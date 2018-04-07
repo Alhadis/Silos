@@ -1,0 +1,11 @@
+s/&nbsp;/\&#xA0;/gi
+s/&lsquo;/\&#x2018;/gi
+s/&rsquo;/\&#x2019;/gi
+s/&ldquo;/\&#x201C;/gi
+s/&rdquo;/\&#x201D;/gi
+s/&ndash;/\&#x2013;/gi
+s/&mdash;/\&#x2014;/gi
+s/&ensp;/\&#x2002;/gi
+s/&emsp;/\&#x2003;/gi
+s/&thinsp;/\&#x2009;/gi
+s/&hellip;/\&#x2026;/gi
