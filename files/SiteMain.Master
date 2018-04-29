@@ -1,0 +1,352 @@
+﻿<%@ Master Language="VB" Inherits="System.Web.Mvc.ViewMasterPage" %>
+
+<%@ Import Namespace="System.IO" %>
+<%@ Import Namespace="System.Web.Hosting" %>
+<%@ Import Namespace="System.Net" %>
+<%@ Import Namespace="System.Xml" %>
+<%@ Import Namespace="Adasoft.Abreast.StoreBack" %>
+<%@ Import Namespace="Adasoft.Abreast.Models" %>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+
+<script runat="server">
+
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs)
+        Dim tLastLang As String = Session("tVB_LastLang")
+
+        If tLastLang Is Nothing AndAlso tLastLang = "" Then
+            Resources.resGBMenuName.Culture = New System.Globalization.CultureInfo("EN")
+            Resources.resGBButton.Culture = New System.Globalization.CultureInfo("EN")
+        Else
+            Resources.resGBMenuName.Culture = New System.Globalization.CultureInfo(tLastLang)
+            Resources.resGBButton.Culture = New System.Globalization.CultureInfo(tLastLang)
+        End If
+        
+        ViewData("UserName") = Session("tVB_CNUserName")
+        ViewData("ServerName") = Session("tVB_ServerName")
+       
+        ViewData("omnPdt") = Resources.resGBMenuName.omnPdt
+        ViewData("omnGeneral") = Resources.resGBMenuName.omnGeneral
+        ViewData("omnMngGenPdt") = Resources.resGBMenuName.omnMngGenPdt
+        ViewData("omnMngGenSpl") = Resources.resGBMenuName.omnMngGenSpl
+        ViewData("omnMngGenCst") = Resources.resGBMenuName.omnMngGenCst
+        ViewData("omnMngGenOther") = Resources.resGBMenuName.omnMngGenOther
+        ViewData("omnSignOut") = Resources.resGBMenuName.omnSignOut
+        ViewData("omnPurchase") = Resources.resGBMenuName.omnPurchase
+        ViewData("omnPromotion") = Resources.resGBMenuName.omnPromotion
+        ViewData("omnPoint") = Resources.resGBMenuName.omnPoint
+        ViewData("omnFavorites") = Resources.resGBMenuName.omnFavorites
+        ViewData("omnCstPointMovement") = Resources.resGBMenuName.omnCstPointMovement
+        ViewData("omnManagement") = Resources.resGBMenuName.omnManagement
+        ViewData("omnMng") = Resources.resGBMenuName.omnMng
+        
+        ViewData("tMsgNotAuthorize") = Resources.resGBMsg.tMsgNotAuthorize
+        
+        ViewData("oimgBrowse") = Url.Content(Resources.resGBImageList.oimgBrowse) '*CH 01-11-2012
+        ViewData("oCompAdd") = Resources.resGBMenuName.oCompAdd
+        
+        ViewData("tHome") = Resources.resGBButton.tHome
+        ViewData("tSignUp") = Resources.resGBButton.tSignUp
+        
+        W_GETxDataLanguage()
+        W_SETxLangCulture()
+    End Sub
+    
+    Sub W_SETxLangCulture()
+        '----- เช็คก่อนว่า Session ภาษา ยังไม่หมด -----' *CH 05-01-12
+        If Not Session("tVB_LastLang") Is Nothing Then
+            System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture(Session("tVB_LastLang").ToString)
+            System.Threading.Thread.CurrentThread.CurrentUICulture = New System.Globalization.CultureInfo(Session("tVB_LastLang").ToString)
+        Else
+            System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture("EN")
+            System.Threading.Thread.CurrentThread.CurrentUICulture = New System.Globalization.CultureInfo("EN")
+        End If
+        '--------------------------------------'
+    End Sub
+
+    
+    Sub W_GETxDataLanguage()
+        Dim tPath As String = AppDomain.CurrentDomain.BaseDirectory & "Content\AdaFiles\AdaLanguage.xml"
+        Dim tValue As String = ""
+        Dim tLang As String = ""
+        Dim oXMLDoc As New XmlDataDocument
+        oXMLDoc.Load(tPath)
+        Session("tPathLang") = tPath
+        For Each oEle As XmlElement In oXMLDoc.DocumentElement.ChildNodes
+            tLang = ""
+            For Each oFiled As XmlElement In oEle.ChildNodes
+                tLang &= "|" & oFiled.InnerText
+            Next
+            tLang = Mid(tLang, 2)
+            tValue &= "," & tLang
+        Next
+        tValue = Mid(tValue, 2)
+        'Session("ValueLange") = tValue
+        'ViewData("SelectLang") = tValue       
+        
+        Dim aValue = tValue.Split(",")
+        For nItem = 0 To aValue.Length - 1
+            Select Case UCase(aValue(nItem).Split("|")(0))
+                Case UCase("TH")
+                    ViewData("TH") = UCase("TH")
+                    ViewData("THValue") = aValue(nItem).Split("|")(1)
+                Case UCase("EN")
+                    ViewData("EN") = UCase("EN")
+                    ViewData("ENValue") = aValue(nItem).Split("|")(1)
+            End Select
+        Next
+    End Sub
+    
+    Private Function DB_CHKbFileConfig(ByRef ptPath As String, ByVal ptFileName As String) As Boolean
+        Dim tChkFile As String
+        If ptPath.EndsWith("\") Then
+            tChkFile = ptPath & ptFileName
+        Else
+            tChkFile = ptPath & "\" & ptFileName
+        End If
+        If IO.File.Exists(tChkFile) Then
+            Return True
+        Else
+            If Path.GetDirectoryName(ptPath) Is Nothing Then
+                Return False
+            Else
+                ptPath = Path.GetDirectoryName(ptPath)
+                Return DB_CHKbFileConfig(ptPath, ptFileName)
+            End If
+        End If
+    End Function
+    
+Protected Sub Page_Init(ByVal sender As Object, ByVal e As System.EventArgs)
+        W_CHKxSessionTimeout()
+End Sub
+
+Sub W_CHKxSessionTimeout()
+    If Session("tVB_LastLang") Is Nothing Then
+        'Response.Redirect(Url.Action("wLogin", "cvcLogin"))
+    End If
+End Sub
+</script>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head id="Head1" runat="server">
+
+    <title><asp:ContentPlaceHolder ID="TitleContent" runat="server" /></title>
+    <link href="../../Content/Site.css" rel="stylesheet" type="text/css" />
+    <link href="../../Content/AdaCss/Local/FCS_SiteMain.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript"  src="<%=Url.Content("~/Scripts/AdaScript/J011_ComboBoxLibrary.js") %>"></script>
+    <script type="text/javascript" src="<%=Url.Content("~/Scripts/AdaScript/J003_SplashDialog.js") %>"></script>
+
+     
+    <link href="<%=Url.Content("~/Content/AdaCss/Global/FCS_CNCenter.css") %>" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="<%=Url.Content("~/Scripts/AdaScript/J002_General.js") %>"></script>      
+    
+    <link href="<%=Url.Content("~/Content/UI/south-street/jquery-ui-1.8.16.custom.css") %>" rel="stylesheet" type="text/css" />
+    <script src="<%=Url.Content("~/Scripts/UI/jquery-1.6.2.min.js") %>" type="text/javascript"></script>
+    <script type="text/javascript">
+            var $ui = jQuery.noConflict();
+    </script>
+    <script src="<%=Url.Content("~/Scripts/UI/jquery-ui-1.8.16.custom.min.js") %>" type="text/javascript"></script>
+
+    <meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="author" content="jQuery Foundation - jquery.org">
+	<meta name="description" content="jQuery: The Write Less, Do More, JavaScript Library">
+
+	<meta name="viewport" content="width=device-width">
+    
+	<%--<link rel="stylesheet" href="http://jqueryui.com/jquery-wp-content/themes/jquery/css/base.css?v=1">
+	<link rel="stylesheet" href="http://jqueryui.com/jquery-wp-content/themes/jqueryui.com/style.css">--%>
+    <link href="<%=Url.Content("~/Content/JQuery/Base.css")%>" rel="stylesheet" type="text/css" />
+    <link href="<%=Url.Content("~/Content/JQuery/Main.css")%>" rel="stylesheet" type="text/css" />
+	<link rel="pingback" href="http://jqueryui.com/xmlrpc.php" />
+	<!--[if lt IE 7]><link rel="stylesheet" href="css/font-awesome-ie7.min.css"><![endif]-->
+
+    <script src="<%=Url.Content("~/Scripts/JQuery/modernizr.custom.2.6.2.min.js")%>" type="text/javascript"></script>
+    <script src="<%=Url.Content("~/Scripts/JQuery/jquery.min.js")%>" type="text/javascript"></script>
+	<%--<script>	    window.jQuery || document.write(unescape('%3Cscript src="<%=Url.Content("~/Scripts/JQuery/jquery-1.9.1.min.js")%>"%3E%3C/script%3E'))</script>--%>
+    <script src="<%=Url.Content("~/Scripts/JQuery/jquery-migrate-1.1.1.min.js")%>" type="text/javascript"></script>
+    <script src="<%=Url.Content("~/Scripts/JQuery/main.js")%>" type="text/javascript"></script>
+    <script src="<%=Url.Content("~/Scripts/JQuery/plugins.js")%>" type="text/javascript"></script>
+    <script src="<%=Url.Content("~/Scripts/JQuery/wde1aof.js")%>" type="text/javascript"></script>
+
+	<%--<script src="http://jqueryui.com/jquery-wp-content/themes/jquery/js/modernizr.custom.2.6.2.min.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>--%>
+	<script>	    window.jQuery || document.write(unescape('%3Cscript src="http://jqueryui.com/jquery-wp-content/themes/jquery/js/jquery-1.9.1.min.js"%3E%3C/script%3E'))</script>
+	<%--<script src="http://jqueryui.com/jquery-wp-content/themes/jquery/js/jquery-migrate-1.1.1.min.js"></script>
+	<script src="http://jqueryui.com/jquery-wp-content/themes/jquery/js/plugins.js"></script>
+	<script src="http://jqueryui.com/jquery-wp-content/themes/jquery/js/main.js"></script>
+	<script src="//use.typekit.net/wde1aof.js"></script>--%>
+
+
+<script type="text/javascript">
+    var tW_StaPage = 0;
+    window.moveTo(0, 0);
+    window.onload = W_SETxInitial;
+    function W_SETxInitial() {
+        tJ002_VirtualDirectory = '<%=Session("VirtualDirectory") %>';
+        tJ003_VirtualDirectory = '<%=Session("VirtualDirectory") %>';
+    }
+    
+    window.onload = window_onload;
+    function window_onload() {
+        if ('<%=Session("ShowHomeFromLogin")%>' == '1') {
+            window.location = window.location; ;
+            //<%Session("ShowHomeFromLogin")=""%>
+        }
+        //alert(screen.height);
+        //alert(screen.width);
+    }
+
+    function W_GETxLanguage(ptLang) {
+        if (ptLang == '<%=Session("tVB_LastLang")%>') { return; }
+        var tDate = J002_GETtTimeStamp();
+        var nIndex = 1; //document.getElementById("ocbLang").selectedIndex;
+        var tLang = ptLang;  //document.getElementById("ocbLang").options[nIndex].value;
+        var tUrl = '<%=Url.Action("C_SETtLanguage","cvcLogin") %>' + "?ptLang=" + tLang + '&pnIndex=' + nIndex + '&ptDate=' + tDate;
+        var oHTTP = J002_GEToXMLHttpRequest();
+        oHTTP.open("GET", encodeURI(tUrl), false);
+        oHTTP.send(null);
+        var tReturn = oHTTP.responseText;
+        window.location = window.location;
+    }
+
+    //ptPage 1 : home, 2 : Sign Up
+    function W_SHWxGotoPage(ptPage) {
+        var tUrl = '';
+        switch (ptPage) {
+            case '1':
+                if (tW_StaPage != '1') {
+                    tUrl = '<%=Url.Action("Index","cvcAbreastMain") %>';
+                    W_SETxOpenPage(tUrl);
+                }
+                break;
+            case '2':
+                if (tW_StaPage != '2') {
+                    tUrl = '<%=Url.Action("wSignUp","cvcAbreastMain") %>';
+                    W_SETxOpenPage(tUrl);
+                }
+                break;
+        }
+    }
+    function W_SETxOpenPage(ptUrl) {
+        var oHTTP = J002_GEToXMLHttpRequest();
+        oHTTP.open("GET", encodeURI(ptUrl), false);
+        oHTTP.send(null);
+        window.location = ptUrl;
+    }
+</script>
+
+    <script type="text/javascript" >
+        function W_SETxSessionAlive() {
+            // Gets reference of image
+            var img = document.getElementById("oimSessionAlive");
+
+            // Set new src value, which will cause request to server, so 
+            // session will stay alive
+            img.src = '<%=Url.Action("C_SETxSessionAlive","cvcCenter") %>' + "?c=" + Math.random(); //counter;
+        }
+
+        // Run function for a first time
+        window.setInterval("W_SETxSessionAlive()", 60000);
+
+    </script>
+
+<asp:ContentPlaceHolder runat="server" ID="HeadContent" />
+     
+</head>
+
+<body>
+    <header>
+	    <section id="global-nav">
+		    <nav>
+			    <div class="constrain">
+				    <ul class="links">
+					    <li class="dropdown xCN_DivDropDown"><a>Language</a>
+						    <ul>
+							    <li class="xCN_DivTH"><a href="javascript:void(0)" onclick="W_GETxLanguage('<%=ViewData("TH")%>')">  
+                                        <label style="margin-left:19px"><%=ViewData("THValue")%></label>
+                                    </a></li>
+							    <li class="xCN_DivEN"><a href="javascript:void(0)" onclick="W_GETxLanguage('<%=ViewData("EN")%>')">  
+                                        <label style="margin-left:19px;"><%=ViewData("ENValue")%></label>
+                                    </a></li>
+						    </ul>
+					    </li>
+				    </ul>
+			    </div>
+		    </nav>
+	    </section>
+    </header>
+
+    <div>
+    <img alt="" id="oimSessionAlive" style="display:none;"/>
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" style ="text-align:center">
+            <tr>
+                <td>
+                    <table width ="980px" border="0" align="center" class="xW_TdWebPage">
+                        <tr class='xCN_DivDisplayNone'>
+                            <td colspan="2" class="xW_Language">
+                                <div class="xCN_DivTHLang">
+                                    <a href="javascript:void(0)" onclick="W_GETxLanguage('<%=ViewData("TH")%>')">  
+                                        <label style="margin-left:19px"><%=ViewData("THValue")%></label>
+                                    </a>
+                                </div>
+                                <div class="xCN_DivENLang">
+                                    <a href="javascript:void(0)" onclick="W_GETxLanguage('<%=ViewData("EN")%>')">  
+                                        <label style="margin-left:19px;"><%=ViewData("ENValue")%></label>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" valign="bottom" class="xW_TdLogo">
+                                <img alt="" src="<%=Url.Content("~/Content/img/AdaLogin/AdaLogoWeb.png") %>"/>
+                            </td>
+                            <td class="xW_DivMenu">
+                                <div class="xCN_DivMenuSub">
+                                    <a href="javascript:void(0)" onclick="W_SHWxGotoPage('1');">  
+                                        <label class="xW_SizeStyle xW_MarginRight"><%=ViewData("tHome")%></label>
+                                    </a>
+                                </div>
+                                <div class="xCN_DivMenuSub">
+                                    <a href="javascript:void(0)" onclick="W_SHWxGotoPage('2');">  
+                                        <label class="xW_SizeStyle"><%=ViewData("tSignUp")%></label>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" class='xW_DivLine'>
+                                <img alt="" src="<%=Url.Content("~/Content/img/AdaMainPage/Line.png") %>"/></td>
+                        </tr>
+                        <!--ส่วนที่ 2-->
+                        <tr>
+                            <!--ส่วนแสดง Webpage-->
+                            <td width="1000px" align="left" valign="top" colspan="2">
+                                <div id="odiDetailMaster" class='xW_DivDetail1'>
+                                    <asp:ContentPlaceHolder ID="MainContent" runat="server" />
+                                </div>
+                            </td>
+                        </tr>
+                        <!--ส่วนที่ 3 -->
+                        <tr class='xCN_DivDisplayNone'>
+                              <td colspan="2" bgcolor="#b7d49e" style ="text-align :14px; height:26px;">
+                                    <div id="Div1">
+                                        <label style="font-size:12px;" ></label>
+                                    </div>      
+                              </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+	    <section id="global-nav">
+		    <nav>
+			    <div class="constrain" style=" width:100%; text-align:center;">
+                    <label style="font-size:12px; color:White;" ><%=ViewData("oCompAdd")%></label>
+			    </div>
+		    </nav>
+	    </section>
+    </div>
+</body>
+</html>

@@ -1,0 +1,38 @@
+NL="
+"
+LOG="====================${NL}"
+:0  # if QUOTA is not set to something, then..
+* ! QUOTA ?? .
+{
+    QUOTA=10000000000
+}
+DROPPRIVS=yes
+LOG="QUOTA:     $QUOTA${NL}"
+
+## David W. Tamkin <3F1EA16E.7040102@panix.com>
+## Recommendation to use :0i from Leow Hock Seng on 25 Apr 2005
+:0i
+INBOXSIZE=| set -- `ls -l $DEFAULT`; echo $5
+
+LOG="INBOXSIZE: $INBOXSIZE${NL}"
+:0
+* $ -${INBOXSIZE}^0
+* $ ${QUOTA}^0
+{
+    MAXMSG = $=
+    LOG="MAXMSG:    $MAXMSG${NL}"
+    :0
+    * $ > ${MAXMSG}
+    {
+        LOG="Bouncing (message too big!)${NL}"
+        EXITCODE=69
+        HOST
+    }
+}
+
+:0E
+{
+    LOG="Bouncing (inbox already full!)${NL}"
+    EXITCODE=69
+    HOST
+}

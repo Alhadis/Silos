@@ -1,0 +1,192 @@
+﻿<%@ Master Language="C#" AutoEventWireup="true" CodeFile="Admin.master.cs" Inherits="TotalTech.Web.Admin.AdminMaster" %>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+        <title>YUI: Complex Application</title>        
+        <link rel="stylesheet" type="text/css"href="http://yui.yahooapis.com/2.8.0r4/build/reset-fonts-grids/reset-fonts-grids.css">
+        <!-- Skin CSS files resize.css must load before layout.css -->
+        <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.8.0r4/build/assets/skins/sam/resize.css">
+        <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.8.0r4/build/assets/skins/sam/layout.css">
+        <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.8.0r4/build/treeview/assets/skins/sam/treeview.css"> 
+        <link type="text/css" rel="stylesheet" href="http://yui.yahooapis.com/2.8.0r4/build/logger/assets/skins/sam/logger.css">
+
+        <!-- Utility Dependencies -->
+        <script src="http://yui.yahooapis.com/2.8.0r4/build/yahoo-dom-event/yahoo-dom-event.js"></script> 
+        <script src="http://yui.yahooapis.com/2.8.0r4/build/dragdrop/dragdrop-min.js"></script> 
+        <script src="http://yui.yahooapis.com/2.8.0r4/build/element/element-min.js"></script> 
+        <!-- Optional Animation Support-->
+        <script src="http://yui.yahooapis.com/2.8.0r4/build/animation/animation-min.js"></script> 
+        <!-- Optional Resize Support -->
+        <script src="http://yui.yahooapis.com/2.8.0r4/build/resize/resize-min.js"></script>
+        <!-- Source file for the Layout Manager -->
+        <script src="http://yui.yahooapis.com/2.8.0r4/build/layout/layout-min.js"></script>
+        <script src="http://yui.yahooapis.com/2.8.0r4/build/json/json-min.js" ></script>
+        <script type="text/javascript" src="http://yui.yahooapis.com/2.8.0r4/build/connection/connection-min.js"></script> 
+        <script src="http://yui.yahooapis.com/2.8.0r4/build/treeview/treeview-min.js" ></script>
+        <script src="http://yui.yahooapis.com/2.8.0r4/build/logger/logger-min.js" ></script>
+
+
+
+        <asp:ContentPlaceHolder id="head" runat="server">
+        </asp:ContentPlaceHolder>
+    </head>
+    <body class="yui-skin-sam">
+        <div id="top1"><p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Suspendisse justo nibh, pharetra at, adipiscing ullamcorper.</p></div>
+
+        <div id="left1">
+            <div id="MainNavTree"></div>            
+        </div>
+        <div id="center1"><div id="logger"></div></div>
+        <script>
+            TotalTech = {}
+            TotalTech.LayoutManager = {}
+
+            TotalTech.LayoutManager.BuildLayout = function () {
+                var Dom = YAHOO.util.Dom,
+                    Event = YAHOO.util.Event;
+
+                Event.onDOMReady(function () {
+                    TotalTech.LayoutManager.Layout = new YAHOO.widget.Layout({
+                        minWidth: 1000,
+                        minHeight: 500,
+                        units: [
+                            { position: 'top', body: 'top1', width: 1000, height: 100, gutter: '2px 5px' },
+                            { position: 'left', header: 'Left', width: 200, resize: true, body: 'left1', gutter: '2px 5px', collapse: true, collapseSize: 25, scroll: true, maxWidth: 300 },
+                            { position: 'center', body: 'center1', width: 800, height: 500, gutter: '2px 5px 2px 0px' }
+                        ]
+                    });
+
+                    TotalTech.LayoutManager.Layout.on('render', function () {
+                        YAHOO.log("Layout Render", "info", "TotalCMS-Layout");
+                        var currentIconMode = 0;
+                        //create a new tree:
+                        var r = TotalTech.LayoutManager.Layout.getUnitByPosition('logger'),
+                        w = 400//r.getSizes().body.w - 150,
+                        h = 400//r.getSizes().body.h - 200;
+
+                        var logger = new YAHOO.widget.LogReader(r.body, {
+                            logReaderEnabled: true,
+                            draggable: true,
+                            newestOnTop: false,
+                            height: h + 'px',
+                            width: w + 'px'
+                        });
+
+                        TotalTech.LayoutManager.NodeTree = new YAHOO.widget.TreeView("MainNavTree");
+                        TotalTech.LayoutManager.NodeTree.Object = "dashboard";
+                        //turn dynamic loading on for entire tree:
+                        TotalTech.LayoutManager.NodeTree.setDynamicLoad(loadNodeData, function () {
+                            TotalTech.LayoutManager.NodeTree.draw();
+                        });
+                        /*TotalText.LayoutManager.NodeTree.on('render', function () {
+                        YAHOO.log("Tree Render", "info", "TotalCMS-Node Tree");
+                        });*/
+                        var RootNode = TotalTech.LayoutManager.NodeTree.getRoot();
+                        RootNode.type = "RootNode";
+                        loadNodeData(RootNode, function () {
+                            TotalTech.LayoutManager.NodeTree.draw();
+                        });
+                    });
+                    TotalTech.LayoutManager.Layout.render();
+                    YAHOO.log("Layout Rendered", "info", "TotalCMS-Layout");
+                });
+
+
+                function loadNodeData(node, fnLoadComplete) {
+                    YAHOO.log("Loading nodes for : " + TotalTech.LayoutManager.NodeTree.Object, "info", "TotalCMS-Layout");
+                    //We'll load node data based on what we get back when we
+                    //use Connection Manager topass the text label of the 
+                    //expanding node to the Yahoo!
+                    //Search "related suggestions" API.  Here, we're at the 
+                    //first part of the request -- we'll make the request to the
+                    //server.  In our success handler, we'll build our new children
+                    //and then return fnLoadComplete back to the tree.
+
+                    //Get the node's label and urlencode it; this is the word/s
+                    //on which we'll search for related words:
+                    var nodeLabel = (node == "RootNode" ? node : encodeURI(node.label));
+                    var nodeType = (node.type ? node.type : "");
+                    if (fnLoadComplete == null)
+                        fnLoadComplete = function () { };
+                    if (nodeType != "") {
+                        //prepare URL for XHR request:
+                        var sUrl = "YUIHandler.ashx?object=" + TotalTech.LayoutManager.NodeTree.Object + "&nodeType=" + encodeURIComponent(nodeType);
+
+                        //prepare our callback object
+                        var callback = {
+
+                            //if our XHR call is successful, we want to make use
+                            //of the returned data and create child nodes.
+                            success: function (oResponse) {
+                                YAHOO.log("XHR transaction was successful.", "info", "example");
+                                //YAHOO.log(oResponse.responseText);
+                                var oResults = eval("(" + oResponse.responseText + ")");
+                                var ResultSet = oResults.settings.dashboard.links.link
+                                if ((ResultSet) && (ResultSet.length)) {
+                                    YAHOO.log("Result Set Found", "info", "TotalCMS-Layout");
+                                    //Result is an array if more than one result, string otherwise
+                                    switch (nodeType) {
+                                        case "RootNode":
+                                            if (YAHOO.lang.isArray(ResultSet)) {
+                                                YAHOO.log("Result Set is Array", "info", "TotalCMS-Layout");
+                                                for (var i = 0, j = ResultSet.length; i < j; i++) {
+                                                    var tempNode = new YAHOO.widget.TextNode(ResultSet[i].label, node, false);
+                                                    tempNode.type = ResultSet[i].type
+                                                    YAHOO.log("Node Loaded", "info", "TotalCMS-Layout");
+                                                }
+                                            } else {
+                                                //there is only one result; comes as string:
+                                                YAHOO.log("Result Set is not Array", "info", "TotalCMS-Layout");
+                                                var tempNode = new YAHOO.widget.TextNode(ResultSet, node, false)
+                                            }
+                                            break;
+                                        case "TotalCMS.Page.Reports.Approvals, TotalCMS":
+                                            
+                                            break;
+                                    }
+                                }
+
+                                //When we're done creating child nodes, we execute the node's
+                                //loadComplete callback method which comes in via the argument
+                                //in the response object (we could also access it at node.loadComplete,
+                                //if necessary):                           
+                                oResponse.argument.fnLoadComplete();
+                            },
+
+                            //if our XHR call is not successful, we want to
+                            //fire the TreeView callback and let the Tree
+                            //proceed with its business.
+                            failure: function (oResponse) {
+                                YAHOO.log("Failed to process XHR transaction.", "info", "example");
+                                oResponse.argument.fnLoadComplete();
+                            },
+
+                            //our handlers for the XHR response will need the same
+                            //argument information we got to loadNodeData, so
+                            //we'll pass those along:
+                            argument: {
+                                "node": node,
+                                "fnLoadComplete": fnLoadComplete
+                            },
+
+                            //timeout -- if more than 7 seconds go by, we'll abort
+                            //the transaction and assume there are no children:
+                            timeout: 7000
+                        };
+
+                        //With our callback object ready, it's now time to 
+                        //make our XHR call using Connection Manager's
+                        //asyncRequest method:
+                        YAHOO.util.Connect.asyncRequest('GET', sUrl, callback);
+                    }
+                    else {
+                        if (fnLoadComplete != null)
+                            fnLoadComplete();
+                    }
+                }
+            } ();
+            
+            
+        </script>
+    </body>
+</html>

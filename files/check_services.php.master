@@ -1,0 +1,73 @@
+<?php
+
+class check_services {
+
+    function warning()
+    {
+
+    $warning = "";
+
+    <!-- BEGIN DYNAMIC BLOCK: monitor -->
+    {WARNUNG}
+    <!-- END DYNAMIC BLOCK: monitor -->
+
+
+    if($warning != ""){
+      $warning .= "Message generated at ".date("F j, Y, G:i", time()).".\n";
+      return $warning;
+    } else {
+      return false;
+    }
+
+    }
+
+    function _check_tcp ($host,$port) {
+
+        $fp = fsockopen ($host, $port, &$errno, &$errstr, 2);
+
+        if ($fp) {
+            fclose($fp);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function _check_udp ($host,$port) {
+
+        $fp = fsockopen ('udp://'.$host, $port, &$errno, &$errstr, 2);
+
+        if ($fp) {
+            fclose($fp);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function _check_ftp ($host,$port){
+
+      $conn_id = @ftp_connect($host, $port);
+
+      if($conn_id){
+        @ftp_close($conn_id);
+        return true;
+      } else {
+        return false;
+      }
+    }
+}
+
+$cs = new check_services;
+
+if(is_file("/home/admispconfig/ispconfig/adminmail.txt")){
+  $fp = fopen ("/home/admispconfig/ispconfig/adminmail.txt", "r");
+  $email = trim(fread($fp, filesize ("/home/admispconfig/ispconfig/adminmail.txt")));
+  fclose($fp);
+  $email = str_replace("\r\n", "", $email);
+  $email = str_replace("\r", "", $email);
+  $email = str_replace("\n", "", $email);
+}
+$msg = $cs->warning();
+if(!empty($email) && strstr($email, "@") && strlen($email) > 3 && $msg) mail($email, "WARNING: services not running", $msg);
+?>

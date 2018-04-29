@@ -1,0 +1,65 @@
+@*
+    Blog post layout.
+*@
+@using uBlogsy.BusinessLogic
+@using System.Linq
+@using uBlogsy.Common.Extensions
+@inherits UmbracoTemplatePage
+@{
+    Layout = "uBlogsyBaseBlog.cshtml";
+    
+    var tag = Request.QueryString["tag"];
+    var label = Request.QueryString["label"];
+    var author = Request.QueryString["author"];
+    var searchTerm = Request.QueryString["search"];
+    var commenter = Request.QueryString["commenter"];
+    int page = int.TryParse(Request.QueryString["page"], out page) ? page : 1;
+    var year = Request.QueryString["year"];
+    var month = Request.QueryString["month"];
+    var day = Request.QueryString["day"];
+    var prev = PostService.Instance.GetNextPost(Model.Content, tag, label, author, searchTerm, commenter, year, month, day);
+    var next = PostService.Instance.GetPreviousPost(Model.Content, tag, label, author, searchTerm, commenter, year, month, day);
+}
+	
+@section uBlogsyHead{}
+
+@section uBlogsyLeftCol{
+    @*render the post*@
+    <div class="uBlogsy_post_container">
+        @*pagination*@
+        <div class="uBlogsy_next_prev">
+            @if (prev != null)
+            {
+                var prevUrl = prev.Url.GetUrlWithQueryString(Request.QueryString, new[] { "action", "success" });
+                <a href="@prevUrl" class="uBlogsy_prev uBlogsy_font_style20" title="Older Posts">&lt; @Umbraco.GetDictionaryValue("uBlogsyDicPaginationOlder")</a>
+            }
+            
+            @if (next != null)
+            {
+                var nextUrl = next.Url.GetUrlWithQueryString(Request.QueryString, new[] { "action", "success" }); 
+                <a href="@nextUrl" class="uBlogsy_next uBlogsy_font_style20" title="Newer Posts">@Umbraco.GetDictionaryValue("uBlogsyDicPaginationNewer") &gt;</a>
+            }
+        </div>
+        
+        @Html.Partial("uBlogsy/Post/uBlogsyPostShowPost", new ViewDataDictionary(ViewData) { {"Node", Model.Content }, { "UseAddthis", true }, { "GravatarSize", 50 } })
+        
+       
+    </div>
+
+    @*list of related posts*@
+    @Html.Partial("uBlogsy/Post/uBlogsyPostListRelatedPosts", new ViewDataDictionary(ViewData) { { "Node", Model.Content }, { "ItemLimit", 5 }, { "MatchCount", 1 }, { "RelatedAlias", string.Empty } })
+        
+
+    @*list comments - install uCommentsy, then uncomment this line*@
+    @try
+    {
+        @Html.Partial("uCommentsy/uCommentsyListComments", new ViewDataDictionary(ViewData) { { "ItemLimit", -1 } })
+    }
+    catch (Exception) { }
+    
+    @*render contact form - install uCommentsy, then uncomment this line**@
+    @try
+    {
+        @Html.Action("Index", "uCommentsyContactFormSurface", new { CurrentPage })
+    }catch(Exception){}
+}

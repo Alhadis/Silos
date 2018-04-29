@@ -1,0 +1,525 @@
+﻿<%@ Master Language="VB" AutoEventWireup="false" CodeBehind="sistema.master.vb" ClientIDMode="Static" Inherits="SmartRP.sistema" %>
+
+<%@ Register Src="/sistema/include/script.ascx" TagPrefix="SmartRP" TagName="script" %>
+
+<!DOCTYPE html>
+
+<html lang="pt-br" xmlns="http://www.w3.org/1999/xhtml">
+<head runat="server">
+    <meta name="theme-color" content="#000" />
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="description" content="Um sistema de planejamento e gestão de assessoria de imprensa e relações públicas" />
+    <meta name="author" content="RPCards Team" />
+    <SmartRP:script runat="server" ID="script" />
+    <title>RPCards - <% Response.Write(Page.Title) %></title>
+    <!-- Post It JS -->
+    <asp:ContentPlaceHolder ID="head" runat="server">
+    </asp:ContentPlaceHolder>
+    <script>
+
+        //Propriedades globais do plugin de PostIts
+        $.fn.postitall.globals.savable = true;
+        $.fn.postitall.globals.randomColor = false;
+
+        // sapoha marca o textoda pesquisa no html 
+        $(document).ready(function () {
+            var mark_selector = ".card-wrapper, card-panel"
+            $(mark_selector).mark("<%Response.Write(Request("q"))%>")
+            $(mark_selector).mark("<%Response.Write(Request("PESQUISA"))%>")
+        })
+
+    </script>
+    <style>
+        mark {
+            background: #e25555;
+            color: black;
+            font-weight: bolder;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Código da área de notificações -->
+    <div class="notificacoes-menu-wrapper">
+        <div class="secoes-notificacao" tabindex="-1">
+            <div class="notificacoes-menu" id="Notificacoes" runat="server">
+            </div>
+
+        </div>
+
+    </div>
+    <!-- Término do código da área de notificações -->
+
+    <div class="ramal-panel ramal-panel-fechado">
+        <a href="javascript:void(0)" style="position: absolute; left: 10px; top: 10px;" onclick="toggleRamal()"><strong><i class="fa fa-times"></i></strong></a>
+        <h3 class="text-center">Lista de Ramais</h3>
+        <div class="alert alert-success text-center">
+            CALL: NÚMERO 1 + FLASH + NÚMERO 2 + TECLA CONFERENCE	
+            <br />
+            PUXAR LIGAÇÃO: *5 #(SEND)			
+        </div>
+        <div class="text-center">
+            <input type="text" style="width: 100%;" placeholder="Pesquisar ramal" onkeyup="searchTable('tr', 'td', [jQuery('.txt-ramal').val()], jQuery('.table-ramais'));" class="form-control txt-ramal" />
+        </div>
+        <div id="WrapperTabelaRamais" runat="server">
+            <table id="TabelaRamais" style="width: 100%;" class="table table-striped table-ramais">
+            </table>
+        </div>
+    </div>
+    <div id="search">
+        <button type="button" class="close">×</button>
+        <h3>Pesquisar em todo o sistema</h3>
+        <input type="text" id="input_search" runat="server" value="" placeholder="Comece a digitar e pressione ENTER para pesquisar..." />
+    </div>
+
+    <div class="notificacoes-mobile mobile-only">
+    </div>
+    <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/sistema/home">
+                <img src="/sistema/img/logo.png" />
+            </a>
+            <!-- Menu Rápido -->
+            <div class="menu-rapido">
+                <!-- Menu rápido que só aparece no mobile -->
+                <% Response.Write(MontarMenuRapido()) %>
+            </div>
+        </div>
+        <div class="collapse navbar-collapse">
+            <ul class="nav navbar-nav navbar-right" style="margin-right: 0%">
+                <li title="Notificações"><a target="_self" href="javascript:abreNotificacoes();"><i class=" fa fa-lightbulb-o fa-2x"></i><span class="badge badge-danger badge-notificacoes empty-badge">0</span>
+                    <div class="ripple-container"></div>
+                </a><span class="notificacoes-titulo"><span class="titulo-painel-ativo">Notificações</span></span></li>
+                <% Response.Write(MontarMenuSuperior()) %>
+            </ul>
+        </div>
+        <!--/.nav-collapse -->
+    </div>
+
+    <div runat="server" visible="false" class="side-menu">
+        <nav class="navbar navbar-inverse sidebar" role="navigation">
+
+            <!-- SPACEBG -->
+            <div class="container space" style="height: 100%; position: absolute;" id="container-menu-espaco">
+                <div class='spacestars'></div>
+                <div class='spacestars2'></div>
+                <div class='spacestars3'></div>
+            </div>
+            <div class="container-fluid container-menu-geral">
+                <!-- Brand and toggle get grouped for better mobile display -->
+                <div class="navbar-header">
+                    <button type="button" class="pull-right navbar-toggle" data-toggle="collapse" data-target="#bs-sidebar-navbar-collapse-1">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                </div>
+                <!-- Collect the nav links, forms, and other content for toggling -->
+                <div class="collapse navbar-collapse" id="bs-sidebar-navbar-collapse-1">
+                    <ul class="nav navbar-nav">
+                        <li class="li-search-form" style="border-top: 0;">
+                            <div class="form-group">
+                                <input type="text" class="form-control" style="margin-bottom: 0; border-bottom: 0; padding-left: 15px; padding-right: 40px; width: 100%;" placeholder="Pesquisar" id="input_search_deprecate" runat="server" />
+                                <i class="fa fa-search form-control-feedback" style="height: 20px; margin-top: 10px; margin-right: 5px;"></i>
+                            </div>
+                        </li>
+
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <div runat="server" id="MaterialButtonGeral" class="material-button-anim">
+    </div>
+
+    <script>
+    </script>
+
+
+    <div class="wrapper-total-pagina">
+
+        <div class="container space" runat="server" style="min-height: 280px; position: fixed; margin-top: 0px" id="spaceheader">
+            <div class="blankrizer"></div>
+            <div id="USU_CAPA">
+                <img src="/api/getImage.aspx?PARAM_IMAGE=USU_FOTO_CAPA&USU_ID=<% Response.Write(Session("USU_ID")) %>" />
+            </div>
+            <div class='spacestars'></div>
+            <div class='spacestars2'></div>
+            <div class='spacestars3'></div>
+            <div id="USU_APELIDO" runat="server"></div>
+
+            <div runat="server" id="BtnEditarPerfil">
+                <div class="btn-editar-capa btn"><i class="fa fa-photo"></i>Editar Capa</div>
+            </div>
+
+        </div>
+        <div class="usu-foto-wrapper">
+
+            <div id="MaterialBtnTopo" class="material-button-anim-imgtopo">
+                <ul class="list-inline" id="options">
+                    <li class="option">
+                        <a href="javascript:editarPerfil()">
+                            <button data-toggle="tooltip" data-original-title="Editar Perfil" data-animation="True" class="material-button option1" type="button" value="">
+                                <span class="fa-stack" style="font-size: 12px !important;">
+                                    <i class="fa fa-user-o fa-stack-2x"></i>
+                                    <i style="font-size: 17px; margin-left: 10px;" class="fa fa-pencil fa-stack-2x"></i>
+                                </span>
+                            </button>
+                        </a>
+                    </li>
+                    <li class="option">
+                        <a href="#">
+                            <button onclick="document.location.href='/sistema/colaboradores/perfil/<% Response.Write(Session("USU_USUARIO")) %>'" data-toggle="tooltip" data-original-title="Meu perfil" data-animation="True" class="material-button option2" type="button" value="">
+                                <span class="fa fa-user-circle" aria-hidden="True" />
+                            </button>
+                        </a>
+                    </li>
+                    <li class="option">
+                        <a href="/sistema/sair">
+                            <button data-toggle="tooltip" data-original-title="Logout" data-animation="True" class="material-button option3" type="button" value="">
+                                <span class="fa fa-power-off" aria-hidden="True" />
+                            </button>
+                        </a>
+                    </li>
+                </ul>
+
+                <button class="material-button material-button-usu-topo material-button-toggle" data-acao="abrir-opcoes-imgtopo" type="button" value="">
+                    <img class="img-circle active" id="USU_FOTO" runat="server" src="/sistema/img/usuario-foto.png" />
+                </button>
+            </div>
+        </div>
+        <div class="row wrapper-conteudo-pagina">
+
+            <!-- Main Content -->
+            <div class="container-fluid conteiner-site-geral" style="position: relative; background-color: white; margin-top: 280px; margin-bottom: 280px;">
+                <div class="side-body">
+
+                    <asp:ContentPlaceHolder ID="wrapper" runat="server">
+                    </asp:ContentPlaceHolder>
+                </div>
+            </div>
+        </div>
+    </div>
+    <form action="" method="post" class="form-cli-selected">
+        <input type="hidden" name="CLI_SELECTED" />
+    </form>
+
+    <div class="modal fade" id="ModalVeiculo" role="dialog" aria-labelledby="confirm-label" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title">Veículo</h4>
+                </div>
+                <div class="modal-body">
+
+                    <!-- Collapse Panel -->
+
+                    <div class=" panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+
+                        <div class="panel-modal-wrapper">
+
+                            <img src="/sistema/img/ring-loader.svg" style="display: block; margin: auto;" />
+                        </div>
+                    </div>
+
+                    <!-- X Collapse Panel -->
+                </div>
+                <div class="modal-footer">
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="ModalFecharPIM" role="dialog" aria-labelledby="confirm-label" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title">PIM</h4>
+                </div>
+                <div class="modal-body">
+                    <form onsubmit="fecharPIM(this)">
+                        <label class="control-label">Mês</label>
+                        <select name="PIM_MES" id="PIM_MES" runat="server" class="select2" style="width: 100%;">
+                            <option value="1">Agosto/2017</option>
+                            <option value="2">Setembro/2017</option>
+                            <option value="3">Outubro/2017</option>
+                            <option value="4">Novembro/2017</option>
+                            <option value="5">Dezembro/2017</option>
+                        </select>
+                        <button class="btn btn-danger btn-raised" style="width: 100%;" value="">
+                            Fechar<div class="ripple-container"></div>
+                        </button>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade modalDetalhesCliente" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">Editar Veículo</h4>
+                </div>
+                <div class="modal-body">
+                </div>
+                <div class="modal-footer">
+                </div>
+            </div>
+            <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div>
+    <!-- /.modal -->
+
+    <div class="modal fade" id="modalPropriedadesArquivo" role="dialog" aria-labelledby="confirm-label" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title">Propriedades</h4>
+                </div>
+                <div class="modal-body">
+                </div>
+                <div class="modal-footer">
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="modal fade modalMapaEndereco" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">Editar Veículo</h4>
+                </div>
+                <div class="modal-body">
+                    <iframe class="mapa-endereco" src="javascript:void(0)"></iframe>
+                </div>
+                <div class="modal-footer">
+                </div>
+            </div>
+            <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div>
+    <!-- /.modal -->
+
+    <div class="modal fade" id="confirm" role="dialog" aria-labelledby="confirm-label" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Fechar</span></button>
+                    <h4 class="modal-title" id="confirm-label"></h4>
+                </div>
+                <div class="modal-body">
+                    <p class="message"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default btn-raised dismiss" data-dismiss="modal"></button>
+                    <button type="button" class="btn btn-primary btn-raised confirm" style="color: white;" data-dismiss="modal"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="ModalPerfilUsuario" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title">Usuário</h4>
+                </div>
+                <div class="modal-body">
+                </div>
+                <div class="modal-footer">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="ModalPerfilVeiculo" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title">Veículo</h4>
+                </div>
+                <div class="modal-body">
+                </div>
+                <div class="modal-footer">
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade modalConteudoForm" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title"></h4>
+                </div>
+                <div class="modal-body">
+                </div>
+                <div class="modal-footer">
+                </div>
+            </div>
+            <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div>
+    <!-- /.modal -->
+
+    <!-- Modal de FileUploader -->
+    <div class="modal fade" id="ModalFileUpload" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title">Upload de Arquivo</h4>
+                </div>
+                <div class="modal-body">
+                </div>
+                <div class="modal-footer">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="ModalFaseAcao" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title"></h4>
+                </div>
+                <div class="modal-body">
+                    <iframe onload="removeAcaoLoading()" src="about:blank" style="border: 0; display: none;" id="AcaoTipoFrame"></iframe>
+                </div>
+                <div class="modal-footer">
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="modal fade" id="modalNovaAcao" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title"></h4>
+                </div>
+                <div class="modal-body">
+                    <iframe style="border: 0; width: 100%; height: 500px;" id="NovaAcaoFrame"></iframe>
+                </div>
+                <div class="modal-footer">
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="ModalGeral" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title"></h4>
+                </div>
+                <div class="modal-body">
+                </div>
+                <div class="modal-footer">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="ModalTrocarImg" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title"></h4>
+                </div>
+                <div class="modal-body">
+                    <input type='file' class='' onchange='getBase64(this.files[0])' />
+                    <input type="hidden" id="imgData" />
+                    <button class="terminar-upload-summernote btn btn-raised btn-success">Ok</button>
+                </div>
+                <div class="modal-footer">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="feedback left RPChat">
+        <div class="tooltips">
+            <div class="btn-group dropup">
+                <button type="button" style="background-color: black!important;" class="btn-bug-report btn btn-raised btn-primary dropdown-toggle btn-circle btn-lg" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fa fa-comments fa-2x" title="RPChat" data-toggle="tooltip"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-right dropdown-menu-form">
+                    <li style="height: 100%;">
+                        <div class="report" style="height: 100%;">
+                            <style>
+                                .iframe-usuarios-online {
+                                    height: 100% !important;
+                                }
+                            </style>
+                            <div class="col-md-12">
+                                <select style="width: 100%" data-tipo="usuario" placeholder="Pesquisar Contatos" data-custom="false" data-min="3" id="USU_ID_CHAT" runat="server">
+                                </select>
+                                <script>
+                                    jQuery(document).ready(function () {
+                                        iniciarEngineChat();
+                                    });
+
+                                    $('#USU_ID_CHAT').on('select2:select', function (e) {                                       
+                                        iniciarChat($(this).data("usuid"), $(this).val(),$(this).find('option:selected').text())
+                                        $(this).val(null).trigger('change');
+                                    });
+                                </script>
+                            </div>
+                            <div class="wrapper-usuarios-online">
+
+                            </div>
+
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div id="achievement">
+        <div class="circle rotate"></div>
+        <div class="copy">
+            <h4>Achievement Unlocked!</h4>
+            <p>Here are some internet points!</p>
+        </div>
+    </div>
+</body>
+</html>

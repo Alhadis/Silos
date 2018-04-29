@@ -1,0 +1,182 @@
+#!/bin/bash
+#
+# TrashScan v0.12; Scan email for viruses
+# ZapCoded by Trashware; 22.04.2004
+# Email: trashware@gmx.de
+# Web: http://trashware.mirrorz.com
+#
+PATH=/sbin:/usr/sbin:/bin:/usr/bin:/usr/local/bin:/usr/local/sbin
+# ------------------------------------------------- Begin Settinx ------------------------------------------------- #
+SCANDIR=$HOME/tmp                                                               # Temp directory for virus scans.
+                                                                                # Security: Don't define public
+                                                                                # accessible directories here !!!
+                                                                                # $HOME/tmp should be fine.
+#DECODER=metamail                                                                # Decoder: "metamail" or "uudeview"
+#DECODPRG=/usr/bin/metamail                                                      # Absolute path to decoder: metamail
+DECODER=uudeview                                                              # Decoder: "metamail" or "uudeview"
+DECODPRG=/home/admispconfig/ispconfig/tools/uudeview/bin/uudeview                                                    # Absolute path to decoder: uudeview
+VSCANNER=clamav                                                               # Scanner: "clamav". If you are using
+                                                                                # clamav and you define "clamav" here
+                                                                                # then the name of the detected virus
+                                                                                # will be reported
+VSCANPRG=/home/admispconfig/ispconfig/tools/clamav/bin/clamscan                                                # Absolute path to the virus scanner
+VSCANOPT="--quiet --tempdir=$HOME/tmp --recursive --max-files=500 \
+        --max-space=30M --unzip=/home/admispconfig/ispconfig/tools/unzip/unzip --unrar=/usr/bin/unrar \
+        --unarj=/usr/bin/unarj --zoo=/usr/bin/zoo --lha=/usr/bin/lha \
+        --jar=/home/admispconfig/ispconfig/tools/unzip/unzip --tar=/bin/tar --tgz=/bin/tar"                                          # Parameters for the virus scanner.
+                                                                                # Security: Don't choose public
+                                                                                # accessible directories for the
+                                                                                # --tempdir definition !!!
+                                                                                # --tempdir=$HOME/tmp should be fine.
+VSCANVEX=1                                                                      # Exitcode of the virus scanner if a
+                                                                                # virus was found
+VSCANSUSP=mail.virus                                                            # File to store suspicious mail (see
+                                                                                # procmail.trashscan)
+FORMAIL=formail                                                        # Absolute path to formail
+PROCMAIL=procmail                                                      # Absolute path to procmail
+SENDMAIL=sendmail                                                     # Absolute path to sendmail
+AWK=awk                                                                # Absolute path to awk
+CAT=cat                                                                    # Absolute path to cat
+GREP=grep                                                                  # Absolute path to grep
+LOGGER=logger                                                          # Absolute path to logger
+LOGPRIO=mail.warn                                                               # Log level for logger
+MKDIR=mkdir                                                                # Absolute path to mkdir
+RM=rm                                                                      # Absolute path to rm
+SED=sed                                                                    # Absolute path to sed
+ALERT=no                                                                        # send alert messages if a virus
+                                                                                # was detected (yes | no)
+ALERTRCVR={VIRUSADMIN}                                               # Receiver of virus alert messages
+ALERTSNDR={VIRUSADMIN}                                             # Sender of virus alert messages
+ALERTCTCT={VIRUSADMIN}                                                   # Person to contact (appears in the
+                                                                                # mail body of the virus alert)
+NOTIFY={NOTIFICATION}                                                                       # Notify the sender and the receiver
+                                                                                # of the original message if a virus
+                                                                                # was detected (yes | no).
+                                                                                # Warning: Some virii fake the From:
+                                                                                # and To: headers !!!
+# VKLUDGE="X-My-Very-Own-Kludge:"                                                # Optional: This kludge marks email
+                                                                                # as scanned and is needed for
+                                                                                # further procmail operation.
+                                                                                # See example in procmail.trashscan.
+                                                                                # Warning: Don't define this keyword
+                                                                                # if you don't know what you are
+                                                                                # doing !!!
+# -------------------------------------------------- End Settinx -------------------------------------------------- #
+
+# No need to change anything below !!!
+
+INFILE=$1
+TSC=TrashScan
+TASKDIR=$SCANDIR/$TSC-$$
+MSGDIR=$TASKDIR/message
+ATTDIR=$TASKDIR/attach
+TSCV="$TSC v0.12"
+if [ ! $VKLUDGE ]; then
+    VKLUDGE="X-Virus-Scan:"
+fi
+
+${MKDIR} -p ${TASKDIR}
+${MKDIR} ${MSGDIR}
+${MKDIR} ${ATTDIR}
+${CAT} ${INFILE} > ${MSGDIR}/rec.msg
+
+case ${DECODER} in
+    metamail|METAMAIL|Metamail)
+        METAMAIL_TMPDIR=$ATTDIR
+        export METAMAIL_TMPDIR
+        ${DECODPRG} -r -q -x -w ${MSGDIR}/rec.msg
+        ;;
+    uudeview|UUDEVIEW|Uudeview)
+        ${DECODPRG} -i -v -p ${ATTDIR} ${MSGDIR}/rec.msg
+        ;;
+    *)
+        ${LOGGER} -p ${LOGPRIO} -t "$TSC[$$]" "Warning, wrong keyword definition: DECODER=${DECODER}"
+        ;;
+esac
+
+case ${VSCANNER} in
+    clamav|CLAMAV|Clamav)
+        VSCANREP=${TASKDIR}/VSCANLOG
+        VSCANOPT="${VSCANOPT} --log=${VSCANREP}"
+        ;;
+    *)
+        VIRNAME=UNKNOWN
+        ;;
+esac
+
+${VSCANPRG} ${VSCANOPT} ${ATTDIR}
+VSCANRC=$?
+
+if [ ${VSCANRC} = $VSCANVEX ]; then
+    if [ ! $VIRNAME ]; then
+        VIRNAME=`${GREP} -e "FOUND" ${VSCANREP} | ${AWK} -F "FOUND" '{print $1}' | ${AWK} '{print $NF}'`
+    fi
+    FROM=`${GREP} -e "^From:" ${MSGDIR}/rec.msg | ${SED} -e "s/From: *//" -e "s/.*<//" -e "s/>.*//"`
+    TO=`${GREP} -e "^To:" ${MSGDIR}/rec.msg | ${SED} -e "s/To: *//" -e "s/.*<//" -e "s/>.*//"`
+    SUBJ=`${GREP} "Subject:" ${MSGDIR}/rec.msg | ${SED} -e "s/Subject: *//" -e "s/.*<//" -e "s/>.*//"`
+    DATE=`${GREP} "Date:" ${MSGDIR}/rec.msg | ${SED} -e "s/Date: *//" -e "s/.*<//" -e "s/>.*//"`
+    (${FORMAIL} -r -I "From: $ALERTSNDR" -I "Subject: Suspicious Attachment") < ${MSGDIR}/rec.msg > ${TASKDIR}/head.rep
+    echo "----------------------------------------------------------------------" > ${TASKDIR}/body.rep
+    echo -e "Warning: Message delivery wasn't performed.\n" >> ${TASKDIR}/body.rep
+    echo "Reason: Our virus scanner detected very suspicious code in" >> ${TASKDIR}/body.rep
+    echo -e "the attachment of a mail addressed to a user of our system.\n" >> ${TASKDIR}/body.rep
+    echo -e "The following message will not be delivered:\n" >> ${TASKDIR}/body.rep
+    echo "From: $FROM" >> ${TASKDIR}/body.rep
+    echo "To: $TO" >> ${TASKDIR}/body.rep
+    echo "Subj: $SUBJ" >> ${TASKDIR}/body.rep
+    echo "Date: $DATE" >> ${TASKDIR}/body.rep
+    echo -e "Virus: $VIRNAME\n" >> ${TASKDIR}/body.rep
+    echo "Feel free to contact $ALERTCTCT if you can't cope with it." >> ${TASKDIR}/body.rep
+    echo -e "----------------------------------------------------------------------\n" >> ${TASKDIR}/body.rep
+    echo -e "This mail was automatically generated by $TSCV\n" >> ${TASKDIR}/body.rep
+    ALERTMSG="Not sent"
+    case ${ALERT} in
+        yes|YES|Yes)
+            (${CAT} ${TASKDIR}/head.rep; ${CAT} ${TASKDIR}/body.rep) | ${FORMAIL} -I "To: $ALERTRCVR" | ${SENDMAIL} -t -oi
+            ALERTMSG="Message sent to $ALERTRCVR"
+            ;;
+        no|NO|No)
+            ;;
+        *)
+            ${LOGGER} -p ${LOGPRIO} -t "$TSC[$$]" "Warning, wrong keyword definition: ALERT=${ALERT}"
+            ;;
+    esac
+    NOTIFYMSG="Not sent"
+    case ${NOTIFY} in
+        yes|YES|Yes)
+            case $VIRNAME in
+                klez|bugbear|hybris|yaha|braid|nimda|tanatos|sobig|winevar|palyh|fizzer)
+                    NOTIFYMSG="Not sent (detected virus fakes From: and To: headers)"
+                    ;;
+                *)
+                    (${CAT} ${TASKDIR}/head.rep; ${CAT} ${TASKDIR}/body.rep) | ${SENDMAIL} -t -oi
+                    (${CAT} ${TASKDIR}/head.rep; ${CAT} ${TASKDIR}/body.rep) | ${FORMAIL} -I "To: $TO" | ${SENDMAIL} -t -oi
+                    NOTIFYMSG="Messages sent to $FROM and $TO"
+                    ;;
+            esac
+            ;;
+        no|NO|No)
+            ;;
+        *)
+            ${LOGGER} -p ${LOGPRIO} -t "$TSC[$$]" "Warning, wrong keyword definition: NOTIFY=${NOTIFY}"
+            ;;
+    esac
+    ${LOGGER} -p ${LOGPRIO} -t "$TSC[$$]" "************************************************************************"
+    ${LOGGER} -p ${LOGPRIO} -t "$TSC[$$]" "Suspicious code in mail attachment detected !!!"
+    ${LOGGER} -p ${LOGPRIO} -t "$TSC[$$]" "From: $FROM"
+    ${LOGGER} -p ${LOGPRIO} -t "$TSC[$$]" "To: $TO"
+    ${LOGGER} -p ${LOGPRIO} -t "$TSC[$$]" "Subj: $SUBJ"
+    ${LOGGER} -p ${LOGPRIO} -t "$TSC[$$]" "Date: $DATE"
+    ${LOGGER} -p ${LOGPRIO} -t "$TSC[$$]" "Virus: $VIRNAME"
+    ${LOGGER} -p ${LOGPRIO} -t "$TSC[$$]" "Alert: $ALERTMSG"
+    ${LOGGER} -p ${LOGPRIO} -t "$TSC[$$]" "Notification: $NOTIFYMSG"
+    ${LOGGER} -p ${LOGPRIO} -t "$TSC[$$]" "Check $VSCANSUSP !!!"
+    ${LOGGER} -p ${LOGPRIO} -t "$TSC[$$]" "************************************************************************"
+    ${FORMAIL} -I "$VKLUDGE Suspicious" < ${MSGDIR}/rec.msg | ${PROCMAIL}
+else
+    ${FORMAIL} -I "$VKLUDGE Scanned by $TSCV running on $HOSTNAME" < ${MSGDIR}/rec.msg | ${PROCMAIL}
+fi
+
+${RM} -rf ${TASKDIR}
+
+exit 0

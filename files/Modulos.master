@@ -1,0 +1,103 @@
+﻿<%@ Master Language="C#" AutoEventWireup="true" MasterPageFile="~/MasterPage.master" CodeFile="Modulos.master.cs" Inherits="Modulos_Modulos" %>
+
+<asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="content" runat="Server">
+    <header>
+        <div id="header" class="header-manager">
+            <asp:Image runat="server" ID="Image1" CssClass="logo" Height="30" ImageUrl="~/Imagens/logo.png" ToolTip="Logo Bradesco" alt="Logo Bradesco" title="Logo Bradesco" />
+            <label for="menu-togle" class="navbar-btn" title="Desabilitar/Habilitar Menu">
+
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+
+            </label>
+
+            <ul>
+                <li class="user" title="Nome do usuario">
+                    <asp:Literal runat="server" ID="ltlUser"></asp:Literal></li>
+                <li class="lk-change-pass" style="display: none"><a id="ln-change-pass" href="#bx-change-pass"><%=Resources.Textos.Trocar_senha %></a></li>
+                <li class="logout">
+                    <asp:HyperLink ID="HyperLink3" runat="server" NavigateUrl="~/Login.aspx?l=1" ToolTip="Logout" alt="Logout" title="Logout"><%=Resources.Textos.Log_Out %></asp:HyperLink></li>
+            </ul>
+        </div>
+    </header>
+
+    <input id="menu-togle" type="checkbox" />
+    <nav class="menu-manager" id="menu" title="Menu Principal">
+        <ul class="menu-manager-ul">
+            <%
+                List<string> objListaGrupos = new List<string>();
+                objListaGrupos = (from s in gobjSecoes select s.Grupo.ToString()).Distinct().ToList();
+
+
+                foreach (String strGrupo in objListaGrupos)
+                {
+                    List<Secao> objListSecoes = new List<Secao>();
+                    objListSecoes = (from s in gobjSecoes where s.Grupo == strGrupo select s).ToList();
+
+                    if (objListSecoes.Any())
+                    {
+                        if (objListSecoes.Count == 1 && objListSecoes[0].Grupo == objListSecoes[0].Nome)
+                        {
+                            Response.Write(string.Format("<li><a class='linkGrupo' href='{0}' title='{1}'>{2}</a></li>", objListSecoes[0].Caminho, objListSecoes[0].ToolTip, objListSecoes[0].Nome));
+                        }
+                        else
+                        {
+                            Response.Write(string.Format("<li><a class='linkGrupo' href='#' title='{0}'><span>{1}</span></a><ul>", objListSecoes[0].Grupo, objListSecoes[0].Grupo));
+                            foreach (Secao objSecao in objListSecoes)
+                            {
+                                if (System.IO.Path.GetExtension(objSecao.Caminho).Contains("aspx"))
+                                    Response.Write(string.Format("<li><a class='liItemMenu' onClick='selecionarItemMenu(this)' style='display: none;' href='{0}' title='{1}'>{2}</a></li>", objSecao.Caminho, objSecao.ToolTip, objSecao.Nome));
+                                else
+                                    Response.Write(string.Format("<li><a class='liItemMenu' onClick='selecionarItemMenu(this)' style='display: none;' href='{0}' target='_blank' title='{1}'>{2}</a></li>", objSecao.Caminho, objSecao.ToolTip, objSecao.Nome));
+
+                            }
+                            Response.Write("</ul></li>");
+                        }
+                    }
+                }
+
+            %>
+        </ul>
+    </nav>
+    
+    <main class="conteudo" id="conteudo">
+        <div id="content">
+            <asp:ContentPlaceHolder ID="contentInterna" runat="server">
+            </asp:ContentPlaceHolder>
+        </div>
+    </main>
+    <div class="footer-manager"></div>
+    <asp:ContentPlaceHolder ID="cphModalAlerta" runat="server">
+
+        <asp:MultiView runat="server" ID="mtvViews" ActiveViewIndex="0">
+            <asp:View runat="server" ID="viewAlerta_Erro">
+
+                <div id="divModalErro" class="ModalMsg" tabindex="Mensagem de erro">
+                    <a href="javascript:void(0)" onclick="closeModal();" class="expresso-fechar-popup" alt="Fechar" title="Fechar">Fechar (X)</a>
+                    <p>Ocorreu um erro na execução do sistema, detalhes técnico:<asp:Label ID="lblErro" runat="server"></asp:Label></p>
+                </div>
+
+            </asp:View>
+            <asp:View runat="server" ID="mtvViewsMensagemUsuario">
+
+                <div id="divModalMensagem" class="ModalMsg">
+
+                    <h2>Bradesco RI informa:</h2>
+                    <p title="Mensagem">
+                        <asp:Literal ID="litMensagem" runat="server"></asp:Literal>
+                    <p>
+                        <a href="javascript:void(0)" onclick="closeModal();" class="expresso-fechar-popup" title="Fechar Popup" alt="Fechar Popup" title="Fechar Popup">Fechar (X)</a>
+                </div>
+            </asp:View>
+        </asp:MultiView>
+
+        <div id="black_overlay"></div>
+    </asp:ContentPlaceHolder>
+</asp:Content>
+
+
+

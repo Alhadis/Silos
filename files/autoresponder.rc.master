@@ -1,0 +1,21 @@
+SHELL=/bin/sh    # for other shells, this might need adjustment
+EMAIL=`formail -zxTo:`
+
+              :0 Whc: vacation.lock
+               # Perform a quick check to see if the mail was addressed to us
+               #* $^To:.*\<$\LOGNAME\>
+               # Don't reply to daemons and mailinglists
+              * !^FROM_DAEMON
+			   # Dont reply on noreply addresses
+			  * !^From:.*noreply
+               # Mail loops are evil
+              * !^X-Loop: ${EMAIL}
+              | formail -rD 8192 {PFAD}/.vacation.cache
+
+                :0 ehc         # if the name was not in the cache
+                * ! ^X-Spam-Flag: YES
+                # don't autoreply to potential spam
+                | (formail -rI"From: {EMAIL_ADDRESS}" -I"Precedence: junk" \
+                     -A"X-Loop: ${EMAIL}" ; \
+                   cat {PFAD}/.vacation.msg \
+                  ) | $SENDMAIL -oi -t

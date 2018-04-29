@@ -1,0 +1,105 @@
+PATH="/usr/bin:$PATH:/usr/local/bin"
+SHELL=/bin/sh
+# Detect Hybris when sent as an anonymous message.
+#
+:0
+* > 20000
+* !^Subject:
+* !^To:
+* ^Content-Type:.*multipart/mixed;
+{
+        :0 B hfi
+        * 1^1 ^Content-Disposition:.*\.EXE
+        * 1^1 ^Content-Type:.*\.EXE
+        | formail -A "X-Content-Security: [${HOST}] NOTIFY" \
+                  -A "X-Content-Security: [${HOST}] QUARANTINE" \
+                  -A "X-Content-Security: [${HOST}] REPORT: Trapped anonymous executable"
+}
+
+# Trap SirCam (signature as of 08/01/2001)
+#
+:0
+* > 130000
+* ^Content-Type:.*multipart/mixed;
+{
+        :0 B hfi
+        * ^Content-Disposition: attachment;
+        * ^Content-Transfer-Encoding: base64
+        * AAAAGgU0NhbTMyABCDTUlN|AAAAAaBTQ2FtMzIAEINNSU1F|ABkAAAABoFNDYW0zMgAQg01J
+        | formail -A "X-Content-Security: [$HOST] NOTIFY" \
+                  -A "X-Content-Security: [$HOST] DISCARD" \
+                  -A "X-Content-Security: [$HOST] REPORT: Trapped SirCam worm - see http://securityresponse.symantec.com/avcenter/venc/data/w32.sircam.worm@mm.html"
+}
+
+# Trap BadTrans (signature as of 11/26/2001)
+#
+:0
+* > 40000
+* < 50000
+* ^Subject: Re:
+* ^Content-Type:.*multipart/.*boundary="====_ABC1234567890DEF_===="
+{
+        :0 B hfi
+        * ^Content-Type: audio/x-wav;
+        * ^Content-ID: <EA4DMGBP9p>
+        * ^Content-Transfer-Encoding: base64
+        | formail -A "X-Content-Security: [$HOST] NOTIFY" \
+                  -A "X-Content-Security: [$HOST] DISCARD" \
+                  -A "X-Content-Security: [$HOST] REPORT: Trapped BadTrans worm - see http://securityresponse.symantec.com/avcenter/venc/data/w32.badtrans.b@mm.html"
+}
+
+
+# Trap Klez (signature as of 04/26/2002)
+# Trap BugBear (signature as of 10/06/2002)
+#
+:0
+* > 50000
+* ^Content-Type:.*multipart/alternative;
+{
+        :0 B
+        * \<i?frame +src=(3D)?cid:.* height=(3D)?[0-9] +width=(3D)?[0-9]>
+        * ^Content-Type:.*audio/
+        * ^Content-ID:.*<
+        * ^Content-Transfer-Encoding: base64
+        * ^TVqQAAMAAAAEAAAA
+        {
+                :0 hfi
+                * > 100000
+                | formail -A "X-Content-Security: [$HOST] NOTIFY" \
+                          -A "X-Content-Security: [$HOST] DISCARD" \
+                          -A "X-Content-Security: [$HOST] REPORT: Trapped possible Klez worm - see http://securityresponse.symantec.com/avcenter/venc/data/w32.klez.removal.tool.html"
+
+                :0 E hfi
+                * > 50000
+                | formail -A "X-Content-Security: [$HOST] NOTIFY" \
+                          -A "X-Content-Security: [$HOST] DISCARD" \
+                          -A "X-Content-Security: [$HOST] REPORT: Trapped possible BugBear worm - see http://securityresponse.symantec.com/avcenter/venc/data/w32.bugbear@mm.removal.tool.html"
+
+        }
+
+        :0 B E hfi
+        * H ?? ^Subject: A( (special|very))?[ ][ ][a-z]
+        * ^Content-Type:.*application/octet-stream
+        * ^Content-ID:
+        * ^Content-Transfer-Encoding: base64
+        * ^TVqQAAMAAAAEAAAA
+        | formail -A "X-Content-Security: [$HOST] NOTIFY" \
+                  -A "X-Content-Security: [$HOST] DISCARD" \
+                  -A "X-Content-Security: [$HOST] REPORT: Trapped possible Klez worm - see http://securityresponse.symantec.com/avcenter/venc/data/w32.klez.removal.tool.html"
+
+}
+
+
+# Attempt to trap sendmail header exploit (signature as of 03/05/3003)
+#
+# CRITICAL NOTE: this WILL NOT protect the system it is installed on.
+# It is intended to prevent a patched Sendmail from relaying an attack
+# message onwards.
+#
+:0 hfi
+* ^((resent-)?(sender|from|(reply-)?to|cc|bcc)|(errors|disposition-notification|apparently)-to|Return-Path): .*<>.*<>.*<>.*<>.*<>.*\(.*\)
+| formail -A "X-Content-Security: [$HOST] NOTIFY" \
+          -A "X-Content-Security: [$HOST] QUARANTINE" \
+          -A "X-Content-Security: [$HOST] REPORT: Trapped possible sendmail header exploit"
+
+

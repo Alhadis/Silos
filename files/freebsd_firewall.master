@@ -1,0 +1,49 @@
+#!/bin/sh
+
+# ISPConfig firewall script for FreeBSD
+
+fwcmd="/sbin/ipfw -q"
+
+case "$1" in
+    start)
+        echo "Starting firewall..."
+        # Reset all rules in case script run multiple times
+        ${fwcmd} -f flush
+        ${fwcmd} add 100 allow all from any to any
+
+        # Allow all via loopback to loopback
+        ${fwcmd} add 220 allow all from any to any via lo0
+
+        # Allow from me to anywhere
+        ${fwcmd} add 240 allow tcp from me to any
+        ${fwcmd} add 260 allow udp from me to any keep-state
+        ${fwcmd} add 280 allow icmp from me to any
+
+        # Allow INCOMING SSH,SMTP,HTTP from anywhere on the internet
+        {TCP_PUBLIC_SERVICES_COMMENT}${fwcmd} add 320 allow tcp from any to me {TCP_PUBLIC_SERVICES}
+        {UDP_PUBLIC_SERVICES_COMMENT}${fwcmd} add 320 allow udp from any to me {UDP_PUBLIC_SERVICES} keep-state
+
+        # Enable icmp
+        ${fwcmd} add 340 allow icmp from any to any icmptype 0,3,8,11
+
+        # Block all other traffic and log in
+        ${fwcmd} add 360 deny all from any to any
+
+        ${fwcmd} delete 100
+        echo "OK"
+    ;;
+    stop)
+        echo "Stopping firewall..."
+        ${fwcmd} -f flush
+        ${fwcmd} add 220 allow all from any to any
+        echo "OK"
+    ;;
+    restart)
+        $0 stop
+        $0 start
+    ;;
+    *)
+    echo "Usage: $0 {start|stop|restart}"
+    exit 1
+esac
+exit 0

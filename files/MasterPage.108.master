@@ -1,0 +1,173 @@
+﻿<%@ Master Language="C#" AutoEventWireup="true" CodeFile="MasterPage.master.cs" Inherits="MasterPage" %>
+
+<!DOCTYPE html>
+<html>
+<head runat="server">
+    <title>Inbook - מכירה וקנייה של ספרים</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- load libraries -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+    <script src="js/jquery.leanModal.min.js"></script>
+
+    <!-- load scripts -->
+    <script src="js/script.js"></script>
+    <asp:PlaceHolder ID="PlaceHolder1" runat="server">
+        <script type="text/javascript">
+            $(document).ready(function () {
+
+                $("#<%=showSignup.ClientID%>").leanModal({ top: 200, closeButton: ".popup_close" });
+
+                $('#<%=loginBtn.ClientID%>').on("click", function () {
+                    if (CallCheckLoginForm())
+                    {
+                        var loadingTimeout = setTimeout(showLoading, 800);
+
+                        function showLoading() {
+                            $("#<%=LoginInvalidMsg.ClientID%>").text("טוען..");
+                        }
+
+                        var xmlhttp = new XMLHttpRequest();
+                        xmlhttp.onreadystatechange = function () {
+
+                            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                                if (xmlhttp.responseText == "redirect") {
+                                    location.reload();
+                                } else {
+                                    clearTimeout(loadingTimeout);
+
+                                    $("#<%=LoginInvalidMsg.ClientID%>").text(xmlhttp.responseText);
+                                    $("#<%=passwordLogin.ClientID%>").val("");
+                                }
+                            }
+                        };
+
+                        var parameters = "email=" + encodeURIComponent($("#<%=emailAddressLogin.ClientID%>").val()) + "&password=" + encodeURIComponent($("#<%=passwordLogin.ClientID%>").val());
+                        xmlhttp.open("POST", "login.ashx", true)
+                        xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
+                        xmlhttp.send(parameters)
+                    }
+                });
+            });
+
+
+            function tryPopup() {
+                if ("<%=Session["userId"]%>" == "") {
+                    debugger;
+                    $('#<%=showSignup.ClientID%>').click();
+                    alert();
+                }
+            }
+
+            function CallCheckLoginForm() {
+                var msg = CheckLoginForm($("#<%=emailAddressLogin.ClientID%>").val(), $("#<%=passwordLogin.ClientID%>").val())
+                if (msg != "") {
+                    $("#<%=LoginInvalidMsg.ClientID%>").text(msg);
+                    return false;
+                }
+                return true;
+            }
+
+            function CallCheckForm() {
+                var msg = CheckForm($("#<%=fullName.ClientID%>").val(), $("#<%=emailAddress.ClientID%>").val(), $("#<%=password.ClientID%>").val());
+                if (msg != "") {
+                    $("#<%=signupInvalidMsg.ClientID%>").text(msg);
+                    return false;
+                }
+                return true;
+            }
+
+            function switchForms() {
+                debugger;
+                if ($("#<%=signupForm.ClientID%>").css('display') == "none") {
+                    $("#<%=signupForm.ClientID%>").show();
+                    $("#<%=loginForm.ClientID%>").hide();
+                } else {
+                    $("#<%=signupForm.ClientID%>").hide();
+                    $("#<%=loginForm.ClientID%>").show();
+                }
+            }
+        </script>
+    </asp:PlaceHolder>
+    
+    <!-- load styles -->
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+    <link href="css/style.css" rel="stylesheet" />
+	<meta charset="utf-8" />
+
+    <asp:ContentPlaceHolder id="head" runat="server">
+    </asp:ContentPlaceHolder>
+</head>
+<body>
+    <form runat="server">
+        <header id="header" runat="server">
+            <nav class="navbar">
+                <ul class="navbarUl-right">
+                    <li><a href="/AddPost.aspx">פרסם ספר למכירה</a></li>
+                    <li><a href="#signup" name="signup" id="showSignup" rel="leanModal" runat="server">התחבר</a></li>
+                    <li><asp:LinkButton ID="logoutBtn" OnClick="logout_Click" runat="server">צא</asp:LinkButton></li>
+                </ul>
+                <ul id="navLoggedIn" class="navbarUl-left" runat="server">
+                    <li><a>שלום <%=firstName %></a></li>
+                </ul>
+            </nav>
+            <a href="/" id="logo" runat="server">
+                <img src="/img/books-icon.png" width="50" />
+                <h1>Inbook</h1>
+                <h2>מכירה וקנייה של ספרים</h2>
+            </a>
+        </header>
+
+        <div id="signup" class="popup" runat="server">
+            <div id="loginForm" runat="server">
+                <h1 class="headline" style="margin-top: 10px">התחבר לאתר</h1>
+                <a href="#" class="popup_close"></a>
+
+                <div style="text-align:center; margin-top: 15px;">
+                    <div id="LoginInvalidMsg" class="errorMsg" runat="server"></div>
+                    <asp:TextBox ID="emailAddressLogin" CssClass="ol-textbox ol-textbox-popup" AutoCompleteType="Email" placeholder='אימייל' runat="server"></asp:TextBox>
+                    <asp:TextBox ID="passwordLogin" CssClass="ol-textbox ol-textbox-popup" TextMode="Password" placeholder='סיסמא' runat="server"></asp:TextBox>
+                    <asp:Button ID="loginBtn" CssClass="ol-button ol-button-popup" OnClientClick="return false;" runat="server" Text="התחבר" />
+                    <div style="margin-top: 40px; font-size: 14px;">
+                        לא רשום?
+                        <a href="javascript: switchForms();">פתח משתמש חדש</a>
+                    </div>
+                </div>
+            </div>
+            <div id="signupForm" style="display: none" runat="server">
+                <h1 class="headline" style="margin-top: 10px">הירשם לאתר</h1>
+                <a href="#" class="popup_close"></a>
+
+                <div style="text-align:center; margin-top: 15px;">
+                    <div id="signupInvalidMsg" class="errorMsg" runat="server"></div>
+                    <asp:TextBox ID="fullName" CssClass="ol-textbox ol-textbox-popup" AutoCompleteType="None" placeholder="שם מלא" runat="server"></asp:TextBox>
+                    <asp:TextBox ID="emailAddress" CssClass="ol-textbox ol-textbox-popup" AutoCompleteType="Email" placeholder='אימייל' runat="server"></asp:TextBox>
+                    <asp:TextBox ID="password" CssClass="ol-textbox ol-textbox-popup" TextMode="Password" placeholder='סיסמא' runat="server"></asp:TextBox>
+                    <asp:Button ID="signupBtn" OnClick="signupBtn_Click" OnClientClick="return CallCheckForm();" CssClass="ol-button ol-button-popup" runat="server" Text="הירשם" />
+                    <div style="margin-top: 40px; font-size: 14px;">
+                        כבר יש לך משתמש?
+                        <a href="javascript: switchForms();">התחבר</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+<%--        <div id="loginDiv" style="display: none" runat="server">
+            <asp:TextBox ID="idNumberLogin" class="small-textbox" placeholder="תעודת זהות" runat="server"></asp:TextBox>
+            <asp:TextBox ID="passwordLogin" TextMode="Password" class="small-textbox" placeholder="סיסמא" runat="server"></asp:TextBox>
+            <asp:Button ID="loginBtn" Text="כניסה" OnClientClick="return CheckLoginForm(<%=emailAddress.ClientID%>,<%=password.ClientID%>)" OnClick="loginBtn_Click" runat="server"/>
+            <div style="display:block; margin:0;">
+                <input type="checkbox" value="rememberMe"/>
+                <span style="display:inline-block;">זכור אותי</span>
+                <a href="#" style="margin-right:67px; color:lightgray; text-decoration:none;">שכחתי סיסמא</a>
+            </div>
+        </div>--%>
+        <div id="container">
+            <asp:ContentPlaceHolder id="Main" runat="server">
+            </asp:ContentPlaceHolder>
+        </div>
+    </form>
+</body>
+</html>

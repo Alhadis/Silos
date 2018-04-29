@@ -1,0 +1,2011 @@
+PATH="/usr/bin:$PATH:/usr/local/bin"
+SHELL=/bin/sh
+### Copyright (C) 1997-2004 John D. Hardin
+### This program is free software; you can redistribute it and/or modify
+### it under the terms of the GNU General Public License as published by
+### the Free Software Foundation; either version 2 of the License, or
+### (at your option) any later version.
+###
+### This program is distributed in the hope that it will be useful,
+### but WITHOUT ANY WARRANTY; without even the implied warranty of
+### MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+### GNU General Public License for more details.
+###
+### Contact the copyright holder for commercial licensing terms
+### if you wish to incorporate this code or portions of it into
+### non-GPL software.
+###
+#
+# <jhardin@impsec.org>
+# $Id: html-trap.procmail,v 1.151 2006-01-20 07:29:24-08 jhardin Exp jhardin $
+#
+# Baroquely complex Procmail and Perl recipe to defang active-content HTML tags
+# to protect those people foolish enough to read their mail from a web browser
+# or HTML-enabled mail client. Also mangles the attachment name on executable
+# attachments to prevent attacks, at the cost of not being able to run
+# programs from within your mail client - which you shouldn't do anyway.
+# Also protects against excessively long filenames in attachments, which
+# can cause nasty things to happen in some clients, and excessively long
+# MIME headers, which may crash or allow exploits of some clients.
+#
+# All of the configuration options discussed below must be set in the
+# procmail script that calls this filter, before this filter is called.
+# Please see http://www.impsec.org/email-tools/sanitizer-configuration.html
+# for complete documentation of all configuration options.
+#
+# If you wish to override the default list of executable extensions,
+# set MANGLE_EXTENSIONS to a regexp (see where it is defined below for
+# the proper syntax). DO NOT start or end it with a vertical bar or have
+# two adjacent vertical bars!
+#
+# If you wish to block specific executable or document filenames from
+# attachments, define $POISONED_EXECUTABLES to point at a filename
+# containing one filename per line, with no leading spaces. Trailing spaces
+# and comments (beginning with "#") are permitted.
+# Case is ignored. Wildcards are allowed, using a mishmash of filename
+# globbing and regular expression syntax.
+#
+# Site policy for trapped messages can be specified within limited bounds.
+# To redirect poisoned messages to a file or directory, set
+# $SECURITY_QUARANTINE to the name of the file or directory. To notify
+# administrator(s), set $SECURITY_NOTIFY and/or $SECURITY_NOTIFY_VERBOSE to a
+# comma-delimited address list. The _VERBOSE recipients will get the whole
+# message.
+#
+# If the trapped message cannot be saved in $SECURITY_QUARANTINE for any
+# reason, the message will be bounced unless $SECURITY_QUARANTINE_OPTIONAL is
+# set to any value.
+#
+# This performs limited scanning of attachments for M$ macros which contain
+# possibly dangerous code (as opposed to specific strings from specific
+# variants of specific exploits). To disable this scanning, set
+# $DISABLE_MACRO_CHECK to anything. To adjust the score an attachment is
+# considered "poisoned" at, set $POISONED_SCORE. The default is 25, which
+# should be okay unless you see valid attachments with complex macros. Set
+# $SCORE_HISTORY to a filename to track the scores on scanned documents.
+# If you wish to do profiling before implementing poisoning, set
+# $SCORE_ONLY to anything to scan and possibly record scores but not
+# poison. This could also be accomplished by setting $POISONED_SCORE to a
+# very high value (200?), which would trap attacks while still allowing
+# profiling.
+#
+# This performs scanning of .ZIP archive attachments for filenames. .ZIP
+# attachments will be handled by the POISON and STRIP lists, and
+# $ZIPPED_EXECUTABLES lists filespecs that will cause the message to be
+# quarantined if found in the .ZIP attachment
+#
+# If you wish to send a message to the author of a trapped message, set
+# $SECURITY_NOTIFY_SENDER to any value. To replace the canned message that
+# is sent to the author of a trapped message, set $SECURITY_NOTIFY_SENDER
+# to point at a text file for the message body. No variable expansion is
+# performed on the body of this message. If you want to notify the
+# sender's postmaster as well, set $SECURITY_NOTIFY_SENDER_POSTMASTER
+# to any value. If you are not running this on a mail relay, you can use
+# $SECURITY_NOTIFY_RECIPIENT in the same manner as $SECURITY_NOTIFY_SENDER.
+#
+# This could also be extended fairly easily to allow virus-checking of
+# attachments, assuming you have a virus-checker that will run under *nix.
+#
+# NOTES
+#   Requires perl.
+#   Attachment scanning requires the "mktemp" and "mimencode" programs OR
+#   the installation of the CPAN Perl modules MIME::Base64 and File::MkTemp.
+#   Set $USE_CPAN if you want to use CPAN modules. If you can't put those
+#   modules in their system directories (e.g. you're running this on your
+#   ISP's computer), put them somewhere accessible and set $PVT_CPAN to that
+#   directory.
+#   Scanning of ZIP attachments requires the "unzip" program.
+#
+#   This is a non-delivering filter recipe unless $SECURITY_QUARANTINE is
+#   set.
+#
+# INVOCATION
+#   Insert
+#     CONFIG_VARIABLE=some_value
+#     {repeat as needed}
+#     INCLUDERC=html-trap.procmail
+#   into your .procmailrc at the beginning or end.
+#
+#   For further details, particularly how to set up site-wide and mail hub
+#   or relay filtering, visit:
+#   http://www.impsec.org/email-tools/procmail-security.html
+#
+
+# possible bug workaround?
+LINEBUF=8192
+
+# Size LINEBUF dynamically to deal with excessively large headers
+:0 H
+* 32000^0
+* 1^1 .
+{
+  LINEBUF="$="
+}
+
+# override csh and cousins
+:0
+* SHELL ?? csh$
+{
+  SHELL="/bin/sh"
+}
+
+# Make sure $LOGFILE exists so the shells don't barf
+LOGFILE=${LOGFILE:-"/dev/null"}
+
+#---------------------------------------------------------------------------
+# Grab some info for logging
+#
+NL="
+"
+SUBJ=""
+FROM="unknown"
+FROMDOM=""
+REPLY_SUPPRESSED=""
+
+:0
+* ^Subject[ 	]*:[ 	]+\/[^ ].+
+{
+  SUBJ=" in \"$MATCH\""
+}
+
+OVERRIDEFORMAIL="Xx:"
+
+# AOL mail servers look up who is dialled in and
+# add that user's ID as the X-Apparently-From: header
+# This is pretty spoof-proof
+
+:0
+* ^Received: from .*\.aol\.com .* by .*\.aol\.com
+* ^X-Apparently-From:.*\/[^ ]+@aol\.com
+{
+  FROM="$MATCH"
+  OVERRIDEFORMAIL="To: $FROM"
+  
+  SUBJ="$SUBJ from $FROM"
+  FROMDOM="aol.com"
+}
+
+# otherwise, try Return-Path: (the envelope sender)
+# which is still subject to spoofing but may be
+# overlooked
+
+:0 E
+* ^Return-Path:.*\/<[^>]+@[^>]+>
+{
+  FROM="$MATCH"
+  
+  # Did a mailing list rewrite the Return-Path header?
+  :0
+  * -1^0
+  * 1^0 ^Precedence: (bulk|junk|list)
+  * 1^0 ^(List-Id|X-Mailing-List):
+  * 9876543210^0 FROM ?? \<owner-
+  * 9876543210^0 FROM ?? \<[^@ >]+-l-admin@
+  {
+    :0
+    * ^From:.*\/<[^>]+>
+    {
+      FROM="$MATCH"
+    }
+  }
+
+  SUBJ="$SUBJ from $FROM"
+  :0
+  * ^Return-Path:.*<[^@]+@\/[^>]+
+  {
+    FROMDOM="$MATCH"
+  }
+}
+
+# The following runs if Return-Path: header not found
+# MAKE SURE your MTA puts in a Return-Path: header!
+:0 E
+* ^From:.*\/<[^>]+>
+{
+  FROM="$MATCH"
+  SUBJ="$SUBJ from $FROM"
+  LOG=" WARN: No usable Return-Path: header found in message.${NL}"
+
+  :0
+  *   SECURITY_NOTIFY_SENDER ?? [^ ]
+  * ! SECURITY_DISABLE_SMART_REPLY ?? [^ ]
+  {
+    REPLY_SUPPRESSED="NOTICE: No Return-Path: header. Suppressing sender notification.${NL}"
+    LOG=" $REPLY_SUPPRESSED"
+    SECURITY_NOTIFY_SENDER=
+  }
+}
+
+TO=<$LOGNAME>
+
+:0
+* LOGNAME ?? ^root$
+{
+  # If $LOGNAME is root, we're probably running as a gateway filter:
+  # get the "real" to name(s) out of the message headers.
+  :0
+  * ^To: +\/.*
+  {
+    TO="$MATCH"
+  }
+}
+
+# try to get the full recipient address from a Received: header
+# this overrides LOGNAME and the To: header
+:0
+* ^Received: .*for \/<?[^> ]+@[^> ]+\.[^> ;]+>?
+{
+  TO="$MATCH"
+}
+
+:0
+* ^Received: .*for \/<[^> ]+@[^> ]+\.[a-z][a-z][a-z]?[a-z]?[a-z]?[a-z]?>
+{
+  TO="$MATCH"
+}
+
+SUBJ="$SUBJ to $TO"
+
+:0
+* ^Message-ID:.*\/<[^>]+>
+{
+  MSGID="$MATCH"
+  SUBJ="$SUBJ msgid=$MSGID"
+}
+
+SUBJ="$SUBJ
+"
+
+#---------------------------------------------------------------------------
+# Override these in /etc/procmailrc as needed
+#
+
+STRIPPED_WARNING=${STRIPPED_WARNING:-"
+SECURITY NOTICE:
+
+The mail system has removed a file attachment from this message.
+The attachment has been discarded.
+
+Please contact your system administrator for details.
+
+"}
+
+POISONED_WARNING=${POISONED_WARNING:-"
+SECURITY WARNING!
+
+The mail system has detected that the following
+attachment may contain hazardous program code, is
+a suspicious file type, or has a suspicious file name.
+Do not trust it. Contact your system administrator immediately.
+
+"}
+
+MACRO_WARNING=${MACRO_WARNING:-"
+SECURITY WARNING!
+
+The mail delivery system has detected that the preceding
+document attachment appears to contain hazardous macro code.
+Macro Scanner score: "}
+
+MACRO_DETAILS=${MACRO_DETAILS:-"Macro Scanner score details:
+"
+
+ZIP_MAGIC_WARNING=${ZIP_MAGIC_WARNING:-"
+SECURITY WARNING!
+
+The mail system has detected that the preceding attachment
+claims to be a ZIP archive, but it does not have a valid ZIP
+archive signature.
+Do not trust it. Contact your system administrator immediately.
+
+"}
+
+ZIPPED_WARNING=${ZIPPED_WARNING:-"
+SECURITY WARNING!
+
+The mail system has detected that the preceding ZIP archive
+attachment contains suspicious files.
+Do not trust it. Contact your system administrator immediately.
+
+The suspicious files in the archive are:
+
+"}
+
+:0
+* ! DISABLE_RAR_SCAN ?? [^ ]
+* ! ? type unrar >/dev/null 2>&1
+{
+  # unrar not on $PATH
+  LOG=" unrar not found, disabling RAR scan - either install unrar or define DISABLE_RAR_SCAN${NL}"
+  DISABLE_RAR_SCAN=Y
+}
+
+
+RAR_MAGIC_WARNING=${RAR_MAGIC_WARNING:-"
+SECURITY WARNING!
+
+The mail system has detected that the preceding attachment
+claims to be a RAR archive, but it does not have a valid RAR
+archive signature.
+Do not trust it. Contact your system administrator immediately.
+
+"}
+
+RARRED_WARNING=${RARRED_WARNING:-"
+SECURITY WARNING!
+
+The mail system has detected that the preceding RAR archive
+attachment contains suspicious files.
+Do not trust it. Contact your system administrator immediately.
+
+The suspicious files in the archive are:
+
+"}
+
+BAD_BASE64_WARNING=${BAD_BASE64_WARNING:-"
+SECURITY WARNING!
+
+The mail system has detected that the preceding attachment
+was encoded in a manner intended to bypass security filtering.
+Do not trust it. Contact your system administrator immediately.
+
+"}
+
+BAD_JPEG_WARNING=${BAD_JPEG_WARNING:-"
+SECURITY WARNING!
+
+The mail system has detected that the preceding attachment
+appears to be a JPEG image containing a Microsoft buffer overflow attack.
+Do not trust it. Contact your system administrator immediately.
+
+"}
+
+WMF_WARNING=${WMF_WARNING:-"
+SECURITY WARNING!
+
+The mail system has detected that the preceding attachment
+appears to be a WMF image. It has been blocked for security reasons.
+Contact your system administrator immediately.
+
+"}
+
+TNEF_WARNING=${TNEF_WARNING:-"
+SECURITY NOTICE:
+
+The mail system has removed a Microsoft attachment for security reasons.
+The sender should disable sending Rich Text format in Outlook and
+disable sending TNEF to the Internet from their Microsoft Exchange gateway.
+
+See http://support.microsoft.com/support/kb/articles/Q241/5/38.ASP
+and http://www.microsoft.com/TechNet/exchange/2505ch10.asp
+for more information.
+
+"}
+
+
+# FROM address for notifications
+SECURITY_LOCAL_POSTMASTER=${SECURITY_LOCAL_POSTMASTER:-"postmaster"}
+
+# MTA command line options when generating messages
+# get recipient(s) from command line
+MTA_FLAGS_CMDLN=${MTA_FLAGS_CMDLN:-"-U"}
+# get recipient(s) from message headers
+MTA_FLAGS_HDRS=${MTA_FLAGS_HDRS:-"-oi -t -f$SECURITY_LOCAL_POSTMASTER"}
+
+# How paranoid to be about stuff embedded in documents
+# default: very
+SC_MBD=${SECURITY_OFFICE_EMBED_SCORE:-99}
+
+
+#---------------------------------------------------------------------------
+# trap some excessively long RFC-822 headers
+#
+
+:0
+* ^\/Subject: ..................................................................................................................................................................................................................................................*
+{
+  LOG=" Trapped excessively long header$SUBJ"
+  STATUS="STATUS: Header truncated."
+  HDR="$MATCH"
+
+  # truncate the header
+  :0 fw h
+  * ^\/Subject: .................................................................................................................................................................................................................................................
+  | formail -i "$MATCH"
+
+  SECURITY_NOTIFY=${SECURITY_NOTIFY:-"postmaster"}
+
+  :0
+  * ! SECURITY_NONOTIFY_LONGSUBJECT ?? [^ ]
+  * SECURITY_NOTIFY ?? [^ ]
+  * !$ ^X-Loop: EMAIL SECURITY WARNING $HOST $SECRET
+  {
+    LOG="${NL} NOTIFY $SECURITY_NOTIFY${NL}"
+
+    :0 h ci
+    | ( \
+        echo "To: $SECURITY_NOTIFY";\
+        echo 'From: "Procmail Security daemon"' "<${SECURITY_LOCAL_POSTMASTER}>";\
+        echo 'Subject: SECURITY WARNING - possible email attack';\
+        echo "X-Loop: EMAIL SECURITY WARNING $HOST $SECRET"; \
+        echo ;\
+        echo 'Trapped excessively long header:' ;\
+        echo "$HDR";\
+        echo ;\
+        echo "$STATUS";\
+        echo ;\
+        echo 'Headers from message:';\
+        echo ;\
+        sed -e 's/^/> /' ;\
+      ) | $SENDMAIL $MTA_FLAGS_CMDLN $SECURITY_NOTIFY
+  }
+}
+
+
+:0
+* \/^((resent-)?(sender|from|(reply-)?to|cc|bcc)|(errors|disposition-notification|apparently)-to|Return-Path): .*<>.*<>.*<>.*<>.*<>.*<>.*
+{
+  HDR=$MATCH
+  LOG=" Trapped multiple null addresses (possible sendmail attack)"
+  STATUS="STATUS: Header cleaned."
+
+  # truncate the header
+  :0 fw h
+  | sed -e 's/<>.*<>.*<>.*<>.*<>.*<>/<>/g'
+
+  SECURITY_NOTIFY=${SECURITY_NOTIFY:-"postmaster"}
+
+  :0
+  * SECURITY_NOTIFY ?? [^ ]
+  * !$ ^X-Loop: EMAIL SECURITY WARNING $HOST $SECRET
+  {
+    LOG="${NL} NOTIFY $SECURITY_NOTIFY${NL}"
+
+    :0 h ci
+    | ( \
+        echo "To: $SECURITY_NOTIFY";\
+        echo 'From: "Procmail Security daemon"' "<${SECURITY_LOCAL_POSTMASTER}>";\
+        echo 'Subject: SECURITY WARNING - possible email attack';\
+        echo "X-Loop: EMAIL SECURITY WARNING $HOST $SECRET"; \
+        echo ;\
+        echo 'Trapped multiple null addresses (possible sendmail exploit):' ;\
+        echo "$HDR";\
+        echo ;\
+        echo "$STATUS";\
+        echo ;\
+        echo 'Headers from message:';\
+        echo ;\
+        sed -e 's/^/> /' ;\
+      ) | $SENDMAIL $MTA_FLAGS_CMDLN $SECURITY_NOTIFY
+  }
+}
+
+
+:0
+* ^\/(Mime-Version|(Resent-)?(Date|Sender|From|Reply-To)|(errors|disposition-notification|apparently)-to|Message-ID|Return-Path|Status|X-Status|X-Keywords|Content-(Class|Type|Disposition|Transfer-Encoding)): ......................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................*
+{
+  LOG=" Trapped excessively long header$SUBJ"
+  STATUS="STATUS: Message bounced."
+  HDR="$MATCH"
+
+  :0
+  * SECURITY_QUARANTINE ?? [^ ]
+  {
+    STATUS="STATUS: Message quarantined in $SECURITY_QUARANTINE, not delivered to recipient."
+  }
+
+  SECURITY_NOTIFY=${SECURITY_NOTIFY:-"postmaster"}
+
+  :0
+  * SECURITY_NOTIFY ?? [^ ]
+  * !$ ^X-Loop: EMAIL SECURITY WARNING $HOST $SECRET
+  {
+    LOG="${NL} NOTIFY $SECURITY_NOTIFY${NL}"
+
+    :0 h ci
+    | ( \
+        echo "To: $SECURITY_NOTIFY";\
+        echo 'From: "Procmail Security daemon"' "<${SECURITY_LOCAL_POSTMASTER}>";\
+        echo 'Subject: SECURITY WARNING - possible email attack';\
+        echo "X-Loop: EMAIL SECURITY WARNING $HOST $SECRET"; \
+        echo ;\
+        echo 'Trapped excessively long header:' ;\
+        echo "$HDR";\
+        echo ;\
+        echo "$STATUS";\
+        echo ;\
+        echo 'Headers from message:';\
+        echo ;\
+        sed -e 's/^/> /' ;\
+      ) | $SENDMAIL $MTA_FLAGS_CMDLN $SECURITY_NOTIFY
+  }
+
+  :0
+  * SECURITY_QUARANTINE ?? [^ ]
+  {
+    :0 :${SECURITY_QUARANTINE_LOCKFILE}
+    $SECURITY_QUARANTINE
+
+    :0 e
+    {
+      # Argh! Quarantine failed!
+      # notify administrator
+      LOG="${NL} ERR: QUARANTINE FAILED!${NL}"
+
+      # bounce it.
+      EXITCODE=65
+
+      :0 h
+      * SECURITY_NOTIFY ?? [^ ]
+      * !$ ^X-Loop: EMAIL SECURITY WARNING $HOST $SECRET
+      | ( \
+          echo "To: $SECURITY_NOTIFY";\
+          echo 'From: "Procmail Security daemon"' "<${SECURITY_LOCAL_POSTMASTER}>";\
+          echo 'Subject: SECURITY WARNING - quarantine failed!';\
+          echo "X-Loop: EMAIL SECURITY WARNING $HOST $SECRET"; \
+          echo ;\
+          echo 'Attempt to quarantine the following message in $SECURITY_QUARANTINE failed.';\
+          echo 'Message has been bounced.';\
+          echo 'Verify file access permissions:';\
+          ls -l $SECURITY_QUARANTINE 2>&1 ;\
+          echo ;\
+          echo 'Headers from message:';\
+          echo ;\
+          sed -e 's/^/> /' ;\
+        ) | $SENDMAIL $MTA_FLAGS_CMDLN $SECURITY_NOTIFY
+
+    }
+  }
+
+  # bounce it.
+  EXITCODE=65
+
+  # zap it.
+  :0
+  /dev/null
+
+}
+
+#---------------------------------------------------------------------------
+# Not all MIME can be sanitized...
+#
+:0
+* ^Content-Type[ 	]*:.*multipart/((signed)|(encrypted));
+* ! SECURITY_DEFANG_SIGNED ?? [^ ]
+{
+  LOG=" WARN: Cannot sanitize message due to signing or encryption$SUBJ"
+}
+
+#---------------------------------------------------------------------------
+# Defang HTML active-content tags
+#
+# NB: In case you think the regexes should be /<[ 	]*TAG/, I suggest
+# you *try* such tags in your browser first...
+#
+# Unfortunately the "on*" (e.g. "onload=") syntax is such that we can't
+# reliably look for /onload="/ - there may be whitespace around the =.
+# This isn't intended to be a full HTML parser, so we'll err on the side of
+# safety by defanging everything, even though it may be outside of an HTML
+# context.
+#
+# This keeps getting uglier as more and more holes are discovered.
+#
+# This will be folded into a better sanitizer Real Soon Now...
+#
+
+:0
+* 9876543210^1 ! ^Content-Type[ 	]*:.*multipart/((signed)|(encrypted));
+* 9876543210^1 SECURITY_DEFANG_SIGNED ?? [^ ]
+{
+#----------- ALL OF THIS IS SKIPPED FOR SIGNED/ENCRYPTED MESSAGES
+
+# "perl -e" has problems when run as root...
+DROPPRIVS=YES
+
+:0
+* DEBUG_VERBOSE ?? [^ ]
+{
+  VERBOSE=YES
+}
+
+:0 H
+* [\015][^\012]
+{
+  # this apparently happens a lot, so stop logging it
+  #LOG="Defanging bare CR in headers$SUBJ"
+
+  :0 fw h
+  | perl -p -e 's/\015/\012/g'
+}
+
+:0 B
+* ! SECURITY_TRUST_HTML ?? [^ ]
+* 9876543210^1 \<(html|title|body|meta|app|script|object|embed|i?frame|style|img|bgsound|i?layer|link|form|input|table|th|td|xml)
+* 9876543210^1 =(3d)?[ 	]*["'](&{|([a-z]+script|mocha):)
+{
+
+  LOG="Defanging active HTML content$SUBJ"
+
+  HAVE_UUE=
+
+  :0 B
+  * ^begin[ 	]+([0-9]+)?[ 	]+[^ 	]+
+  {
+    HAVE_UUE=YES
+    LOG=" UUE content, HTML defang suppression enabled.$NL"
+  }
+
+  :0 fw b
+  | perl -p -e '	#\
+	unless ($ENV{"HAVE_UUE"} && /^M.{60}$/ ) {	#\
+		if (/ / && /["\047][^"\047\s]*&#x?[1-9][0-9a-f]/i) {	#\
+			while (/["\047][^"\047\s]*&#((4[6-9]|5[0-8]|6[4-9]|[78][0-9]|9[07-9]|1[0-1][0-9]|12[0-2])(?![0-9]))/) {	#\
+				$char = chr($1);	#\
+				s/&#$1;?/$char/g;	#\
+			}	#\
+			while (/["\047][^"\047\s]*&#(x(2[ef]|3[0-9a]|4[0-9a-f]|5[0-9a]|6[1-9a-f]|7[0-9a]))/i) {	#\
+				$char = chr(hex("0$1"));	#\
+				s/&#$1;?/$char/gi;	#\
+			}	#\
+		}	#\
+		if (/ / && /["\047][^"\047\s]*%[2-7][0-9a-f]/i) {	#\
+			while (/["\047][^"\047\s]*%((2[ef]|3[0-9a]|4[0-9a-f]|5[0-9a]|6[1-9a-f]|7[0-9a]))/i) {	#\
+				$char = chr(hex("0x$1"));	#\
+				s/%$1/$char/gi;	#\
+			}	#\
+		}	#\
+		if (/<|%3c/) {	#\
+			s/(<|%3c)(META|APP|SCRIPT|OBJECT|EMBED|FRAME|IFRAME|LAYER|ILAYER|LINK|FORM|INPUT|XML)/$1DEFANGED_$2/gi;	#\
+			unless ($ENV{"SECURITY_TRUST_STYLE_TAGS"}) {	#\
+				s/<STYLE/ <!-- <DEFANGED_STYLE/gi;	#\
+				s/<\/STYLE/ --> <\/DEFANGED_STYLE/gi;	#\
+				s/\sSTYLE\s*=/ DEFANGED_STYLE=/gi;	#\
+			}	#\
+			if ($ENV{"DEFANG_WEBBUGS"}) {	#\
+				s/<IMG/<DEFANGED_IMG/gi;	#\
+				s/<BGSOUND/<DEFANGED_BGSOUND/gi;	#\
+				if (/<(BODY|TABLE|TH|TD)\s/i) {	#\
+					s/\sBACKGROUND\s*=\s*/ DEFANGED_BACKGROUND=/gi;	#\
+				}	#\
+			}	#\
+			s/\sOn(Abort|Blur|Change|Click|DblClick|DragDrop|Error|Focus|KeyDown|KeyPress|KeyUp|Load|MouseDown|MouseMove|MouseOut|MouseOver|MouseUp|Move|Reset|Resize|Select|Submit|Unload|ContextMenu|DragStart)/ DEFANGED_On$1/gi;	#\
+		}	#\
+		s/^\s*On(Abort|Blur|Change|Click|DblClick|DragDrop|Error|Focus|KeyDown|KeyPress|KeyUp|Load|MouseDown|MouseMove|MouseOut|MouseOver|MouseUp|Move|Reset|Resize|Select|Submit|Unload|ContextMenu|DragStart)/DEFANGED_On$1/gi;	#\
+		s/(["\047\075]|url\()([a-z]+script|mocha):/${1}DEFANGED_$2:/gi;	#\
+		s/(["\047\075])&{/${1}DEFANGED_&_{/g;	#\
+	}	#\
+        '
+}
+
+#---------------------------------------------------------------------------
+# Mangle HTML and executable attachment filenames enough that they won't
+# automatically execute, and limit the length of extremely long attachment
+# filenames and MIME headers to prevent buffer overflows and client
+# crashes (sigh). Adding ${$} to the mangling inserts a bit of randomness
+# so that an active-HTML or BO exploit can't just look for an attachment
+# named EXPLOIT.DEFANGED-EXE to get around the defanging.
+#
+# NOTE: the [ 	] has a tab embedded in it - DO NOT remove it...
+#
+
+:0
+* ! MANGLE_EXTENSIONS ?? [^ ]
+{
+  MANGLE_EXTENSIONS='html?|exe|com|cmd|bat|pif|sc[rt]|lnk|dll|ocx|do[ct]|xl[swt]|p[po]t|rtf|vb[se]?|hta|p[lm]|sh[bs]|hlp|chm|eml|ws[cfh]|ad[ep]|jse?|md[abew]|ms[ip]|reg|as[dfx]|c[ip]l|pps|wm[avszdf]|vcf|nws|wsz|\{[-0-9a-f]+\}'
+}
+
+
+# UUE attachments
+:0 B
+* ^begin[ 	]+([0-9]+)?[ 	]+[^ 	]+
+{
+  :0 B
+  * ^begin[ 	]+([0-9]+)?[ 	]+\/[^ 	]....................................................................................................+$
+  {
+    LOG="Truncating extremely long attachment filename $MATCH$SUBJ"
+
+    :0 fw b
+    | perl -p -e 'if (/^begin\s+[0-9]*\s/i) {	#\
+            ($mode, $filen) = /^begin\s+([0-9]*)\s+(.{64}).*$/i;	#\
+            $mode = "644" unless $mode;	#\
+            s/^.*$/begin $mode $filen.../ if $filen;	#\
+          }'
+  }
+
+  :0 B
+  * $ ^begin[ 	]+([0-9]+)?[ 	]+.+\.(${MANGLE_EXTENSIONS})[ 	]*$
+  {
+    LOG="Sanitizing executable UUE attachments$SUBJ"
+
+    :0 fw b
+    | perl -p -e '	#\
+      if ($stripped) {	#\
+	chomp;	#\
+	if (/^end$/i || /^\s*$/) {	#\
+	  $stripped = 0;	#\
+	}	#\
+	$_ = ""; next;	#\
+      }	#\
+      if (($junk,$filen) = /^begin\s+([0-9]+\s+)?((\\.|[^"])+\.($ENV{"MANGLE_EXTENSIONS"}|\{[-0-9a-f]+\}))[\.\s]*$/io) {	#\
+	if ($specf = $ENV{"STRIPPED_EXECUTABLES"}) {	#\
+	  if (open(STRIPPED,$specf)) {	#\
+	    warn " Checking UUE \"$filen\" for stripping.\n";	#\
+	    while (chomp($stp_spec = <STRIPPED>)) {	#\
+	      $stp_spec =~ s/^\s+//g;	#\
+	      $stp_spec =~ s/\s.*$//g;	#\
+	      next unless $stp_spec;	#\
+	      $stp_spec =~ s/([^\\])\./$1\\./g;	#\
+	      $stp_spec =~ s/\*/.*/g;	#\
+	      $stp_spec =~ s/\?\?/?./g;	#\
+	      $stp_spec =~ s/([^\(]|^)\?/$1./g;	#\
+	      $stp_spec .= "\$" unless $stp_spec =~ /\$/;	#\
+              warn "  Checking against \"$stp_spec\"\n" if $ENV{"DEBUG"};	#\
+	      if ($filen =~ /^${stp_spec}/i) {	#\
+	      warn " Stripped UUE attachment \"$filen\".\n";	#\
+		$stripped = 1;	#\
+		print "\n";	#\
+		print "X-Content-Security: [" . $ENV{"HOST"} . "] REPORT: UUE attachment \"$filen\" stripped\n";	#\
+		print "\n";	#\
+		print $ENV{"STRIPPED_WARNING"};	#\
+		print "Filename: $filen\n\n";	#\
+		last;	#\
+	      }	#\
+	    }	#\
+	    close(STRIPPED);	#\
+	    if ($stripped) {	#\
+		$_ = <>;	#\
+		$_ = ""; next;	#\
+	    }	#\
+	  } else {	#\
+	    warn " ERR: Unable to open stripped-executables file \"$specf\".\n";	#\
+	  }	#\
+	}	#\
+	if ($specf = $ENV{"POISONED_EXECUTABLES"}) {	#\
+	  if (open(POISONED,$specf)) {	#\
+	    warn " Checking UUE \"$filen\" for poisoning.\n";	#\
+	    while (chomp($psn_spec = <POISONED>)) {	#\
+              $psn_spec =~ s/^\s+//g;	#\
+              $psn_spec =~ s/\s.*$//g;	#\
+              next unless $psn_spec;	#\
+              $psn_spec =~ s/([^\\])\./$1\\./g;	#\
+              $psn_spec =~ s/\*/.*/g;	#\
+              $psn_spec =~ s/\?\?/?./g;	#\
+	      $psn_spec =~ s/([^\(]|^)\?/$1./g;	#\
+	      $psn_spec .= "\$" unless $psn_spec =~ /\$/;	#\
+              warn "  Checking against \"$psn_spec\"\n" if $ENV{"DEBUG"};	#\
+              if ($filen =~ /^${psn_spec}/i) {	#\
+                warn " Trapped poisoned attachment \"$filen\".\n";	#\
+                print "X-Content-Security: [", $ENV{"HOST"}, "] NOTIFY\n" if $ENV{"SECURITY_NOTIFY"} || $ENV{"SECURITY_NOTIFY_VERBOSE"};	#\
+                print "X-Content-Security: [", $ENV{"HOST"}, "] REPORT: Trapped poisoned attachment \"$filen\"\n" if $ENV{"SECURITY_NOTIFY"} || $ENV{"SECURITY_NOTIFY_VERBOSE"};	#\
+                print "X-Content-Security: [", $ENV{"HOST"}, "] QUARANTINE\n" if $ENV{"SECURITY_QUARANTINE"};	#\
+                print "\n";	#\
+		print $ENV{"POISONED_WARNING"};	#\
+                print "SUSPICIOUS ATTACHMENT: ";	#\
+                last;	#\
+              }	#\
+            }	#\
+            close(POISONED);	#\
+          } else {	#\
+            warn " ERR: Unable to open poisoned-executables file \"$specf\".\n";	#\
+          }	#\
+        }	#\
+        warn " Mangling executable UUE filename \"$filen\".\n";	#\
+        $filen =~ s/\.([-a-z0-9{}]+)$/.${$}DEFANGED-$1/i;	#\
+        print "begin 666 $filen\n";	#\
+        $_ = "";	#\
+      }	#\
+    ' 2>> $LOGFILE
+  }
+}
+
+# MIME attachments and general header sanitizing
+:0
+* !$ ^X-Content-Security: \[${HOST}\] (QUARANTINE|DISCARD)
+* 9876543210^0 ^Content-Type[ 	]*:.*(application|multipart)/[^ ]*[ 	]*;
+* 9876543210^0 ^Content-Type[ 	]*:.*message/rfc822
+* 9876543210^0 ^Content-Disposition[ 	]*:.*attachment
+{
+  LOG="Sanitizing MIME & attachments$SUBJ"
+
+  # Due to procmail not unwrapping MIME attachment headers,
+  # (they're in the message body) this perl script has to run against
+  # *every* message with MIME attachments to ensure security. Sorry.
+
+  # If you get "Out of memory" errors in your procmail log, try changing to
+  # the following:
+  # :0 fw
+  # | ulimit -d 15000; perl -p -e '	#\
+
+  POISONED_SCORE=${POISONED_SCORE:-25}
+  ZIPPED_EXECUTABLES=${ZIPPED_EXECUTABLES:-"$POISONED_EXECUTABLES"}
+
+  :0 fw
+  | perl -p -e '	#\
+      $pastmsghdr = 1 if /^\s*$/;	#\
+      $XCS = "X-Content-Security: [" . $ENV{"HOST"} . "]" unless $XCS;	#\
+      if ($pastmsghdr) {	#\
+	if (!$mimebdry && $mimebdrs[0]) {	#\
+	  warn " Found no MIME boundary in msg attachment.\n" if $ENV{"DEBUG"};	#\
+	  $mimebdry = pop @mimebdrs;	#\
+	  $newbdry = pop @newbdrs;	#\
+	  $rawbdry = pop @rawbdrs;	#\
+	  $bdrytoolong = pop @bdrstoolong;	#\
+	  $gotbdry = pop @gotbdrs;	#\
+	  $nullbdry = pop @nullbdrs;	#\
+	}	#\
+	$_ = "" if $strip_att && !$gotbdry;	#\
+      } else {	#\
+	if (($type,$format,$junk) = /^Content-Type\s*:\s.*(application|multipart|message)\/(\S+)\s*(;.*)?$/i) {	#\
+	  $wanthdr = 1;	#\
+	  print "X-Security: message sanitized on ", $ENV{"HOST"}, "\n";	#\
+	  print "\tSee http://www.impsec.org/email-tools/sanitizer-intro.html\n";	#\
+	  print "\tfor details. \$Revision: 1.151 $x\$Date: 2006-01-20 07:29:24-08 $x\n";	#\
+	  print "X-Security: The postmaster has not enabled quarantine of poisoned messages.\n" unless $ENV{"SECURITY_QUARANTINE"};	#\
+	  if ($type =~ /application/i) {	#\
+	    $inmimehdr = 1;	#\
+	  } elsif ($type =~ /message/i && $format =~ /rfc822/i) {	#\
+	    $rcrsmsg = $inmimehdr = 1;	#\
+	  }	#\
+	} elsif (/^\S/) {	#\
+	  $wanthdr = 0;	#\
+	}	#\
+	if ($wanthdr) {	#\
+	  if (($mimebdry) = /boundary\s*=\s*(("")|("[^"]+")|([^"]\S+)|$)/i) {	#\
+	    $mimebdry =~ s/(^"|"$)//g;	#\
+	    $rawbdry = $mimebdry;	#\
+	    $gotbdry = 1;	#\
+	    $wanthdr = 0;	#\
+	    $bdrytoolong = $nullbdry = 0;	#\
+	    if ($bdrytoolong = (length($mimebdry) > 80)) {	#\
+	      warn " Truncating long MIME boundary string.\n";	#\
+	      $newbdry = substr($mimebdry,0,64);	#\
+	      $mimebdry = quotemeta($mimebdry);	#\
+	      s/${mimebdry}/${newbdry}/;	#\
+	      $rawbdry =~ s/${mimebdry}/${newbdry}/;	#\
+	    } elsif ($nullbdry = (length($mimebdry) < 1)) {	#\
+	      warn " Replacing null MIME boundary string.\n";	#\
+	      $newbdry = "==NULL_MIME_BOUNDARY_ATTACK_SANITIZED-${$}==";	#\
+	      s/boundary\s*=\s*(""|$)/boundary="${newbdry}"/i;	#\
+	    } else {	#\
+	      $newbdry = $mimebdry;	#\
+	      $mimebdry = quotemeta($mimebdry);	#\
+	    }	#\
+	  }	#\
+	}	#\
+      }	#\
+      if ($mimebdry || ($gotbdry && $nullbdry) || $inmimehdr) {	#\
+	if (/^\s*$/) {	#\
+	  $inmimehdr = 0;	#\
+	  if ($rcrsmsg) {	#\
+	    push @mimebdrs, $mimebdry;	#\
+	    push @newbdrs, $newbdry;	#\
+	    push @rawbdrs, $rawbdry;	#\
+	    push @bdrstoolong, $bdrytoolong;	#\
+	    push @gotbdrs, $gotbdry;	#\
+	    push @nullbdrs, $nullbdry;	#\
+	    $mimebdry = $newbdry = "";	#\
+	    $rcrsmsg = $pastmsghdr = $bdrytoolong = $gotbdry = 0;	#\
+	  }	#\
+	} elsif (/^--${mimebdry}(--)?$/) {	#\
+	  $mend = $1;	#\
+	  s/${mimebdry}/${newbdry}/ if $bdrytoolong;	#\
+	  s/^--/--${newbdry}${mend}/ if $nullbdry;	#\
+	  if ($mend) {	#\
+	    if ($mimebdrs[0]) {	#\
+	      $mimebdry = pop @mimebdrs;	#\
+	      $newbdry = pop @newbdrs;	#\
+	      $rawbdry = pop @rawbdrs;	#\
+	      $bdrytoolong = pop @bdrstoolong;	#\
+	      $gotbdry = pop @gotbdrs;	#\
+	      $nullbdry = pop @nullbdrs;	#\
+	    }	#\
+	  } else {	#\
+	    $inmimehdr = 1;	#\
+	    $rcrsmsg = $strip_att = $check_att = 0;	#\
+	  }	#\
+	} elsif (!$inmimehdr && $strip_att) {	#\
+	  $_ = "";	#\
+	} elsif (!$inmimehdr && $check_att && !$base64) {	#\
+	  warn "  Not base64, not scanning\n";	#\
+	  $base64 = $check_att = 0;	#\
+	} elsif (!$inmimehdr && $check_att) {	#\
+	  $ATTCH = $destf = $rarh = $ziph = "";	#\
+	  $SIG{PIPE} = 'IGNORE';	#\
+	  if ($ENV{"USE_CPAN"}) {	#\
+	    push @INC, $ENV{"PVT_CPAN"} if $ENV{"PVT_CPAN"};	#\
+	    eval "use MIME::Base64; use File::MkTemp;"; die $@ if $@;	#\
+	    if (($ATTCH,$destf) = mkstempt("mailchk.XXXXXX","/tmp")) {	#\
+	      $destf = "/tmp/$destf";	#\
+	    } else {	#\
+	      warn " ERR: mkstempt failed\n";	#\
+	      $ATTCH = $destf = "";	#\
+	    }	#\
+	  } else {	#\
+	    if (!chomp($destf = `mktemp /tmp/mailchk.XXXXXX`)) {	#\
+	      warn " ERR: mktemp failed\n";	#\
+	      $ATTCH = $destf = "";	#\
+	    } else {	#\
+	      if (open(ATTCH,"|mimencode -u -o $destf")) {	#\
+		$ATTCH = ATTCH;	#\
+	      } else {	#\
+		warn " ERR: mimencode failed: $@\n";	#\
+		unlink($destf);	#\
+		$ATTCH = $destf = "";	#\
+	      }	#\
+	    }	#\
+	  }	#\
+	  if ($ATTCH && $destf) {	#\
+	    warn "  Decoding to \"$destf\"\n";	#\
+	    do {	#\
+	      print $_;	#\
+	      if (length($_) > 3) {	#\
+	        if ($ENV{"USE_CPAN"}) {	#\
+		  $de = decode_base64($_);	#\
+		  print $ATTCH $de || die $@;	#\
+		  $rarh = $ziph = $de unless $ziph;	#\
+	        } else {	#\
+	      	  print $ATTCH $_ || die $@;	#\
+	        } #\
+	      } else {	#\
+		$rarh = $ziph = "XXX" if length($_) > 1;	#\
+	      }	#\
+	      $_ = <>;	#\
+	      $lastline = $_;	#\
+	    } until (/^--${mimebdry}(--)?$/ || ($mimebdrs[0] && /^--${mimebdrs[0]}(--)?$/) || !$_ );	#\
+	    if (close($ATTCH)) {	#\
+	      # Run virus-checker against $destf here.	#\
+	    } else {	#\
+	      warn "  ERR: decode failed! mimencode?\n";	#\
+	      $check_att = 0;	#\
+	    }	#\
+	    if ($check_att == 3) {	#\
+	      warn "  Scanning image\n";	#\
+	      $wmf = $jpegbo = 0; #\
+	      if ($ENV{"SECURITY_POISON_WMF"} && (`/usr/bin/od -N 4 -t x $destf` =~ /9ac6cdd7/i)) {	#\
+	        $wmf = 1;	#\
+		warn "   Poisoned WMF\n";	#\
+	      } elsif (open(JPEGI,"rdjpgcom $destf 2>&1 |")) {	#\
+	        while (<JPEGI>) {	#\
+		  warn "djpeg: $_" if $ENV{"DEBUG_VERBOSE"};	#\
+	          if (/Erroneous JPEG marker length/i) {	#\
+	            $jpegbo = $_; last;	#\
+	          }	#\
+	        }	#\
+	        close(JPEGI);	#\
+	      }	#\
+	      if ($jpegbo || $wmf) {	#\
+		print "\n\n--$newbdry\n";	#\
+		print "Content-Type: TEXT/PLAIN;\n";	#\
+		print "Content-Description: SECURITY WARNING\n";	#\
+		print "$XCS NOTIFY\n" if $ENV{"SECURITY_NOTIFY"} || $ENV{"SECURITY_NOTIFY_VERBOSE"};	#\
+		print "$XCS QUARANTINE\n" if $ENV{"SECURITY_QUARANTINE"};	#\
+	      }	#\
+	      if ($jpegbo) {	#\
+		warn "   JPEG BO?\n";	#\
+		print "$XCS REPORT: Trapped possible JPEG attack: $jpegbo" if $ENV{"SECURITY_NOTIFY"} || $ENV{"SECURITY_NOTIFY_VERBOSE"};	#\
+		print "\n";	#\
+		print $ENV{"BAD_JPEG_WARNING"};	#\
+	      }	#\
+	      if ($wmf) {	#\
+		print "$XCS REPORT: Trapped possible WMF attack." if $ENV{"SECURITY_NOTIFY"} || $ENV{"SECURITY_NOTIFY_VERBOSE"};	#\
+		print "\n";	#\
+		print $ENV{"WMF_WARNING"};	#\
+	      }	#\
+	    } elsif (($check_att == 2 || $check_att == 4) && ($specf = $ENV{"ZIPPED_EXECUTABLES"})) {	#\
+	      if ($check_att == 2) {	#\
+		$rarh = "Rar";	#\
+	        warn "  Scanning ZIP\n" if $ENV{"DEBUG"};	#\
+	        unless ($ENV{"USE_CPAN"} || $ziph) {	#\
+		  if (open(ATTCH,"<$destf")) {	#\
+		    $ziph = <ATTCH>;	#\
+		    close(ATTCH);	#\
+		  } else {	#\
+		    warn " ERR: decode failed\n";	#\
+		    $ziph = "PK\003\004";	#\
+		  }	#\
+	        }	#\
+	      }	elsif ($check_att == 4) {	#\
+		$ziph = "PK\003\004";	#\
+	        warn "  Scanning RAR\n" if $ENV{"DEBUG"};	#\
+	        unless ($rarh) {	#\
+		  if (open(ATTCH,"<$destf")) {	#\
+		    $rarh = <ATTCH>;	#\
+		    close(ATTCH);	#\
+		  } else {	#\
+		    warn " ERR: decode failed\n";	#\
+		    $rarh = "Rar";	#\
+		  }	#\
+	        }	#\
+	      }	#\
+	      if ($ziph !~ /^(?:PK00)?PK\003\004/ || $rarh !~ /^Rar/) {	#\
+		if ($ziph eq "XXX") {	#\
+		  warn "   Hostile BASE64\n";	#\
+		} else {	#\
+		  warn "   ZIP/RAR magic not found\n";	#\
+		} #\
+		print "\n\n--$newbdry\n";	#\
+		print "Content-Type: TEXT/PLAIN;\n";	#\
+		print "$XCS NOTIFY\n" if $ENV{"SECURITY_NOTIFY"} || $ENV{"SECURITY_NOTIFY_VERBOSE"};	#\
+		if ($ziph eq "XXX") {	#\
+		  print "$XCS REPORT: Trapped ZIP/RAR file \"$zfilen\" with hostile base64 encoding\n" if $ENV{"SECURITY_NOTIFY"} || $ENV{"SECURITY_NOTIFY_VERBOSE"};	#\
+		} else {	#\
+		  print "$XCS REPORT: Trapped bogus ZIP/RAR file \"$zfilen\"\n" if $ENV{"SECURITY_NOTIFY"} || $ENV{"SECURITY_NOTIFY_VERBOSE"};	#\
+		} #\
+		print "$XCS QUARANTINE\n" if $ENV{"SECURITY_QUARANTINE"};	#\
+		print "Content-Description: SECURITY WARNING\n\n";	#\
+		if ($ziph eq "XXX") {	#\
+		  print $ENV{"BAD_BASE64_WARNING"};	#\
+		} else {	#\
+	          if ($check_att == 2) {	#\
+		    print $ENV{"ZIP_MAGIC_WARNING"};	#\
+	          } elsif ($check_att == 4) {	#\
+		    print $ENV{"RAR_MAGIC_WARNING"};	#\
+		  } #\
+		} #\
+	      } elsif (open(ZIPPOL,$specf)) {	#\
+		%zipf = ();	#\
+	        if ($check_att == 2) {	#\
+		  if (open(ZIPL,"unzip -l $destf |")) {	#\
+		    while (<ZIPL>) {	#\
+		      if (($filen) = /^\s+\d+\s+\S+\s+\S+\s+(.+)$/) {	#\
+			warn "$filen\n" if $ENV{"DEBUG"};	#\
+		        $zipf{$filen} = 1;	#\
+		      }	#\
+		    }	#\
+		    warn "  ERR: scan failed! unzip?\n" unless close(ZIPL);	#\
+		    if (open(ZIPL,"unzip -t -P _virus_$$ $destf 2>&1 |")) {	#\
+		      while (<ZIPL>) {	#\
+		        if (($junk,$filen) = /(skipp|test)ing:\s+(\S.+\.\w+)\W*\s+($|incorrect)/i) {	#\
+		          $zipf{$filen} = 1;	#\
+		        }	#\
+		      }	#\
+		      close(ZIPL);	#\
+		    }	#\
+		  }	#\
+		} elsif ($check_att == 4) {	#\
+		  if (open(RARL,"unrar v $destf |")) {	#\
+		    while (<RARL>) {	#\
+		      if (($filen) = /^[\s*](?:[^\/]+\/)*(\S.*\..+)$/) {	#\
+			warn "$filen\n" if $ENV{"DEBUG"};	#\
+			$zipf{$filen} = 1;	#\
+		      }	#\
+		    }	#\
+		    warn "  ERR: scan failed! unrar?\n" unless close(RARL);	#\
+		  }	#\
+		}	#\
+		$filel = "";	#\
+		foreach $filen (keys %zipf) {	#\
+		$fn = $filen; $fn =~ s/\s{10,}/ (many spaces) /;	#\
+		  warn "  Checking archived \"$fn\"\n";	#\
+		  seek(ZIPPOL,0,0);	#\
+		  while (chomp($pol_spec = <ZIPPOL>)) {	#\
+		    $pol_spec =~ s/^\s+//g;	#\
+		    $pol_spec =~ s/\s.*$//g;	#\
+		    next unless $pol_spec;	#\
+		    $pol_spec =~ s/([^\\])\./$1\\./g;	#\
+		    $pol_spec =~ s/\*/.*/g;	#\
+		    $pol_spec =~ s/\?\?/?./g;	#\
+		    $pol_spec =~ s/([^\(]|^)\?/$1./g;	#\
+		    warn "   Checking against \"$pol_spec\"\n" if $ENV{"DEBUG"};	#\
+		    if ($filen =~ /^${pol_spec}$/i) {	#\
+		      warn "   Trapped archived \"$fn\".\n";	#\
+		      if (!$poisoned) {	#\
+		        print "\n\n--$newbdry\n";	#\
+		        print "Content-Type: TEXT/PLAIN;\n";	#\
+		        print "$XCS NOTIFY\n" if $ENV{"SECURITY_NOTIFY"} || $ENV{"SECURITY_NOTIFY_VERBOSE"};	#\
+		        print "$XCS REPORT: Scanned attachment \"$zfilen\"\n$XCS REPORT: Trapped suspicious archived files:\n" if $ENV{"SECURITY_NOTIFY"} || $ENV{"SECURITY_NOTIFY_VERBOSE"};	#\
+		        $poisoned = 1;	#\
+		      }	#\
+		      print "$XCS REPORT:  $fn\n" if $ENV{"SECURITY_NOTIFY"} || $ENV{"SECURITY_NOTIFY_VERBOSE"};	#\
+		      $filel .= "  $fn\n";	#\
+		      last;	#\
+		    }	#\
+		  }	#\
+		}	#\
+		if ($poisoned) {	#\
+		  print "$XCS QUARANTINE\n" if $ENV{"SECURITY_QUARANTINE"};	#\
+		  print "Content-Description: SECURITY WARNING\n\n";	#\
+	          if ($check_att == 2) {	#\
+		    print $ENV{"ZIPPED_WARNING"};	#\
+	          } elsif ($check_att == 4) {	#\
+		    print $ENV{"RARRED_WARNING"};	#\
+		  }	#\
+		  print "$filel\n";	#\
+		}	#\
+	      } else { 	#\
+		warn " ERR: Unable to open ZIP/RAR list \"$specf\".\n";	#\
+	      }	#\
+	    } elsif ($check_att == 1) {	# CUT \
+	      warn "  Scanning MSOffice file\n";	#\
+	      $msapp = $score = 0;	#\
+	      @scores = ();	#\
+	      $why = "";	#\
+	      if (open(ATTCH,"<$destf")) {	#\
+		while (<ATTCH>) {	#\
+		  if (/\023 (INCLUDE(PICTURE|TEXT)[^\000-\037]+)/i) {	#\
+		    $why .= "    " . $ENV{"SC_MBD"} . " for $1\n";	#\
+		    $score+= $ENV{"SC_MBD"};	#\
+		  }	#\
+		  if (/(\000|\001|\004)(VirusProtection)/i) {	#\
+		    $why .= "    99 for $&\n";	#\
+		    $score+= 99;	#\
+		  }	#\
+		  if (/\000(select\s[^\000]*shell\s*\(\s*["\047])/i) {	#\
+		    $why .= "    99 for $1\n";	#\
+		    $score+= 99;	#\
+		  }	#\
+		  if (/\000(ID="{.{36}[^}][^\000\012\015]{5,})/i) {	#\
+		    $why .= "     99 for $1\n";	#\
+		    $score+= 99;	#\
+		  }	#\
+		  if (/\000(regedit)/i) {	#\
+		    $why .= "     9 for $1\n";	#\
+		    $score+= 9;	#\
+		  }	#\
+		  if (/\000(Shell\s*\()/i) {	#\
+		    $why .= "     9 for $1\n";	#\
+		    $score+= 9;	#\
+		  }	#\
+		  if (/\000(Save(Normal|Properties)Prompt)/i) {	#\
+		    $why .= "     9 for $1\n";	#\
+		    $score+= 9;	#\
+		  }	#\
+		  if (/\000(Outlook\.Application)\000/i) {	#\
+		    $why .= "     9 for $1\n";	#\
+		    $score+= 9;	#\
+		  }	#\
+		  if (/\000(CountOfLines)/i) {	#\
+		    $why .= "     9 for $1\n";	#\
+		    $score+= 9;	#\
+		  }	#\
+		  if (/\000(AddFromString)/i) {	#\
+		    $why .= "     9 for $1\n";	#\
+		    $score+= 9;	#\
+		  }	#\
+		  if (/\000(StartupPath)/i) {	#\
+		    $why .= "     9 for $1\n";	#\
+		    $score+= 9;	#\
+		  }	#\
+		  if (/\000(CreateObject)/i) {	#\
+		    $why .= "     4 for $1\n";	#\
+		    $score+= 4;	#\
+		  }	#\
+		  if (/(\000|\004)([a-z0-9_]\.)*(Autoexec|Workbook_(Open|BeforeClose|Window(De)?activate)|Document_(Open|New|Close))/i) {	#\
+		    $why .= "     4 for $&\n";	#\
+		    $score+= 4;	#\
+		  }	#\
+		  if (/(\000|\004)(Logon|AddressLists|AddressEntries|Recipients|Attachments|Logoff)/i) {	#\
+		    $why .= "     4 for $&\n";	#\
+		    $score+= 4;	#\
+		  }	#\
+		  if (/(\000|\004)(Subject|Body)/i) {	#\
+		    $why .= "     4 for $&\n" unless $scores[0];	#\
+		    $scores[0] = 4;	#\
+		  }	#\
+		  if (/\000(Options[^\w\s])/i) {	#\
+		    $why .= "     2 for $1\n";	#\
+		    $score+= 2;	#\
+		  }	#\
+		  if (/\000(CodeModule)/i) {	#\
+		    $why .= "     2 for $1\n";	#\
+		    $score+= 2;	#\
+		  }	#\
+		  if (/\000(([a-z]+\.)?Application)\000/i) {	#\
+		    $why .= "     2 for $1\n";	#\
+		    $score+= 2;	#\
+		  }	#\
+		  if (/(\000|\004)stdole/i) {	#\
+		    $why .= "     2 for $&\n";	#\
+		    $score+= 2;	#\
+		  }	#\
+		  if (/(\000|\004)NormalTemplate/i) {	#\
+		    $why .= "     2 for $&\n";	#\
+		    $score+= 2;	#\
+		  }	#\
+		  if (/\000(ID="{[-0-9A-F]{36}}")/i) {	#\
+		    $why .= "     4 for $1\n";	#\
+		    $score+= 4;	#\
+		  }	#\
+		  if (/\000(ThisWorkbook)\000/i) {	#\
+		    $why .= "     1 for $1\n";	#\
+		    $score+= 1;	#\
+		  }	#\
+		  if (/\000(PrivateProfileString)/i) {	#\
+		    $why .= "     1 for $1\n";	#\
+		    $score+= 1;	#\
+		  }	#\
+		  if (/(\000|\004)(ActiveDocument|ThisDocument|ThisWorkbook)/i) {	#\
+		    $why .= "     1 for $&\n";	#\
+		    $score+= 1;	#\
+		  }	#\
+		  if (/\000(\[?HKEY_(CLASSES_ROOT|CURRENT_USER|LOCAL_MACHINE))/) {	#\
+		    $why .= "     1 for $1\n";	#\
+		    $score+= 1;	#\
+		  }	#\
+		  $msapp++ if /\000(Microsoft (Word Document|Excel Worksheet|Excel|PowerPoint)|MSWordDoc|Word\.Document\.[0-9]+|Excel\.Sheet\.[0-9]+)\000/;	#\
+		}	#\
+		close(ATTCH);	#\
+	      } else { 	#\
+		warn " ERR: Scan failed\n";	#\
+	      }	#\
+	      if ($msapp) {	#\
+		for (@scores) {	#\
+		  $score += $_;	#\
+		}	#\
+		if ($histfile = $ENV{"SCORE_HISTORY"}) {	#\
+		  if (open(HIST,">>$histfile")) {	#\
+		    print HIST "score=$score to=".$ENV{"TO"}." from=".$ENV{"FROM"}."\n";	#\
+		    close HIST;	#\
+		  }	#\
+		}	#\
+		$poison_score = $ENV{"POISONED_SCORE"};	#\
+		$poison_score = 5 if $poison_score < 5;	#\
+		if ($score > $poison_score && !$ENV{"SCORE_ONLY"}) {	#\
+		  $why =~ s/[\000-\011\013-\037]//g;	#\
+		  warn "   POSSIBLE MACRO EXPLOIT: Score=$score\n";	#\
+		  print "\n\n--$newbdry\n";	#\
+		  print "Content-Type: TEXT/PLAIN;\n";	#\
+		  print "$XCS NOTIFY\n" if $ENV{"SECURITY_NOTIFY"} || $ENV{"SECURITY_NOTIFY_VERBOSE"};	#\
+		  print "$XCS REPORT: Trapped poisoned Microsoft Office attachment\n" if $ENV{"SECURITY_NOTIFY"} || $ENV{"SECURITY_NOTIFY_VERBOSE"};	#\
+		  if ($ENV{"SCORE_DETAILS"}) {	#\
+		    $why2 = $why;	#\
+		    $why2 =~ s/^/$XCS REPORT:/gm;	#\
+		    print $why2;	#\
+		  }	#\
+		  print "$XCS QUARANTINE\n" if $ENV{"SECURITY_QUARANTINE"};	#\
+		  print "Content-Description: SECURITY WARNING\n\n";	#\
+		  print $ENV{"MACRO_WARNING"}, "$score\n";	#\
+		  if ($ENV{"SCORE_DETAILS"}) {	#\
+		    print $ENV{"MACRO_DETAILS"};	#\
+		    print $why;	#\
+		  }	#\
+		}	#\
+	      }	# CUT \
+	    }	#\
+	    unlink($destf);	#\
+	    if ($lastline =~ /^--${mimebdry}(--)?$/) {	#\
+	      $mend = $1;	#\
+	      $lastline =~ s/${mimebdry}/${newbdry}/ if $bdrytoolong;	#\
+	      s/^--/--${newbdry}${mend}/ if $nullbdry;	#\
+	      if ($mend) {	#\
+		if ($mimebdrs[0]) {	#\
+		  $mimebdry = pop @mimebdrs;	#\
+		  $newbdry = pop @newbdrs;	#\
+		  $rawbdry = pop @rawbdrs;	#\
+		  $bdrytoolong = pop @bdrstoolong;	#\
+		  $gotbdry = pop @gotbdrs;	#\
+		  $nullbdry = pop @nullbdrs;	#\
+		}	#\
+	      } else {	#\
+	        $inmimehdr = 1;	#\
+	      }	#\
+	    }	#\
+	    print $lastline; $_ = "";	#\
+	  }	#\
+	  $check_att = 0;	#\
+	}	#\
+	if ($inmimehdr || $hdrcnt) {	#\
+	  if (/^(\s+\S|(file)?name)/) {	#\
+	    s/^\s*/ /;	#\
+	    s/^\s*// if $hdrtxt =~ /"[^"]*[^;]$/;	#\
+	    s/\s*\n$//;	#\
+	    $hdrtxt .= $_;	#\
+	    $_ = "";	#\
+	  } else {	#\
+	    if ($hdrtxt) {	#\
+	      $hdrtxt =~ s/([^\\])\\"/\1\\ÿ/g;	#\
+	      if ($hdrtxt =~ /`\s*`/) {	#\
+		warn " Fixing double backquotes.\n";	#\
+		$hdrtxt =~ s/`\s*`/\\"/g;	#\
+	      }	#\
+	      if ($hdrtxt =~ /^[-\w]+\s*:.*name\s*=\s*"[^"]+$/i) {	#\
+		warn " Fixing missing close quote on filename.\n";	#\
+		$hdrtxt .= "\"";	#\
+	      }	#\
+	      while (($hdr, $val) = $hdrtxt =~ /^([-\w]+)\s*:.*\s(\S+)\s*=\s*""/i) {	#\
+		warn " Null $val in $hdr header.\n";	#\
+		$sval = quotemeta($val);	#\
+		$hdrtxt =~ s/\s$sval\s*=\s*""/ X-$val="{null value sanitized}"/;	#\
+	      }	#\
+	      unless ($ENV{"SECURITY_DISABLE_OUTLOOK_HACKS"}) {	#\
+		while (($hdr,$filen) = $hdrtxt =~ /^(Content-Description)\s*:\s*text\s+from\s+file\s+\047([^\047]+)\047/i) {	#\
+		  warn " Fixing file name \"$filen\" in ${hdr}:\n";	#\
+		  $newfilen = $filen; $filen = quotemeta($filen);	#\
+		  $hdrtxt =~ s/\s+\047${filen}\047/, filename="${newfilen}"/ig;	#\
+		}	#\
+	      }	#\
+	      while (($junk,$filen,$junk) = $hdrtxt =~ /^Content-[-\w]+\s*:[^"]*("[^"]*"[^"]+)*name\s*=\s*([^"\s]([^;]|;(?!\s))+)/i) {	#\
+		warn " Fixing unquoted filename \"$filen\".\n";	#\
+		$newfilen = $filen; $filen = quotemeta($filen);	#\
+		if ($newfilen =~ /\.[a-z0-9]+"[a-z0-9"]+[\.\s]*$/i) {	#\
+		  warn " Defanging quotes-in-extension attack.\n";	#\
+		  while ($newfilen =~ /\.[a-z0-9]+"[a-z0-9"]+[\.\s]*$/i) {	#\
+		    $newfilen =~ s/\.([a-z0-9]+)"([a-z0-9"]+)[\.\s]*$/.$1$2/i;	#\
+		  }	#\
+		}	#\
+		$newfilen =~ s/\"/\\"/g;	#\
+		if ($newfilen =~ /\([^)]*\)/) {	#\
+		  warn " Removing embedded RFC822 comments.\n";	#\
+		  $newfilen =~ s/\([^)]*\)//g;	#\
+		}	#\
+		$hdrtxt =~ s/name\s*=\s*${filen}/name="$newfilen"/ig;	#\
+	      }	#\
+	      while (($filen) = $hdrtxt =~ /^Content-[-\w]+\s*:.*name\s*=\s*"(=\?[^"]+\?Q\?[^"]+=(2e|3[0-9]|[46][1-9a-f]|[57][0-9a])[^"]+\?=)"/i) {	#\
+		warn " Fixing encoded plain characters in \"$filen\".\n";	#\
+		$newfilen = $filen; $filen = quotemeta($filen);	#\
+		while ($newfilen =~ /=(2e|3[0-9]|[46][1-9a-f]|[57][0-9a])/i) {	#\
+		  $char = chr(hex("0x$1"));	#\
+		  $newfilen =~ s/=$1/$char/gi;	#\
+		}	#\
+		$hdrtxt =~ s/name\s*=\s*"${filen}"/name="$newfilen"/ig;	#\
+	      }	#\
+	      while (($filen) = $hdrtxt =~ /^Content-[-\w]+\s*:.*name\s*=\s*"([^"]+)[\.\s]+"/i) {	#\
+		warn " Fixing trailing spaces/periods in filename.\n";	#\
+		$newfilen = $filen; $filen = quotemeta($filen);	#\
+		$hdrtxt =~ s/name\s*=\s*"${filen}[\.\s]+"/name="$newfilen"/ig;	#\
+	      }	#\
+	      while (($filen) = $hdrtxt =~ /^Content-[-\w]+\s*:.*name\s*=\s*"([^"]{128,})"/i) {	#\
+		warn " Shortening long filename \"$filen\".\n";	#\
+		$filen =~ s/\s+/ /g;	#\
+		substr ($filen,64,32) = "..." while (length($filen) > 120);	#\
+		$hdrtxt =~ s/name\s*=\s*"[^"]{120,}"/name="$filen"/i;	#\
+		$mangle_mime_type = 1;	#\
+		warn " Filename now \"$filen\".\n";	#\
+	      }	#\
+	      if (($mtype) = $hdrtxt =~ /^Content-Type:\s+([a-z0-9-_]+\/[a-z0-9-_]+)/i) {	#\
+		warn " MIME body part type \"$mtype\".\n" if $ENV{"DEBUG"};	#\
+		unless ($mtype =~ /^(multipart|text|message)\//i) {	#\
+		  unless ($hdrtxt =~ /name\s*=\s*"/i) {	#\
+		    $dfrhdr .= "$hdrtxt\n"; $hdrtxt = "";	#\
+		  }	#\
+		}	#\
+		if ($mtype =~ /^application\/x-ms-?download/i && ! ($ENV{"SECURITY_TRUST_MS_DOWNLOAD"} || $poisoned)) {	#\
+			warn " Trapped poisoned $mtype\n";	#\
+			$poisoned = 1; $check_att = 0;	#\
+			print "Content-Type: TEXT/PLAIN;\n";	#\
+			print "$XCS NOTIFY\n" if $ENV{"SECURITY_NOTIFY"} || $ENV{"SECURITY_NOTIFY_VERBOSE"};	#\
+			print "$XCS REPORT: Trapped poisoned $mtype attachment\n" if $ENV{"SECURITY_NOTIFY"} || $ENV{"SECURITY_NOTIFY_VERBOSE"};	#\
+			print "$XCS QUARANTINE\n" if $ENV{"SECURITY_QUARANTINE"};	#\
+			print "Content-Description: SECURITY WARNING\n\n";	#\
+			print $ENV{"POISONED_WARNING"};	#\
+			print "Scanner score: 0 (poisoned by MIME type, scan skipped)\n\n";	#\
+		}	#\
+		if ($mtype =~ /^application\/x(-zip)?-compress(ed)?/i) {	#\
+		  $check_att = 2 unless $ENV{"DISABLE_ZIP_SCAN"} || $poisoned;	#\
+	        }	#\
+		if ($mtype =~ /^image\//i) {	#\
+		  $check_att = 3 unless $ENV{"DISABLE_JPEG_SCAN"} || $poisoned;	#\
+	        }	#\
+	      }	#\
+	      if ($hdrtxt =~ /^Content-Transfer-Encoding\s*:/i) {	#\
+		$base64 = ($hdrtxt =~ /:\s+base64/i);	#\
+		$dfrhdr .= "$hdrtxt\n"; $hdrtxt = "";	#\
+	      }	#\
+	      if ($hdrtxt =~ /^Content-[-\w]+\s*:.*name\s*=\s*"([^"]*\.(p?jp[eg]+|bmp|gif|png|wmf)(\?=)?)"/i) {	#\
+		  $check_att = 3 unless $ENV{"DISABLE_JPEG_SCAN"} || $poisoned;	#\
+	      }	#\
+	      if (($filen) = $hdrtxt =~ /^Content-[-\w]+\s*:.*name\s*=\s*"([^"]*\.(do[ct]|xl[swt]|p[po]t|rtf|pps|zip|rar)(\?=)?)"/i) {	#\
+		$fn = $filen; $fn =~ s/\s{10,}/ (many spaces) /;	#\
+		$stripped = 0;	#\
+		if ($filen =~ /\.rar(\?=)?$/i) {	#\
+			$typ = "RAR archive";	#\
+			$check_att = 4 unless $ENV{"DISABLE_RAR_SCAN"} || $poisoned;	#\
+			$zfilen = $filen;	#\
+		} elsif ($filen =~ /\.zip(\?=)?$/i) {	#\
+			$typ = "ZIP archive";	#\
+			$check_att = 2 unless $ENV{"DISABLE_ZIP_SCAN"} || $poisoned;	#\
+			$zfilen = $filen;	#\
+		} else {	#\
+			$typ = "Office document";	#\
+			$check_att = 1 unless $ENV{"DISABLE_MACRO_CHECK"} || $poisoned;	#\
+		}	#\
+		if (!$poisoned && ($specf = $ENV{"STRIPPED_EXECUTABLES"})) {	#\
+		  if (open(STRIPPED,$specf)) {	#\
+		    warn " Checking $typ \"$fn\" for stripping.\n";	#\
+		    while (chomp($stp_spec = <STRIPPED>)) {	#\
+		      $stp_spec =~ s/^\s+//g;	#\
+		      $stp_spec =~ s/\s.*$//g;	#\
+		      next unless $stp_spec;	#\
+		      $stp_spec =~ s/([^\\])\./$1\\./g;	#\
+		      $stp_spec =~ s/\*/.*/g;	#\
+		      $stp_spec =~ s/\?\?/?./g;	#\
+		      $stp_spec =~ s/([^\(]|^)\?/$1./g;	#\
+		      $stp_spec .= "(\\?=)?\$" unless $stp_spec =~ /\$/;	#\
+		      warn "  Checking against \"$stp_spec\"\n" if $ENV{"DEBUG"};	#\
+		      if ($filen =~ /^${stp_spec}/i) {	#\
+			warn " Stripped $typ \"$fn\".\n";	#\
+			print "Content-Type: TEXT/PLAIN;\n";	#\
+			print "$XCS REPORT: $typ attachment \"$fn\" stripped\n";	#\
+			print "Content-Description: SECURITY NOTICE\n\n";	#\
+			print $ENV{"STRIPPED_WARNING"};	#\
+			print "Filename: $fn\n\n";	#\
+			print "More headers follow:\n\n" unless $pastmsghdr;	#\
+			$_ = $dfrhdr = $hdrtxt = "";	#\
+			$stripped = $strip_att = 1;	#\
+			$check_att = $inmimehdr = 0;	#\
+			last;	#\
+		      }	#\
+		    }	#\
+		    close(STRIPPED);	#\
+		  } else {	#\
+		    warn " ERR: Unable to open strip list \"$specf\".\n";	#\
+		  }	#\
+		}	#\
+		if (!$poisoned && !$stripped && ($specf = $ENV{"POISONED_EXECUTABLES"})) {	#\
+		  if (open(POISONED,$specf)) {	#\
+		    warn " Checking $typ \"$fn\" for poisoning.\n";	#\
+		    while (chomp($psn_spec = <POISONED>)) {	#\
+		      $psn_spec =~ s/^\s+//g;	#\
+		      $psn_spec =~ s/\s.*$//g;	#\
+		      next unless $psn_spec;	#\
+		      $psn_spec =~ s/([^\\])\./$1\\./g;	#\
+		      $psn_spec =~ s/\*/.*/g;	#\
+		      $psn_spec =~ s/\?\?/?./g;	#\
+		      $psn_spec =~ s/([^\(]|^)\?/$1./g;	#\
+		      $psn_spec .= "(\\?=)?\$" unless $psn_spec =~ /\$/;	#\
+		      warn "  Checking against \"$psn_spec\"\n" if $ENV{"DEBUG"};	#\
+		      if ($filen =~ /^${psn_spec}/i) {	#\
+			warn " Trapped poisoned $typ \"$fn\".\n";	#\
+			$poisoned = 1; $check_att = 0;	#\
+			print "Content-Type: TEXT/PLAIN;\n";	#\
+			print "$XCS NOTIFY\n" if $ENV{"SECURITY_NOTIFY"} || $ENV{"SECURITY_NOTIFY_VERBOSE"};	#\
+			print "$XCS REPORT: Trapped poisoned $typ attachment \"$fn\"\n" if $ENV{"SECURITY_NOTIFY"} || $ENV{"SECURITY_NOTIFY_VERBOSE"};	#\
+			print "$XCS QUARANTINE\n" if $ENV{"SECURITY_QUARANTINE"};	#\
+			print "Content-Description: SECURITY WARNING\n\n";	#\
+			print $ENV{"POISONED_WARNING"};	#\
+			print "Scanner score: 0 (poisoned by name, scan skipped)\n\n";	#\
+			last;	#\
+		      }	#\
+		    }	#\
+		    close(POISONED);	#\
+		  } else {	#\
+		    warn " ERR: Unable to open poison list \"$specf\".\n";	#\
+		  }	#\
+		}	#\
+	      }	#\
+	      if (($bndry) = $hdrtxt =~ /^Content-Type:\s+multipart\/.*\s+boundary\s*=\s*"?([^"]+)"?/i) {	#\
+		push @mimebdrs, $mimebdry;	#\
+		push @newbdrs, $newbdry;	#\
+		push @rawbdrs, $rawbdry;	#\
+		push @bdrstoolong, $bdrytoolong;	#\
+		push @gotbdrs, $gotbdry;	#\
+		push @nullbdrs, $nullbdry;	#\
+		$mimebdry = $newbdry = $bndry;	#\
+		$mimebdry = quotemeta($mimebdry);	#\
+		$rcrsmsg = $bdrytoolong = $gotbdry = 0;	#\
+	      }	#\
+	      if ($hdrtxt =~ /^Content-Type:\s+message\/rfc822/i) {	#\
+		if (!$inmimehdr) {	#\
+		  push @mimebdrs, $mimebdry;	#\
+		  push @newbdrs, $newbdry;	#\
+		  push @rawbdrs, $rawbdry;	#\
+		  push @bdrstoolong, $bdrytoolong;	#\
+		  push @gotbdrs, $gotbdry;	#\
+		  push @nullbdrs, $nullbdry;	#\
+		  $mimebdry = $newbdry = "";	#\
+		  $rcrsmsg = $pastmsghdr = $bdrytoolong = $gotbdry = 0;	#\
+		} else {	#\
+		  $rcrsmsg = 1;	#\
+		}	#\
+	      }	#\
+	      if ($ENV{"SECURITY_STRIP_MSTNEF"} && $hdrtxt =~ /^Content-Type:\s+application\/MS-TNEF/i) {	#\
+		print "Content-Type: TEXT/PLAIN;\n";	#\
+		print "$XCS REPORT: Stripped MS-TNEF attachment\n";	#\
+		print "Content-Description: SECURITY NOTICE\n\n";	#\
+		print $ENV{"TNEF_WARNING"};	#\
+		$_ = $dfrhdr = $hdrtxt = "";	#\
+		$strip_att = 1;	#\
+		$inmimehdr = 0;	#\
+	      }	#\
+	      while (($filen) = $hdrtxt =~ /^Content-[-\w]+\s*:.*name\s*=\s*"([^"]*\.($ENV{"MANGLE_EXTENSIONS"})(\?=)?)"/io) {	#\
+		$fn = $filen; $fn =~ s/\s{10,}/ (many spaces) /;	#\
+		$stripped = 0;	#\
+		if (!$poisoned && ($specf = $ENV{"STRIPPED_EXECUTABLES"})) {	#\
+		  if (open(STRIPPED,$specf)) {	#\
+		    warn " Checking \"$fn\" for stripping.\n";	#\
+		    while (chomp($stp_spec = <STRIPPED>)) {	#\
+		      $stp_spec =~ s/^\s+//g;	#\
+		      $stp_spec =~ s/\s.*$//g;	#\
+		      next unless $stp_spec;	#\
+		      $stp_spec =~ s/([^\\])\./$1\\./g;	#\
+		      $stp_spec =~ s/\*/.*/g;	#\
+		      $stp_spec =~ s/\?\?/?./g;	#\
+		      $stp_spec =~ s/([^\(]|^)\?/$1./g;	#\
+		      $stp_spec .= "(\\?=)?\$" unless $stp_spec =~ /\$/;	#\
+		      warn "  Checking against \"$stp_spec\"\n" if $ENV{"DEBUG"};	#\
+		      if ($filen =~ /^${stp_spec}/i) {	#\
+			warn " Stripped executable \"$fn\".\n";	#\
+			print "Content-Type: TEXT/PLAIN;\n";	#\
+			print "$XCS REPORT: Attachment \"$fn\" stripped\n";	#\
+			print "Content-Description: SECURITY NOTICE\n\n";	#\
+			print $ENV{"STRIPPED_WARNING"};	#\
+			print "Filename: $fn\n\n";	#\
+			print "More headers follow:\n\n" unless $pastmsghdr;	#\
+			$_ = $dfrhdr = $hdrtxt = "";	#\
+			$strip_att = $stripped = 1;	#\
+			$inmimehdr = $check_att = 0;	#\
+			last;	#\
+		      }	#\
+		    }	#\
+		    close(STRIPPED);	#\
+		  } else {	#\
+		    warn " ERR: Unable to open stripped-executables file \"$specf\".\n";	#\
+		  }	#\
+		}	#\
+		if (!$poisoned && !$stripped && ($specf = $ENV{"POISONED_EXECUTABLES"})) {	#\
+		  if (open(POISONED,$specf)) {	#\
+		    warn " Checking \"$fn\" for poisoning.\n";	#\
+		    while (chomp($psn_spec = <POISONED>)) {	#\
+		      $psn_spec =~ s/^\s+//g;	#\
+		      $psn_spec =~ s/\s.*$//g;	#\
+		      next unless $psn_spec;	#\
+		      $psn_spec =~ s/([^\\])\./$1\\./g;	#\
+		      $psn_spec =~ s/\*/.*/g;	#\
+		      $psn_spec =~ s/\?\?/?./g;	#\
+		      $psn_spec =~ s/([^\(]|^)\?/$1./g;	#\
+		      $psn_spec .= "(\\?=)?\$" unless $psn_spec =~ /\$/;	#\
+		      warn "  Checking against \"$psn_spec\"\n" if $ENV{"DEBUG"};	#\
+		      if ($filen =~ /^${psn_spec}/i) {	#\
+			warn " Trapped poisoned executable \"$fn\".\n";	#\
+			$poisoned = 1; $check_att = 0; 	#\
+			print "Content-Type: TEXT/PLAIN;\n";	#\
+			print "$XCS NOTIFY\n" if $ENV{"SECURITY_NOTIFY"} || $ENV{"SECURITY_NOTIFY_VERBOSE"};	#\
+			print "$XCS REPORT: Trapped poisoned executable \"$fn\"\n" if $ENV{"SECURITY_NOTIFY"} || $ENV{"SECURITY_NOTIFY_VERBOSE"};	#\
+			print "$XCS QUARANTINE\n" if $ENV{"SECURITY_QUARANTINE"};	#\
+			print "Content-Description: SECURITY WARNING\n\n";	#\
+			print $ENV{"POISONED_WARNING"};	#\
+			last;	#\
+		      }	#\
+		    }	#\
+		    close(POISONED);	#\
+		  } else {	#\
+		    warn " ERR: Unable to open poisoned-executables file \"$specf\".\n";	#\
+		  }	#\
+		}	#\
+		unless ($stripped) {	#\
+		  warn " Mangling executable filename \"$fn\".\n";	#\
+		  $newfilen = $filen; $filen = quotemeta($filen);	#\
+		  $newfilen =~ s/\.([-a-z0-9{}]+(\?=)?)$/.${$}DEFANGED-$1/i;	#\
+		  $hdrtxt =~ s/name\s*=\s*"?${filen}"?/name="$newfilen"/ig;	#\
+		  $mangle_mime_type = 1;	#\
+		}	#\
+	      }	#\
+	      if ($mangle_mime_type && $hdrtxt =~ /^Content-Type:\s/i) {	#\
+		($oct) = $hdrtxt =~ /^Content-Type:.*\s(\S+\/\S+;?)/i;	#\
+		warn " Mangling MIME type \"$oct\".\n";	#\
+		unless ($oct =~ /text\/plain;/i) {	#\
+		  print "$XCS original Content-Type was $oct\n";	#\
+		  $oct = quotemeta($oct);	#\
+		  $hdrtxt =~ s/${oct}/APPLICATION\/DEFANGED;/i;	#\
+		}	#\
+	      }	#\
+	      if ($mangle_mime_type && $hdrtxt =~ /\sx-mac-\S+/i) {	#\
+		$eudora = "";	#\
+		while (($eh) = $hdrtxt =~ /(\sx-mac-\S+\s*=\s*\S+;?)/i) {	#\
+		  $eudora .= $eh;	#\
+		  $eh = quotemeta($eh);	#\
+		  $hdrtxt =~ s/${eh}//i;	#\
+		}	#\
+		print "$XCS removed$eudora\n";	#\
+	      }	#\
+	      if (($junk) = $hdrtxt =~ /^Content-Type\s*:\s+(.{128}).{100,}$/i) {	#\
+		warn " Truncating long Content-Type header.\n";	#\
+		$junk =~ s/"/\\"/g;	#\
+		$hdrtxt = "Content-Type: X-BOGUS\/X-BOGUS; originally=\"$junk...\"";	#\
+	      } elsif (($junk) = $hdrtxt =~ /^Content-Description\s*:\s+(.{128}).{100,}$/i) {	#\
+		warn " Truncating long Content-Description header.\n";	#\
+		$hdrtxt = "Content-Description: $junk...";	#\
+	      } elsif (($junk) = $hdrtxt =~ /^Content-[-\w]+\s*:\s+(.{128}).{100,}$/i) {	#\
+		warn " Truncating long MIME header.\n";	#\
+		$junk =~ s/"/\\"/g;	#\
+		$hdrtxt =~ s/^Content-([-\w]+)\s*:.*$/X-Overflow: Content-$1; originally="$junk..."/i;	#\
+	      }	#\
+	      $hdrtxt =~ s/\\ÿ/\\"/g;	#\
+	      print "$hdrtxt\n" if $hdrtxt;	#\
+	      $hdrtxt = "";	#\
+	      if (!$inmimehdr) {	#\
+		if ($dfrhdr) {	#\
+		  if ($mangle_mime_type && $dfrhdr =~ /^Content-Type:\s/i) {	#\
+		    ($oct) = $dfrhdr =~ /^Content-Type:[^\n]*\s(\S+\/\S+;?)/i;	#\
+		    warn " Mangling MIME type \"$oct\".\n";	#\
+		    unless ($oct =~ /text\/plain;/i) {	#\
+		      print "$XCS original Content-Type was $oct\n";	#\
+		      $oct = quotemeta($oct);	#\
+		      $dfrhdr =~ s/${oct}/APPLICATION\/DEFANGED;/i;	#\
+		    }	#\
+		  }	#\
+		  print $dfrhdr; $dfrhdr = "";	#\
+		}	#\
+		$poisoned = $mangle_mime_type = 0;	#\
+	      }	#\
+	    }	#\
+	    if (/^\S/) {	#\
+	      s/\s*\n$//;	#\
+	      $hdrtxt = $_;	#\
+	      $_ = "";	#\
+	      $hdrcnt++;	#\
+	    } else {	#\
+	      $hdrcnt = 0;	#\
+	      $hdrtxt = "";	#\
+	    }	#\
+	  }	#\
+	}	#\
+      }	#\
+    ' 2>> $LOGFILE
+}
+
+}  # ---- END OF SIGNED/ENCRYPTED SKIP
+
+:0 HB
+* SECURITY_POISON_WINEXE ?? [^ ]
+* !$ ^X-Content-Security: \[${HOST}\] (QUARANTINE|DISCARD)
+* ^Content-Transfer-Encoding[	]*:.*base64
+* 9876543210^0 ^Content-Type[ 	]*:.*(application|multipart)/[^ ]*[ 	]*;
+* 9876543210^0 ^Content-Disposition[ 	]*:.*attachment
+{
+    # not already quarantined
+    # check for Windows executable attachments that were not blocked by name
+    # rules for postfix from <hobbit@avian.org>, adapted to sanitizer
+    # http://archives.neohapsis.com/archives/postfix/2002-04/1841.html
+    # NOT 100% reliable, but will catch the simple case of using
+    # a benign filename and a bogus MIME type, and letting Windows figure out
+    # to execute the attachment directly (vs. opening in a viewer) by its magic
+
+    :0 B D hf
+    * 9876543210^0 ^TV[nopqr]....[AB]..A.A....*AAAA...*AAAA
+    * 9876543210^0 ^[^ 	]*LnJkYXRhAA
+    * 9876543210^0 ^[^ 	]*cmRhdGEAA
+    * 9876543210^0 ^[^ 	]*5yZGF0YQAA
+    * 9876543210^0 ^[^ 	]*LnJlbG9JAA
+    * 9876543210^0 ^[^ 	]*cmVsb2MAA
+    * 9876543210^0 ^[^ 	]*5yZWxvYwAA
+    | formail -A "X-Content-Security: [$HOST] NOTIFY" \
+              -A "X-Content-Security: [$HOST] QUARANTINE" \
+              -A "X-Content-Security: [$HOST] REPORT: Trapped Windows executable attachment"
+}
+
+:0 HB
+* $ ^X-Content-Security: \[${HOST}\] (NOTIFY|QUARANTINE|DISCARD)
+{
+  :0
+  * SECURITY_MSGID_LOG ?? [^ ]
+  { JUNK=`echo "$MSGID" >> $SECURITY_MSGID_LOG` }
+
+  :0 HB
+  * $ ^X-Content-Security: \[${HOST}\] DISCARD
+  {
+    SECURITY_QUARANTINE=/dev/null
+  }
+
+  :0 HB
+  * $ ^X-Content-Security: \[${HOST}\] SPOOFED_SENDER
+  {
+    # don't bother the sender, it's probably forged
+    SECURITY_NOTIFY_SENDER=
+  }
+
+  :0
+  * 9876543210^0 SECURITY_NOTIFY ?? [^ ]
+  * 9876543210^0 SECURITY_NOTIFY_VERBOSE ?? [^ ]
+  {
+    # Notify administration and sender of the attack
+
+    STATUS="STATUS: Message delivered to $TO"
+    STATUS_PUBLIC="STATUS: Message delivered."
+    REPORT="REPORT: No details available."
+    SCORE="REPORT: Not a document, or already poisoned by filename. Not scanned for macros."
+
+    :0
+    * SECURITY_QUARANTINE ?? [^ ]
+    {
+      STATUS="STATUS: Message quarantined in $SECURITY_QUARANTINE, not delivered to recipient."
+      STATUS_PUBLIC="STATUS: Message quarantined, not delivered to recipient."
+    }
+
+    :0 HB
+    * $ ^X-Content-Security: \[${HOST}\] DISCARD
+    {
+      STATUS="STATUS: Message discarded, not delivered to recipient."
+      STATUS_PUBLIC="$STATUS"
+    }
+
+    :0 HB
+    * ^\/Macro Scanner score: [1-9][0-9]+
+    {
+      SCORE="REPORT: $MATCH"
+    }
+
+    :0 HB
+    * $ ^X-Content-Security: \[${HOST}\] REPORT:
+    { REPORT=`grep "^X-Content-Security: \[${HOST}\] REPORT: " | sed -e 's/^.* REPORT:/REPORT:/g'` }
+
+
+    #---------------------------------------------------------------------------
+    # Smart Sender Notify Suppression
+    # If the Return-Path: domain is not supported by any of the Received: domains
+    # then the envelope sender address is probably forged. Don't waste time notifying.
+    #
+    
+    :0
+    *   SECURITY_NOTIFY_SENDER ?? [^ ]
+    *   FROMDOM ?? [^ ]
+    * ! SECURITY_DISABLE_SMART_REPLY ?? [^ ]
+    {
+      FROMDOM2="_"
+      FROMDOM3="_"
+    
+      :0
+      * FROMDOM ?? ^.+\.\/[^.]+\.[^.]+$
+      {
+        FROMDOM2="$MATCH"
+        # ignore some domains (e.g. ac.uk, com.ar, etc.)
+        :0
+        * FROMDOM2 ?? ^(co|ac|com|net|org)\.[a-z][a-z]$
+        {
+          FROMDOM2="_"
+        }
+      }
+    
+      :0
+      * FROMDOM ?? ^.+\.\/[^.]+\.[^.]+\.[^.]+$
+      {
+        FROMDOM3="$MATCH"
+      }
+    
+      # Look for Received: headers that support the sender's claimed domain
+      # Line 1: sendmail, postfix
+      # Line 2: qmail
+      :0 H
+      * $! ^Received: from [^ ]+ \(([^ .]+\.)*($FROMDOM|$FROMDOM3|$FROMDOM2) [^)]+\)+[ 	]+by (${SECURITY_TRUSTED_MTAS:-${HOST}})
+      * $! ^Received: from ([^ .]+\.)*($FROMDOM|$FROMDOM3|$FROMDOM2)[ 	]+\(HELO .*[ 	]+by (${SECURITY_TRUSTED_MTAS:-${HOST}})
+      {
+        REPLY_SUPPRESSED="NOTICE: Envelope sender domain $FROMDOM not supported by trusted Received: path. Suppressing sender notification.${NL}"
+        LOG=" $REPLY_SUPPRESSED"
+        SECURITY_NOTIFY_SENDER=
+      }
+    
+      # Did a mailing list rewrite the Return-Path header?
+      :0E
+      * -1^0
+      * 1^0 ^Precedence: (bulk|junk|list)
+      * 1^0 ^(List-Id|X-Mailing-List):
+      * 9876543210^0 FROM ?? \<owner-
+      * 9876543210^0 FROM ?? \<[^@ >]+-l-admin@
+      {
+        REPLY_SUPPRESSED="NOTICE: Message from mailing list. Suppressing sender notification.${NL}"
+        LOG=" $REPLY_SUPPRESSED"
+        SECURITY_NOTIFY_SENDER=
+      }
+    }
+    #---------------------------------------------------------------------------
+
+    :0 HB
+    * !$ ^X-Content-Security: \[${HOST}\] NONOTIFY
+    {
+       :0
+       * SECURITY_NOTIFY ?? [^ ]
+       * !$ ^X-Loop: EMAIL SECURITY WARNING $HOST $SECRET
+       {
+	 LOG="${NL} NOTIFY ADMIN ($SECURITY_NOTIFY)${NL}"
+   
+	 :0 h ci
+	 | ( \
+	     echo "To: $SECURITY_NOTIFY";\
+             echo 'From: "Procmail Security daemon"' "<${SECURITY_LOCAL_POSTMASTER}>";\
+	     echo 'Subject: SECURITY WARNING - possible email attack';\
+	     echo "X-Loop: EMAIL SECURITY WARNING $HOST $SECRET"; \
+	     echo ;\
+	     echo "\$Revision: 1.151 $";\
+	     echo ;\
+	     echo "$REPORT";\
+	     echo "$SCORE";\
+	     echo "$STATUS";\
+	     echo "$REPLY_SUPPRESSED";\
+	     echo ;\
+	     echo 'Headers from message:';\
+	     echo ;\
+	     sed -e 's/^/> /' ;\
+	   ) | $SENDMAIL $MTA_FLAGS_CMDLN $SECURITY_NOTIFY
+       }
+   
+       :0
+       * SECURITY_NOTIFY_VERBOSE ?? [^ ]
+       * !$ ^X-Loop: EMAIL SECURITY WARNING $HOST $SECRET
+       {
+	 LOG="${NL} NOTIFY ADMIN VERBOSE ($SECURITY_NOTIFY_VERBOSE)${NL}"
+   
+	 :0 hb ci
+	 | ( \
+	     echo "To: $SECURITY_NOTIFY_VERBOSE";\
+             echo 'From: "Procmail Security daemon"' "<${SECURITY_LOCAL_POSTMASTER}>";\
+	     echo 'Subject: SECURITY WARNING - possible email attack';\
+	     echo "X-Loop: EMAIL SECURITY WARNING $HOST $SECRET"; \
+	     echo ;\
+	     echo "$REPORT";\
+	     echo "$SCORE";\
+	     echo "$STATUS";\
+	     echo "$REPLY_SUPPRESSED";\
+	     echo ;\
+	     echo 'Message:';\
+	     echo ;\
+	     sed -e 's/^/> /' ;\
+	   ) | $SENDMAIL $MTA_FLAGS_CMDLN $SECURITY_NOTIFY_VERBOSE
+       }
+    }
+   
+    :0 H
+    * SECURITY_NOTIFY_SENDER ?? [^ ]
+    * !  ^FROM_DAEMON
+    * !$ ^X-Loop: EMAIL SECURITY WARNING $HOST $SECRET
+    {
+      LOG="${NL} NOTIFY SENDER${NL}"
+      PM_BCC="X-Placeholder:"
+      PM_CC="X-Placeholder:"
+
+      :0 HB
+      * !$ ^X-Content-Security: \[${HOST}\] NONOTIFY
+      {
+          PM_BCC="Bcc: $SECURITY_NOTIFY"
+      }
+
+      :0
+      * SECURITY_NOTIFY_SENDER_POSTMASTER ?? [^ ]
+      * FROMDOM ?? [^ ]
+      {
+          PM_CC="postmaster@$FROMDOM"
+          
+	  :0
+	  * SECURITY_NOTIFY_SENDER_ABUSE ?? [^ ]
+	  {
+	    PM_CC="$PM_CC>, <abuse@$FROMDOM"
+	  }
+
+          PM_CC="Cc: <$PM_CC>"
+      }
+
+      MSG_HEADERS=`sed -e '/^$/q; s/^/> /'`
+
+      :0 h ci
+      | ( \
+          formail -r \
+                  -I "From: \"Procmail Security daemon\" <${SECURITY_LOCAL_POSTMASTER}>"\
+                  -I "$PM_BCC" -I "$PM_CC" -I "References: $MSGID" \
+		  -I "Sender: <${SECURITY_LOCAL_POSTMASTER}>" \
+		  -I "Errors-To: <${SECURITY_LOCAL_POSTMASTER}>" \
+                  -I "X-Loop: EMAIL SECURITY WARNING $HOST $SECRET" \
+		  -I "$OVERRIDEFORMAIL" \
+          ;\
+          echo ;\
+          if [ -f "$SECURITY_NOTIFY_SENDER" -a -s "$SECURITY_NOTIFY_SENDER" -a -r "$SECURITY_NOTIFY_SENDER" ] ;\
+          then \
+                echo 'Regarding your message to';\
+                echo "$TO";\
+                echo ;\
+                cat $SECURITY_NOTIFY_SENDER; \
+          else \
+                echo '*** SECURITY WARNING ***';\
+                echo 'Our email gateway has detected that your message to';\
+                echo "$TO";\
+                echo 'MAY contain hazardous embedded scripting or attachments,';\
+                echo 'or has been rejected by our site security policy for some other reason.';\
+                echo 'If you have a question, please reply to this notification message.';\
+                echo ;\
+                echo 'It is POSSIBLE that your message was infected by a virus.';\
+                echo 'You should make sure your virus signature file';\
+                echo 'is up-to-date and then rescan your computer,';\
+                echo 'especially if you do not remember sending this message.';\
+                echo ;\
+                echo 'If the macro scanner score is large yet your virus scanner reports';\
+                echo 'that the document is not infected, try saving it using a different';\
+                echo 'format (such as Rich Text - "RTF") that will remove all macros.';\
+          fi ;\
+          echo ;\
+          echo "$REPORT";\
+          echo "$SCORE";\
+          echo "$STATUS_PUBLIC";\
+          echo ;\
+          echo 'Headers from message:';\
+          echo ;\
+          echo "$MSG_HEADERS";\
+          echo ;\
+          echo ;\
+          echo '--';\
+          echo 'Message sanitized on' $HOST;\
+          echo 'See http://www.impsec.org/email-tools/sanitizer-intro.html for details.';\
+          echo ;\
+        ) | $SENDMAIL $MTA_FLAGS_HDRS
+
+    }
+  }
+
+  :0
+  * SECURITY_QUARANTINE ?? [^ ]
+  {
+    :0
+    * SECURITY_NOTIFY_RECIPIENT ?? [^ ]
+    {
+      LOG="${NL} NOTIFY RECIPIENT${NL}"
+
+      # We could stuff this directly into $DEFAULT but then
+      # we'd have to worry about generating Message-ID and Date headers
+      # and it wouldn't work on a relay...
+      :0 h ci
+      | ( \
+          echo "To: $TO";\
+          echo 'From: "Procmail Security daemon"' "<${SECURITY_LOCAL_POSTMASTER}>";\
+	  if [ "$SECURITY_QUARANTINE" = "/dev/null" ] ;\
+          then \
+		  echo 'Subject: SECURITY WARNING - email discarded';\
+          else \
+		  echo 'Subject: SECURITY WARNING - email quarantined';\
+          fi ;\
+          echo ;\
+          if [ -f "$SECURITY_NOTIFY_RECIPIENT" -a -s "$SECURITY_NOTIFY_RECIPIENT" -a -r "$SECURITY_NOTIFY_RECIPIENT" ] ;\
+          then \
+                cat $SECURITY_NOTIFY_RECIPIENT; \
+          else \
+                echo '*** SECURITY WARNING ***';\
+                echo 'Our email gateway has detected that a message sent to you';\
+                echo 'MAY contain hazardous embedded scripting or attachments.';\
+                echo 'The message has been quarantined or discarded per our site security policy.';\
+                echo 'Please contact your system administrator for further details.';\
+                echo ;\
+          fi ;\
+          echo ;\
+          echo "$REPORT";\
+          echo "$SCORE";\
+          echo "$STATUS_PUBLIC";\
+          echo ;\
+          echo 'Headers from message:';\
+          echo ;\
+          sed -e 's/^/> /' ;\
+          echo ;\
+          echo '--';\
+          echo 'Message sanitized on' $HOST;\
+          echo 'See http://www.impsec.org/email-tools/sanitizer-intro.html for details.';\
+          echo ;\
+        ) | $SENDMAIL $MTA_FLAGS_HDRS
+
+    }
+
+    :0 :${SECURITY_QUARANTINE_LOCKFILE}
+    $SECURITY_QUARANTINE
+
+    :0 e
+    * ! SECURITY_QUARANTINE_OPTIONAL ?? [^ ]
+    {
+      # Argh! Quarantine failed, and not explicitly marked as optional!
+      # Bounce message, and notify administrator
+      LOG="${NL} ERR: QUARANTINE FAILED!${NL}"
+      EXITCODE=65
+
+      :0 h
+      * SECURITY_NOTIFY ?? [^ ]
+      * !$ ^X-Loop: EMAIL SECURITY WARNING $HOST $SECRET
+      | ( \
+          echo "To: $SECURITY_NOTIFY";\
+          echo 'From: "Procmail Security daemon"' "<${SECURITY_LOCAL_POSTMASTER}>";\
+          echo 'Subject: SECURITY WARNING - quarantine failed!';\
+          echo "X-Loop: EMAIL SECURITY WARNING $HOST $SECRET"; \
+          echo ;\
+          echo 'Attempt to quarantine the following message in $SECURITY_QUARANTINE failed.';\
+          echo 'Message has been bounced.';\
+          echo 'Verify file access permissions (file must be writable):';\
+          ls -l $SECURITY_QUARANTINE ;\
+          echo ;\
+          echo "$REPORT";\
+          echo "$SCORE";\
+          echo ;\
+          echo 'Headers from message:';\
+          echo ;\
+          sed -e 's/^/> /' ;\
+        ) | $SENDMAIL $MTA_FLAGS_CMDLN $SECURITY_NOTIFY
+
+      # zap it, just in case
+      :0
+      /dev/null
+    }
+  }
+}
+
+#eof

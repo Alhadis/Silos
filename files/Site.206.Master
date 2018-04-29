@@ -1,0 +1,480 @@
+﻿<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="Site.master.cs" Inherits="SMAC.SiteMaster" %>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>SMAC - Student Management And Collaboration</title>
+
+    <script src="//code.jquery.com/jquery-2.1.3.min.js" ></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <script src="Scripts/bootbox.min.js"></script>
+    <script src="Scripts/jquery.maskedinput.min.js" type="text/javascript"></script>
+    <script src="//code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery-ui-timepicker-addon/1.4.5/jquery-ui-timepicker-addon.min.js"></script>
+    <script src="Scripts/Common.js" ></script>
+
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css" />
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jquery-ui-timepicker-addon/1.4.5/jquery-ui-timepicker-addon.min.css" />
+    <link href="/Content/Site.less" rel="stylesheet" /> 
+</head>
+<body>
+    <script id="control-template" type="text/control-template">
+        <div class="ctrlPanel">
+            <div class="ctrlValRow">
+                <span class="oneCol">Your user ID: <span id="userid"></span></span>
+            </div>
+            <div class="ctrlLblRow">
+                <span class="triCol">First Name:</span><span class="triCol">Middle Name:</span><span class="triCol">Last Name:</span>
+            </div> 
+            <div class="ctrlValRow">
+                <span class="triCol"><input type="text" id="fName" /></span>
+                <span class="triCol"><input type="text" id="mName" /></span>
+                <span class="triCol"><input type="text" id="lName" /></span>
+            </div>
+            <div class="ctrlEmailHead">
+                <span class="oneCol">Email Address:</span>
+            </div>
+            <div class="ctrlEmailRow">
+                <span class="oneCol"><input type="text" id="email" /></span>
+            </div>
+            <div class="ctrlLblRow">
+                <span class="triCol">Phone Number:</span>
+                <span class="triCol">Gender:</span>
+                <span class="triCol">User Name:</span>
+            </div>
+            <div class="ctrlValRow">
+                <span class="triCol"><input type="text" id="phone" /></span>
+                <span class="triCol"><select id="gender"></select></span>
+                <span class="triCol"><input type="text" id="uName" /></span>
+            </div>
+            <div class="ctrlChkRow">
+                <span><input id="passChng" type="checkbox" /><label for="passChng" >Click to change password</span>
+            </div>
+            <div class="ctrlLblRow">
+                <span class="triCol">Current Password:</span>
+                <span class="triCol">New Password:</span>
+                <span class="triCol">Confirm Password:</span>
+            </div>
+            <div class="ctrlValRow">
+                <span class="triCol"><input type="password" id="curPass" disabled="disabled" /></span>
+                <span class="triCol"><input type="password" id="newPass" disabled="disabled" /></span>
+                <span class="triCol"><input type="password" id="confirmPass" disabled="disabled" /></span>
+            </div>
+        </div>
+    </script>
+    <asp:ContentPlaceHolder ID="ScriptContent" runat="server" />
+    <div class="mainContent">
+        <div class="contentContainer">
+            <div id="schoolBanner" runat="server" visible="false" class="banner master"></div>
+            <div class="mainHeader">
+                <div class="headerRow">
+                    <div class="headerOption welcome"><span id="greeting"></span></div>
+                    <div class="btn btn-info headerOption small" id="home"><i class="fa fa-home right"></i><span>Home</span></div>
+                    <div class="btn btn-info headerOption small" id="controlPanel"><i class="fa fa-cogs right"></i><span>Control Panel</span></div>
+                    <div class="btn btn-info headerOption small" id="logout"><span>Log Out</span><i class="fa fa-sign-out left"></i></div>
+                </div>
+                <div class="headerRow">
+                    <div class="btn btn-info headerOption" id="messages"><i class="fa fa-comment right"></i><span>Messages</span></div>
+                    <div class="btn btn-info headerOption" id="clubs"><i class="fa fa-camera right"></i><span>Clubs</span></div>
+                    <div class="btn btn-info headerOption" id="classes"><i class="fa fa-bed right"></i><span>Classes</span></div>
+                    <div class="btn btn-info headerOption" id="grades"><i class="fa fa-list-alt right"></i><span>Grades</span></div>
+                </div>
+            </div>
+            <form runat="server">
+                <div class="mainBody">
+                    <div id="breadCrumbs"></div>
+                    <asp:ContentPlaceHolder ID="MainContent" runat="server" />
+                </div>
+                <asp:HiddenField runat="server" ID="userRole" ClientIDMode="Static" />
+                <asp:HiddenField runat="server" ID="newMessages" ClientIDMode="Static" />
+            </form>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            var fName = '<%= Session["FirstName"] %>'
+            var lName = '<%= Session["LastName"] %>'
+
+            SetClickHandlers();
+            
+            $('#greeting').text('Welcome back, ' + fName + ' ' + lName + '!');
+
+            if (window.location.href.indexOf("Home") > -1) {
+                $('#home').addClass('active');
+                $('#home').off('click');
+            }
+            else if (window.location.href.indexOf("Grades") > -1) {
+                $('#grades').addClass('active');
+                $('#grades').off('click');
+            }
+            else if (window.location.href.indexOf("Clubs") > -1) {
+                $('#clubs').addClass('active');
+                $('#clubs').off('click');
+            }
+            else if ((window.location.href.indexOf("Messages") > -1) ||
+                (window.location.href.indexOf("NewMessage") > -1)){
+                $('#messages').addClass('active');
+                $('#messages').off('click');
+            }
+            else if ((window.location.href.indexOf("Classes") > -1)||
+                (window.location.href.indexOf("Thread") > -1)) {
+                $('#classes').addClass('active');
+                $('#classes').off('click');
+            }
+            else if ((window.location.href.indexOf("Admin") > -1)) {
+                // using grades as admin replacement
+                $('#classes').addClass('active');
+                $('#classes').off('click');
+            }
+            else if (window.location.href.indexOf("SchoolSelection")) {
+                $('#classes').addClass('active');
+                $('#messages').addClass('active');
+                $('#clubs').addClass('active');
+                $('#home').addClass('active');
+                $('#grades').addClass('active');
+
+                $('#classes').off('click');
+                $('#messages').off('click');
+                $('#clubs').off('click');
+                $('#home').off('click');
+                $('#grades').off('click');
+            }
+
+            if ($('#userRole').val() == 'Staff') {
+                $('#classes').attr('disabled', 'disabled');
+                $('#classes').addClass('invalid');
+                $('#classes').off('click');
+
+                $('#classes span').text('');
+                $('#classes span').html('&nbsp;')
+                $('#classes i').removeClass('fa').removeClass('fa-bed');
+
+                $('#grades').attr('disabled', 'disabled');
+                $('#grades').off('click');
+                $('#grades').addClass('invalid');
+
+                $('#grades span').text('');
+                $('#grades span').html('&nbsp;')
+                $('#grades i').removeClass('fa').removeClass('fa-list-alt');
+            }
+            else if ($('#userRole').val() == 'Admin') {
+                $('#grades').attr('disabled', 'disabled');
+                $('#grades').addClass('invalid');
+                $('#grades').off('click');
+
+                $('#grades span').text('');
+                $('#grades span').html('&nbsp;')
+                $('#grades i').removeClass('fa').removeClass('fa-list-alt');
+
+                //Replace classes with admin
+                $('#classes span').text('Administration');
+                $('#classes i').removeClass('fa-bed').addClass('fa fa-star');
+
+                $('#classes').off('click');
+                $('#classes').on('click', function () {
+                    if (window.location.href.indexOf("Admin") == -1) {
+                        window.location.href = '/Admin.aspx';
+                    }
+                });
+            }
+
+            if ($('#newMessages').val() > 0) {
+                $('#messages').removeClass('btn-info').addClass('btn-warning');
+                $('#messages span').append(' (' + $('#newMessages').val() + ')');
+            }
+
+            GenerateBreadCrumbs();
+        });
+
+        function GenerateBreadCrumbs() {
+            var bc = $('#breadCrumbs');
+
+            if (window.location.href.indexOf("Grades") > -1) {
+                var home = $('<a>').addClass('crumb').text('Home').attr('href', '/Home.aspx');
+                var crumb = $('<span>').addClass('crumb').text('Grades');
+
+                bc.append(home).append(' > ').append(crumb);
+            }
+            else if (window.location.href.indexOf("Messages") > -1) {
+                var home = $('<a>').addClass('crumb').text('Home').attr('href', '/Home.aspx');
+
+                if (getParameterByName('msgId') != '') {
+                    var crumb = $('<a>').addClass('crumb').text('Messages').attr('href', '/Messages.aspx');
+                    bc.append(home).append(' > ').append(crumb);
+                }
+                else {
+                    var crumb = $('<span>').addClass('crumb').text('Messages');
+                    bc.append(home).append(' > ').append(crumb);
+                }
+            }
+            else if (window.location.href.indexOf("NewMessage") > -1) {
+                var home = $('<a>').addClass('crumb').text('Home').attr('href', '/Home.aspx');
+                var msg = $('<a>').addClass('crumb').text('Messages').attr('href', '/Messages.aspx');
+                var crumb = $('<span>').addClass('crumb').text('New Message');
+
+                bc.append(home).append(' > ').append(msg).append(' > ').append(crumb);
+            }
+            else if (window.location.href.indexOf("Clubs") > -1) {
+                var home = $('<a>').addClass('crumb').text('Home').attr('href', '/Home.aspx');
+                var crumb = $('<span>').addClass('crumb').text('Clubs');
+
+                bc.append(home).append(' > ').append(crumb);
+            }
+            else if (window.location.href.indexOf("Classes") > -1) {
+                var home = $('<a>').addClass('crumb').text('Home').attr('href', '/Home.aspx');
+                var crumb = $('<span>').addClass('crumb').text('Classes');
+
+                bc.append(home).append(' > ').append(crumb);
+            }
+            else if (window.location.href.indexOf("Threads") > -1) {
+                var home = $('<a>').addClass('crumb').text('Home').attr('href', '/Home.aspx');
+                var cls = $('<a>').addClass('crumb').text('Classes').attr('href', '/Classes.aspx');
+
+                var secId = getParameterByName('secId');
+                var threadId = getParameterByName('threadId');
+
+                if (threadId != '') {
+                    var crumb = $('<a>').addClass('crumb').text('Threads').attr('href', '/Threads.aspx?secId=' + secId);
+                    bc.append(home).append(' > ').append(cls).append(' > ').append(crumb);
+                }
+                else {
+                    var crumb = $('<span>').addClass('crumb').text('Threads');
+                    bc.append(home).append(' > ').append(cls).append(' > ').append(crumb);
+                }
+            }
+            else if (window.location.href.indexOf("NewThread") > -1) {
+                var home = $('<a>').addClass('crumb').text('Home').attr('href', '/Home.aspx');
+                var cls = $('<a>').addClass('crumb').text('Classes').attr('href', '/Classes.aspx');
+
+                var secId = getParameterByName('secId');
+
+                var thread = $('<a>').addClass('crumb').text('Threads').attr('href', '/Threads.aspx?secId=' + secId);
+                var crumb = $('<span>').addClass('crumb').text('New Thread');
+                bc.append(home).append(' > ').append(cls).append(' > ').append(thread).append(' > ').append(crumb);
+            }
+            else if (window.location.href.indexOf("Admin") > -1) {
+                var home = $('<a>').addClass('crumb').text('Home').attr('href', '/Home.aspx');
+                var crumb = $('<span>').addClass('crumb').text('Administration');
+
+                bc.append(home).append(' > ').append(crumb);
+            }
+        }
+
+        function ValidateData() {
+            var valid = true;
+
+            var firstName = $('#fName');
+            var lastName = $('#lName');
+            var userName = $('#uName');
+
+            var curPass = $('#curPass');
+            var newPass = $('#newPass');
+            var confirmPass = $('#confirmPass');
+
+            if (!ValidateField(firstName)) {
+                valid = false;
+            }
+
+            if (!ValidateField(lastName)) {
+                valid = false;
+            }
+
+            if (!ValidateField(userName)) {
+                valid = false;
+            }
+
+            var foo = $('#curPass').attr('disabled');
+
+            if (foo != 'disabled') {
+                if (!ValidateField(curPass)) {
+                    valid = false;
+                }
+
+                if (!ValidatePasswords(newPass, confirmPass)) {
+                    valid = false;
+                }
+            }
+
+            return valid;
+        }
+
+        function ValidatePasswords(field1, field2) {
+            if (field1.val() != field2.val()) {
+                field1.addClass('invalidField');
+                field2.addClass('invalidField');
+
+                return false;
+            } else {
+                return ValidateField(field1) & ValidateField(field2);
+            }
+        }
+
+        function ValidateField(field) {
+            if (field.val() == '') {
+                field.addClass('invalidField');
+                return false;
+            }
+            else {
+                field.removeClass('invalidField');
+                return true;
+            }
+        }
+
+        function DisplayResult(res) {
+            bootbox.alert(res, function () {
+                controlPanelDialog.modal('hide');
+                window.location.reload();
+            })
+        }
+
+        var controlPanelDialog;
+
+        $('#controlPanel').on('click', function () {
+
+            controlPanelDialog = bootbox.dialog({
+                title: "User Control Panel",
+                message: PopulateTemplate(),
+                buttons: {
+                    save: {
+                        label: 'Save',
+                        className: 'btn btn-success',
+                        callback: function () {
+                            if (ValidateData()) {
+
+                                var userid = '<%= Session["UserId"] %>'
+
+                                $.ajax({
+                                    type: "POST",
+                                    url: "Services.asmx/UpdateUserInfo",
+                                    data: "{'userId': '" + userid + "'," +
+                                        " 'fName': '" + $('#fName').val() + "'," +
+                                        " 'mName': '" + $('#mName').val() + "'," +
+                                        " 'lName': '" + $('#lName').val() + "'," +
+                                        " 'email': '" + $('#email').val() + "'," +
+                                        " 'phone': '" + $('#phone').val() + "'," +
+                                        " 'gender': '" + $('#gender option:selected').text() + "'," +
+                                        " 'uName': '" + $('#uName').val() + "'," +
+                                        " 'cPass': '" + $('#curPass').val() + "'," +
+                                        " 'nPass': '" + $('#newPass').val() + "'}",
+                                    contentType: "application/json; charset=UTF-8",
+                                    success: function (data) {
+                                        //Populate news info in block
+                                        var result = JSON.parse(data.d);
+
+                                        DisplayResult(result);
+                                    }
+                                });
+                            }
+
+                            return false;
+                        }
+                    },
+                    cancel: {
+                        label: 'Cancel',
+                        className: 'btn btn-danger',
+                        callback: function () {
+                            return true;
+                        }
+                    }
+                }
+            });
+        });
+        
+        function SetClickHandlers() {
+            $('#home').on('click', function () {
+                if (window.location.href.indexOf("Home") == -1) {
+                    window.location.href = '/Home.aspx';
+                }
+            });
+            $('#logout').on('click', function () {
+                $.ajax({
+                    type: "POST",
+                    url: "Services.asmx/LogOut",
+                    data: {},
+                    success: function () {
+                        window.location.href = "/";
+                    }
+                });
+            });
+            $('#messages').on('click', function () {
+                if (window.location.href.indexOf("Messages") == -1) {
+                    window.location.href = '/Messages.aspx';
+                }
+            });
+            $('#grades').on('click', function () {
+                if (window.location.href.indexOf("Grades") == -1) {
+                    window.location.href = '/Grades.aspx';
+                }
+            });
+            $('#classes').on('click', function () {
+                if (window.location.href.indexOf("Classes") == -1) {
+                    window.location.href = '/Classes.aspx';
+                }
+            });
+            $('#clubs').on('click', function () {
+                if (window.location.href.indexOf("Clubs") == -1) {
+                    window.location.href = '/Clubs.aspx';
+                }
+            });
+        }
+
+        function OnPassClick() {
+            var foo = $('#curPass').attr('disabled');
+
+            $('#curPass').val('');
+            $('#newPass').val('');
+            $('#confirmPass').val('');
+
+            $('#curPass').removeClass('invalidField');
+            $('#newPass').removeClass('invalidField');
+            $('#confirmPass').removeClass('invalidField');
+
+            if (foo == 'disabled') {
+                $('#curPass').removeAttr('disabled');
+                $('#newPass').removeAttr('disabled');
+                $('#confirmPass').removeAttr('disabled');
+            }
+            else {
+                $('#curPass').attr('disabled', 'disabled');
+                $('#newPass').attr('disabled', 'disabled');
+                $('#confirmPass').attr('disabled', 'disabled');
+            }
+        }
+
+        function PopulateTemplate() {
+            var tmpl = $($('#control-template').html());
+
+            $(tmpl.find('#fName')).val('<%= Session["FirstName"] %>');
+            $(tmpl.find('#mName')).val('<%= Session["MiddleName"] %>');
+            $(tmpl.find('#lName')).val('<%= Session["LastName"] %>');
+            $(tmpl.find('#email')).val('<%= Session["Email"] %>');
+            $(tmpl.find('#phone')).val('<%= Session["PhoneNumber"] %>');
+            $(tmpl.find('#uName')).val('<%= Session["UserName"] %>');
+            $(tmpl.find('#userid')).text('<%= Session["UserId"] %>');
+
+            var gender = '<%= Session["Gender"] %>';
+
+            var genders = '<%= Session["Genders"] %>'.split(':');
+
+            var genderList = $(tmpl.find('#gender'))
+
+            $.each(genders, function (i, el) {
+                if (el == gender) {
+                    genderList.append('<option value=' + el + ' selected="selected">' + el + '</option>');
+                }
+                else {
+                    genderList.append('<option value=' + el + '>' + el + '</option>');
+                }
+            });
+
+            $(tmpl.find('#passChng')).on('click', OnPassClick);
+            $(tmpl.find('#phone')).mask("(999) 999-9999");
+
+            return tmpl;
+        }
+    </script>
+</body>
+</html>
