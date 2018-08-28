@@ -1,0 +1,167 @@
+INIT MASTER(S)
+$ NASTRAN SYSTEM(151)=1,NLINES=9999999
+$ mAEWing1 FEM history - Virginia Tech
+$ -- FEB, 27 2015
+$  v1.0: Mimic mAEWing1 CAD model for mAEWing1 finite element model, all data are from spar build 
+$       and test report and CAD model
+$		Increase GJ for the spar to take into account of the foam torsional stiffness;
+$       Assume point mass distribution and values in the fuselage based on 
+$		BFF report (www.paaw.net) and paper (AIAA 2015-0903)
+$       Assume stiffness value for stiffened spar to match modal frequencies with BFF's
+$ -- April, 10 2015
+$  v1.1: 1) Add spring elements that connect the control surfaces/body flaps to the main wing, 
+$			CBUSH element was used, stiffness values are
+$          given in the PBUSH card, the values are 10^6 now, 
+$			which are subjected to change to reflect the real connection of mAEWing1.  
+$        2) Change the point mass locations for C.S and B.F, so that the line between
+$			 the servos and CS/BF is perpendicular to the EA to reflect
+$          the real connection as shown in X56A model
+$        3) Consider the mass moment of inertia of the foam mass in the outer wing 
+$			section which has 3 flaps, CMASS2 card was used
+$ -- May 26, 2016
+$         1): Remove the grid start from 888xxx in the FEM for aeroelastic spline, becuase the
+$           GVT accelerometers are used now. see Spline4_mAEWing1_updated.dat
+$ -- FEM updates following the files in sol103xxx.bdf
+SOL 144
+CEND
+$ Direct Text Input for Global Case Control Data
+TITLE = MSC.Nastran job created on 20-Feb-15 at 15:37:03
+ECHO = SORT
+  DISP    = ALL   $ PRINT ALL DISPLACEMENTS
+  STRESS  = ALL $ PRINT ALL STRESSES
+  FORCE   = ALL $ PRINT ALL FORCES
+  AEROF   = ALL $ PRINT ALL AERODYNAMIC FORCES
+  APRES   = ALL $ PRINT ALL AERODYNAMIC PRESSURES
+  SET 100 = 1 thru 20
+$ Using Nastran default values for RESVEC
+SUBCASE 1
+$ Subcase name : Default
+   SUBTITLE=Default
+   TRIM = 101
+   $TRIMF= ALL
+   SPC = 200
+   load = 10
+   trimf(loadset=10,applied,air,rigid) = ALL
+
+$   DISP = ALL
+ $   VECTOR(SORT1,REAL)=ALL
+ $  SPCFORCES(SORT1,REAL)=ALL
+  $ DISP(PUNCH)=ALL
+BEGIN BULK
+$ Direct Text Input for Bulk Data
+param    opphipa       0
+$
+PARAM       POST       0
+$PARAM     PATVER      3.
+$PARAM      INREL       0
+$PARAM     ALTRED      NO
+PARAM   COUPMASS      1
+$PARAM      K6ROT    100.
+$ PRE_PROPVERT WEIGHT TO MASS (1/386)  
+PARAM     WTMASS .002591
+PARAM     AUNITS .002591
+PARAM   PRTMAXIM     YES
+$PARAM    AUTOSPC     YES
+$PARAM    NOCOMPS      -1
+$PARAM       TINY     1.0
+$PARAM     RESVEC      NO
+$ GROUND POINT FOR WEIGHT GENERATION
+PARAM,GRDPNT,18888
+$ PRE_PROPVERT FROM IN/SEC TO KNOTS
+$PARAM       VREF  20.254
+$EIGRL    100                     20      0
+$EIGR     101    MGIV                            20
+$         MASS
+$TABDMP1	2000
+$	0.0	.00	1000.	.00  	ENDT
+$1------$2------$3------$4------$5------$6------$7------$8------$9------$0  
+grav    10              386.    0.      0.      -1.
+$                           
+$ grid coordinates
+INCLUDE GRID_mAEWing1.dat
+INCLUDE WS3_spar_full.dat
+$ beam connections and properties
+INCLUDE BEAM_mAEWing1_updated_asymmetric.dat
+$ material properteis
+$ INCLUDE MAT1_mAEWing1.dat; move to beam_xx.dat
+$ point masses
+INCLUDE CONM2_mAEWing1_updated.dat
+$ rigid connections
+INCLUDE RBE2_mAEWing1.dat
+$ spring connections
+INCLUDE Spring_mAEWing1.dat
+$ GVT accels
+INCLUDE gvt_accelerations.dat
+$
+$
+$ Fictitious support at the CG for decoupled rigid modes 
+SUPORT,18888,35
+SPC1,200,1246,18888
+
+$
+$1------$2------$3------$4------$5------$6------$7------$8------$9------$0
+$SPC1    99      345     1001    3001    THRU    3006 
+$
+$ Referenced Coordinate Frames for control surfaces and body flaps
+$1------$2------$3------$4------$5------$6------$7------$8------$9------$0
+$ --- Left body flap ---
+CORD2R  101             13.64   -1.16   0.0     13.64    -1.16  1.0
+        17.34   -2.75   0.0   
+$ --- Left C.S.  ---
+CORD2R  102             9.753   -16.016 0.0     9.753   -16.016 1.0
+        12.34   -14.97  1.0 
+$ --- Right body flap ---
+CORD2R  201             13.64    1.16   0.0     13.64    1.16   1.0
+        17.34   2.75    0.0
+$ --- Right C.S.  ---
+CORD2R  202             9.753    16.016 0.0     9.753    16.016 1.0
+        12.34    14.97  1.0		
+$
+$
+$1------$2------$3------$4------$5------$6------$7------$8------$9------$0
+CORD2R  18888           8.20      0.0   0.00    8.20     0.0    1.00
+        9.20     0.0    0.50		
+$============================================================================
+$                           DATA
+$===========================================================================
+$1------$2------$3------$4------$5------$6------$7------$8------$9------$0
+$       ACSID   velo    REFC    rhoref  SYMXZ   SYMXY
+$ AERO    0               15.6    1.1468-7  
+$       ACSID   RCSID   REFC    REFB    REFS    SYMXZ   SYMXY
+AEROS   18888   18888   15.744  120.    1681.78  
+$
+INCLUDE mAEWing1_CAERO_v2.DAT
+$INCLUDE mAEWing1_SPLINE4_v2.dat
+INCLUDE spline4_updated.dat
+INCLUDE mAEWing1_AESURF.dat
+$====================================================
+$                   TRIM VARIABLES
+$====================================================
+$$$$ --------  BODY RIGID TRIM VARIABLES ------------
+AESTAT  501     ANGLEA
+$AESTAT  502     PITCH
+AESTAT  503     URDD3
+$AESTAT  504     URDD5
+$ AESTAT  511     SIDES
+$ AESTAT  512     YAW
+$ AESTAT  513     ROLL
+$ AESTAT  514     URDD2
+$ AESTAT  515     URDD4
+$ AESTAT  516     URDD6
+
+$
+$====================================================
+$                   TRIM ANALYSIS
+$====================================================
+$1......2.......3.......4.......5.......6.......7.......8.......9.......0
+AELINK, ALWAYS, FLAPR4,  FLAPL4, -1.0
+AELINK, ALWAYS, FLAPR3,  FLAPL3, -1.0
+AELINK, ALWAYS, FLAPR2,  FLAPL2, -1.0
+AELINK, ALWAYS, FLAPR1,  FLAPL1, -1.0
+$ ---- 1G LOAD or others loads ----
+TRIM ,   101 , 0.07  ,0.047 ,  URDD3,0.0     , FLAPL1  ,0.    , 1. ,  +TR1A
++TR1A,   FLAPL2  ,0.  ,FLAPL4 ,0.  ,         
+MONCNCM ALL     ALL STRIPS
+                all
+ENDDATA d2dbc08c
+$
