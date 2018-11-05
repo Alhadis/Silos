@@ -1,0 +1,734 @@
+'\" te
+.\" Copyright (c) 2007, 2014, Oracle and/or its affiliates. All rights reserved.
+.TH poolcfg 1M "25 March 2014" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+poolcfg \- create and modify resource pool configuration files
+.SH SYNOPSIS
+.LP
+.nf
+\fB/usr/sbin/poolcfg\fR \fB-c\fR \fIcommand\fR [\fB-d\fR | [\fIfilename\fR]]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/poolcfg\fR \fB-f\fR \fIcommand-file\fR [\fB-d\fR | [\fIfilename\fR]]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/poolcfg\fR \fB-h\fR
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBpoolcfg\fR utility provides configuration operations on pools, sets, and system wide pools properties. These operations are performed upon an existing configuration file. If the file arguments are not specified, the default configuration file, \fB/etc/pooladm.conf\fR, is used.
+.sp
+.LP
+Type svc:/system/pools:default service must be enabled before pools configuration files can be created or committed. The service can be enabled throught \fBsvcadm\fR(1M), or by the \fB-e\fR option to the \fBpooladm\fR(1M) utility.
+.sp
+.LP
+\fB/etc/pooladm.conf\fR does not exist by default. See example 1 below for instructions on how to create it.
+.sp
+.LP
+If the \fBsvc:/system/pools:default\fR service is enabled, this configuration file is applied during system boot. The configuration file can also be applied using the \fB-c\fR option of the \fBpooladm\fR(1M) utility. This is referred to as committing the pools configuration. When the configuration is committed, pools and psets are created in the kernel, and processes can be bound to them. This kernel state is referred to as the pools dynamic configuration.
+.sp
+.LP
+If you use the \fB-d\fR option to \fBpoolcfg\fR, the operations will be performed directly on the run-time kernel state rather than on a configuration file. These changes will not persist on reboot, and will be clobbered by a future application of a pools configuration file. To capture run-time changes made through \fBpoolcfg -d\fR to a configuration file, use the \fB-s\fR option to the \fBpooladm\fR(1M) utility.
+.sp
+.LP
+Pools configuration files are structured files that must be constructed and edited using poolcfg(1m) or \fBlibpool\fR(3LIB).
+.sp
+.LP
+An invocation of \fBpoolcfg -d\fR using any modifying operations will hang if the dynamic configuration has already been opened for writing by another process, such as another \fBpoolcfg -d\fR, or a process utilizing libpool.so.1. The hang will persist until the writing process closes the file.
+.SH OPTIONS
+.sp
+.LP
+The following options are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIcommand\fR\fR
+.ad
+.RS 19n
+.rt  
+Specify a \fBpoolcfg\fR command. Multiple \fB-c\fR options are supported, and will be processed in order. See USAGE section below.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.RS 19n
+.rt  
+Operate directly on the kernel state. The kernel state is also known as the pools dynamic configuration.
+.sp
+No filename argument is allowed. The commands are executed against the kernel state, as seen by the \fBpooladm\fR(1M) command, and any modifications are immediately committed.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIcommand-file\fR\fR
+.ad
+.RS 19n
+.rt  
+Take the commands from \fIcommand-file\fR. \fIcommand-file\fR consists of \fBpoolcfg\fR commands, one per line. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.RS 19n
+.rt  
+Display extended information about the syntax of editing commands.
+.RE
+
+.SH USAGE
+.sp
+.LP
+The following \fBpoolcfg\fR commands are supported:
+.sp
+.ne 2
+.mk
+.na
+\fBinfo [<\fIentity-type\fR> <\fIentity-name\fR> ]\fR
+.ad
+.sp .6
+.RS 4n
+Display configuration (or specified portion) in human readable form to standard output. If no entity is specified, system information is displayed. Therefore, \fBpoolcfg\fR \fB-c\fR \fB\&'info'\fR is an equivalent invocation to \fBpoolcfg\fR \fB- c\fR \fB\&'info system default'\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBcreate <\fIentity-type\fR> <\fIentity-name\fR> [(\fIproperty-list\fR)]\fR
+.ad
+.sp .6
+.RS 4n
+Make an entity of the specified type and name. Entities of type \fBpool\fR and \fBpset\fR can be created. A created pset will be associated to \fBpool_default\fR. A created pool will be associated to \fBpset_default\fR.
+.sp
+A \fBproperty-list\fR can optionally be supplied to provide initial values for one or more properties.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdestroy <\fIentity-type\fR> <\fIentity-name\fR>\fR
+.ad
+.sp .6
+.RS 4n
+Remove the specified entity. Entities of type \fBpool\fR and \fBpset\fR can be destroyed. If a pset is destroyed, any pools associated with that pset will become associated with the pool "\fBpool_default\fR".
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBmodify <\fIentity-type\fR> <\fIentity-name\fR> [(\fIproperty-list\fR)]\fR
+.ad
+.sp .6
+.RS 4n
+Change the listed properties on the named entity. Modifying the \fBpset.min\fR and \fBpset.max\fR properties will remove any configuration set by a previous \fBassign\fR command.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBassociate pool <\fIentity-name\fR> ( pset <\fIentity-name\fR> )\fR
+.ad
+.sp .6
+.RS 4n
+Associate a pool to a pset. Both the pool and pset must exist. The prior pset association is removed, as a pool may only be associated to a single pset.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBassign to pset <\fIentity-name\fR> ( <\fIcpu-resource-list\fR> )\fR
+.ad
+.sp .6
+.RS 4n
+Assign a specific set of cpus, cores, or sockets to a pset. A pset must be assigned cpu resources of all the same type.
+.sp
+If, in the pools configuration file, the cpu resources are already assigned to another pset the assign command will fail.
+.sp
+For a given pset, the \fBassign\fR command replaces the configuration set by any prior modify command. Previous assign commands are preserved if they are of the same type. For example, assigning cores to a pset that already has cores assigned will add to the already assigned cores, but not replace them.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBunassign from pset <\fIentity-name\fR> ( [ <\fIcpu-resource-list> | all\fR ] )\fR
+.ad
+.sp .6
+.RS 4n
+Remove cpu, core, or socket assignments from a pset. The special token "all" can be used to unassign all resources. A configuration will fail to commit if all cpu resources are unassigned and the pset has one or more processes bound to it.
+.sp
+The \fBunassign\fR command can only succeed after a successful \fBassign\fR command.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBtransfer to pset <\fItgt-pset-name\fR> ( <\fIcpu-resource-list\fR> )\fR
+.ad
+.sp .6
+.RS 4n
+Transfer one or more specific cpus. Only cpu resource types are supported.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBtransfer <\fIquantity\fR> from pset <\fIsrc-pset-name\fR> to <\fItgt-pset-name\fR>\fR
+.ad
+.sp .6
+.RS 4n
+Transfer a quantity of cpus from pset src-pset-name to pset tgt-pset-name.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBtransfer <\fIquantity\fR> to pset <\fItgt-pset-name\fR> from <\fIsrc-pset-name\fR>\fR
+.ad
+.sp .6
+.RS 4n
+Transfer a quantity of cpus to \fBpset tgt-pset-name\fR to \fBpset src-pset-name\fR.
+.sp
+The \fBtransfer\fR command fails if either the source or target pset is configured using the \fBassign\fR command. This rule does not apply to \fBpset_default\fR because \fBpset_default\fR can have more cpu resources than it has been assigned.
+.sp
+The \fBtransfer\fR command will fail if it would cause the minimum or maximum number of cpus configured for the source or target pset to be exceeded. This rule does not apply to the maximum size of \fBpset_default\fR, as it can have more cpu resources than it has assigned, or allocated through the pset.min and pset.max properties.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdiscover\fR
+.ad
+.sp .6
+.RS 4n
+Create a new pools configuration file matching the current kernel pools configuration, as ouput by the \fBpooladm\fR(1M) utility.
+.sp
+This command has no effect when \fBpoolcfg\fR operates directly on the kernel. See the \fB-d\fR option.
+.sp
+You should avoid use of this command. The preferred method for creating a configuration is to export the dynamic configuration using \fBpooladm\fR(1M) with the \fB-s\fR option.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBrename <\fIentity-type\fR> <\fIentity-name\fR> to <\fIentity-name\fR>\fR
+.ad
+.sp .6
+.RS 4n
+Change the name of an entity on the system to its new name. 
+.RE
+
+.sp
+.LP
+The \fBpoolcfg\fR commands use the following tokens:
+.sp
+.ne 2
+.mk
+.na
+\fB\fIentity-type\fR\fR
+.ad
+.RS 21n
+.rt  
+It can be any one of the following:
+.sp
+.ne 2
+.mk
+.na
+\fBsystem\fR
+.ad
+.RS 10n
+.rt  
+Machine level entity. There is only one system entity with name "default".
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBpool\fR
+.ad
+.RS 10n
+.rt  
+Named object associated with a pset. Multiple pools may be associated with the same processor set, but a pset can only be associated with a single pool.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBpset\fR
+.ad
+.RS 10n
+.rt  
+An object representing a collection of processor resources.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBcpu\fR
+.ad
+.RS 10n
+.rt  
+An object representing a single virtual processor, also known as a hardware thread.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBentity-name\fR
+.ad
+.RS 21n
+.rt  
+The entity names vary by entity type.
+.sp
+For type "system", only one entity exists, with name "default". The system entity stores the system-wide pools properties.
+.sp
+For type "pool", there is always a "pool_default", and zero or more user defined pools.
+.sp
+For type "pset", there is always a "pset_default", and zero or more user defined psets.
+.sp
+For type "cpu", there is a cpu entity for each cpu on the system, each of which has a numeric name equal to its cpuid.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBprop-type\fR
+.ad
+.RS 21n
+.rt  
+It can be any one of the following:
+.sp
+.ne 2
+.mk
+.na
+\fBboolean\fR
+.ad
+.RS 11n
+.rt  
+Takes one of two values true or false.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBint\fR
+.ad
+.RS 11n
+.rt  
+A 64-bit signed integer value.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBuint\fR
+.ad
+.RS 11n
+.rt  
+A 64-bit unsigned integer value.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBstring\fR
+.ad
+.RS 11n
+.rt  
+Strings are delimited by quotes (\fB"\fR), and support the character escape sequences defined in \fBformats\fR(5).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBfloat\fR
+.ad
+.RS 11n
+.rt  
+Scientific notation is not supported.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBprop-name\fR
+.ad
+.RS 21n
+.rt  
+A name of a property on the entity being manipulated. See the \fBlibpool\fR(3LIB) manpage for a list of properties understood by the resource pools framework. User defined properties can also be set and deleted.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBvalue\fR
+.ad
+.RS 21n
+.rt  
+A valid value as defined by the preceding prop-type.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBproperty-list\fR
+.ad
+.RS 21n
+.rt  
+The property list is a list of one or more property value assignments.
+.sp
+.in +2
+.nf
+<prop-type> <prop-name> = <value>
+  [ ; <prop-type> <prop-name> = <value> ]*
+.fi
+.in -2
+
+Property deletions can also be specified using the following syntax within a property-list.
+.sp
+.in +2
+.nf
+~ <prop-type> <prop-name>
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBcpu-res-type\fR
+.ad
+.RS 21n
+.rt  
+An object representing a cpu resource. It can be any one of the following:
+.sp
+.ne 2
+.mk
+.na
+\fBcpu\fR
+.ad
+.RS 10n
+.rt  
+A virtual cpu, also known as a hardware thread.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBcore\fR
+.ad
+.RS 10n
+.rt  
+A group of virtual cpus sharing compute resources.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBsocket\fR
+.ad
+.RS 10n
+.rt  
+A group of cores contained within a physical processor.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBcpu-res-id\fR
+.ad
+.RS 21n
+.rt  
+A numeric id for a cpu, core, or socket, as listed by \fBpsrinfo -c\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBcpu-resource-list\fR
+.ad
+.RS 21n
+.rt  
+A list of one or more cpu resources. All resources in a list must be the same cpu-type.
+.sp
+.in +2
+.nf
+cpu-res-type cpu-res-id [ ; cpu-res-type cpu-res-id ]
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBrange\fR
+.ad
+.RS 21n
+.rt  
+A minimum and maximum value separated by a \fB-\fR. For example, a range of two to four is represented as "2-4".
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBquantity\fR
+.ad
+.RS 21n
+.rt  
+A single positive integer value.
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fREnabling Pools and Creating a New Configuration File
+.sp
+.LP
+The following commands will enable the pools service and create a new pools configuration file. The file created is \fB/etc/pooladm.conf\fR. It will contain pool_default and pset_default.
+
+.sp
+.in +2
+.nf
+# \fBpooladm -e\fR
+# \fBpooladm -s\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRCreating a pool and pset
+.sp
+.LP
+The following \fBpoolcfg\fR script creates a pool named \fBAccounting\fR, and a processor set, \fBsmall-1\fR. The processor set is created first, then the pool is created and associated with the set. Finally, the configuration is committed to create the pool and pset on the running system.
+
+.sp
+.in +2
+.nf
+# \fBcat command-file.txt\fR 
+create pset Small-1 (uint pset.min = 2; uint pset.max = 2)
+create pool associate pool Accounting ( pset Small-1 )
+  
+# \fBpoolcfg -f command-file.txt\fR
+# \fBpooladm -c\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRReporting on \fBpool_0\fR
+.sp
+.LP
+The following command reports on \fBpool_0\fR to standard output in human readable form: 
+
+.sp
+.in +2
+.nf
+ # \fBpoolcfg -c 'info pool pool_0'\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 4 \fRDestroying pool_0 and Its Associations
+.sp
+.LP
+The following command destroys pool_0. The pset associated  with pool_0 is not destroyed.
+
+.sp
+.in +2
+.nf
+# \fBpoolcfg -c 'destroy pool pool_0'\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 5 \fRDisplaying the Current Configuration
+.sp
+.LP
+The following command displays the current configuration that will be applied at system boot or the next \fBpooladm -c\fR command.
+
+.sp
+.in +2
+.nf
+       $ poolcfg -c 'info'
+       system default
+        string  system.comment
+        int     system.version 1
+        boolean system.bind-default true
+        string  system.poold.objectives wt-load
+  
+        pool pool_default
+                int     pool.sys_id 0
+                boolean pool.active true
+                boolean pool.default true
+                int     pool.importance 1
+                string  pool.comment
+                pset    pset_default
+  
+       pset pset_default
+               int     pset.sys_id -1
+               boolean pset.default true
+               uint    pset.min 1
+               uint    pset.max 65536
+               string  pset.units population
+               string  pset.policy minmax
+               string  pset.restype cpu
+               strintg pset.reslist
+               uint    pset.load 0
+               uint    pset.size 2
+               string  pset.comment
+  
+               cpu
+                       int     cpu.sys_id 1
+                       string  cpu.comment
+                       string  cpu.status on-line
+  
+              cpu
+                       int     cpu.sys_id 0
+                       string  cpu.comment
+                       string  cpu.status on-line
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 6 \fRMoving cpu with ID 2 to Processor Set pset1 in the Kernel
+.sp
+.LP
+The following command moves \fBcpu\fR with ID \fB2\fR to processor set \fBpset1\fR in the kernel:
+
+.sp
+.in +2
+.nf
+# \fBpoolcfg -dc 'transfer to pset pset1 ( cpu 2 )'\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 7 \fRMoving 2 cpus from Processor Set pset1 to Processor Set pset2 in the Kernel
+.sp
+.LP
+The following command moves 2 \fBcpu\fRs from processor set \fBpset1\fR to processor set \fBpset2\fR in the kernel:
+
+.sp
+.in +2
+.nf
+# \fBpoolcfg -dc 'transfer 2 from pset pset1 to pset2'\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 8 \fRConfigure a Pool to Have a Specific List of Cores
+.sp
+.LP
+The following commands configure a pool to have a specific list of cores.
+
+.sp
+.in +2
+.nf
+# \fBpoolcfg -c 'create pset pset1'\fR
+# \fBpoolcfg -c 'assign to pset pset1 (core 0-3)'\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 9 \fRDelete a Pool Property
+.sp
+.LP
+This following command deletes a property previously set on a pool by the user.
+
+.sp
+.in +2
+.nf
+# \fBpoolcfg -c 'modify pool pset1 ( ~ string userprop1 )'\fR
+.fi
+.in -2
+.sp
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/resource-mgmt/resource-pools
+_
+Interface StabilitySee below.
+.TE
+
+.sp
+.LP
+The invocation is Committed. The output is Uncommitted.
+.SH SEE ALSO
+.sp
+.LP
+\fBpooladm\fR(1M), \fBpoolbind\fR(1M), \fBpoold\fR(1M), \fBlibpool\fR(3LIB), \fBattributes\fR(5), \fBformats\fR(5)
+.sp
+.LP
+\fIAdministering Resource Management in Oracle         Solaris 11.3\fR
+.sp
+.LP
+\fICreating and Using Oracle Solaris Zones\fR

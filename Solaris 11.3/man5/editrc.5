@@ -1,0 +1,592 @@
+'\" te
+.TH EDITRC 5 "October 18, 2003" ""
+.SH NAME
+\fBeditrc\fP
+\- configuration file for editline library
+.SH SYNOPSIS
+.br
+\fBeditrc\fP
+.SH DESCRIPTION
+The
+\fBeditrc\fP
+file defines various settings to be used by the
+\fBeditline\fP(3)
+library.
+
+The format of each line is:
+[prog:]command [arg [...]]
+
+\fIcommand\fP
+is one of the
+\fBeditline\fP(3)
+builtin commands.
+Refer to
+.B BUILTIN COMMANDS
+for more information.
+
+\fIprog\fP
+is the program name string that a program defines when it calls
+\fBel_init\fP(3)
+to set up
+\fBeditline\fP(3),
+which is usually
+\fIargv[0]\fP.
+\fIcommand\fP
+will be executed for any program which matches
+\fIprog\fP.
+
+\fIprog\fP
+may also be a
+\fBregex\fP(3)
+style
+regular expression, in which case
+\fIcommand\fP
+will be executed for any program that matches the regular expression.
+
+If
+\fIprog\fP
+is absent,
+\fIcommand\fP
+is executed for all programs.
+.SH BUILTIN COMMANDS
+The
+\fBeditline\fP
+library has some builtin commands, which affect the way
+that the line editing and history functions operate.
+These are based on similar named builtins present in the
+\fBtcsh\fP(1)
+shell.
+
+The following builtin commands are available:
+.TP
+\fBbind Oo Fl a Oc Oo Fl e Oc Oo Fl k Oc Oo Fl l Oc Oo Fl r Oc \\fP
+Oo Fl s Oc Oo Fl v Oc Oo Ar key Op Ar command Oc
+Without options, list all bound keys, and the editor command to which
+each is bound.
+If
+\fIkey\fP
+is supplied, show the bindings for
+\fIkey\fP.
+If
+\fIkey\fP command
+is supplied, bind
+\fIcommand\fP
+to
+\fIkey\fP.
+Options include:
+.RS
+.TP
+\fB\-e\fP
+Bind all keys to the standard GNU Emacs-like bindings.
+.TP
+\fB\-v\fP
+Bind all keys to the standard
+\fBvi\fP(1) -like
+bindings.
+.TP
+\fB\-a\fP
+List or change key bindings in the
+\fBvi\fP(1)
+mode alternate (command mode) key map.
+.TP
+\fB\-k\fP
+\fIkey\fP
+is interpreted as a symbolic arrow key name, which may be one of
+`up',
+`down',
+`left'
+or
+`right'.
+.TP
+\fB\-l\fP
+List all editor commands and a short description of each.
+.TP
+\fB\-r\fP
+Remove a key's binding.
+.TP
+\fB\-s\fP
+\fIcommand\fP
+is taken as a literal string and treated as terminal input when
+\fIkey\fP
+is typed.
+Bound keys in
+\fIcommand\fP
+are themselves reinterpreted, and this continues for ten levels of
+interpretation.
+.RE
+
+\fIcommand\fP
+may be one of the commands documented in
+.B "EDITOR COMMANDS"
+below, or another key.
+
+\fIkey\fP
+and
+\fIcommand\fP
+can contain control characters of the form
+`No'^\fIcharacter\fP
+(
+e.g.
+`^A'
+),
+and the following backslashed escape sequences:
+
+.RS
+.TP
+\fB\ea\fP
+Bell
+.TP
+\fB\eb\fP
+Backspace
+.TP
+\fB\ee\fP
+Escape
+.TP
+\fB\ef\fP
+Formfeed
+.TP
+\fB\en\fP
+Newline
+.TP
+\fB\er\fP
+Carriage return
+.TP
+\fB\et\fP
+Horizontal tab
+.TP
+\fB\ev\fP
+Vertical tab
+.TP
+.B \e Ar nnn
+The ASCII character corresponding to the octal number
+\fInnn\fP.
+.RE
+
+`\e'
+nullifies the special meaning of the following character,
+if it has any, notably
+`\e'
+and
+`^'.
+.TP
+\fBechotc Oo Fl sv Oc \fIarg\fP \fI...\fP\fP
+Exercise terminal capabilities given in
+\fIarg\fP \fI...\fP.
+If
+\fIarg\fP
+is
+`baud',
+`cols',
+`lines',
+`rows',
+`meta',
+or
+`tabs',
+the value of that capability is printed, with
+``yes''
+or
+``no''
+indicating that the terminal does or does not have that capability.
+
+\fB\-s\fP
+returns an empty string for non-existent capabilities, rather than
+causing an error.
+\fB\-v\fP
+causes messages to be verbose.
+.TP
+\fBedit [Li on | Li off]\fP
+Enable or disable the
+\fBeditline\fP
+functionality in a program.
+.TP
+\fBhistory \fIlist\fP | \fIsize\fP Dv n | \fIunique\fP Dv n\fP
+The
+\fIlist\fP
+command lists all entries in the history.
+The
+\fIsize\fP
+command sets the history size to
+n
+entries.
+The
+\fIunique\fP
+command controls if history should keep duplicate entries.
+If
+n
+is non zero, only keep unique history entries.
+If
+n
+is zero, then keep all entries (the default).
+.TP
+\fBtelltc\fP
+List the values of all the terminal capabilities (see
+\fBtermcap\fP(5)) .
+.TP
+\fBsettc \fIcap\fP \fIval\fP\fP
+Set the terminal capability
+\fIcap\fP
+to
+\fIval\fP,
+as defined in
+\fBtermcap\fP(5).
+No sanity checking is done.
+.TP
+\fBsetty Oo Fl a Oc Oo Fl d Oc Oo Fl q Oc Oo Fl x Oc Oo \fI+mode\fP Oc \\fP
+Oo Ar -mode Oc Oo Ar mode Oc Oo Ar char=c Oc
+Control which tty modes that
+\fBeditrc\fP
+won't allow the user to change.
+\fB\-d\fP,
+\fB\-q\fP
+or
+\fB\-x\fP
+tells
+\fBsetty\fP
+to act on the
+`edit',
+`quote'
+or
+`execute'
+set of tty modes respectively; defaulting to
+\fB\-x\fP.
+
+Without other arguments,
+\fBsetty\fP
+lists the modes in the chosen set which are fixed on
+(
+`+mode'
+)
+or off
+(
+`-mode'
+).
+\fB\-a\fP
+lists all tty modes in the chosen set regardless of the setting.
+With
+\fI+mode\fP,
+\fI-mode\fP
+or
+\fImode\fP,
+fixes
+\fImode\fP
+on or off or removes control of
+\fImode\fP
+in the chosen set.
+
+\fBSetty\fP
+can also be used to set tty characters to particular values using
+\fIchar=value\fP.
+If
+\fIvalue\fP
+is empty
+then the character is set to
+_POSIX_VDISABLE .
+.SH EDITOR COMMANDS
+The following editor commands are available for use in key bindings:
+.TP
+\fBvi-paste-next\fP
+Vi paste previous deletion to the right of the cursor.
+.TP
+\fBvi-paste-prev\fP
+Vi paste previous deletion to the left of the cursor.
+.TP
+\fBvi-prev-space-word\fP
+Vi move to the previous space delimited word.
+.TP
+\fBvi-prev-word\fP
+Vi move to the previous word.
+.TP
+\fBvi-next-space-word\fP
+Vi move to the next space delimited word.
+.TP
+\fBvi-next-word\fP
+Vi move to the next word.
+.TP
+\fBvi-change-case\fP
+Vi change case of character under the cursor and advance one character.
+.TP
+\fBvi-change-meta\fP
+Vi change prefix command.
+.TP
+\fBvi-insert-at-bol\fP
+Vi enter insert mode at the beginning of line.
+.TP
+\fBvi-replace-char\fP
+Vi replace character under the cursor with the next character typed.
+.TP
+\fBvi-replace-mode\fP
+Vi enter replace mode.
+.TP
+\fBvi-substitute-char\fP
+Vi replace character under the cursor and enter insert mode.
+.TP
+\fBvi-substitute-line\fP
+Vi substitute entire line.
+.TP
+\fBvi-change-to-eol\fP
+Vi change to end of line.
+.TP
+\fBvi-insert\fP
+Vi enter insert mode.
+.TP
+\fBvi-add\fP
+Vi enter insert mode after the cursor.
+.TP
+\fBvi-add-at-eol\fP
+Vi enter insert mode at end of line.
+.TP
+\fBvi-delete-meta\fP
+Vi delete prefix command.
+.TP
+\fBvi-end-word\fP
+Vi move to the end of the current space delimited word.
+.TP
+\fBvi-to-end-word\fP
+Vi move to the end of the current word.
+.TP
+\fBvi-undo\fP
+Vi undo last change.
+.TP
+\fBvi-command-mode\fP
+Vi enter command mode (use alternative key bindings).
+.TP
+\fBvi-zero\fP
+Vi move to the beginning of line.
+.TP
+\fBvi-delete-prev-char\fP
+Vi move to previous character (backspace).
+.TP
+\fBvi-list-or-eof\fP
+Vi list choices for completion or indicate end of file if empty line.
+.TP
+\fBvi-kill-line-prev\fP
+Vi cut from beginning of line to cursor.
+.TP
+\fBvi-search-prev\fP
+Vi search history previous.
+.TP
+\fBvi-search-next\fP
+Vi search history next.
+.TP
+\fBvi-repeat-search-next\fP
+Vi repeat current search in the same search direction.
+.TP
+\fBvi-repeat-search-prev\fP
+Vi repeat current search in the opposite search direction.
+.TP
+\fBvi-next-char\fP
+Vi move to the character specified next.
+.TP
+\fBvi-prev-char\fP
+Vi move to the character specified previous.
+.TP
+\fBvi-to-next-char\fP
+Vi move up to the character specified next.
+.TP
+\fBvi-to-prev-char\fP
+Vi move up to the character specified previous.
+.TP
+\fBvi-repeat-next-char\fP
+Vi repeat current character search in the same search direction.
+.TP
+\fBvi-repeat-prev-char\fP
+Vi repeat current character search in the opposite search direction.
+.TP
+\fBem-delete-or-list\fP
+Delete character under cursor or list completions if at end of line.
+.TP
+\fBem-delete-next-word\fP
+Cut from cursor to end of current word.
+.TP
+\fBem-yank\fP
+Paste cut buffer at cursor position.
+.TP
+\fBem-kill-line\fP
+Cut the entire line and save in cut buffer.
+.TP
+\fBem-kill-region\fP
+Cut area between mark and cursor and save in cut buffer.
+.TP
+\fBem-copy-region\fP
+Copy area between mark and cursor to cut buffer.
+.TP
+\fBem-gosmacs-transpose\fP
+Exchange the two characters before the cursor.
+.TP
+\fBem-next-word\fP
+Move next to end of current word.
+.TP
+\fBem-upper-case\fP
+Uppercase the characters from cursor to end of current word.
+.TP
+\fBem-capitol-case\fP
+Capitalize the characters from cursor to end of current word.
+.TP
+\fBem-lower-case\fP
+Lowercase the characters from cursor to end of current word.
+.TP
+\fBem-set-mark\fP
+Set the mark at cursor.
+.TP
+\fBem-exchange-mark\fP
+Exchange the cursor and mark.
+.TP
+\fBem-universal-argument\fP
+Universal argument (argument times 4).
+.TP
+\fBem-meta-next\fP
+Add 8th bit to next character typed.
+.TP
+\fBem-toggle-overwrite\fP
+Switch from insert to overwrite mode or vice versa.
+.TP
+\fBem-copy-prev-word\fP
+Copy current word to cursor.
+.TP
+\fBem-inc-search-next\fP
+Emacs incremental next search.
+.TP
+\fBem-inc-search-prev\fP
+Emacs incremental reverse search.
+.TP
+\fBed-end-of-file\fP
+Indicate end of file.
+.TP
+\fBed-insert\fP
+Add character to the line.
+.TP
+\fBed-delete-prev-word\fP
+Delete from beginning of current word to cursor.
+.TP
+\fBed-delete-next-char\fP
+Delete character under cursor.
+.TP
+\fBed-kill-line\fP
+Cut to the end of line.
+.TP
+\fBed-move-to-end\fP
+Move cursor to the end of line.
+.TP
+\fBed-move-to-beg\fP
+Move cursor to the beginning of line.
+.TP
+\fBed-transpose-chars\fP
+Exchange the character to the left of the cursor with the one under it.
+.TP
+\fBed-next-char\fP
+Move to the right one character.
+.TP
+\fBed-prev-word\fP
+Move to the beginning of the current word.
+.TP
+\fBed-prev-char\fP
+Move to the left one character.
+.TP
+\fBed-quoted-insert\fP
+Add the next character typed verbatim.
+.TP
+\fBed-digit\fP
+Adds to argument or enters a digit.
+.TP
+\fBed-argument-digit\fP
+Digit that starts argument.
+.TP
+\fBed-unassigned\fP
+Indicates unbound character.
+.TP
+\fBed-tty-sigint\fP
+Tty interrupt character.
+.TP
+\fBed-tty-dsusp\fP
+Tty delayed suspend character.
+.TP
+\fBed-tty-flush-output\fP
+Tty flush output characters.
+.TP
+\fBed-tty-sigquit\fP
+Tty quit character.
+.TP
+\fBed-tty-sigtstp\fP
+Tty suspend character.
+.TP
+\fBed-tty-stop-output\fP
+Tty disallow output characters.
+.TP
+\fBed-tty-start-output\fP
+Tty allow output characters.
+.TP
+\fBed-newline\fP
+Execute command.
+.TP
+\fBed-delete-prev-char\fP
+Delete the character to the left of the cursor.
+.TP
+\fBed-clear-screen\fP
+Clear screen leaving current line at the top.
+.TP
+\fBed-redisplay\fP
+Redisplay everything.
+.TP
+\fBed-start-over\fP
+Erase current line and start from scratch.
+.TP
+\fBed-sequence-lead-in\fP
+First character in a bound sequence.
+.TP
+\fBed-prev-history\fP
+Move to the previous history line.
+.TP
+\fBed-next-history\fP
+Move to the next history line.
+.TP
+\fBed-search-prev-history\fP
+Search previous in history for a line matching the current.
+.TP
+\fBed-search-next-history\fP
+Search next in history for a line matching the current.
+.TP
+\fBed-prev-line\fP
+Move up one line.
+.TP
+\fBed-next-line\fP
+Move down one line.
+.TP
+\fBed-command\fP
+Editline extended command.
+
+.\" Oracle has added the ARC stability level to this manual page
+.SH ATTRIBUTES
+See
+.BR attributes (5)
+for descriptions of the following attributes:
+.sp
+.TS
+box;
+cbp-1 | cbp-1
+l | l .
+ATTRIBUTE TYPE	ATTRIBUTE VALUE 
+=
+Availability	library/libedit
+=
+Stability	Uncommitted
+.TE 
+.PP
+.SH SEE ALSO
+\fBeditline\fP(3),
+\fBregex\fP(3),
+\fBtermcap\fP(5)
+.SH AUTHORS
+The
+\fBeditline\fP
+library was written by Christos Zoulas,
+and this manual was written by Luke Mewburn,
+with some sections inspired by
+\fBtcsh\fP(1).
+
+
+.SH NOTES
+
+.\" Oracle has added source availability information to this manual page
+This software was built from source available at https://java.net/projects/solaris-userland.  The original community source was downloaded from  http://www.thrysoee.dk/editline/libedit-20110802-3.0.tar.gz
+
+Further information about this software can be found on the open source community website at http://www.thrysoee.dk/editline/.

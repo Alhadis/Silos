@@ -1,0 +1,591 @@
+'\" te
+.\" Copyright (c) 2012, 2015, Oracle and/or its affiliates.All rights reserved
+.TH svcbundle 1M "2015 年 6 月 2 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+svcbundle \- 创建 SMF 服务束
+.SH 用法概要
+.LP
+.nf
+\fBsvcbundle\fR [\fB-i\fR | \fB-o\fR \fIoutput_file\fR] \fB-s\fR \fIname\fR=\fIvalue\fR...
+.fi
+
+.LP
+.nf
+\fBsvcbundle\fR help [\fIname\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBsvcbundle\fR 命令用于生成 SMF 清单。此清单是通过多个 \fB-s\fR 选项指定的。要生成清单，必须指定 \fBservice-name\fR 和 \fBstart-method\fR。其他 NV 对是可选的，允许用户为服务指定更多详细信息。\fBsvccfg\fR(1M) 用于验证命令是否会对生成的清单运行，以检测任何模板冲突。
+.sp
+.LP
+还可使用 \fBsvcbundle\fR 生成配置文件。请参见下文的 \fIbundle-type\fR。
+.sp
+.LP
+第二个用法概要会在标准输出上列显帮助消息，并列出所有合法名称。此外，还可以指定 help 以及一个名称以查看有关该名称的合法值的讨论。
+.sp
+.LP
+为了降低用户的负担，\fBsvcbundle\fR 会在生成清单时进行多项假设以简化操作。如果这些假设对于应用程序不正确，则可以编辑生成的清单：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+生成的清单可与主重启程序 \fBsvc.startd\fR(1M) 配合使用。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+生成对 \fBsvc:/milestone/multi-user\fR 的依赖性，以免服务过早启动。有关例外情况，请参见下文的 \fBrc-script\fR。要使某个服务提前启动，可以将清单编辑为依赖 \fBsmf\fR(5) 中描述的任何特定服务或任何里程碑。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+服务束名称与提供给 \fBservice-name\fR 的值相同。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+所有 \fBexec_methods\fR 的超时时间为 60 秒。
+.RE
+.sp
+.LP
+通过使用 \fB-i\fR 选项，可以获取 \fBsvcbundle\fR 以执行大量服务安装操作。它会将生成的清单保存在 \fB/lib/svc/manifest/site\fR 中或将配置文件保存在 \fB/etc/svc/profile/site\fR 中。生成的文件名是使用 \fB-s\fR \fIservice-name\fR 指定的服务名称的基名，并且该文件会使用扩展名 \fB\&.xml\fR。警告：\fBsvcbundle\fR 将用该名称覆盖任何现有文件。
+.sp
+.LP
+然后，\fBsvcbundle\fR 将重新启动 \fBmanifest-import\fR 服务以处理新创建的文件，并将其合并到 SMF 中。对于清单，\fBsvcbundle\fR 将等待服务进入一个最终状态（联机、禁用或维护之一）。在该等待期间开始时，\fBsvcbundle\fR 将输出：
+.sp
+.in +2
+.nf
+svcbundle: waiting for service to reach \fIfinal_state\fR state
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\&...其中 \fIfinal_state\fR 为启用或禁用。出现该消息后，可以放心地中断 \fBsvcbundle\fR。
+.sp
+.LP
+显然，要使用 \fB-i\fR 选项，需要具有足够的授权，以便在这些受限目录中创建文件，并重新启动 \fBmanifest-import\fR 服务。请参见 \fBsmf_security\fR(5)。
+.SH 扩展描述
+.sp
+.LP
+本部分讨论名称/值 (NV) 对。
+.sp
+.LP
+通过在命令行上使用多个 -s 选项，可以定义生成的整个服务束。每个 NV 对均采用格式 \fIname\fR=\fIvalue\fR，其中 \fIname\fR 和 \fIname\fR 来自此列表：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbundle-type\fR\fR
+.ad
+.sp .6
+.RS 4n
+要生成的服务束类型。合法值为 \fBmanifest\fR 和 \fBprofile\fR。缺省值为 \fBmanifest\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBduration\fR\fR
+.ad
+.sp .6
+.RS 4n
+model 的同义词。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBenabled（已启用）\fR\fR
+.ad
+.sp .6
+.RS 4n
+指示是否应启用实例。合法值为 \fBtrue\fR 和 \fBfalse\fR。缺省值为 \fBtrue\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmodel\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置服务模型。这是 \fBstartd\fR/\fBduration\fR 属性的值。请参阅 \fBsvc.startd\fR(1M)。可将模型设置为以下值之一：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBcontract\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBdaemon\fR－\fBcontract\fR 的同义词
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBchild\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBwait\fR－\fBchild\fR 的同义词
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBtransient\fR
+.RE
+缺省值为 \fBtransient\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstance-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+实例的名称。缺省值为 \fBdefault\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstance-property\fR=\fIpg_name\fR:\fIprop_name\fR:\fIprop_type\fR:\fIvalue\fR\fR
+.ad
+.br
+.na
+\fB\fBservice-property\fR=\fIpg_name\fR:\fIprop_name \fR:\fIprop_type\fR:\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+这些选项用于在实例或服务中创建名为 \fIpg_name\fR 的属性组，该属性组的类型为应用程序。PG 将具有一个名为 \fIprop_name\fR 的属性，该属性具有一个类型为\fI prop_type\fR 的值。通过多次调用 \fB*-property\fR，可以创建具有多个属性的属性组。可以使用一个或多个 \fB*-property=\fR 声明，也可以不使用该声明。
+.sp
+通过使用两个连续冒号，可以设置缺省属性类型。请参见下文的“示例”部分。对于清单，将使用缺省属性类型 \fBastring\fR。配置文件不需要指定该属性，因为该属性通常可以通过其他信息源确定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrc-script\fR=\fIscript_path\fR:\fIrun_level\fR\fR
+.ad
+.sp .6
+.RS 4n
+该 NV 对会使 \fBsvcbundle\fR 发出一个清单，以便于将传统 \fBrc\fR 脚本转换为 SMF 服务。\fIscript_path\fR 是 \fBrc\fR 脚本所在的路径，\fIrun_level\fR 是 \fBrc\fR 脚本的运行级别（请参见 \fBinit\fR(1M)）。\fIscript_path\fR 用于在清单中生成启动和停止 \fBexec_method \fR元素。exec 属性将设置为：
+.sp
+.in +2
+.nf
+\fIscript_path\fR %m
+.fi
+.in -2
+.sp
+
+\fIrun_level\fR 用于生成依赖项，以便使该脚本在引导过程中的适当时间运行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrefresh-method\fR\fR
+.ad
+.sp .6
+.RS 4n
+刷新服务时要执行的命令。该值允许使用空格。该值可以包括带百分比符号 (\fB%\fR) 的方法标记，如 \fBsmf_method\fR(5) 中所述。缺省值为 \fB:true\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBservice-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+服务的名称。该 NV 对是必需的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstart-method\fR\fR
+.ad
+.sp .6
+.RS 4n
+启动服务时要执行的命令。该值允许使用空格。允许使用 \fBsmf_method\fR(5) 中所述的带 \fB%\fR 的方法标记，该标记将放置在清单中，以供重启程序扩展。可以使用 \fB:true\fR。必须为清单指定该 NV 对，除非指定了 \fIrc-script\fR NV 对。配置文件不需要指定该 NV 对。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstop-method\fR\fR
+.ad
+.sp .6
+.RS 4n
+停止服务时要执行的命令。该命令接受诸如 start-method 这类的值，同时，还接受 \fB:kill\fR。\fB:true\fR 是瞬态服务的缺省值，而 \fB:kill\fR 是合同和子服务的缺省值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBperiod\fR\fR
+.ad
+.sp .6
+.RS 4n
+此 NV 对以及 \fBperiodic-method\fR 对用于为定期服务创建清单。此对的值用于定期服务的期间。如果指定了此对，还需要指定 \fBperiodic-method\fR，反之亦然。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBperiodic-method\fR\fR
+.ad
+.sp .6
+.RS 4n
+此 NV 对以及 \fBperiodic\fR 对用于为定期服务创建清单。此对的值指定每个期间要运行的命令。如果指定了此对，还需要指定期间，反之亦然。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBday\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定创建预定服务时的 'day' 约束。有关预定服务的详细信息，请参阅 \fBsvc.periodicd\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBday_of_month\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定创建预定服务时的 'day_of_month' 约束。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfrequency\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定创建预定服务时的频率。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBminute\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定创建预定服务时的 'minute' 约束。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmonth\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定创建预定服务时的 'month' 约束。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhour\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定创建预定服务时的 'hour' 约束。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinterval\fR\fR
+.ad
+.sp .6
+.RS 4n
+此 NV 对以及 \fBstart-method\fR 对用于为预定服务创建清单。此对的值用于确定应该运行预定服务的频率。如果指定了此对，还需要指定 \fBstart-method\fR，反之亦然。\fBstart-method\fR 对的值将用于 \fB scheduled_method\fR 元素的 exec 属性。有关预定服务的详细信息，请参阅 \fBsvc.periodicd\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtimezone\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定创建预定服务时的 'timezone' 值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBweekday_of_month\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定创建预定服务时的 'weekday_of_month' 约束。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBweek_of_year\fR
+.ad
+.sp .6
+.RS 4n
+指定创建预定服务时的 'week_of_year' 约束。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fByear\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定创建预定服务时的 'year' 约束。
+.RE
+
+.SH 选项
+.sp
+.LP
+支持以下命令行选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.sp .6
+.RS 4n
+安装生成的文件。有关详细信息，请参见“说明”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIoutput_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定要创建的文件的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIname\fR=\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定名称/值对。有关详细信息，请参见“扩展说明”部分。
+.RE
+
+.sp
+.LP
+如果 \fB-i\fR 和 \fB-o\fR 均未指定，则生成的文件将写入到 stdout。
+.SH 示例
+.LP
+\fB示例 1 \fR为瞬态服务创建清单
+.sp
+.LP
+以下命令将为一个简单的瞬态服务创建清单。由于瞬态服务是 \fBsvcbundle\fR 的缺省值，因此，只能使用两个选项指定清单。
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s service-name=site/sneezy \e
+-s start-method=/lib/svc/method/sneezy\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR为守护进程服务创建清单
+.sp
+.LP
+以下命令将为一个守护进程服务创建清单。
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s service-name=site/sneezy \e
+-s start-method=/lib/svc/method/sneezy \e\fR
+\fB-s model=daemon\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR使用 Stop 和 Refresh 命令为守护进程服务创建清单
+.sp
+.LP
+以下命令将使用 stop 和 refresh 命令为一个守护进程服务创建清单。
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s service-name=site/sleepy \e
+-s start-method="/lib/svc/method/sleepy %m" \e
+-s stop-method="/lib/svc/method/sleepy %m" \e
+-s refresh-method="/lib/svc/method/sleepy %m" \e\fR
+\fB-s model=daemon\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR使用实例属性创建清单
+.sp
+.LP
+以下命令将使用实例属性创建清单。
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s service-name=system/happy \e
+-s start-method=/lib/svc/method/happy \e
+-s instance-property=config:velocity:count:50 \e
+-s instance-property=config:color:astring:red\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+生成的清单将使用包含两个属性（\fBvelocity\fR 和 \fBcolor\fR）的配置属性组创建服务实例。
+
+.LP
+\fB示例 5 \fR为 \fBrc\fR 脚本转换创建清单
+.sp
+.LP
+以下命令将创建一个清单以帮助转换 \fBrc\fR 脚本。此示例假定 \fBrc\fR 脚本在多用户级别运行，并且不会启动守护进程。
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s service-name=doc \e
+-s rc-script=/etc/init.d/doc:2\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+谨慎的用户将修改 \fBrc\fR 脚本，使其包含 \fB/lib/svc/share/smf_include.sh\fR。
+
+.LP
+\fB示例 6 \fR生成配置文件以修改服务属性
+.sp
+.LP
+以下命令将生成配置文件以设置 \fBgrumpy\fR 服务的 \fBnfsmapid_domain\fR 属性。
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s bundle-type=profile \e
+-s service-name=network/nfs/grumpy \e
+-s service-property=nfs-props:nfsmapid_domain:astring:grumpy\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR使用缺省属性类型
+.sp
+.LP
+以下命令会将 config/color 缺省值的属性类型设置为 \fBastring\fR。
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s service-name=system/happy \e
+-s start-method=/lib/svc/method/happy \e
+-s instance-property=config:color::red\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 8 \fR安装清单
+.sp
+.LP
+以下命令将使用 -i 选项安装清单。在此示例中，生成的清单将写入 \fB/lib/svc/manifest/site/bashful.xml\fR，因为 \fBbashful\fR 是服务名称的基名。
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -i -s service-name=application/bashful \e
+-s start-method=/opt/bashful/start\fR
+svcbundle: waiting for application/bashful to reach enabled state
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBsvcs\fR(1)、\fBinit\fR(1M)、\fBsvc.startd\fR(1M)、\fBsvccfg\fR(1M)、\fBsvc.periodicd\fR(1M)、\fBservice_bundle\fR(4)、\fBattributes\fR(5)、\fBsmf_method\fR(5)、\fBsmf_security\fR(5)、\fBsmf_template\fR(5)、\fBsmf\fR(5)

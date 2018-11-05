@@ -1,0 +1,110 @@
+'\" te
+.\" Copyright (c) 2003, 2013, Oracle and/or its affiliates.All rights reserved.
+.TH pfexec 1 "2012 年 3 月 15 日" "SunOS 5.11" "用户命令"
+.SH 名称
+pfexec, pfbash, pfcsh, pfksh, pfsh, pftcsh, pfzsh \- 执行配置文件中的命令
+.SH 用法概要
+.LP
+.nf
+\fB/usr/bin/pfexec\fR \fIcommand\fR
+.fi
+
+.LP
+.nf
+\fB/usr/bin/pfexec\fR \fB-P\fR \fIprivspec\fR \fIcommand\fR [ \fIarg\fR ]...
+.fi
+
+.LP
+.nf
+\fB/usr/bin/pfsh\fR [ \fIoptions\fR ] [ \fIargument\fR ]...
+.fi
+
+.LP
+.nf
+\fB/usr/bin/pfcsh\fR [ \fIoptions\fR ] [ \fIargument\fR ]...
+.fi
+
+.LP
+.nf
+\fB/usr/bin/pfksh\fR [ \fIoptions\fR ] [ \fIargument\fR ]...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBpfexec\fR 程序可设置 \fBPRIV_PFEXEC\fR 进程标志，并将当前进程标记为配置文件 shell。然后，它执行指定的命令。内核将查询 \fBexec_attr\fR(4) 数据库，并通过相应的属性执行。
+.sp
+.LP
+搜索配置文件时会按照 \fBuser_attr\fR(4) 数据库和 \fBpolicy.conf\fR(4) 中用户条目指定的顺序。对于每个用户，共有两组配置文件，即已验证集和未验证集。如果命令与已验证配置文件集对应的 \fBexec_attr\fR(4) 数据库中的条目匹配，用户在执行这些命令之前需要重新进行验证。如果从终端执行命令，系统会缓存当前用户和 tty 的验证状态，但该验证状态会受到为 PAM 堆栈 \fB/etc/pam.d/pfexec\fR 中的 \fBpam_tty_tickets\fR(5) 设置的超时选项的影响。如果当前没有 tty，但存在活动的 X11 会话，系统会通过 zenity 对话框提示用户进行验证。系统会为当前用户和 DISPLAY 环境设置缓存此验证状态。成功通过重新验证的进程（包括在缓存的超时值以内通过隐式验证的进程）会使用另一个进程标志 \fBPRIV_PFEXEC_AUTH\fR 进行标记，以使其子进程无需进行后续的重新验证。除非实际 UID 发生变化，否则子进程将继承 \fBPRIV_PFEXEC\fR 和 \fBPRIV_PFEXEC_AUTH\fR 标志。与未验证配置文件集匹配的命令不需要进行重新验证，但其优先级低于已验证配置文件集中的命令。如果同一命令出现在多个配置文件中，则配置文件 shell 将使用第一个匹配的条目。
+.sp
+.LP
+使用第二种形式 (\fBpfexec\fR \fB-P\fR \fI privspec\fR) 时，用户可以获取在 \fBprof_attr\fR(4) 中授予用户配置文件的附加特权。在命令行上指定的特权使用 \fBpriv_str_to_set\fR(3C) 解析。得到的特权将先与在 \fBprof_attr\fR(4) 中使用 \fBprivs\fR 关键字为所有用户配置文件指定的特权联合相交，并添加到可继承集，然后再执行命令。
+.SH 用法
+.sp
+.LP
+\fBpfexec\fR 用于使用预定义的进程属性（例如特定用户或组 \fBID\fR）执行命令。
+.sp
+.LP
+有关配置文件 shell 的完整使用说明，请参见 \fBsh\fR(1)、\fBcsh\fR(1) 和 \fBksh\fR(1) 手册页。
+.SH 示例
+.LP
+\fB示例 1 \fR获取附加的用户特权
+.sp
+.in +2
+.nf
+example% \fBpfexec -P all chown user file\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+此命令仅以分配给当前用户的所有特权运行 \fBchown user file\fR，不必使用所有特权。
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+出现错误。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBbash\fR(1)、\fBcsh\fR(1)、\fBksh\fR(1)、\fBksh88\fR(1)、\fBprofiles\fR(1)、\fBsh\fR(1)、\fBtcsh\fR(1)、\fBzsh\fR(1)、\fBexec_attr\fR(4)、\fBprof_attr\fR(4)、\fBuser_attr\fR(4)、\fBattributes\fR(5)

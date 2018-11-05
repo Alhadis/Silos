@@ -1,0 +1,419 @@
+'\" te
+.\" Copyright (c) 2009, 2015, Oracle and/or its affiliates. All rights reserved.
+.TH fwupdate 1M "March 5, 2015" "SunOS 11" "System Administration Commands"
+.sp
+.SH NAME
+fwupdate \- A firmware update utility for Oracle devices\&.
+.sp
+.SH SYNOPSIS
+.LP
+.nf
+\fBfwupdate <subcommand> <target> [options]\fR
+.fi
+.sp
+.SH DESCRIPTION
+.sp
+A command line utility to update the firmware of devices in Oracle servers\&. Refer to the user manual for your device when updating any firmware for special instructions or handling requirements\&. Accessing the service processor using the Host-to-ILOM Interconnect requires that you either provide credentials manually, or set up a host credentials cache using \fBilomconfig\fR\&.
+.sp
+When doing a firmware update the preferred mode is with the use of firmware metadata\&. This metadata is an XML file that is downloaded with the firmware patch from My Oracle Support (MOS)\&. This metadata automates the firmware update process and it should be used unmodified as it contains no customer configurable elements\&. The Oracle Hardware Management Pack documentation refers to this mode as automatic mode\&.
+.sp
+A complete list of currently supported Oracle servers is available at:
+.sp
+http://www.oracle.com/goto/ohmp
+.sp
+This utility interacts directly with physical hardware and can not run in a virtual environment\&.
+.sp
+.SH OPTIONS
+.sp
+This section shows only the general summary of \fBfwupdate\fR options\&. Usage varies based on the subcommand used\&. See subcommand sections of this man page for options specific to each subcommand\&.
+.sp
+For help on a specific subcommand, type: fwupdate <subcommand> --help
+.sp
+.in +2
+.nf
+fwupdate <subcommand> <target> [options]
+
+General Options:
+  -?, --help       help
+
+  -H, --remote-hostname=\fIsp_ip\fR  Provide user name to
+                               login to remote SP (must be
+                               paired with option -U)\&.
+
+  -U, --remote-username=\fIusername\fR  Provide user name to
+                                  login to remote SP(must be 
+                                  paired with option -H)\&.
+
+  -V, --version    Show the version of the command\&.
+
+  -q, --quiet      Suppress informational message output and
+                   only return error codes\&.
+.fi
+.in -2
+.sp
+.SH SUB-COMMANDS
+.sp
+The following subcommands are supported\&. See the next section for subcommand usage\&.
+.sp
+Note -
+.sp
+.RS 2
+The subcommands below reference fwupdate device names\&. These device names look similar to Solaris device paths but they are not the same\&.
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fBlist\fR
+.ad
+.RS 10n
+.rt
+Show devices available for update
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fBupdate\fR
+.ad
+.RS 10n
+.rt
+Update device firmware
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fBreset\fR
+.ad
+.RS 10n
+.rt
+Reset an individual device (not all devices are supported)
+.RE
+.sp
+.SH USAGE
+.sp
+Always consult your device documentation and release notes when performing any firmware update\&.
+.sp
+.ne 2
+.mk
+.na
+\fBlist\fR
+.ad
+.br
+.sp .6
+.RS 4n
+Show devices available for update\&.
+.sp
+.in +2
+.nf
+fwupdate list <target> [options]
+
+<target>
+  supported-targets
+  supported-images
+  error-codes
+  all
+  expander
+  disk
+  bridge
+  controller
+  sp_bios
+.fi
+.in -2
+.sp
+The \fBsupported-targets\fR and \fBsupported-images\fR targets, shown above, list devices that can be updated using \fBfwupdate\fR\&. The \fBerror-codes\fR target lists all the possible \fBfwupdate\fR error codes\&.
+.sp
+.in +2
+.nf
+[options]
+
+  -v, --verbose          Show detailed display, default
+                         is a brief display\&.
+
+  -x, --xml=\fIfilename\fR     Using the provided XML file, 
+                         determine which devices are 
+                         supported\&.
+
+  -n, --device_name=\fIname\fR  Allows a mandatory parameter 
+                         to designate a single device 
+                         to list\&. The device name is 
+                         the common-mapped device 
+                         name label\&.
+
+  -o, --output_xml=\fIfilename\fR  Print configuration 
+                             information in XML format 
+                             to the given file\&.
+.fi
+.in -2
+.sp
+Examples:
+.sp
+.in +2
+.nf
+fwupdate list all     
+    Show all available devices
+
+fwupdate list disk -n c0d1  
+    Show information about the disk labeled c0d1
+
+fwupdate list expanders -v -x firmware\&.xml -o output 
+    Show all expanders, log configuration to "output", 
+    show which expanders are supported by firmware\&.xml\&.
+
+    By using -x and providing metadata the output list
+    will show what devices will be updated for the
+    given patch metadata\&.
+.fi
+.in -2
+.sp
+See the Oracle Hardware Management Pack documentation for detailed examples of list functions\&.
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fBupdate\fR
+.ad
+.br
+.sp .6
+.RS 4n
+Update device firmware\&.
+.sp
+Update the firmware of all devices of the same type\&. 
+.sp
+.in +2
+.nf
+fwupdate update <target> <tokens> [options]
+
+<target>
+.fi
+.in -2
+.sp
+.in +2
+.nf
+When using an XML metadata file, the following device 
+types can be specified to update all devices of 
+the same type:
+  all
+  expander
+  disk
+  bridge
+  controller
+  sp_bios
+.fi
+.in -2
+.sp
+.in +2
+.nf
+<tokens>
+  -x, --xml=\fIfilename\fR     Take an XML file as input\&.
+
+  -o, --output=\fIfilename\fR  Log all actions in an output
+                         file\&.
+
+  -n, --device_name       Enter the name of the
+                          device that is to be updated\&.
+                          The device name can be found
+                          by using the "list" 
+                          subcommand\&.
+.fi
+.in -2
+.sp
+Note -
+.sp
+.RS 2
+The device name is optional when updating using an XML metadata file\&.
+.RE
+.sp
+.in +2
+.nf
+[Options]
+  -d --dry-run  Process and check firmware against 
+                selected device, but do not upload\&. 
+                Very useful for determining which 
+                device would be updated by a given XML 
+                metadata file without changing any
+                system firmware\&.
+
+  -q, --quiet   Suppress all output except for error 
+                codes and do not ask for user input\&. 
+                It is strongly recommend that you use 
+                the -o option to log output to a 
+                file to capture all update actions\&.
+
+  -p, --priority=\fIvalue\fR  Start processing at given
+                        priority level, skipping all 
+                        lower levels\&.
+
+  --silent-reboot  User is not prompted if a reboot is 
+                   required to update the firmware, the
+                   reboot will take place automatically\&.
+
+  --silent-no-reboot  User is not prompted if a reboot 
+                      is required to update the firmware 
+                      and no reboot will take place\&.
+.fi
+.in -2
+.sp
+Example of an automatic update:
+.sp
+.in +2
+.nf
+fwupdate update all -x firmware\&.xml -o output
+    This will update all devices specified in the patch
+    metadata\&.
+
+.fi
+.in -2
+.sp
+See the Oracle Hardware Management Pack documentation for more examples of firmware updates\&.
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fBreset\fR
+.ad
+.br
+.sp .6
+.RS 4n
+Reset a device\&. Typically done after an update\&.
+.sp
+.in +2
+.nf
+fwupdate reset <target> <tokens> [options]
+
+<target>
+  expander
+  controller
+  sp_bios
+.fi
+.in -2
+.sp
+.in +2
+.nf
+<tokens>
+  -n, --device_name   Enter the name of the device
+                      that is to be reset\&. The device
+                      name can be found by using the
+                      "list" subcommand\&.
+.fi
+.in -2
+.sp
+Example:
+.sp
+.in +2
+.nf
+fwupdate reset expander -n c0x1
+    This will reset the expander c0x1\&.  The device name 
+    used with -n was obtained using the list subcommand\&.
+
+.fi
+.in -2
+.sp
+See the Oracle Hardware Management Pack documentation for detailed examples of list functions\&.
+.RE
+.sp
+.SH ERRORS
+.sp
+The following are \fBfwupdate\fR error codes:
+.sp
+.in +2
+.nf
+Error Code Error Description
+---------- ------------------------------------------
+200        Invalid device type\&.
+201        Invalid device target type\&.
+202        Invalid device ID, run: fwupdate list all
+           to verify id\&.
+203        Reset of component failed\&.
+204        Firmware check failed for component\&.
+205        Firmware download failed for component\&.
+206        Specified component and specified image 
+           type do not match\&.
+207        Must specify an image file name when doing 
+           an update\&.
+208        Could not read specified image file\&.
+209        Reset of this component type is not supported\&.
+210        Specified component type does not match 
+           devices type\&.
+211        Must specify device to update\&.
+212        Update canceled by user\&.
+213        Firmware version information not available\&. 
+           Reset necessary to activate new firmware\&.
+214        Version verification failed\&.
+215        Final version is being reported the same 
+           as the starting version\&. Update may have 
+           succeeded, check update documentation\&.
+216        Missing or corrupt firmware file referenced 
+           by firmware metadata file\&.
+217        Metadata file invalid or corrupt\&.
+218        Metadata error\&. Prerequisite and priority 
+           settings conflict\&.
+219        Power control option is not supported for 
+           pre-application\&.
+220        Power control option is not supported for 
+           post-application\&.
+221        Power Control option is not supported\&.
+222        Requested component not available\&.
+223        Cannot verify version information, no XML 
+           provided\&.
+224        Metadata does not include support for this 
+           host\&.
+225        Could not identify host type\&.
+226        A valid subcommand required\&.
+227        Invalid option entered\&.
+228        Must specify device to reset\&. 
+229        Cannot open file to write XML output\&.
+230        Metadata XML file is required\&. 
+231        Invalid priority level entered\&. 
+232        Cannot read firmware metadata XML file\&.
+.fi
+.in -2
+.sp
+.SH FILES
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/log/ssm/fwupdate\&.log\fR \fR
+.ad
+.br
+.sp .6
+.RS 4n
+\fBfwupdate\fR specific log file\&.
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB/usr/lib/ssm/doc/fwupdate\&.xsd\fR
+.ad
+.br
+.sp .6
+.RS 4n
+\fBfwupdate\fR XML schema definition\&.
+.RE
+.sp
+.SH ATTRIBUTES
+.sp
+See attributes(5) for descriptions of the following attributes:
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/management/fwupdate
+_
+Interface StabilityCommitted
+.TE
+.sp
+.SH SEE ALSO
+.sp
+http://www.oracle.com/goto/ohmp/solarisdocs
+.sp
+Copyright (c) 2009, 2015, Oracle and/or its affiliates\&. All rights reserved\&.

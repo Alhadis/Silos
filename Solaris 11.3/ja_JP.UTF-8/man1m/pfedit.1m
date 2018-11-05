@@ -1,0 +1,142 @@
+'\" te
+.\" Copyright (c) 2012, 2014, Oracle and/or its affiliates.All rights reserved
+.TH pfedit 1M "2014 年 1 月 23 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+pfedit \- 管理ファイルのファイルごとに承認された編集
+.SH 形式
+.LP
+.nf
+\fBpfedit\fR [\fB-r\fR] [\fB-s\fR] \fIfile\fR
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBpfedit\fR コマンドを使用すると、承認されたユーザーはシステム構成ファイルを編集できます。\fIfile\fR 引数は、編集されるファイルのパス名です。file が絶対パス名でない場合は、現在の作業ディレクトリのパス名が先頭に付加され、以降のすべての処理はそれが引数であるかのように続行されます。呼び出し元ユーザーには、承認 \fBsolaris.admin.edit/\fR\fIpath_to_file\fR または包括的な承認 \fBsolaris.admin.edit\fR が必要です。\fBpfedit\fR コマンドではシンボリックリンクを使用できますが、そのためには、ファイルの \fBrealpath\fR(3C) に対する承認があるかどうかもチェックします。
+.sp
+.LP
+\fBpfedit\fR コマンドは、呼び出し元ユーザーが所有するファイルのコピーを作成してから、呼び出し元ユーザーの ID と特権を使ってそのファイルに対するエディタを呼び出します。デフォルトのエディタは \fB/usr/bin/vi\fR ですが、\fBEDITOR\fR または \fBVISUAL\fR 環境変数 (両方が設定されている場合は \fBVISUAL\fR が優先される) を使って選択することもできます。ユーザーがエディタを終了するときに、コピーされたファイルが更新されている場合は、その更新内容が自動的にファイルに適用されます。ファイルの随意アクセス属性 (所有者、グループ、アクセス権、および ACL) は、元のファイルのシステム属性や拡張属性とともにすべて保持されます。どの場合でも、\fBpfedit\fR の終了前に、ユーザーが所有するファイルのコピーが削除されます。 
+.sp
+.LP
+ファイルが存在しない場合は、所有者の root、グループの root を使ってファイルが作成されます。ファイルアクセス権は、\fB-s\fR オプションが選択されないかぎり、644 (\fB-rw-r--r--\fR) になり、その後ファイルアクセス権は 600 (\fB-rw-------\fR) になります。作成後は、前述の操作がそのファイルに適用されます。\fBpfedit\fR を使用したファイルの作成および変更が完了している場合、\fB-r\fR オプションを使用してファイルを削除できます。
+.sp
+.LP
+\fBpfedit\fR コマンドはファイルに随意ロックを設定するので、\fBpfedit\fR による同時更新は禁止されています。
+.sp
+.LP
+\fBpfedit\fR コマンドは、ほかのファイルへのハードリンクを壊さないように注意します。原子更新では既存のファイルを、更新内容の含まれる新しいものに置き換える必要があるため、\fBpfedit\fR はリンク数が 1 を超えるファイルの操作を拒否します。
+.sp
+.LP
+\fBpfedit\fR コマンドは、テキストファイルの編集に限定されているため、テキスト以外の文字 (NUL) を含む更新を受け入れません。
+.sp
+.LP
+構成によっては、更新が成功した際に、承認なしでの使用が試みられたり、エラーが発生した場合に、監査レコードが生成されて、被認証者、ファイル名、使用された承認、ファイルの変更 (存在する場合)、および操作の成功または失敗が取得されたりするようにできます。監査イベントのタイプとデフォルトクラスは次のいずれかです。
+.sp
+.in +2
+.nf
+AUE_admin_edit:edit administrative file:as
+AUE_admin_file_create:create administrative file:as
+AUE_admin_file_remove:remove administrative file:as
+.fi
+.in -2
+.sp
+
+.SH オプション
+.sp
+.LP
+次のオプションがサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたファイルを削除します (ファイルが \fBpfedit\fR によって作成済みの場合)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 6n
+.rt  
+ファイルに「高い機密性」のマークを付けます (\fBpfedit\fR を使用してファイルを作成する場合にのみ有効)。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRプロファイルを作成する
+.sp
+.LP
+\fB/etc/syslog.conf\fR を変更するためにユーザーに割り当てることができる \fBsolaris.admin.edit\fR 承認を使用してプロファイルを作成するには、\fBprofiles\fR(1) コマンドを使用します。
+
+.sp
+.in +2
+.nf
+% \fBprofiles -p "syslog Configure"\fR
+profiles: syslog Configure> \fBset auths=solaris.admin.edit/etc/syslog.conf\fR
+profiles: syslog Configure> \fBset desc="Edit syslog configuration"\fR
+profiles: syslog Configure> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fR/etc/syslog.conf を変更する
+.sp
+.LP
+ユーザーが前の例で構成された「syslog Configure」プロファイルを持っている場合、次を呼び出すと:
+
+.sp
+.in +2
+.nf
+# \fBpfedit /etc/syslog.conf\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\&...そのユーザーが所有する \fB/etc/syslog.conf\fR のコピーが作成され、そのユーザーとしてそのコピーに対して実行される \fB/usr/bin/vi\fR がデフォルトで呼び出されます。ユーザーがそのエディタを終了すると、ユーザーが保存した内容で \fB/etc/syslog.conf \fR が原子的に更新されます。
+
+.SH 終了ステータス
+.sp
+.LP
+\fBpfedit\fR コマンドは、正常終了した場合は 0、操作の一部が失敗した場合は 0 以外の終了値を保持します。
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性不確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBauths\fR(1), \fBpasswd\fR(1), \fBprofiles\fR(1), \fBgroupadd\fR(1M), \fBgroupdel\fR(1M), \fBgroupmod\fR(1M), \fBuseradd\fR(1M), \fBuserdel\fR(1M), \fBusermod\fR(1M), \fBfgetattr\fR(3C), \fBrealpath\fR(3C), \fBattributes\fR(5), \fBfsattr\fR(5)
+.SH 注意事項
+.sp
+.LP
+Oracle Solaris には、\fBpfedit\fR および \fBsolaris.admin.edit/\fR\fIpath_to_file\fR 承認の使用が推奨されていない管理構成ファイルが含まれています。ドメイン固有でより安全な代替コマンドがあります。たとえば、\fB/etc/passwd\fR、\fB/etc/shadow\fR、または \fB/etc/user_attr\fR ファイルには、代わりに \fBpasswd\fR(1)、\fBuseradd\fR(1M)、\fBuserdel\fR(1M)、または \fBusermod\fR(1M) を使用してください。\fB/etc/group\fR ファイルには、代わりに \fBgroupadd\fR(1M)、\fBgroupdel\fR(1M)、または \fBgroupmod\fR(1M) を使用してください。\fB/etc/security/auth_attr \fR、\fB/etc/security/exec_attr\fR、または \fB/etc/security/prof_attr \fR を更新する場合は、\fBprofiles\fR(1) コマンドが推奨されます。
+.sp
+.LP
+一部の構成ファイルの内容を変更する機能を使用すると、ユーザーに割り当てられた特権を昇格させることができます。そのようなファイルを編集するための承認、またはそのような承認を含むプロファイルの割り当ては、完全な特権付きのアクセスを提供するのと同等であるとみなされます。
+.sp
+.LP
+「高い機密性」というシステム属性を持つファイルまたは \fB-s\fR オプションを使用して作成されたファイルには、監査レコードに含まれている内容または内容の変更は入っていません。

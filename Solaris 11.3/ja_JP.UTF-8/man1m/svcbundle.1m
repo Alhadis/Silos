@@ -1,0 +1,591 @@
+'\" te
+.\" Copyright (c) 2012, 2015, Oracle and/or its affiliates.All rights reserved
+.TH svcbundle 1M "2015 年 6 月 2 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+svcbundle \- SMF サービスバンドルの作成
+.SH 形式
+.LP
+.nf
+\fBsvcbundle\fR [\fB-i\fR | \fB-o\fR \fIoutput_file\fR] \fB-s\fR \fIname\fR=\fIvalue\fR...
+.fi
+
+.LP
+.nf
+\fBsvcbundle\fR help [\fIname\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBsvcbundle\fR コマンドは、SMF マニフェストを生成するために使用されます。マニフェストは複数の \fB-s\fR オプションによって指定されます。マニフェストを生成するには、\fBservice-name\fR および \fBstart-method\fR を指定する必要があります。その他の NV ペアはオプションであり、ユーザーはこれらを使用してサービスの詳細を指定できます。\fBsvccfg\fR(1M) は、生成されたマニフェスト上で実行されるコマンドを検証して、テンプレートの競合があれば検出します。
+.sp
+.LP
+\fBsvcbundle\fR を使用してプロファイルを生成することもできます。後述の \fIbundle-type\fR を参照してください。
+.sp
+.LP
+2 つめの形式では、有効な名前がすべて一覧表示されるヘルプメッセージを標準出力に出力します。あるいは、help と名前を指定して、その名前に有効な値についての考察を表示することもできます。
+.sp
+.LP
+ユーザーへの負担を軽減するために、\fBsvcbundle\fR はマニフェストの生成時に、作業を簡素化するための仮定をいくつか設けます。これらの想定が、使用しているアプリケーションに適さない場合は、生成されたマニフェストを編集できます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+生成されたマニフェストは、マスターリスタータ \fBsvc.startd\fR(1M) とともに使用されるよう意図されています。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+サービスの開始が早くなりすぎないように、\fBsvc:/milestone/multi-user\fR への依存関係が生成されます。これの例外については、後述の \fBrc-script\fR を参照してください。サービスの起動を早めるために、\fBsmf\fR(5) で説明されている特定のサービスまたはマイルストーンのいずれかに依存するようにマニフェストを編集できます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+バンドル名は \fBservice-name\fR で提供される値と同じになります。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+すべての \fBexec_methods\fR のタイムアウトは 60 秒です。
+.RE
+.sp
+.LP
+\fB-i\fR オプションの使用により、サービスのインストール作業の大半を \fBsvcbundle\fR に実行させることができます。生成されたマニフェストは \fB/lib/svc/manifest/site\fR、または \fB/etc/svc/profile/site\fR 内のプロファイルに自動的に保存されます。生成されたファイルの名前は \fB-s\fR \fIservice-name\fR で指定されるサービス名のベース名になり、ファイルには \fB\&.xml\fR 拡張子が付けられます。警告: \fBsvcbundle\fR はその名前を持つ既存ファイルがあれば上書きします。
+.sp
+.LP
+次に、\fBsvcbundle\fR は \fBmanifest-import\fR サービスを再起動して新しく作成されたファイルを処理し、それを SMF に組み込みます。マニフェストの場合、\fBsvcbundle\fR はサービスが最終状態 (オンライン、無効、または保守のいずれか) に入るのを待機します。この待機期間の始めに、\fBsvcbundle\fR は次を出力します。
+.sp
+.in +2
+.nf
+svcbundle: waiting for service to reach \fIfinal_state\fR state
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\&...ここで、\fIfinal_state\fR は enabled (有効) または disabled (無効) です。このメッセージが表示されたあとは、\fBsvcbundle\fR を中断しても安全です。
+.sp
+.LP
+\fB-i\fR オプションを使用するには、これらの限定されたディレクトリにファイルを作成し、\fBmanifest-import\fR サービスを再起動するのに十分な承認が必要であることは明らかです。\fBsmf_security\fR(5) を参照してください。
+.SH 拡張機能説明
+.sp
+.LP
+このセクションでは、名前/値 (NV) ペアについて説明します。
+.sp
+.LP
+生成されたバンドルは、コマンド行で複数の -s オプションを使用することによって完全に定義されます。各 NV ペアの形式は \fIname\fR=\fIvalue\fR であり、ここでの \fIname\fR と \fIname\fR はこのリストからのものです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbundle-type\fR\fR
+.ad
+.sp .6
+.RS 4n
+生成するサービスバンドルのタイプ。有効な値は、\fBmanifest\fR および \fBprofile\fR です。\fBmanifest\fR がデフォルトです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBduration\fR\fR
+.ad
+.sp .6
+.RS 4n
+model の同義語。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBenabled\fR\fR
+.ad
+.sp .6
+.RS 4n
+インスタンスを有効にすべきかどうかを示します。有効な値は、\fBtrue\fR および \fBfalse\fR です。デフォルト値は \fBtrue\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmodel\fR\fR
+.ad
+.sp .6
+.RS 4n
+サービスモデルを設定します。これは \fBstartd\fR/\fBduration\fR プロパティーの値です。\fBsvc.startd\fR(1M) を参照してください。モデルは、次のいずれかの値に設定できます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBcontract\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBdaemon\fR — \fBcontract\fR の同義語
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBchild\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBwait\fR — \fBchild\fR の同義語
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBtransient\fR
+.RE
+デフォルトは \fBtransient\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstance-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+インスタンスの名前。デフォルト値は \fBdefault\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstance-property\fR=\fIpg_name\fR:\fIprop_name\fR:\fIprop_type\fR:\fIvalue\fR\fR
+.ad
+.br
+.na
+\fB\fBservice-property\fR=\fIpg_name\fR:\fIprop_name \fR:\fIprop_type\fR:\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+これらのオプションは、\fIpg_name\fR という名前のプロパティーグループをインスタンスまたはサービス内に作成するために使用され、それにはアプリケーションのタイプが割り当てられます。この PG には、\fIprop_type\fR タイプの 1 つの値を持つ、\fIprop_name\fR という名前のプロパティーが 1 つ含まれます。複数のプロパティーを持つプロパティーグループを作成するには、\fB*-property\fR を複数回呼び出します。ゼロまたはそれ以上の \fB*-property=\fR 宣言を使用できます。
+.sp
+プロパティータイプをデフォルトにするには、2 つの連続するコロンを使用します。後述の「使用例」を参照してください。マニフェストの場合は、\fBastring\fR というデフォルトのプロパティータイプが使用されます。プロファイルの場合、プロパティーは通常ほかの情報ソースから判断できるため、それを指定する必要はありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrc-script\fR=\fIscript_path\fR:\fIrun_level\fR\fR
+.ad
+.sp .6
+.RS 4n
+この NV ペアによって \fBsvcbundle\fR は、レガシー \fBrc\fR スクリプトから SMF サービスへの変換を容易にするマニフェストを発行できます。\fIscript_path\fR は \fBrc\fR スクリプトへのパスであり、\fIrun_level\fR は \fBrc\fR スクリプトが実行されている実行レベルです (\fBinit\fR(1M) を参照)。\fIscript_path\fR は、\fBexec_method\fR の開始と停止の要素をマニフェスト内に生成するために使用されます。exec 属性は次に設定されます。
+.sp
+.in +2
+.nf
+\fIscript_path\fR %m
+.fi
+.in -2
+.sp
+
+\fIrun_level\fR は依存関係の生成に使用されるため、そのスクリプトはブート中の適切な時期に実行されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrefresh-method\fR\fR
+.ad
+.sp .6
+.RS 4n
+サービスがリフレッシュされるときに実行するコマンド。この値を空白にしてもかまいません。この値には、\fBsmf_method\fR(5) に記載されている、パーセント記号 (\fB%\fR) によって取り込まれるメソッドトークンを指定できます。デフォルト値は \fB:true\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBservice-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+サービスの名前。この NV ペアは必須です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstart-method\fR\fR
+.ad
+.sp .6
+.RS 4n
+サービスが開始されるときに実行するコマンド。この値を空白にしてもかまいません。\fBsmf_method\fR(5) に記載されている、\fB%\fR によって取り込まれるメソッドトークンを指定でき、リスタータによる展開用としてマニフェストに格納されます。\fB:true\fR を指定できます。\fIrc-script\fR の NV ペアが指定されていないかぎり、マニフェストにはこの NV ペアが必要です。プロファイルには必要ありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstop-method\fR\fR
+.ad
+.sp .6
+.RS 4n
+サービスが停止されるときに実行するコマンド。これは、start-method と同様の値を受け入れ、さらに \fB:kill\fR も受け入れます。transient サービスのデフォルト値は \fB:true\fR、contract および child サービスのデフォルト値は \fB:kill\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBperiod\fR\fR
+.ad
+.sp .6
+.RS 4n
+この NV ペアは、定期的なサービスのマニフェストを作成するために、\fBperiodic-method\fR ペアとともに使用されます。このペアの値は、定期的なサービスの期間として使用されます。このペアを指定する場合は、\fBperiodic-method\fR も指定する必要があります (その逆も同様)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBperiodic-method\fR\fR
+.ad
+.sp .6
+.RS 4n
+この NV ペアは、定期的なサービスのマニフェストを作成するために、\fBperiodic\fR ペアとともに使用されます。このペアの値は、各期間に実行するコマンドを指定します。このペアを指定する場合は、period も指定する必要があります (その逆も同様)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBday\fR\fR
+.ad
+.sp .6
+.RS 4n
+スケジュールされたサービスを作成する際の「曜日」の制約を指定します。スケジュールされたサービスに関する詳細は、\fBsvc.periodicd\fR(1M) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBday_of_month\fR\fR
+.ad
+.sp .6
+.RS 4n
+スケジュールされたサービスを作成する際の「月の日」の制約を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfrequency\fR\fR
+.ad
+.sp .6
+.RS 4n
+スケジュールされたサービスを作成する際の頻度を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBminute\fR\fR
+.ad
+.sp .6
+.RS 4n
+スケジュールされたサービスを作成する際の「分」の制約を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmonth\fR\fR
+.ad
+.sp .6
+.RS 4n
+スケジュールされたサービスを作成する際の「月」の制約を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhour\fR\fR
+.ad
+.sp .6
+.RS 4n
+スケジュールされたサービスを作成する際の「時」の制約を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinterval\fR\fR
+.ad
+.sp .6
+.RS 4n
+この NV ペアは、スケジュールされたサービスのマニフェストを作成するために、\fBstart-method\fR ペアとともに使用されます。このペアの値は、スケジュールされたサービスを実行する頻度を指定します。このペアを指定する場合は、\fBstart-method\fR も指定する必要があります。\fBstart-method\fR ペアの値は、\fBscheduled_method\fR 要素の exec 属性に使用されます。スケジュールされたサービスに関する詳細は、\fBsvc.periodicd\fR(1M) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtimezone\fR\fR
+.ad
+.sp .6
+.RS 4n
+スケジュールされたサービスを作成する際の「タイムゾーン」の値を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBweekday_of_month\fR\fR
+.ad
+.sp .6
+.RS 4n
+スケジュールされたサービスを作成する際の「weekday_of_month」の制約を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBweek_of_year\fR
+.ad
+.sp .6
+.RS 4n
+スケジュールされたサービスを作成する際の「年の週番号」の制約を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fByear\fR\fR
+.ad
+.sp .6
+.RS 4n
+スケジュールされたサービスを作成する際の「年」の制約を指定します。
+.RE
+
+.SH オプション
+.sp
+.LP
+次のコマンド行オプションがサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.sp .6
+.RS 4n
+生成されたファイルをインストールします。詳細は、「機能説明」を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIoutput_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+作成されるファイルの名前を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIname\fR=\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+名前/値ペアを指定します。詳細は、「拡張機能説明」を参照してください。
+.RE
+
+.sp
+.LP
+\fB-i\fR も \fB-o\fR も指定されていない場合、生成されたファイルは標準出力に書き出されます。
+.SH 使用例
+.LP
+\fB例 1 \fRtransient サービス用のマニフェストを作成する
+.sp
+.LP
+次のコマンドでは、単純な transient サービス用のマニフェストを作成します。transient サービスは \fBsvcbundle\fR のデフォルトであるため、2 つのオプションだけでマニフェストを指定できます。
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s service-name=site/sneezy \e
+-s start-method=/lib/svc/method/sneezy\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRdaemon サービス用のマニフェストを作成する
+.sp
+.LP
+次のコマンドでは、daemon サービス用のマニフェストを作成します。
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s service-name=site/sneezy \e
+-s start-method=/lib/svc/method/sneezy \e\fR
+\fB-s model=daemon\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fR停止およびリフレッシュコマンドを使用して daemon サービス用のマニフェストを作成する
+.sp
+.LP
+次のコマンドでは、停止コマンドとリフレッシュコマンドを使用して daemon サービス用のマニフェストを作成します。
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s service-name=site/sleepy \e
+-s start-method="/lib/svc/method/sleepy %m" \e
+-s stop-method="/lib/svc/method/sleepy %m" \e
+-s refresh-method="/lib/svc/method/sleepy %m" \e\fR
+\fB-s model=daemon\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fRインスタンスプロパティーを使用してマニフェストを作成する
+.sp
+.LP
+次のコマンドでは、インスタンスプロパティーを使用してマニフェストを作成します。
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s service-name=system/happy \e
+-s start-method=/lib/svc/method/happy \e
+-s instance-property=config:velocity:count:50 \e
+-s instance-property=config:color:astring:red\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+生成されたマニフェストは、2 つのプロパティー \fBvelocity\fR と \fBcolor\fR を含む config プロパティーグループを使用してサービスインスタンスを作成します。
+
+.LP
+\fB例 5 \fR\fBrc\fR スクリプト変換用のマニフェストを作成する
+.sp
+.LP
+次のコマンドでは、\fBrc\fR スクリプトの変換に役立つマニフェストを作成します。この例では、\fBrc\fR スクリプトがマルチユーザーレベルで実行され、デーモンを起動しないものと想定します。
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s service-name=doc \e
+-s rc-script=/etc/init.d/doc:2\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+注意深いユーザーは、\fB/lib/svc/share/smf_include.sh\fR を含めるように \fBrc\fR スクリプトを変更します。
+
+.LP
+\fB例 6 \fRサービスプロパティーを変更するためのプロファイルを生成する
+.sp
+.LP
+次のコマンドでは、\fBgrumpy\fR サービスの \fBnfsmapid_domain\fR プロパティーを設定するためのプロファイルを生成します。
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s bundle-type=profile \e
+-s service-name=network/nfs/grumpy \e
+-s service-property=nfs-props:nfsmapid_domain:astring:grumpy\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 7 \fRデフォルトのプロパティータイプを使用する
+.sp
+.LP
+次のコマンドでは、デフォルトで \fBastring\fR になる config/color のプロパティータイプを設定します。
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s service-name=system/happy \e
+-s start-method=/lib/svc/method/happy \e
+-s instance-property=config:color::red\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 8 \fRマニフェストをインストールする
+.sp
+.LP
+次のコマンドでは、-i オプションを使用してマニフェストをインストールします。この例では、\fBbashful\fR はサービス名のベース名であるため、生成されたマニフェストは \fB/lib/svc/manifest/site/bashful.xml\fR に書き出されます。
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -i -s service-name=application/bashful \e
+-s start-method=/opt/bashful/start\fR
+svcbundle: waiting for application/bashful to reach enabled state
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBsvcs\fR(1)、\fBinit\fR(1M)、\fBsvc.startd\fR(1M)、\fBsvccfg\fR(1M)、\fBsvc.periodicd\fR(1M)、\fBservice_bundle\fR(4)、\fBattributes\fR(5)、\fBsmf_method\fR(5)、\fBsmf_security\fR(5)、\fBsmf_template\fR(5)、\fBsmf\fR(5)

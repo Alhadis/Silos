@@ -1,0 +1,164 @@
+'\" te
+.\" Copyright (c) 2002, 2013, Oracle and/or its affiliates. All rights reserved.
+.TH rbac 5 "2012 年 3 月 14 日" "SunOS 5.11" "標準、環境、マクロ"
+.SH 名前
+rbac, RBAC \- 役割に基づくアクセス制御
+.SH 機能説明
+.sp
+.LP
+役割に基づくアクセス制御を使用すると、システム管理者は、システムの各部分の管理制御をユーザーに委任できます。ユーザーが追加の特権を使用してコマンドを実行できるようにするための方法には、次の 2 つがあります:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ユーザーにプロファイルを直接割り当てます。この場合、追加の認証は必要ありません
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+役割を作成し、その役割にプロファイルを割り当てます。また、このアクセス制御を使用すると、通常であれば実行を許可されるコマンドを実行できなくすることにより、ユーザーにとって制限的な環境を構築することもできます。
+.RE
+.SS "プロファイル"
+.sp
+.LP
+プロファイルは、追加の特権または特定の実 UID/GID や実効 UID/GID、あるいはその両方で実行されるコマンドおよび承認の名前付き集合です。たとえば、ほとんどのプリンタシステムは、\fBlp\fR コマンドを UID または \fBlp\fR で実行することによって管理できます。一部のコマンドの実行には、\fBprivileges\fR(5) で定義された特権が必要です。たとえば、「Process Management」プロファイルを使用すると、ユーザーは、所有していないプロセスにシグナルを送信できるように \fBproc_owner\fR 特権で \fBkill\fR コマンドを実行できます。
+.sp
+.LP
+管理者がシステムで提供されたプロファイルを拡張したり、独自のプロファイルを作成したりする方法については、\fBexec_attr\fR(4) および \fBprof_attr\fR(4) を参照してください。プロファイルの構成は、現在サポートされているネームサービス (ファイル、NIS、LDAP) のいずれかに格納できます。
+.sp
+.LP
+プロファイルはまた、サービスの実行に使用される特権や UID/GID を制御するためにサービス管理機能 (SMF) でも使用できます。詳細は、\fBsmf_security\fR(5) を参照してください。
+.SS "役割"
+.sp
+.LP
+役割は、承認されたユーザーが \fBsu\fR(1M) コマンドを使用して、またはホストベース認証や GSS-API 認証を使用している場合は \fBssh\fR(1) を使用してネットワーク経由でしかアクセスできないシステムに直接ログインすることができない特殊な共有アカウントです。役割は、\fBrlogin\fR(1)、\fBtelnet\fR(1)、または \fBgdm\fR ではログインできません。 
+.sp
+.LP
+役割には、通常ユーザーと同様に UID、パスワード、およびホームディレクトリがあります。役割に対する認証は、ユーザー独自のパスワードまたは役割ごとのパスワードのどちらかで行うことができます (\fBuser_attr\fR(4) の \fBroleauth\fR キーワードによって、役割ごとの動作が制御されます)。通常、役割のログインシェルは、1 つ以上のプロファイルが付与されることによって役割が常に特権でコマンドを実行できるようにするプロファイルシェル (\fBpfsh\fR(1)、\fBpfksh\fR(1)、\fBpfcsh\fR(1)) のいずれかです。
+.sp
+.LP
+役割は通常、共有アカウント環境が必要な場合にのみ必要になります。通常は、ユーザーにプロファイルを直接割り当てれば十分です。
+.sp
+.LP
+root ユーザーは、\fBusermod\fR(1M) コマンドを使用すると、役割として構成できます。これにより、root パスワードがより広範囲に知られている場合でも、承認ユーザーのみが root になれることが保証されます。
+.sp
+.in +2
+.nf
+# usermod -K type=role root
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+root を役割にしても、シングルユーザーモードへのアクセスは制限されません。システムコンソールは、\fBeeprom\fR(1M) でのセキュリティーパスワードの設定などの、ほかの手段を使用して保護してください。
+.SS "承認"
+.sp
+.LP
+承認は、一部の操作または操作のクラスを実行するためのユーザーの権利を表す一意の文字列です。承認は通常、常に何らかの特権で実行されるプログラム (たとえば、\fBcdrw\fR(1) などの \fBsetuid\fR(2) プログラムや、システムの \fBcron\fR(1M) デーモン) によってのみチェックされます。
+.sp
+.LP
+承認の定義は、\fBauth_attr\fR(4) データベースに格納されます。プログラミングでの承認チェックの場合は、承認名のみが重要です。
+.sp
+.LP
+\fBauth_attr\fR データベース内のいくつかの代表的な値を次に示します:
+.sp
+.in +2
+.nf
+solaris.jobs.:::Cron and At Jobs::help=JobHeader.html
+solaris.jobs.grant:::Delegate Cron & At \e
+    Administration::help=JobsGrant.html
+solaris.jobs.admin:::Manage All Jobs::help=AuthJobsAdmin.html
+solaris.jobs.user:::Cron & At User::help=JobsUser.html
+.fi
+.in -2
+
+.sp
+.LP
+\fBgrant\fR 接尾辞で終わる承認名文字列は、ユーザーが、同じ接頭辞と機能領域を持つ承認をほかのユーザーに委任できるようにする特殊な承認です。
+.sp
+.LP
+\fBsolaris\fR で始まる承認名はすべて、オペレーティングシステムのベンダーによる割り当てのために予約されています。開発者と管理者は、独自の最上位の名前空間を作成できます (会社名、DNS ドメイン名、アプリケーション名などの一意の識別子を使用することをお勧めします)。
+.SS "承認のチェック"
+.sp
+.LP
+C コードから承認をチェックするには、開発者は、ユーザーに特定の承認が割り当てられているかどうかを検証する \fBchkauthattr\fR(3C) ライブラリ関数を使用してください。
+.sp
+.LP
+承認は、\fBauths\fR(1) ユーティリティーの出力をチェックすることによって、シェルスクリプトで明示的にチェックできます。たとえば、
+.sp
+.in +2
+.nf
+for auth in `auths      | tr , " "` NOTFOUND
+do
+    ["$auth" = "solaris.date" ] && break      # authorization found
+done
+
+if [ "$auth" != "solaris.date" ]
+then
+    echo >&2 "$PROG: ERROR: you are not authorized to set the date"
+    exit 1
+fi
+.fi
+.in -2
+
+.sp
+.LP
+承認はまた、どのユーザーがサービスの状態を変更したり、サービスを再構成したりできるかを制御するためにサービス管理機能 (SMF) でも使用されます。詳細は、\fBsmf_security\fR(5) を参照してください。
+.SS "sudo(1M) との比較"
+.sp
+.LP
+Solaris の RBAC には、多くの場合は UNIX または UNIX ライクなシステムに提供されている \fBsudo\fR(1M) に似た一連の機能が用意されています。これは Solaris の Companion CD で提供されています。
+.sp
+.LP
+Solaris RBAC と \fBsudo\fR のもっとも明らかな相違点の 1 つが認証モデルです。\fBsudo\fR では、ユーザーは自分自身として再認証します。Solaris RBAC では、追加の認証が必要ないか (ユーザーにプロファイルが直接割り当てられている場合)、またはユーザーが、役割と呼ばれる共有アカウントから認証されるかのどちらかです。
+.sp
+.LP
+\fBsudo\fR での \fBNOPASSWD\fR 機能の使用は、ユーザーにプロファイルを割り当て、ユーザーが \fBpfexec\fR(1) を使用してコマンドを実行するようにする方法と同様です。たとえば、\fBsudoers\fR(4) で、ユーザーが UID 0 として \fBkill\fR(1) を認証なしで (\fBNOPASSWD\fR) 実行できるようにする場合、ユーザーは次を実行します。
+.sp
+.in +2
+.nf
+$ sudo kill -HUP 1235
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Solaris RBAC では、ユーザーに通常の (つまり、プロファイルなしの) ログインシェルが割り当てられている場合、ユーザーは「Process Management」プロファイルが割り当てられることにより同等の操作を実行し、次のように \fBpfexec\fR を使用します。
+.sp
+.in +2
+.nf
+$ pfexec kill -HUP 1235
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+ユーザーにログインシェルとして (\fBpfsh\fR などの) プロファイルシェルが割り当てられている場合は、「接頭辞」がなくても \fBkill\fR は常に追加の特権で実行されます。たとえば、
+.sp
+.in +2
+.nf
+$ kill -HUP 1235
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+RBAC の役割は、ユーザーパスワードではなく役割のパスワードが必要な点を除き、概念的には \fBsudoers\fR(4) の \fBUser_Alias\fR に似ています。
+.sp
+.LP
+RBAC の実行プロファイル (\fBexec_attr\fR(4) エントリ) は、\fBsudoers\fR の \fBCmnd_Alias\fR に似ています。
+.sp
+.LP
+現在、Solaris RBAC には \fBHost_Alias\fR \fBsudo\fR(1M) と同等の機能はありません。
+.SH 関連項目
+.sp
+.LP
+\fBauths\fR(1), \fBld.so.1\fR(1), \fBpfcsh\fR(1), \fBpfexec\fR(1), \fBpfksh\fR(1), \fBpfsh\fR(1), \fBroles\fR(1), \fBsudo\fR(1M), \fBexec_attr\fR(4), \fBprof_attr\fR(4), \fBuser_attr\fR(4), \fBsmf_security\fR(5)
+.sp
+.LP
+\fI『Securing Users and Processes in Oracle Solaris 11.3 』\fR

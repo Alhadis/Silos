@@ -1,0 +1,838 @@
+'\" te
+.\" Copyright (c) 2007, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH logadm 1M "2015 年 4 月 6 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+logadm \- 管理不断增长的日志文件
+.SH 用法概要
+.LP
+.nf
+\fBlogadm\fR 
+.fi
+
+.LP
+.nf
+\fBlogadm\fR [\fB-\fIoptions\fR\fR] \fIlogname\fR...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBlogadm\fR 是常规日志轮转工具，适合从 \fBcron\fR(1M) 运行。
+.sp
+.LP
+不带参数时，\fBlogadm\fR 读取 \fB/etc/logadm.conf\fR 文件，对于该文件中的每个条目，检查对应的日志文件以确认是否应轮转该文件。通常，该检查根据 root 用户的 \fBcrontab\fR 中的条目在每天上午执行。
+.sp
+.LP
+如果指定了 \fIlogname\fR 参数，\fBlogadm\fR 会通过添加一个后缀来重命名对应的日志文件，以便使最近的日志文件以 \fB\&.0\fR 结尾（即，\fIlogfile\fR\fB\&.0\fR），下一个最近的文件以 \fB\&.1\fR 结尾（即，\fIlogfile\fR\fB\&.1\fR），依此类推。缺省情况下，会保留十个旧日志文件版本（即，\fIlogfile\fR\fB\&.0\fR 到 \fIlogfile\fR\fB\&.9\fR）。当要记录第十一个文件时，\fBlogadm\fR 会自动删除最旧的版本，以保持文件总数为十。
+.sp
+.LP
+\fBlogadm\fR 接受多个选项\fI\fR。您可以在命令行上或在 \fB/etc/logadm.conf\fR 文件中指定这些选项。\fBlogadm\fR 命令在 \fB/etc/logadm.conf\fR 中搜索 \fIlogname\fR \fI options\fR 格式的行 
+.sp
+.ne 2
+.mk
+.na
+\fB\fIlogname\fR\fR
+.ad
+.sp .6
+.RS 4n
+标识 \fB/etc/logadm.conf\fR 中的条目。该值可以是日志文件的名称或路径名。如果为此字段指定日志文件时未采用具体名称，必须设为完全限定路径名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIoptions\fR\fR
+.ad
+.sp .6
+.RS 4n
+该字段标识的选项与要在命令行上输入的选项完全相同。这允许将常用日志轮转策略存储在 \fB/etc/logadm.conf\fR 文件中。请参见\fB\fR“示例”部分。 
+.sp
+如果同时在 \fB/etc/logadm.conf\fR 和命令行中指定了 \fIoptions\fR，将会首先应用 \fB/etc/logadm.conf\fR 文件中的选项。因此，命令行选项将覆盖 \fB/etc/logadm.conf\fR 中的选项。 
+.sp
+\fB/etc/logadm.conf\fR 中指定的日志文件名可能包含文件名替换字符，例如 \fB*\fR 和 \fB?\fR，\fBcsh\fR(1) 支持这些字符。
+.RE
+
+.sp
+.LP
+由两个选项控制轮转日志文件的时间。这两个选项为：\fB-s\fR（大小）和 \fB-p\fR（时间段）。
+.sp
+.LP
+当同时使用这两个选项时，这两者之间存在隐含的\fB与\fR关系。这意味着，轮转日志之前必须满足所有条件。
+.sp
+.LP
+如果这两个选项都未指定，轮转日志文件的缺省条件为：\fB\fR\fB-s\fR \fB1b\fR \fB- p\fR \fB1w\fR，这意味着仅当大小非零并且自上次轮转之后已过 1 周时，才会轮转日志文件。
+.sp
+.LP
+如果指定 \fB\fR\fB-p\fR\fBnever\fR 作为轮转条件，将忽略任何其他轮转条件，并且 \fBlogadm\fR 将转为使旧日志文件过期。如果指定 \fB\fR\fB-p\fR \fBnow\fR 作为轮转条件，将强制执行日志轮转。
+.sp
+.LP
+如果未指定 \fB-o\fR、\fB-g\fR 或 \fB-m\fR 选项，\fBlogadm\fR 会通过创建所有者、组 ID 和权限与原始文件匹配的空文件来替换原始日志文件（在重命名该文件之后替换）。 
+.sp
+.LP
+由三个选项控制旧日志文件过期的时间：\fB-A\fR（寿命）、\fB-C\fR（计数）、\fB-S\fR（大小）。这些选项将使最旧的日志文件过期，直至满足特定的一个或多个条件。例如，\fB\fR\fB-C\fR \fB5\fR 和 \fB\fR\fB-S\fR \fB10m\fR 选项组合将使旧日志文件过期，直至日志文件总数不超过 5 个\fB并且\fR这些文件的总磁盘使用量不超过 10 MB。如果这些选项都未指定，则缺省过期选项为 \fB\fR\fB-C\fR \fB 10\fR，即保留十个旧日志文件。如果没有文件要过期，使用 \fB\fR\fB-C\fR \fB0\fR 作为缺省值来阻止过期。
+.sp
+.LP
+\fBlogadm\fR 将时间戳存储在 \fB/var/logadm/timestamps\fR 文件中。对于使用以前版本的 \fBlogadm\fR 的用户，该实用程序会自动将时间戳从 \fB/etc/logadm.conf\fR（以前的系统信息库）移至 \fB/var/logadm/timestamps\fR。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fIpost_command\fR\fR
+.ad
+.sp .6
+.RS 4n
+在重命名日志文件之后执行 \fIpost_command\fR。\fIpost_command\fR 将传递到 \fBsh\fR \fB-c\fR。
+.sp
+请将 \fIpost_command\fR 指定为有效 shell 命令。使用引号括起 \fIpost_command\fR 中的空格或 shell 元字符。 
+.sp
+此选项可用于重新启动正在写入文件的守护进程。使用一个 \fBlogadm\fR 命令轮转多个日志时，\fIpost_command\fR 仅在轮转所有日志之后执行一次，而不是在轮转每个日志之后执行一次。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fIage\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除在 \fIage\fR 指定的时间内尚未修改的任何版本。
+.sp
+将 \fIage\fR 指定为一个数字，后跟 \fBh\fR（小时）、\fBd\fR（天）、\fBw\fR（周）、\fBm\fR（月）或 \fBy\fR（年）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR \fIpre_command\fR\fR
+.ad
+.sp .6
+.RS 4n
+在重命名日志文件之前执行 \fIpre_command\fR。\fIpre_command\fR 将传递到 \fBsh\fR \fB-c\fR。 
+.sp
+请将 \fIpre_command\fR 指定为有效 shell 命令。使用引号括起 \fIpre_command\fR 中的空格或 shell 元字符。 
+.sp
+此选项可用于停止正在写入文件的守护进程。使用一个 \fBlogadm\fR 命令轮转多个日志时，\fIpre_command\fR 仅在轮转所有日志之前执行一次，而不是在轮转每个日志之前执行一次。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.sp .6
+.RS 4n
+通过以下方式轮转日志文件：复制原始日志文件，然后将原始日志文件截断到长度为零，而不重命名该日志文件。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR \fIcount\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除最旧的版本，直至保留的文件不超过 \fIcount\fR 个。
+.sp
+如果未指定任何过期选项（\fB-A\fR、\fB-C\fR 或 \fB-S\fR），则缺省值为 \fB\fR\fB-C\fR \fB10\fR。要阻止自动添加缺省过期规则，请指定 \fB\fR\fB-C\fR \fB0\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fImail_addr\fR\fR
+.ad
+.sp .6
+.RS 4n
+通过电子邮件将错误消息发送到 \fImail_addr\fR。 
+.sp
+由于 \fBlogadm\fR 通常从 \fBcron\fR(1M) 运行，因此 \fBcron\fR 将捕获错误消息并通过邮件发送到 \fBcrontab\fR 的所有者。
+.sp
+如果希望将与错误消息相关的邮件发送到其他地址，此选项非常有用。如果未遇到任何错误，则不会生成邮件消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-E\fR \fIcmd\fR\fR
+.ad
+.sp .6
+.RS 4n
+执行 \fIcmd\fR 使文件过期，而不是删除旧日志文件使文件过期。
+.sp
+\fIcmd\fR 将传递到 \fBsh\fR \fB-c\fR。在 \fIcmd\fR 完成之后，该文件将视为已过期。如果 \fIcmd\fR 未删除或重命名旧日志文件，会在下次对指定的日志文件运行 \fBlogadm\fR 时将该日志文件视为过期。如果指定的 \fIcmd\fR 中存在关键字 \fB$file\fR，该关键字将扩展为要过期的文件的名称。
+.sp
+此选项对许多任务都非常有用，例如将旧日志文件通过邮件发送给管理员，或者将旧日志文件复制到用于长期存储的设备。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIconf_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fIconf_file\fR 而非 \fB/etc/logadm.conf \fR。 
+.sp
+此选项允许非 root 用户保留自己的 \fBlogadm\fR 配置文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR \fItimestamp_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fItimestamp_file\fR 而非 \fB/var/logadm/timestamps\fR 存储 \fBlogadm\fR 时间戳。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR \fIgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用由 \fIgroup\fR 指定的 \fBID\fR 创建一个新的空文件，而不保留日志文件的组 \fBID\fR。 
+.sp
+以 \fBchgrp\fR(1) 可接受的名称或数值组 \fBID\fR 指定 \fIgroup\fR。
+.sp
+此选项要求用户能够使用 \fBchgrp\fR(1) 命令更改文件组所有权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.sp .6
+.RS 4n
+列显描述 \fBlogadm\fR 选项的帮助消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+命名轮转日志文件时使用本地时间而不是世界标准时间 (Coordinated Universal Time, UTC)（请参见随 \fB-t\fR 选项提供的模板中百分比序列的讨论）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fImode\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用由 \fImode\fR 指定的模式创建一个新的空文件，而不保留日志文件的模式。 
+.sp
+以 \fBchmod\fR(1) 命令可接受的任意格式指定 \fImode\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR \fIcmd\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fIcmd\fR 重命名日志文件。如果指定了关键字 \fB$file\fR，其将扩展为日志文件的名称。类似地，关键字 \fB$nfile\fR 将扩展为日志文件的新名称。\fB$nfile\fR 关键字仅可用于带 \fB-M\fR 选项的命令。该命令完成之后，日志文件将替换为轮转文件。缺省 \fIcmd\fR 是 “\fB/bin/mv\fR \fB $file\fR\fB\fR\fB$nfile\fR”。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR \fI\fR\fR
+.ad
+.sp .6
+.RS 4n
+列显 \fBlogadm\fR 命令将执行的操作而不实际执行这些操作。
+.sp
+此选项用于在对系统进行任何更改之前检查参数。
+.sp
+但是务必注意，由于使用此选项时只会输出日志轮转操作，\fBlogadm\fR 可能找不到需要过期的文件，但如果在不使用 \fB-n\fR 的情况下运行，\fBlogadm\fR 可能会因执行日志轮转操作而创建需要过期的文件。因此，即使在使用 \fB-n\fR 选项时未看到有文件要过期，在不使用该选项时仍可能有文件会过期。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR\fR
+.ad
+.sp .6
+.RS 4n
+在指定的日志文件不存在时阻止生成错误消息。通常情况下，\fBlogadm\fR 未找到日志文件时会生成错误消息。使用 \fB-N\fR 时，如果日志文件不存在，\fBlogadm\fR 会转为使用过期规则（如果有），然后转为使用下一个日志文件（如果有），而不会创建空的替换日志文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIowner\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fIowner\fR 创建一个新的空日志文件，而不保留日志文件的所有者。
+.sp
+以 \fBchown\fR(1) 命令可接受的任意格式指定 \fIowner\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIperiod\fR\fR
+.ad
+.sp .6
+.RS 4n
+在经过指定的时间段 (\fIperiod\fR) 之后轮转日志文件。
+.sp
+将 \fIperiod\fR 指定为一个数字，后跟 \fBd\fR（天）、\fBh\fR（小时）、\fBw\fR（周）、\fBm\fR（月，按 30 天算）或者 \fBy\fR（年）。时间段还有两个特殊值：\fBnow\fR 和 \fB never\fR。“\fB\fR\fB-p\fR \fBnow\fR” 强制进行日志轮转。“\fB\fR\fB-p\fR \fBnever\fR” 不进行任何日志轮转。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fItimestamp\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBlogadm\fR 用于将上次轮转日志的时间记录到 \fB/var/logadm/timestamps\fR。
+.sp
+此选项使用 \fItimestamp\fR 确定是否已过日志轮转时间段。\fItimestamp\fR 的格式与 \fBctime\fR(3C) 生成的格式匹配，使用引号括起嵌入的空格。\fItimestamp\fR 始终采用世界标准时间 (Coordinated Universal Time, UTC) 时区记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+从 \fB/etc/logadm.conf\fR 中删除对应于指定 \fIlogname\fR 的所有条目。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIcmd\fR\fR
+.ad
+.sp .6
+.RS 4n
+当通过日志轮转创建旧日志文件时运行 \fIcmd\fR。如果指定的命令中嵌入了关键字 \fB$file\fR，该关键字将扩展为刚才通过日志轮转创建的旧日志文件的名称。 
+.sp
+此选项用于在轮转日志之后处理日志文件内容。\fIcmd\fR 通过传递给 \fBsh\fR \fB- c\fR 来执行。使用一个 logadm 命令轮转多个日志时，带 \fB-R\fR 的命令在每次轮转日志时执行一次。此命令用于对日志文件进行后期处理（即，对日志文件进行排序、删除不感兴趣的行等）。\fB-a\fR 选项更适合在日志轮转之后重新启动守护进程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIsize\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅当日志文件的大小大于或等于 \fIsize\fR 时才轮转日志文件。 
+.sp
+将 \fIsize\fR 指定为一个数字，后跟字母 \fBb\fR（字节）、\fBk\fR (KB)、\fBm\fR (MB) 或 \fBg\fR (GB)。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR \fIsize\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除最旧的版本，直至旧日志文件使用的总磁盘空间小于指定的大小。
+.sp
+将 \fIsize\fR 指定为一个数字，后跟字母 \fBb\fR（字节）、\fBk\fR (KB)、\fBm\fR (MB) 或 \fBg\fR (GB)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fItemplate\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定重命名日志文件时要使用的模板。 
+.sp
+\fItemplate\fR 可以是一个简单名称，例如 \fB /var/adm/oldfile\fR，也可以包含通过 \fBlogadm\fR 扩展的格式为 \fB$\fR\fI word\fR 的特殊关键字。允许的序列包括：
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIbasename\fR\fR
+.ad
+.sp .6
+.RS 4n
+不包含目录名的日志文件名
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIdirname\fR\fR
+.ad
+.sp .6
+.RS 4n
+要轮转的文件所在的目录
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIdomain\fR\fR
+.ad
+.sp .6
+.RS 4n
+扩展为 \fBdomainname\fR 的输出
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+要轮转的文件的全路径名
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIisa\fR\fR
+.ad
+.sp .6
+.RS 4n
+扩展为 \fBuname\fR \fB-p\fR 的输出
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fImachine\fR\fR
+.ad
+.sp .6
+.RS 4n
+扩展为 \fBuname\fR \fB-m\fR 的输出
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIn\fR\fR
+.ad
+.sp .6
+.RS 4n
+版本号 \fB0\fR 是最新版本，\fB1\fR 是次最新版本，依此类推
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIN\fR\fR
+.ad
+.sp .6
+.RS 4n
+与 $\fIn\fR 相同，但从 \fB1\fR 而不是从零开始
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fInodename\fR\fR
+.ad
+.sp .6
+.RS 4n
+扩展为 \fBuname\fR \fB-n\fR 的输出
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIplatform\fR\fR
+.ad
+.sp .6
+.RS 4n
+扩展为 \fBuname\fR \fB-i\fR 的输出
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIrelease\fR\fR
+.ad
+.sp .6
+.RS 4n
+扩展为 \fBuname\fR \fB-r\fR 的输出
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIsecs\fR\fR
+.ad
+.sp .6
+.RS 4n
+自 \fB00:00:00 UTC, January 1,1970\fR 起经过的秒数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIzonename\fR\fR
+.ad
+.sp .6
+.RS 4n
+扩展为 \fBzonename\fR(1) 的输出。
+.RE
+
+要真正地在文件名中包含美元符号字符，请使用 \fB$$\fR。此外，也允许使用 \fBstrftime\fR(3C) 接受的任何百分比序列，例如 \fB %d\fR 将扩展为一个月份中的某天。要真正地在文件名中包含百分比符号字符，请使用 \fB%%\fR。美元符号关键字和百分比序列可以出现在模板中的任意位置。如果模板生成的路径名中含有不存在的目录，则在轮转日志文件时将会根据需要创建这些目录。
+.sp
+如果没有指定 \fB-t\fR 选项，缺省模板为 \fB$file.$n\fR。日志文件的实际\fB轮转\fR（每个版本逐一上移，直至过期）使用 \fB$n\fR 关键字执行。如果模板不包含 \fB$n\fR 关键字，日志文件将仅重命名为新名称，然后应用过期规则（如果有）。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fIpattern\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBlogadm\fR 查找旧日志文件列表时，通常将模板（使用 \fB-t\fR 选项指定）转变为模式，然后查找名称与该模式匹配的现有文件。\fB-T\fR 选项会导致改用给定的模式。
+.sp
+如果其他程序使用旧日志文件名执行操作（例如压缩一段时间内的日志文件的 \fBcron\fR 作业），则此选项会非常有用。该模式采用路径名格式，其中可包含 \fBcsh\fR(1) 文件名替换支持的特殊字符（例如 \fB*\fR 和 \fB?\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+以详细模式列显有关要执行的操作的信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR\fR
+.ad
+.sp .6
+.RS 4n
+验证配置文件。 
+.sp
+此选项验证 \fB/etc/logadm.conf\fR 文件中是否存在指定的 \fIlogname\fR 条目以及该条目的语法是否正确。如果未指定 \fIlogname\fR，则将验证配置文件中的所有条目。如果指定了 \fBlogname\fR 参数，命令将验证该条目的语法。如果找到该条目，将输出该条目并且命令的退出值为 true。否则退出值为 false。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-w\fR \fIentryname\fR\fR
+.ad
+.sp .6
+.RS 4n
+将条目写入与当前命令行参数对应的配置文件（即 \fB/etc/logadm.conf\fR）中。如果已经存在指定的 \fIentryname\fR 对应的条目，会首先删除该条目。这是更新 \fB/etc/logadm.conf\fR 的首选方法，原因是该语法可防止语法错误。\fIentryname\fR 是 \fBlogadm\fR 调用中的参数。可以为 \fIentryname\fR 选择易于记住的名称，或者设置为日志文件的路径名。如果使用的是路径名而不是具体名称，则必须为完全限定路径名。
+.sp
+如果未在 \fBlogadm\fR 命令行中提供日志文件名，系统将假定条目名称与日志文件名相同。例如，以下两行效果相同，即保留轮转日志文件的两个副本：
+.sp
+.in +2
+.nf
+% logadm -C2 -w mylog /my/really/long/log/file/name
+% logadm -C2 -w /my/really/long/log/file/name
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fIcount\fR\fR
+.ad
+.sp .6
+.RS 4n
+执行其他所有命令之后压缩旧日志文件。将会保留 \fIcount\fR 个最近日志文件不压缩，因此这 \fIcount\fR 个最近文件易于查阅。将 \fIcount\fR 设为零可压缩所有旧日志。
+.sp
+压缩通过 \fBgzip\fR(1) 执行，生成的日志文件的后缀为 \fB\&.gz\fR。
+.sp
+请注意，使用零计数可能导致守护进程之间的争用情况仍记录到文件中，而 gzip 已经压缩该文件。例如，通过 \fB-a post_command\fR 指示守护进程刷新其打开的日志文件时可能会发生这种情况。
+.sp
+.in +2
+.nf
+logadm -z 0 -a 'kill -HUP <pid>'
+.fi
+.in -2
+.sp
+
+甚至在守护进程已处理 HUP 信号之前，也可能开始压缩。在这种情况下，用户会在日志文件中看到以下消息：
+.sp
+.in +2
+.nf
+gzip: /var/adm/messages.0: file size changed while zipping
+.fi
+.in -2
+.sp
+
+解决方法是使用 \fB-z\fR 1，或在发送 HUP 信号后放置足够大的延迟（例如 'sleep 10'）。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIlogname\fR\fR
+.ad
+.sp .6
+.RS 4n
+标识 \fB/etc/logadm.conf\fR 中条目的名称。如果 \fIlogname\fR 字段中指定了日志文件名，系统将假定 \fIlogname\fR 与实际日志文件名相同。 
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR轮转文件并保留以前版本
+.sp
+.LP
+以下示例轮转 \fB/var/adm/exacct/proc\fR 文件，并在 \fB/var/adm/exacct/proc.0\fR 到 \fB /var/adm/exacct/proc.9\fR 中保留十个以前版本。
+
+.sp
+.LP
+通知 \fBlogadm\fR 复制文件并将该文件截断。
+
+.sp
+.in +2
+.nf
+ % logadm -c /var/adm/exacct/proc
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR轮转系统日志
+.sp
+.LP
+以下示例轮转 \fBsyslog\fR 并保留八个日志文件。旧日志文件将放入目录 \fB/var/oldlogs\fR 而不是 \fB/var/log\fR 中：
+
+.sp
+.in +2
+.nf
+% logadm -C8 -t'/var/oldlogs/syslog.$n' /var/log/syslog
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR轮转 /var/adm/sulog 并基于寿命使文件过期
+.sp
+.LP
+根据 \fB/etc/logadm.conf\fR 文件的以下条目轮转 \fB/var/adm/sulog\fR 文件，并使寿命大于 30 天的所有副本过期。
+
+.sp
+.in +2
+.nf
+/var/adm/sulog -A 30d
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR轮转文件并基于磁盘使用量使文件过期
+.sp
+.LP
+根据 \fB/etc/logadm.conf\fR 文件的以下条目轮转 \fB/var/adm/sulog\fR 文件，并在所有轮转日志文件的总空间量大于 100 MB 时使旧日志文件过期。 
+
+.sp
+.in +2
+.nf
+/var/adm/sulog -S 100m
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR创建用于存储日志文件名的条目
+.sp
+.LP
+此示例创建一个用于存储日志文件名的条目，实际上需要在 \fB/etc/logadm.conf\fR 中保留 20 个副本，但 \fB\fR\fB-p\fR \fBnever\fR 意味着每天上午从 root 的 crontab 运行的常规 \fBlogadm\fR 将忽略该条目。
+
+.sp
+.in +2
+.nf
+% logadm -w locallog /usr/local/logfile -C20 -p never
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+为此，在命令行上使用以下条目覆盖 \fB\fR\fB-p\fR \fBnever\fR 选项：
+
+.sp
+.in +2
+.nf
+ % logadm -p now locallog
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR轮转 apache 错误和访问日志
+.sp
+.LP
+以下示例会每月轮转 apache 错误和访问日志并基于当前年份和月份为文件命名。将保留 24 个最近副本并在重命名日志之后通知 apache 重新启动。 
+
+.sp
+.LP
+此命令运行一次，由于指定了 \fB-w\fR 选项，将在 \fB/etc/logadm.conf\fR 中创建一个条目，之后轮转 apache 日志。
+
+.sp
+.in +2
+.nf
+ % logadm -w apache -p 1m -C 24\e
+     -t '/var/apache/old-logs/$basename.%Y-%m'\e
+     -a '/usr/apache/bin/apachectl graceful'\e
+     '/var/apache/logs/*{access,error}_log'
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+此示例还说明了用 \fB-w\fR 选项提供的条目名称无需与日志文件名匹配。在此示例中，条目名称为 \fBapache\fR，运行该行之后，可以通过执行以下命令来强制运行 \fB/etc/logadm.conf\fR 中的该条目： 
+
+.sp
+.in +2
+.nf
+% logadm -p now apache
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+由于与 apache 日志文件名匹配的表达式括在引号中，因此会将该表达式（而非其扩展的文件列表）存储在 \fB/etc/logadm.conf\fR。这意味着每次 \fBlogadm\fR 从 \fBcron\fR 运行时，它将扩展表达式，并检查生成的列表中的所有日志文件，确认这些文件是否需要轮转。 
+
+.sp
+.LP
+以下命令是未使用引号将日志名称表达式括起来的一个示例。shell 将最后一个参数扩展为输入命令时存在的一个日志文件列表，并将一个条目写入用于轮转文件的 \fB/etc/logadm.conf\fR 中。
+
+.sp
+.in +2
+.nf
+logadm -w apache /var/apache/logs/*_log
+.fi
+.in -2
+.sp
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/logadm.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBlogadm\fR 命令的配置文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/logadm/timestamps\fR\fR
+.ad
+.sp .6
+.RS 4n
+记录时间戳的系统信息库
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBchgrp\fR(1)、\fBchmod\fR(1)、\fBchown\fR(1)、\fBcsh\fR(1), \fBgzip\fR(1), \fBcron\fR(1M)、\fBctime\fR(3C)、\fBstrftime\fR(3C)、\fBlogadm.conf\fR(4)、\fBattributes\fR(5)
+.SH 附注
+.sp
+.LP
+当 \fBlogadm\fR 应用过期条件（通过 \fB-A\fR、\fB-C\fR 和 \fB-S\fR 选项提供）时，系统将删除文件（首先删除最旧的文件），直到满足这些条件。如果用于命名旧日志的模板包含 \fB$n\fR 或 \fB $N\fR，\fBlogadm\fR 会首先选择旧日志文件名中值最大的 \fB$n\fR 或 \fB$N\fR。如果使用的模板为其他模板，\fBlogadm\fR 将使用修改时间确定首先要过期的文件。如果旧日志文件在轮转之后做了修改，可能不会遵循此行为。
+.sp
+.LP
+日志文件轮转可能非常耗时，具体取决于日志文件的大小和数量。
+.sp
+.LP
+缺省情况下，\fBlogadm\fR 按照 \fBUTC\fR 工作。因此，写入 \fB/etc/logadm.conf\fR 文件（请参见 \fBlogadm.conf\fR(4)）的所有条目都将具有 \fBUTC\fR 时间戳。用户可以使用 \fB-l\fR 选项将 \fBlogadm\fR 设置为本地时间。
+.sp
+.LP
+\fB-f\fR 和 \fB-F\fR 选项可以指定同一文件，在这种情况下，\fBlogadm\fR 恢复为先前版本的行为。即，时间戳将写入配置文件。

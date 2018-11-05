@@ -1,0 +1,807 @@
+'\" te
+.\" To view license terms, attribution, and copyright for OpenSSH, the default path is /var/sadm/pkg/SUNWsshdr/install/copyright.If the Solaris operating environment has been installed anywhere other than the default, modify the specified path to access the file at the installed location.
+.\" Portions Copyright (c) 2009, 2012, Oracle and/or its affiliates. All rights reserved.
+.TH ssh 1 "2012 年 5 月 7 日" "SunOS 5.11" "用户命令"
+.SH 名称
+ssh \- 安全 shell 客户机（远程登录程序）
+.SH 用法概要
+.LP
+.nf
+\fBssh\fR [\fB-l\fR \fIlogin_name\fR] \fIhostname\fR | \fIuser@hostname\fR [ \fIcommand\fR]
+.fi
+
+.LP
+.nf
+\fBssh\fR [\fB-afgknqstvxACNTX1246\fR] [\fB-b\fR \fIbind_address\fR] [\fB-m\fR \fImac_spec\fR] 
+     [\fB-c\fR \fIcipher_spec\fR] [\fB-e\fR \fIescape_char\fR] [\fB-i\fR \fIidentity_file\fR] 
+     [\fB-i\fR \fIPKCS#11-URI\fR]
+     [\fB-l\fR \fIlogin_name\fR] [\fB-F\fR \fIconfigfile\fR] [\fB-o\fR \fIoption\fR] [\fB-p\fR \fIport\fR] 
+     [\fB-L\fR [\fIbind_address\fR\fB:\fR]\fIport\fR\fB:\fR\fIhost\fR\fB:\fR\fIhostport\fR]
+     [\fB-R\fR [\fIbind_address\fR\fB:\fR]\fIport\fR\fB:\fR\fIhost\fR\fB:\fR\fIhostport\fR]
+     [\fB-D\fR [\fIbind_address\fR\fB:\fR]\fIport\fR] \fIhostname\fR | \fIuser\fR\fB@\fR\fIhostname\fR [\fIcommand\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBssh\fR（Secure Shell，安全 Shell）是用于登录到远程计算机并在远程计算机上执行命令的程序。该程序用于替代 \fBrlogin\fR 和 \fBrsh\fR，并可在不安全网络中的两个不可信主机之间实现安全的加密通信。X11 连接和任意的 TCP/IP 端口也可以通过安全通道转发。
+.sp
+.LP
+上述 \fBssh\fR 实现方案可同时支持 SSH 协议版本 1 和 2。由于协议版本 1 存在安全漏洞，因此，只应运行版本 2（如果可能）。 
+.sp
+.LP
+目前，仍提供版本 1 支持，以帮助使用现有 \fBssh\fR 版本 1 服务器的站点向版本 2 转换。未来的发行版可能不再支持版本 1。
+.sp
+.LP
+\fBssh\fR 可连接并登录到指定的主机名。用户必须根据所使用的协议版本，从多种方法中选择一种来向远程计算机证明其身份：
+.SS "SSH 协议版本 1"
+.sp
+.LP
+首先，如果用户登录的计算机已在远程计算机的 \fB/etc/hosts.equiv\fR 或 \fB/etc/shosts.equiv\fR 中列出，并且在这两端使用的用户名相同，则用户可以立即登录。其次，如果 \fB\&.rhosts\fR 或 \fB .shosts\fR 位于远程计算机上的用户起始目录中，并且其中一行包含客户机的名称以及用户在该客户机上的用户名，则用户可以登录。通常，服务器不允许单独采取这种形式进行验证，因为它不安全。
+.sp
+.LP
+第二种（主要）验证方法是将 \fBrhosts\fR 或 \fBhosts.equiv\fR 方法与基于 RSA 的主机验证相结合。这意味着，只有在 \fB$HOME/.rhosts\fR、\fB$HOME/.shosts\fR、\fB/etc/hosts.equiv\fR 或 \fB/etc/shosts.equiv\fR 允许登录，并且服务器可以验证客户机的主机密钥（请参见“文件”部分的 \fB/etc/ssh_known_hosts\fR）时，才可以登录。这种验证方法可以避免因 \fBIP\fR 欺骗、\fBDNS\fR 欺骗和路由欺骗而产生的安全漏洞。
+.sp
+.LP
+\fB管理员注意：\fR一般情况下，\fB/etc/hosts.equiv\fR、\fB$HOME/.rhosts\fR 和 rlogin/rsh 协议本身存在固有的不安全性，如需确保安全性，应将其禁用。
+.sp
+.LP
+作为第三种验证方法，\fBssh\fR 可支持基于 \fBRSA\fR 的验证。此方案基于公钥加密。在某些加密系统中，可使用不同的密钥进行加密和解密，但解密密钥无法从加密密钥派生。\fBRSA\fR 就是这样一个系统。其理念是，每个用户都会创建一个公钥对/私钥对进行验证。服务器可识别公钥，但只有用户才能识别私钥。文件 \fB$HOME/.ssh/authorized_keys\fR 列出了登录时允许使用的公钥。用户登录时，\fBssh\fR 程序会告知服务器要使用哪个密钥对进行验证。随后，服务器将检查是否允许使用该密钥，如果是，则会以随机数字的形式向用户（实际上是代表用户运行的 \fBssh\fR 程序）发送一个质询，该质询通过用户公钥进行加密。该质询只能使用正确的私钥进行解密。然后，用户的客户机会使用该私钥对该质询进行解密，以证明他或她可识别该私钥，但不会将其透露给服务器。
+.sp
+.LP
+\fBssh\fR 将自动实现 \fBRSA\fR 验证协议。用户将通过运行 \fBssh-keygen\fR(1) 创建其 \fBRSA\fR 密钥对。这种方法会将私钥存储在 \fB$HOME/.ssh/identity\fR 中，而将公钥存储在用户起始目录的 \fB$HOME/.ssh/identity.pub\fR 中。随后，用户应将 \fBidentity.pub\fR 复制到其位于远程计算机的起始目录中的 \fB$HOME/.ssh/authorized_keys\fR（\fBauthorized_keys\fR 文件相当于常规的 \fB$HOME/.rhosts\fR 文件，而且每行都包含一个密钥，即使行可能很长也是如此）。完成上述操作后，用户无需提供口令即可登录。\fBRSA \fR 验证比 \fBrhosts\fR 验证更为安全。
+.sp
+.LP
+使用 \fBRSA\fR 验证的最简便方法是使用验证代理。有关详细信息，请参见 \fBssh-agent\fR(1)。
+.sp
+.LP
+如果其他验证方法失败，\fBssh\fR 将提示用户输入口令。口令将发送至远程主机以供检查。但是，由于所有通信均已加密，因此，侦听网络的人员无法看到该口令。
+.SS "SSH 协议版本 2"
+.sp
+.LP
+SSH 协议版本 2 可支持多种用户验证方法，其中一些方法与 SSH 协议版本 1 提供的方法类似。这些验证机制由客户机和服务器进行协商，而客户机会按照 \fB PreferredAuthentications\fR 客户机配置选项中指定的顺序尝试各种方法。服务器将确定是否已成功尝试足够的验证方法而可以完成协议的验证阶段。
+.sp
+.LP
+如果用户使用协议版本 2 进行连接，则可以使用类似的验证方法。通过 \fBPreferredAuthentications\fR 的缺省值，客户机可以首先尝试使用基于主机的方法进行验证。如果上述方法失败，将尝试公钥验证。最后，如果此方法仍失败，将尝试进行键盘交互式验证和口令验证。
+.sp
+.LP
+公钥方法类似于上一部分所述的 \fBRSA\fR 验证，它允许使用 \fBRSA\fR 或 \fBDSA\fR 算法：客户机使用其私钥、\fB$HOME/.ssh/id_dsa\fR 或 \fB$HOME/.ssh/id_rsa \fR 对会话标识符进行签名，并将结果发送至服务器。之后，服务器将检查匹配的公钥是否列在 \fB$HOME/.ssh/authorized_keys\fR 中，如果找到该密钥，并且签名正确，则授予访问权限。会话标识符是从一个共享的 Diffie-Hellman 值派生的，并且仅由客户机和服务器识别。
+.sp
+.LP
+如果公钥验证失败或不可用，可向远程主机发送加密口令，以证明用户的身份，或者还可以使用扩展提示/应答协议。
+.sp
+.LP
+此外，\fBssh\fR 还支持基于主机的验证或质询应答验证。
+.sp
+.LP
+协议 2 可提供其他机制来确保保密性（使用 3DES、Blowfish、CAST128 或 Arcfour 对通信进行加密） 和完整性（\fBhmac-sha2-256\fR、\fBhmac-sha2-256-96\fR、\fBhmac-sha2-512\fR、\fBhmac-sha2-512-96\fR、\fB hmac-sha1\fR 和 \fBhmac-md5\fR）。协议 1 缺乏可确保连接完整性的强大机制。
+.SS "登录会话和远程执行"
+.sp
+.LP
+在服务器接受用户身份后，服务器可以执行指定的命令，也可以登录到计算机并在远程计算机上为用户提供一个常规 shell。所有与远程命令或 shell 之间的通信均自动加密。
+.sp
+.LP
+如果分配了伪终端（常规登录会话），则用户可以使用下文提供的转义符。如果分配了伪终端（常规登录会话），则用户可以使用 \fB~.\fR 断开连接，并使用 \fB~^Z\fR 暂停 \fBssh\fR。所有转发的连接均可通过 \fB~#\fR 列出。如果会话阻止等待转发的 X11 或 TCP/IP 连接终止，可使用 \fB~&\fR 将 \fBssh\fR 置于后台，但不应在用户 shell 处于活动状态时使用此方法，因为这可能导致 shell 挂起。所有可用的转义符均可通过 \fB~?\fR 列出。
+.sp
+.LP
+单个波浪号字符可以以 \fB~~\fR 的形式发送，也可以在其后添加一个除上述字符之外的字符来发送。转义符前必须始终添加一个换行符，才能将其解释为特殊字符。转义符可在配置文件中或命令行上进行更改。
+.sp
+.LP
+如果未分配任何伪 tty，则会话是透明的，并可用于可靠地传输二进制数据。在大多数系统上，将转义符设置为 “\fBnone\fR” 也可以使会话透明，即使使用了 tty 也是如此。
+.sp
+.LP
+当远程计算机上的命令或 shell 退出，并且关闭了所有 X11 和 TCP/IP 连接后，会话将终止。此时将返回远程程序的退出状态，并将该状态作为 \fBssh\fR 的退出状态。
+.SS "转义符"
+.sp
+.LP
+如果请求了伪终端，则 \fBssh\fR 可通过使用转义符来支持大量函数。
+.sp
+.LP
+单个波浪号字符可以以 \fB~~\fR 的形式发送，也可以在其后添加一个除下列字符之外的字符来发送。转义符前必须始终添加一个换行符，才能将其解释为特殊字符。转义符可通过 \fB EscapeChar\fR 配置指令在配置文件中进行更改，也可通过 \fB-e\fR 选项在命令行上进行更改。
+.sp
+.LP
+受支持的转义符（假定缺省为 \fB~\fR）包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB~.\fR\fR
+.ad
+.RS 7n
+.rt  
+断开。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB~^Z\fR\fR
+.ad
+.RS 7n
+.rt  
+将 \fBssh\fR 置于后台。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB~#\fR\fR
+.ad
+.RS 7n
+.rt  
+列出转发的连接。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB~&\fR\fR
+.ad
+.RS 7n
+.rt  
+等待转发的连接/X11 会话终止时注销会将 \fBssh\fR 置于后台。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB~?\fR\fR
+.ad
+.RS 7n
+.rt  
+显示转义符列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB~B\fR\fR
+.ad
+.RS 7n
+.rt  
+向远程系统发送中断信号。只有在使用 SSH 协议版本 2，并且对等方支持它时才适用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB~C\fR\fR
+.ad
+.RS 7n
+.rt  
+打开命令行。只有在使用 \fB-L\fR 和 \fB-R\fR 选项添加端口转发时才适用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB~R\fR\fR
+.ad
+.RS 7n
+.rt  
+请求重设连接的密钥。只有在使用 SSH 协议版本 2，并且对等方支持它时才适用。
+.RE
+
+.SS "X11 和 TCP 转发"
+.sp
+.LP
+如果 \fBForwardX11\fR 变量设置为 "\fByes\fR"（或者请参见下文介绍的 \fB-X\fR 和 \fB-x\fR 选项），并且用户正在使用 X11（已设置 \fBDISPLAY\fR 环境变量），则与 X11 显示之间的连接将自动转发至远程端，从而使所有从 shell（或命令）启动的 X11 程序都经过加密通道，并从本地计算机连接到实际 X 服务器。用户不应手动设置 \fBDISPLAY\fR。X11 连接的转发可在命令行上或配置文件中进行配置。
+.sp
+.LP
+由 \fBssh\fR 设置的 \fBDISPLAY\fR 值指向服务器计算机，但使用的显示编号大于零。此行为属于正常行为，因为 \fBssh\fR 会在服务器计算机上创建“代理”X11 服务器，用以通过加密通道转发连接。
+.sp
+.LP
+\fBssh\fR 还会在服务器计算机上自动设置 \fBXauthority\fR 数据。为此，它将生成一个随机的授权 Cookie，将其存储在服务器上的 \fBXauthority\fR 中，确认所有转发的连接均具有此 Cookie，并在打开连接时将其替换为实际 Cookie。实际的验证 Cookie 从不会发送至服务器计算机（并且不会以明文形式发送任何 Cookie）。
+.sp
+.LP
+如果 \fBForwardAgent\fR 变量设置为 “\fByes\fR”（或者请参见下文介绍的 \fB-A\fR 和 \fB-a\fR 选项），并且用户正在使用验证代理，则与该代理之间的连接将自动转发至远程端。
+.sp
+.LP
+可在命令行或配置文件中指定通过安全通道转发任意 TCP/IP 连接。TCP/IP 转发的一种可能的应用情形是，与电子钱包进行安全连接。另一种可能的应用情形是防火墙遍历。
+.SS "服务器验证"
+.sp
+.LP
+\fBssh\fR 将自动维护并检查一个数据库，该数据库包含曾使用它的所有主机的标识。主机密钥存储在用户起始目录的 \fB$HOME/.ssh/known_hosts\fR 中。此外，还会自动检查文件 \fB/etc/ssh_known_hosts\fR 中的已知主机。\fBssh\fR 针对未知主机密钥的行为通过 \fBStrictHostKeyChecking\fR 参数进行控制。如果主机的标识发生更改，\fBssh\fR 将发出相关警告，并禁用口令验证，以防止特洛伊木马获取用户口令。此机制的另一个用途是，防止遭受中介的攻击，否则这些攻击可能会绕开加密。\fBStrictHostKeyChecking\fR 选项可用于防止登录到主机密钥未知或已发生更改的计算机。
+.sp
+.LP
+但是，在使用受 GSS-API 保护的密钥交换时，服务器可以通告一个主机密钥。无论 \fBStrictHostKeyChecking\fR 选项的设置如何，客户机都会自动将此主机密钥添加到其已知的主机文件 \fB$HOME/.ssh/known_hosts\fR，除非通告的主机密钥与现有已知主机条目相冲突。
+.sp
+.LP
+当用户的 GSS-API 凭证过期后，客户机仍能使用服务器的公共主机密钥重设会话密钥，以保护密钥交换。
+.SS "GSS-API 用户和服务器验证"
+.sp
+.LP
+如果设置了 \fBGssKeyEx\fR 和/或 \fBGssAuthentication\fR，则 \fBssh\fR 会在任何可能的情况下使用用户的 GSS-API 凭证向服务器验证客户机。
+.sp
+.LP
+借助 \fBGssKeyEx\fR，用户可以使用一台不具有任何主机公钥的 SSHv2 服务器，这样就只能使用 \fBGssKeyEx\fR。如果使用此类服务器，则在客户机的凭证过期后，重设密钥会失败。
+.sp
+.LP
+GSS-API 用户验证的缺点是，仍然需要 SSH 主机密钥，但验证失败不会影响重设密钥。如果 GSS-API 验证失败，\fBssh\fR 可以尝试其他验证方法（如公钥、口令等）。
+.sp
+.LP
+委托 GSS-API 凭证的方法可能非常有用，但并非没有危险。与口令一样，用户不应将 GSS 凭证委托给不可信的服务器，因为有风险的服务器可能会使用用户委托的 GSS 凭证来模拟用户。
+.sp
+.LP
+\fBgss_auth_rules\fR(5) 中介绍了 GSS-API 用户授权。
+.sp
+.LP
+如果 \fBGssKeyEx\fR 设置为 “\fByes\fR”，则可以通过重设密钥来重新委托凭证。（请参见上述\fB\fR“转义符”中的 \fB~R\fR 部分。）
+.sp
+.LP
+使用以下设置配置 \fBssh\fR：
+.sp
+.in +2
+.nf
+UseFIPS140 yes
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\&...可在 FIPS-140 模式下运行 OpenSSL。仅支持 SSH 协议版本 2。SunSSH 仍可将用户/主机验证的加密操作委托给 Solaris 的其他组件，这些组件可能已通过 FIPS 140 认证，也可能未通过此认证。\fBUseOpenSSLEngine\fR 选项的缺省值是 \fBno\fR，将 \fBUseOpenSSLEngine\fR 设置为 \fByes\fR 不会在 FIPS 模式下有任何影响。如果仍然需要在 FIPS-140 模式下运行 \fBssh\fR，则客户机需要使用 \fBssh-keygen\fR \fB-8\fR 命令生成 PKCS#8 格式的用户私钥。
+.sp
+.LP
+如果 \fBssh\fR 已启用 FIPS-140，则在登录到非 FIPS-140 \fBsshd\fR 时，必须使用适用于此方案的“加密算法”在 \fBsshd_config\fR(4) 中显式指定受支持且经批准的 FIPS 加密算法。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-1\fR\fR
+.ad
+.sp .6
+.RS 4n
+强制 \fBssh\fR 仅尝试协议版本 1。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-2\fR\fR
+.ad
+.sp .6
+.RS 4n
+强制 \fBssh\fR 仅尝试协议版本 2。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-4\fR\fR
+.ad
+.sp .6
+.RS 4n
+强制 \fBssh\fR 仅使用 IPv4 地址。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-6\fR\fR
+.ad
+.sp .6
+.RS 4n
+强制 \fBssh\fR 仅使用 IPv6 地址。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁用验证代理连接转发。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用验证代理连接转发。也可以在配置文件中按主机指定此选项。
+.sp
+启用代理转发时应谨慎。如果用户能够绕过远程主机上的文件权限（有代理的 UNIX 域套接字），则可以通过转发的连接访问本地代理。攻击者无法从代理获取密钥材料。但是，攻击者可以对密钥执行操作，从而可以使用已装入代理的标识进行验证。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR \fIbind_address\fR\fR
+.ad
+.sp .6
+.RS 4n
+在具有多个接口或别名地址的计算机上指定要从中传输数据的接口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIcipher_spec\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择用于为会话加密的加密算法规范。 
+.sp
+对于协议版本 1，\fIcipher_spec\fR 是单个加密算法。有关更多信息，请参见 \fBssh_config\fR(4) 中的 \fBCipher\fR 选项。 
+.sp
+对于协议版本 2，\fIcipher_spec\fR 是以逗号分隔并按优先顺序列出的加密算法列表。有关更多信息，请参见 \fBssh_config\fR(4) 中的 \fICiphers\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR\fR
+.ad
+.sp .6
+.RS 4n
+请求压缩所有数据（包括标准输入、标准输出、标准错误以及已转发的 X11 和 TCP/IP 连接的数据）。其压缩算法与 \fBgzip\fR(1) 所使用的压缩算法相同。\fBSUNWsfman\fR 软件包中提供了 \fBgzip\fR 手册页。“级别”可通过 \fBCompressionLevel\fR 选项进行控制（请参见 \fBssh_config\fR(4)）。对于调制解调器线路和其他慢速连接而言，压缩是可取的，但对于快速网络而言，它只会降低速度。可以在配置文件中为每台主机设置缺省值。请参见 \fBssh_config\fR(4) 中的 \fBCompression\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR [\fIbind_address\fR\fB:\fR]\fIport\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定一个本地的\fB动态\fR应用程序级别端口转发。该操作可以通过分配套接字以侦听本地端上的端口来实现，也可以选择绑定到指定的 \fIbind_address\fR。每当与此端口建立连接时，该连接就会通过安全通道转发。然后，使用应用程序协议确定从远程计算机连接到的位置。目前，支持 \fBSOCKS4\fR 和 \fBSOCKS5\fR 协议，\fBssh\fR 可充当 SOCKS 服务器。只有具有足够特权的用户才能转发特权端口。动态端口转发也可以在配置文件中进行指定。
+.sp
+指定 IPv6 地址时，可以通过备用语法 \fB[\fR\fIbind_address\fR\fB/]\fR\fIport\fR 或将该地址括在方括号中。缺省情况下，本地端口将根据 \fBGatewayPorts\fR 设置进行绑定。但是，可以使用显式 \fIbind_address\fR 将连接绑定到特定地址。\fBlocalhost\fR 的 \fIbind_address\fR 表示侦听端口仅供本地使用，而空地址或 \fB*\fR 则表示所有接口均可使用该端口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fIch\fR | ^\fIch\fR | none\fR
+.ad
+.sp .6
+.RS 4n
+使用 pty 为会话设置转义符（缺省为：\fB~\fR）。转义符只有位于行开头时才可以识别。后跟一个点 (\fB\&.\fR) 的转义符会关闭连接。如果转义符后面跟有 CTRL-z，则该转义符将暂停连接。如果转义符后面跟着转义符自身，则该转义符将发送自身一次。将该字符设置为 \fBnone\fR 将禁用所有转义符，并使会话完全透明。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+请求 \fBssh\fR 在命令执行之前进入后台。如果 \fBssh\fR 需要输入口令或口令短语，但用户希望在后台提供，则该操作很有用。此选项隐式指定 \fB-n\fR 选项。在远程站点启动 X11 程序的推荐方法是使用类似于 \fBssh\fR \fB-f\fR \fIhost\fR \fIxterm\fR 的命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR \fIconfigfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定每个用户的备用配置文件。如果在命令行上指定了配置文件，则系统范围的配置文件 \fB/etc/ssh_config\fR 将被忽略。每个用户的缺省配置文件为 \fB$HOME/.ssh/config\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许远程主机连接到本地转发端口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fIidentity_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择用于读取 \fBRSA\fR 或 \fBDSA\fR 验证所使用的标识（私钥）的文件。对于协议版本 1，缺省值为 \fB$HOME/.ssh/identity\fR，对于协议版本 2，缺省值为 \fB$HOME/.ssh/id_rsa\fR 和 \fB$HOME/.ssh/id_dsa\fR。也可以在配置文件中按主机指定标识。可以指定多个 \fB-i\fR 选项（也可以在配置文件中指定多个标识）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR \fIPKCS#11–URI\fR\fR
+.ad
+.sp .6
+.RS 4n
+与存储在 PKCS#11 令牌中的证书和私钥（而不是标识文件）一起使用。有关详细信息，请参见 \fBsshd\fR(1M) 手册页的\fB\fR“使用 X.509 证书”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIlogin_name\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定远程计算机上的登录用户。此选项也可以在配置文件中按主机指定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR [\fIbind_address:\fR]\fIport\fR:\fIhost\fR:\fIhostport\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定将本地（客户机）主机上的指定端口转发到远程端上的指定主机和端口。该操作可以通过分配套接字以侦听本地端上的端口来实现，也可以选择绑定到指定的 \fIbind_address\fR。然后，一旦与该端口建立连接，该连接就会通过安全通道进行转发，并与远程计算机上的主机端口 \fIhostport\fR 建立连接。端口转发也可以在配置文件中进行指定。只有具有足够特权的用户才能转发特权端口。指定 IPv6 地址时，可以通过备用语法 \fB[\fR\fIbind_address\fR\fB/]\fR\fIport\fR\fB/\fR\fIhost\fR\fB/\fR\fIhostport\fR 或将该地址括在方括号中。
+.sp
+缺省情况下，本地端口将根据 \fBGatewayPorts\fR 设置进行绑定。但是，可以使用显式 \fIbind_address\fR 将连接绑定到特定地址。\fBlocalhost\fR 的 \fIbind_address\fR 表示侦听端口仅供本地使用，而空地址或 \fB*\fR 则表示所有接口均可使用该端口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fImac_spec\fR\fR
+.ad
+.sp .6
+.RS 4n
+此外，对于协议版本 2，也可以按优先顺序指定以逗号分隔的 \fBMAC\fR（消息验证代码）算法列表。有关更多信息，请参见 MAC 关键字。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+从 \fB/dev/null\fR 重定向 \fBstdin\fR（实际上是防止从 \fBstdin\fR 进行读取）。如果 \fBssh\fR 在后台运行，则必须使用此选项。常见的技巧是，使用此选项在远程计算机上运行 X11 程序。例如，
+.sp
+.in +2
+.nf
+ssh -n shadows.cs.hut.fi emacs &
+.fi
+.in -2
+.sp
+
+在 \fBshadows.cs.hut.fi\fR 上启动 \fBemacs\fR，然后 X11 连接将自动通过加密通道进行转发。\fBssh\fR 程序将被置于后台。如果 \fBssh\fR 需要输入口令或口令短语，则此选项不起作用。另请参见 \fB-f\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR\fR
+.ad
+.sp .6
+.RS 4n
+不执行远程命令。如果您只想转发端口，则此选项很有用（仅适用于协议版本 2）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIoption\fR\fR
+.ad
+.sp .6
+.RS 4n
+可用来以配置文件中使用的格式指定选项。在指定没有单独的命令行标志的选项时，这很有用。此选项的格式与配置文件中的行相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIport\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定所要连接的远程主机上的端口。此选项可以在配置文件中按主机指定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR\fR
+.ad
+.sp .6
+.RS 4n
+过时选项。不支持从特权端口发起的 SSHv1 连接。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR\fR
+.ad
+.sp .6
+.RS 4n
+静默模式。隐藏所有警告和诊断消息。仅显示致命错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR [\fIbind_address\fR:]\fIport\fR:\fIhost\fR:\fIhostport\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定将远程（服务器）主机上的指定端口转发到本地端上的指定主机和端口。该操作可以通过分配套接字以侦听远程端上的端口来实现。然后，一旦与该端口建立连接，该连接就会通过安全通道进行转发，并与本地计算机上的主机端口 \fIhostport\fR 建立连接。端口转发也可以在配置文件中进行指定。只有以具有足够特权的用户身份登录到远程计算机上时，才能转发特权端口。
+.sp
+IPv6 地址可以通过将地址括在方括号中或使用备用语法 \fB[\fR\fIbind_address\fR\fB/]\fR\fIhost\fR\fB/\fR\fIport\fR\fB/\fR\fI hostport\fR 来指定。
+.sp
+缺省情况下，服务器上的侦听套接字仅绑定到回送接口。通过指定 \fIbind_address\fR 可以覆盖此选项。空的 \fIbind_address\fR 或地址 \fB*\fR 表示远程套接字应在所有接口上侦听。只有在启用了服务器的 \fBGatewayPorts\fR 选项时，指定远程 \fIbind_address\fR 才会成功。请参见 \fBsshd_config\fR(4)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.sp .6
+.RS 4n
+可用来请求调用远程系统上的子系统。子系统是 SSH2 协议的一项功能，该功能便于使用 SSH 为其他应用程序（例如，\fBsftp\fR）提供安全传输。子系统作为远程命令来指定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+强制分配伪 tty。此选项可用来在远程计算机上执行基于屏幕的任意程序，例如，在实现菜单服务时可能非常有用。使用多个 \fB-t\fR 选项可强制分配，即使 \fBssh\fR 不具有本地 \fB tty\fR 也是如此。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁用伪 tty 分配（仅适用于协议版本 2）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+详细模式。使 \fBssh\fR 打印有关其进度的调试消息。这有助于调试连接、验证和配置问题。使用多个 \fB-v\fR 选项可提高详细级别。最大值为 3。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁用 X11 转发。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-X\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用 X11 转发。也可以在配置文件中按主机指定此选项。
+.sp
+启用 X11 转发时应谨慎。对于用户的 X 授权数据库，如果用户能够绕过远程主机上的文件权限，则可以通过转发连接访问本地 X11 显示。然后，攻击者可以执行诸如击键监视等活动。
+.sp
+为此，X11 转发可能会受到 X11 SECURITY 扩展限制的约束。有关更多信息，请参见 \fBssh_config\fR(4) 中的 \fBForwardX11Trusted\fR 指令。
+.sp
+缺省情况下，如果启用了 X11 转发，则远程 X11 客户机将受信任。也就是说，它们对原始 X11 显示具有完全访问权限。
+.RE
+
+.SH 环境变量
+.sp
+.LP
+\fBssh\fR 通常会设置以下环境变量：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDISPLAY\fR\fR
+.ad
+.sp .6
+.RS 4n
+要使 X11 显示转发可以正常工作，必须设置 \fBDISPLAY\fR 变量。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSSH_ASKPASS\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果 \fBssh\fR 需要一个口令短语，当在终端中运行时，它将通过当前终端读取口令短语。如果 \fBssh\fR 没有与之关联的终端，但设置了 \fBDISPLAY\fR 和 \fBSSH_ASKPASS\fR，它将执行 \fBSSH_ASKPASS\fR 指定的程序并打开一个 X11 窗口来读取口令短语。从 .Xsession 或相关脚本调用 \fBssh\fR 时，这尤其有用。在某些计算机上，要实现这一点，可能需要从 \fB/dev/null\fR 重定向输入。系统附带了 \fB/usr/lib/ssh/ssh-askpass\fR，这是 \fBSSH_ASKPASS\fR 的缺省值
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSSH_AUTH_SOCK\fR\fR
+.ad
+.sp .6
+.RS 4n
+指示用于与代理通信的 unix-domain 套接字的路径。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSSH_LANGS\fR\fR
+.ad
+.sp .6
+.RS 4n
+以逗号分隔的 IETF 语言标记列表（请参见 RFC3066），表示用户可以阅读和编写的语言。用于协商服务器上的语言环境。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLANG\fR、\fBLC_ALL\fR、\fBLC_COLLATE\fR、\fBLC_CTYPE\fR、\fR
+.ad
+.br
+.na
+\fB\fBLC_MESSAGES\fR、\fBLC_MONETARY\fR、\fBLC_NUMERIC\fR、\fBLC_TIME\fR\fR
+.ad
+.sp .6
+.RS 4n
+根据客户机的语言环境设置以及服务器端是否支持这些语言环境，可以在远程会话中设置这些环境变量的值。环境变量传递（请参见 \fIRFC 4254\fR）用于将环境变量传递到服务器端。 
+.RE
+
+.sp
+.LP
+有关如何根据服务器端配置进一步更改语言环境的更多信息，请参见 \fBsshd\fR(1M) 手册页中的\fB\fR“环境变量”部分。
+.SH 退出状态
+.sp
+.LP
+远程程序的状态将作为 \fBssh\fR 的退出状态返回。如果在 \fBssh\fR 连接期间出现任何错误（包括初始密钥交换），则返回 \fB255\fR。
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.ssh/known_hosts\fR\fR
+.ad
+.RS 26n
+.rt  
+记录用户已登录但不位于 \fB/etc/ssh/ssh_known_hosts\fR 中的所有主机的主机密钥。请参见 \fBsshd\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.ssh/identity\fR\fR
+.ad
+.br
+.na
+\fB\fB$HOME/.ssh/id_dsa\fR\fR
+.ad
+.br
+.na
+\fB\fB$HOME/.ssh/id_ssa\fR\fR
+.ad
+.RS 26n
+.rt  
+包含用户的验证标识。这些文件分别适用于协议 1 \fBRSA\fR、协议 2 \fBDSA\fR 和协议 2 \fBRSA\fR。这些文件包含敏感数据，应能由该用户读取，而不能由其他用户访问（读取/写入/执行）。\fBssh\fR 将忽略可由其他用户访问的私钥文件。可以在生成密钥时指定一个口令短语。该口令短语用于通过 \fB3DES\fR 对该文件中的敏感数据进行加密。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ssh/sshrc\fR\fR
+.ad
+.RS 26n
+.rt  
+该文件中的命令会在用户登录后且在启动用户的 Shell 或命令之前由 \fBssh\fR 执行。有关详细信息，请参见 \fBsshd\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.ssh/rc\fR\fR
+.ad
+.RS 26n
+.rt  
+该文件中的命令会在用户登录后且在启动用户的 Shell 或命令之前由 \fBssh\fR 执行。有关详细信息，请参见 \fBsshd\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.ssh/environment\fR\fR
+.ad
+.RS 26n
+.rt  
+包含有关环境变量的更多信息。请参见“环境变量”部分。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性network/ssh
+_
+接口稳定性请参见下文。
+.TE
+
+.sp
+.LP
+命令行语法是 "Committed"（已确定）。通过传递 \fBLC_*\fR 环境变量而选择的远程语言环境为 "Uncommitted"（未确定）。
+.SH 另请参见
+.sp
+.LP
+\fBrlogin\fR(1)、\fBrsh\fR(1)、\fBscp\fR(1)、\fBssh-add\fR(1)、\fBssh-agent\fR(1)、\fBssh-keygen\fR(1)、\fBssh-http-proxy-connect\fR(1)、\fBssh-socks5-proxy-connect\fR(1)、\fBtelnet\fR(1)、\fBsshd\fR(1M)、\fBssh_config\fR(4)、\fBsshd_config\fR(4)、\fBattributes\fR(5)、\fBgss_auth_rules\fR(5)、\fBkerberos\fR(5)、\fBprivileges\fR(5)
+.sp
+.LP
+请参见 \fBkrb5_auth_rules\fR(5) 中对 \fB\&.k5login\fR 文件的讨论。
+.sp
+.LP
+\fIRFC 1928\fR
+.sp
+.LP
+\fIRFC 4254\fR

@@ -1,0 +1,371 @@
+'\" te
+.\" Copyright (c) 1999, 2012, Oracle and/or its affiliates. All rights reserved.
+.TH auditd 1M "13 Apr 2012" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+auditd \- audit service daemon
+.SH SYNOPSIS
+.LP
+.nf
+\fB/usr/sbin/auditd\fR 
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The audit service daemon, \fBauditd\fR, manages audit data generated either locally (see \fBaudit_binfile\fR(5), \fBaudit_syslog\fR(5) and \fBaudit_remote\fR(5)) or remotely (see "Audit Remote Server" below). When auditing is enabled, \fBauditd\fR reads its configuration to do the following:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Configure audit policy.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Configure the audit queue control parameters.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Configure the event-to-class mappings.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Set the default audit masks.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+If local auditing is enabled (see "Local Auditing" below), load one or more plugins.
+.sp
+Solaris provides three plugins. \fBaudit_binfile\fR(5) writes binary audit data to a file. \fBaudit_remote\fR(5) sends binary audit data to an authenticated server with privacy and integrity protection. \fBaudit_syslog\fR(5) sends text summaries of audit records to the \fBsyslog\fR daemon.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Read audit data from the kernel and pass that data to each of the active plugins.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Execute the \fBaudit_warn\fR(1M) script to warn of various conditions.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+If remote auditing (\fBars\fR(5)) is enabled, process requests and store the remotely generated audit data.
+.RE
+.sp
+.LP
+\fBaudit\fR(1M) is used to control the audit service. It can cause \fBauditd\fR to:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Close a connection to a remote audit server thus causing it to close its respective audit file.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Start and refresh the service based on the current properties.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Close the audit trail and disable local auditing and remote audit service.
+.RE
+.sp
+.LP
+\fBauditconfig\fR(1M) is used to configure the audit service. It can configure the active and permanent:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+audit policy
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+audit queue control parameters
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+default audit masks
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+plugins to be loaded
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+plugin attributes
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+audit remote server state, attributes, and connection groups
+.RE
+.SS "Local Auditing"
+.sp
+.LP
+The collecting of audit records that are generated on the local system. The records can be generated in the global zone or in non-global zones, or both.
+.SS "Remote Auditing"
+.sp
+.LP
+The Audit Remote Server, ARS, that receives and stores audit records from a system that is being audited and is configured with an active \fBaudit_remote\fR plugin. To distinguish an audited system from an ARS, the audited system can be termed the locally audited system.
+.SS "Auditing Conditions"
+.sp
+.LP
+The audit service daemon enables local auditing in case at least one audit daemon plugin is configured as active.
+.sp
+.LP
+The Audit Remote Server functionality is enabled, if the server is not configured as inactive (see the \fB-setremote\fR server option in \fBauditconfig\fR(1M)) and at least one connection group is active. See Audit Remote Server section for more information.
+.sp
+.LP
+Local auditing and the Audit Remote Server can be configured independently.
+.SS "Audit Remote Server"
+.sp
+.LP
+The Audit Remote Server, ARS, is an integral part of \fBauditd\fR. It makes a counterpart to the \fBaudit_remote\fR(5) plugin. Data sent by the plugin can be captured, processed, and stored by the server according to its configuration.
+.sp
+.LP
+ARS is delivered as a disabled Solaris audit component. It is necessary to configure it before it can be used to process a remote audit trail. ARS configuration is twofold: first, the underlying security mechanisms used for secure audit data transport has to be configured (see \fBaudit_remote\fR(5)); second, the audit subsystem has to be properly configured.
+.sp
+.LP
+To observe and configure the ARS, use the \fBauditconfig\fR(1M) \fB-setremote\fR and \fB-getremote\fR options. The configuration is divided to the configuration of \fBserver\fR and \fBgroup\fR. The \fBserver\fR configuration allows for changing common ARS parameters, while the \fBgroup\fR keyword allows configuration of connection groups, the sets of hosts sharing the same local storage parameters.
+.SS "Server Configuration Attributes"
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlisten_address\fR\fR
+.ad
+.sp .6
+.RS 4n
+Address the server listens on. Empty \fBlisten_address\fR attribute defaults to listen on all local addresses.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlisten_port\fR\fR
+.ad
+.sp .6
+.RS 4n
+The local listening port; 0 defaults to 16162. Port associated with the \fBsolaris-audit\fR Internet service name. See \fBservices\fR(4).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlogin_grace_time\fR\fR
+.ad
+.sp .6
+.RS 4n
+The server disconnects after login grace time (in seconds) if the connection has not been successfully established. \fB0\fR defaults to no limit.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmax_startups\fR\fR
+.ad
+.sp .6
+.RS 4n
+Number of concurrent unauthenticated connections to the server at which the server starts refusing new connections. Note that the value might be specified in \fIbegin\fR:\fIrate\fR:\fIfull\fR format to allow random early drop mode, for example \fB10:30:60\fR. That means that ARS would refuse connection attempts with a probability of \fIrate\fR/100 (30% in our example) if there are currently 10 (from the \fBstart\fR field) unauthenticated connections. The probability increases linearly and all connection attempts are refused if the number of unauthenticated connections reaches \fBfull\fR (60 in our example).
+.RE
+
+.SS "Group Configuration Attributes"
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbinfile_dir\fR, \fBbinfile_fsize\fR, \fBbinfile_minfree\fR\fR
+.ad
+.sp .6
+.RS 4n
+Attributes follow the respective \fBp_*\fR attributes defined in \fBaudit_binfile\fR(5), in short:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbinfile_dir\fR\fR
+.ad
+.sp .6
+.RS 4n
+Directory for storing per host audit data.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbinfile_fsize\fR\fR
+.ad
+.sp .6
+.RS 4n
+The maximum size of each of the stored audit trail files; \fB0\fR defaults to no limit.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbinfile_minfree\fR\fR
+.ad
+.sp .6
+.RS 4n
+The minimum free space on file system with binfile_dir before the \fBaudit_binfile\fR(5) lets administrator know by means of \fBaudit_warn\fR(1M); \fB0\fR defaults to no limit.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhosts\fR\fR
+.ad
+.sp .6
+.RS 4n
+Defines the hosts in the given connection group allowed to send audit data to server. Note that a comma is a delimiter in case of multiple host entries. If \fBhosts\fR is empty, such connection group is called a wild card connection group. If a new connection cannot be classified to any other (non-wild card) connection group and there is an active wild card connection group configured, the new connection is classified to that connection group. Only one active wild card connection group can be configured.
+.sp
+For a configuration example, see "Examples".
+.RE
+
+.sp
+.LP
+For comprehensive configuration description and examples, see the appropriate chapter in the \fISecuring Systems and Attached Devices in Oracle Solaris 11.3\fR. 
+.SS "Audit Record Queue"
+.sp
+.LP
+The maximum number of records to queue for audit data sent to the plugin is specified by the \fBqsize\fR parameter specified for the plugin. If omitted, the current \fBhiwater\fR mark is used. See the \fB-getqctrl\fR option in \fBauditconfig\fR(1M). When this maximum is reached, \fBauditd\fR will either block processes or discard data, depending on the \fBcnt\fR audit policy as described in \fBauditconfig\fR(1M).
+.SS "Auditing System Warnings"
+.sp
+.LP
+The audit service daemon and audit plugins invoke the script \fBaudit_warn\fR(1M) under certain conditions. See \fBaudit_warn\fR(1M) for more information.
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRAudit Remote Server Configuration
+.sp
+.LP
+The following example describes steps to configure audit remote server to listen on a specific address. One wild card and one non-wild card connection group will be created. The non-wild card connection group configuration will address remote audit data from \fBtic.cz.example.com\fR and \fBtac.us.example.com\fR. The trail will be stored in \fB/var/audit/remote\fR.
+
+.sp
+.in +2
+.nf
+# Print the current audit remote server configuration.
+# Both server and connection groups (if any) is displayed.
+
+# \fBauditconfig -getremote\fR
+
+# Set address the audit remote server will listen on.
+
+# \fBauditconfig -setremote server "listen_address=192.168.0.1"\fR
+
+# Create two connection groups. Note that by default the
+# connection group is created with no hosts specified
+# (wild card connection group).
+
+# \fBauditconfig -setremote group create clockhouse\fR
+# \fBauditconfig -setremote group create sink\fR
+
+# Add hosts to the connection group (convert the wild card
+# connection group no non-wild card one). Set the storage
+# directory and activate the connection group.
+
+# \fBauditconfig -setremote group active clockhouse \e\fR
+# \fB"hosts=tic.cz.example.com,tac.us.example.com,\e\fR
+# \fBbinfile_dir=/var/audit/remote"\fR
+
+# Activate the wild card connection group.
+
+# \fBauditconfig -setremote group active sink\fR
+
+# Verify the audit remote server configuration.
+
+# \fBauditconfig -getremote\fR
+
+# Start or refresh the audit service.
+
+# \fBaudit -s\fR
+.fi
+.in -2
+.sp
+
+.SH FILES
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBetc/security/audit/audit_class\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBetc/security/audit/audit_event\fR
+.RE
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/core-os
+_
+Interface StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBaudit\fR(1M), \fBaudit_warn\fR(1M), \fBauditconfig\fR(1M), \fBpraudit\fR(1M), \fBaudit_class\fR(4), \fBaudit_class\fR(4), \fBaudit_event\fR(4), \fBservices\fR(4), \fBars\fR(5), \fBattributes\fR(5), \fBaudit_binfile\fR(5), \fBaudit_flags\fR(5), \fBaudit_remote\fR(5), \fBaudit_syslog\fR(5), \fBsmf\fR(5)
+.sp
+.LP
+See the section on Auditing in \fISecuring Systems and Attached Devices in Oracle Solaris 11.3\fR. 
+.SH NOTES
+.sp
+.LP
+\fBauditd\fR is loaded in the global zone at boot time if auditing is enabled.
+.sp
+.LP
+If the audit policy \fBperzone\fR is set, \fBauditd\fR runs in each zone, starting automatically when the local zone boots. If a zone is running when the \fBperzone\fR policy is set, auditing must be started manually in local zones. It is not necessary to reboot the system or the local zone to start auditing in a local zone. \fBauditd\fR can be started with \fBaudit\fR \fB-s\fR and will start automatically with future boots of the zone.
+.sp
+.LP
+When \fBauditd\fR runs in a local zone, the configuration is taken from the local zone's \fBsmf\fR(5) repository and the \fB/etc/security\fR directory's files: \fBaudit_class\fR, \fBuser_attr\fR, and \fBaudit_event\fR.
+.sp
+.LP
+Configuration changes do not affect audit sessions that are currently running, as the changes do not modify a process's preselection mask. To change the preselection mask on a running process, use the \fB-setpmask\fR option of the \fBauditconfig\fR command (see \fBauditconfig\fR(1M)). If the user logs out and logs back in, the new configuration changes will be reflected in the next audit session.
+.sp
+.LP
+The audit service FMRI is \fBsvc:/system/auditd:default\fR.

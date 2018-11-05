@@ -1,0 +1,1512 @@
+'\" te
+.\" Copyright (c) 2008, 2012, Oracle and/or its affiliates. All rights reserved.
+.TH ipseckey 1M "2012 年 6 月 12 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+ipseckey \- IPsec セキュリティーアソシエーションデータベース (SADB) の手動による操作
+.SH 形式
+.LP
+.nf
+\fBipseckey\fR [\fB-nvp\fR]
+.fi
+
+.LP
+.nf
+\fBipseckey\fR [\fB-nvp\fR] \fB-f\fR \fIfilename\fR
+.fi
+
+.LP
+.nf
+\fBipseckey\fR \fB-c\fR \fIfilename\fR
+.fi
+
+.LP
+.nf
+\fBipseckey\fR [\fB-nvp\fR] [delete | delete-pair | get] SA_TYPE {EXTENSION \fIvalue\fR...}
+.fi
+
+.LP
+.nf
+\fBipseckey\fR [\fB-np\fR] [monitor | passive_monitor | pmonitor]
+.fi
+
+.LP
+.nf
+\fBipseckey\fR [\fB-nvp\fR] flush {SA_TYPE}
+.fi
+
+.LP
+.nf
+\fBipseckey\fR [\fB-nvp\fR] dump {SA_TYPE}
+.fi
+
+.LP
+.nf
+\fBipseckey\fR [\fB-nvp\fR] save SA_TYPE {\fIfilename\fR}
+.fi
+
+.LP
+.nf
+\fBipseckey\fR [\fB-nvp\fR] \fB-s\fR \fIfilename\fR
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBipseckey\fR コマンドは、ネットワークセキュリティーサービス \fBipsecah\fR(7P) および \fBipsecesp\fR(7P) のセキュリティーアソシエーションデータベースを手動で操作するために使用されます。\fBipseckey\fR コマンドを使用して、自動鍵管理が使用できない場合の通信者間のセキュリティーアソシエーションを設定できます。
+.sp
+.LP
+\fBipseckey\fR ユーティリティーの一般的なオプションの数は限られていますが、豊富なコマンド言語がサポートされています。ユーザーは、手動キーイング固有のプログラムインタフェースによって要求が配信されるように指定できます。\fBpf_key\fR(7P) を参照してください。\fBipseckey\fR は、引数なしで呼び出されると対話型モードに入り、標準出力にプロンプトを出力したあと、ファイルの終わりに達するまで標準入力からコマンドを受け入れます。一部のコマンドは明示的なセキュリティーアソシエーション (「\fBSA\fR」) タイプを必要としますが、その他は \fBSA\fR タイプの指定を必要とせず、すべての \fBSA\fR タイプに対して機能します。 
+.sp
+.LP
+\fBipseckey\fR では、\fBPF_KEY\fR ソケットと、メッセージタイプ \fBSADB_ADD\fR、\fBSADB_DELETE\fR、\fBSADB_GET\fR、\fBSADB_UPDATE\fR、\fBSADB_FLUSH\fR、および \fBSADB_X_PROMISC\fR を使用します。したがって、このコマンドを使用するにはスーパーユーザーである必要があります。
+.sp
+.LP
+\fBipseckey\fR は機密性の高い暗号化キーイング情報を処理します。このコマンドを安全に使用する方法の詳細については、「\fBセキュリティー\fR」のセクションを参照してください。
+.SH オプション
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR [\fIfilename\fR]\fR
+.ad
+.sp .6
+.RS 4n
+\fB-f\fR オプション (次を参照) と同様ですが、入力は実行されず、構文的に正しいかどうかの検査だけが行われる点が異なります。エラーは\fB標準エラー出力\fRに報告されます。このオプションは、変更を加えずに構成をデバッグするために用意されています。詳細は、「\fBセキュリティー\fR」および「サービス管理機能」を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR [\fIfilename\fR]\fR
+.ad
+.sp .6
+.RS 4n
+入力ファイル \fIfilename\fR からコマンドを読み取ります。入力ファイルの行は、コマンド行言語と同じです。\fBload\fR コマンドは同様の機能を提供します。\fB-s\fR オプションまたは \fBsave\fR コマンドにより、\fB-f\fR 引数で読み取り可能なファイルを生成できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+アクションの報告時に、ホスト名やネットワーク名をシンボルで出力できないようにします。これは、すべてのネームサーバーが停止したか、またはその他の理由で到達不能になった場合などに役立ちます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+パラノイド。\fBSA\fR を保存する場合でもキーイング材料を一切出力しません。このフラグが有効になると、実際の 16 進数値の代わりに \fBX\fR を出力します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR [\fIfilename\fR]\fR
+.ad
+.sp .6
+.RS 4n
+\fB-f\fR オプションの反対です。\fIfilename\fR に「\fB-\fR」を指定すると、出力は標準出力に送られます。現在のすべての \fBSA\fR テーブルのスナップショットが、\fB-f\fR オプションで読み取り可能な形式で出力されます。出力は一連の \fBadd\fR コマンドですが、使用されない名前が含まれています。これは、1 つの名前が複数のアドレスを示す場合があるために発生します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+冗長。\fBPF_KEY\fR ソケットに送信されるメッセージを表示し、有効期間の生の秒数値を表示します。
+.RE
+
+.SH コマンド
+.sp
+.ne 2
+.mk
+.na
+\fB\fBadd\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBSA\fR を追加します。キーイング材料の転送を伴うため、\fBps\fR(1) の出力に鍵が表示されないようにするために、シェルから呼び出すことはできません。対話型 \fBipseckey>\fR プロンプトから、または \fB-f\fR コマンドで指定されるコマンドファイル内で使用できます。\fBadd\fR コマンドは、後述する拡張と値のペアをすべて受け入れます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBupdate\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBSA\fR の有効期間を更新し、larval \fBSA\fR (中止された自動鍵管理からの残り) の場合はキーイング材料とその他の拡張を更新します。\fBadd\fR と同様に、キーイング材料が \fBps\fR(1) コマンドで表示されないようにするために、このコマンドをシェルから呼び出すことはできません。対話型 \fBipseckey>\fR プロンプトから、または \fB-f\fR コマンドで指定されるコマンドファイル内で使用できます。\fBupdate\fR コマンドは、拡張と値のペアをすべて受け入れますが、通常は \fBSA\fR の有効期間の更新のみに使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBupdate-pair\fR\fR
+.ad
+.sp .6
+.RS 4n
+update と同様ですが、SA およびそのペア SA (存在する場合) に更新を適用します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete\fR\fR
+.ad
+.sp .6
+.RS 4n
+特定の \fBSADB\fR から特定の \fBSA\fR を削除します。このコマンドには、IPsec \fBSA\fR の \fBspi\fR 拡張と \fBdest\fR 拡張が必要です。その他の拡張と値のペアは、削除メッセージには余分です。削除される SA が別の SA とペアになっている場合、SA は削除され、ペア SA はペアが解除されたことを示すように更新されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete-pair\fR\fR
+.ad
+.sp .6
+.RS 4n
+特定の SADB から特定の SA を削除します。SA が別の SA とペアになっている場合は、その SA も削除します。このコマンドには、IPsec SA またはそのペアの \fBspi\fR 拡張と \fBdest\fR 拡張が必要です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBget\fR\fR
+.ad
+.sp .6
+.RS 4n
+特定の \fBSADB\fR からセキュリティーアソシエーションを検索して表示します。\fBdelete\fR と同様に、このコマンドには IPsec の \fBspi\fR と \fBdest\fR だけが必要です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBflush\fR\fR
+.ad
+.sp .6
+.RS 4n
+特定の \fBSA_TYPE\fR のすべての \fBSA\fR、またはすべてのタイプのすべての \fBSA\fR を削除します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmonitor\fR\fR
+.ad
+.sp .6
+.RS 4n
+すべての \fBPF_KEY\fR メッセージについて継続的に報告します。これは \fBSADB_X_PROMISC\fR メッセージを使用して、通常の \fBPF_KEY\fR ソケットでは受信されないメッセージが受信されるようにします。\fBpf_key\fR(7P) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpassive_monitor\fR\fR
+.ad
+.sp .6
+.RS 4n
+monitor と同様ですが、\fBSADB_X_PROMISC\fR メッセージを使用しない点が異なります。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpmonitor\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpassive_monitor\fR の同義語。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdump\fR\fR
+.ad
+.sp .6
+.RS 4n
+特定の \fBSA\fR タイプのすべての \fBSA\fR、またはすべての \fBSA\fR を表示します。このコマンドでは大量のデータが生成されるため、すべての \fBSA\fR 情報が正常に提供される保証はなく、このコマンドが完了することさえも保証されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsave\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-s\fR オプションと同様のコマンドです。たとえば \fBesp\fR や \fBah\fR など、特定の \fBSA\fR タイプのスナップショットを作成するためのコマンドとして含まれてます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhelp\fR\fR
+.ad
+.sp .6
+.RS 4n
+コマンドの簡単なサマリーを出力します。
+.RE
+
+.SS "\fBSA_TYPE\fR"
+.sp
+.ne 2
+.mk
+.na
+\fB\fBall\fR\fR
+.ad
+.sp .6
+.RS 4n
+すべての既知の \fBSA\fR タイプを指定します。このタイプは \fBflush\fR および \fBdump\fR コマンドにのみ使用されます。これは、これらのコマンドに \fBSA\fR タイプを指定しないことと同等です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBah\fR\fR
+.ad
+.sp .6
+.RS 4n
+IPsec 認証ヘッダー (「\fBAH\fR」) \fBSA\fR を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBesp\fR\fR
+.ad
+.sp .6
+.RS 4n
+IPsec カプセル化セキュリティーペイロード (「\fBESP\fR」) \fBSA\fR を指定します。
+.RE
+
+.SH 拡張値のタイプ
+.sp
+.LP
+\fBadd\fR、\fBdelete\fR、\fBget\fR、\fBupdate\fR などのコマンドには、特定の拡張および関連する値を指定する必要があります。ここでは、拡張、それらを使用するコマンド、およびそれらを必要とするコマンドの一覧を示します。現在、要件は \fBSA\fR の IPsec 定義に基づいて説明されています。必須の拡張は将来変更される可能性があります。\fB<number>\fR は、16 進数 (\fB0xnnn\fR)、10 進数 (\fBnnn\fR)、または 8 進数 (\fB0nnn\fR) です。\fB <string>\fR はテキスト文字列です。\fB<hexstr>\fR はビット長の long 16 進数です。通常、拡張は値とペアになりますが、それらのあとに 2 つの値が必要な場合もあります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBspi \fI<number>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBSA\fR のセキュリティーパラメータインデックスを指定します。この拡張は、\fBadd\fR、\fBdelete\fR、\fBget\fR、および \fBupdate\fR コマンドにのみ必要です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpair-spi \fI<number>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpair-spi\fR を \fBadd\fR または \fBupdate\fR コマンドで使用すると、追加または更新される SA は、\fBpair-spi\fR で定義された SA とペアになります。SA のペアは 1 つのコマンドで更新または削除できます。
+.sp
+ペアを構成する 2 つの SA は、同じ IP アドレスペアから反対の方向になっている必要があります。指定された SA のいずれかがすでに別の SA とペアになっている場合、コマンドは失敗します。
+.sp
+コマンドに pair-spi トークンを使用すると、pair-spi で定義された SA が存在しない場合、コマンドは失敗します。コマンドが \fBadd\fR の場合で、ペアにできないとき、SA は追加されずに削除されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinbound | outbound\fR\fR
+.ad
+.sp .6
+.RS 4n
+これらのオプションフラグは SA の方向を指定します。\fBadd\fR コマンドに \fBinbound\fR または \fBoutbound\fR フラグを指定した場合、より高速な検索のために、カーネルは指定されたハッシュテーブルに新しい SA を挿入します。フラグが省略されている場合、カーネルは自分が認識している \fBsrc\fR および \fBdst\fR 拡張で指定された IP アドレスに基づいて、新しい SA を挿入するハッシュテーブルを決定します。
+.sp
+\fBupdate\fR、\fBdelete\fR、\fBupdate-pair\fR、または \fBget\fR コマンドで使用する場合、これらのフラグは、カーネルが SA を検索すべきハッシュテーブルに関するヒントを提供します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreplay\fR \fI<number>\fR\fR
+.ad
+.sp .6
+.RS 4n
+再実行ウィンドウサイズを指定します。指定されていない場合、再実行ウィンドウサイズはゼロと見なされます。手動で追加された \fBSA\fR が再実行ウィンドウを持つことは推奨されません。この拡張は \fBadd\fR および \fBupdate\fR コマンドで使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreplay_value\fR \fI<number>\fR\fR
+.ad
+.sp .6
+.RS 4n
+SA の再実行値を指定します。この拡張は \fBadd\fR および \fBupdate\fR コマンドで使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstate \fI<string>\fR|\fI<number>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBSA\fR の状態を、数値または文字列「\fBlarval\fR」、「\fBmature\fR」、「\fBdying\fR」、「\fBdead\fR」で指定します。指定のない場合、値はデフォルトの \fBmature\fR になります。この拡張は \fBadd\fR および \fBupdate\fR コマンドで使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauth_alg \fI<string>\fR|\fI<number>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBauthalg <string>|<number>\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBSA\fR の認証アルゴリズムを、数値またはアルゴリズム名を示す文字列で指定します。現在の認証アルゴリズムには次のようなものがあります。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHMAC-MD5\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBmd5\fR、\fBhmac-md5\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHMAC-SH-1\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsha\fR、\fBsha-1\fR、\fBhmac-sha1\fR、\fBhmac-sha\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHMAC-SHA-256\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsha256\fR、\fBsha-256\fR、\fBhmac-sha256\fR、\fBhmac-sha-256\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHMAC-SHA-384\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsha384\fR、\fBsha-384\fR、\fBhmac-sha384\fR、\fBhmac-sha-384\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHMAC-SHA-512\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsha512\fR、\fBsha-512\fR、\fBhmac-sha512\fR、\fBhmac-sha-512\fR
+.RE
+
+多くの場合、アルゴリズム名にはいくつかの同義語があります。この拡張は、特定の \fBSA\fR タイプの \fBadd\fR コマンドに必要です。\fBupdate\fR コマンドでも使用されます。
+.sp
+認証アルゴリズムの完全なリストを取得するには、\fBipsecalgs\fR(1M) コマンドを使用してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBencr_alg \fI<string>\fR|\fI<number>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBencralg \fI<string>\fR|\fI<number>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+SA の暗号化アルゴリズムを、数値またはアルゴリズム名を示す文字列で指定します。現在の暗号化アルゴリズムには、DES (「\fBdes\fR」)、トリプル DES (「\fB3des\fR」)、Blowfish (「blowfish」)、AES (「aes」) などがあります。この拡張は、特定の \fBSA\fR タイプの add コマンドに必要です。\fBupdate\fR コマンドでも使用されます。
+.sp
+暗号化アルゴリズムの完全なリストを取得するには、\fBipsecalgs\fR(1M) コマンドを使用してください。
+.RE
+
+.sp
+.LP
+次の 6 つの拡張は、有効期間の拡張です。「\fBhard\fR」と「\fBsoft\fR」の 2 種類があります。\fBhard\fR 有効期間が期限切れになると、\fBSA\fR はシステムによって自動的に削除されます。\fBsoft\fR 有効期間が期限切れになると、\fBSADB_EXPIRE\fR メッセージがシステムによって送信され、その状態は \fBmature\fR から \fBdying\fR にダウングレードされます。\fBpf_key\fR(7P) を参照してください。\fBkey\fR に対する \fBmonitor\fR コマンドを使用すると、\fBSADB_EXPIRE\fR メッセージを表示できます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBidle_addtime\fR \fI<number>\fR\fR
+.ad
+.br
+.na
+\fB\fBidle_usetime\fR \fI<number>\fR\fR
+.ad
+.sp .6
+.RS 4n
+SA が再検証される前に SA が使用されない場合にこの SA が存在できる秒数を指定します。この拡張が存在しない場合、デフォルト値は \fBhard_addtime\fR の半分です (下記を参照)。この拡張は \fBadd\fR および \fBupdate\fR コマンドで使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsoft_bytes \fI<number>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBhard_bytes \fI<number>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+この \fBSA\fR が保護できるバイト数を指定します。この拡張が存在しない場合、デフォルト値はゼロで、保護されたバイト数に基づいて \fBSA\fR が期限切れにならないことを意味します。この拡張は \fBadd\fR および \fBupdate\fR コマンドで使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsoft_addtime \fI<number>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBhard_addtime \fI<number>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+追加後または larval \fBSA\fR からの更新後にこの \fBSA\fR が存在できる秒数を指定します。mature \fBSA\fR の更新では、追加されたときの初期時間はリセットされません。この拡張が存在しない場合、デフォルト値はゼロで、追加されてから存在している時間に基づいて \fBSA\fR が期限切れにならないことを意味します。この拡張は \fBadd\fR および \fBupdate\fR コマンドで使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsoft_usetime \fI<number>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBhard_usetime \fI<number>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+最初の使用後にこの \fBSA\fR が存在できる秒数を指定します。この拡張が存在しない場合、デフォルト値はゼロで、追加されてから存在している時間に基づいて \fBSA\fR が期限切れにならないことを意味します。この拡張は \fBadd\fR および \fBupdate\fR コマンドで使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsaddr \fIaddress\fR | \fIname\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBsrcaddr \fIaddress\fR | \fIname\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBsaddr6 \fIIPv6 address\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBsrcaddr6 \fIIPv6 address\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBsrc \fIaddress\fR | \fIname\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBsrc6 \fIIPv6 address\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsrcaddr \fIaddress\fR\fR と \fBsrc \fIaddress\fR\fR は、\fBSA\fR の発信元アドレスを示す同義語です。指定されていない場合、発信元アドレスは未設定のままになるか、着信先アドレスが指定された場合はワイルドカードアドレスに設定されます。発信元アドレスを指定しないことは、IPsec \fBSA\fR では有効です。将来の \fBSA\fR タイプでは、この前提条件が変更される可能性があります。この拡張は、\fBadd\fR、\fBupdate\fR、\fBget\fR、および \fBdelete\fR コマンドで使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdaddr \fI<address>\fR|\fI<name>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBdstaddr \fI<address>\fR|\fI<name>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBdaddr6 \fI<IPv6 address>\fR|\fI <name>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBdstaddr6 \fI<IPv6 address>\fR|\fI<name>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBdst \fI<addr>\fR|\fI<name>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBdst6 \fI <IPv6 address>\fR|\fI<name>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBdstaddr \fI<addr>\fR\fR と \fBdst \fI<addr>\fR\fR は、\fBSA\fR の着信先アドレスを示す同義語です。指定されていない場合、着信先アドレスは未設定のままになります。IPsec \fBSA\fR の識別には着信先アドレスと \fBspi\fR を指定する必要があるため、この拡張 (および特定の値) は \fBadd\fR、\fBupdate\fR、\fBget\fR、および \fBdelete\fR コマンドに必要です。
+.sp
+名前が指定された場合、\fBipseckey\fR は、その名前で識別できるすべての着信先アドレスを持つ複数の \fBSA\fR に対してコマンドを呼び出そうとします。これは、\fBipsecconf\fR がアドレスを処理する方法と似ています。
+.sp
+\fBdst6\fR または \fBdstaddr6\fR が指定された場合は、名前で識別される IPv6 アドレスだけが使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsport\fR \fI<portnum>\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsport\fR は、SA の発信元ポート番号を指定します。上位レイヤーのプロトコル (下記を参照) と組み合わせて使用すべきですが、必須ではありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdport\fR \fI<portnum>\fR\fR
+.ad
+.sp .6
+.RS 4n
+sport は、SA の着信先ポート番号を指定します。上位レイヤーのプロトコル (下記を参照) と組み合わせて使用すべきですが、必須ではありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBencap\fR \fI<protocol>\fR\fR
+.ad
+.sp .6
+.RS 4n
+NAT トラバーサル IPsec パケットのカプセル化に使用するプロトコルを指定します。その他の NAT トラバーサルパラメータ (\fBnat_*\fR) は下記のとおりです。現在 \fI<protocol>\fR に使用可能な値は \fBudp\fR だけです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBproto\fR \fI<protocol number>\fR\fR
+.ad
+.br
+.na
+\fB\fBulp\fR \fI<protocol number>\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBproto\fR およびその同義語 \fBulp\fR は、SA の IP プロトコル番号を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnat_loc\fR \fI<address>\fR|\fI<name>\fR\fR
+.ad
+.sp .6
+.RS 4n
+SA のローカルアドレス (発信元または着信先) が NAT の背後にある場合、この拡張は NAT ノードのグローバルにルーティング可能なアドレスを示します。\fBnat_lport\fR (下記を参照) が指定されている場合、このアドレスは SA のローカルアドレスと一致する可能性があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnat_rem\fR \fI<address>\fR|\fI<name>\fR\fR
+.ad
+.sp .6
+.RS 4n
+SA のリモートアドレス (発信元または着信先) が NAT の背後にある場合、この拡張はそのノードの内部 (つまり NAT 背後の) アドレスを示します。\fBnat_rport\fR (下記を参照) が指定されている場合、このアドレスは SA のローカルアドレスと一致する可能性があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnat_lport\fR \fI<portnum>\fR\fR
+.ad
+.sp .6
+.RS 4n
+ESP のカプセル化が発生するローカル UDP ポートを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnat_rport\fR \fI<portnum>\fR\fR
+.ad
+.sp .6
+.RS 4n
+ESP のカプセル化が発生するリモート UDP ポートを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBisrc\fR \fI<address>\fR | \fI<name>\fR[/\fI<prefix>\fR]\fR
+.ad
+.br
+.na
+\fB\fBinnersrc\fR \fI<address>\fR | \fI<name>\fR[/\fI<prefix> \fR]\fR
+.ad
+.br
+.na
+\fB\fBisrc6\fR \fI<address>\fR | \fI<name>\fR[/\fI<prefix>\fR]\fR
+.ad
+.br
+.na
+\fB\fBinnersrc6\fR \fI<address>\fR | \fI<name>\fR[/\fI <prefix>\fR]\fR
+.ad
+.br
+.na
+\fB\fBproxyaddr\fR \fI<address>\fR | \fI<name>\fR[/\fI<prefix>\fR]\fR
+.ad
+.br
+.na
+\fB\fBproxy\fR \fI<address>\fR | \fI<name>\fR[/\fI <prefix>\fR]\fR
+.ad
+.sp .6
+.RS 4n
+\fBisrc\fR \fI<address>\fR[/\fI<prefix>\fR] と \fBinnersrc\fR \fI<address>\fR[/\fI<prefix>\fR] は同義語です。これらは、トンネルモード SA の内側の発信元アドレスを示します。
+.sp
+内側の発信元には、アドレスの代わりに接頭辞を指定できます。ほかのアドレス拡張と同様に、IPv6 固有の形式があります。そのような場合は、IPv6 固有のアドレスまたは接頭辞だけを使用してください。
+.sp
+以前のバージョンでは、この値はプロキシアドレスと呼ばれていました。非推奨ですが引き続き使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBidst\fR \fI<address>\fR | \fI<name>\fR[/\fI<prefix>\fR]\fR
+.ad
+.br
+.na
+\fB\fBinnerdst\fR \fI<address>\fR | \fI<name>\fR[/\fI<prefix> \fR]\fR
+.ad
+.br
+.na
+\fB\fBidst6\fR \fI<address>\fR | \fI<name>\fR[/\fI<prefix>\fR]\fR
+.ad
+.br
+.na
+\fB\fBinnerdst6\fR \fI<address>\fR | \fI<name>\fR[/\fI <prefix>\fR]\fR
+.ad
+.sp .6
+.RS 4n
+\fBidst\fR \fI<address>\fR[/\fI<prefix>\fR] と \fBinnerdst\fR \fI<address>\fR[/\fI<prefix>\fR] は同義語です。これらは、トンネルモード SA の内側の着信先アドレスを示します。
+.sp
+内側の着信先には、アドレスの代わりに接頭辞を指定できます。ほかのアドレス拡張と同様に、IPv6 固有の形式があります。そのような場合は、IPv6 固有のアドレスまたは接頭辞だけを使用してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinnersport\fR \fI<portnum>\fR\fR
+.ad
+.br
+.na
+\fB\fBisport\fR \fI<portnum>\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBinnersport\fR は、トンネルモード SA の内側のヘッダーの発信元ポート番号を指定します。上位レイヤーのプロトコル (下記を参照) と組み合わせて使用すべきですが、必須ではありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinnerdport\fR \fI<portnum>\fR\fR
+.ad
+.br
+.na
+\fB\fBidport\fR \fI<portnum>\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBinnerdport\fR は、トンネルモード SA の内側のヘッダーの着信先ポート番号を指定します。上位レイヤーのプロトコル (下記を参照) と組み合わせて使用すべきですが、必須ではありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBiproto\fR \fI<protocol number>\fR\fBiulp\fR \fI<protocol number>\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBiproto\fR およびその同義語 \fBiulp\fR は、トンネルモード SA の内側のヘッダーの IP プロトコル番号を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauthkey \fI<hexstring>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+この \fBSA\fR の認証鍵を指定します。鍵は 16 進数字の文字列で表現され、オプションの \fB/\fR が末尾に付加され、たとえば \fB123/12\fR となります。ビット数は最上位ビットから下へカウントされます。たとえば、3 つの「1」ビットを表現するための正しい構文は文字列「\fBe/3\fR」です。複数鍵アルゴリズムの場合、文字列は複数の鍵を連結したものです。この拡張は \fBadd\fR および \fBupdate\fR コマンドで使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBencrkey \fI<hexstring>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+この \fBSA\fR の暗号化鍵を指定します。鍵の構文は \fBauthkey\fR と同じです。複数鍵暗号化アルゴリズムの具体的な例は \fB3des\fR で、それ自体は 1 つの 192 ビット鍵として表現される、パリティーを含む 3 つの 64 ビット \fBDES\fR 鍵です。この拡張は \fBadd\fR および \fBupdate\fR コマンドで使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreserved_bits\fR \fI<number>\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBencrkey\fR 文字列の最後の \fI<number>\fR ビットは、\fBPF_KEY\fR メッセージで予約済みとマークされます。このオプションは、特定の暗号化アルゴリズムのテスト専用です。
+.RE
+
+.sp
+.LP
+証明書アイデンティティーは、ほとんどの自動鍵管理プロトコルで使用される公開鍵証明書に \fBSA\fR を関連付けるため、自動鍵管理のコンテキストで非常に役立ちます。手動で追加された \fBSA\fR にはあまり役立ちません。ほかの拡張と異なり、\fBsrcidtype\fR は \fItype\fR と実際の \fIvalue\fR という 2 つの値を取ります。使用できるタイプは、次のうちのいずれかです。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprefix\fR\fR
+.ad
+.sp .6
+.RS 4n
+アドレスの接頭辞。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfqdn\fR\fR
+.ad
+.sp .6
+.RS 4n
+完全修飾ドメイン名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdomain\fR\fR
+.ad
+.sp .6
+.RS 4n
+ドメイン名。\fBfqdn\fR の同義語です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuser_fqdn\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB\fIuser\fR@\fIfqdn\fR\fR という形式のユーザーアイデンティティー。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmailbox\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBuser_fqdn\fR の同義語。
+.RE
+
+.sp
+.LP
+\fIvalue\fR は、証明書を識別できるような任意のテキスト文字列です。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsrcidtype \fI<type, value>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+この \fBSA\fR の発信元証明書アイデンティティーを指定します。この拡張は \fBadd\fR および \fBupdate\fR コマンドで使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdstidtype \fI<type, value>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+この \fBSA\fR の着信先証明書アイデンティティーを指定します。この拡張は \fBadd\fR および \fBupdate\fR コマンドで使用されます。
+.RE
+
+.sp
+.LP
+ラベル拡張は、セキュリティーアソシエーションの内部で伝送されるトラフィックに機密ラベルを関連付けるために Trusted Extensions で使用されます。Trusted Extensions が有効になっていない場合、これらの拡張は許可されません。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlabel\fR \fIlabel\fR\fR
+.ad
+.sp .6
+.RS 4n
+この SA によって伝送されるトラフィックの機密ラベルを定義します。Trusted Extensions を使用していないシステムでは許可されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBouter-label\fR \fIlabel\fR\fR
+.ad
+.sp .6
+.RS 4n
+この SA に属する暗号化テキストトラフィックの機密度を定義します。このラベルは外側のパケットヘッダーに表示されます。Trusted Extensions を使用していないシステムでは許可されません。この拡張を正しく使用しないと、ラベルポリシーの迂回を許す可能性があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBimplicit-label\fR \fIlabel\fR\fR
+.ad
+.sp .6
+.RS 4n
+この SA に属する暗号化テキストトラフィックの機密度を定義し、明示的な有線上のラベルがこの SA に含まれないように要求します。Trusted Extensions を使用していないシステムでは許可されません。この拡張を正しく使用しないと、ラベルポリシーの迂回を許す可能性があります。
+.RE
+
+.SS "トンネルモード SA とトランスポートモード SA"
+.sp
+.LP
+IPsec SA の「proto」値が 4 (\fBipip\fR) または 41 (\fBipv6\fR)、\fBかつ\fR、内側のアドレスまたは内側のポートの値が指定されている場合、それはトンネルモード SA です。それ以外の場合、その SA はトランスポートモード SA です。
+.SH セキュリティ
+.sp
+.LP
+キーイング材料は機密性が高く、できるだけランダムに生成されるべきです。一部のアルゴリズムでは、弱い鍵が知られています。IPsec アルゴリズムには弱い鍵のチェックが組み込まれているため、新しく追加される \fBSA\fR に弱い鍵が含まれている場合、\fBadd\fR コマンドは無効な値で失敗します。
+.sp
+.LP
+\fBipseckey\fR コマンドを使用すると、特権ユーザーが暗号化キーイング情報を入力できます。そのような情報に悪意のあるユーザーがアクセスできると、IPsec トラフィックのセキュリティーが損なわれます。\fBipseckey\fR コマンドを使用する際には、次の問題を考慮するようにしてください。
+.RS +4
+.TP
+1.
+\fBTTY\fR の情報がネットワーク上を流れるか (対話モード) 
+.RS +4
+.TP
+.ie t \(bu
+.el o
+そうである場合、キーイング材料のセキュリティーは、この \fBTTY\fR のトラフィックに対するネットワークパスのセキュリティーになります。平文の \fBtelnet\fR または \fBrlogin\fR セッション経由で \fBipseckey\fR を使用するのは危険です。 
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ウィンドウイベントを読み取ることのできる隠密プログラムが存在する場合、ローカルウィンドウでもその攻撃には無防備となります。
+.RE
+.RE
+.RS +4
+.TP
+2.
+ファイルがネットワーク経由でアクセスされたり、外部から読み取り可能であったりするか (\fB-f\fR オプション)
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ネットワーク上にマウントされたファイルを読み取る際に、悪意のあるユーザーがその情報を盗む可能性があります。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+外部から読み取り可能なファイルにキーイング材料が格納されている場合も危険です。
+.RE
+.RE
+.RS +4
+.TP
+3.
+\fBipseckey\fR コマンドは、\fBmanual-key\fR \fBsmf\fR(5) サービスで管理されるように設計されています。\fBsmf\fR(5) のログファイルは外部から読み取り可能であり、また、構文エラーには秘密情報が含まれている可能性があるため、\fBipseckey\fR はこれらのエラーをログファイルに記録しません。
+.sp
+\fBmanual-key\fR \fBsmf\fR(5) サービスが有効になっているときに構文エラーが見つかった場合、サービスは保守モードに入ります。ログファイルには構文エラーが発生したことは示されますが、どのようなエラーであったかは示されません。
+.sp
+管理者はコマンド行から \fBipseckey\fR \fB-c\fR \fIfilename\fR を使用して、エラーの原因を見つけるようにしてください。詳しくは「オプション」の項を参照してください。\fB\fR
+.RE
+.sp
+.LP
+送信元アドレスがネットワーク経由で検索可能なホストである場合に、ネームシステム自体の安全性が損なわれると、使用されているすべての名前が信用できなくなります。
+.sp
+.LP
+セキュリティーの脆弱性はしばしば、ツール自体に原因があるのではなく、ツールの間違った適用方法に原因があります。管理者には、\fBipseckey\fR コマンドの使用時に十分な注意を払うことを強くお勧めします。もっとも安全な操作モードはおそらく、コンソール上やその他の物理的に接続された \fBTTY\fR 上で作業を行うことです。
+.sp
+.LP
+このテーマの追加情報については、Bruce Schneier 著『\fIApplied Cryptography: Protocols, Algorithms, and Source Code in C\fR』に含まれる Matt Blaze 氏の後書きを参照してください。
+.SS "サービス管理機能"
+.sp
+.LP
+IPsec の手動鍵は、サービス管理機能 \fBsmf\fR(5) によって管理されます。次に示すサービスは、IPsec のコンポーネントを管理します。これらのサービスは、次のように提供されます。
+.sp
+.in +2
+.nf
+svc:/network/ipsec/policy:default (enabled)
+svc:/network/ipsec/ipsecalgs:default (enabled)
+svc:/network/ipsec/manual-key:default (disabled)
+svc:/network/ipsec/ike:default (disabled)
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+manual-key サービスは無効な状態で提供されます。システム管理者は、そのサービスを有効にする前に、このマニュアルページの説明に従って手動 IPsec セキュリティーアソシエーション (SA) を作成する必要があります。
+.sp
+.LP
+policy サービスは有効な状態で提供されますが、構成ファイルがないため、起動時の状態としてはパケットが IPsec で保護されません。構成ファイル \fB/etc/inet/ipsecinit.conf\fR を作成し、サービスをリフレッシュ (\fBsvcadm refresh\fR、下記を参照) すると、構成ファイルに含まれているポリシーが適用されます。このファイルにエラーがある場合は、サービスが保守モードに入ります。\fBipsecconf\fR(1M) を参照してください。
+.sp
+.LP
+無効な状態で提供されるサービスは、有効にする前にシステム管理者がそれらの構成ファイルを作成する必要があるため、そのような方法で提供されます。\fBike\fR サービスについては、\fBike.config\fR(4) を参照してください。
+.sp
+.LP
+\fBipsecalgs\fR サービスについては、\fBipsecalgs\fR(1M) を参照してください。
+.sp
+.LP
+正しい管理手順としては、各サービスの構成ファイルを作成してから、\fBsvcadm\fR(1M) を使用して各サービスを有効にします。
+.sp
+.LP
+構成を変更する必要がある場合は、構成ファイルを編集してから、次のようにしてサービスをリフレッシュします。
+.sp
+.in +2
+.nf
+example# \fBsvcadm refresh manual-key\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fB警告:\fR \fBipseckey\fR コマンドが \fBsmf\fR(5) から実行された場合、\fBipseckey\fR で重複アソシエーションが報告されることを防ぐために、\fBipseckey\fR コマンドはセキュリティーアソシエーションデータベース (SADB) をフラッシュしてから、構成ファイルに定義されている新しいセキュリティーアソシエーションを追加します。コマンド行の動作はこれとは異なり、新しいセキュリティーアソシエーションの追加前に SADB がフラッシュされることはありません。
+.sp
+.LP
+\fBsmf\fR(5) フレームワークは、サービス固有のログファイルにエラーを記録します。\fBlogfile\fR プロパティーを調べるには、次のいずれかのコマンドを使用します。
+.sp
+.in +2
+.nf
+example# \fBsvcs -l manual-key\fR
+example# \fBsvcprop manual-key\fR
+example# \fBsvccfg -s manual-key listprop\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBmanual-key\fR サービスには、次のプロパティーが定義されます。
+.sp
+.in +2
+.nf
+config/config_file
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+このプロパティーは、次の承認を割り当てられているユーザーが \fBsvccfg\fR(1M) を使用して変更できます。
+.sp
+.in +2
+.nf
+solaris.smf.value.ipsec
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBauths\fR(1)、\fBuser_attr\fR(4)、\fBrbac\fR(5) を参照してください。
+.sp
+.LP
+新しいプロパティーを有効にするには、\fBsvcadm\fR(1M) を使用してこのサービスをリフレッシュする必要があります。変更不可能な一般プロパティーは、\fBsvcprop\fR(1) コマンドを使用して表示できます。
+.sp
+.in +2
+.nf
+# \fBsvccfg -s ipsec/manual-key setprop config/config_file = \e
+/new/config_file\fR
+# \fBsvcadm refresh manual-key\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有効化、無効化、リフレッシュ、再起動要求など、このサービスに対する管理操作は、\fBsvcadm\fR(1M) を使用して実行できます。次に示す承認を割り当てられたユーザーは、これらの操作を実行できます。
+.sp
+.in +2
+.nf
+solaris.smf.manage.ipsec
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+サービスステータスを照会するには、\fBsvcs\fR(1) コマンドを使用します。
+.sp
+.LP
+\fBipseckey\fR コマンドは、\fBsmf\fR(5) 管理の下で実行されるように設計されています。\fBipsecconf\fR コマンドはコマンド行から実行できますが、これは推奨されていません。\fBipseckey\fR コマンドをコマンド行から実行する場合は、まず \fBmanual-key\fR \fBsmf\fR(5) サービスを無効にするようにしてください。\fBsvcadm\fR(1M) を参照してください。
+.sp
+.LP
+IPsec および IKE ポリシーと構成とは異なり、IPsec キーイング材料は場所プロファイルでは管理\fBされません\fR。このデータは、システム全般を対象としており、場所の変更時に変更されません。
+.SH 使用例
+.LP
+\fB例 1 \fRすべての \fBSA\fR を削除する
+.sp
+.LP
+すべての \fBSA\fR を削除するには:
+
+.sp
+.in +2
+.nf
+example# \fBipseckey flush\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRIPsec AH \fBSA\fR だけをフラッシュする
+.sp
+.LP
+IPsec \fBAH\fR \fBSA\fR だけをフラッシュするには:
+
+.sp
+.in +2
+.nf
+example# \fBipseckey flush ah\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fRすべての \fBSA\fR を標準出力に保存する
+.sp
+.LP
+すべての \fBSA\fR を標準出力に保存するには:
+
+.sp
+.in +2
+.nf
+example# \fBipseckey save all\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fR\fBESP\fR \fBSA\fR をファイル \fB/tmp/snapshot\fR に保存する
+.sp
+.LP
+\fBESP\fR \fBSA\fR をファイル \fB/tmp/snapshot\fR に保存するには:
+
+.sp
+.in +2
+.nf
+example# \fBipseckey save esp /tmp/snapshot\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 5 \fRIPsec \fBSA\fR を削除する
+.sp
+.LP
+IPsec \fBSA\fR を削除するには、\fBSPI\fR と着信先アドレスだけが必要です。
+
+.sp
+.in +2
+.nf
+example# \fBipseckey delete esp spi 0x2112 dst 224.0.0.1\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+SA および SA ペア (存在する場合) を削除する方法もあります。
+
+.sp
+.in +2
+.nf
+example# \fBipseckey delete-pair esp spi 0x2112 dst 224.0.0.1\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 6 \fRIPsec \fBSA\fR の情報を取得する
+.sp
+.LP
+同様に、IPsec \fBSA\fR の情報を取得するには、着信先アドレスと \fBSPI\fR だけが必要です。
+
+.sp
+.in +2
+.nf
+example# \fBipseckey get ah spi 0x5150 dst mypeer\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 7 \fRIPsec \fBSA\fR を追加または更新する
+.sp
+.LP
+\fBSA\fR を追加または更新するには、対話型モードに入る必要があります。
+
+.sp
+.in +2
+.nf
+example# \fBipseckey\fR
+ipseckey> \fBadd ah spi 0x90125 src me.domain.com dst you.domain.com \e
+          authalg md5 authkey 1234567890abcdef1234567890abcdef\fR
+ipseckey> \fBupdate ah spi 0x90125 dst you.domain.com hard_bytes \e
+          16000000\fR
+ipseckey> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+ペアとして相互にリンクされた 2 つの SA を追加するには:
+
+.sp
+.in +2
+.nf
+example# \fBipseckey\fR
+ipseckey> \fBadd esp spi 0x2345 src me.domain.com dst you.domain.com \e
+   authalg md5 authkey bde359723576fdea08e56cbe876e24ad \e
+   encralg des encrkey be02938e7def2839\fR
+ipseckey> \fBadd esp spi 0x5432 src me.domain.com dst you.domain.com \e
+   authalg md5 authkey bde359723576fdea08e56cbe876e24ad \e
+   encralg des encrkey be02938e7def2839 pair-spi 0x2345\fR
+ipseckey> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 8 \fR反対方向の \fBSA\fR を追加する
+.sp
+.LP
+IPsec の場合、\fBSA\fR は単方向です。安全に通信するには、2 つ目の \fBSA\fR を反対の方向に追加する必要があります。接続先のマシンも両方の \fBSA\fR を追加する必要があります。 
+
+.sp
+.in +2
+.nf
+example# \fBipseckey\fR 
+ipseckey> \fBadd ah spi 0x2112 src you.domain.com dst me.domain.com \e
+          authalg md5 authkey bde359723576fdea08e56cbe876e24ad \e
+          hard_bytes 16000000\fR
+ipseckey> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 9 \fR\fBPF_KEY\fR メッセージを監視する
+.sp
+.LP
+\fBPF_KEY\fR メッセージの監視は簡単です。 
+
+.sp
+.in +2
+.nf
+example# \fBipseckey monitor\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 10 \fRファイル内のコマンドを使用する
+.sp
+.LP
+\fB-f\fR オプションで解析できるファイルにコマンドを置くことができます。このファイルには、「#」記号で始まるコメント行を含めることができます。例:  
+
+.sp
+.in +2
+.nf
+# This is a sample file for flushing out the ESP table and 
+# adding a pair of SAs. 
+
+flush esp 
+
+### Watch out!  I have keying material in this file.  See the 
+### SECURITY section in this manual page for why this can be 
+### dangerous .
+
+add esp spi 0x2112 src me.domain.com dst you.domain.com \e
+    authalg md5 authkey bde359723576fdea08e56cbe876e24ad \e
+    encralg des encrkey be02938e7def2839 hard_usetime 28800 
+add esp spi 0x5150 src you.domain.com dst me.domain.com \e
+    authalg md5 authkey 930987dbe09743ade09d92b4097d9e93 \e
+    encralg des encrkey 8bd4a52e10127deb hard_usetime 28800
+
+## End of file  -  This is a gratuitous comment
+.fi
+.in -2
+
+.LP
+\fB例 11 \fRIPv6 アドレス用の SA を追加する
+.sp
+.LP
+対話型モードから次のコマンドを使用して、サイトのローカルアドレス間の IPv6 トラフィックを保護する SA を作成します。
+
+.sp
+.in +2
+.nf
+example # \fBipseckey\fR
+ipseckey> \fBadd esp spi 0x6789 src6 fec0:bbbb::4483 dst6 fec0:bbbb::7843\e
+           authalg md5 authkey bde359723576fdea08e56cbe876e24ad \e
+          encralg des encrkey be02938e7def2839 hard_usetime 28800\fR
+ipseckey>\fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 12 \fR2 つの SA をペアとしてリンクする
+.sp
+.LP
+次のコマンドは、2 つの SA をペアとして相互にリンクします。
+
+.sp
+.in +2
+.nf
+example# \fBipseckey update esp spi 0x123456 dst 192.168.99.2 \e
+pair-spi 0x654321\fR
+.fi
+.in -2
+.sp
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/secret/ipseckeys\fR\fR
+.ad
+.sp .6
+.RS 4n
+ブート時に使用されるデフォルトの構成ファイル。詳細は、「サービス管理機能」および「\fBセキュリティー\fR」を参照してください。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBps\fR(1), \fBsvcprop\fR(1), \fBsvcs\fR(1), \fBipsecconf\fR(1M), \fBipsecalgs\fR(1M), \fBroute\fR(1M), \fBsvcadm\fR(1M), \fBsvccfg\fR(1M), \fBike.config\fR(4), \fBattributes\fR(5), \fBsmf\fR(5), \fBipsec\fR(7P), \fBipsecah\fR(7P), \fBipsecesp\fR(7P), \fBpf_key\fR(7P)
+.sp
+.LP
+Schneier, B. 著『\fIApplied Cryptography: Protocols, Algorithms, and Source Code in C\fR』、第 2 版、New York, New York、John Wiley & Sons 発行、1996 年
+.SH 診断
+.sp
+.LP
+\fBipseckey\fR コマンドは構成ファイルを解析し、すべてのエラーを報告します。複数のエラーがある場合、\fBipseckey\fR はできるだけ多くを報告します。
+.sp
+.LP
+\fBipseckey\fR コマンドは、構文エラーのある \fBCOMMAND\fR の使用を試みません。\fBCOMMAND\fR が構文的に正しい場合でも、\fBpf_key\fR(7P) に対する要求をカーネルが拒否したためにエラーが生成されることがあります。これは、鍵の長さが無効だった場合や、サポートされていないアルゴリズムが指定された場合に発生することがあります。
+.sp
+.LP
+構成ファイルにエラーがある場合、ipseckey は有効な COMMAND の数および解析された COMMAND の合計数を報告します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBParse error on line \fIN\fR.\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBipseckey\fR を対話形式で使用すると使用法に関する情報が表示されるような場合には、代わりにこれが表示されます。通常、この前に別の診断が表示されます。構成ファイル内の \fBCOMMAND\fR は、バックスラッシュ文字を使用して行を区切ることによって複数の行にわたる場合があるため、構成ファイル内でエラーの原因となった行を常に正確に特定できるとは限りません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBUnexpected end of command line.\fR\fR
+.ad
+.sp .6
+.RS 4n
+コマンド行には追加の引数が必要でした。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBUnknown\fR
+.ad
+.sp .6
+.RS 4n
+特定の拡張の値が不明でした。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBAddress type \fIN\fR not supported.\fR\fR
+.ad
+.sp .6
+.RS 4n
+名前からのアドレスの検索で、サポートされていないアドレスファミリが返されました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fIN\fR is not a bit specifier\fR\fR
+.ad
+.br
+.na
+\fB\fBbit length \fIN\fR is too big for\fR\fR
+.ad
+.br
+.na
+\fB\fBstring is not a hex string\fR\fR
+.ad
+.sp .6
+.RS 4n
+キーイング材料が適切に入力されませんでした。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCan only specify single\fR\fR
+.ad
+.sp .6
+.RS 4n
+重複する拡張が入力されました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDon't use extension for \fI<string>\fR for \fI<command>\fR\&.\fR\fR
+.ad
+.sp .6
+.RS 4n
+コマンドで使用されない拡張が使用されました。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBOne of the entered values is incorrect: Diagnostic code \fINN\fR: \fI<msg>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは一般的な無効なパラメータエラーです。診断コードとメッセージは、どの値がなぜ正しくなかったかについて詳細を提供します。
+.RE
+
+.SH 注意事項
+.sp
+.LP
+IPsec 固有の名前を持っていますが、\fBipseckey\fR はソケットベースの管理エンジン (この場合は \fBPF_KEY\fR) へのコマンド行インタフェースであるという点で、\fBroute\fR(1M) と同様です。\fBPF_KEY\fR は米国海軍研究所で最初に開発されました。
+.sp
+.LP
+マシンが手動キーイングで安全に通信するためには、すべての通信者が \fBSA\fR を追加する必要があります。2 つのノードが安全に通信するには、両方のノードに適切な \fBSA\fR が追加されている必要があります。
+.sp
+.LP
+将来、\fBPF_KEY\fR でほかのセキュリティープロトコルが使用可能になったら、ほかの名前でも \fBipseckey\fR を呼び出すことができます。
+.sp
+.LP
+このコマンドは、動作するために \fBsys_ip_config\fR 権限が必要であり、したがって大域ゾーンおよび排他的 IP ゾーンで実行できます。大域ゾーンで \fBipseckey\fR を使用してセキュリティーアソシエーションを設定し、システム上の共有 IP ゾーンのトラフィックを保護することができます。

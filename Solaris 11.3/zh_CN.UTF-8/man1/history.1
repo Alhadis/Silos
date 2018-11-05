@@ -1,0 +1,1009 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 2007, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Portions Copyright (c) 1982-2007 AT&T Knowledge Ventures
+.\" Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\" Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH history 1 "2011 年 7 月 12 日" "SunOS 5.11" "用户命令"
+.SH 名称
+history, fc, hist \- 进程命令历史记录列表
+.SH 用法概要
+.LP
+.nf
+\fB/usr/bin/fc\fR [\fB-r\fR] [\fB-e\fR \fIeditor\fR] [\fIfirst\fR [\fIlast\fR]]
+.fi
+
+.LP
+.nf
+\fB/usr/bin/fc\fR \fB-l\fR [\fB-nr\fR] [\fIfirst\fR [\fIlast\fR]]
+.fi
+
+.LP
+.nf
+\fB/usr/bin/fc\fR \fB-s\fR [\fIold\fR=\fInew\fR] [\fIfirst\fR]
+.fi
+
+.SS "csh"
+.LP
+.nf
+\fBhistory\fR [\fB-hr\fR] [\fIn\fR]
+.fi
+
+.SS "ksh88"
+.LP
+.nf
+\fBfc\fR \fB-e\fR \fB-\fR [\fIold\fR=\fInew\fR] [\fIcommand\fR]
+.fi
+
+.LP
+.nf
+\fBfc\fR \fB-s\fR [\fIold\fR = \fInew\fR] [\fIcommand\fR]
+.fi
+
+.LP
+.nf
+\fBfc\fR [\fB-e\fR \fIename\fR] [\fB-nlr\fR] [\fIfirst\fR [\fIlast\fR]]
+.fi
+
+.SS "ksh"
+.LP
+.nf
+\fBhist\fR [\fB-lnprs\fR] [\fB-e\fR \fIeditor\fR][\fB-N\fR \fInum\fR][\fIfirst\fR[\fIlast\fR]]
+.fi
+
+.SH 描述
+.SS "/usr/bin/fc"
+.sp
+.LP
+\fBfc\fR 实用程序用于列出、编辑或重新执行之前输入到交互式 \fBsh\fR 的命令。
+.sp
+.LP
+命令历史记录列表按编号引用命令。列表中的第一个编号是任意选择的。编号与其对应的命令之间的关系不会发生变化，除非出现用户登录后没有其他进程正在访问列表这一情况，此时系统会重置编号，并使用另一个编号（通常为 1）从保留时间最久的命令开始编号。编号达到 \fBHISTSIZE\fR 中的值或 \fB32767\fR（取两者中的较大者）时，shell 会重新从头编号，使用一个较小的编号（通常为 1）开始对下一个命令进行编号。尽管会使用重新从头编号功能，\fBfc\fR 仍会保留按时间排序的命令顺序。例如，如果为四个连续执行的命令提供了 32 766、32 767、1（重新从头编号）和 2 这四个编号，则 32 767 会被视为 1 之前的命令，尽管它的编号更大。
+.sp
+.LP
+编辑命令时（未指定 \fB-l\fR 选项时），所得到的行将输入在历史记录列表结尾处，然后由 \fBsh\fR 重新执行。引发编辑的 \fBfc\fR 命令不会输入到历史记录列表中。如果编辑器返回一个非零退出状态，系统会禁止向历史记录列表中输入，还会禁止重新执行命令。与 \fBfc\fR 一起使用的任何命令行变量赋值或重定向运算符都会影响 \fBfc\fR 命令本身以及所产生的命令，例如：
+.sp
+.in +2
+.nf
+\fBfc -s -- -1 2>/dev/null\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+会重新调用前一个命令，并且会为 \fBfc\fR 和前一个命令抑制标准错误。
+.SS "csh"
+.sp
+.LP
+显示历史记录列表。如果指定了 \fIn\fR，则只会显示最近发生的 \fIn\fR 个事件。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.RS 6n
+.rt  
+将输出顺序反转为最近的事件在前而不是最旧的事件在前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.RS 6n
+.rt  
+显示不带前导编号的历史记录列表。这用来生成适合使用 \fBcsh\fR 内置命令 \fBsource\fR(1) 及 \fB-h\fR 选项来提供信息的文件。
+.RE
+
+.SS "历史记录替换："
+.sp
+.LP
+历史记录替换允许您在当前正在键入的命令行中使用以前的命令行中的词。这简化了复杂命令或参数的拼写更正和重复输入。命令行保存在历史记录列表中，该列表的大小由 \fBhistory\fR 变量控制。可以将 \fBhistory\fR shell 变量设置为历史记录文件中保存的命令行的最大数量，即：
+.sp
+.in +2
+.nf
+set history = 200
+.fi
+.in -2
+
+.sp
+.LP
+这样，历史记录列表将可以跟踪最近使用的 200 个命令行。如果未设置，则 C shell 将仅保存最近的一个命令。
+.sp
+.LP
+历史记录替换以 \fB!\fR 开头（不过可以通过 \fBhistchars\fR 变量对此进行更改），可以出现在命令行上的任何位置；历史记录替换不能嵌套。可以使用 \fB\\fR 对 \fB!\fR 进行转义以抑制其特殊含义。
+.sp
+.LP
+包含历史记录替换的输入行在被扩展后会在终端上回显，但该回显发生在任何其他替换发生之前或命令执行之前。
+.SS "事件定义符："
+.sp
+.LP
+事件定义符是对历史记录列表中某个命令行条目的引用。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!\fR\fR
+.ad
+.sp .6
+.RS 4n
+启动历史记录替换，除非其后跟有空格字符、tab、换行符、\fB=\fR 或 \fB(\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!!\fR\fR
+.ad
+.sp .6
+.RS 4n
+引用前一个命令。单独使用时，此替换重复前一个命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!\fR\fIn\fR\fR
+.ad
+.sp .6
+.RS 4n
+引用命令行 \fIn\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!\fR\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+引用当前命令行减 \fIn\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!\fR\fIstr\fR\fR
+.ad
+.sp .6
+.RS 4n
+引用以 \fIstr\fR 开头的最近命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!?\fR\fIstr\fR\fB?\fR\fR
+.ad
+.sp .6
+.RS 4n
+引用包含 \fIstr\fR 的最近命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!?\fR\fIstr\fR\fB?\fR \fIadditional\fR\fR
+.ad
+.sp .6
+.RS 4n
+引用包含 \fIstr\fR 的最近命令并将 \fIadditional\fR 附加到该被引用的命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!{\fR\fBcommand\fR\fB}\fR \fIadditional\fR\fR
+.ad
+.sp .6
+.RS 4n
+引用以 \fBcommand\fR 开头的最近命令并将 \fIadditional\fR 附加到该被引用的命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB^\fR\fIprevious_word\fR\fB^\fR\fIreplacement\fR\fB^\fR\fR
+.ad
+.sp .6
+.RS 4n
+重复前一个命令行，将字符串 \fIprevious_word\fR 替换为字符串 \fIreplacement\fR。这等效于以下历史记录替换：
+.sp
+重复前一个命令行，将字符串 \fIprevious_word\fR 替换为字符串 \fIreplacement\fR。这等效于以下历史记录替换：
+.sp
+.in +2
+.nf
+\fB!:s/\fR\fIprevious_word\fR\fB/\fR\fIreplacement\fR\fB/\fR.
+.fi
+.in -2
+
+要重新执行之前的某个特定命令\fB并\fR进行这样的替换，比如说，重复执行命令 #6，请使用以下命令：
+.sp
+.in +2
+.nf
+\fB!:6s/\fR\fIprevious_word\fR\fB/\fR\fIreplacement\fR\fB/\fR.
+.fi
+.in -2
+
+.RE
+
+.SS "词定义符："
+.sp
+.LP
+`\fB:\fR'（冒号）将事件指定与词定义符相隔离。如果词定义符以 \fB^\fR、\fB$\fR、\fB*\fR、\fB-\fR 或 \fB%\fR 开头，则可以省略冒号。如果将从前一个命令选择词，则在事件指定中可以忽略第二个 \fB!\fR 字符。例如，\fB!!:1\fR 和 \fB!:1\fR 都引用前一个命令中的第一个词，而 \fB!!$\fR 和 \fB!$\fR 都引用前一个命令中的最后一个词。词定义符包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB#\fR\fR
+.ad
+.RS 7n
+.rt  
+迄今为止键入的整个命令行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 7n
+.rt  
+输入的第一个词（命令）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIn\fR\fR
+.ad
+.RS 7n
+.rt  
+第 \fIn\fR 个参数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB^\fR\fR
+.ad
+.RS 7n
+.rt  
+第一个参数，也就是 \fB1\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$\fR\fR
+.ad
+.RS 7n
+.rt  
+最后一个参数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%\fR\fR
+.ad
+.RS 7n
+.rt  
+与（最近的）\fB?\fR\fIs\fR 搜索匹配的词。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIx\fR\fB-\fR\fIy\fR\fR
+.ad
+.RS 7n
+.rt  
+某一范围内的词；\fB-\fR\fIy\fR 是 \fB0-\fR\fIy\fR 的缩写。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB*\fR\fR
+.ad
+.RS 7n
+.rt  
+所有参数，或者一个空值（如果事件中只有一个词）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIx\fR\fB*\fR\fR
+.ad
+.RS 7n
+.rt  
+\fIx\fR\fB-$\fR\fI 的缩写。\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIx\fR\fB-\fR\fR
+.ad
+.RS 7n
+.rt  
+与 \fIx\fR\fB*\fR 一样，但省略了词 \fB$\fR。
+.RE
+
+.SS "修饰符："
+.sp
+.LP
+在可选的词定义符后，您可以添加包含下列一个或多个修饰符的序列，每个序列前都有一个 \fB:\fR。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBh\fR\fR
+.ad
+.RS 28n
+.rt  
+删除结尾路径名组件，保留头部。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBr\fR\fR
+.ad
+.RS 28n
+.rt  
+删除 `\fB\&.\fR\fIxxx\fR' 形式的结尾后缀，保留基名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBe\fR\fR
+.ad
+.RS 28n
+.rt  
+删除除后缀以外的所有内容，从而保留扩展名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBs/\fR\fIoldchars\fR\fB/\fR\fIreplacements\fR\fB/\fR\fR
+.ad
+.RS 28n
+.rt  
+使用 \fIreplacements\fR 替换 \fIoldchars\fR。\fIoldchars\fR 是一个字符串，可以包含嵌入的空格，但事件定义符中的 \fIprevious_word\fR 不能包含嵌入的空格。
+.sp
+.in +2
+.nf
+\fB^\fR\fIoldchars\fR\fB^\fR\fIreplacements\fR\fB^\fR
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBt\fR\fR
+.ad
+.RS 28n
+.rt  
+删除所有前导路径名组件，保留尾部。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB&\fR\fR
+.ad
+.RS 28n
+.rt  
+重复前一个替换。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBg\fR\fR
+.ad
+.RS 28n
+.rt  
+向每个词中的匹配项的第一个实例应用更改，向其附加上面的前缀（例如 \fBg&\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp\fR\fR
+.ad
+.RS 28n
+.rt  
+列显新命令但不执行它。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBq\fR\fR
+.ad
+.RS 28n
+.rt  
+将替代的词用引号括起来，防止被进一步替换。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBx\fR\fR
+.ad
+.RS 28n
+.rt  
+与 \fBq\fR 一样，但在每个空格字符、制表符或换行符处拆分为词。
+.RE
+
+.sp
+.LP
+除非前面带有一个 \fBg\fR，否则修改将仅应用于与 \fIoldchars\fR 匹配的第一个字符串。如果没有匹配的字符串，则会产生错误。
+.sp
+.LP
+左侧的替换项不是正则表达式，而是字符串。任何字符都可以取代 \fB/\fR 用作分隔符。使用反斜杠将分隔符字符括起来。右侧的字符 \fB&\fR 将被来自左侧的文本替换。可以用反斜杠将 \fB&\fR 括起来。空 \fIoldchars\fR 将使用前一个字符串，该字符串来自 \fIoldchars\fR 或者来自 \fB!?\fR\fIs\fR 中的上下文扫描字符串 \fIs\fR。如果一个换行符直接跟在 \fIreplacements\fR 之后，则可以省略最右侧的分隔符；类似地，还可以省略上下文扫描中最右侧的 \fB?\fR。
+.sp
+.LP
+如果没有事件指定，则历史记录引用将引用上一个命令，或者引用命令行上以前的某个历史记录引用（如果有）。
+.SS "ksh88"
+.sp
+.LP
+使用 \fBfc\fR 时，如果命令形式为
+.sp
+.in +2
+.nf
+\fBfc -e \(mi [\fIold\fR=\fInew\fR] [\fIcommand\fR],\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+或
+.sp
+.in +2
+.nf
+\fBfc -s [\fIold\fR=\fInew\fR] [\fIcommand\fR],\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+则 \fIcommand\fR 会在 \fIold\fR\fB=\fR\fInew\fR 替换执行后重新执行。如果不存在 \fIcommand\fR 参数，则会执行在此终端键入的最近一个命令。
+.sp
+.LP
+使用 \fBfc\fR 时，如果命令形式为
+.sp
+.in +2
+.nf
+\fBfc [-e \fIename\fR] [-nlr ] [\fIfirst\fR [\fIlast\fR]],\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+则会从在终端键入的最近 \fBHISTSIZE\fR 个命令中，选择从第 \fIfirst\fR 个到第 \fIlast\fR 个的一系列命令。参数 \fIfirst\fR 和 \fIlast\fR 可以指定为数字或字符串。字符串用于查找以指定字符串开头的最近命令。负数用作到当前命令数的偏移。如果选择了 \fB-l\fR 标志，则命令将列在标准输出中。否则，将在包含这些键盘命令的文件中调用编辑器程序 \fB- e\fR \fIname\fR。如果未提供 \fIename\fR，则会将变量 \fBFCEDIT\fR 的值（缺省值 \fB/bin/ed\fR）用作编辑器。编辑完成后，将执行编辑后的命令。如果未指定 \fBlast\fR，则会将它设置为 \fIfirst\fR。如果未指定 \fIfirst\fR，则针对编辑和列显的缺省值分别为上一条命令和 -16。标志 \fB-r\fR 用于颠倒命令顺序，而标志 \fB-n\fR 用于在列显时抑制命令编号。（有关命令行编辑的更多信息，请参见 \fBksh88\fR(1)。）
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHISTFILE\fR\fR
+.ad
+.RS 12n
+.rt  
+如果在调用 shell 时设置了此变量，则此变量的值是存储命令历史记录时所使用的文件的路径名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHISTSIZE\fR\fR
+.ad
+.RS 12n
+.rt  
+如果在调用 shell 时设置了此变量，此 shell 可访问的以前输入的命令的数目则大于或等于此数目。缺省值为 \fB128\fR。
+.RE
+
+.SS "命令重新输入："
+.sp
+.LP
+从终端设备输入的最近 \fBHISTSIZE\fR 个（缺省值为 128）命令的文本保存在 \fBhistory\fR 文件中。如果未设置 \fBHISTFILE\fR 变量或者如果此变量指定的文件无法写入，则会使用 \fB$HOME/.sh_history\fR。shell 可以访问使用指定的同一 \fBHISTFILE\fR 的所有\fI交互式\fR shell 的命令。特殊命令 \fBfc\fR 用来列出或编辑此文件的某个部分。要编辑或列出的文件部分可以根据编号进行选择，或者通过指定此命令的第一个字符或前几个字符来进行选择。可以指定一个命令或一系列命令。如果未将编辑器程序指定为 \fBfc\fR 的参数，则会使用变量 \fBFCEDIT\fR 的值。如果未定义 \fBFCEDIT\fR，则会使用 \fB/bin/ed\fR。退出编辑器时，将输出并重新执行编辑后的命令。编辑器名称 \fB-\fR 用于跳过编辑阶段，并重新执行命令。在这种情况下，在执行之前可使用 \fIold\fR\fB =\fR\fInew\fR 格式的替换参数来修改命令。例如，如果 \fBr\fR 的别名为 \fB´fc\fR \fB-e\fR \fB- ´\fR，则键入 \fB`r\fR \fBbad=good\fR \fBc' \fR 将重新执行以字母 \fBc\fR 开头的最近的命令，并将第一次出现的字符串 \fBbad\fR 替换为字符串 \fBgood\fR。
+.sp
+.LP
+在复合命令中使用 \fBfc\fR 内置命令会导致整个命令从历史记录文件中消失。
+.SS "ksh"
+.sp
+.LP
+\fBhist\fR 用于列出、编辑或重新执行以前输入到当前 shell 环境中的命令。
+.sp
+.LP
+命令历史记录列表按编号引用命令。列表中的第一个编号是任意选择的。在登录会话期间，编号与其对应的命令之间的关系不会发生变化。当编号达到 \fB32767\fR 时，会从 \fB1\fR 开始重新编号，但仍会保留各命令的顺序。
+.sp
+.LP
+在未指定 \fBl\fR 选项的情况下编辑命令时，所得到的行会输入在历史记录列表结尾处，然后由当前 shell 重新执行。引发编辑的 \fBhist\fR 命令不会输入到历史记录列表中。如果编辑器返回一个\fB非零\fR退出状态，则这将禁止向历史记录列表中输入，还会禁止重新执行命令。命令行变量赋值和重定向会影响 \fBhist\fR 命令和重新执行的命令。 
+.sp
+.LP
+\fIfirst\fR 和 \fIlast\fR 用于定义命令的范围。将 \fIfirst\fR 和 \fIlast\fR 指定为以下类型之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fInumber\fR\fR
+.ad
+.RS 11n
+.rt  
+表示命令编号的一个正数。可以将 \fB+\fR 符号放在 \fInumber\fR 前面。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-\fR\fInumber\fR\fR
+.ad
+.RS 11n
+.rt  
+表示在 \fInumber\fR 个命令之前执行的命令的一个负数。例如，\fB-1\fR 指的是前一条命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIstring\fR\fR
+.ad
+.RS 11n
+.rt  
+\fIstring\fR 是指最近输入的以 \fIstring\fR 开头的命令。\fIstring\fR 不得包含 \fB=\fR。
+.RE
+
+.sp
+.LP
+如果省略了 \fIfirst\fR，则将使用前一条命令，除非指定了 \fB-l\fR，在此情况下它缺省设置为 \fB-16\fR，而 last 缺省设置为 \fB-1\fR。
+.sp
+.LP
+如果指定了 \fIfirst\fR 但省略了 \fIlast\fR，则 \fIlast\fR 缺省设置为 \fIfirst\fR，除非指定了 \fB-l\fR，在此情况下它缺省设置为 \fB-1\fR。
+.sp
+.LP
+如果未指定编辑器，当设置了 \fBHISTEDIT\fR 变量时将使用该变量指定的编辑器，否则，当设置了 \fBFCEDIT\fR 变量时将使用该变量指定的编辑器，其他情况下将使用 \fBed\fR。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-e\fR \fIeditor\fR\fR
+.ad
+.RS 13n
+.rt  
+使用 \fIeditor\fR 指定的编辑器编辑命令。\fIeditor\fR 字符串是一个实用程序名称，可以通过 \fBPATH\fR 变量进行搜索。未指定 \fB-e\fR 时，\fBFCEDIT\fR 变量中的值将用作缺省值。如果 \fBFCEDIT\fR 为空或未设置，则会使用 \fBed\fR 作为编辑器。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 13n
+.rt  
+（字母 ell。）列出命令，但不针对它们调用编辑器。命令将按照 \fIfirst\fR 和 \fIlast\fR 操作数指示的顺序写入，但会受 \fB-r\fR 的影响，而且每个命令前都带有命令编号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 13n
+.rt  
+在通过 \fB-l\fR 列出命令时抑制命令编号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.RS 13n
+.rt  
+颠倒命令的列出顺序（使用 \fB-l\fR\fB 时）\fR或编辑顺序（\fB-l\fR 和 \fB-s\fR 均未使用时）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 13n
+.rt  
+重新执行命令，但不调用编辑器。
+.RE
+
+.SS "ksh"
+.sp
+.LP
+\fBksh\fR 支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fIeditor\fR\fR
+.ad
+.RS 13n
+.rt  
+指定用来编辑历史记录命令的编辑器。\fIeditor\fR 的值为 \fB-\fR 等效于指定 \fB-s\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 13n
+.rt  
+列出命令，但不编辑和重新执行这些命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR \fInum\fR\fR
+.ad
+.RS 13n
+.rt  
+从之前的 \fInum\fR 个命令开始。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 13n
+.rt  
+列出命令时抑制命令编号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 13n
+.rt  
+将每个操作数的历史记录扩展的结果写入到标准输出。将忽略所有其他选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.RS 13n
+.rt  
+颠倒命令的顺序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 13n
+.rt  
+重新执行命令，但不调用编辑器。在这种情况下，可以指定一个 \fIold=new\fR 格式的操作数以在重新执行命令前将命令中第一次出现的字符串 \fIold\fR 替换为 \fInew\fR。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfirst\fR\fR
+.ad
+.br
+.na
+\fB\fIlast\fR\fR
+.ad
+.RS 9n
+.rt  
+选择要列出或编辑的命令。可以访问的以前的命令数是由 \fBHISTSIZE\fR 变量的值确定的。\fIfirst\fR 或 \fIlast\fR 或两者的值可以为以下类型之一：
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB+\fR]\fInumber\fR\fR
+.ad
+.RS 13n
+.rt  
+表示命令编号的一个正数。可以使用 \fB-l\fR 选项显示命令编号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-\fR\fInumber\fR\fR
+.ad
+.RS 13n
+.rt  
+表示在 \fInumber\fR 个命令之前执行的命令的一个十进制负数。例如，\fB-1\fR 指的是前一条命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIstring\fR\fR
+.ad
+.RS 13n
+.rt  
+表示最近输入的以某字符串开头的命令的字符串。如果也没有随 \fB-s\fR 指定 \fIold=new\fR 操作数，则 \fIfirst\fR 操作数的字符串形式不能包含嵌入的等号。
+.sp
+使用带 \fB-s\fR 的概要形式时，如果省略了 \fIfirst\fR，则将使用前一条命令。
+.sp
+对于不带 \fB-s\fR 的概要形式\fB：\fR
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果省略了 \fIlast\fR，则当指定了 \fB-l\fR 时，\fIlast\fR 会缺省设置为前一条命令；否则，它将缺省设置为 \fIfirst\fR。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果同时省略了 \fIfirst\fR 和 \fIlast\fR，则会根据 \fB-l\fR 选项是否使用，列出前 16 个命令或编辑前一个命令。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果同时提供了 \fIfirst\fR 和 \fIlast\fR，则会编辑从 \fIfirst\fR 到 \fIlast\fR 的所有命令（未使用 \fB-l\fR 时\fB）\fR，或者列出这些命令（使用了 \fB-l\fR 时）。要编辑多个命令，需要同时向编辑器提供所有这些命令，且每个命令都另起一行。如果 \fIfirst\fR 代表的命令较之 \fIlast\fR 更新，则命令会按照倒序列出或编辑，等同于使用了 \fB-r\fR。例如，第一行上的以下命令等同于第二行上的相应命令：
+.sp
+.in +2
+.nf
+fc -r 10 20     fc    30 40 
+fc   20 10      fc -r 40 30
+.fi
+.in -2
+
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+使用一个范围内的命令时，如果指定的 \fIfirst\fR 或 \fIlast\fR 值不在历史记录列表内，这不算是错误。\fBfc\fR 会相应替代表示列表中最旧或最新命令的值。例如，如果历史记录列表中只有编号为 1 至 10 的十个命令：
+.sp
+.in +2
+.nf
+fc -l 
+fc 1 99
+.fi
+.in -2
+
+则会分别列出和编辑全部十个命令。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIold=new\fR\fR
+.ad
+.RS 13n
+.rt  
+将要重新执行的命令中第一次出现的字符串 \fIold\fR 替换为字符串 \fInew\fR。
+.RE
+
+.RE
+
+.SH 输出
+.sp
+.LP
+使用 \fB-l\fR 选项列出命令时，列表中各命令的格式如下：
+.sp
+.in +2
+.nf
+\fB"%d\et%s\en", <\fR\fIline number\fR\fB>, <\fR\fIcommand\fR\fB>\fR
+.fi
+.in -2
+
+.sp
+.LP
+同时指定了 \fB-l\fR 和 \fB-n\fR 选项时，各命令的格式为：
+.sp
+.in +2
+.nf
+\fB"\et%s\en", <\fR\fIcommand\fR\fB>\fR
+.fi
+.in -2
+
+.sp
+.LP
+如果 \fIcommand\fR\fIcommand\fR 包含多行，则第一行后的行显示为：
+.sp
+.in +2
+.nf
+\fB"\et%s\en", <\fR\fIcontinued-command\fR\fB>\fR
+.fi
+.in -2
+
+.SH 示例
+.LP
+\fB示例 1 \fR使用 history 和 fc
+.sp
+.in +2
+.nf
+             csh                                     ksh88
+
+% history                               $ fc -l
+  1   cd /etc                             1   cd /etc
+  2   vi passwd                           2   vi passwd
+  3   date                                3   date
+  4   cd                                  4   cd
+  5   du .                                5   du .
+  6   ls -t                               6   ls -t
+  7   history                             7   fc -l
+
+% !d                                    $ fc -e - d
+  du .                                    du .
+  262   ./SCCS                            262   ./SCCS
+  336   .                                 336   .
+
+% !da                                   $ fc -e - da
+  Thu Jul 21 17:29:56 PDT 1994            Thu Jul 21 17:29:56 PDT 1994
+
+%                                       $ alias \e!='fc -e -'
+
+% !!                                    $ !
+  date                                    alias ='fc -e -'
+  Thu Jul 21 17:29:56 PDT 1994
+.fi
+.in -2
+
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBfc\fR 执行的环境变量 \fBLC_CTYPE\fR、\fBLC_MESSAGES\fR 和 \fBNLSPATH\fR 的说明，请参见 \fBenviron\fR(5)。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBFCEDIT\fR\fR
+.ad
+.RS 12n
+.rt  
+此变量（经 shell 扩展后）将确定 \fB-e\fR \fIeditor\fR 选项的 \fIeditor\fR 选项参数的缺省值。如果 \fBFCEDIT\fR 为空或未设置，则会使用 \fBed\fR(1) 作为编辑器。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHISTFILE\fR\fR
+.ad
+.RS 12n
+.rt  
+确定用于指定命令历史记录文件的路径名。如果未设置 \fBHISTFILE\fR 变量，则 shell 会尝试在用户的起始目录中访问或创建 \fB\&.sh_history\fR 文件。如果 shell 无法获得对历史记录文件的读写访问权限或无法创建该文件，则它会使用一种未指定的机制来确保历史记录正常发挥作用。（本部分中提到的历史记录“文件”应被理解为是指此类情况下的这种未指定的机制。）\fBfc\fR 可以选择仅在初始化历史记录文件时访问此变量；受用户发出的命令、\fBENV\fR 变量指定的文件或 \fB/etc/profile\fR 等系统启动文件的影响，\fBfc\fR 或 \fBsh\fR 首次尝试从历史记录文件中检索条目或者向其中添加条目时，会发生此初始化。（历史记录文件的初始化过程可能依赖于系统启动文件，因为它们可能包含有效取代用户的 \fBHISTFILE\fR 和 \fBHISTSIZE\fR 设置的命令。例如，函数定义命令记录在历史记录文件中，除非设置了 \fBset\fR \fB-o\fR \fBnolog\fR 选项。如果系统管理员将函数定义纳入在 \fBENV\fR 文件之前调用的某个系统启动文件中，则历史记录文件在用户有机会影响其特性之前就已经初始化。）调用 shell 时会先行访问变量 \fBHISTFILE\fR。对 \fBHISTFILE\fR 所做的任何更改在调用另一个 shell 前都不会生效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHISTSIZE\fR\fR
+.ad
+.RS 12n
+.rt  
+确定一个表示可以访问的以前命令数限制的十进制数字。如果未设置此变量，则将使用大于或等于 128 的未指定缺省值。调用 shell 时会先行访问变量 \fBHISTSIZE\fR。对 \fBHISTSIZE\fR 所做的任何更改在调用另一个 shell 前都不会生效。
+.RE
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功完成了列出操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。
+.RE
+
+.sp
+.LP
+否则，退出状态为 \fBfc\fR 或 \fBhist\fR 执行的命令的退出状态。
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBcsh\fR(1)、\fBed\fR(1)、\fBksh\fR(1)、\fBksh88\fR(1)、\fBset\fR(1)、\fBsh\fR(1)、\fBsource\fR(1)、\fBattributes\fR(5)、\fBenviron\fR(5)

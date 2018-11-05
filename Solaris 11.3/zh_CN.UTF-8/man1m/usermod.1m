@@ -1,0 +1,765 @@
+'\" te
+.\" Copyright 1989 AT&T All Rights Reserved
+.\" Portions Copyright (c) 2004, 2013, Oracle and/or its affiliates.All rights reserved.
+.TH usermod 1M "2013 年 11 月 19 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+usermod \- 修改系统中的用户登录信息
+.SH 用法概要
+.LP
+.nf
+\fBusermod\fR [\fB-u\fR \fIuid\fR [\fB-o\fR]] [\fB-g\fR \fIgroup\fR] [\fB-G\fR [+|-]\fIgroup\fR [, \fIgroup\fR...]] 
+     [\fB-d\fR \fIdir\fR [\fB-m\fR]] [\fB-s\fR \fIshell\fR] [\fB-c\fR \fIcomment\fR] [\fB-l\fR \fInew_name\fR]
+     [\fB-f\fR \fIinactive\fR] [\fB-e\fR \fIexpire\fR] [\fB-p\fR] \fIproject\fR, \fIproject\fR
+     [\fB-A\fR [+|-]\fIauthorization\fR [,\fIauthorization\fR]] 
+     [\fB-P\fR [+|-]\fIprofile\fR [,\fIprofile\fR]] [\fB-R\fR [+|-]\fIrole\fR [,\fIrole\fR]] 
+     [\fB-K\fR \fIkey\fR[+|-]=\fIvalue\fR] [\fB-S\fR \fIrepository\fR] \fB[-q \fIqualifier\fR]\fR \fIlogin\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBusermod\fR 实用程序可以修改系统中的用户登录名定义。该命令可以更改指定登录项的定义并对系统文件和文件系统进行与帐户相关的相应更改。
+.sp
+.LP
+使用此命令创建的系统文件条目每行最多允许有 512 个字符。为多个选项指定长参数可能会超出此限制。
+.sp
+.LP
+对于本地文件系统信息库中没有的用户，通过指定 \fB-S\fR 选项，文件将为用户创建/修改本地文件条目。 
+.sp
+.LP
+管理员必须具有 "User Security"（用户安全）配置文件才能修改现有用户的安全属性。要修改现有角色的非安全属性，用户需要 "User Management"（用户管理）配置文件。在 \fBpasswd\fR、\fBshadow\fR 和 \fBuser_attr\fR 中设置各种字段所需的授权可以在 \fBpasswd\fR(4)、\fBshadow\fR(4) 和 \fBuser_attr\fR(4) 中找到。分配组所需的授权可以在 \fBgroup\fR(4) 中找到。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR [+|-]\fIauthorization\fR\fR
+.ad
+.sp .6
+.RS 4n
+一个或多个在 \fBauth_attr\fR(4) 中定义的以逗号分隔的授权。只有对授权\fB\fR具有 \fBgrant\fR 权限的用户或角色才能将授权分配给帐户。这将替换所有现有授权设置。如果未指定任何授权列表，将删除现有设置。
+.sp
+前缀 \fB+\fR 可以将授权添加到现有授权；前缀 \fB-\fR 则可以将授权从现有授权中删除。如果未指定任何前缀，\fIauthorization\fR 将替换现有授权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIcomment\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定注释字符串。\fIcomment\fR 可以为任意文本字符串。它通常为登录项的简短说明，当前用作存储用户全名的字段。该信息存储在用户的 \fBpasswd\fR 条目中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdir\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定用户的新起始目录。缺省值为 \fIbase_dir/login\fR，其中 \fIbase_dir\fR 是新登录项起始目录的基目录，\fBlogin\fR 是新的登录项。这会创建或修改用户的 \fBauto_home\fR 条目。
+.sp
+该选项的参数可指定为 \fIserver\fR:\fIdir\fR，其中 \fIserver\fR 是起始目录所在计算机的主机名，\fIdir\fR 是用户起始目录所在的路径。如果服务器是远程主机，则在用户登录时，需要在远程主机上为挂载该起始目录的系统创建该目录。如果未指定任何服务器名称，将在执行使用了 \fB-m\fR 选项的命令时，在主机上创建起始目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fIexpire\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定登录名的失效日期。此日期过后，没有任何用户能够访问此登录名。到期选项参数是使用模板文件 \fB/etc/datemsk\fR 中包含的日期格式之一输入的日期。请参见 \fBgetdate\fR(3C)。
+.sp
+例如，您可以输入 \fB10/6/90\fR 或 \fBOctober 6, 1990\fR。\fB" "\fR 值会使到期日期处于无效状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIinactive\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定在声明登录 \fBID\fR 无效之前，允许该登录 \fBID\fR 在连续两次使用之间间隔的最大天数。正常值为正整数。\fB0\fR 值会使此状态无效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR \fIgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定现有组的整数 \fBID\fR 或字符串名称。该命令会重新定义用户的主组成员关系。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-G\fR [+|-]\fIgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+现有组的整数 ID 或字符串名称。它定义新用户的补充组成员关系。使用 \fB-g\fR 和 \fB-G\fR 选项指定的组之间的重复项将被忽略。指定的组数不能大于 \fBNGROUPS_MAX\fR。Solaris 操行系统保留了 GID 0-99 供将来分配。
+.sp
+前缀 \fB+\fR 可以将组添加到现有组；前缀 \fB-\fR 则可以将组从现有组中删除。如果不使用前缀，\fIgroup\fR 会替换现有组。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-K\fR \fIkey\fR[+|-]=\fI value\fR\fR
+.ad
+.sp .6
+.RS 4n
+替换现有用户的 \fIkey=value\fR 对属性，或向角色中添加此对属性。可以使用多个 \fB-K\fR 选项来替换或添加多个 \fIkey=value\fR 对。但是，键不能重复。可以使用通用 \fB-K\fR 选项以及相应键来代替特定的隐式键选项（\fB-A\fR、\fB-P\fR、\fB-R\fR、\fB-p\fR）。有关有效的 \fIkey\fR 列表，请参见 \fBuser_attr\fR(4)。这些键的值通常可在手册页或与这些键相关的其他来源中找到。例如，有关 \fBproject\fR 键的值的指导，请参见 \fBproject\fR(4)。使用带有 \fB-v\fR 和 \fB- l\fR 选项的命令 \fBppriv\fR(1) 获取键 \fBdefaultpriv\fR 和 \fBlimitpriv\fR 的值列表。如果未指定任何值，将删除现有键。
+.sp
+可以为关键字 \fBtype\fR 指定值 \fBrole\fR 或值 \fBnormal\fR。使用值 \fBrole\fR 时，帐户会从正常用户更改为角色户；使用值 \fBnormal\fR 会将帐户保留为正常用户。
+.sp
+作为 \fBrole\fR 帐户，不能有任何角色（\fB-R\fR 或 \fIroles=value\fR）。
+.sp
+前缀 \fB+\fR 可以将值添加到现有值；前缀 \fB-\fR 则可以将值从现有值中删除。如果未指定任何前缀，\fIvalue\fR 将替换现有值。
+.sp
+\fB+\fR/\fB-\fR 前缀操作仅适用于以下键：\fBauths\fR、\fBprofiles\fR、\fBauth_profiles\fR、\fBroles\fR、\fBproject\fR、\fBlimitpriv\fR、\fBdefaultpriv\fR、\fBauth_profiles\fR 和 \fBaccess_times\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fInew_logname\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定用户的新登录名。有关用户名的要求，请参见 \fBpasswd\fR(4)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.sp .6
+.RS 4n
+将用户的起始目录移动到使用 \fB-d\fR 选项指定的新目录。如果该目录已存在，\fIgroup\fR 必须对其具有读/写/执行权限，其中 \fIgroup\fR 为用户的主组。如果指定给 \fB-d\fR 选项的服务器名称是远程主机，系统将不尝试创建起始目录。
+.sp
+如果目录尚不存在，将创建新的 ZFS 数据集。在全局区域中，数据集会创建为 \fBrpool/export/home/\fR\fIrolename\fR。对于非全局区域，数据集将创建为 \fIROOT-dataset\fR\fB/export/home/\fR\fIrolename\fR。缺省情况下，ZFS 数据集的挂载点为 \fB/export/home/ \fR\fIrolename\fR。如果指定了 \fB-d\fR \fIpath\fR，并且它是本地计算机上的路径，数据集将挂载在指定位置。授予角色创建 ZFS 快照并对其进行提升的权限。新创建的数据集将继承其父项的加密设置。如果该数据集已加密，将授予角色更改其包装密钥的权限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR\fR
+.ad
+.sp .6
+.RS 4n
+该选项允许指定的 \fBUID\fR 重复（不唯一）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+现有项目的整数 ID 或字符串名称。它定义用户的补充项目成员关系。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR [+|-]\fIprofile\fR\fR
+.ad
+.sp .6
+.RS 4n
+一个或多个由逗号分隔的在 \fBprof_attr\fR(4) 中定义的权限配置文件。这会替换 \fBuser_attr\fR(4) 中的任何现有配置文件设置。如果指定了空配置文件列表，则会删除现有设置。
+.sp
+前缀 \fB+\fR 可以将配置文件添加到现有配置文件；前缀 \fB-\fR 则可以将配置文件从现有配置文件中删除。如果未指定任何前缀，\fIprofile\fR 会替换现有配置文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR \fIqualifier\fR\fR
+.ad
+.sp .6
+.RS 4n
+用于限定扩展属性（通过 -K、-P、-A 和 + -R 指定）适用位置的主机或 netgroup 的名称。需要前缀 @ 来指示限定符是 netgroup 名称。仅当在 LDAP 名称服务中维护用户帐户时，\fB-q\fR 选项才有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR [+|-]\fIrole\fR\fR
+.ad
+.sp .6
+.RS 4n
+一个或多个逗号分隔的角色（请参见 \fBroleadd\fR(1M)）。这将替换所有现有角色设置。如果未指定任何角色列表，将删除现有设置。
+.sp
+前缀 \fB+\fR 将角色添加到现有角色；前缀 \fB-\fR 将角色从现有角色中删除。如果没有前缀，\fIrole\fR 会替换现有角色。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIshell\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定程序的全路径名，登录时可用作用户的 shell。\fIshell\fR 的值必须为一个有效的可执行文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR \fIrepository\fR\fR
+.ad
+.sp .6
+.RS 4n
+有效的系统信息库包括 \fBfiles\fR 和 \fBldap\fR。系统信息库指定将更新哪个名称服务。缺省的系统信息库为 \fBfiles\fR。系统信息库为 \fBfiles\fR 时，授权、配置文件和角色可存在于其他名称服务系统信息库中，并可以分配给 \fBfiles\fR 系统信息库中的用户。当系统信息库为 \fBldap\fR 时，所有可分配的属性必须存在于 \fBldap\fR 系统信息库中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR \fIuid\fR\fR
+.ad
+.sp .6
+.RS 4n
+为用户指定新的 \fBUID\fR。该值必须为小于 \fB<param.h>\fR 中定义的 \fBMAXUID\fR 的非负十进制整数。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlogin\fR\fR
+.ad
+.sp .6
+.RS 4n
+要修改的现有登录名。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR为用户分配特权
+.sp
+.LP
+以下命令添加的特权会影响用户初始可继承权限集的高分辨率时间。
+
+.sp
+.in +2
+.nf
+# \fBusermod -K defaultpriv=basic,proc_clock_highres jdoe\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+此命令将在 \fBuser_attr\fR 中生成以下条目：
+
+.sp
+.in +2
+.nf
+jdoe::::type=normal;defaultpriv=basic,proc_clock_highres
+.fi
+.in -2
+
+.LP
+\fB示例 2 \fR从用户的限制权限集中删除特权
+.sp
+.LP
+以下命令删除的特权允许指定用户创建目录的硬链接以及取消目录链接。
+
+.sp
+.in +2
+.nf
+# \fBusermod -K limitpriv=all,!sys_linkdir jdoe\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+此命令将在 \fBuser_attr\fR 中生成以下条目：
+
+.sp
+.in +2
+.nf
+jdoe::::type=normal;defaultpriv=basic,limitpriv=all,!sys_linkdir
+.fi
+.in -2
+
+.LP
+\fB示例 3 \fR从用户的基本特权集中删除特权
+.sp
+.LP
+以下命令删除的特权允许指定用户检查用户会话以外的进程。
+
+.sp
+.in +2
+.nf
+# \fBusermod -K defaultpriv=basic,!proc_session jdoe\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+此命令将在 \fBuser_attr\fR 中生成以下条目：
+
+.sp
+.in +2
+.nf
+jdoe::::type=normal;defaultpriv=basic,!proc_session;limitpriv=all
+.fi
+.in -2
+
+.LP
+\fB示例 4 \fR将角色分配给用户
+.sp
+.LP
+以下命令将角色分配给用户。该角色必须是在执行此命令之前就已使用 \fBroleadd\fR(1M) 创建的角色。
+
+.sp
+.in +2
+.nf
+# \fBusermod -R mailadm jdoe\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+此命令将在 \fBuser_attr\fR 中生成以下条目：
+
+.sp
+.in +2
+.nf
+jdoe::::type=normal;roles=mailadm;defaultpriv=basic;limitpriv=all
+.fi
+.in -2
+
+.LP
+\fB示例 5 \fR向用户授予授权角色
+.sp
+.LP
+以下命令授予 \fBsolaris.zone.manage\fR 授权、"Project Management"（项目管理）权限配置文件，将限制特权设置为基本特权，并将 \fBmailadm\fR 角色分配给用户。
+
+.sp
+.in +2
+.nf
+# \fBusermod -A 'solaris.zone.manage' -P 'Project Management' -K limitpriv=basic
+ -R mailadm -S files jdoe_ldap\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+此命令将在 \fBuser_attr\fR 中生成以下条目：
+
+.sp
+.in +2
+.nf
+jdoe_ldap::::auths=solaris.zone.manage;profiles=ProjectManagement;limitpriv=basic;
+roles=mailadm
+.fi
+.in -2
+
+.LP
+\fB示例 6 \fR删除用户的所有配置文件
+.sp
+.LP
+以下命令删除直接授予用户的所有配置文件。用户仍将拥有通过 \fBpolicy.conf\fR(4) 中的 \fBPROFS_GRANTED\fR 键授予的权限配置文件。
+
+.sp
+.in +2
+.nf
+# \fBusermod -P "" jdoe\fR
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.LP
+如果出现错误，\fBusermod\fR 将输出错误消息并以下列某一值退出：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 6n
+.rt  
+无权执行尝试的操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 6n
+.rt  
+命令语法无效。将显示 \fBusermod\fR 命令的用法消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.RS 6n
+.rt  
+为选项提供的参数无效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR\fR
+.ad
+.RS 6n
+.rt  
+使用 \fB-u\fR 选项指定的 \fIgid\fR 或 \fIuid\fR 已在使用中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB5\fR\fR
+.ad
+.RS 6n
+.rt  
+\fBpassword\fR 和 \fBshadow\fR 文件相互不一致。可使用 \fBpwconv\fR(1M) 更正可能的错误。请参见 \fBpasswd\fR(4) 和 \fBshadow\fR(4)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB6\fR\fR
+.ad
+.RS 6n
+.rt  
+要修改的登录项不存在，\fIgid\fR 或 \fIuid\fR 不存在。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB7\fR\fR
+.ad
+.RS 6n
+.rt  
+\fBgroup\fR、\fBpasswd\fR 或 \fBshadow\fR 文件缺失。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB9\fR\fR
+.ad
+.RS 6n
+.rt  
+组名或用户名已在使用中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB10\fR\fR
+.ad
+.RS 6n
+.rt  
+无法更新 \fBpasswd\fR、\fBshadow\fR 或 \fBuser_attr\fR 文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB11\fR\fR
+.ad
+.RS 6n
+.rt  
+空间不足，无法移动起始目录（\fB-m\fR 选项）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB12\fR\fR
+.ad
+.RS 6n
+.rt  
+无法创建、删除或移动新的起始目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB13\fR\fR
+.ad
+.RS 6n
+.rt  
+请求的登录名已在使用中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB14\fR\fR
+.ad
+.RS 6n
+.rt  
+意外失败。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB16\fR\fR
+.ad
+.RS 6n
+.rt  
+无法更新组数据库。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB17\fR\fR
+.ad
+.RS 6n
+.rt  
+无法更新项目数据库。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB18\fR\fR
+.ad
+.RS 6n
+.rt  
+授权不足。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB19\fR\fR
+.ad
+.RS 6n
+.rt  
+没有角色。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB20\fR\fR
+.ad
+.RS 6n
+.rt  
+没有配置文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB21\fR\fR
+.ad
+.RS 6n
+.rt  
+没有特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB22\fR\fR
+.ad
+.RS 6n
+.rt  
+没有标签。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB23\fR\fR
+.ad
+.RS 6n
+.rt  
+没有组。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB24\fR\fR
+.ad
+.RS 6n
+.rt  
+系统未运行 Trusted Extensions。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB25\fR\fR
+.ad
+.RS 6n
+.rt  
+没有项目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB26\fR\fR
+.ad
+.RS 6n
+.rt  
+无法更新 \fBauto_home\fR。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/group\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含组定义的系统文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/datemsk\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含日期格式的系统文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/passwd\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统口令文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/shadow\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含用户加密口令和相关信息的系统文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/user_attr\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含其他用户和角色属性的系统文件
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBauths\fR(1)、\fBchown\fR(1)、\fBpasswd\fR(1)、\fBprofiles\fR(1)、\fBusers\fR(1B)、\fBgroupadd\fR(1M)、\fBgroupdel\fR(1M)、\fBgroupmod\fR(1M)、\fBlogins\fR(1M)、\fBpwconv\fR(1M)、\fBroleadd\fR(1M)、\fBroledel\fR(1M)、\fBrolemod\fR(1M)、\fBuseradd\fR(1M)、\fBuserdel\fR(1M)、\fBgetdate\fR(3C)、\fBauth_attr\fR(4)、\fBpasswd\fR(4)、\fBpolicy.conf\fR(4)、\fBprof_attr\fR(4)、\fBuser_attr\fR(4)、\fBattributes\fR(5) 
+.SH 附注
+.sp
+.LP
+\fBusermod\fR 实用程序修改（缺省或指定的）作用域中的 \fBpasswd\fR、\fBshadow\fR、\fBgroup\fR、\fBproject\fR 和 \fBuser_attr\fR 数据库中的定义。该实用程序将依据外部名称服务验证用户名和用户 ID 的唯一性。
+.sp
+.LP
+\fBusermod\fR 实用程序使用通过 \fBSUNWaccr\fR 获得的 \fB/etc/datemsk\fR 文件进行数据格式化。

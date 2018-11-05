@@ -1,0 +1,744 @@
+'\" te
+.\" Copyright (c) 2008, 2015, Oracle and/or its affiliates. All rights          reserved.
+.TH fmadm 1M "02 Jun 2015" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+fmadm \- fault management configuration tool
+.SH SYNOPSIS
+.LP
+.nf
+\fBfmadm\fR [\fB-q\fR] [\fIsubcommand\fR [\fIarguments\fR]]
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBfmadm\fR utility can be used by administrators and service personnel to view and modify system configuration parameters maintained by the Solaris Fault Manager, \fBfmd\fR(1M). \fBfmd\fR receives symptomatic telemetry associated with conditions detected by the system software, diagnoses the telemetry into faults, defects, or alerts, and initiates proactive self-healing activities such as disabling faulty components.
+.sp
+.LP
+\fBfmadm\fR can be used to do the following:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+View the set of diagnosis engines and agents that are currently participating in fault management.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+View the list of system components that have been diagnosed as associated with a fault, defect, or alert.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Perform administrative tasks related to these entities.
+.RE
+.sp
+.LP
+The Fault Manager attempts to automate as many activities as possible, so use of \fBfmadm\fR is typically not required. When the Fault Manager needs help from an administrator, service repair technician, or Oracle, it produces a message indicating its needs. It also refers you to a knowledge article on the Oracle web site. The web site might ask you to use \fBfmadm\fR or one of the other fault management utilities to gather more information or perform additional tasks. The documentation for \fBfmd\fR(1M), \fBfmdump\fR(1M), and \fBfmstat\fR(1M) man pages and the Managing Faults, Defects, and Alerts in Oracle Solaris 11.3 document describe more about tools to observe fault management activities.
+.sp
+.LP
+One responsibility of the Fault Manager is to keep track of the location of components. At the chassis level, the \fBfmadm\fR *\fB-alias\fR subcommands manage a chassis \fIchassis-name\fR.\fIchassis-serial\fR to \fIalias-id \fR mapping. The administered \fIalias-id\fR is intended to describe the physical location of a chassis.
+.sp
+.LP
+The \fBfmadm\fR utility requires the user to possess the \fBSYS_ADMIN\fR privilege. Refer to the \fISecuring Systems and Attached Devices in Oracle Solaris 11.3\fR for more information about how to configure Solaris privileges. The \fBfmadm\fR \fBload\fR subcommand requires that the user possess all privileges.
+.SS "SUBCOMMANDS"
+.sp
+.LP
+The \fBfmadm\fR command accepts the following subcommands. Some of the subcommands accept or require additional options and operands. The \fBacquit\fR, \fBload\fR, \fBunload\fR, \fBrepaired\fR, \fBreplaced\fR, \fBreset\fR, and \fBrotate\fR subcommands are intended for trained technical personnel. Use of these subcommands without the specific guidance of, for example, a Knowledge Base article is not recommended.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm acquit\fR \fIfmri\fR \fB|\fR \fIlabel\fR [\fIuuid\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Notify the Fault Manager that the specified resource is not to be considered to be a suspect in the event identified by \fIuuid\fR, or if no UUID is specified, then in any faults, defects, or alerts that have been detected. The \fBfmadm acquit\fR command should be used only at the direction of a documented Oracle repair procedure. Administrators might need to apply additional commands to re-enable a previously faulted resource.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm acquit\fR \fIuuid\fR\fR
+.ad
+.sp .6
+.RS 4n
+Notify the Fault Manager that the event identified by \fIuuid\fR can be safely ignored. The \fBfmadm acquit\fR command should be used only at the direction of a documented Oracle repair procedure. Administrators might need to apply additional commands to re-enable any previously faulted resources.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm add-alias\fR \fIchassis-name.chassis-serial\fR \fIalias-id\fR [\fI\&'comment'\fR]\fR
+.ad
+.sp .6
+.RS 4n
+The \fBadd-alias\fR subcommand is used to establish \fIalias-id\fR as a managed alias for the \fIchassis-name.chassis-serial\fR chassis. When a managed alias is defined, the \fB/dev/chassis devchassis(7FS)\fR name space representation of the chassis will use the more meaningful \fIalias-id\fR instead of the \fIchassis-name.chassis-serial\fR.
+.sp
+.in +2
+.nf
+# fmadm add-alias SUN-Storage-J4410.1039QAQ007 RACK29.U25-28
+.fi
+.in -2
+.sp
+
+The command shown above will verify that the new mapping does not conflict with existing mappings. In the case of conflict, no mapping change occurs. This command completes when the associated name space updates are complete. If the updated name space does not use the new \fIalias-id\fR, a warning is printed, but the mapping is updated. If the name space update takes too long, a warning is printed.
+.sp
+If an optional comment is provided, the comment is preserved and will be displayed by a subsequent \fBlookup-alias\fR or \fBlist-alias\fR command. See also \fBremove-alias\fR and \fBsync-alias\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm clear\fR \fIlabel\fR | \fIuuid\fR | \fIclass@resource\fR\fR
+.ad
+.sp .6
+.RS 4n
+Notify the Fault Manager that any alert events associated with the specified location \fIlabel\fR or \fIuuid\fR or identified by \fIclass@resource\fR should be cleared. This command can only be applied to an alert, not to a defect or fault. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm config\fR\fR
+.ad
+.sp .6
+.RS 4n
+Display the configuration of the Fault Manager itself, including the module name, version, and description of each component module. Fault Manager modules provide services such as automated diagnosis, self-healing, and messaging for hardware and software present on the system.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm faulty\fR [\fB-afiprsv\fR] [\fB-u\fR \fIuuid\fR]\fR
+.ad
+.sp .6
+.RS 4n
+This command is an alias for the fmadm list command.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm flush\fR \fIfmri\fR | \fIlabel\fR\fR
+.ad
+.sp .6
+.RS 4n
+Flush the information cached by the Fault Manager for the specified resource, for any faults, defects, or alerts for which the resource has already been repaired, acquitted or replaced.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm list\fR [\fB-afiprsv\fR] [\fB-u\fR \fIuuid\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Display status information for resources that the Fault Manager currently believes to be associated with a fault, defect, or alert. See also \fBlist-alert\fR, \fBlist-defect\fR, and \fBlist-fault\fR.
+.sp
+The following options are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 11n
+.rt  
+Display all resources that might be associated with a fault, defect, or alert. By default, the \fBfmadm list\fR command only lists output for resources for which a fault, defect, or alert is still active. If you specify the \fB-a\fR option, all resource information cached by the Fault Manager is listed, including information for resources that might have already been acquitted or repaired, or might no longer be present in the system.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.RS 11n
+.rt  
+Display FRUs (Field Replaceable Units) that are associated with a fault, defect, or alert.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.RS 11n
+.rt  
+Display a persistent cache identifier for each resource in the Fault Manager.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 11n
+.rt  
+Pipe output through a pager with form feed between each event.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.RS 11n
+.rt  
+Display affected Solaris resources with their Identifier (FMRI) and their fault management state.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 11n
+.rt  
+Display a one-line line summary for each event.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR \fIuuid\fR\fR
+.ad
+.RS 11n
+.rt  
+Only display the event with the given \fBuuid\fR. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 11n
+.rt  
+Display full output.
+.RE
+
+The percentage certainty is displayed if an event has multiple suspects, either of different classes or on different FRUs. If more than one resource is on the same FRU and it is not 100% certain that the event is associated with the FRU, the maximum percentage certainty of the possible suspects on the FRU is displayed.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm list-alert\fR [\fB-afiprsv\fR] [\fB-u\fR \fIuuid\fR]\fR
+.ad
+.sp .6
+.RS 4n
+This subcommand behaves like list, but only displays suspect lists that contain an alert event.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm list-alias\fR\fR
+.ad
+.sp .6
+.RS 4n
+The \fBlist-alias\fR command is used to display all com- ments and mappings. See also add-alias, lookup-alias, remove-alias, and sync-alias.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm list-defect\fR [\fB-afiprsv\fR] [\fB-u\fR \fIuuid\fR]\fR
+.ad
+.sp .6
+.RS 4n
+This subcommand behaves like list, but only displays suspect lists that contain a defect event.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm list-fault\fR [\fB-afiprsv\fR] [\fB-u\fR \fIuuid\fR]\fR
+.ad
+.sp .6
+.RS 4n
+This subcommand behaves like list, but only displays suspect lists that contain a fault event.
+.sp
+The Fault Manager associates the following states with every FRU which that has been diagnosed as having a fault, defect, or alert.
+.sp
+.ne 2
+.mk
+.na
+\fBfaulty\fR
+.ad
+.RS 22n
+.rt  
+The FRU has been diagnosed by the Fault Manager as being associated with a fault, defect, or alert, and is still present in the system.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBfaulty/not_present\fR
+.ad
+.RS 22n
+.rt  
+The FRU has been diagnosed by the Fault Manager as being associated with a fault, defect, or alert and is no longer present in the system.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBreplaced\fR
+.ad
+.RS 22n
+.rt  
+The FRU has been removed from the sys- tem and a replacement FRU has taken its place.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBrepaired\fR
+.ad
+.RS 22n
+.rt  
+The command \fBfmadm repaired\fR has been used to notify the Fault Manager that the FRU has been repaired.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBacquitted\fR
+.ad
+.RS 22n
+.rt  
+The command \fBfmadm acquit\fR has been used to notify the Fault Manager that the FRU has been acquitted.
+.RE
+
+The state of any affected Solaris resources is also displayed. For a faulty FRU, the state of the associated resources can be one of:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+faulted and taken out of service
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+faulted but still in service
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+faulted but still providing degraded service
+.RE
+For a FRU that has been repaired, replaced or acquitted, the state of the associated resources can be one of:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ok and in service
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+out of service, but associated components no longer faulty
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+service degraded, but associated components no longer faulty
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm load\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+Load the specified Fault Manager module. The \fIpath\fR must be an absolute path and must refer to a module present in one of the defined directories for modules. Typically, the use of this command is not necessary because the Fault Manager loads modules automatically when Solaris initially boots or as needed. See also \fBfmadm unload\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm unload\fR \fImodule\fR\fR
+.ad
+.sp .6
+.RS 4n
+Unload the specified Fault Manager module. Specify \fImodule\fR using the basename listed in the \fBfmadm config\fR output. Typically, the use of this command is not necessary as the Fault Manager loads and unloads modules automatically based on the system configuration
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm lookup-alias\fR \fIalias-id\fR | \fIchassis-name\fR.\fIchassis-serial\fR\fR
+.ad
+.sp .6
+.RS 4n
+The \fBlookup-alias\fR subcommand can be used to determine what the current mapping is. The following is an example command.
+.sp
+.in +2
+.nf
+# \fBfmadm lookup-alias SUN-Storage-J4410.1039QAQ007\fR
+.fi
+.in -2
+.sp
+
+See also \fBadd-alias\fR, \fBlist-alias\fR, \fBremove-alias\fR, and \fBsync-alias\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm remove-alias\fR \fIalias-id\fR | \fIchassis-name\fR.\fIchassis-serial\fR\fR
+.ad
+.sp .6
+.RS 4n
+The \fBfmadm remove-alias\fR subcommand is used to remove a \fIchassis-name\fR.\fIchassis-serial\fR to \fIalias-id\fR mapping.
+.sp
+.in +2
+.nf
+# \fBfmadm remove-alias RACK29.U25-28\fR
+.fi
+.in -2
+.sp
+
+The command shown above completes when the associated name space updates are complete. See also \fBadd-alias\fR, \fBlist-alias\fR, \fBlookup-alias\fR, and \fBsync-alias\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm repaired\fR \fIfmri\fR \fB|\fR \fIlabel\fR\fR
+.ad
+.sp .6
+.RS 4n
+Notify the Fault Manager that a repair procedure has been carried out on the specified resource. The \fBfmadm repaired\fR command should be used only at the direction of a documented Oracle repair procedure. Administrators might need to apply additional commands to re-enable a previously faulted resource.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm replaced\fR \fIfmri\fR \fB|\fR \fIlabel\fR\fR
+.ad
+.sp .6
+.RS 4n
+Notify the Fault Manager that the specified resource has been replaced. This command should be used in those cases in which the Fault Manager is unable to automatically detect the replacement. The \fBfmadm replaced\fR command should be used only at the direction of a documented Oracle repair procedure. Administrators might need to apply additional commands to re-enable a previously faulted resource.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm reset\fR [\fB-s\fR \fIserd\fR\fB]\fR \fImodule\fR\fR
+.ad
+.sp .6
+.RS 4n
+Reset the specified Fault Manager module or module subcomponent. If the \fB-s\fR option is present, the specified Soft Error Rate Discrimination (SERD) engine is reset within the module. If the \fB-s\fR option is not present, the entire module is reset and all persistent state associated with the module is deleted. The \fBfmadm reset\fR command should only be used at the direction of a documented Oracle repair procedure. The use of this command is typically not necessary because the Fault Manager manages its modules automatically.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm rotate\fR \fBerrlog | fltlog | infolog | infolog_hival\fR\fR
+.ad
+.sp .6
+.RS 4n
+The \fBfmadm rotate\fR command is a helper command for the \fBlogadm\fR(1M) command, so that \fBlogadm\fR can rotate live log files correctly. The \fBfmadm rotate\fR command is not intended to be invoked directly (and invoking it directly is likely to lose log history). Use one of the following commands to cause the appropriate logfile to be rotated, if the current logfile is not zero in size:
+.sp
+.in +2
+.nf
+# \fBlogadm -p now -s 1b /var/fm/fmd/errlog\fR
+# \fBlogadm -p now -s 1b /var/fm/fmd/fltlog\fR
+# \fBlogadm -p now -s 1b /var/fm/fmd/infolog\fR
+# \fBlogadm -p now -s 1b /var/fm/fmd/infolog_hival\fR
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm sync-alias\fR\fR
+.ad
+.sp .6
+.RS 4n
+The \fBsync-alias\fR subcommand is used to hand-import a set of mappings in bulk. Two copies of the current mappings are maintained:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/dev/chassis_aliases\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/dev/.chassis_aliases\fR
+.RE
+To import a set of mappings in bulk, you can update the \fB/etc/dev/chassis_aliases\fR file and then run \fBfmadm sync-alias\fR. See also \fBadd-alias\fR, \fBlist-alias\fR, \fBlookup-alias\fR, and \fBremove-alias\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmadm unload module\fR\fR
+.ad
+.sp .6
+.RS 4n
+Unload the specified Fault Manager module. Specify module using the basename listed in the \fBfmadm config\fR output. Typically, the use of this command is not necessary because the Fault Manager loads and unloads modules automatically based on the system configuration. See also \fBfmadm load\fR.
+.RE
+
+.SH OPTIONS
+.sp
+.LP
+The following options are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR\fR
+.ad
+.RS 6n
+.rt  
+Set quiet mode. \fBfmadm\fR does not produce messages indicating the result of successful operations to standard output.
+.RE
+
+.SH OPERANDS
+.sp
+.LP
+The following operands are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcmd\fR\fR
+.ad
+.RS 13n
+.rt  
+The name of a subcommand listed in \fBSUBCOMMANDS\fR. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIarguments\fR\fR
+.ad
+.RS 13n
+.rt  
+One or more options or arguments appropriate for the selected \fIsubcommand\fR, as described in \fBSUBCOMMANDS\fR. Among these arguments are \fBfmri\fR, \fBuuid\fR, and \fBlabel\fR. These identify resources that are the objects of \fBfmadm\fR subcommands. Use \fBfmadm list\fR to obtain the \fBfmri\fR, \fBuuid\fR, and \fBlabel\fR for a targeted resource. In general, \fBlabel\fR is the most user-friendly of these operands. See the Examples section below.
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRInvoking the \fBlist\fR Subcommand
+.sp
+.LP
+The following command invokes the \fBlist\fR subcommand, which displays the \fIuuid\fR, \fIlabel\fR, and \fIfmri\fR for a component.
+
+.sp
+.in +2
+.nf
+# \fBfmadm list\fR
+------------ ------------------------------------  ------------ ---------
+TIME         EVENT-ID                              MSG-ID       SEVERITY
+------------ ------------------------------------  ------------ ---------
+Sep 09 16:15 96609fae-113c-e48c-b1cf-ebf4b0902d72  DISK-8000-3E Critical
+                                                                
+Problem Status  : open
+Diag Engine     : eft / 1.16 
+System
+   Manufacturer : Oracle-Corp.
+   Name         : SUN-FIRE-X4170-SERVER
+   Part Number  : unknown
+   Serial Number: 0920XF508B
+
+----------------------------------------
+Suspect 1 of 1:
+  Fault class: fault.io.scsi.cmd.disk.dev.rqs.derr
+  Certainty  : 100% 
+  Affects    : dev:///:devid=id1,sd@n5000c5000940edbb//scsi_vhci/disk@g\e
+                 5000c5000940edbb
+  Status     : faulted and taken out of service
+  
+   FRU  
+      Status            : faulty
+      Location         : "/SUN-Storage-J4410.1037QAQ052/HDD11"
+      Location Alias   : "/RACK29.U25-28/HDD11"
+      Manufacturer      : SEAGATE
+      Name              : ST330057SSUN300G
+      Part Number       : SEAGATE-ST330057SSUN300G
+      Revision          : 0205 
+      Serial Number     : 000930G01CN4----3SJ01CN4
+      Chassis
+         Manufacturer   : Oracle-Corp.
+         Name           : SUN-Storage-J4410
+         Part Number    : 594-5329
+         Serial Number  : 1037QAQ052
+      ...
+      ...
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+In the preceding output, the \fBuuid\fR is the first item in the \fBEVENT-ID\fR column, \fB96609fae-113c-e48c-b1cf-ebf4b0902d72\fR. The \fBlabel\fR is in the \fBFRU\fR section in the Location line, "\fB/SUN-Storage-J4410.1037QAQ052/HDD11\fR". In this example, an alias for the chassis has been set, and the aliased location is displayed in the Location Alias line, "\fB/RACK29.U25-28/HDD11\fR".
+
+.sp
+.LP
+The \fBfmri\fRs are available with \fBfmdump\fR \fB-v\fR:
+
+.sp
+.in +2
+.nf
+# \fBfmdump -v\fR
+Sep 09 16:15:36.9252 96609fae-113c-e48c-b1cf-ebf4b0902d72 DISK-8000-3E \e
+Diagnosed 100%  fault.io.scsi.cmd.disk.dev.rqs.derr
+
+Problem in: hc://:scheme=:chassis-mfg=Oracle-Corp.:chassis-name=SUN-\e 
+Storage-J4410:chassis-part=594-5329:chassis-serial=1037QAQ052/ses-\e 
+enclosure=0/bay=11/disk=0
+
+Affects: dev:///:devid=id1,sd@n5000c5000940edbb//\e 
+scsi_vhci/disk@g5000c5000940edbb
+FRU: hc://chassis-mfg=Oracle-Corp.:chassis-name=SUN-Storage-J4410\e 
+:chassis-part=594-5329:chassis-serial=1037QAQ052:fru-mfg=SEAGATE\e 
+:fru-name=SEAGATE-ST330057SSUN300G:fru-part=SEAGATE-ST330057SSUN300G\e 
+:fru-revision=0205:fru-serial=000930G01CN4--------3SJ01CN4/\e
+ses-enclosure=0/bay=11/disk=0
+
+FRU Location: "/SUN-Storage-J4410.1037QAQ052/HDD11"
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Note that \fBlabel\fR is the easiest-to-use identifier. Either the aliased or the non-aliased form of the Location may be used.
+
+.LP
+\fBExample 2 \fRObtaining the Module Name
+.sp
+.LP
+The following command displays the module name for each component. The module name is specified as input to the \fBfmadm unload\fR command.
+
+.sp
+.in +2
+.nf
+# \fBfmadm config\fR
+MODULE                   VERSION STATUS  DESCRIPTION
+cpumem-retire            1.1     active  CPU/Memory Retire Agent
+disk-transport           1.0     active  Disk Transport Agent
+eft                      1.16    active  eft diagnosis engine
+\&..
+.fi
+.in -2
+.sp
+
+.SH EXIT STATUS
+.sp
+.LP
+The following exit values are returned:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+Successful completion.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+An error occurred. Errors include a failure to communicate with \fBfmd\fR or insufficient privileges to perform the requested operation.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+Invalid command-line options were specified.
+.RE
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/fault-management
+_
+Interface StabilitySee below.
+.TE
+
+.sp
+.LP
+The command-line options are Committed. The human-readable output is not-an-interface.
+.SH SEE ALSO
+.sp
+.LP
+\fBfmd\fR(1M), \fBfmdump\fR(1M), \fBfmstat\fR(1M), \fBlogadm\fR(1M), \fBsyslogd\fR(1M), \fBattributes\fR(5), \fBdevchassis\fR(7FS)
+.sp
+.LP
+\fIManaging Faults, Defects, and Alerts in Oracle Solaris 11.3\fR

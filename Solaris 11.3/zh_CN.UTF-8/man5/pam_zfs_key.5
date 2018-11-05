@@ -1,0 +1,233 @@
+'\" te
+.\" Copyright (c) 2011, Oracle and/or its affiliates.All rights reserved.
+.TH pam_zfs_key 5 "2011 年 2 月 22 日" "SunOS 5.11" "标准、环境和宏"
+.SH 名称
+pam_zfs_key \- ZFS 的 PAM 用户凭证模块
+.SH 用法概要
+.LP
+.nf
+\fBpam_zfs_key.so.1 [create] [homes=]\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBpam_zfs_key\fR 模块用于实现 \fBpam_sm_setcred\fR(3PAM) 和 \fBpam_sm_chauthtok\fR(3PAM)。 
+.sp
+.LP
+通过 \fBpam_zfs_key\fR 模块可以装入和更改在用户起始目录位置挂载的已加密文件系统的 ZFS 加密口令短语。验证服务模块必须同时实现 \fBpam_sm_authenticate()\fR 和 \fBpam_sm_setcred()\fR。 
+.sp
+.LP
+该模块中的 \fBpam_sm_authenticate()\fR 始终返回 \fBPAM_IGNORE\fR。如果位于不同位置，则可以使用模块选项 \fBhomes=\fR 指定该位置。它是一个 ZFS 数据集名称，而不是挂载点，该挂载点通常为 \fB/export/home/\fR。 
+.sp
+.LP
+该 ZFS 数据集名称的最后一部分必须与 \fBPAM_USER\fR 的值匹配，即用户登录名。如果用户起始目录是一个启用了加密的本地 ZFS 文件系统，而 ZFS 密钥源属性设置为 \fBpassphrase,prompt\fR，则在 \fBpam_sm_setcred()\fR 上，此模块将按如下方式管理密钥： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPAM_DELETE_CRED\fR\fR
+.ad
+.RS 22n
+.rt  
+尝试使用 \fBumount\fR 取消挂载文件系统并卸载密钥。该操作通常会失败，因为仍有某些进程使用用户起始目录作为当前工作目录。\fBforce\fR 模块选项用于首先尝试强制取消挂载。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPAM_ESTABLISH_CRED\fR\fR
+.ad
+.RS 22n
+.rt  
+尝试使用 \fBPAM_AUTHTOK\fR 的值为 ZFS 数据集装入密钥并进行挂载。
+.sp
+如果 \fBPAM_AUTHTOK\fR 不是正确的口令短语，则系统将向用户发出一次提示，要求提供备用项。该值不会存储在 \fBPAM_AUTHTOK\fR 中，即使它是作为用户起始目录的 ZFS 数据集的正确口令短语。它等效于：
+.sp
+.in +2
+.nf
+zfs key -l rpool/export/home/$USER
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.LP
+如果用户没有 ZFS 文件系统，但提供了 \fBcreate\fR 模块选项，则会创建一个新的 ZFS 文件系统。在这种情况下，ZFS 加密属性将缺省为 \fBon\fR，除非为该模块设置了 \fBencryption=\fR 属性以覆盖该值。
+.sp
+.LP
+如果未提供 \fBcreate\fR 模块选项，并且用户也没有 ZFS 文件系统，则该模块将返回 \fBPAM_IGNORE\fR。 
+.sp
+.LP
+新创建的 ZFS 文件系统会为创建该文件系统的用户指定以下 ZFS 委托：\fBkey,keychange,mount\fR。在这种情况下，\fBkeysource\fR 始终设置为 \fBpassphrase,prompt\fR。
+.sp
+.LP
+如果在更改口令时调用 \fBpam_sm_chauthtok\fR(3PAM)，该模块将尝试更改 ZFS 数据集的口令短语，以便与 \fBPAM_AUTHTOK\fR 中的值匹配。该操作等效于运行以下命令：
+.sp
+.in +2
+.nf
+zfs key -c rpool/export/home/$USER
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+该命令要求用户具有 \fBkeychange\fR 委托，因为口令更改通常以用户身份运行。
+.sp
+.LP
+支持以下挂载选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate\fR\fR
+.ad
+.RS 14n
+.rt  
+创建新的 ZFS 数据集
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBencryption\fR\fR
+.ad
+.RS 14n
+.rt  
+设置 \fBcreate\fR 的 ZFS 加密属性
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBforce\fR\fR
+.ad
+.RS 14n
+.rt  
+执行 \fBPAM_DELETE_CRED\fR 时，尝试使用 \fBMS_FORCE\fR 对数据集执行 \fBumount2\fR(2)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhomes=\fR\fR
+.ad
+.RS 14n
+.rt  
+作为用户起始目录的 ZFS 数据集的备用位置。缺省值为 \fBrpool/export/home\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnowarn\fR\fR
+.ad
+.RS 14n
+.rt  
+不提供任何错误消息或警告。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR在缺省模式下使用 \fBpam_zfs_key\fR
+.sp
+.LP
+以下示例将在缺省模式下使用 \fBpam_zfs_key\fR。
+
+.sp
+.in +2
+.nf
+gdm     auth requisite          pam_authtok_get.so.1
+gdm     auth required           pam_dhkeys.so.1
+gdm     auth required           pam_unix_cred.so.1
+gdm     auth required           pam_unix_auth.so.1
+gdm     auth optional           pam_zfs_key.so.1
+
+other   password required       pam_dhkeys.so.1
+other   password requisite      pam_authtok_get.so.1
+other   password requisite      pam_authtok_check.so.1
+other   password required       pam_authtok_store.so.1
+other   password optional       pam_zfs_key.so.1
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR指定备用 ZFS 数据集
+.sp
+.LP
+以下示例将为起始目录文件系统指定备用 ZFS 数据集位置。如果没有使用 \fBaes-256-gcm\fR 作为 ZFS 加密属性设置，则应创建新条目。
+
+.sp
+.in +2
+.nf
+gdm auth requisite  pam_authtok_get.so.1
+gdm auth required   pam_dhkeys.so.1
+gdm auth required   pam_unix_cred.so.1
+gdm auth required   pam_unix_auth.so.1
+gdm auth optional   pam_zfs_key.so.1 homes=tank/users \e
+create encryption=aes-256-gcm
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR强制挂载 ZFS 数据集
+.sp
+.LP
+以下示例将强制挂载 ZFS 数据集，并确保口令短语始终与登录口令同步。
+
+.sp
+.in +2
+.nf
+gdm     auth requisite          pam_authtok_get.so.1
+gdm     auth required           pam_dhkeys.so.1
+gdm     auth required           pam_unix_cred.so.1
+gdm     auth required           pam_unix_auth.so.1
+gdm     auth required           pam_zfs_key.so.1
+
+other   password required       pam_dhkeys.so.1
+other   password requisite      pam_authtok_get.so.1
+other   password requisite      pam_authtok_check.so.1
+other   password requisite      pam_zfs_key.so.1
+other   password required       pam_authtok_store.so.1
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+接口稳定性Committed（已确定）
+_
+MT 级别T{
+MT-Safe with exceptions（多线程安全，但存在异常）。请参见下文。
+T}
+.TE
+
+.sp
+.LP
+\fBlibpam\fR(3LIB) 中的接口仅在多线程应用程序中的每个线程都使用自己的 PAM 句柄时才是多线程安全的。
+.SH 另请参见
+.sp
+.LP
+\fBzfs\fR(1M)、\fBumount2\fR(2)、\fBpam.conf\fR(4)、\fBlibpam\fR(3LIB)、\fBpam\fR(3PAM)、\fBpam_sm_chauthtok\fR(3PAM)、\fBpam_sm_setcred\fR(3PAM)、\fBattributes\fR(5)

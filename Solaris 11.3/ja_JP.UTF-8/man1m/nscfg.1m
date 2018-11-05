@@ -1,0 +1,452 @@
+'\" te
+.\" Copyright (c) 2012, 2014, Oracle and/or its affiliates.All rights reserved
+.TH nscfg 1M "2014 年 2 月 13 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+nscfg \- ネームサービス構成のインポート、エクスポート
+.SH 形式
+.LP
+.nf
+\fB/usr/sbin/nscfg\fR \fIcommand\fR [\fIcmd_options\fR] [\fIoperands\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/nscfg\fR import [\fB-fnvq\fR] \fIFMRI\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/nscfg\fR export [\fB-nvq\fR] \fIFMRI\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/nscfg\fR unconfig [\fB-nvq\fR] \fIFMRI\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/nscfg\fR validate [\fB-vq\fR] \fIFMRI\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/nscfg\fR help
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBnscfg\fR ユーティリティーは、レガシーネームサービス構成ファイルを、SMF リポジトリにインポートまたは SMF リポジトリからエクスポートします。有効な SMF 構成および対応する FMRI が指定された場合、\fBnscfg\fR は、\fBnsswitch.conf\fR、\fBresolv.conf\fR、\fBnscd.conf\fR などのレガシーネームサービス構成ファイルを従来の場所に再生成します。あるいは、SMF リポジトリに現在データが取り込まれていない場合、\fBnscfg\fR はそれらの同じ構成ファイルをインポートして SMF リポジトリに取り込むことができます。
+.sp
+.LP
+\fBnscfg\fR のオペランドに指定できる SMF サービスは次のとおりです。多くの場合、SMF サービスによって置き換えられるレガシー構成ファイルが示されています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/system/name-service/switch:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+レガシーファイル: \fB/etc/nsswitch.conf\fR
+.sp
+ネームサービススイッチの構成 (\fBnscd\fR で使用される)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/system/name-service/cache:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+レガシーファイル: \fB/etc/nscd.conf\fR
+.sp
+ネームサービスキャッシュ (\fBnscd\fR)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/network/dns/client:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+レガシーファイル: \fB/etc/resolv.conf\fR
+.sp
+DNS ネームサービス。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/network/nis/domain:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+レガシーファイル: \fB/etc/defaultdomain\fR
+.sp
+レガシーファイル: \fB/var/yp/binding/$DOMAIN/*\fR
+.sp
+共有 NIS ドメイン構成。すべての NIS サービスで使用されます。また、LDAP ネームサービスと (従来) 共有で使用されます。\fBnis/client\fR または \fBldap/client\fR を使用する場合は、有効にする必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/network/nis/client:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+NIS クライアントのネームサービス (\fBypbind\fR および関連)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/network/ldap/client:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+レガシーファイル: \fB/var/ldap/*\fR
+.sp
+LDAP クライアントのネームサービス (\fBldap_cachemgr\fR および関連)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/network/nis/server:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+NIS サーバーサービス (\fBypserv\fR)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/network/nis/passwd:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+NIS サーバー \fBpasswd\fR サービス (\fBrpc.yppasswd\fR)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/network/nis/xfr:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+NIS サーバー \fBxfr\fR サービス (\fBypxfrd\fR)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/network/nis/update:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+NIS サーバー update サービス (\fBrpc.ypupdated\fR)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/system/name-service/upgrade:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+レガシー構成ファイルを SMF サービスにインポートします。
+.RE
+
+.SS "場所プロファイルとの相互作用"
+.sp
+.LP
+次のサービスの構成は、場所プロファイルによって管理されます:
+.sp
+.in +2
+.nf
+svc:/system/name-service/switch:default
+svc:/network/dns/client:default
+svc:/network/nis/domain:default
+svc:/network/nis/client:default
+svc:/network/ldap/client:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+場所プロファイルの詳細は、\fBnetcfg\fR(1M)を参照してください。
+.sp
+.LP
+これらのプロファイルは、固定 (つまり、ネットワーク構成は従来の方法で管理される) とリアクティブ (つまり、ネットワーク構成は自動的に管理され、プロファイルに指定されたポリシールールに従ってネットワーク環境の変更に反応する) のいずれかです。
+.sp
+.LP
+固定の場所 (現在、場所として \fBDefaultFixed\fR の 1 つのみが存在できます) がアクティブの場合、その場所が無効のときに、SMF リポジトリに対する変更 (\fBnscfg\fR を使用して行われる変更を含む) がその場所に適用されるため、その場所が後で再度有効にされた場合に、変更が復元されます。
+.sp
+.LP
+リアクティブな場所がアクティブのときは、変更は SMF リポジトリに直接適用すべきではありません。これらの変更は場所プロファイルに保持されないため、場所が無効にされるか、\fBsvc:/network/physical:default\fR および \fBsvc:/network/location:default\fR によって管理されるシステムのネットワーク構成がリフレッシュまたは再起動された場合に失われます。代わりに、変更は、\fBnetcfg\fR(1M) コマンドを使用して場所自体に適用すべきです。これによって、変更は場所プロファイルリポジトリに保存され、SMF リポジトリにも適用されます (現在アクティブな場所に対して変更が行われた場合)。
+.SH サブコマンド
+.sp
+.LP
+\fBnscfg\fR ユーティリティーは、次のサブコマンドをサポートします。オプションについてはサブコマンドの文脈で説明します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBimport\fR [\fB-fvq\fR] \fIFMRI\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された FMRI の SMF リポジトリのプロパティーが現在どれも取り込まれていない場合は、指定された FMRI に関連付けられたレガシー構成ファイルを SMF リポジトリにインポートします。
+.sp
+\fB-f\fR を指定すると、SMF リポジトリに現在データが取り込まれている場合でも、レガシー構成のものが強制的に取り込まれます。
+.sp
+\fB-v\fR を指定すると、要求された操作の実行中、詳細な進捗状況メッセージが発行されます。\fB-q\fR を指定すると、要求された操作の実行中、エラーやその他のメッセージは発行されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexport\fR [\fB-vq\fR] \fIFMRI\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された FMRI の SMF 構成をレガシー構成ファイルにエクスポートします。この操作は、影響を受ける既存のレガシーファイルをすべて削除し、SMF 構成を使用して新しいものを生成します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunconfig\fR [\fB-vq\fR] \fIFMRI\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された FMRI の SMF 構成を構成解除します。この操作は、指定された FMRI および既存のすべてのレガシーファイルを、初期の未構成状態にリセットします。
+.sp
+\fB-v\fR を指定すると、要求された操作の実行中、詳細な進捗状況メッセージが発行されます。\fB-q\fR を指定すると、要求された操作の実行中、エラーやその他のメッセージは発行されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvalidate\fR [\fB-vq\fR] \fIFMRI\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された FMRI の SMF 構成を検証します。この操作は、現在の構成を検査し、エラーが存在するかどうかを確認します。
+.sp
+\fB-v\fR を指定すると、要求された操作の実行中、詳細な進捗状況メッセージが発行されます。\fB-q\fR を指定すると、要求された操作の実行中、エラーやその他のメッセージは発行されません。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRDNS クライアント構成をインポートする
+.sp
+.LP
+次のコマンドは、\fBresolv.conf\fR に格納されている DNS クライアント構成を SMF リポジトリにインポートします。
+
+.sp
+.in +2
+.nf
+# \fBnscfg import svc:/network/dns/client:default\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRSMF LDAP クライアント構成をエクスポートする
+.sp
+.LP
+次のコマンドは、SMF LDAP クライアント構成を \fB/var/ldap\fR 内のレガシー構成ファイルにエクスポートします。
+
+.sp
+.in +2
+.nf
+# \fBnscfg export svc:/network/ldap/client:default\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fRネームサービススイッチの構成をリセットする
+.sp
+.LP
+次のコマンドは、ネームサービススイッチの構成を、初期の未構成状態にリセットします。このコマンドは出力を生成せず、メッセージを表示することなくステータスのみで終了します。
+
+.sp
+.in +2
+.nf
+# \fBnscfg unconfig -q svc:/system/name-service/switch:default\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fRLDAP クライアント構成を検証する
+.sp
+.LP
+次のコマンドは、LDAP クライアント構成にエラーや不整合がないか検証します。このコマンドは出力を生成せず、メッセージを表示することなくステータスのみで終了します。
+
+.sp
+.in +2
+.nf
+# \fBnscfg validate -q svc:/network/ldap/client:default\fR
+.fi
+.in -2
+.sp
+
+.SH 終了ステータス
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+コマンドが正常に実行されました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+エラーが発生した。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.sp .6
+.RS 4n
+構成は変更されていません、変更は不要です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.sp .6
+.RS 4n
+インポートする構成がありません。
+.RE
+
+.SH ファイル
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/default/{nss, yppasswd}\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/defaultdomain\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/nscd.conf\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/nsswitch.conf\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/resolv.conf\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/var/ldap/ldap_client_cred\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/var/ldap/ldap_client_file\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/var/yp/binding/{\fInisdomainname\fR}/ypservers\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/var/yp/NISLDAPmapping\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/var/yp/securenets\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/var/yp/updaters\fR
+.RE
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性不確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBsvcs\fR(1), \fBldapclient\fR(1M), \fBnetcfg\fR(1M), \fBnscd\fR(1M), \fBsvcadm\fR(1M), \fBsvccfg\fR(1M), \fBypinit\fR(1M), \fBdefaultdomain\fR(4), \fBnsswitch.conf\fR(4), \fBresolv.conf\fR(4), \fBypfiles\fR(4), \fBattributes\fR(5)

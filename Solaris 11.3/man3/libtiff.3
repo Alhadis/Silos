@@ -1,0 +1,1606 @@
+'\" te
+.TH libtiff 3 "06 Apr 2004" "SunOS 5.11" "C Library Functions"
+.SH "NAME"
+libtiff \- introduction
+to \fBlibtiff\fR, a library for reading and writing TIFF files
+.SH "SYNOPSIS"
+.sp
+.nf
+\f(CW#include <tiffio\&.h>
+
+cc [ \fIflag\fR \&.\&.\&.]  -I/usr/sfw/include	 \fIfile\fR  [  \fIlibrary\fR  \&.\&.\&.	]
+	-L/usr/sfw/lib -R/usr/sfw/lib -ltiff\fR
+.fi
+.sp
+.SH "DESCRIPTION"
+.PP
+\fBlibtiff\fR is a library for reading and writing data
+files encoded with the Tag Image File format, Revision 4\&.0 or later\&. The TIFF
+file format is suitable for archiving multicolor and monochromatic image data\&.
+.SH "EXTENDED DESCRIPTION"
+.PP
+The \fBlibtiff\fR library supports several compression
+algorithms, as indicated by the Compression field, including:
+.sp
+.in +2
+\(bu
+.mk
+.in +3
+.rt
+No compression (1)
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+CCITT 1D Huffman compression (2)
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+CCITT Group 3 Facsimile compression (3)
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+CCITT Group 4 Facsimile compression (4)
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+Lempel-Ziv & Welch compression (5)
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+Baseline JPEG compression (7)
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+Word-aligned 1D Huffman compression (32771)
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+PackBits compression (32773)
+.sp
+.in -3
+.in -2
+.PP
+In addition, several nonstandard compression algorithms are supported:
+.sp
+.in +2
+\(bu
+.mk
+.in +3
+.rt
+4-bit compression algorithm used by the ThunderScan program
+(32809) (decompression only)
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+NeXT\&'s 2-bit compression algorithm (32766) (decompression
+only)
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+Experimental LZ-style algorithm known as Deflate (32946)
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+Experimental CIE LogLuv compression scheme designed for images
+with high dynamic range (32845 for LogL and 32845 for LogLuv)
+.sp
+.in -3
+.in -2
+.PP
+Directory information may be in either little- or big-endian byte order\&.
+Byte swapping is automatically done by the library\&.
+.PP
+Data bit ordering may be either Most Significant Bit (MSB) to Least
+Significant Bit (LSB), or LSB to MSB\&.
+.PP
+The library does not support files in which the BitsPerSample, Compression,
+MinSampleValue, or MaxSampleValue fields are defined differently on a per-sample
+basis\&. In Revision 6\&.0, the Compression tag is not defined on a per-sample
+basis, so this is immaterial\&.
+.SS "Data Types"
+.PP
+The \fBlibtiff\fR library makes extensive use of C typedefs
+to promote portability\&. Two sets of typedefs are used, one for communication
+with clients of the library and one for internal data structures and parsing
+of the TIFF format\&. The following typedefs are exposed to users either through
+function definitions or through parameters passed through the \fBvarargs\fR interfaces\&.
+.sp
+.in +2
+\(bu
+.mk
+.in +3
+.rt
+\fBtypedef unsigned short uint16;\fR \(em
+16-bit unsigned integer
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBtypedef unsigned <thing> uint32;\fR \(em
+32-bit unsigned integer
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBtypedef unsigned int ttag_t;\fR \(em directory
+tag
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBtypedef uint16 tdir_t;\fR \(em directory
+index
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBtypedef uint16 tsample_t;\fR \(em sample
+number
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBtypedef uint32 tstrip_t;\fR \(em strip
+number
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBtypedef uint32 ttile_t;\fR \(em tile number
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBtypedef int32 tsize_t;\fR \(em i/o size
+in bytes
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBtypedef void* tdata_t;\fR \(em image data
+ref
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBtypedef void* thandle_t;\fR \(em client
+data handle
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBtypedef int32 toff_t;\fR \(em file offset
+.sp
+.in -3
+.in -2
+.PP
+\fBtstrip_t\fR, \fBttile_t\fR, and \fBtsize_t\fR are limited to 32-bit quantities because they are stored
+in 32-bit fields in the TIFF image\&. Similarly, \fBtsample_t\fR
+is limited by the 16-bit field used to store the \fBSamplesPerPixel\fR tag\&. \fBtdir_t\fR constrains the maximum number of
+IFDs that may appear in an image and may be an arbitrary size without penalty\&.
+.PP
+\fBttag_t\fR must be \fBint\fR, \fBunsigned int\fR, \fBpointer\fR, or \fBdouble\fR
+because the library uses a \fBvarargs\fR interface and ANSI C
+restricts the type of the parameter before an ellipsis to be a promoted type\&.
+.PP
+\fBtoff_t\fR is defined as \fBint32\fR because
+TIFF file offsets are unsigned 32-bit quantities\&. A signed value is used because
+some interfaces return -1 on error\&.
+.PP
+User-specified data references are passed as opaque handles and only
+cast at the lowest layers where their type is presumed\&.
+.SS "Library Routines"
+.PP
+The following routines are part of the \fBlibtiff\fR library\&.
+Consult specific reference pages for details on their operation\&. The reference
+page names listed below are for systems where the full function names cannot
+be encoded in the file system\&. On most systems, the command \fBman \fIfunction-name\fR\fR will work\&.
+.sp
+.ne 2
+.mk
+\fB\fB_TIFFfree\fR\fR
+.in +40n
+.rt
+Release
+allocated memory\&. See \fBTIFFmemory\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fB_TIFFmalloc\fR\fR
+.in +40n
+.rt
+Dynamically allocate memory\&. See \fBTIFFmemory\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fB_TIFFmemcmp\fR\fR
+.in +40n
+.rt
+Compare allocated memory\&. See \fBTIFFmemory\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fB_TIFFmemcpy\fR\fR
+.in +40n
+.rt
+Copy allocated memory to another memory location\&. See \fBTIFFmemory\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fB_TIFFmemset\fR\fR
+.in +40n
+.rt
+Set allocated memory to known value\&. See \fBTIFFmemory\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fB_TIFFrealloc\fR\fR
+.in +40n
+.rt
+Dynamically reallocate memory\&. See \fBTIFFmemory\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFbuffer\fR\fR
+.in +40n
+.rt
+Specify
+i/o buffer for reading or writing\&. See \fBTIFFbuffer\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFCheckTile\fR\fR
+.in +40n
+.rt
+Every \fIx,y,z,sample\fR is within image\&. See \fBTIFFtile\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFClientOpen\fR\fR
+.in +40n
+.rt
+Open a file for reading or writing\&. See \fBTIFFOpen\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFClose\fR\fR
+.in +40n
+.rt
+Close
+an open file\&. See \fBTIFFClose\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFcodec\fR\fR
+.in +40n
+.rt
+Work
+with codecs\&. See \fBTIFFcodec\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFComputeStrip\fR\fR
+.in +40n
+.rt
+Return strip containing \fIx,y,z,sample\fR\&. See \fBTIFFstrip\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFComputeTile\fR\fR
+.in +40n
+.rt
+Return tile containing \fIy,sample\fR\&. See \fBTIFFtile\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFCurrentDirectory\fR\fR
+.in +40n
+.rt
+Return index of current directory\&. See \fBTIFFquery\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFCurrentRow\fR\fR
+.in +40n
+.rt
+Return index of current scanline\&. See \fBTIFFquery\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFCurrentStrip\fR\fR
+.in +40n
+.rt
+Return index of current strip\&. See \fBTIFFquery\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFCurrentTile\fR\fR
+.in +40n
+.rt
+Return index of current tile\&. See \fBTIFFquery\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFDefaultStripSize\fR\fR
+.in +40n
+.rt
+Return size of a strip\&. See \fBTIFFstrip\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFDefaultTileSize\fR\fR
+.in +40n
+.rt
+Return size of a tile\&. See \fBTIFFtile\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFError\fR\fR
+.in +40n
+.rt
+Library
+error handler\&. See \fBTIFFError\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFFdOpen\fR\fR
+.in +40n
+.rt
+Open
+a file for reading or writing\&. See \fBTIFFOpen\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFFileName\fR\fR
+.in +40n
+.rt
+Return name of open file\&. See \fBTIFFquery\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFFileno\fR\fR
+.in +40n
+.rt
+Return
+open file descriptor\&. See \fBTIFFquery\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFFindCODEC\fR\fR
+.in +40n
+.rt
+Find a codec\&. See \fBTIFFcodec\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFFlush\fR\fR
+.in +40n
+.rt
+Flush
+all pending writes\&. See \fBTIFFFlush\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFFlushData\fR\fR
+.in +40n
+.rt
+Flush pending data writes\&. See \fBTIFFFlush\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFGetBitRevTable\fR\fR
+.in +40n
+.rt
+Return bit reversal table\&. See \fBTIFFswab\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFGetField\fR\fR
+.in +40n
+.rt
+Return tag value in current directory\&. See \fBTIFFGetField\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFGetFieldDefaulted\fR\fR
+.in +40n
+.rt
+Return tag value in current directory\&. See \fBTIFFGetField\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFGetMode\fR\fR
+.in +40n
+.rt
+Return open file mode\&. See \fBTIFFquery\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFGetVersion\fR\fR
+.in +40n
+.rt
+Return library version string\&. See \fBTIFFquery\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFIsByteSwapped\fR\fR
+.in +40n
+.rt
+Return true if image data is byte-swapped\&. See \fBTIFFquery\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFIsMSB2LSB\fR\fR
+.in +40n
+.rt
+Return true if image data is returned with bit 0 as the most significant bit\&.
+See \fBTIFFquery\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFIsTiled\fR\fR
+.in +40n
+.rt
+Return true if image data is tiled\&. See \fBTIFFquery\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFIsUpSampled\fR\fR
+.in +40n
+.rt
+Return true if image data is up-sampled\&. See \fBTIFFquery\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFLastDirectory\fR\fR
+.in +40n
+.rt
+Return a non-zero value if the current directory is the last directory
+in the file\&. See \fBTIFFquery\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFmemory\fR\fR
+.in +40n
+.rt
+Manage
+memory\&. See \fBTIFFmemory\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFNumberOfStrips\fR\fR
+.in +40n
+.rt
+Return number of strips in an image\&. See \fBTIFFstrip\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFNumberOfTiles\fR\fR
+.in +40n
+.rt
+Return number of tiles in an image\&. See \fBTIFFtile\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFOpen\fR\fR
+.in +40n
+.rt
+Open
+a file for reading or writing\&. See \fBTIFFOpen\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFPrintDirectory\fR\fR
+.in +40n
+.rt
+Print description of the current directory\&. See \fBTIFFPrintDirectory\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFquery\fR\fR
+.in +40n
+.rt
+Return
+information about image\&. See \fBTIFFquery\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFRasterScanlineSize\fR\fR
+.in +40n
+.rt
+Return size of a raster scanline\&. See \fBTIFFsize\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFReadBufferSetup\fR\fR
+.in +40n
+.rt
+Specify i/o buffer for reading\&. See \fBTIFFbuffer\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFReadDirectory\fR\fR
+.in +40n
+.rt
+Read the next directory\&. See \fBTIFFReadDirectory\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFReadEncodedStrip\fR\fR
+.in +40n
+.rt
+Read and decode a strip of data\&. See \fBTIFFReadEncodedStrip\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFReadEncodedTile\fR\fR
+.in +40n
+.rt
+Read and decode a tile of data\&. See \fBTIFFReadEncodedTile\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFReadRawStrip\fR\fR
+.in +40n
+.rt
+Read a raw strip of data\&. See \fBTIFFReadRawStrip\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFReadRawTile\fR\fR
+.in +40n
+.rt
+Read a raw tile of data\&. See \fBTIFFReadRawTile\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFReadRGBAImage\fR\fR
+.in +40n
+.rt
+Read an image into a fixed format raster\&. See \fBTIFFReadRGBAImage\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFReadRGBAStrip\fR\fR
+.in +40n
+.rt
+Read an image strip into a fixed format raster\&. See \fBTIFFReadRGBAStrip\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFReadRGBATile\fR\fR
+.in +40n
+.rt
+Read an image tile into a fixed format raster\&. See \fBTIFFReadRGBATile\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFReadScanline\fR\fR
+.in +40n
+.rt
+Read and decode a row of data\&. See \fBTIFFReadScanline\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFReadTile\fR\fR
+.in +40n
+.rt
+Read and decode a tile of data\&. See \fBTIFFReadTile\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFRegisterCODEC\fR\fR
+.in +40n
+.rt
+Register a codec\&. See \fBTIFFcodec\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFReverseBits\fR\fR
+.in +40n
+.rt
+Reverse bits in an array of bytes\&. See \fBTIFFswab\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFRGBAImage\fR\fR
+.in +40n
+.rt
+Read and decode an image into a raster\&. See \fBTIFFRGBAImage\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFRGBAImageBegin\fR\fR
+.in +40n
+.rt
+Set up decoder state for \fBTIFFRGBAImageGet\fR\&. See \fBTIFFRGBAImage\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFRGBAImageEnd\fR\fR
+.in +40n
+.rt
+Release \fBTIFFRGBAImage\fR decoder state\&. See \fBTIFFRGBAImage\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFRGBAImageGet\fR\fR
+.in +40n
+.rt
+Read and decode an image\&. See \fBTIFFRGBAImage\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFRGBAImageOK\fR\fR
+.in +40n
+.rt
+Determine whether image is readable by \fBTIFFRGBAImageGet\fR\&.
+See \fBTIFFRGBAImage\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFScanlineSize\fR\fR
+.in +40n
+.rt
+Return size of a scanline\&. See \fBTIFFsize\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFSetDirectory\fR\fR
+.in +40n
+.rt
+Set the current directory\&. See \fBTIFFSetDirectory\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFSetSubDirectory\fR\fR
+.in +40n
+.rt
+Set the current directory\&. See \fBTIFFSetDirectory\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFSetErrorHandler\fR\fR
+.in +40n
+.rt
+Set error handler function\&. See \fBTIFFError\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFSetField\fR\fR
+.in +40n
+.rt
+Set tag value in the current directory\&. See \fBTIFFSetField\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFSetWarningHandler\fR\fR
+.in +40n
+.rt
+Set warning handler function\&. See \fBTIFFWarning\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFsize\fR\fR
+.in +40n
+.rt
+Return
+the size\&. See \fBTIFFsize\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFstrip\fR\fR
+.in +40n
+.rt
+Work
+with strips\&. See \fBTIFFstrip\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFStripSize\fR\fR
+.in +40n
+.rt
+Return size of a strip\&. See \fBTIFFstrip\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFswab\fR\fR
+.in +40n
+.rt
+Swap
+bytes\&. See \fBTIFFswab\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFSwabShort\fR\fR
+.in +40n
+.rt
+Swap bytes of short\&. See \fBTIFFswab\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFSwabLong\fR\fR
+.in +40n
+.rt
+Swap bytes of long\&. See \fBTIFFswab\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFSwabArrayOfShort\fR\fR
+.in +40n
+.rt
+Swap bytes of an array of shorts\&. See \fBTIFFswab\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFSwabArrayOfLong\fR\fR
+.in +40n
+.rt
+Swap bytes of an array of longs\&. See \fBTIFFswab\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFtile\fR\fR
+.in +40n
+.rt
+Return
+tile information\&. See \fBTIFFtile\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFTileRowSize\fR\fR
+.in +40n
+.rt
+Return size of a row in a tile\&. See \fBTIFFtile\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFTileSize\fR\fR
+.in +40n
+.rt
+Return size of a tile\&. See \fBTIFFtile\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFUnregisterCODEC\fR\fR
+.in +40n
+.rt
+Unregister a codec\&. See \fBTIFFcodec\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFVGetField\fR\fR
+.in +40n
+.rt
+Return tag value in current directory\&. See \fBTIFFGetField\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFVGetFieldDefaulted\fR\fR
+.in +40n
+.rt
+Return tag value in current directory\&. See \fBTIFFGetField\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFVSetField\fR\fR
+.in +40n
+.rt
+Set tag value in current directory\&. See \fBTIFFSetField\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFVStripSize\fR\fR
+.in +40n
+.rt
+Return size of a strip\&. See \fBTIFFstrip\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFVTileSize\fR\fR
+.in +40n
+.rt
+Return size of a tile\&. See \fBTIFFtile\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFWarning\fR\fR
+.in +40n
+.rt
+Library warning handler\&. See \fBTIFFWarning\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFWriteBufferSetup\fR\fR
+.in +40n
+.rt
+Specify i/o buffer for writing\&. See \fBTIFFbuffer\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFWriteDirectory\fR\fR
+.in +40n
+.rt
+Write the current directory\&. See \fBTIFFWriteDirectory\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFWriteEncodedStrip\fR\fR
+.in +40n
+.rt
+Compress and write a strip of data\&. See \fBTIFFWriteEncodedStrip\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFWriteEncodedTile\fR\fR
+.in +40n
+.rt
+Compress and write a tile of data\&. See \fBTIFFWriteEncodedTile\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFWriteRawStrip\fR\fR
+.in +40n
+.rt
+Write a raw strip of data\&. See \fBTIFFWriteRawStrip\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFWriteRawTile\fR\fR
+.in +40n
+.rt
+Write a raw tile of data\&. See \fBTIFFWriteRawTile\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFWriteScanline\fR\fR
+.in +40n
+.rt
+Write a scanline of data\&. See \fBTIFFWriteScanline\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.sp
+.ne 2
+.mk
+\fB\fBTIFFWriteTile\fR\fR
+.in +40n
+.rt
+Compress and write a tile of data\&. See \fBTIFFWriteTile\fR(3tiff)\&.
+.sp
+.sp 1
+.in -40n
+.SS "Tag Usage"
+.PP
+The table below lists the TIFF tags that are recognized and supported
+by the \fBlibtiff\fR library\&. If no use is indicated in the table,
+then the library reads and writes the tag, but does not use the tag internally\&.
+Note that some tags are meaningful only when a particular compression scheme
+is used\&. For example, \fBGroup3Options\fR is only useful if Compression
+is set to \fBCCITT Group 3\fR encoding\&. Tags of this sort are
+considered codec-specific tags and the library does not recognize them except
+when the Compression tag has been previously set to the relevant compression
+scheme\&.
+.sp
+.TS
+tab() allbox;
+lw(1.375000i)| lw(1.375000i)| lw(1.375000i)| lw(1.375000i).
+TAG NAMEVALUER/WLIBRARY USE / NOTES
+\fBArtist\fR315R/W
+\fBBadFaxLines\fR326R/W
+\fBBitsPerSample\fR258R/WLots\&.
+\fBCellLength\fR265Parsed but ignored\&.
+\fBCellWidth\fR264Parsed but ignored\&.
+\fBCleanFaxData\fR327R/W
+\fBColorMap\fR320R/W
+\fBColorResponseUnit\fR300Parsed but ignored\&.
+\fBCompression\fR259R/WChoosing codec\&.
+\fBConsecutiveBadFaxLines\fR328R/W
+\fBDataType\fR32996RObsoleted by \fBSampleFormat\fR tag\&.
+\fBDateTime\fR306R/W
+\fBDocumentName\fR269R/W
+\fBDotRange\fR336R/W
+\fBExtraSamples\fR338R/WLots\&.
+\fBFaxRecvParams\fR34908R/W
+\fBFaxSubAddress\fR34909R/W
+\fBFaxRecvTime\fR34910R/W
+\fBFillOrder\fR266R/WControl bit order\&.
+\fBFreeByteCounts\fR289Parsed but ignored\&.
+\fBFreeOffsets\fR288Parsed but ignored\&.
+\fBGrayResponseCurve\fR291Parsed but ignored\&.
+\fBGrayResponseUnit\fR290Parsed but ignored\&.
+\fBGroup3Options\fR292R/WUsed
+by Group 3 codec\&.
+\fBGroup4Options\fR293R/W
+\fBHostComputer\fR316R/W
+\fBImageDepth\fR32997R/WTile/strip
+calculations\&.
+\fBImageDescription\fR270R/W
+\fBImageLength\fR257R/WLots\&.
+\fBImageWidth\fR256R/WLots\&.
+\fBInkNames\fR333R/W
+\fBInkSet\fR332R/W
+\fBJPEGTables\fR347R/WUsed
+by JPEG codec\&.
+\fBMake\fR271R/W
+\fBMatteing\fR32995RObsoleted
+by \fBExtraSamples\fR tag\&.
+\fBMaxSampleValue\fR281R/W
+\fBMinSampleValue\fR280R/W
+\fBModel\fR272R/W
+\fBNewSubFileType\fR254R/WCalled \fBSubFileType\fR in spec\&.
+\fBNumberOfInks\fR334R/W
+\fBOrientation\fR274R/W
+\fBPageName\fR285R/W
+\fBPageNumber\fR297R/W
+\fBPhotometricInterpretation\fR262R/WUsed
+by Group 3 and JPEG codecs\&.
+\fBPlanarConfiguration\fR284R/WData
+i/o\&.
+\fBPredictor\fR317R/WUsed
+by LZW and Deflate codecs\&.
+\fBPrimaryChromacities\fR319R/W
+\fBReferenceBlackWhite\fR532R/W
+\fBResolutionUnit\fR296R/WUsed
+by Group 3 codec\&.
+\fBRowsPerStrip\fR278R/WData
+i/o\&.
+\fBSampleFormat\fR339R/W
+\fBSamplesPerPixel\fR277R/WLots\&.
+\fBSMinSampleValue\fR340R/W
+\fBSMaxSampleValue\fR341R/W
+\fBSoftware\fR305R/W
+\fBStoNits\fR37439R/W
+\fBStripByteCounts\fR279R/WData
+i/o\&.
+\fBStripOffsets\fR273R/WData
+i/o\&.
+\fBSubFileType\fR255R/WCalled \fBOSubFileType\fR in spec\&.
+\fBTargetPrinter\fR337R/W
+\fBThresholding\fR263R/W
+\fBTileByteCounts\fR324R/WData
+i/o\&.
+\fBTileDepth\fR32998R/WTile/strip
+calculations\&.
+\fBTileLength\fR323R/WData
+i/o\&.
+\fBTileOffsets\fR324R/WData
+i/o\&.
+\fBTileWidth\fR322R/WData
+i/o\&.
+\fBTransferFunction\fR301R/W
+\fBWhitePoint\fR318R/W
+\fBXPosition\fR286R/W
+\fBXResolution\fR282R/W
+\fBYCbCrCoefficients\fR529R/WUsed
+by TIFFRGBAImage support\&.
+\fBYCbCrPositioning\fR531R/WTile/strip
+size calulcations\&.
+\fBYCbCrSubsampling\fR530R/W
+\fBYPosition\fR286R/W
+\fBYResolution\fR283R/WUsed
+by Group 3 codec\&.
+.TE
+.sp
+.SS "Pseudo Tags"
+.PP
+In addition to the normal TIFF tags, the \fBlibtiff\fR
+library supports a collection of tags whose values lie in a range outside
+the valid range of TIFF tags\&. These tags are termed pseudo-tags and are used
+to control various codec-specific functions within the library\&. The table
+below summarizes the defined pseudo-tags\&.
+.sp
+.TS
+tab() allbox;
+lw(1.375000i)| lw(1.375000i)| lw(1.375000i)| lw(1.375000i).
+TAG NAMECODECR/WLIBRARY USE / NOTES
+\fBTIFFTAG_FAXMODE\fRG3R/WGeneral codec operation\&.
+\fBTIFFTAG_FAXFILLFUNC\fRG3/G4R/WBitmap fill function\&.
+\fBTIFFTAG_JPEGQUALITY\fRJPEGR/WCompression quality control\&.
+\fBTIFFTAG_JPEGCOLORMODE\fRJPEGR/WControl colorspace conversions\&.
+\fBTIFFTAG_JPEGTABLESMODE\fRJPEGR/WControl contents of \fBJPEGTables\fR tag\&.
+\fBTIFFTAG_ZIPQUALITY\fRDeflateR/WCompression quality level\&.
+\fBTIFFTAG_PIXARLOGDATAFMT\fRPixarLogR/WUser data format\&.
+\fBTIFFTAG_PIXARLOGQUALITY\fRPixarLogR/WCompression quality level\&.
+\fBTIFFTAG_SGILOGDATAFMT\fRSGILogR/WUser data format\&.
+.TE
+.sp
+.SS "TIFFTAG_FAXMODE"
+.PP
+Controls the operation of the Group 3 codec\&. Possible values (independent
+bits that can be combined by or\&'ing them together) are: 
+.sp
+.ne 2
+.mk
+\fB\fBFAXMODE_BYTEALIGN\fR\fR
+.in +24n
+.rt
+Align each encoded row to an 8-bit boundary\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fB\fBFAXMODE_CLASSIC\fR\fR
+.in +24n
+.rt
+Enable old-style format in which the RTC is written at the end of the last
+strip\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fB\fBFAXMODE_NOEOL\fR\fR
+.in +24n
+.rt
+Do not write EOL codes at the start of each row of data\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fB\fBFAXMODE_NORTC\fR, also called \fBFAXMODE_CLASSF\fR\fR
+.in +24n
+.rt
+Opposite of \fBFAXMODE_CLASSIC\fR\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fB\fBFAXMODE_WORDALIGN\fR\fR
+.in +24n
+.rt
+Align each encoded row to a 16-bit boundary\&.
+.sp
+.sp 1
+.in -24n
+.PP
+The default value depends on the compression scheme\&.
+This pseudo-tag is used by the various G3 and G4 codecs to share code\&.
+.SS "TIFFTAG_FAXFILLFUNC"
+.PP
+Controls the function used to convert arrays of black and white runs
+to packed bit arrays\&. This hook can be used to image decoded scanlines in
+multi-bit depth rasters (for example, for display in colormap mode) or for
+other purposes\&. The default value is a pointer to a builtin function that
+images packed bilevel data\&.
+.SS "TIFFTAG_IPTCNEWSPHOTO"
+.PP
+Contains image metadata per the IPTC newsphoto specification: Headline,
+captioning, credit, and so on\&. Used by most wire services\&.
+.SS "TIFFTAG_PHOTOSHOP"
+.PP
+Contains Photoshop captioning information and metadata\&. Photoshop uses
+in parallel and redundantly alongside \fBIPTCNEWSPHOTO\fR information\&.
+.SS "TIFFTAG_JPEGQUALITY"
+.PP
+Controls the compression quality level used in the baseline algorithm\&.
+Note that quality levels are in the range 0-100 with a default value of 75\&.
+.SS "TIFFTAG_JPEGCOLORMODE"
+.PP
+Controls whether or not conversion is done between RGB and YCbCr colorspaces\&.
+Possible values are: \fBJPEGCOLORMODE_RAW\fR (do not convert),
+and \fBJPEGCOLORMODE_RGB\fR (convert to/from RGB)\&. The default
+value is \fBJPEGCOLORMODE_RAW\fR\&.
+.SS "TIFFTAG_JPEGTABLESMODE"
+.PP
+Controls the information written in the \fBJPEGTables\fR
+tag\&. Possible values (independent bits that can be combined by or\&'ing them
+together) are: \fBJPEGTABLESMODE_QUANT\fR (include quantization
+tables), and \fBJPEGTABLESMODE_HUFF\fR (include Huffman encoding
+tables)\&.
+.SS "TIFFTAG_ZIPQUALITY"
+.PP
+Controls the compression technique used by the Deflate codec\&. Quality
+levels are in the range 1-9 with larger numbers yielding better compression
+at the cost of more computation\&. The default quality level is 6 which yields
+a good time-space tradeoff\&.
+.SS "TIFFTAG_PIXARLOGDATAFMT"
+.PP
+Controls the format of user data passed to the PixarLog codec when encoding
+and passed from the PixarLog codec when decoding\&. Possible values are:
+.sp
+.in +2
+\(bu
+.mk
+.in +3
+.rt
+\fBPIXARLOGDATAFMT_8BIT\fR for 8-bit unsigned
+pixels
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBPIXARLOGDATAFMT_8BITABGR\fR for 8-bit unsigned
+ABGR-orderedpixels
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBPIXARLOGDATAFMT_11BITLOG\fR for 11-bit log-encoded
+raw data
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBPIXARLOGDATAFMT_12BITPICIO\fR for 12-bit PICIO-compatible
+data
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBPIXARLOGDATAFMT_16BIT\fR for 16-bit signed
+samples
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBPIXARLOGDATAFMT_FLOAT\fR for 32-bit IEEE floating
+point samples
+.sp
+.in -3
+.in -2
+.SS "TIFFTAG_PIXARLOGQUALITY"
+.PP
+Controls the compression technique used by the PixarLog codec\&. This
+value is treated identically to \fBTIFFTAG_ZIPQUALITY\fR\&.
+.SS "TIFFTAG_SGILOGDATAFMT"
+.PP
+Controls the format of client data passed to the SGILog codec when encoding
+and passed from the SGILog codec when decoding\&. Possible values are:
+.sp
+.in +2
+\(bu
+.mk
+.in +3
+.rt
+\fBSGILOGDATAFMT_FLTXYZ\fR for converting between
+LogLuv and 32-bit IEEE floating valued XYZ pixels
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBSGILOGDATAFMT_16BITLUV\fR for 16-bit encoded
+Luv pixels
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBSGILOGDATAFMT_32BITRAW\fR and \fBSGILOGDATAFMT_24BITRAW\fR for no conversion of data
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBSGILOGDATAFMT_8BITRGB\fR for returning 8-bit
+RGB data (valid only when decoding LogLuv-encoded data)
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBSGILOGDATAFMT_FLTY\fR for converting between
+LogL and 32-bit IEEE floating valued Y pixels
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBSGILOGDATAFMT_16BITL\fR for 16-bit encoded
+L pixels
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBSGILOGDATAFMT_8BITGRY\fR for returning 8-bit
+greyscale data (valid only when decoding LogL-encoded data)
+.sp
+.in -3
+.in -2
+.SS "Diagnostics"
+.PP
+All error messages are directed through the \fBTIFFError\fR
+routine\&. By default, messages are directed to \fBstderr\fR in
+the form: \fB\fImodule\fR: \fImessage\fR\\n\fR\&. Warning messages are likewise directed through
+the TIFFWarning routine\&.
+.SH "ATTRIBUTES"
+.PP
+See \fBattributes\fR(5)
+for descriptions of the following attributes:
+.sp
+.TS
+tab() allbox;
+cw(2.750000i)| cw(2.750000i)
+lw(2.750000i)| lw(2.750000i).
+ATTRIBUTE TYPEATTRIBUTE VALUE
+Availabilityimage/library/libtiff
+Interface stabilityUncommitted
+.TE
+.sp
+.SH "SEE ALSO"
+.PP
+\fBfax2tiff\fR(1),
+\fBgif2tiff\fR(1),
+\fBpal2rgb\fR(1),
+\fBppm2tiff\fR(1),
+\fBras2tiff\fR(1),
+\fBrgb2ycbcr\fR(1),
+\fBsgi2tiff\fR(1),
+\fBtiff2bw\fR(1),
+\fBtiffcmp\fR(1),
+\fBtiffcp\fR(1),
+\fBtiffdither\fR(1),
+\fBtiffdump\fR(1),
+\fBtiffgt\fR(1),
+\fBtiffinfo\fR(1),
+\fBtiffmedian\fR(1),
+\fBtiffsplit\fR(1),
+\fBtiffsv\fR(1),
+\fBattributes\fR(5)
+.PP
+\fITag Image File Format Specification\fR Revision
+6\&.0, an Aldus Technical Memorandum\&.
+.PP
+\fIThe Spirit of TIFF Class F\fR an appendix to the
+TIFF 5\&.0 specification prepared by Cygnet Technologies\&.
+.SH "NOTES"
+.PP
+The \fBlibtiff\fR library does not support multisample
+images where some samples have different bits/sample\&.
+.PP
+The library does not support random access to compressed data that is
+organized with more than one row per tile or strip\&. The library discards unknown
+tags\&. The library should do more validity checking of a directory\&'s contents\&.
+.PP
+This man page was originally written by Sam Leffler\&. Updated by Breda
+McColgan, Sun Microsystems Inc\&., 2004\&.
+...\" created by instant / solbook-to-man, Thu 20 Mar 2014, 02:30
+...\" LSARC 2003/085 libtiff, libjpeg, and libpng

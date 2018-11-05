@@ -1,0 +1,121 @@
+'\" te
+.\" Copyright (c) 1996, 2011, Oracle and/or its affiliates. All rights reserved.
+.\" Copyright 1989 AT&T
+.TH acctprc 1M "2011 年 8 月 16 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+acctprc, acctprc1, acctprc2 \- プロセスアカウンティング
+.SH 形式
+.LP
+.nf
+\fB/usr/lib/acct/acctprc\fR 
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/acctprc1\fR [\fIctmp\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/acctprc2\fR 
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBacctprc\fR は、標準入力を読み取り、それを合計アカウンティングレコード (\fBacct.h\fR(3HEAD) の \fBtacct\fR レコードを参照) に変換します。\fBacctprc\fR は、CPU 時間をプライムタイムと非プライムタイムに分割し、平均メモリーサイズ (メモリーセグメントの単位) を決定します。\fBacctprc\fR はその後、ユーザー ID に従って \fBtacct\fR レコードを集計し、ユーザー ID に対応するログイン名を追加します。続いて、集計されたレコードが標準出力に書き込まれます。\fBacctprc1\fR は、\fBacct.h\fR(3HEAD) で説明した形式の入力を読み取り、ユーザー \fBID\fR に対応するログイン名を追加したあと、ユーザー \fBID\fR、ログイン名、プライム \fBCPU\fR 時間 (ティック)、非プライム \fBCPU\fR 時間 (ティック)、および平均メモリーサイズ (メモリーセグメントの単位) を含む \fBASCII\fR 行を、プロセスごとに書き込みます。\fIctmp\fR を指定する場合、それには、ユーザー \fBID\fR とログイン名でソートされたログインセッションのリストを含めるようにしてください。このファイルが指定されなかった場合、これは \fBacctprc\fR と同様に、パスワードファイルからログイン名を取得します。\fIctmp\fR 内の情報があれば、同じユーザー \fBID.\fR を共有する異なるログイン名の区別がつきやすくなります
+.sp
+.LP
+\fBacctprc2\fR は、\fBacctprc1\fR から書き込まれた形式のレコードを標準入力から読み取り、それらをユーザー \fBID\fR と名前に従って集計したあと、ソート済みの集計結果を合計アカウンティングレコードとして標準出力に書き込みます。
+.SH 使用例
+.LP
+\fB例 1 \fR\fBacctprc\fR の例。
+.sp
+.LP
+\fBacctprc\fR コマンドは通常、次に示すように使用されます。
+
+.sp
+.in +2
+.nf
+example% acctprc \|< /var/adm/pacct \|> ptacct
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBacctprc1\fR および \fBacctprc2s\fR コマンドは通常、次に示すように使用されます。
+
+.sp
+.in +2
+.nf
+example% acctprc1 \|ctmp \|</var/adm/pacct
+example% acctprc2 > ptacct 
+.fi
+.in -2
+.sp
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/passwd\fR\fR
+.ad
+.RS 15n
+.rt  
+システムパスワードファイル
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/accounting/legacy-accounting
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBacctcom\fR(1), \fBacct\fR(1M), \fBacctcms\fR(1M), \fBacctcon\fR(1M), \fBacctmerg\fR(1M), \fBacctsh\fR(1M), \fBcron\fR(1M), \fBfwtmp\fR(1M), \fBrunacct\fR(1M), \fBacct\fR(2), \fBacct.h\fR(3HEAD), \fButmpx\fR(4), \fBattributes\fR(5)
+.SH 注意事項
+.sp
+.LP
+\fBacctprc1\fR は、コマンド行から実行されたコマンドではユーザー \fBID\fR を共有するログイン名を区別できますが、ほかの方法で呼び出されたコマンドでは、\fBacctprc1\fR はこの区別を行えません。\fBcron\fR(1M) から実行されたコマンドは、\fBacctprc1\fR で問題が生じる可能性のある例の 1 つです。\fBacct\fR(1M) の \fBacctwtmp\fR プログラムを使用することで、より正確な変換を行うことができます。\fBacctprc\fR では同一のユーザー ID を持つユーザーは区別されません。
+.sp
+.LP
+平均メモリーサイズのメモリーセグメントが、特定のプロセッサ上の論理メモリーセグメント内のバイト数の測定単位になります。
+.sp
+.LP
+任意の指定されたコマンドの単一の呼び出し中に、\fBacctprc\fR、\fBacctprc1\fR、および \fBacctprc2\fR コマンドは最大で次を処理できます
+.RS +4
+.TP
+.ie t \(bu
+.el o
+6000 件の異なるセッション
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+1000 件の異なる端末回線
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+2000 件の異なるログイン名
+.RE
+.sp
+.LP
+ある時点でこれらの項目のいずれかの実際の数が最大を超えた場合、このコマンドは成功しません。

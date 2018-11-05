@@ -1,0 +1,493 @@
+'\" te
+.\" Copyright (c) 2008, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH dumpadm 1M "2015 年 2 月 23 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+dumpadm \- オペレーティングシステムクラッシュダンプの構成
+.SH 形式
+.LP
+.nf
+\fB/usr/sbin/dumpadm\fR [\fB-enpuy\fR] [\fB-c\fR \fIcontent-type\fR] [\fB-d\fR \fIdump-device\fR] 
+     [\fB-m\fR \fImin\fRk | \fImin\fRm | \fImin\fR%] [\fB-s\fR \fIsavecore-dir\fR] 
+     [\fB-r\fR \fIroot-dir\fR] [\fB-z\fR on | off]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBdumpadm\fR プログラムは、オペレーティングシステムクラッシュダンプ機能の構成を管理する管理コマンドです。クラッシュダンプは、致命的なシステムエラー時のコンピュータの物理メモリーのコピーです。重大なオペレーティングシステムエラーが発生すると、エラーを説明するメッセージがコンソールに出力されます。そのときオペレーティングシステムは、物理メモリーの内容を RAM 内に保持することによってクラッシュダンプを生成します。これが可能でない場合、物理メモリーの内容は定義済みダンプデバイス (通常はローカルディスクパーティション) に書き込まれます。\fBall\fR または \fBallproc\fR が指定されている場合は、ローカルディスクパーティションが必要です。
+.sp
+.LP
+重大なオペレーティングシステムエラーは、オペレーティングシステム、関連付けられたデバイスドライバ、および読み込み可能モジュールのバグや、ハードウェアの故障によって発生する可能性があります。原因がどのようなものでも、クラッシュダンプ自体が、問題を診断するのに役立つ重要な情報をサポートエンジニアに提供します。このため、クラッシュダンプを収集してサポートプロバイダに提供することはとても重要です。オペレーティングシステムがクラッシュすると、ブート時に \fBsavecore\fR(1M) ユーティリティーが自動的に実行されて、クラッシュダンプが取り出され、\fBvmdump.\fR\fIX\fR および \fBvmdump-<secname>.\fR\fIX\fR (\fIX\fR はダンプを識別する整数) というファイル名で、ファイルシステムに圧縮形式で書き込まれます。あとで、同じシステムまたは別のシステムで \fBsavecore\fR(1M) を呼び出すことで、圧縮されたクラッシュダンプを \fBvmcore.\fR\fIX\fR および \fBvmcore-<secname>.\fR\fIX\fR という名前のファイルに展開できます。リブート時にクラッシュダンプを保存するディレクトリは、\fBdumpadm\fR コマンドを使用して構成できます。
+.sp
+.LP
+デフォルトでは、スワップ領域とダンプ領域には専用の ZFS ボリュームが使用されます。ZFS でダンプ領域を設定する方法の詳細については、『\fIZFS 管理ガイド\fR』を参照してください。 
+.sp
+.LP
+現在のダンプ構成を表示するには、引数なしの \fBdumpadm\fR コマンドを使用します。
+.sp
+.in +2
+.nf
+example# \fBdumpadm\fR
+
+      Dump content: kernel pages with ZFS metadata
+       Dump device: /dev/zvol/dsk/rpool/dump (dedicated)
+Savecore directory: /var/crash
+  Savecore enabled: yes
+   Save compressed: yes
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+オプションが指定されない場合、\fBdumpadm\fR は現在のクラッシュダンプ構成を表示します。上の例では一連のデフォルト値が表示されており、ダンプ内容はカーネルメモリーページと ZFS メタデータのみに設定されています。クラッシュダンプはメモリー内に保持され、必要に応じてダンプデバイスが使用されます。デフォルトでは、ダンプデバイスはルートプールの \fBzvol\fR です。\fBsavecore\fR ファイルのディレクトリは \fB/var/crash/\fR に設定されています。\fBsavecore\fR がリブート時に自動的に実行され、圧縮形式でクラッシュダンプを保存するように設定されています。
+.sp
+.LP
+1 つ以上のオプションが指定された場合、\fBdumpadm\fR は変更が有効であることを検証し、有効な場合はクラッシュダンプパラメータを再構成して結果の構成を表示します。ダンプパラメータを表示または変更するには、\fBroot\fR である必要があります。
+.sp
+.LP
+システムインストール時に \fBdumpadm\fR は、カーネルメモリーなどの内部情報に基づいて、ダンプファイルを格納するのに十分なサイズのダンプデバイスを確立します。その後、小さすぎてダンプファイルを格納できないダンプデバイスを作成しようとすると、\fBdumpadm\fR からエラーメッセージが発行されて処理が失敗します。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIcontent-spec\fR\fR
+.ad
+.sp .6
+.RS 4n
+クラッシュダンプが指定されたダンプ内容で構成されるように、ダンプ構成を変更します。\fIcontent-spec\fR は、オプションの内容の種類と内容の修飾子で構成されています。
+.sp
+.ne 2
+.mk
+.na
+\fB[ \fIcontent-type\fR ] [ \fIcontent-modifier\fR | -\fIcontent-modifier\fR.. ]\fR
+.ad
+.sp .6
+.RS 4n
+\fIcontent-type\fR は基本情報を提供し、内容の修飾子はダンプ対象の内容をさらに変更します。\fB+\fR を使用すると、内容の修飾子によってダンプ対象のデータがさらに追加され、\fB-\fR を使用すると、そのデータが除外されます。
+.sp
+content-type は次のいずれかにできます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkernel\fR\fR
+.ad
+.RS 11n
+.rt  
+カーネルメモリーページのみ。これにはカーネルページの基本セットのみが含まれ、内容の修飾子を使って指定できるページは含まれません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBall\fR\fR
+.ad
+.RS 11n
+.rt  
+すべてのメモリーページ。all を指定すると、システムイメージはダンプデバイスに書き込まれます。結果となるダンプにはファイルシステムバッファーのページが含まれます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcurproc\fR\fR
+.ad
+.RS 11n
+.rt  
+カーネルメモリーページ (「kernel」で指定されるもの) と、クラッシュダンプが起動された CPU 上でその時点で実行されていたスレッドを持つプロセスのメモリーページ。その CPU 上で実行中のスレッドが、どのユーザープロセスにも関連付けられていないカーネルスレッドである場合、カーネルページのみがダンプされます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBallproc\fR\fR
+.ad
+.RS 11n
+.rt  
+カーネルメモリーページ (「kernel」で指定されるもの) とすべてのプロセスページ。allproc を指定すると、システムイメージはダンプデバイスに書き込まれます。
+.RE
+
+\fIcontent-modifier\fR は次のいずれかにできます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs\fR\fR
+.ad
+.RS 7n
+.rt  
+ZFS メタデータを格納するカーネルページ。
+.RE
+
+\fIcontent-modifier\fR は、カーネルメモリーのどの部分がダンプされ、どの部分がダンプされないかに影響を及ぼします。それらは、内容の種類を「all」に設定している場合にはまったく効果がありません。
+.sp
+\fIcontent-type\fR が指定されていない場合は、現在構成されている内容の種類が変更されます。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdump-device\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたダンプデバイスを使用するようにダンプ構成を変更します。ダンプデバイスは次のいずれかを指定できます。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdump-device\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB/dev/dsk/\fR\fIcNtNdNsN\fR のように絶対パス名で指定された特定のダンプデバイス、または \fB/dev/zvol/dsk/rpool/dump\fR などの ZFS ボリューム。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBswap\fR\fR
+.ad
+.sp .6
+.RS 4n
+ダンプデバイスとして特殊トークン \fBswap\fR を指定した場合、\fBdumpadm\fR はアクティブスワップエントリを調べ、ダンプデバイスとして構成するのにもっとも適したエントリを選択します。\fBswap\fR(1M) を参照してください。適切なスワップエントリの選択に使用されるアルゴリズムの詳細については、後述の「\fB注意事項\fR」を参照してください。
+.sp
+特定の ZFS ボリュームをスワップ領域かつダンプデバイスとして構成することはできません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.sp .6
+.RS 4n
+圧縮されたクラッシュダンプの格納に必要なディスク容量の概算を出力します。この値は、現在の構成および現在実行中のシステムを使用して算出されます。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fImin\fR\fBk\fR | \fI min\fR\fBm\fR | \fImin\fR\fB%\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBminfree\fR ファイル (savecore ディレクトリがあるファイルシステム内で指定された量以上の空き領域を \fBsavecore\fR が維持すべきであることを示す) を現在の savecore ディレクトリ内に作成します。\fBmin\fR 引数は次のいずれかを指定できます。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBk\fR\fR
+.ad
+.sp .6
+.RS 4n
+K バイトを表す単位 \fBk\fR が末尾に付いた正の整数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBm\fR\fR
+.ad
+.sp .6
+.RS 4n
+M バイトを表す単位 \fBm\fR が末尾に付いた正の整数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBminfree\fR 値を、savecore ディレクトリを含むファイルシステムの現在の合計サイズの指定されたパーセント値として計算すべきであることを示す、% 記号。
+.RE
+
+\fBsavecore\fR コマンドは、\fBminfree\fR ファイルがある場合、ダンプファイルに書き込む前に参照します。これらのファイルのサイズによって空きディスク容量が \fBminfree\fR しきい値より下回る場合、ダンプファイルは書き込まれず、エラーメッセージが記録されます。管理者は十分な空き容量を確保するためにすぐに savecore ディレクトリをクリーンアップし、\fBsavecore\fR コマンドを手動で再度実行すべきです。管理者は、\fBsavecore\fR コマンド行で代替ディレクトリを指定することもできます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+リブート時に \fBsavecore\fR が自動的に実行されないようにダンプ構成を変更します。これは推奨されるシステム構成ではありません。システムはクラッシュダンプイメージをメモリー内に保持しようとします。\fBdumpadm\fR \fB-n\fR が設定されている場合は、システムのリブート後にクラッシュダンプイメージがダンプデバイスに書き込まれます。システムがブートしたあとで \fBsavecore\fR(1M) を実行すると、クラッシュダンプを \fBsavecore\fR ディレクトリに抽出できます。
+.sp
+ダンプデバイスがスワップパーティションの場合、システムがスワップを開始するとダンプデータが上書きされます。ブート直後に \fBsavecore\fR が実行されない場合は、クラッシュダンプを収集できない場合があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+マシン解析可能な出力を生成します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIroot-dir\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBdumpadm\fR がファイルを作成する際の起点となる代替ルートディレクトリを指定します。\fB-r\fR 引数を指定しない場合は、デフォルトルートディレクトリ \fB/\fR が使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIsavecore-dir\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsavecore\fR によって書き込まれるファイルを保存するために、指定したディレクトリを使用するようにダンプ構成を変更します。このディレクトリは絶対パスで、システム上に存在しているべきです。リブート時にディレクトリが存在しない場合は、\fBsavecore\fR の実行前に作成されます。savecore ディレクトリへのアクセスに関連するセキュリティ問題については、後述の「\fB注意事項\fR」セクションを参照してください。デフォルト savecore ディレクトリは、\fB/var/crash/\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+カーネルダンプ構成を \fB/etc/dumpadm.conf\fR の内容に基づいて強制的に更新します。このオプションは通常、リブート時に \fBsvc:/system/dumpadm:default\fR を起動するときに、以前のブートからの \fBdumpadm\fR 設定を復元する必要があるときにのみ使用されます。ダンプ構成はこの目的のために構成ファイルに保存されます。構成ファイルがないかいずれかのダンププロパティーに無効な値を含んでいる場合は、デフォルト値で置き換えられます。更新後、構成ファイルはカーネルダンプ構成と再同期されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-y\fR\fR
+.ad
+.sp .6
+.RS 4n
+リブート時に \fBsavecore\fR を自動的に実行するように、ダンプ構成を変更します。これはこのダンプ設定のデフォルトです。「\fB注意事項\fR」を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBon\fR | \fBoff\fR\fR
+.ad
+.sp .6
+.RS 4n
+リブート時の \fBsavecore\fR の動作を制御するように、ダンプ構成を変更します。オプションは、コアファイルを圧縮形式で保存することを有効にする \fBon\fR と、クラッシュダンプファイルを自動的に圧縮解除する \fBoff\fR です。デフォルトは \fBon\fR で、理由はクラッシュダンプファイルは非常に大きくなる可能性があり、圧縮形式で保存すれば必要なファイルシステム容量が少なくなるためです。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fR現在のプロセスページを格納し ZFS メタデータページは格納しないようにダンプデバイスを再構成する
+.sp
+.in +2
+.nf
+\fBexample# dumpadm -c curproc-zfs\fR
+                   Dump content: kernel and current process pages without ZFS metadata
+                    Dump device: /dev/zvol/dsk/rpool/dump (dedicated)
+             Savecore directory: /var/crash
+               Savecore enabled: yes
+                Save compressed: on
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fR\fBallproc\fR または \fBall\fR の内容を指定する
+.sp
+.LP
+\fBallproc\fR または \fBall\fR の内容が指定された場合、クラッシュダンプをメモリー内に保持する試みは行われません。
+
+.sp
+.in +2
+.nf
+example# \fBdumpadm -c all\fR
+                   Dump content: all
+                    Dump device: /dev/zvol/dsk/rpool/dump (dedicated)
+             Savecore directory: /var/crash
+               Savecore enabled: yes
+                Save compressed: on
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fR\fBsavecore\fR が無効な場合にクラッシュダンプを保持する
+.sp
+.LP
+savecore が無効になっている場合、クラッシュダンプはメモリー内に保持され、ダンプデバイスにコピーされます。あとで \fBsavecore\fR(1M) を手動で実行して抽出できます。
+
+.sp
+.in +2
+.nf
+example# \fBdumpadm -n -c kernel+zfs\fR
+                   Dump content: kernel with ZFS metadata
+                    Dump device: /dev/zvol/dsk/rpool/dump (dedicated)
+             Savecore directory: /var/crash
+               Savecore enabled: yes
+                Save compressed: on
+.fi
+.in -2
+.sp
+
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+ダンプ構成が有効で、指定された変更 (ある場合) が正常に行われた。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+ダンプ構成を取得または変更するときに致命的エラーが発生した。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.sp .6
+.RS 4n
+無効なコマンド行オプションが指定された。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/dev/dump\fR\fR
+.ad
+.sp .6
+.RS 4n
+ダンプデバイス。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/dumpadm.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBdumpadm\fR の構成パラメータを含みます。このコマンドでのみ変更できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIsavecore-directory\fR\fB/minfree \fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIsavecore-directory\fR の最小空き容量を含みます。\fBsavecore\fR(1M) を参照してください。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBsvcs\fR(1)、\fBuname\fR(1)、\fBsavecore\fR(1M)、\fBsvcadm\fR(1M)、\fBswap\fR(1M)、\fBattributes\fR(5)、\fBsmf\fR(5)
+.SH 注意事項
+.sp
+.LP
+システムクラッシュダンプサービスは、サービス管理機能 \fBsmf\fR(5) によって、次のサービス識別子の下で管理されます。
+.sp
+.in +2
+.nf
+svc:/system/dumpadm:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有効化、無効化、または再起動要求など、このサービスに関する管理操作は、\fBsvcadm\fR(1M) を使用して実行できます。サービスステータスを照会するには、\fBsvcs\fR(1) コマンドを使用します。
+.SS "ダンプデバイス選択"
+.sp
+.LP
+\fBdumpadm\fR \fB-d\fR の引数として特殊な \fBswap\fR トークンが指定されると、ユーティリティーはもっとも適したスワップデバイスをダンプデバイスとして構成しようとします。\fBdumpadm\fR はもっとも大きなスワップブロック型デバイスをダンプデバイスとして構成します。スワップに使用できるブロック型デバイスがない場合は、もっとも大きなスワップエントリがダンプデバイスとして構成されます。スワップエントリが存在しないか、ダンプデバイスとして構成できるものがない場合は、警告メッセージが表示されます。ローカルおよびリモートスワップファイルをダンプデバイスとして構成できますが、これは推奨されていません。
+.SS "ダンプデバイス/スワップデバイスの対話"
+.sp
+.LP
+ダンプデバイスがスワップデバイスでもある場合に、スワップデバイスが管理者によって \fBswap\fR \fB-d\fR コマンドを使って削除されると、\fBswap\fR コマンドは別の適切なスワップデバイスをダンプデバイスとして構成しようとして \fBdumpadm\fR \fB-d\fR \fBswap\fR を自動的に呼び出します。スワップデバイスが残っていないかダンプデバイスとして構成できるものがない場合には、クラッシュダンプが無効になり、警告メッセージが表示されます。同様に、クラッシュダンプが無効なときに管理者が \fBswap\fR \fB-a\fR コマンドを使って新しいスワップデバイスを追加すると、新しいスワップデバイスを使ってクラッシュダンプを再度有効にするために \fBdumpadm\fR \fB-d\fR \fBswap\fR が呼び出されます。
+.sp
+.LP
+\fBdumpadm\fR \fB-d\fR \fBswap\fR が発行されると、それ以降のリブートのために新しいダンプデバイスが構成ファイル内に格納されます。管理者によってより大きなまたはより適したスワップデバイスが追加されても、ダンプデバイスは変更されません。管理者は、\fBdumpadm\fR \fB-d\fR \fBswap\fR を再実行して最適なデバイスをスワップデバイスの新しいリストから再選択する必要があります。
+.SS "最小空き容量"
+.sp
+.LP
+\fBdumpadm\fR \fB-m\fR オプションを使って \fBsavecore\fR ディレクトリを含むファイルシステムの合計サイズのパーセント値に基づいて \fBminfree\fR ファイルが作成された場合、その後ファイルシステムのサイズが変更されても、この値は自動的に再計算されません。この場合、管理者が \fBdumpadm\fR \fB-m\fR を再実行して \fBminfree\fR 値を再計算する必要があります。\fBsavecore\fR ディレクトリ内にそのようなファイルが存在しない場合、\fBsavecore\fR はデフォルトで空き容量しきい値として 1M バイトを使用します。空き容量しきい値が不要な場合は、サイズ 0 を含む minfree ファイルを作成できます。
+.sp
+.LP
+ダンプディレクトリの容量が十分でなく、クラッシュダンプイメージがメモリー内に保持されている場合、イメージはダンプデバイスに書き込まれ、あとで \fBsavecore\fR(1M) を使用して抽出できます。
+.SS "セキュリティー問題"
+.sp
+.LP
+リブート時に、指定された \fBsavecore\fR ディレクトリが存在しない場合、\fBsavecore\fR を実行する前に、アクセス権 0700 (所有者のみによる読み取り、書き込み、実行)、所有者 \fBroot\fR で作成されます。オペレーティングシステムクラッシュダンプファイル自体にセキュア情報が含まれている可能性があるため、同様のアクセス権で代替 savecore ディレクトリを作成することもお勧めします。
+.SS "\fBsavecore\fR 用のデフォルト"
+.sp
+.LP
+システムインストールソフトウェアが専用ダンプデバイス (ディスクスライスや ZFS ボリュームなど) を予約する場合があります。そのような場合、\fBdumpadm\fR のデフォルトを、システムリブート時に \fBsavecore\fR が自動的に実行されないことを意味する \fB-n\fR に設定してもかまいません。クラッシュイメージは、最初はメモリー内に保持された場合でも、ダンプデバイス上に保持されます。root として \fB/usr/bin/savecore\fR を手動で実行してクラッシュイメージを取り出し、それを \fB/var/crash\fR の下の一連のファイルにコピーします。クラッシュイメージは、後続のもので上書きされるまでダンプデバイス上に残ります。

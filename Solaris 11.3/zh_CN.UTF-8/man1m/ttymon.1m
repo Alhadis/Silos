@@ -1,0 +1,343 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 2004, 2012, Oracle and/or its affiliates.All rights reserved.
+.TH ttymon 1M "2012 年 5 月 10 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+ttymon \- 终端端口的端口监视器
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/ttymon\fR \fB-g\fR [\fB-d\fR \fIdevice\fR] [\fB-h\fR] [\fB-t\fR \fItimeout\fR] 
+     [\fB-l\fR \fIttylabel\fR] [\fB-p\fR \fIprompt\fR] [\fB-m\fR \fImodules\fR] [\fB-T\fR \fItermtype\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBttymon\fR 是一个基于 STREAMS 的 TTY 端口监视器。其功能是监视端口，设置终端模式、波特率以及端口的线路规程，以及将用户或应用程序连接到与端口关联的服务。每个 \fBttymon\fR 实例监视一个端口（在启动时指定）。启动一个 \fBttymon\fR 实例时，\fBttymon\fR 会先初始化线路规程（如果已指定）以及速度和终端设置。对于在 \fB/etc/logindevperm\fR 中有条目的端口，要设置设备所有者、组和权限。（请参见 \fBlogindevperm\fR(4)。）用于初始化的值取自 TTY 文件中的相应条目。此文件通过 \fBsttydefs\fR(1M) 命令维护。端口上的缺省线路规程一般通过 Autopush Facility 的 \fBautopush\fR(1M) 命令设置。
+.sp
+.LP
+然后，\fBttymon\fR 写入提示，并等待用户输入。如果用户通过按 BREAK 键指示速度不合适，则 \fBttymon\fR 将尝试下一个速度，并再次写入提示。收到有效的输入时，\fBttymon\fR 会创建一个 \fButmpx\fR 条目（请参见 \fButmpx\fR(4)），并对端口的登录服务执行 \fBexec\fR。有效输入包含一个至少由一个非换行符字符组成的字符串，并用回车结束。
+.sp
+.LP
+如果为端口启用了 \fIautobaud\fR，则 \fBttymon\fR 将尝试自动确定端口上的波特率。用户必须按回车，之后 \fBttymon\fR 才能识别波特率并输出提示。当前，可通过 \fIautobaud\fR 确定的波特率包括 \fB110\fR、\fB1200\fR、\fB2400\fR、\fB4800\fR 和 \fB9600\fR。
+.SS "SMF 服务说明"
+.sp
+.LP
+调用 \fBttymon\fR 的主 \fBsmf\fR(5) 服务是 \fBsvc:/system/console-login\fR，它可以有多个服务实例。下文中有对实例的更详细介绍。该服务提供了属性组 \fBttymon\fR 中的大量属性来控制调用，如下所示：
+.sp
+.in +2
+.nf
+NAME                  TYPE               TTYMON OPTION
+----------------------------------------------------------
+device                astring            [-d device]
+nohangup              boolean            [-h]
+label                 astring            [-l label]
+modules               astring            [-m module1,module2]
+prompt                astring            [-p prompt]
+timeout               count              [-t timeout]
+terminal_type         astring            [-T termtype]
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果某个值为空字符串或者设置为零的整数，则不会将该选项传递到 \fBttymon\fR 调用。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/system/console-login:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+该缺省实例始终代表在系统硬件控制台上提供登录的 \fBttymon\fR。
+.sp
+有关如何修改系统控制台设置的示例，请参见“示例”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/system/console-login:{vt2, vt3, vt4, vt5, vt6}\fR\fR
+.ad
+.sp .6
+.RS 4n
+提供的其他服务实例用于系统的虚拟控制台。如果虚拟控制台不可用，则会自动禁用这些服务。请参见 \fBvtdaemon\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/system/console-login:{terma, termb}\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsvc:/system/console-login:terma\fR 和 \fBsvc:/system/console-login:termb\fR 是为了方便而提供的，可以帮助用户设置附加端口 \fB/dev/term/a\fR 和 \fB/dev/term/b\fR 的登录服务。缺省情况下这两个服务处于禁用状态。
+.RE
+
+.SS "创建其他实例"
+.sp
+.LP
+用户可以为增加的设备配置额外的服务实例。可通过以下方式之一完成此操作：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+使用 \fBsvccfg\fR(1M) 手动创建服务实例。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在服务配置文件中创建服务（请参见 \fBsmf\fR(5)）。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+为增加的服务实例创建服务清单。
+.RE
+.sp
+.LP
+有关使用 \fBsvccfg\fR 手动配置服务的示例，请参见“示例”部分。
+.SS "SMF 服务错误"
+.sp
+.LP
+在大多数情况下，当控制台登录服务实例配置错误时，它会将自己转换到维护状态。使用 \fBsvcs\fR \fB-l\fR（请参见 \fBsvcs\fR(1)）可确定服务日志文件的位置，并可在日志中查询其他信息。
+.sp
+.LP
+在某些出错情况下，服务可能会无限次地重新派生。使用 \fBsvcadm\fR(1M) 可禁用服务，然后在服务日志中查看其他消息或信息以帮助解决问题。
+.SH 安全
+.sp
+.LP
+\fBttymon\fR 使用 \fBpam\fR(3PAM) 来进行会话管理。\fBPAM\fR 配置策略（在 \fB/etc/pam.conf\fR 中指定或在 \fB/etc/pam.d/\fR 中按服务文件配置）指定要用于 \fBttymon\fR 的模块。下面是部分 \fBpam.conf\fR 文件，其中包含针对使用 UNIX 会话管理模块的 \fBttymon\fR 条目：
+.sp
+.in +2
+.nf
+ttymon session required /usr/lib/security/pam_unix_session.so.1
+.fi
+.in -2
+
+.sp
+.LP
+使用 \fB/etc/pam.d/\fR 的等效 PAM 配置将是 \fB/etc/pam.d/ttymon\fR 中的以下条目：
+.sp
+.in +2
+.nf
+session required /usr/lib/security/pam_unix_session.so.1
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果在 \fB/etc/pam.conf\fR 中没有 \fBttymon\fR 服务的条目，且不存在 \fB/etc/pam.d/ttymon\fR 文件，那么将使用 \fB/etc/pam.conf\fR 中的 "other" 服务的条目。如果 \fB/etc/pam.conf\fR 中没有 "other" 服务的条目，那么将使用 \fB/etc/pam.d/other\fR 中的条目。
+.SH 选项
+.sp
+.LP
+支持以下选项： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR\fR
+.ad
+.RS 14n
+.rt  
+\fB-g\fR 选项是出于历史需要而设置的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fIdevice\fR\fR
+.ad
+.RS 14n
+.rt  
+\fIdevice\fR 是 \fBttymon\fR 要连接到的端口的全路径名。如果未指定此选项，则调用进程必须将文件描述符 \fB0\fR 设置为 TTY 端口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.RS 14n
+.rt  
+如果未设置 -h 标志，\fBttymon\fR 将强制挂断线路（将速度设置为零），然后将速度设置为缺省值或指定速度。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fIttylabel\fR\fR
+.ad
+.RS 14n
+.rt  
+\fIttylabel\fR 是指向 \fBttydefs\fR 文件中的速度和 TTY 定义的链接。此定义可确定 \fBttymon\fR 的初始运行速度、初始 TTY 设置以及用户通过按 BREAK 键指示速度不合适时要尝试的下一个速度。缺省速度为 9600 波特。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fImodules\fR\fR
+.ad
+.RS 14n
+.rt  
+在初始化端口时，\fBttymon\fR 将弹出端口上的所有模块，然后按指定的顺序推送 \fImodules\fR。\fImodules\fR 是以逗号分隔的可推送模块列表。端口上的缺省模块通常通过 Autopush 工具设置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fIprompt\fR\fR
+.ad
+.RS 14n
+.rt  
+允许用户指定提示字符串。缺省提示符为 \fBLogin:\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fItimeout\fR\fR
+.ad
+.RS 14n
+.rt  
+指定如果在发送提示之后 \fItimeout\fR 秒内没有键入任何内容，就应退出 \fBttymon\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR\fItermtype\fR\fR
+.ad
+.RS 14n
+.rt  
+将 \fBTERM\fR 环境变量设置为 \fItermtype\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 14n
+.rt  
+启用详细消息。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR设置系统控制台的终端类型
+.sp
+.LP
+以下示例为系统控制台 \fBttymon\fR 调用设置终端类型 (\fB-T\fR) 选项的值：
+
+.sp
+.in +2
+.nf
+# \fBsvccfg -s svc:/system/console-login:default \e\fR
+	    \fB"setprop ttymon/terminal_type = xterm"\fR
+# \fBsvcadm refresh svc:/system/console-login:default\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR为增加的串行设备创建服务实例
+.sp
+.LP
+在此示例中，用户希望配置一个额外的 \fBsvc:/system/console-login\fR 服务实例，以便在通过 USB 串行适配器连接的终端上提供登录服务。假定存在的 USB 串行端口为 \fB/dev/term/1\fR，用户计划将一个 \fBvt100\fR 终端连接到该端口上。在这种情况下，可以将服务实例命名为 \fBterm1\fR（或任何其他名称）并进行如下定义：
+
+.sp
+.in +2
+.nf
+# \fBsvccfg -s svc:/system/console-login "add term1"\fR
+# \fBSVC=svc:/system/console-login:term1\fR
+# \fBsvccfg -s $SVC "addpg ttymon application"\fR
+# \fBsvccfg -s $SVC "setprop ttymon/device = /dev/term/1"\fR
+# \fBsvccfg -s $SVC "setprop ttymon/terminal_type = vt100"\fR
+# \fBsvcadm refresh $SVC\fR
+# \fBsvcadm enable $SVC\fR
+.fi
+.in -2
+.sp
+
+.SH 环境变量
+.sp
+.LP
+如果任何 \fBLC_*\fR 变量，即 \fBLC_CTYPE\fR、\fBLC_MESSAGES\fR、\fBLC_TIME\fR、\fBLC_COLLATE\fR、\fBLC_NUMERIC\fR 和 \fBLC_MONETARY\fR（请参见 \fBenviron\fR(5)）未在此环境中进行设置，则每个对应语言环境类别的 \fBttymon\fR 的操作行为由 \fBLANG\fR 环境变量的值确定。如果设置了 \fBLC_ALL\fR，则会使用其内容覆盖 \fBLANG\fR 和其他 \fBLC_*\fR 变量。如果未在环境中设置以上任何变量，\fBttymon\fR 的行为方式将取决于 “C”（美国样式）语言环境。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_CTYPE\fR\fR
+.ad
+.RS 12n
+.rt  
+确定 \fBttymon\fR 如何处理字符。\fBLC_CTYPE\fR 设置为有效值时，\fBttymon\fR 可以显示和处理包含适用于该语言环境的有效字符的文本和文件名。\fBttymon\fR 可以显示和处理扩展 Unix 代码 (Extended Unix Code, EUC) 字符，其中任何单个字符的宽度可以为 1、2 或 3 个字节。\fBttymon\fR 也可以处理宽度为 1、2 或更多列的 EUC 字符。在 “C” 语言环境中，只有 ISO 8859-1 中的字符有效。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/logindevperm\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含 \fBlogin\fR(1) 和 \fBttymon\fR 用于在登录或退出控制台设备时更改设备的所有者、组以及权限的信息。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBsvcs\fR(1)、\fBct\fR(1C)、\fBcu\fR(1C)、\fBautopush\fR(1M)、\fBsttydefs\fR(1M)、\fBsvcadm\fR(1M)、\fBsvccfg\fR(1M)、\fBuucico\fR(1M)、\fBvtdaemon\fR(1M)、\fBpam\fR(3PAM)、\fBlogindevperm\fR(4)、\fBpam.conf\fR(4)、\fButmpx\fR(4)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBpam_authtok_check\fR(5)、\fBpam_authtok_get\fR(5)、\fBpam_authtok_store\fR(5)、\fBpam_dhkeys\fR(5)、\fBpam_passwd_auth\fR(5)、\fBpam_unix_account\fR(5)、\fBpam_unix_auth\fR(5)、\fBpam_unix_session\fR(5)、\fBsmf\fR(5)
+.sp
+.LP
+\fIIntroduction to Oracle Solaris 11.3                 Administration\fR
+.SH 附注
+.SS "服务访问工具（SAF 和 SAC）"
+.sp
+.LP
+\fBttymon\fR 以前是服务访问工具的一个组件，由 \fBsac\fR（服务访问控制器）调用。此 Solaris 发行版已经删除了该工具，并对相关部分执行了到 SMF 的转换。
+.SS "端口竞争"
+.sp
+.LP
+如果某个端口由多个 \fBttymon\fR 监视，则 \fBttymon\fR 可能会以竞争输入的方式发出提示消息。
+.sp
+.LP
+有可能出现两个 \fBsvc:/system/console-login\fR 服务实例引用同一个底层设备的情况。例如，如果系统的硬件控制台（通过固件中的设置或自动检测）连接到串行端口 A，则 \fBsvc:/system/console-login:default\fR 和 \fBsvc:/system/console-login:terma\fR 服务将引用同一个底层硬件设备。在定义或启用额外的服务实例时应小心避免这种情况，否则两个 \fBttymon\fR 将竞争输入。

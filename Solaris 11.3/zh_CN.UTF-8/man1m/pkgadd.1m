@@ -1,0 +1,575 @@
+'\" te
+.\" Copyright (c) 2007, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1989 AT&T
+.TH pkgadd 1M "2011 年 11 月 18 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+pkgadd \- 将软件包传输到系统
+.SH 用法概要
+.LP
+.nf
+\fBpkgadd\fR [\fB-nv\fR] [\fB-a\fR \fIadmin\fR] [\fB-G\fR] [\fB-x\fR \fIproxy\fR] 
+     [ [\fB-M\fR] \fB-R\fR \fIroot_path\fR] [\fB-r\fR \fIresponse\fR] [\fB-k\fR \fIkeystore\fR] 
+     [\fB-P\fR \fIpasswd\fR] [\fB-V\fR \fIfs_file\fR] 
+     [\fB-d\fR \fIdevice\fR | \fB-d\fR \fIdatastream\fR \fIpkginst\fR | all] 
+     [\fIpkginst\fR | \fB-Y\fR \fIcategory\fR [\fI, category\fR]...]
+.fi
+
+.LP
+.nf
+\fBpkgadd\fR \fB-s\fR [\fB-d\fR \fIdevice\fR | \fB-d\fR \fIdatastream\fR \fIpkginst\fR | all] 
+     [\fIpkginst\fR | \fB-Y\fR \fIcategory\fR [\fI, category\fR]...]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBpkgadd\fR 传输分发介质或目录中的软件包的内容，以便将该软件包安装到系统上。未使用 \fB-d\fR \fIdevice\fR 源说明符时，\fBpkgadd\fR 将在缺省假脱机目录 (\fB/var/spool/pkg\fR) 中查找软件包。使用 \fB-s\fR 选项时，该命令会将软件包写入假脱机目录而不安装该软件包。
+.sp
+.LP
+\fBpkgadd\fR 实用程序需要一定量的临时空间，其大小为要安装的软件包大小。\fBpkgadd\fR 通过检查是否存在 \fB$TMPDIR\fR 环境变量来确定要使用的临时目录。如果未定义 \fB$TMPDIR\fR，\fBpkgadd\fR 将使用 \fBstdio.h\fR 中的 \fBP_tmpdir\fR。\fBP_tmpdir\fR 的缺省值为 \fB/var/tmp/\fR。
+.sp
+.LP
+某些非随附软件包和第三方软件包不再与 \fBpkgadd\fR 的最新版本完全兼容。这些软件包在整个安装过程中都需要用户交互而不只是在开始阶段需要这样做，或者需要以 root 用户身份运行其请求脚本。
+.sp
+.LP
+要安装这些较早的软件包（在 Solaris 2.4 之前发行），请设置以下环境变量：\fBNONABI_SCRIPTS=TRUE\fR
+.sp
+.LP
+只要设置了此环境变量，\fBpkgadd\fR 即允许在整个安装过程中进行键盘交互，并且软件包请求脚本以 \fBroot\fR 用户身份运行。
+.sp
+.LP
+如果您的软件包请求脚本要求以 \fBroot\fR 用户（而不是 \fBnoaccess\fR [缺省] 或 \fBinstall\fR 用户）身份运行，请在 \fBadmin\fR(4) 文件中使用 \fBrscript_alt\fR 参数做出适当的选择。请参见 \fBadmin\fR(4)。
+.sp
+.LP
+请注意，在 Solaris 8 和 Solaris 9 中，运行请求脚本的缺省用户为 \fBroot\fR 或 \fBnobody\fR，具体取决于操作系统的修补程序级别。在当前发行版中，缺省用户为 \fBnoaccess\fR。
+.sp
+.LP
+软件包命令可识别 \fBlargefile\fR(5)。它们处理大于 2 GB 的文件的方法与处理较小文件的方法相同。在当前实现中，\fBpkgadd\fR、\fBpkgtrans\fR(1) 和其他软件包命令可以处理最大为 4 GB 的数据流。
+.sp
+.LP
+“用法概要”中显示的 \fB-d\fR、\fB-Y\fR 和 \fIpkginst\fR 参数将在“选项”后的“操作数”部分中介绍。
+.SH 选项
+.sp
+.LP
+受支持的选项如下所述。\fB-d\fR \fIdevice\fR 源说明符将在下文中的“操作数”部分介绍。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-a\fR \fIadmin\fR\fR
+.ad
+.sp .6
+.RS 4n
+定义安装管理文件 \fIadmin\fR，该文件用来替代缺省的管理文件。标记 \fBnone\fR 将覆盖使用的任何 \fIadmin\fR 文件，因此将强制与用户进行交互。除非提供了全路径名，否则 \fBpkgadd\fR 将首先在当前工作目录中查找管理文件。如果当前工作目录中不存在指定的管理文件，\fBpkgadd\fR 将在 \fB/var/sadm/install/admin\fR 目录中查找该管理文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-G\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项已过时。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR \fIkeystore\fR\fR
+.ad
+.sp .6
+.RS 4n
+验证软件包中发现的数字签名时，使用 \fIkeystore\fR 作为获取可信证书颁发机构证书的位置。如果未指定密钥库，将在缺省的密钥库位置搜索有效的可信证书。有关更多信息，请参见“密钥库位置”\fB\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR\fR
+.ad
+.sp .6
+.RS 4n
+指示 \fBpkgadd\fR 不使用 \fB$\fR\fIroot_path\fR\fB/etc/vfstab\fR 文件来确定客户机的挂载点。此选项假设服务器上的挂载点正确，并且其行为方式与 Solaris 2.5 和早期发行版一致。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+以非交互模式进行安装。不输出已安装文件列表。缺省模式是交互模式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIpasswd\fR\fR
+.ad
+.sp .6
+.RS 4n
+该口令用于在需要时解密使用 \fB-k\fR 指定的密钥库。有关此选项参数格式的更多信息，请参见“传递密码短语参数”\fB\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-r\fR \fIresponse\fR\fR
+.ad
+.sp .6
+.RS 4n
+标识包含之前的 \fBpkgask\fR(1M) 会话输出的文件或目录。在交互模式下，此文件可提供软件包请求的交互响应。\fIresponse\fR 必须是全路径名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIroot_path\fR\fR
+.ad
+.sp .6
+.RS 4n
+定义要用作 \fIroot_path\fR 的目录的全路径名。所有文件，包括软件包系统信息文件，都重定位到指定的 \fIroot_path\fR 下开始的目录树。从服务器安装到客户机时，可以指定 \fIroot_path\fR（例如 \fB/export/root/client1\fR）。
+.LP
+注 - 
+.sp
+.RS 2
+不得使用 \fB-R\fR 选项引用任何非全局区域的根文件系统。否则，可能会损坏全局区域的文件系统，危及全局区域的安全性，或者损坏非全局区域的文件系统。请参见 \fBzones\fR(5)。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-s\fR \fIspool\fR\fR
+.ad
+.sp .6
+.RS 4n
+将软件包写入 \fIspool\fR 目录而不安装该软件包。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+跟踪 \fBpkgadd\fR 已执行的所有脚本（位于 \fIpkginst\fR\fB/install\fR 目录中）。此选项用于调试过程脚本和非过程脚本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR \fIfs_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定备用 \fIfs_file\fR 以映射客户机的文件系统。例如，在 \fB$\fR\fIroot_path\fR\fB/etc/vfstab\fR 文件不存在或不可靠的情况下使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fIproxy\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定下载软件包时要使用的 HTTP[S] 代理。代理的格式为 \fIhost\fR:\fIport\fR，其中 \fIhost\fR 是 HTTP[S] 代理的主机名，\fIport\fR 是与该代理关联的端口号。此切换项将覆盖用于指定代理的其他所有方法。有关指定缺省代理的其他方法的更多信息，请参见“环境变量”。
+.RE
+
+.sp
+.LP
+如果执行时未使用选项或操作数，\fBpkgadd\fR 将使用 \fB/var/spool/pkg\fR（缺省假脱机目录）。
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.SS "源"
+.sp
+.LP
+缺省情况下，pkgadd 搜索要安装或假脱机的软件包的实例时，会在 \fB/var/spool/pkg\fR 目录中进行查找。或者，可以使用以下方式指定要安装或假脱机的软件包实例的源：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdevice\fR\fR
+.ad
+.br
+.na
+\fB\fB-d\fR \fIdatastream\fR \fIpkgname\fR,... | \fBall\fR\fR
+.ad
+.sp .6
+.RS 4n
+安装或复制 \fIdevice\fR 中的软件包。\fIdevice\fR 可以是以下任一项：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+目录的全路径名或者磁带或可移除介质的标识符（例如 \fB/var/tmp\fR）。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBpkgtrans\fR 所创建的数据流（请参见 \fBpkgtrans\fR(1)）。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+指向 \fBpkgtrans\fR 所创建的数据流的 URL。受支持的通用资源标识符 (Universal Resource Identifier, URI) 为 \fBhttp:\fR 和 \fBhttps:\fR。
+.RE
+上述 \fB-d\fR 说明符的第二种形式指示了在指定数据流时要使用的语法。在这种情况下，必须指定软件包名称的逗号分隔列表或关键字 \fBall\fR。
+.RE
+
+.SS "实例"
+.sp
+.LP
+缺省情况下，\fBpkgadd\fR 搜索指定的源，并显示一个交互式菜单供用户选择要安装源上的哪个软件包实例。还可以选择使用以下方式指定要安装的软件包实例：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIpkginst\fR\fR
+.ad
+.sp .6
+.RS 4n
+要安装的软件包实例或实例列表。可使用标记 \fBall\fR 引用源介质上的所有可用软件包。可使用 \fIpkginst\fR\fB\&.*\fR 格式指示某个软件包的所有实例。
+.sp
+星号字符(\fB*\fR) 对于某些 shell 来说是特殊字符，可能需要转义。在 C-Shell 中，星号必须放在单引号 (\fB\&'\fR) 中或者前面加上反斜杠 (\fB\\fR)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Y\fR \fIcategory\fR[,\fIcategory\fR...]\fR
+.ad
+.sp .6
+.RS 4n
+基于存储在软件包的 \fBpkginfo\fR(4) 文件中的 \fBCATEGORY\fR 参数的值安装软件包。将选择源介质上 \fBCATEGORY\fR 与指定类别之一匹配的所有软件包进行安装或假脱机。
+.RE
+
+.SH 密钥库位置
+.sp
+.LP
+\fBpkgadd\fR 等软件包实用程序使用一组可信证书对软件包中发现的签名执行签名验证。如果软件包中未包含任何签名，将跳过签名验证。证书可以来自各种位置。如果指定了 \fB-k\fR \fIkeystore\fR，且 \fIkeystore\fR 是一个目录，则会假定 \fIkeystore\fR 是要使用的证书的基目录。如果 \fIkeystore\fR 是一个文件，则会假定该文件本身包含所有必需的密钥和证书。如果未指定 \fB-k\fR，将使用 \fB/var/sadm/security\fR 作为基目录。
+.sp
+.LP
+在指定的基目录内，搜索的存储位置会因执行搜索的应用程序和要搜索的存储类型而有所不同。将按指定顺序搜索以下目录：
+.RS +4
+.TP
+1.
+\fI<store_dir>\fR/\fI<app_name>\fR/\fI<store_type>\fR
+.RE
+.RS +4
+.TP
+2.
+\fI<store_dir>\fR/\fI<store_type>\fR
+.RE
+.sp
+.LP
+其中，\fI<store_dir>\fR 是由 \fB-k\fR 指定的目录，\fI<app_name>\fR 是执行搜索的应用程序的名称，\fI<store_type>\fR 是 \fBkeystore\fR（适用于私钥）、\fBcertstore\fR（适用于不可信公钥证书）或 \fBtruststore\fR（适用于可信证书颁发机构证书）之一。
+.sp
+.LP
+例如，当使用 \fB-k\fR \fB/export/certs\fR 运行 \fBpkgadd\fR 时，将依次搜索以下位置来查找信任存储：
+.RS +4
+.TP
+1.
+/export/certs/pkgadd/truststore
+.RE
+.RS +4
+.TP
+2.
+/export/certs/truststore
+.RE
+.sp
+.LP
+此搜索顺序允许管理员对大多数应用程序使用一个地址，而对特定的应用程序使用特殊的证书地址。
+.SH 密钥库和证书格式
+.sp
+.LP
+\fBpkgtrans\fR 等软件包管理实用程序需要对一组密钥和证书具有访问权限，以便签署软件包以及（可选）对软件包进行验证。
+.sp
+.LP
+按照“密钥库位置”\fB\fR中指定的搜索模式找到的密钥库文件必须都是自包含的 PKCS#12 格式文件。
+.sp
+.LP
+使用 \fBpkgtrans\fR 签署软件包时，如果 \fBcertstore\fR 具有多个公钥证书，则每个公钥都必须具有 \fBfriendlyName\fR 属性，以便在签署软件包时使用 \fB-a\fR 选项进行标识和选择。此外，使用 \fB-a\fR 选择的 \fBcertstore\fR 中的公钥证书必须在密钥库中具有关联的私钥。
+.sp
+.LP
+有多个浏览器和实用程序可用于导出证书和密钥以及将其导入 PKCS#12 密钥库中。例如，可以从 Mozilla 中导出可信证书，然后将该证书导入 PKCS#12 密钥库中以供 \fBpkgadd\fR 结合 OpenSSL Toolkit 使用。
+.SH 传递密码短语参数
+.sp
+.LP
+\fBpkgtrans\fR 和 \fBpkgadd\fR 可接受口令参数，通常使用 \fB-p\fR 指定口令。允许从各种源获取口令。这两个选项都将采用单个参数，参数的格式如下所述。如果需要口令但未提供口令参数，系统将提示用户输入一个口令：通常在关闭回显的情况下从当前终端读取口令。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpass:\fIpassword\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+实际口令为 \fIpassword\fR。由于该口令对于 \fBps\fR 等实用程序可见，只应在安全性不是很重要的场合使用此形式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBenv:\fIvar\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+从环境变量 \fIvar\fR 中获取口令。由于其他进程的环境在特定平台上可见，应谨慎使用此选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfile:\fIpathname\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIpathname\fR 中包含的第一行为口令。\fIpathname\fR 不需要引用常规文件，可以引用设备或指定管道等。例如，要从标准输入中读取口令，请使用 \fBfile:/dev/stdin\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconsole\fR\fR
+.ad
+.sp .6
+.RS 4n
+从 \fB/dev/tty\fR 中读取口令。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR安装 Solaris DVD 中的软件包
+.sp
+.LP
+以下示例将安装 Solaris DVD 中的软件包。系统将提示您提供要安装的软件包的名称。
+
+.sp
+.in +2
+.nf
+example# \fBpkgadd -d /cdrom/cdrom0/s0/Solaris_10/Product\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR安装数据流中的一组软件包
+.sp
+.LP
+下面所示的示例命令将安装由 \fB-d\fR 源说明符指定的数据流中的所有软件包。在执行此命令之前，必须已使用 \fBpkgtrans\fR(1) 命令创建了此数据流。
+
+.sp
+.in +2
+.nf
+example# \fBpkgadd -d /var/tmp/datastream all\fR 
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+关键字 \fBall\fR 指明安装指定数据流中的所有软件包。
+
+.SH 退出状态
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功完成
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+致命错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.sp .6
+.RS 4n
+警告。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.sp .6
+.RS 4n
+中断。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR\fR
+.ad
+.sp .6
+.RS 4n
+管理。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB5\fR\fR
+.ad
+.sp .6
+.RS 4n
+管理。需要进行交互。请勿使用 \fBpkgadd\fR \fB-n\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB10\fR\fR
+.ad
+.sp .6
+.RS 4n
+安装所有软件包后重新引导。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB20\fR\fR
+.ad
+.sp .6
+.RS 4n
+安装此软件包后重新引导。
+.RE
+
+.SH 环境变量
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHTTPPROXY\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 HTTP 代理主机。覆盖管理文件设置和 \fBhttp_proxy\fR 环境变量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHTTPPROXYPORT\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定在联系 \fBHTTPPROXY\fR 所指定的主机时要使用的端口。如果未设置 \fBHTTPPROXY\fR，则忽略此项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhttp_proxy\fR\fR
+.ad
+.sp .6
+.RS 4n
+用于指定代理主机和端口的 URL 格式。覆盖管理文件设置。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/sadm/install/logs/\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpkgadd\fR 记录软件安装实例的位置。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性package/svr4
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBpkginfo\fR(1)、\fBpkgmk\fR(1)、\fBpkgparam\fR(1)、\fBpkgproto\fR(1)、\fBpkgtrans\fR(1)、\fBinstallf\fR(1M)、\fBpkgadm\fR(1M)、\fBpkgask\fR(1M)、\fBpkgchk\fR(1M)、\fBpkgrm\fR(1M)、\fBremovef\fR(1M)、\fBadmin\fR(4)、\fBpkginfo\fR(4)、\fBattributes\fR(5)、\fBlargefile\fR(5)、\fBzones\fR(5)
+.sp
+.LP
+\fI《Packaging and Delivering Software With the Image Packaging System in Oracle Solaris 11.3》\fR
+.sp
+.LP
+\fBhttp://www.openssl.org\fR
+.SH 附注
+.sp
+.LP
+将软件包传输到假脱机目录时，无法使用 \fB-r\fR、\fB-n\fR 和 \fB-a\fR 选项。
+.sp
+.LP
+\fB-r\fR 选项可用于指示目录名称和文件名。目录可包含大量响应文件，每个文件都使用应与其关联的软件包的名称。例如，通过调用一次 \fBpkgadd\fR 来添加多个交互式软件包时可以使用目录。在这种情况下，每个软件包都需要一个响应文件。如果使用与软件包相同的名称创建了响应文件（例如 \fBpkinst1\fR 和 \fBpkinst2\fR），请在 \fB-r\fR 后面指定这些文件所在的目录。
+.sp
+.LP
+\fB-n\fR 选项会导致安装停止，可用于需要进行交互来完成安装的情况。
+.sp
+.LP
+如果缺省的 \fIadmin\fR 文件包含过多限制，则可能需要修改该管理文件以允许在安装软件包期间完全不进行交互。有关详细信息，请参见 \fBadmin\fR(4)。
+.sp
+.LP
+如果使用 \fB-d\fR 指定软件包流，并在该流中发现了数字签名，则缺省行为是尝试验证发现的证书和签名。可使用 \fBadmin\fR 文件设置覆盖此行为。有关更多信息，请参见 \fBadmin\fR(4)。

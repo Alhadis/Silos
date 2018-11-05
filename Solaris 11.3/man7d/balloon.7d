@@ -1,0 +1,116 @@
+'\" te
+.\" Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+.TH balloon 7D "30 May 2012" "SunOS 5.11" "Devices"
+.SH NAME
+balloon \- memory ballooning driver
+.SH SYNOPSIS
+.LP
+.nf
+/platform/i86hvm/kernel/drv/amd64/balloon
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBballoon\fR driver is used to adjust current memory reservation for Solaris domU that is running on Xen hypervisor.
+.sp
+.LP
+Xen dom0 controls the balloon module running within Solaris guest, directing it to allocate guest pages and pin them in "physical" memory. The machine pages backing this memory can then be reclaimed by Xen dom0. Inflating the balloon increases memory pressure, forcing Oracle Solaris to invoke its own memory management algorithms. Oracle Solaris may page out to its virtual disk when memory is scarce. Deflating the balloon decreases pressure, freeing guest memory.
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRInflate and deflate memory balloon driver.
+.sp
+.LP
+Inflate memory balloon driver in domU (ID 27), which was assigned 4096MB memory at domain creation.
+
+.sp
+.in +2
+.nf
+[In dom0]
+#xm mem-set 27 2048
+#xm list
+Name       ID     Mem       VCPUs      State       Time(s)
+Domain-0   0     1798        16        r-----      74838.9
+domU       27    2048        2         -b----      416.8
+
+[In domU]
+#echo "::memstat" | mdb -k
+               Page Summary    Pages MB        %Tot
+------------ ---------------- ---------------- ----
+Kernel          143185          559            14%
+ZFS File Data   2720            10              0%
+Anon            31720           123             3%
+Exec and libs   1524            5               0%
+Page cache      5284            20              1%
+Free (cachelist) 3207           12              0%
+Free (freelist) 333575          1303           32%
+Balloon         524191          2047           50%
+
+Total 1045406 4083
+Physical 1045405 4083
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Deflate memory balloon driver in domU (ID 27).
+
+.sp
+.in +2
+.nf
+[In dom0]
+#xm mem-set 27 4096
+#xm list
+Name        ID    Mem       VCPUs       State        Time(s)
+Domain-0    0    1798        16         r-----       74842.8
+domU        27   4096        2          r-----       421.2
+
+[In domU]
+#echo "::memstat" | mdb -k
+               Page Summary       Pages MB     %Tot
+------------ ---------------- ---------------- ----
+Kernel           143190             559         14%
+ZFS File Data    2752               10           0%
+Anon             31721              123          3%
+Exec and libs    1525               5            0%
+Page cache       5208               20           0%
+Free (cachelist) 3283               12           0%
+Free (freelist)  857727             3350        82%
+Balloon          0                  0            0%
+
+Total 1045406 4083
+Physical 1045405 4083
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Currently, the balloon driver only supports adjusting memory reservation within the maximum memory size assigned at domU creation. It is (0,4096] in the above example.
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Architecturex86
+_
+Availabilitydriver/driver-xvm-pv
+_
+Interface StabilityUncommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBattributes\fR(5)

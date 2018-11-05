@@ -1,0 +1,372 @@
+'\" te
+.\" To view license terms, attribution, and copyright for IP Filter, the default path is /usr/lib/ipf/IPFILTER.LICENCE. If the Solaris operating environment has been installed anywhere other than the default, modify the given path to access the file at the installed location.
+.\" Copyright (c) 2008, 2012, Oracle and/or its affiliates. All rights reserved.
+.TH ipmon 1M "2012 年 5 月 15 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+ipmon \- /dev/ipl に記録されたパケットの監視
+.SH 形式
+.LP
+.nf
+\fBipmon\fR [\fB-abDFhnpstvxX\fR] [\fB-N\fR \fIdevice\fR] [ [o] [NSI]] [\fB-O\fR [NSI]] 
+     [\fB-P\fR \fIpidfile\fR] [\fB-S\fR \fIdevice\fR] [\fB-f\fR \fIdevice\fR] [\fIfilename\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBipmon\fR コマンドは、Solaris IP フィルタ機能に関連するコマンド群の 1 つです。\fBipfilter\fR(5) を参照してください。
+.sp
+.LP
+\fBipmon\fR コマンドは、\fB/dev/ipl\fR を読み取り用に開き、パケットフィルタから保存されるデータを待機します。デバイスから読み取られたバイナリデータは、人間が読める形式で出力されます。ただし、IP アドレスはホスト名にマップされず、ポートもサービス名にマップされません。出力は、標準出力 (デフォルト) またはファイル名 (コマンド行で指定された場合) に送られます。\fB-s\fR オプションが使用された場合、出力は代わりに \fBsyslogd\fR(1M) に送られます。\fBsyslog\fR を使用して送られるメッセージは、年月日が削除されますが、ログに記録された時間 (マイクロ秒を含む) は含まれたままです。
+.sp
+.LP
+\fBipmon\fR によって生成されるメッセージは、スペース区切りのフィールドで構成されます。すべてのメッセージに共通するフィールドは、次のとおりです。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+パケットの受信日。これは、メッセージが \fBsyslog\fR に送られたときに抑制されます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+パケットの受信時間。これは、時、分、秒、および秒の端数 (数桁になる可能性がある) を表す \fIHH\fR:\fIMM\fR:\fISS\fR.\fIF\fR という形式です。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+パケットが処理されたインタフェースの名前 (たとえば、\fBib1\fR)。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ルールのグループとルール番号 (たとえば、\fB@0:17\fR)。これらは、\fBipfstat\fR \fB-in\fR (入力ルールの場合) または \fBipfstat\fR \fB-out\fR (出力ルールの場合) を使用して表示できます。\fBipfstat\fR(1M) を参照してください。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+アクション。\fBp\fR は通過、\fBb\fR はブロック、\fBs\fR は短いパケット、\fBn\fR はすべてのルールに不一致、\fBL\fR はログルールを表します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+アドレス。これは、実際には発信元のアドレスとポート (コンマ区切り)、->記号、および着信先のアドレスとポートの 3 つのフィールドです。例: \fB209.53.17.22,80 -> 198.73.220.17,1722\fR。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBPR\fR とそれに続くプロトコル名または番号 (たとえば、\fBPR tcp\fR)。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBlen\fR とそれに続くヘッダー長およびパケットの合計長 (たとえば、\fBlen 20 40\fR)。
+.RE
+.sp
+.LP
+パケットが TCP パケットである場合は、先頭がハイフンで、そのあとに設定されたフラグに対応する文字が続くフィールドが追加されます。文字とそれらのフラグの一覧については、\fBipf.conf\fR(4) を参照してください。
+.sp
+.LP
+パケットが ICMP パケットである場合は、2 つのフィールド (最初が常に \fBicmp\fR、次がスラッシュで区切られた ICMP メッセージおよびサブメッセージタイプ) が末尾に追加されます。たとえば、ポート到達不能メッセージの場合は \fBicmp 3/3\fR です。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+ログエントリを読み取るためにデバイスのログファイルをすべて開きます。すべてのエントリが同じ出力デバイス (stderr または syslog) に表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.sp .6
+.RS 4n
+パケットの本体を記録するルールについて、ヘッダーのあとにパケットの内容を表す 16 進出力が生成されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBipmon\fR がデーモンになるようにします。サブシェルやバックグラウンド処理を使用しなくても、\fBipmon\fR を孤立したプロセスにして、無期限に実行できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIdevice\fR\fR
+.ad
+.sp .6
+.RS 4n
+通常の IP フィルタログレコードに関するログ情報の読み取り元となる代替デバイス/ファイルを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fR
+.ad
+.sp .6
+.RS 4n
+現在のパケットログバッファーをフラッシュします。フラッシュされたバイト数が表示されます (結果がゼロの場合を含む)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用法に関する情報を表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+IP アドレスとポート番号がホスト名とサービス名にマップされます (可能な場合)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR \fIdevice\fR\fR
+.ad
+.sp .6
+.RS 4n
+NAT ログレコードを読み取るために開かれるログファイルの入力元または出力先を \fIdevice\fR に設定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIletter\fR\fR
+.ad
+.sp .6
+.RS 4n
+実際にデータを読み取るログファイルを指定します。\fBN\fR は NAT ログファイル、\fBS\fR は状態ログファイル、\fBI\fR は通常の IP フィルタログファイルです。\fB-a\fR オプションは、\fB-o\fR \fBNSI\fR を使用することと同等です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-O\fR \fIletter\fR\fR
+.ad
+.sp .6
+.RS 4n
+読み取らないログファイルを指定します。これは、通常 \fB-a\fR と組み合わせて使用します。パラメータとして使用できる文字は、\fB-o\fR の場合と同じです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+ログメッセージ内のポート番号を常に番号として出力し、検索を試行しないようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIpidfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBipmon\fR プロセスの PD をファイルに書き込みます。デフォルトでは、これは \fB/var/run/ipmon.pid\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.sp .6
+.RS 4n
+読み取られたパケット情報は、ファイルに保存されずに \fBsyslogd\fR を介して送られます。コンパイルおよびインストール時のデフォルト機能は \fBlocal0\fR です。次のレベルが使用されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLOG_INFO\fR\fR
+.ad
+.sp .6
+.RS 4n
+アクションとして \fBpass\fR または \fBblock\fR ではなく \fBlog\fR キーワードを使用して記録されたパケット。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLOG_NOTICE\fR\fR
+.ad
+.sp .6
+.RS 4n
+通過したことが記録されたパケット。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLOG_WARNING\fR\fR
+.ad
+.sp .6
+.RS 4n
+ブロックされたことが記録されたパケット。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLOG_ERR\fR\fR
+.ad
+.sp .6
+.RS 4n
+記録され、「短い」とみなすことができるパケット。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR \fIdevice\fR\fR
+.ad
+.sp .6
+.RS 4n
+状態ログレコードを読み取るために開かれるログファイルの入力元または出力先を \fIdevice\fR に設定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+入力ファイル/デバイスを、\fBtail\fR(1) と同じ方法で読み取ります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+TCP の \fBwindow\fR、\fBack\fR、および \fBsequence\fR フィールドを表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.sp .6
+.RS 4n
+パケットのデータを 16 進数で表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-X\fR \fR
+.ad
+.sp .6
+.RS 4n
+ログのヘッダーレコードのデータを 16 進数で表示します。
+.RE
+
+.SH ファイル
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/dev/ipl\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/dev/ipnat\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/dev/ipstate\fR
+.RE
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件network/ipfilter
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBipf\fR(1M), \fBipfstat\fR(1M), \fBipnat\fR(1M), \fBattributes\fR(5), \fBipfilter\fR(5)
+.sp
+.LP
+\fI『Managing IP Quality of Service in Oracle Solaris 11.3 』\fR
+.SH 診断
+.sp
+.LP
+\fBipmon\fR は、読み取ったデータが保存時の形式と一致することを予期し、記録されたデータに異常を検出する表明に失敗した場合は異常終了します。

@@ -1,0 +1,175 @@
+'\" te
+.\" Copyright (c) 2004, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH rcapd 1M "2015 年 3 月 20 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+rcapd \- リソース上限適用デーモン
+.SH 形式
+.LP
+.nf
+\fBrcapd\fR [\fB-d\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBrcapd\fR デーモンはプロセスのコレクションにリソース上限を適用します。プロジェクトごとおよびゾーンごとの物理メモリー上限がサポートされています。プロジェクトについては、\fBproject\fR(4) を参照してください。ゾーンについては、\fBzones\fR(5) を参照してください
+.sp
+.LP
+プロセスのコレクションの常駐セットサイズ (RSS) がその上限を超えると、\fBrcapd\fR が作動してそのコレクションの RSS を削減します。
+.sp
+.LP
+仮想メモリーシステムは、物理メモリーをページと呼ばれるセグメントに分割します。ファイルからメモリーにデータを読み込むために、仮想メモリーシステムは個々のページ内を読み取ります。リソース消費を削減するために、デーモンは使用頻度の低いページを物理メモリー外部の領域にページアウト (再配置) できます。
+.sp
+.LP
+\fBproject\fR ファイルでは、次のプロジェクト属性に正の値が設定されているプロジェクトに対して上限が定義されます。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrcap.max-rss\fR\fR
+.ad
+.RS 16n
+.rt  
+プロジェクトのメンバープロセスで使用可能な物理メモリーの合計量 (バイト)。
+.RE
+
+.sp
+.LP
+プロジェクト属性の詳細については、\fBproject\fR(4) を参照してください。
+.sp
+.LP
+1 つ以上のゾーンが存在するシステムの場合、ゾーンの \fBrcap.max-rss\fR 値を \fBrcapadm\fR(1M) で動的に設定できます。ゾーン内のメモリー使用率に永続的な上限を設定するには、\fBzonecfg\fR(1M) を使用します。
+.sp
+.LP
+\fBrcapd\fR の構成には \fBrcapadm\fR(1M) を使用します。\fBrcapstat\fR(1) でデーモンを監視できます。\fBrcapd\fR に \fBSIGHUP\fR (\fBkill\fR(1) を参照) を送信することにより、または構成間隔 (\fBrcapadm\fR(1M) を参照) に従って、構成の変更が取り込まれます。
+.SH オプション
+.sp
+.LP
+次のオプションがサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.RS 6n
+.rt  
+デバッグモードを有効にします。メッセージは呼び出し元のユーザーの端末に表示されます。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fR常駐セットサイズ上限属性を設定する
+.sp
+.LP
+\fB/etc/project\fR データベース内の次の行は、\fBfoo\fR という名前のプロジェクトに 1073741824 バイトの RSS 上限を設定します。
+
+.sp
+.in +2
+.nf
+foo:100::foo,root::rcap.max-rss=10737418240
+.fi
+.in -2
+
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB0\fR
+.ad
+.RS 5n
+.rt  
+正常終了。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB1\fR
+.ad
+.RS 5n
+.rt  
+エラーが発生した。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB2\fR
+.ad
+.RS 5n
+.rt  
+無効なコマンド行オプションが指定されました。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/project\fR\fR
+.ad
+.RS 16n
+.rt  
+プロジェクトデータベース。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/resource-mgmt/resource-caps
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBrcapstat\fR(1), \fBsvcs\fR(1), \fBrcapadm\fR(1M), \fBzonecfg\fR(1M), \fBsvcadm\fR(1M), \fBproject\fR(4), \fBattributes\fR(5), \fBsmf\fR(5), \fBzones\fR(5)
+.sp
+.LP
+\fISolaris コンテナリソース管理と Solaris ゾーンに関するシステム管理ガイド\fRの、リソース上限デーモンによる物理メモリーの制御の項目
+.SH 注意事項
+.sp
+.LP
+シグナルによって \fBrcapd\fR が中断されると、実行中のすべてのスキャンがただちに停止され、\fBrcapd\fR はクリーンな状態で終了します。
+.sp
+.LP
+ページング可能なメモリーが十分ある場合でも、上限が適用される前にコレクションの RSS がその上限をしばらく超えることがあります。\fBrcapadm\fR で RSS のサンプリング間隔を短くすることにより、この期間を短縮できます。
+.sp
+.LP
+コレクションが長時間その rss 上限を超えている場合、\fBrcapd\fR はそのコレクションに対する上限の適用を停止し、適切な上限の設定を推奨するメッセージを記録する場合があります。その後、\fBrcapd\fR はこのコレクションに対する上限の適用を再開します。
+.sp
+.LP
+強制的に \fBrcapd\fR を使用して上限の適用を再開するには、コレクションに適切な上限を設定するか、誤動作しているプロセスを検索し、\fBrcapd\fR を再起動します。
+.sp
+.LP
+\fBrcapd\fR サービスは、サービス管理機構 \fBsmf\fR(5) によって、次のサービス識別子として管理されます。
+.sp
+.in +2
+.nf
+svc:/system/rcap:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有効化、無効化、または再起動要求など、このサービスに関する管理操作は、\fBsvcadm\fR(1M) を使用して実行できます。サービスステータスを照会するには、\fBsvcs\fR(1) コマンドを使用します。

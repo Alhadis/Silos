@@ -1,0 +1,630 @@
+'\" te
+.\" Copyright (c) 2013, Oracle and/or its affiliates.All rights reserved.
+.TH numatop 1M "2013 年 6 月 24 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+numatop \- 用于内存访问定位特性描述和分析的工具。
+.SH 用法概要
+.LP
+.nf
+\fBnumatop\fR [\fB-s\fR \fIsampling_precision\fR]
+        [\fB-l\fR \fIlog_level\fR] [\fB-f\fR \fIlog_file\fR] [\fB-d\fR \fIdump_file\fR] [\fB-h\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+大多数现代系统都使用非统一内存访问 (Non-Uniform Memory Access, NUMA) 设计进行多重处理。在 NUMA 系统中，内存和处理器按以下方式进行组织：内存中的某些部分距离给定处理器较近，而其他部分则距离该处理器较远。处理器访问距离近的内存远快于访问距离远的内存。因此，在 NUMA 计算机中，处理器与内存不同部分之间的访问延迟可能相差很大。
+.sp
+.LP
+\fBnumatop\fR 是一个监测工具，用于对 NUMA 系统上运行的进程和线程的运行时内存定位特性进行描述和分析。它可以帮助用户了解进程和线程的 NUMA 行为特性，并确定与 NUMA 相关的性能瓶颈的位置。该工具可用于：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+了解所有正在运行的进程和线程的定位特性，以确定系统中那些定位性能最差的进程和线程。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+确定“热”内存区域，报告平均内存访问延迟并提供所访问的内存分配到的位置。“热”内存区域是指进程/线程访问最频繁的区域。\fBnumatop\fR 具有一个称为 \fBACCESS%\fR 的度量，其指定每个内存区域的内存访问百分比。
+.LP
+注 - 
+.sp
+.RS 2
+\fBnumatop\fR 仅记录延迟超过预定义阈值的内存访问。
+.RE
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+当进程/线程生成特定计数器事件（例如远程内存访问 (Remote Memory Access, RMA)、本地内存访问 (Local Memory Access, LMA)、撤消指令 (Instruction Retired, IR) 和 CPU 循环 (CYCLE)）时，提供调用链。调用链可帮助用户确定生成这些事件的源代码的位置。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+提供每个节点的内存和 CPU 利用率统计信息。一个节点就是一个内存区域，其中每个字节与每个 CPU 的距离都相等。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+使用一个用户友好界面显示按某些度量排序的进程/线程列表（缺省情况下，按 CPU 利用率进行排序），列表首位的进程在系统中的 CPU 利用率最高，列表末位的进程 CPU 利用率最低。用户还可以使用热键按以下度量对输出进行重新排序：RMA、LMA、RMA/LMA、每条指令的 CPU 周期 (CPU cycle per Instruction, CPI) 和 CPU 利用率 (CPU%)。
+.RE
+.sp
+.LP
+\fBnumatop\fR 是一个 GUI 工具，定期跟踪并分析进程和线程的 NUMA 活动并显示有用的度量。用户可以向上/向下滚动（使用向上键或向下键）在当前窗口中导航，可以使用窗口底部显示的多个热键在多个窗口之间进行切换或更改该工具的运行状态。例如，热键 \fBR\fR 可刷新当前窗口中的数据。
+.sp
+.LP
+该工具支持 Intel Westmere-EX 和 Sandy Bridge-EP 平台。
+.sp
+.LP
+以下是各个显示窗口的详细说明以及 \fBnumatop\fR 显示的数据项：
+.sp
+.ne 2
+.mk
+.na
+\fBWIN1－监视进程和线程\fR
+.ad
+.sp .6
+.RS 4n
+获取所有进程的定位特性。这是启动后的第一个窗口，也是 numatop 的主窗口。此窗口显示一个进程列表。列表首位的进程在系统中的 CPU 利用率 (CPU%) 最高，列表末位的进程 CPU% 最低。通常，占用大量内存的进程也会占用大量 CPU，因此缺省情况下，显示在 WIN1 中的进程按 CPU% 进行排序。用户可以使用热键 \fB1\fR、\fB 2\fR、\fB3\fR、\fB4\fR 或 \fB5\fR 分别按 \fBRMA、LMA、RMA/LMA、CPI\fR 或 \fBCPU%\fR 对输出进行重新排序。
+.sp
+.in +2
+.nf
+[KEY METRICS]: 
+RMA(K): number of Remote Memory Access (unit is 1000).
+RMA(K) = RMA / 1000
+LMA(K): number of Local Memory Access (unit is 1000).
+LMA(K) = LMA / 1000
+RMA/LMA: ratio of RMA / LMA.
+CPI: CPU cycles per instruction.
+CPU%: System CPU utilization (busy time across all CPUs).
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': WIN1 refresh.
+\&'R': Refresh to show the latest data.
+\&'I': Show the normalized data.
+\&'N': Show the per-node statistics
+<Enter>: Switch to WIN3 for the selected process.
+\&'1': Sort by 'RMA'.
+\&'2': Sort by 'LMA'.
+\&'3': Sort by 'RMA/LMA'.
+\&'4': Sort by 'CPI'.
+\&'5': Sort by 'CPU%'
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN2－监视进程和线程（标准化）\fR
+.ad
+.sp .6
+.RS 4n
+获取所有进程的标准化定位特性。
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+RPI(K): RMA normalized by 1000 instructions.
+RPI(K) = RMA / (IR / 1000);
+LPI(K): LMA normalized by 1000 instructions.
+LPI(K) = LMA / (IR / 1000);
+Other metrics remain the same.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+\&'N': Show the per-node statistics.
+<Enter>: Switch to WIN3 for the selected process.
+\&'1': Sort by 'RPI'.
+\&'2': Sort by 'LPI'.
+\&'3': Sort by 'RMA/LMA'.
+\&'4': Sort by 'CPI'.
+\&'5': Sort by 'CPU%'
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN3－监视进程\fR
+.ad
+.sp .6
+.RS 4n
+获取指定进程的定位特性和节点关联。
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+NODE: the node ID.
+	CPU%: per-node CPU utilization.
+	Other metrics remain the same.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+	'N': Show the per-node statistics.
+\&'L': Show the latency information.
+	'C': Show the call-chain.
+	<Enter>: Switch to WIN4 for the specified process.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN4－监视所有线程\fR
+.ad
+.sp .6
+.RS 4n
+获取指定进程中所有线程的定位特性。
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+CPU%: per-CPU CPU utilization
+	Other metrics remain the same.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+	'N': Show the per-node statistics.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN5－监视线程\fR
+.ad
+.sp .6
+.RS 4n
+获取指定线程的定位特性和节点关联。
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+CPU%: per-CPU CPU utilization.
+	Other metrics remain the same.
+        
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+\&'N': Show the per-node statistics.
+\&'L': Show the latency information.
+\&'C': Show the call-chain.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN6－监视内存区域\fR
+.ad
+.sp .6
+.RS 4n
+获取指定进程/线程的内存区域使用情况与相关访问延迟。
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+ADDR: starting address of the memory area.
+SIZE: size of memory area (K/M/G bytes)
+ACCESS%: percentage of memory accesses are to this memory area.
+LAT(ns): the average latency (nanosecond) of memory accesses.
+DESC: description of memory area (from /proc/<pid>/maps).
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+\&'D': Show the memory access node distribution.
+\&'M': Recalculate the address mapping.
+	<Enter>: Show break down the memory area into physical memory on node.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN7－内存访问节点分布概述\fR
+.ad
+.sp .6
+.RS 4n
+获取进程/线程对每个节点的内存访问百分比。
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+NODE: the node ID.
+	ACCESS%: percentage of memory accesses are to this node.
+	LAT(ns): the average latency (nanoseconds) of memory accesses
+         to this node.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+\&'M': Recalculate the address mapping.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN8－将内存区域细分到节点上的物理内存\fR
+.ad
+.sp .6
+.RS 4n
+将内存区域细分到节点上的物理映射，提供进程/线程的物理内存使用情况与相关访问延迟。
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+NODE: the node ID.
+	Other metrics remain the same.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+\&'M': Recalculate the address mapping.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN9－当进程/线程生成指定事件时显示调用链\fR
+.ad
+.sp .6
+.RS 4n
+当进程生成 RMA、LMA、CYCLE 或 IR 时显示调用链。
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+Call-chain list: a list of call-chains.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+	'1': Show the call-chain for RMA
+	'2': Show the call-chain for LMA
+	'3': Show the call-chain for CYCLE
+	'4': Show the call-chain for IR
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN10－节点概述\fR
+.ad
+.sp .6
+.RS 4n
+显示此系统中每个节点的基本统计信息。
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+LG: node id of this node.
+MEM.ALL: total physical memory in this node.
+	MEM.FREE: free physical memory in this node.
+	CPU%: per-node CPU utilization
+	Other metrics remain the same
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window (WIN).
+\&'R': Refresh to show the latest data.
+	<Enter>: Show the information of the specified node.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN11－节点信息\fR
+.ad
+.sp .6
+.RS 4n
+显示指定节点的内存使用情况和 CPU 利用率。
+.sp
+.in +2
+.nf
+CPU: array of logical CPUs which belong to this node.
+	CPU%: per-node CPU utilization
+	Other metrics remain the same.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+.fi
+.in -2
+
+.RE
+
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIsampling_precision\fR\fR
+.ad
+.RS 25n
+.rt  
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnormal\fR\fR
+.ad
+.RS 10n
+.rt  
+在精度和开销之间取得平衡（缺省）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhigh\fR\fR
+.ad
+.RS 10n
+.rt  
+高抽样精度（高开销）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlow\fR\fR
+.ad
+.RS 10n
+.rt  
+低抽样精度，适用于高负载系统
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIlog_level\fR\fR
+.ad
+.RS 25n
+.rt  
+指定日志文件中的日志记录的级别。有效值为：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+None（缺省）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+Unknown（保留）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+All
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIlog_file\fR\fR
+.ad
+.RS 25n
+.rt  
+指定输出将写入的日志文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdump_file\fR\fR
+.ad
+.RS 25n
+.rt  
+指定要将屏幕数据写入到的转储文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.RS 25n
+.rt  
+显示命令的用法。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR使用缺省行为启动 \fBnumatop\fR
+.sp
+.LP
+以下命令使用受支持选项的缺省值启动该工具：
+
+.sp
+.in +2
+.nf
+# \fBnumatop\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR使用高抽样精度启动 \fBnumatop\fR
+.sp
+.LP
+以下命令使用高抽样精度启动该工具：
+
+.sp
+.in +2
+.nf
+# \fBnumatop -s high\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR指定日志文件
+.sp
+.LP
+以下命令将日志文件设置为 \fB/tmp/numatop.log\fR 并将所有警告消息转储到该文件中。
+
+.sp
+.in +2
+.nf
+# \fBnumatop -l 2 -o /tmp/numatop.log\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR指定转储文件
+.sp
+.LP
+以下命令将转储文件设置为 \fB/tmp/dump.log\fR 并将所有屏幕数据转储到该文件中。 
+
+.sp
+.in +2
+.nf
+# \fBnumatop -d /tmp/dump.log\fR
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB0\fR
+.ad
+.RS 13n
+.rt  
+操作成功。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB其他值\fR
+.ad
+.RS 13n
+.rt  
+出现错误。
+.RE
+
+.SH 用法
+.sp
+.LP
+要运行 \fBnumatop\fR，必须具有 root 特权。
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+体系结构x86
+_
+可用性diagnostic/numatop
+_
+接口稳定性Committed（已确定）
+.TE
+

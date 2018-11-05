@@ -1,0 +1,510 @@
+'\" te
+.\" Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\" Copyright 1989 AT&T
+.\" Portions Copyright (c) 1995, 2011, Oracle and/or its affiliates.All rights reserved.
+.\"  Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH dd 1M "1996 年 9 月 16 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+dd \- 转换和复制文件
+.SH 用法概要
+.LP
+.nf
+\fB/usr/bin/dd\fR [\fIoperand=value\fR]...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBdd\fR 实用程序将指定的输入文件复制到指定的输出并进行可能的转换。缺省情况下使用标准输入和输出。可以指定输入和输出块大小来利用原始物理 I/O。以字节为单位指定大小：数值可以用 \fBk\fR、\fBb\fR 或 \fBw\fR 结尾来指定分别乘以 1024、512 或 2。数值还可以使用 \fBx\fR 分隔来指示相乘。
+.sp
+.LP
+\fBdd\fR 实用程序使用指定的输入块大小一次读取一个输入块。然后，\fBdd\fR 处理实际返回的数据块，该块可能小于请求的块大小。\fBdd\fR 应用已经指定的任何转换并以指定的输出块大小将结果数据写入输出。
+.sp
+.LP
+仅当指定 \fBascii\fR、\fBasciib\fR、\fBunblock\fR、\fBebcdic\fR、\fBebcdicb\fR、\fBibm\fR、\fBibmb\fR 或 \fBblock\fR 转换时才使用 \fBcbs\fR。在前两种情况下，\fBcbs\fR 字符将复制到转换缓冲区中，执行指定的所有字符映射，截断结尾空白，并在将行发送到输出之前添加\fB换行符\fR。在最后三种情况下，将\fB换行符\fR之前的字符读取到转换缓冲区中并添加空白来构成 \fBcbs\fR 大小的输出记录。假定 \fBASCII\fR 文件包含\fB换行\fR符。如果 \fBcbs\fR 未指定或者为 \fB0\fR，\fBascii\fR、\fB asciib\fR、\fBebcdic\fR、\fBebcdicb\fR、\fBibm\fR 和 \fBibmb\fR 选项可以转换字符集，而不更改输入文件的块结构。\fBunblock\fR 和 \fBblock\fR 选项变为简单文件副本。
+.sp
+.LP
+完成后，\fBdd\fR 报告整个和部分输入及输出块数量。
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBif=\fR\fIfile\fR\fR
+.ad
+.RS 28n
+.rt  
+指定输入路径。标准输入是缺省值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBof=\fR\fIfile\fR\fR
+.ad
+.RS 28n
+.rt  
+指定输出路径。标准输出是缺省值。如果未同时指定 \fBseek=\fR\fBexpr\fR 转换，将在复制开始之前截断输出文件（除非指定了 \fBconv=notrunc\fR）。如果指定了 \fBseek=\fR\fBexpr\fR，但未指定 \fBconv=notrunc\fR，复制的作用是在 \fBdd\fR 查找的输出文件中保留块，但是将不保留输出文件的其他部分。（如果查找的大小加上输入文件的大小小于输出文件的先前大小，复制将缩短输出文件。）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBibs=\fR\fIn\fR\fR
+.ad
+.RS 28n
+.rt  
+以 \fIn\fR 字节指定输入块大小（缺省为 \fB512\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBobs=\fR\fIn\fR\fR
+.ad
+.RS 28n
+.rt  
+以 \fIn\fR 字节指定输出块大小（缺省为 \fB512\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbs=\fR\fIn\fR\fR
+.ad
+.RS 28n
+.rt  
+将输入和输出块大小设置为 \fIn\fR 字节，取代 \fBibs=\fR 和 \fBobs=\fR。如果仅指定了 \fBsync\fR、\fBnoerror \fR 和 \fBnotrunc\fR，会将每个输入块作为单个块复制到输出中，而不聚合短块。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcbs=\fR\fIn\fR\fR
+.ad
+.RS 28n
+.rt  
+以字节为单位按 \fIn\fR 指定 \fBblock\fR 和 \fBunblock\fR 的转换块大小（缺省为 \fB0\fR）。如果省略 \fBcbs=\fR 或者为其提供值 \fB0\fR，使用 \fBblock\fR 或 \fBunblock\fR 将产生未指定的结果。
+.sp
+仅当指定 \fBASCII\fR 或 \fBEBCDIC\fR 转换时才使用此选项。对于 \fBascii\fR 和 \fBasciib\fR 操作数，将按照对 \fBunblock\fR 操作数所描述的那样处理输入，但是在删除结尾 \fBSPACE\fR 字符之前，字符将转换为 \fBASCII\fR。对于 \fBebcdic\fR、\fBebcdicb\fR、\fBibm\fR 和 \fBibmb\fR 操作数，将按照对 \fB block\fR 操作数所描述的那样处理输入，但是在添加结尾 \fBSPACE\fR 字符之后，字符将转换为 \fBEBCDIC\fR 或 IBM \fBEBCDIC\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfiles=\fR\fIn\fR\fR
+.ad
+.RS 28n
+.rt  
+在终止之前复制和串联 \fIn\fR 个输入文件（仅在输入是磁带或类似设备时才有意义）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBskip=\fR\fIn\fR\fR
+.ad
+.RS 28n
+.rt  
+在开始复制之前，跳过 \fIn\fR 个输入块（使用指定的输入块大小）。在可查找文件中，实现读取块或者查找这些块。在不可查找文件中，将读取块并且将丢弃数据。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBiseek=\fR\fIn\fR\fR
+.ad
+.RS 28n
+.rt  
+在复制之前，从输入文件的开头查找 \fIn\fR 个块（适用于磁盘文件，其中 \fBskip\fR 会非常慢）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBoseek=\fR\fIn\fR\fR
+.ad
+.RS 28n
+.rt  
+在复制之前，从输出文件的开头查找 \fIn\fR 个块。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBseek=\fR\fIn\fR\fR
+.ad
+.RS 28n
+.rt  
+在开始之前，从输出文件的开头跳过 \fIn\fR 个块（使用指定的输出块大小）。在非可查找文件中，将读取现有块并使用空字节填充从当前文件结尾到指定偏移的空格（如果有）。在可查找文件中，实现按照对非可查找文件所描述的那样查找指定的偏移或者读取块。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcount=\fR\fIn\fR\fR
+.ad
+.RS 28n
+.rt  
+仅复制 \fIn\fR 个输入块。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconv=\fR\fIvalue\fR[\fB,\fR\fIvalue\fR. . . ]\fR
+.ad
+.RS 28n
+.rt  
+其中 \fIvalue\fR 是来自以下列表的逗号分隔的符号：  
+.sp
+.ne 2
+.mk
+.na
+\fB\fBascii\fR\fR
+.ad
+.RS 11n
+.rt  
+将 \fBEBCDIC\fR 转换为 \fBASCII\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBasciib\fR\fR
+.ad
+.RS 11n
+.rt  
+使用 \fBBSD\fR 兼容的字符转换将 \fBEBCDIC\fR 转换为 \fBASCII\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBebcdic\fR\fR
+.ad
+.RS 11n
+.rt  
+将 \fBASCII\fR 转换为 \fBEBCDIC\fR。如果转换固定长度的 \fBASCII\fR 记录而不使用换行符，请预先使用 \fBdd conv=unblock\fR 设置管道。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBebcdicb\fR\fR
+.ad
+.RS 11n
+.rt  
+使用 \fBBSD\fR 兼容的字符转换将 \fBASCII\fR 转换为 \fBEBCDIC\fR。如果转换固定长度的 \fBASCII\fR 记录而不使用\fB换行符\fR，请预先使用 \fBdd conv=unblock\fR 设置管道。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBibm\fR\fR
+.ad
+.RS 11n
+.rt  
+稍微不同的 \fBASCII\fR 到 \fBEBCDIC\fR 映射。如果转换固定长度的 \fBASCII\fR 记录而不使用\fB换行符\fR，请预先使用 \fBdd conv=unblock\fR 设置管道。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBibmb\fR\fR
+.ad
+.RS 11n
+.rt  
+使用 \fBBSD\fR 兼容字符转换的稍微不同的 \fBASCII\fR 到 \fBEBCDIC\fR 映射。如果转换固定长度的 \fBASCII\fR 记录而不使用\fB换行符\fR，请预先使用 \fBdd conv=unblock\fR 设置管道。
+.RE
+
+\fBascii\fR（或 \fBasciib\fR）、\fBebcdic\fR（或 \fBebcdicb\fR）和 \fBibm\fR（或 \fBibmb\fR）值是互斥的。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBblock\fR\fR
+.ad
+.RS 11n
+.rt  
+将输入视为一系列\fB换行符\fR终止或者 \fBEOF\fR 终止的可变长度记录，独立于输入块边界。每个记录将转换为具有由转换块大小指定的固定长度的记录。将从输入文件中删除所有\fB换行\fR符。如果行比其转换块大小短，将向这些行附加 \fBSPACE\fR 字符来填充块。如果行比转换块大小长，将行截断至适合该尺寸的最大字符数。将报告截断的行数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunblock\fR\fR
+.ad
+.RS 11n
+.rt  
+将固定长度记录转换为可变长度。读取等于转换块大小的字节数（如果小于转换块大小，则读取输入中剩余的字节数），删除所有结尾\fB空格\fR字符并附加\fB换行\fR符。
+.RE
+
+\fBblock\fR 和 \fBunblock\fR 值是互斥的。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlcase\fR\fR
+.ad
+.RS 9n
+.rt  
+将 \fBLC_CTYPE\fR 关键字 \fBtolower\fR 指定的大写字符映射到相应的小写字符。此转换将不修改未指定映射的字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBucase\fR\fR
+.ad
+.RS 9n
+.rt  
+将 \fBLC_CTYPE\fR 关键字 \fBtoupper\fR 指定的小写字符映射到相应的大写字符。此转换将不修改未指定映射的字符。
+.RE
+
+\fBlcase\fR 和 \fBucase\fR 符号是互斥的。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBswab\fR\fR
+.ad
+.RS 11n
+.rt  
+交换每对输入字节。如果当前输入记录是奇数字节，将忽略输入记录中的最后一个字节。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoerror\fR\fR
+.ad
+.RS 11n
+.rt  
+发生输入错误时不停止处理。发生输入错误时，将在标准错误上写入诊断消息，后面是当前输入和输出块计数，与在完成时使用的格式相同。如果指定 \fBsync\fR 转换，将使用空字节替换缺少的输入并对其进行正常处理。否则，将在输出中忽略输入块。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnotrunc\fR\fR
+.ad
+.RS 11n
+.rt  
+不截断输出文件。在未通过此 \fBdd\fR 调用明确写入的输出文件中保留块。（另请参见前面的 \fBof=\fR\fIfile\fR 操作数。）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsync\fR\fR
+.ad
+.RS 11n
+.rt  
+通过附加空字节，填充每个输入块以达到 \fBibs=\fR 缓冲区的大小。（如果还指定 \fBblock\fR 或 \fBunblock\fR，则附加 \fBSPACE\fR 字符，而不是空字节。）
+.RE
+
+.RE
+
+.sp
+.LP
+如果将除 \fBconv=\fR 之外的操作数指定多次，将使用最后指定的 \fBoperand=\fR\fIvalue\fR。
+.sp
+.LP
+对于 \fBbs=\fR、\fBcbs=\fR、\fBibs=\fR 和 \fBobs=\fR 操作数，应用程序必须提供以字节为单位指定大小的表达式。表达式 \fBexpr\fR 可以是：
+.RS +4
+.TP
+1.
+正十进制数字
+.RE
+.RS +4
+.TP
+2.
+正十进制数字后跟 \fBk\fR，指定与 1024 相乘
+.RE
+.RS +4
+.TP
+3.
+正十进制数字后跟 \fBb\fR，指定与 512 相乘
+.RE
+.RS +4
+.TP
+4.
+两个或多个正十进制数字（有或没有 \fBk\fR 或 \fBb\fR），由 \fBx\fR 分隔，指定所指示值的乘积。
+.RE
+.sp
+.LP
+将在读取任何输入之前处理所有操作数。
+.SH 用法
+.sp
+.LP
+有关 \fBdd\fR 遇到大于或等于 2 GB（2^31 字节）文件时行为的说明，请参见 \fBlargefile\fR(5)。
+.SH 示例
+.LP
+\fB示例 1 \fR从一个磁带机复制到另一个磁带机
+.sp
+.LP
+以下示例将文件从磁带机 \fB0\fR 复制到磁带机 \fB1\fR，使用通用历史设备命名约定。
+
+.sp
+.in +2
+.nf
+example% \fBdd if=/dev/rmt/0h  of=/dev/rmt/1h\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR从标准输入中删除前 10 个字节
+.sp
+.LP
+以下示例从标准输入中删除前 10 个字节：
+
+.sp
+.in +2
+.nf
+example% \fBdd ibs=10  skip=1\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR将磁带内容读取到 ASCII 文件中
+.sp
+.LP
+本示例将 \fBEBCDIC\fR 磁带内容（每块包含十个 80 字节的 \fBEBCDIC\fR 卡映像）读取到 \fBASCII\fR 文件 \fBx\fR 中：
+
+.sp
+.in +2
+.nf
+example% \fBdd if=/dev/tape of=x ibs=800 cbs=80 conv=ascii,lcase\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR使用 conv=sync 向磁带写入
+.sp
+.LP
+以下示例在向磁带写入时使用 \fBconv=sync\fR：
+
+.sp
+.in +2
+.nf
+example% \fBtar cvf - . | compress | dd obs=1024k of=/dev/rmt/0 conv=sync\fR
+.fi
+.in -2
+.sp
+
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBdd\fR 执行的环境变量 \fBLANG\fR、\fBLC_ALL\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR 和 \fBNLSPATH\fR 的说明，请参见 \fBenviron\fR(5)。
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+已成功复制输入文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。
+.RE
+
+.sp
+.LP
+如果检测到输入错误并且未指定 \fBnoerror\fR 转换，会将任何部分输出块写入输出文件，写入诊断消息并停止复制操作。如果检测到某些其他错误，将写入诊断消息并停止复制操作。
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+_
+标准请参见 \fBstandards\fR(5)。
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBcp\fR(1)、\fBsed\fR(1)、\fBtr\fR(1)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBlargefile\fR(5)、\fBstandards\fR(5)
+.SH 诊断
+.sp
+.ne 2
+.mk
+.na
+\fB\fBf+p records in(out)\fR\fR
+.ad
+.RS 23n
+.rt  
+读取（写入）的完整和部分块数量
+.RE
+
+.SH 附注
+.sp
+.LP
+不要使用 \fBdd\fR 在具有不同块大小的文件系统之间复制文件。
+.sp
+.LP
+使用已分块设备复制文件将导致向文件添加额外空字符来填充最后的块以达到块边界。
+.sp
+.LP
+\fBdd\fR 使用 \fBibs=X\fR 和 \fBobs=Y\fR 操作数从管道读取时，将始终以大小为 Y 的块对输出进行分块。使用 \fBbs=Z\fR 时，输出块将是此时可以从管道读取的任何数据。
+.sp
+.LP
+使用 \fBdd\fR 将文件复制到磁带设备时，文件大小必须是设备扇区大小的倍数（例如 512 KB）。要将任意大小的文件复制到磁带设备，请使用 \fBtar\fR(1) 或 \fBcpio\fR(1)。
+.sp
+.LP
+对于 \fBSIGINT\fR，\fBdd\fR 在退出之前将状态信息写入标准错误。它对所有其他信号执行标准操作。

@@ -1,0 +1,2143 @@
+'\" te
+.\" Copyright (c) 2012, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH fmri 5 "2015 年 2 月 18 日" "SunOS 5.11" "標準、環境、マクロ"
+.SH 名前
+fmri \- 障害管理リソース識別子
+.SH 機能説明
+.sp
+.LP
+サービス管理機能 (\fBsmf\fR(5) を参照)、障害管理デーモン (\fBfmd\fR(1M)、\fBfmadm\fR(1M) を参照)、および Image Packaging System (\fBpkg\fR(5) を参照) などの Oracle Solaris サブシステムは、\fB障害管理リソース識別子\fR (省略形は FMRI) を使用して、それらが管理する各要素を識別します。
+.sp
+.LP
+FMRI はハードウェアリソースとソフトウェアリソースおよび抽象の両方を識別するために使用します。ハードウェアリソースの場合、FMRI は通常実装の詳細であり、コンポーネントに障害があると診断された場合は、それを識別するために使われる FRU (現場交換可能ユニット) の位置ラベルになります。FRU ラベルを使用できない場合、FMRI が使用されます。SMF サービスまたは \fBpkg\fR(5) ソフトウェアパッケージなどのソフトウェア抽象の場合、FMRI (文字列形式のことがある) は管理対象リソースの唯一の名前付けの手段になります (省略形は別として)。
+.sp
+.LP
+すべての FMRI には順守する FMRI スキームの指示と、使用されているその FMRI スキームのバージョンが含まれます。スキームとバージョンが分かったら、FMRI の残りの部分は、その FMRI スキームバージョンの形式的定義に指定されているとおりに解釈されます。\fBsvc\fR、\fB pkg\fR、\fBcpu\fR, \fBhc\fR (ハードウェアコンポーネント)、\fBdev\fR (デバイス)、その他多くのものに対して、スキームが存在します。
+.sp
+.LP
+特定の FMRI スキームの特定のバージョンの公式の定義は、(member-name, data-type, data-semantics) タプルで指定された、順序付けされていない一連の FMRI メンバーとして指定されます。FMRI のインスタンスは一連の (名前、型、値) タプルであり、そこでの名前と型は FMRI 仕様に一致し、指定される値は特定の型の値で、そのスキームとバージョンの公式の FMRI 定義に記述されたセマンティクスに従って派生され、解釈されます。\fBlibfmevent\fR(3LIB) などの Oracle Solaris C ライブラリ API では、FMRI は \fBlibnvpair\fR(3LIB) ライブラリを使用して、\fBnvlists\fR として表されます。
+.sp
+.LP
+コマンド行での対話やコマンド出力など、特定の FMRI インスタンスを文字列として表すとより便利な場合があります。各 FMRI スキームバージョンの仕様には、そのスキームとバージョンの FMRI を、名前と値のペアリストではなく、文字列としてフォーマットするためのルールが含まれ、FMRI 文字列があれば、それらの同じルールを逆に適用して、より公式の FMRI 形式を復元することができます。場合によっては、FMRI の文字列形式では、公式の形式と比較して含める情報量を減らすことができますが、それでも管理目的でリソースを識別するために十分な情報を提供します。FMRI の文字列形式には、通常 FMRI バージョン番号が含まれないため、バージョンは、特定の FMRI 文字列に一致する公式の FMRI から文字列へのフォーマットルールのバージョンとして理解されます。FMRI の文字列形式は、構文モデルとして使用する \fIRFC 2396\fR に記述されている URI とあまり違いません。特に、同じ文字列セット \fB:、;、=、@、/、&、'、$\fR、および \fB,\fR を予約しており、文字列で表示される FMRI メンバー値にこれらの文字がある場合に、同じエスケープエンコード規則が必要です。
+.SS "FMRI メンバー"
+.sp
+.LP
+特定の FMRI スキームの特定のバージョンの公式の定義は、次の順序付けされていないシリーズで指定されます。
+.sp
+.in +2
+.nf
+(member-name, data-type, data-semantics)
+.fi
+.in -2
+
+.sp
+.LP
+タプル、一部は必須で一部はオプションです。公式の定義では文字列形式で FMRI を表示する方法も指定します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmember-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは、次のアルファベットから選ばれた文字で、名前を FMRI メンバーに関連付けます。
+.sp
+.in +2
+.nf
+A-Z
+a-z
+\&'_' (underscore)
+\&'-' (hyphen)
+\&'.' (period)
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdata-type\fR\fR
+.ad
+.sp .6
+.RS 4n
+これはこのメンバーのデータ型を指定します。正式なプリミティブデータ型を次の表に一覧表示し、すべてのプリミティブ型について、正式なデータ型としてその型の配列も定義しています。プリミティブ整数および倍精度浮動小数点データ型は C と同様に定義され、ブール値と文字列プリミティブデータ型を追加しています。
+.sp
+.in +2
+.nf
+Primitive Datatype   Description
+---------------------------------------------
+boolean_value        Values can be 0 or 1
+string               ASCII string
+[u]int8              (Un)signed 8-bit integer
+[u]int16             (Un)signed 16-bit integer
+[u]int32             (Un)signed 32-bit integer
+[u]int64             (Un)signed 64-bit integer
+double               Double precision floating point
+.fi
+.in -2
+
+各プリミティブデータ型について、プリミティブ型の順序付き配列である集約データ型を形成しています。
+.sp
+.in +2
+.nf
+Primitive Datatype    Description
+----------------------------------------------
+boolean_value array   Array of boolean_value
+string array          Array of ASCII strings
+[u]int8 array         Array of (un)signed 8-bit integer
+[u]int16 array        Array of (un)signed 16-bit integer
+[u]int32 array        Array of (un)signed 32-bit integer
+[u]int64 array        Array of (un)signed 64-bit integer
+double array          Array of double
+.fi
+.in -2
+
+追加の集約データ型 \fBnvlist\fR (名前と値のリスト) を定義しています。\fBnvlist\fR は順序付けされていない (\fBlist-member-name, list-member-datatype\fR) のリストで、その中の \fBlist-member-name\fR は上の \fBmember-name\fR と同じアルファベットを使用して、メンバーに名前を付け、\fBlist-member-datatype\fR は任意のプリミティブデータ型または \fBnvlist\fR 自体を含む集約データ型です。\fBnvlist\fR のメンバーを \fBnvpairs\fR (名前と値のペア) と呼んでいます。
+.sp
+\fBnvlist\fR の特殊な型は \fBfmri\fR で、これは下に定義されたいずれかの FMRI スキームバージョンに準拠する \fBnvlist\fR です。
+.sp
+.in +2
+.nf
+Synthetic Datatype    Description
+---------------------------------------------------------
+nvlist                Unordered list of nvpairs
+nvlist array          Array of nvlist
+fmri                  An nvlist that specifies an FMRI
+                      scheme and version and includes other
+                      members so as to be a valid FMRI
+                      in that scheme version.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdata-semantics\fR\fR
+.ad
+.sp .6
+.RS 4n
+FMRI 定義内の特定のメンバーのデータセマンティクスは、そのメンバーの値の解釈方法、つまりそれらの意味を指定します。データセマンティクスは、メンバーが想定できる一連の正式な値を、メンバーのデータ型によって表現可能な値のサブセットに制限できます。
+.RE
+
+.SS "安定性"
+.sp
+.LP
+SMF の \fBsvc\fR など、一部の FMRI スキームは管理者対応ですが、もっとプライベートな実装の詳細であるスキームもあります。それに応じて、一部の FMRI スキームは \fBCommitted\fR インタフェースになり、ほかの定義は \fB Private\fR インタフェースを形成します。\fBattributes\fR(5) を参照してください。すべての \fBPrivate\fR インタフェースと同様に、\fBPrivate\fR FMRI コンポーネントの定義は、いつでも互換性のない変更が行われる可能性があるため、それらのインタフェースを使用したり、プライベート FMRI メンバーの存在や想定されるセマンティクスに依存したりしないでください。
+.sp
+.LP
+下の FMRI スキームの定義では、一連の (\fBmember-name, data-type, data-semantics\fR) を一覧表示し、どのメンバーが必須で、どのメンバーがオプションであるか、および FMRI を文字列形式で表示する場合のルールを示しています。安定性の割り当てに関して、各メンバーに 2 つの安定性レベルが関連付けられます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+(\fBmember-name, data-type\fR) ペアの安定性
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+対応するデータセマンティクスの安定性
+.RE
+.sp
+.LP
+両方の場合のデフォルトは \fBPrivate\fR です。メンバーの両方の側面の安定性が同じ (一般的な例) 場合、安定性レベルを 1 回だけ書いています。それらが違う場合は、メンバー名とデータ型の安定性を最初に書き、次にコンマとデータセマンティクスの安定性レベルを続けています。現在 FMRI で採用されている安定性レベルは \fBCommitted\fR、\fBPrivate\fR、および \fBNot An Interface\fR だけですが、ほかも使用できます。\fBCommitted\fR FMRI コンポーネントのセマンティクスは、その特定のスキームとバージョンに互換性なく変更されません。
+.SS "FMRI スキームおよびバージョンの識別"
+.sp
+.LP
+スキーム名とメジャーバージョンのメンバーを含めるために、すべての FMRI 定義が必要です。名前/データ型とデータセマンティクスの安定性は \fBCommitted\fR であるため、すべての FMRI 定義を次のように始める必要があります。
+.sp
+.in +2
+.nf
+Member Name      Data Type    Stability
+----------------------------------------
+scheme           string       Committed
+version          uint8        Committed
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBscheme\fR\fR
+.ad
+.sp .6
+.RS 4n
+この FMRI スキームに名前を付けます
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBversion\fR\fR
+.ad
+.sp .6
+.RS 4n
+スキームメジャーバージョン
+.RE
+
+.sp
+.LP
+これらと一緒に、特定の FMRI を解釈する一連のルール (下のように) を選択します。さまざまなサブシステム内のリソースの識別を処理するために、少数のスキーム名が定義され、各スキームはバージョン番号 0 から始まってバージョン管理されます。 
+.sp
+.LP
+FMRI の非公式の文字列表現を使用する場合、スキームは常に書き込まれますが、使用されているスキームバージョンは通常含まれません。使用されているバージョンは、特定の FMRI 文字列が、FMRI から文字列への変換ルールに一致している最新のものとして理解されます。
+.SS "FMRI 権限"
+.sp
+.LP
+暗黙的に存在している場合もありますが、さらに必要な FMRI メンバーは \fBauthority\fR です。
+.sp
+.in +2
+.nf
+Member Name   Data Type  Stability
+----------------------------------------
+[authority]   nvlist     Committed, (Varies)
+.fi
+.in -2
+
+.sp
+.LP
+権限情報が FMRI に存在する場合は \fBauthority nvlist\fR によって明示的に、存在しない場合はローカル障害管理ドメインのそれを暗黙的に、すべての FMRI に権限情報が含まれます。権限情報には 2 つの特性があります。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+FMRI のサブジェクトである特定のリソースがあるプラットフォームやホスト名を識別するなどの高レベル権限情報
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+FMRI のサブジェクトである特定のリソースの識別情報を提供するリーフレベル権限情報
+.RE
+.sp
+.LP
+たとえば、ディスクを識別する FMRI には、ディスクが存在するプラットフォーム (ホスト名、製品名、シャーシシリアル) の詳細を示す高レベル権限情報と個々のディスクのパーツ番号、シリアルなどの詳細を示すリーフレベル権限情報が含まれることがあります。
+.sp
+.LP
+残念なことに、一部の FMRI スキームでは、スタンドアロン FMRI メンバーとして、\fBauthority nvlist\fR の外部でリーフレベル権限情報を含めるように発展しており、文字列形式でパスコンポーネントの一部として書かれています。
+.sp
+.LP
+それらの文字列表現では、高レベルとリーフレベルの両方の FMRI 権限情報がコロン (:) で始まります。たとえば、
+.sp
+.in +2
+.nf
+hc://:chassis-serial=12345/<string>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+「:chassis-serial=12345」は文字列で表現された権限メンバーです。
+.sp
+.LP
+高レベル権限には 2 つのバージョンがあります (バージョン 0 とバージョン 1)。それぞれの説明を次に示します。
+.sp
+.LP
+リーフレベル権限メンバーは、後述のスキーム固有のセクションで説明しています。
+.sp
+.LP
+バージョン 0
+.sp
+.in +2
+.nf
+Member Name   Data Type   Stability
+-----------------------------------------------------
+[server-id]   string      Committed, Not an Interface
+[chassis-id]  string      Committed, Not an Interface
+[product-sn]  string      Committed, Not an Interface
+[product-id]  string      Committed, Not an Interface
+[domain-id]   string      Committed, Not an Interface
+[host-id]     string      Committed, Not an Interface
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[server-id]\fR\fR
+.ad
+.sp .6
+.RS 4n
+Fault Manager が実行しているエンティティーのホスト名 (\fBuname\fR \fB-n\fR) 文字列。不変ではありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[chassis-id]\fR\fR
+.ad
+.sp .6
+.RS 4n
+これはリソースが存在するシャーシを識別するシリアル番号です。一部の大規模なシステムでは、複数の個別のシャーシコンポーネントが含まれることがあります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[product-sn]\fR\fR
+.ad
+.sp .6
+.RS 4n
+場合によっては、chassis-id だけではシステムを完全に識別できないことがあります。たとえば、サービス権限が製品シリアル番号に基づいている場合や製品が複数のシャーシ要素で構成されている可能性がある場合などです。不変です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[product-id]\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sun-Fire-X4600 などの製品名文字列。不変です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[domain-id]\fR\fR
+.ad
+.sp .6
+.RS 4n
+この機能をサポートするハードウェアの場合に特定のハードウェアドメインを識別します。不変ではありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[host-id]\fR\fR
+.ad
+.sp .6
+.RS 4n
+Oracle Solaris での \fBhostid\fR(1) 文字列、一般に使用されません。必ずしも不変ではありません。
+.RE
+
+.sp
+.LP
+バージョン 1
+.sp
+.in +2
+.nf
+Member Name     Data Type    Stability
+--------------------------------------------------------
+[system-mfg]      string      Committed, Not an Interface
+[system-name]     string      Committed, Not an Interface
+[system-part]     string      Committed, Not an Interface
+[system-serial]   string      Committed, Not an Interface
+[sys-comp-mfg]    string      Committed, Not an Interface
+[sys-comp-name]   string      Committed, Not an Interface
+[sys-comp-part]   string      Committed, Not an Interface
+[sys-comp-serial] string      Committed, Not an Interface
+[chassis-mfg]     string      Committed, Not an Interface
+[chassis-name]    string      Committed, Not an Interface
+[chassis-part]    string      Committed, Not an Interface
+[chassis-serial]  string      Committed, Not an Interface
+[chassis-alias]   string      Committed, Not an Interface
+[server-name]     string      Committed, Not an Interface
+[domain-name]     string      Committed, Not an Interface
+[host-id]         string      Committed, Not an Interface
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[system-mfg]\fR\fR
+.ad
+.sp .6
+.RS 4n
+最上位レベル製品の製造元。複合製品では、system-* メンバーにサービス権限データが含まれます。単純なスタンドアロンラックシステムでは、system-*、sys-comp-*、および d chassis-* データが重複しています。不変です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[system-name]\fR\fR
+.ad
+.sp .6
+.RS 4n
+最上位レベル製品のモデル名。不変です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[system-part]\fR\fR
+.ad
+.sp .6
+.RS 4n
+最上位レベル製品のパーツ番号。不変です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[system-serial]\fR\fR
+.ad
+.sp .6
+.RS 4n
+最上位レベル製品のシリアル番号。不変です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[sys-comp-mfg]\fR\fR
+.ad
+.sp .6
+.RS 4n
+コンポーネントシステムレベル製品の製造元。不変です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[sys-comp-name]\fR\fR
+.ad
+.sp .6
+.RS 4n
+コンポーネントシステムレベル製品のモデル名。不変です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[sys-comp-part]\fR\fR
+.ad
+.sp .6
+.RS 4n
+コンポーネントシステムレベル製品のパーツ番号。不変です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[sys-comp-serial]\fR\fR
+.ad
+.sp .6
+.RS 4n
+コンポーネントシステムレベル製品のシリアル番号。不変です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[chassis-mfg]\fR\fR
+.ad
+.sp .6
+.RS 4n
+リソースが存在するシャーシの製造元。一部の大規模なシステムでは、複数の個別のシャーシコンポーネントが含まれることがあります。不変です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[chassis-name]\fR\fR
+.ad
+.sp .6
+.RS 4n
+シャーシのモデル名。不変です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[chassis-part]\fR\fR
+.ad
+.sp .6
+.RS 4n
+シャーシのパーツ番号。不変です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[chassis-serial]\fR\fR
+.ad
+.sp .6
+.RS 4n
+シャーシのシリアル番号。不変です。
+.sp
+場合によっては、*-name/*-part/*-serial の単一のセットだけではシステムを完全に識別できないことがあります。たとえば、サービス権限が製品シリアル番号に基づいている場合や製品が複数のシャーシ要素で構成されている可能性がある場合などです。不変です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[chassis-alias]\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは「fmadm add-alias」によってこのシャーシに割り当てられた Chassis Receptacle Occupant の別名値です。不変ではありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[server-name]\fR\fR
+.ad
+.sp .6
+.RS 4n
+Fault Manager が実行しているエンティティーのホスト名 (\fBuname\fR \fB-n\fR) 文字列。不変ではありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[domain-name]\fR\fR
+.ad
+.sp .6
+.RS 4n
+この機能をサポートするハードウェアの場合に特定のハードウェアドメインを識別します。不変ではありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[host-id]\fR\fR
+.ad
+.sp .6
+.RS 4n
+Oracle Solaris での \fBhostid\fR(1) 文字列、一般に使用されません。必ずしも不変ではありません。
+.RE
+
+.SS "論理および汎用 FMRI スキーム"
+.sp
+.LP
+\fB論理\fR FMRI スキームは、それらが生成された障害管理ドメイン (一般に Oracle Solaris インスタンス) 内でのみ意味をもって解釈可能な FMRI を定義します。個別の障害管理ドメインにネイティブな論理スキームの同一の FMRI は、必ずしも同じ実際のリソースを識別するわけではありません。たとえば、\fBcpu\fR スキームを使用して \fBcpu id 1\fR と識別された \fBcpu\fR は、FMRI を生成した Oracle Solaris インスタンス (つまり、そのネイティブコンテキスト) で解釈される必要があり、その他の多くの Oracle Solaris インスタンスも論理プロセッサ ID 番号 \fB1\fR が付けられていますが、それらのすべての FMRI が同じ実際のプロセッサを識別しているわけではありません。ネイティブ障害管理ドメインは、一般に FMRI インスタンスで取得されないが、代わりにローカル Oracle Solaris インスタンスのそれとして理解される、高レベル権限情報によって識別されます。 
+.sp
+.LP
+\fB汎用\fR FMRI スキームは汎用的な一意の方法でリソースを識別し、汎用スキームでの 2 つの同一の FMRI は、それらが解釈されるどこの場所でも、同じ実際のリソースを識別します。それらのスキームは、障害の発生したハードウェアコンポーネントの識別など、あいまいさを避ける必要がある場合に使用します。 
+.sp
+.LP
+FMRI スキームにはスキームが論理か汎用かを示すメンバーが含まれません。
+.SS "FMRI スキームとバージョン"
+.sp
+.LP
+次の FMRI スキームバージョンはあとのセクションで定義しています。
+.sp
+.in +2
+.nf
+Scheme     Version(s) Universal? Description
+-------------------------------------------------------------
+cpu        0, 1       No         Logical processor identification
+dev        0          No         Device resources
+fmd        0, 1       No         Fault Management Daemon modules
+hc         0, 1       Yes        Hardware Components
+mem        0          No         Memory modules and cache
+mod        0          No         Kernel modules
+pkg        0, 1       Yes        Software packages
+svc        0          No         SMF services & service instances
+sw         0          No         Software objects
+zfs        0          No         zfs filesystem resources
+location   0          No         FRU location
+.fi
+.in -2
+
+.sp
+.LP
+これらのうち \fBsvc\fR および \fBpkg\fR スキームは毎日の Oracle Solaris の使用でもっとも目にする可能性のあるもので、残りのものは通常、問題が診断されたときの障害管理サブシステムとのコマンド行の対話に隠されます。
+.SS "SCHEME \fBcpu\fR VERSION 0"
+.sp
+.LP
+\fBcpu\fR スキームは、診断された問題に影響を受ける可能性のある論理 Oracle Solaris プロセッサリソースの識別に使用され、その問題の診断に対応して、オフラインにすることができます。それは必ずしも関係のある物理リソースを識別するわけではないため、交換するパーツを識別するために使用しないでください。
+.sp
+.LP
+\fBcpu\fR スキームは論理 FMRI スキームで、\fBcpu\fR スキームの FMRI は、権限情報によって識別された障害管理ドメイン内でのみ意味があります。
+.sp
+.in +2
+.nf
+Member Name   Data Type    Stability
+------------------------------------
+scheme        string       Committed, value "cpu"
+version       uint8        Committed, value 0
+cpuid         uint32       Committed
+[serial]      uint64       Private
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcpuid\fR\fR
+.ad
+.sp .6
+.RS 4n
+権限情報によって識別された Oracle Solaris インスタンスの \fBpsradm\fR(1M) によって一覧表示される、この論理実行ユニットの Oracle Solaris プロセッサインスタンス ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[serial]\fR\fR
+.ad
+.sp .6
+.RS 4n
+この Private FMRI メンバーのセマンティクスについてはドキュメント化されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB文字列形式:\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+cpu:///cpuid=<cpuid>[/serial=<hex-serial>]
+.fi
+.in -2
+
+\fB<hex-serial>\fR は \fB0x\fR 接頭辞のない 16 進での\fBシリアル\fRメンバーです。
+.RE
+
+.SS "SCHEME \fBcpu\fR VERSION 1"
+.sp
+.LP
+\fBcpu\fR FMRI スキームのバージョン 1 の使用方法はバージョン 0 と同じですが、いくつかの Private FMRI メンバーの変更と追加があります。
+.sp
+.in +2
+.nf
+Member Name   Data Type   Stability
+------------------------------------------------
+scheme        string      Committed, value "cpu"
+version       uint8       Committed, value 1
+cpuid         uint32      Committed
+[serial]      string      Private
+[cpumask]     uint8       Private
+[cpufru]      string      Private
+[cacheindex]  uint32      Private
+[cacheway]    uint32      Private
+[cachebit]    uint16      Private
+[cachetype]   uint8       Private
+
+cpuid
+
+       As per cpu scheme version 0
+
+[serial]
+[cpumask]
+[cpufru]
+[cacheindex]
+[cacheway]
+[cachebit]
+[cachetype]
+.fi
+.in -2
+
+.sp
+.LP
+これらの Private FMRI メンバーのセマンティクスについてはドキュメント化されていません。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB文字列形式:\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+cpu:///cpuid=<cpuid>[/serial=<serial>]
+         [/cacheindex=.../cacheway=.../
+         cachebit=.../cachetype=...]
+.fi
+.in -2
+
+メンバー \fBcpumask\fR および \fBcpufru\fR は文字列形式で表示されません。
+.RE
+
+.SS "SCHEME \fBdev\fR VERSION 0"
+.sp
+.LP
+\fBdev\fR スキームはデバイスを識別するために使用します。これは不変スキームではありません。\fBdev\fR スキームの FMRI は権限情報内で識別された障害管理ドメイン内でのみ解釈するようにしてください。
+.sp
+.in +2
+.nf
+Member Name        Data Type   Stability
+-------------------------------------------------------------------
+scheme             string      Committed, value "dev"
+version            uint8       Committed, value 0
+device-path        string      Committed
+[devid]            string      Private
+[target-port-l0id] string      Private
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdevice-path\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpci@0,0/pci108e,cb84@2,1\fR などのデバイスノードを識別する Oracle Solaris \fB/devices\fR ツリー内のファイルシステムパス。このメンバーが \fB/devices\fR パスを識別するというこの解釈のほかに、それらのパスの内部構造、つまり Oracle Solaris \fB/devices\fR ツリーの構造とノードの名前付けは\fBNot An Interface\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[devid]\fR\fR
+.ad
+.br
+.na
+\fB\fB[target-port-l0id]\fR\fR
+.ad
+.sp .6
+.RS 4n
+これらの \fBPrivate\fR FMRI メンバーのセマンティクスについてはドキュメント化されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB文字列形式:\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+dev:///[:devid=<devid>]
+    [:target-port-l0id=<target-port-l0id>]
+    <device-path>
+.fi
+.in -2
+
+.RE
+
+.SS "SCHEME \fBfmd\fR VERSION 0"
+.sp
+.LP
+このスキームは Oracle Solaris Fault Manager (\fBfmd\fR(1M)) モジュールを識別するために使用されます。
+.sp
+.LP
+高レベル権限:
+.sp
+.in +2
+.nf
+Member Name  Data Type  Stability
+---------------------------------
+[server-id]  string     Committed, Not an Interface
+[chassis-id] string     Committed, Not an Interface
+[product-sn] string     Committed, Not an Interface
+[product-id] string     Committed, Not an Interface
+[domain-id]  string     Committed, Not an Interface
+.fi
+.in -2
+
+.sp
+.LP
+FMRI は、権限 nvlist 内にリーフレベル権限情報が含まれず、代わりに FMRI の最上位レベルメンバーとして特徴付けられます。
+.sp
+.in +2
+.nf
+Member Name  Data Type  Stability
+-----------------------------
+scheme       string     Committed, value "fmd"
+version      uint8      Committed, value 0
+[authority]  nvlist     Committed, See above
+mod-name     string     Committed, Not an Interface
+mod-version  string     Committed, Not an Interface
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmod-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBfmd\fR モジュール名、不透明な文字列。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmod-version\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBfmd\fR モジュールバージョン、不透明な文字列。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB文字列形式:\fR
+.ad
+.sp .6
+.RS 4n
+\fBfmd:///module/mod-name>\fR
+.RE
+
+.SS "SCHEME fmd VERSION 1"
+.sp
+.LP
+このスキームは Oracle Solaris Fault Manager (\fBfmd\fR(1M)) モジュールを識別するために使用されます。
+.sp
+.LP
+高レベル権限:
+.sp
+.in +2
+.nf
+Member Name       Data Type  Stability
+--------------------------------------
+[system-mfg]      string     Committed, Not an Interface
+[system-name]     string     Committed, Not an Interface
+[system-part]     string     Committed, Not an Interface
+[system-serial]   string     Committed, Not an Interface
+[sys-comp-mfg]    string     Committed, Not an Interface
+[sys-comp-name]   string     Committed, Not an Interface
+[sys-comp-part]   string     Committed, Not an Interface
+[sys-comp-serial] string     Committed, Not an Interface
+[server-name]     string     Committed, Not an Interface
+[domain-name]     string     Committed, Not an Interface
+[host-id]         string     Committed, Not an Interface
+.fi
+.in -2
+
+.sp
+.LP
+バージョン 0 と同様に、FMRI は権限 nvlist 内にリーフレベル権限情報が含まれません。代わりに、FMRI の最上位レベルメンバーとして特徴付けられます。
+.sp
+.in +2
+.nf
+Member Name       Data Type  Stability
+--------------------------------------
+scheme            string     Committed, value "fmd"
+version           uint8      Committed, value 1
+[authority]       nvlist     Committed, See above
+mod-name          string     Committed, Not an Interface
+mod-version       string     Committed, Not an Interface
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmod-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBfmd\fR モジュール名、不透明な文字列。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmod-version\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBfmd\fR モジュールバージョン、不透明な文字列。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB文字列形式:\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+fmd:///module/<mod-name>
+.fi
+.in -2
+.sp
+
+.RE
+
+.SS "SCHEME legacy-hc VERSION 0"
+.sp
+.LP
+hc スキームはハードウェアコンポーネントを識別するために使用します。ほとんどの場合、これらの FMRI は内部実装の詳細として残すべきであり、ハードウェアコンポーネントが障害ありと診断された場合に、その FRU または位置ラベルによって、(たとえば \fBfmadm\fR(1M) などで) それが識別されます。
+.sp
+.LP
+使用されている \fBhc\fR スキームのバージョンは 1 つだけ (バージョン 0) ですが、2 つのマイナーバーションをメンバーの名前付きコンポーネントの有無によって識別して、区別しています。コンポーネントメンバーを含む \fBhc\fR スキーム FMRI は廃止されたレガシー \fBhc\fR スキームのインスタンスです。
+.sp
+.LP
+廃止されたレガシー \fBhc\fR バリアント:
+.sp
+.in +2
+.nf
+Member Name  Data Type  Stability
+-------------------------------------------------------------------
+scheme       string      Committed, value "hc"
+version      uint8       Committed, value 0
+component    string      Committed
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcomponent\fR\fR
+.ad
+.sp .6
+.RS 4n
+リソースの FRU ラベル。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBレガシー \fBhc\fR の文字列形式:\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+hc:///component=<component>
+.fi
+.in -2
+.sp
+
+.RE
+
+.SS "SCHEME \fBhc\fR VERSION 0"
+.sp
+.LP
+権限 \fBnvlist\fR は特定の FMRI が生成された障害管理ドメインの識別に関係する高レベル権限情報です。そのため、ホスト名、製品名、シャーシシリアル番号などのメンバーが含まれます。これらのメンバーの一部は不変 (プラットフォームシリアル番号など) であり、特定の要素を識別するために一意に使用され、ほかのメンバー (ホスト名など) は時間とともに変更される可能性がある (めったにありませんが) 柔軟な識別情報です。
+.sp
+.in +2
+.nf
+Member Name   Data Type   Stability
+-----------------------------------------------------
+[server-id]   string      Committed, Not an Interface
+[chassis-id]  string      Committed, Not an Interface
+[product-sn]  string      Committed, Not an Interface
+[product-id]  string      Committed, Not an Interface
+[domain-id]   string      Committed, Not an Interface
+[host-id]     string      Committed, Not an Interface
+.fi
+.in -2
+
+.sp
+.LP
+すべてのメンバーがオプションとして一覧表示されますが、特定の FMRI に意味のある数だけ含めるようにしてください。権限 \fBnvlist\fR が FMRI にない場合、権限はローカル障害管理ドメインとして理解されます。\fBhc\fR スキーム FMRI をそのネイティブドメインの外部に転送する場合は、明示的な高レベル権限情報を含めてください。
+.sp
+.LP
+それぞれのデータセマンティクスの \fBNot an Interface\fR 安定性は、値を不透明な文字列としてのみ処理することができ、文字列の内部構造がインタフェースではないことを意味します。たとえば、シリアル番号は文字列比較を使用して照合できますが、シリアル番号文字列の長さとその中の個々の文字の意味はインタフェースではありません。
+.sp
+.LP
+文字列形式:
+.sp
+.LP
+特定の FMRI に存在するこれらの権限メンバーは、順序付けされていない一連のコロンで区切った \fIname\fR\fB=\fR\fIvalue\fR のペアとして、文字列形式で書き込むことができます。これを \fBauthstr\fR として定義し、デフォルトの権限情報をインポートする下の各 FMRI スキームの文字列形式の仕様で使用しています。
+.sp
+.in +2
+.nf
+authstr = server-id=<server-id>
+                [:chassis-id=<chassis-id>]
+                [:product-sn=<product-sn>]
+                [:product-id=<product-id>]
+                [:domain-id=<domain-id>]
+                [:host-id=<host-id>]
+                [:devid=<devid>]
+.fi
+.in -2
+
+.sp
+.LP
+権限 \fBnvlist\fR には、リーフレベル権限/識別情報が含まれておらず、代わりにそれらの情報 (シリアルおよびパーツ番号) は、FMRI の最上位レベルメンバーとして特徴付けられます。
+.sp
+.in +2
+.nf
+Member Name    Data Type    Stability
+------------------------------------------------------
+scheme         string       Committed, value "hc"
+version        uint8        Committed, value 0
+[authority]    nvlist       Committed, See above
+[serial]       string       Committed, Not-an-Interface
+[devid]        string       Private
+[part]         string       Committed, Not-an-Interface
+[revision]     string       Committed, Not-an-Interface
+[hc-root]      string       Private
+hc-list-sz     uint32       Private
+hc-list        nvlist array Private
+[facility]     nvlist       Private
+[hc-specific]  nvlist       Private
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[serial]\fR\fR
+.ad
+.sp .6
+.RS 4n
+この FMRI で識別されるハードウェアコンポーネントのシリアル番号文字列。これは内部構造がインタフェースでない不透明な文字列です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[devid]\fR\fR
+.ad
+.sp .6
+.RS 4n
+これらの Private FMRI メンバーのセマンティクスについてはドキュメント化されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[part]\fR\fR
+.ad
+.sp .6
+.RS 4n
+この FMRI で識別されるハードウェアコンポーネントのパーツ番号文字列。これは内部構造がインタフェースでない不透明な文字列です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[revision]\fR\fR
+.ad
+.sp .6
+.RS 4n
+文字列としてのパーツ番号のリビジョン。ここでも、これは不透明の文字列です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[hc-root]\fR\fR
+.ad
+.sp .6
+.RS 4n
+この Private FMRI メンバーのセマンティクスについてはドキュメント化されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhc-list-sz\fR\fR
+.ad
+.sp .6
+.RS 4n
+この Private FMRI メンバーのセマンティクスについてはドキュメント化されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhc-list\fR\fR
+.ad
+.sp .6
+.RS 4n
+この Private FMRI メンバーのセマンティクスについてはドキュメント化されていませんが、内容の構造を列挙しています (互換性のない変更が行われることがあります)。(順序付けされた) \fBnvlist\fR 配列の各メンバーは次の構造になります。
+.sp
+.in +2
+.nf
+Member Name    Data Type   Stability
+------------------------------------
+hc-name        string      Private
+hc-id          string      Private
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[facility]\fR\fR
+.ad
+.sp .6
+.RS 4n
+この Private FMRI メンバーのセマンティクスについてはドキュメント化されていませんが、内容の構造を列挙しています (互換性のない変更が行われることがあります)。機能 \fBnvlist\fR には次のメンバーがあります。
+.sp
+.in +2
+.nf
+Member Name    Data Type   Stability
+------------------------------------
+facility-type  string      Private
+facility-name  string      Private
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[hc-specific]\fR\fR
+.ad
+.sp .6
+.RS 4n
+この Private FMRI メンバーのセマンティクスについてはドキュメント化されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB文字列形式:\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+authstr is defined above
+hcauthstr = [:serial=<serial>]
+                 [:devid=<devid>]
+                 [:part=<part>]
+                 [:revision=<revision>]
+
+hc-path =<hc-list[0].hc-name>=<hc-list[0].hc-id>
+               /<hc-list[1].hc-name>=<hc-list[1].hc-id>
+               /<hc-list[2].hc-name>=<hc-list[2].hc-id>
+               ...
+hcspecstr = private string formed from hc-specific nvlist,
+               of the form "/name=value"
+
+facstr = <facility.facility-type>=<facility.facility-name>
+
+hc://[authstr][hcauthstr]/[hc-root/]<hc-path>
+                                     [<hcspecstr>]
+                                     [?<facstr>]
+.fi
+.in -2
+
+権限 nvlist からの高レベル権限情報は、すべてコロン区切りで、シリアル番号とパーツ番号のリーフレベル権限情報の隣に表示されます。この権限文字列のコンポーネントは、高レベル権限要素とリーフ権限要素が交互に配置され、任意の順序で表示されることがあります。そのような文字列の解釈は難しく、どのコンポーネントがどの権限情報のクラスに属しているか前もって知っていることに依存します。
+.RE
+
+.SS "SCHEME hc VERSION 1"
+.sp
+.LP
+hc FMRI スキームのバージョン 1 の使用方法はバージョン 0 と同じですが、いくつかの Private FMRI メンバーの変更と追加があります。
+.sp
+.in +2
+.nf
+Member Name     Data Type    Stability
+--------------------------------------------------------
+[chassis-mfg]     string      Committed, Not an Interface
+[chassis-name]    string      Committed, Not an Interface
+[chassis-part]    string      Committed, Not an Interface
+[chassis-serial]  string      Committed, Not an Interface
+[chassis-alias]   string      Committed, Not an Interface
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB文字列形式:\fR
+.ad
+.sp .6
+.RS 4n
+バージョン 0 と同じセマンティクスが hc FMRI スキームバージョン 1 文字列形式に適用されます。
+.sp
+.in +2
+.nf
+authstr = [:chassis-mfg=<chassis-mfg>]
+                [:chassis-name=<chassis-name>]
+                [:chassis-part=<chassis-part>]
+                [:chassis-serial=<chassis-serial>]
+                [:chassis-alias=<chassis-alias>]
+.fi
+.in -2
+
+.RE
+
+.sp
+.LP
+hc スキームバージョン 0 と同様に、バージョン 1 では、権限 nvlist にリーフレベル権限/識別情報が含まれておらず、代わりにそれらの情報 (シリアル/リビジョン/パーツ番号など) は FMRI の最上位レベルメンバーとして特徴付けられます。
+.sp
+.in +2
+.nf
+Member Name    Data Type    Stability
+------------------------------------------------------
+scheme         string       Committed, value "hc"
+version        uint8        Committed, value 1
+[authority]    nvlist       Committed, See above
+[fru-mfg]      string       Committed, Not-an-Interface
+[fru-serial]   string       Committed, Not-an-Interface
+[fru-part]     string       Committed, Not-an-Interface
+[fru-revision] string       Committed, Not-an-Interface
+[devid]        string       Private
+[hc-root]      string       Private
+hc-list-sz     uint32       Private
+hc-list        nvlist array Private
+[facility]     nvlist       Private
+[hc-specific]  nvlist       Private
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[fru-mfg]\fR\fR
+.ad
+.sp .6
+.RS 4n
+この FMRI で識別されるハードウェアコンポーネントの製造元文字列。これは内部構造がインタフェースでない不透明な文字列です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[fru-serial]\fR\fR
+.ad
+.sp .6
+.RS 4n
+この FMRI で識別されるハードウェアコンポーネントのシリアル番号文字列。これは内部構造がインタフェースでない不透明な文字列です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[fru-part]\fR\fR
+.ad
+.sp .6
+.RS 4n
+この FMRI で識別されるハードウェアコンポーネントのパーツ番号文字列。これは内部構造がインタフェースでない不透明な文字列です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[fru-revision]\fR\fR
+.ad
+.sp .6
+.RS 4n
+文字列としてのパーツ番号のリビジョン。ここでも、これは不透明の文字列です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[devid]\fR\fR
+.ad
+.sp .6
+.RS 4n
+これらの Private FMRI メンバーのセマンティクスについてはドキュメント化されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[hc-root]\fR\fR
+.ad
+.sp .6
+.RS 4n
+この Private FMRI メンバーのセマンティクスについてはドキュメント化されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhc-list-sz\fR\fR
+.ad
+.sp .6
+.RS 4n
+この Private FMRI メンバーのセマンティクスについてはドキュメント化されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhc-list\fR\fR
+.ad
+.sp .6
+.RS 4n
+この Private FMRI メンバーのセマンティクスについてはドキュメント化されていませんが、内容の構造を列挙しています (互換性のない変更が行われることがあります)。(順序付けされた) nvlist 配列の各メンバーは次の構造になります。
+.sp
+.in +2
+.nf
+Member Name    Data Type   Stability
+------------------------------------
+hc-name        string      Private
+hc-id          string      Private
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[facility]\fR\fR
+.ad
+.sp .6
+.RS 4n
+この Private FMRI メンバーのセマンティクスについてはドキュメント化されていませんが、内容の構造を列挙しています (互換性のない変更が行われることがあります)。機能 nvlist には次のメンバーがあります。
+.sp
+.in +2
+.nf
+Member Name    Data Type   Stability
+------------------------------------
+facility-type  string      Private
+facility-name  string      Private
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[hc-specific]\fR\fR
+.ad
+.sp .6
+.RS 4n
+この Private FMRI メンバーのセマンティクスについてはドキュメント化されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB文字列形式:\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+authstr is defined above
+hcauthstr = [:fru-mfg=<fru-mfg>]
+                 [:fru-serial=<fru-serial>]
+                 [:devid=<devid>]
+                 [:fru-part=<fru-part>]
+                 [:fru-revision=<fru-revision>]
+
+hc-path =<hc-list[0].hc-name>=<hc-list[0].hc-id>
+               /<hc-list[1].hc-name>=<hc-list[1].hc-id>
+               /<hc-list[2].hc-name>=<hc-list[2].hc-id>
+               ...
+hcspecstr = private string formed from hc-specific nvlist,
+               of the form "/name=value"
+
+facstr = <facility.facility-type>=<facility.facility-name>
+
+hc://[authstr][hcauthstr]/[hc-root/]<hc-path>
+                                     [<hcspecstr>]
+                                     [?<facstr>]
+.fi
+.in -2
+
+.RE
+
+.sp
+.LP
+権限 nvlist からの高レベル権限情報は、すべてコロン区切りで、シリアル番号とパーツ番号のリーフレベル権限情報の隣に表示されます。この権限文字列のコンポーネントは、高レベル権限要素とリーフ権限要素が交互に配置され、任意の順序で表示されることがあります。そのような文字列の解釈は難しく、どのコンポーネントがどの権限情報のクラスに属しているか前もって知っていることに依存します。
+.SS "SCHEME \fBmem\fR VERSION 0"
+.sp
+.LP
+このスキームはメモリーモジュールおよびメモリーページの識別に使用されます。ただし、最近、これらは \fBhc\fR スキームに識別されるようになってきました。\fBmem\fR スキームは cpu キャッシュリソースを識別するためにも使用されています。
+.sp
+.in +2
+.nf
+Member Name   Data Type    Stability
+-------------------------------------------------
+scheme        string       Committed, value "mem"
+version       uint8        Committed, value 0
+unum          string       Committed, Private
+[serial]      string array Private
+[physaddr]    uint64       Private
+[offset]      uint64       Private
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunum\fR\fR
+.ad
+.sp .6
+.RS 4n
+この文字列は、一般にプラットフォームのシルクスクリーンまたはサービスラベルにラベル付けされているように、メモリーモジュールを識別します。この文字列型のメンバーの存在は、Committed インタフェースですが、\fBunum\fR 文字列の内部構造は \fBPrivate\fR インタフェースです。そのため、不透明な \fBunum\fR 文字列を使用して、メモリーモジュールを識別できますが、\fBunum\fR 文字列のコンポーネントの解釈はプラットフォームに依存し、\fBPrivate\fR です。  
+.sp
+\fBunum\fR はメモリーモジュールのグループ (またはバンク) を識別できます。これらは代わりに、メモリーモジュールごとに 1 つずつ、複数の FMRI によって識別されるべきですが、これは初期の実装からは歴史的に異例とされます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[serial]\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBunum\fR メンバーによって名前が付けられたメモリーモジュールのシリアル番号の文字列配列。シリアル番号文字列の内部構造はインタフェースでないため、シリアル番号の照合では不透明な文字列値のみを使用でき、それ以上の解釈は適用されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[physaddr]\fR\fR
+.ad
+.br
+.na
+\fB\fB[offset]\fR\fR
+.ad
+.sp .6
+.RS 4n
+これらの Private FMRI メンバーのセマンティクスについてはドキュメント化されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB文字列形式:\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+mem:///unum=<unum>
+        [/offset=<hex-offset> | /physaddr=<hex-physaddr>]
+.fi
+.in -2
+
+.RE
+
+.SS "SCHEME \fBmod\fR VERSION 0"
+.sp
+.LP
+このスキームは Oracle Solaris カーネルモジュールの識別に使用されます。
+.sp
+.in +2
+.nf
+Member Name    Data Type    Stability
+--------------------------------------------------
+scheme         string       Committed, value "fmd"
+version        uint8        Committed, value 0
+mod-name       string       Committed
+[mod-desc]     string       Committed
+[mod-pkg]      fmri         (fmri)
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmod-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBmodinfo\fR(1M) のとおりのモジュール名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[mod-desc]\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBmodinfo\fR(1M) のとおりのモジュールの説明。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[mod-pkg]\fR\fR
+.ad
+.sp .6
+.RS 4n
+このモジュールを配布するパッケージの \fBpkg\fR スキーム FMRI。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB文字列形式:\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+mod:///mod-name=<mod-name>
+.fi
+.in -2
+.sp
+
+.RE
+
+.SS "SCHEME \fBpkg\fR VERSION 0"
+.sp
+.LP
+このバージョンの \fBpkg\fR スキームは \fBpkgadd\fR(1M)、\fBpkginfo\fR(1)、\fBpkgrm\fR(1M)、および関連ユーティリティーで使用されるレガシー SVR4 パッケージングに対応します。パッケージ名およびパッケージバージョン規則に準拠している場合、このスキームは汎用です。
+.sp
+.in +2
+.nf
+Member Name   Data Type   Stability
+-------------------------------------------------------------------
+scheme        string      Committed, value "pkg"
+version       int8        Committed, value 0
+pkg-name      string      Committed
+pkg-basedir   string      Committed
+pkg-inst      string      Committed
+pkg-version   string      Committed
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkg-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+パッケージの名前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkg-basedir\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpkginfo\fR(1) のとおりの \fBBASEDIR\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkg-inst\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpkginfo\fR(1) のとおりの \fBPKGINST\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkg-version\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpkginfo\fR(1) のとおりの \fBVERSION\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB文字列形式:\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+pkg:///<pkg-name>/:version=<pkg-version>
+.fi
+.in -2
+.sp
+
+.RE
+
+.SS "SCHEME \fBpkg\fR VERSION 1"
+.sp
+.LP
+このバージョンの \fBpkg\fR スキームは \fBpkg\fR(5) Image Packaging System に対応します。それらの FMRI は \fBpkg\fR(1) コマンド行とその出力で文字列形式で使用され、コマンド行では FMRI 文字列の省略形が許可されます。
+.sp
+.LP
+\fBpkg\fR スキームバージョン 1 の FMRI は汎用です。2 つの個別のコンテキスト (個別の Oracle Solaris インスタンスなど) で解釈された同じ FMRI は同じ実際のパッケージ (またはそのコピー) を識別します。  
+.sp
+.LP
+\fBpkg\fR(5) コマンド行ではバージョン 1 \fBpkg\fR FMRI の文字列形式を使用し、それらの文字列の省略形を許可します。
+.sp
+.in +2
+.nf
+Member Name   Data Type    Stability
+-------------------------------------------------
+scheme        string       Committed, value "pkg"
+version       uint8        Committed, value 1
+[authority]   nvlist       Committed
+pkg-name      string       Committed
+[pkg-version] nvlist       Committed
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[authority]\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBauthority nvlist\fR は \fBpkg publisher\fR の出力に従って、パッケージパブリッシャーを指定します。
+.sp
+.in +2
+.nf
+Member Name    Data Type    Stability
+-------------------------------------
+publisher      string       Committed
+
+publisher
+.fi
+.in -2
+
+Oracle Solaris などのこのパッケージのパブリッシャー。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkg-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+パッケージの名前 (stem)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[pkg-version]\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+Member Name    Data Type    Stability
+---------------------------------------
+release        string       Committed
+[built-on]     string       Committed
+[branch]       string       Committed
+[timestamp]    string       Committed
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrelease\fR\fR
+.ad
+.sp .6
+.RS 4n
+ドットシーケンス文字列 (任意の長さ、ドット区切りの一連の 0 が先頭に付かない 10 進数) で書かれた、コンポーネントのプライマリバージョン。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbuilt-on\fR\fR
+.ad
+.sp .6
+.RS 4n
+ドットシーケンスで指定された、コンポーネントが構築されたオペレーティングシステムバージョン。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbranch\fR\fR
+.ad
+.sp .6
+.RS 4n
+ドットシーケンスとしてのベンダーブランチバージョン。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtimestamp\fR\fR
+.ad
+.sp .6
+.RS 4n
+ISO 8601 日付文字列: \fIyyyymmdd\fR\fBT\fR\fIhhmmss\fR\fBZ\fR で、\fBT\fR と \fBZ\fR はリテラルです。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB文字列形式:\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+pkgauthstr = <authority.publisher>
+
+pkg://[pkgauthstr]/<pkg-name>
+    [@<release>[,<built-on>][-<branch>][:<timestamp>]
+.fi
+.in -2
+
+.RE
+
+.SS "SCHEME \fBsvc\fR VERSION 0"
+.sp
+.LP
+\fBsvc\fR スキームは SMF (\fBsmf\fR(5) を参照) サービスおよびサービスインスタンスを記述します。\fBsvcadm\fR(1M)、\fBsvccfg\fR(1M)、\fBsvcprop\fR(1)、\fBsvcs\fR(1) などの SMF コマンド行およびそれらの出力では、それらの FMRI は常にそれらの文字列形式で書かれ、SMF コマンド行は省略形を許可します。
+.sp
+.LP
+\fBsvc\fR スキーム FMRI は論理スキームであるため、FMRI はそれが生成された障害管理ドメイン (Oracle Solaris インスタンス) でのみ解釈するようにしてください。
+.sp
+.in +2
+.nf
+Member Name    Data Type   Stability
+-------------------------------------------------
+scheme         string      Committed, value "svc"
+version        uint8       Committed, value 0
+svc-name       string      Committed
+[svc-instance] string      Committed
+[contract-id]  string      Committed
+[svc-scope]    string      Committed
+
+     pkg://[pkgauthstr]/<pkg-name>
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBnetwork/smtp\fR などのサービス名。\fBsmf\fR(5) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[svc-instance]\fR\fR
+.ad
+.sp .6
+.RS 4n
+サービスのインスタンスを識別する場合に使用されます。\fBdefault\fR の場合が多いですが、サービス \fBnetwork/smtp\fR の \fBsendmail\fR インスタンスのようなものを指定することもできます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[contract-id]\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは、サービスの特定の実行中インスタンスを管理するために使用される数値の (10 進文字列として書かれますが) 契約 ID (\fBsmf\fR(5) および \fBcontract\fR(4) を参照) を識別します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[svc-scope]\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsmf\fR(5) のとおりに、すべてのサービスおよびインスタンスオブジェクトは構成情報のコレクションを表す \fBscope\fR に格納されます。ローカル Oracle Solaris インスタンスの構成は \fBlocalhost\fR スコープと呼ばれ、現在サポートされている唯一のスコープとなります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB文字列形式:\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+svc://[<svc-scope>]/<svc-name>
+        [:<svc-instance>[@<contract-id>]]
+.fi
+.in -2
+
+\fBsvcadm\fR(1M) などの SMF サブシステムコマンドは上記の文字列形式の省略形を許可 (または必要と) します。文字列の開始での \fBsvc\fR スキームの指示は、オプションとみなされ、SMF コマンド行ユーティリティーによって暗黙的に示されます。\fBsvc\fR スキーム識別子を使用すると、権限コンポーネントもより公式な \fBsvc:///<svc-name>\fR ではなく、\fBsvc:/<svc-name>\fR に省略されます。たとえば、SMF では次のように書きます。
+.sp
+.in +2
+.nf
+svc:/network/smtp:sendmail
+.fi
+.in -2
+
+より公式な次の代わりに
+.sp
+.in +2
+.nf
+svc:///network/smtp:sendmail
+.fi
+.in -2
+
+またはもっと公式な
+.sp
+.in +2
+.nf
+svc://localhost/network/smtp:sendmail
+.fi
+.in -2
+
+さらに、SMF は一意のサービスやインスタンスを識別していれば、さらなる省略形を許可します。たとえば、インスタンス名 \fBsendmail\fR は一意で、\fBsvcs sendmail\fR、\fBsvcadm restart sendmail\fR などを使用できます。  
+.sp
+そうした省略形は、SMF サブシステムの規則であり、公式の FMRI 定義に含まれません。\fBsvc\fR スキーム FMRI は \fBnvlist\fR 形式で受け取られると (たとえば、\fBlibfmevent\fR(3LIB) サブスクリプションで)、文字列として表示される際に、より公式な形式で表示されます。
+.RE
+
+.SS "SCHEME \fBsw\fR VERSION 0"
+.sp
+.LP
+この FMRI スキームは、実行可能ファイル、ライブラリオブジェクト、コアファイルなどのソフトウェアリソースを識別するために使用します。これは論理 FMRI スキームです。
+.sp
+.in +2
+.nf
+Member Name   Data Type   Stability
+-----------------------------------------------
+scheme        string      Committed, value "sw"
+version       uint8       Committed, value 0
+object        nvlist      See belowPrivate
+[site]        nvlist      See belowPrivate
+[context]     nvlist      See belowPrivate
+.fi
+.in -2
+
+.sp
+.LP
+\fBobject\fR、\fBsite\fR、および \fBcontext\fR メンバーはすべて \fBPrivate\fR であるため、互換性のない変更が行われることがありますが、それらの内容を情報目的で、下に説明します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBobject\fR\fR
+.ad
+.sp .6
+.RS 4n
+この必須メンバーはソフトウェアオブジェクトを識別します。現在のところ、ファイルシステム内に存在するオブジェクトのみが考慮されます。
+.sp
+.in +2
+.nf
+Member     Type        Description
+------------------------------------------------------------
+path       string      Filesystem path to object
+[root]     string      If present, real path to chroot root
+                       directory
+[pkg]      fmri        "pkg" scheme fmri of package that
+                       delivers path
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsite\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションのメンバーはオブジェクト内のサイトを識別します。
+.sp
+.in +2
+.nf
+Member   Type    Description
+------------------------------------------------------------
+[token]  string  Vendor and subsystem unique publisher
+                 token id
+[module] string  Source module information
+[file]   string  Source filename (translation unit)
+[func]   string  Source function
+[line]   int64   Source file line number
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcontext\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションのメンバーは実行時情報を伝えます。
+.sp
+.in +2
+.nf
+Member             Type         Description
+-------------------------------------------------------
+[origin]           string       "userland" or "kernel"
+[execname]         string       Executable name
+[pid]              uint64       Process id
+[thread-id]        uint64       Thread id
+[os-instance-uuid] string       Solaris instance UUID
+[zone]             string       Zone name, if not the global zone
+[ctid]             uint64       Contract id
+[stack]            string array Symbolic stack trace
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB文字列形式:\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+sw://[<authority>]/
+       [:root=<object.root]
+       :path=<object.path>
+       [#<fragment-identifier>]
+.fi
+.in -2
+
+ルートおよびオブジェクトパスのスラッシュ文字 \fB/\fR はエスケープされません。
+.sp
+\fB<fragment-identifier>\fR は次のいずれかです。
+.sp
+.in +2
+.nf
+:token=<site.token>
+.fi
+.in -2
+
+または
+.sp
+.in +2
+.nf
+:file=<site.file>[:func=<site.func>][:line=<site.line>]
+.fi
+.in -2
+
+.RE
+
+.SS "SCHEME \fBzfs\fR VERSION 0"
+.sp
+.in +2
+.nf
+Member Name   Data Type    Stability
+-------------------------------------------------------------------
+scheme        string       Committed, value "zfs"
+version       uint8        Committed, value 0
+[pool-name]   string       Committed
+pool          uint64       Committed
+[vdev]        uint64       Private
+[vdev-name]   string       Private
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[pool-name]\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBzpool list -o name\fR のとおりのプール名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBzpool list -o guid\fR のとおりのプール GUID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[vdev]\fR\fR
+.ad
+.sp .6
+.RS 4n
+この \fBPrivate\fR FMRI メンバーのセマンティクスについてはドキュメント化されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[vdev-name]\fR\fR
+.ad
+.sp .6
+.RS 4n
+この \fBPrivate\fR FMRI メンバーのセマンティクスについてはドキュメント化されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB文字列形式:\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+hex-vdev = 'vdev' in hexadecimal with no '0x' prefix.  
+hex-pool = 'pool' in hexadecimal with no '0x' prefix.
+zfs://[pool_name=<pool-name>/]pool=<hex-pool>
+zfs://[pool_name=<zfs://[pool_name=<hex-pool>
+[/vdev=<hex-vdev>][:vdev_name=<vdev-name>]
+.fi
+.in -2
+
+\fB<vdev-name>\fR は \fB/\fR 文字がエスケープされずに書かれます。
+.RE
+
+.SS "SCHEME \fBlocation\fR VERSION 0"
+.sp
+.LP
+この FMRI スキームは、ハードウェアリソースをその場所のパスで識別するために使用されます。
+.sp
+.in +2
+.nf
+Member Name    Data Type    Stability
+-------------------------------------------------------------------
+scheme         string       Committed, value "location"
+version        uint8        Committed, value 0
+location-path  string       Committed
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlocation-path\fR\fR
+.ad
+.RS 20n
+.rt  
+リソースの場所。通常はハードウェアに印刷されているラベルと一致します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB文字列形式:\fR\fR
+.ad
+.RS 20n
+.rt  
+.sp
+.in +2
+.nf
+location:///<location-path>
+.fi
+.in -2
+
+\fB<location-path>\fR は / 文字がエスケープされずに書かれます。
+.RE
+
+.SH 関連項目
+.sp
+.LP
+\fBhostid\fR(1), \fBfmadm\fR(1M), \fBfmd\fR(1M), \fBfmdump\fR(1M), \fBpkg\fR(5), \fBpkg\fR(1), \fBpkgadd\fR(1M), \fBpkginfo\fR(1), \fBpkgrm\fR(1M), \fBpsradm\fR(1M), \fBsvcadm\fR(1M), \fBsvccfg\fR(1M), \fBsvcprop\fR(1), \fBsvcs\fR(1), \fBlibfmevent\fR(3LIB), \fBlibnvpair\fR(3LIB), \fBcontract\fR(4), \fBattributes\fR(5), \fBsmf\fR(5)
+.sp
+.LP
+\fIRFC 2396\fR

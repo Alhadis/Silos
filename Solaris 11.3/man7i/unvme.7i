@@ -1,0 +1,288 @@
+'\" te
+.\" Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+.TH unvme 7I "10 Mar 2015" "SunOS 5.11" "Ioctl Requests"
+.SH NAME
+unvme \- user NVME command interface
+.SH SYNOPSIS
+.LP
+.nf
+\fB#include\fR \fB<sys/nvme/unvme.h>\fR
+ioctl(int \fIfildes\fR, int \fIrequest\fR, unvme_cmd_t *\fIcmd\fR);
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBunvme\fR command is very powerful and somewhat dangerous, therefore it has some permission restrictions. See WARNINGS for more details.
+.sp
+.LP
+The \fBnvme\fR(7D) driver supporting this \fBioctl\fR(2) provides a general interface allowing user-level applications to cause individual NVMe commands to be directed to a particular NVMe controller under control of that driver.
+.sp
+.LP
+The NVMe command may include a data transfer to or from that device, if appropriate for that command. Upon completion of the command, the user application can determine the command status through NVMe command completion queue entry returned by the interface.
+.sp
+.LP
+The \fBfildes\fR argument is an open file descriptor that refers to an NVMe controller minor node.
+.sp
+.LP
+The \fBunvme_cmd\fR structure is defined in \fB<sys/nvme/unvme.h>\fR and includes the following members:
+.sp
+.in +2
+.nf
+int        unvme_flags;        /* read, write, etc. see below */
+int        unvme_timeout;      /* command timeout */
+caddr_t    unvme_comp;         /* nvme command completion queue entry */
+caddr_t    unvme_cmdp;         /* nvme command */
+caddr_t    unvme_bufaddr;      /* i/o source/destination */
+size_t     unvme_buflen;       /* size of i/o to take place */
+void       *unvme_rsvd;        /* reserved field for future use */
+.fi
+.in -2
+
+.sp
+.LP
+The fields of the unvme_cmd structure have the following meanings:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunvme_flags\fR\fR
+.ad
+.RS 17n
+.rt  
+The I/O direction and other details of how to carry out the NVMe command. Possible values are described below.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunvme_timeout\fR\fR
+.ad
+.RS 17n
+.rt  
+Time in seconds to allow for completion of the command.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunvme_comp\fR\fR
+.ad
+.RS 17n
+.rt  
+The 16 bytes NVMe Completion Queue Entry for this NVMe command. Only the Command Specific and Status Field are valid. Other fields will be cleared to zero.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunvme_cmdp\fR\fR
+.ad
+.RS 17n
+.rt  
+A pointer to the 64 bytes NVMe command to be transferred to the device. The caller can set Opcode, NSID and DW10 to DW15. All other fields must be set to zero by the caller.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunvme_bufaddr\fR\fR
+.ad
+.RS 17n
+.rt  
+The user buffer containing the data to be read from or written to the device.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunvme_buflen\fR\fR
+.ad
+.RS 17n
+.rt  
+The length of \fBunvme_bufaddr\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunvme_rsvd\fR\fR
+.ad
+.RS 17n
+.rt  
+Reserved for future use.
+.RE
+
+.sp
+.LP
+The \fBunvme_flags\fR field defines the following: 
+.sp
+.in +2
+.nf
+UNVME_READ            /* Get data from device */
+UNVME_WRITE           /* Write data to device */
+UNVME_ADMIN           /* Admin command flag */
+UNVME_NVM             /* NVM command flag */   
+UNVME_RESET           /* Reset controller */ 
+UNVME_FAILFAST        /* Don't retry if fail */
+.fi
+.in -2
+
+.sp
+.in +2
+.nf
+The \fBunvme_flags\fR bits have the following interpretation:
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBUNVME_READ\fR\fR
+.ad
+.RS 18n
+.rt  
+Data will be read from device to host.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBUNVME_WRITE\fR\fR
+.ad
+.RS 18n
+.rt  
+Data will be written from the host to the device.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBUNVME_ADMIN\fR\fR
+.ad
+.RS 18n
+.rt  
+Indicating that the command being sent is an \fBAdmin\fR command.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBUNVME_NVM\fR\fR
+.ad
+.RS 18n
+.rt  
+Indicating that the command being sent is a \fBNVM\fR command.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBUNVME_RESET\fR\fR
+.ad
+.RS 18n
+.rt  
+Issuing a controller level reset.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBUNVME_FAILFAST\fR\fR
+.ad
+.RS 18n
+.rt  
+If this command fails, do not retry or reset controller. Just return fail.
+.RE
+
+.SH IOCTLS
+.sp
+.LP
+The ioctl supported by drivers providing the \fBunvme\fR interface is:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBUNVMECMD\fR\fR
+.ad
+.RS 12n
+.rt  
+The argument is a pointer to a \fBunvme_cmd\fR structure. The NVMe device addressed by NVMe driver is selected, and given the NVMe command addressed by \fBunvme_cmdp\fR. If this command requires a data transfer, the \fBunvme_buflen\fR and \fBunvme_bufaddr\fR fields must be set appropriately; The status of the command, as returned by the device, is returned in the \fBunvme_comp\fR field.
+.RE
+
+.SH ERRORS
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEINVAL\fR\fR
+.ad
+.RS 10n
+.rt  
+A parameter has an incorrect, or unsupported value.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEIO\fR\fR
+.ad
+.RS 10n
+.rt  
+An error occurred during the execution of the command.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEFAULT\fR\fR
+.ad
+.RS 10n
+.rt  
+The \fBunvme_cmd\fR itself, the \fBunvme_cmdp\fR, the \fBunvme_comp\fR, or the \fBunvme_bufaddr\fR points to an invalid address.
+.RE
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/header
+_
+Interface StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBioctl\fR(2), \fBattributes\fR(5), \fBnvme\fR(7D)
+.SH WARNINGS
+.sp
+.LP
+The \fBunvme\fR command is very powerful, but somewhat dangerous, so its use is restricted to processes running as root, regardless of the file permissions on the device node. The device driver code expects to own the device state, and unvme commands can change the state of the device and confuse the device driver. It is best to send unvme commands only with no side effects, and avoid commands such as Create/Delete Submission/Completion Queue, Format, Set Feature, Asynchronous Event, etc. as they may cause damage to data stored on the drive or system panics. Also, as the commands are not checked in any way by the device driver, any block may be overwritten.
+.sp
+.LP
+The \fBunvme\fR interface is not recommended for very large data transfers (not exceeding the maximum transfer size reported by NVMe controller). If the requested transfer size exceeds the maximum transfer size supported by the controller, it will not be broken up into multiple transfers and \fBEINVAL\fR will be returned.

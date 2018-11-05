@@ -1,0 +1,260 @@
+'\" te
+.TH dbus-send 1 "25 Feb 2009" "SunOS 5.11" "User Commands"
+.SH "NAME"
+dbus-send \- Send a message to a message bus
+.SH "SYNOPSIS"
+.PP
+\fBdbus-send\fR [-\fB-system\fR | -\fB-session\fR] [-\fB-dest=\fIname\fR\fR] [-\fB-help\fR] [-\fB-print-reply\fR] [-\fB-type=\fItype\fR\fR] \fBdestination_object_path\fR \fBmessage_name\fR [\fBcontents\fR\&...]
+.SH "DESCRIPTION"
+.PP
+The \fBdbus-send\fR command is used to send a message to a D\-Bus
+message bus\&.
+.PP
+There are two standard message buses:
+.sp
+.in +2
+\(bu
+.mk
+.in +3
+.rt
+systemwide message bus - Launched when the system is started and is always
+available\&.  Additional systemwide services can be launched via D\-Bus
+service activation\&.  However, D\-Bus service activation is disabled on Solaris\&.
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+per-user-login-session message bus - Launched each time a user logs in\&.
+.sp
+.in -3
+.in -2
+.PP
+The -\fB-system\fR and -\fB-session\fR options direct
+\fBdbus-send\fR to send messages to the  system  or session buses
+respectively\&.  If neither is specified, dbus-send sends to the session bus\&.
+.PP
+Nearly all uses of \fBdbus-send\fR must provide the
+-\fB-dest\fR argument which is the name of a connection on the bus to
+send the message to\&.  If -\fB-dest\fR is omitted, no destination is
+set\&.
+.PP
+The object path and the name of the message to send must always be specified\&.
+Following arguments, if any, are the message contents (message arguments)\&.
+These are given as type-specified values and may include containers (arrays,
+dicts, and variants) as described below\&.
+.PP
+.PP
+.nf
+     <contents>   ::= <item> | <container> [ <item> | <container>\&.\&.\&.]
+     <item>       ::= <type>:<value>
+     <container>  ::= <array> | <dict> | <variant>
+     <array>      ::= array:<type>:<value>[,<value>\&.\&.\&.]
+     <dict>       ::= dict:<type>:<type>:<key>,<value>[,<key>,<value>\&.\&.\&.]
+     <variant>    ::= variant:<type>:<value>
+     <type>       ::= string | int16 | uint 16 | int32 | uint32 |
+                      int64 | uint64 | double | byte | boolean | objpath
+.fi
+.PP
+D\-Bus supports more types than these, but \fBdbus-send\fR currently
+does not\&.  Also, \fBdbus-send\fR does not permit empty containers or
+nested containers (e\&.g\&. arrays of variants)\&.
+.SH "OPTIONS"
+.PP
+The following options are supported:
+.sp
+.ne 2
+.mk
+\fB-\fB-dest=\fIname\fR\fR\fR
+.sp .6
+.in +4
+Specify the \fIname\fR of the connection to receive the
+message\&.
+.sp
+.sp 1
+.in -4
+.sp
+.ne 2
+.mk
+\fB-\fB-help\fR\fR
+.sp .6
+.in +4
+Show help information on standard output and exit\&.
+.sp
+.sp 1
+.in -4
+.sp
+.ne 2
+.mk
+\fB-\fB-print-reply\fR\fR
+.sp .6
+.in +4
+Block for a reply to the message sent, and print any reply received\&.
+.sp
+.sp 1
+.in -4
+.sp
+.ne 2
+.mk
+\fB-\fB-session\fR\fR
+.sp .6
+.in +4
+Send to the session message bus (this is the default)\&.
+.sp
+.sp 1
+.in -4
+.sp
+.ne 2
+.mk
+\fB-\fB-system\fR\fR
+.sp .6
+.in +4
+Send to the system message bus\&.  The system bus is disabled and unsupported
+on Solaris\&.
+.sp
+.sp 1
+.in -4
+.sp
+.ne 2
+.mk
+\fB-\fB-type=\fItype\fR\fR\fR
+.sp .6
+.in +4
+Specify "method_call" or "signal" (defaults to
+"signal")\&.
+.sp
+.sp 1
+.in -4
+.SH "OPERANDS"
+.PP
+The following operands are supported:
+.sp
+.ne 2
+.mk
+\fB\fB\fIdestination_object_path\fR\fR\fR
+.in +24n
+.rt
+The object path of the message to send must always be specified\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fB\fB\fImessage_name\fR\fR\fR
+.in +24n
+.rt
+The name of the message to send must always be specified\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fB\fB\fIcontents\fR\fR\fR
+.in +24n
+.rt
+Following arguments, if any, are the message contents (message arguments)\&.
+These are given as a type name, a colon, and then the value of the argument\&.
+.sp
+.sp 1
+.in -24n
+.SH "EXAMPLES"
+.PP
+\fBExample 1: How to use \fBdbus-send\fR with a sh-compatible shell to start
+the per-session bus daemon\fR
+.PP
+.PP
+.nf
+example% \fBdbus-send --dest=org\&.freedesktop\&.ExampleName               \\
+                   /org/freedesktop/sample/object/name              \\
+                   org\&.freedesktop\&.ExampleInterface\&.ExampleMethod   \\
+                   int32:47 string:\&'hello world\&' double:65\&.32       \\
+                   array:string:"1st item","next item","last item"  \\
+                   dict:string:int32:"one",1,"two",2,"three",3      \\
+                   variant:int32:-8                                 \\
+                   objpath:/org/freedesktop/sample/object/name\fR
+.fi
+.PP
+Note that the interface is separated from a method or signal name by a dot,
+though in the actual protocol the interface and the interface member are
+separate fields\&.
+.SH "EXIT STATUS"
+.PP
+The following exit values are returned:
+.sp
+.ne 2
+.mk
+\fB\fB0\fR\fR
+.in +9n
+.rt
+Application exited successfully
+.sp
+.sp 1
+.in -9n
+.sp
+.ne 2
+.mk
+\fB\fB>0\fR\fR
+.in +9n
+.rt
+Application exited with failure
+.sp
+.sp 1
+.in -9n
+.SH "FILES"
+.PP
+The following files are used by this application:
+.sp
+.ne 2
+.mk
+\fB\fB/usr/bin/dbus-send\fR\fR
+.in +32n
+.rt
+Executable for \fBdbus-send\fR
+.sp
+.sp 1
+.in -32n
+.SH "ATTRIBUTES"
+.PP
+See
+\fBattributes\fR(5)
+for descriptions of the following attributes:
+.sp
+.TS
+tab() allbox;
+cw(2.750000i)| cw(2.750000i)
+lw(2.750000i)| lw(2.750000i).
+ATTRIBUTE TYPEATTRIBUTE VALUE
+Availabilitysystem/library/dbus
+Interface stabilityVolatile
+.TE
+.sp
+.SH "SEE ALSO"
+.PP
+More information can be found at:
+.PP
+\fBhttp://www\&.freedesktop\&.org/software/dbus/\fR
+.PP
+\fBdbus-binding-tool\fR(1),
+\fBdbus-cleanup-sockets\fR(1),
+\fBdbus-daemon\fR(1),
+\fBdbus-launch\fR(1),
+\fBdbus-monitor\fR(1),
+\fBdbus-uuidgen\fR(1),
+\fBlibdbus-glib-1\fR(3),
+\fBattributes\fR(5)
+.SH "NOTES"
+.PP
+For authorship information refer to
+\fBhttp://www\&.freedesktop\&.org/software/dbus/doc/AUTHORS\fR\&.
+Updated by Brian Cameron, Sun Microsystems Inc\&., 2007\&.
+.PP
+\fBdbus-send\fR was written by Philip Blundell\&.
+.PP
+Please send bug reports to the D\-Bus mailing list or bug
+tracker, see
+\fBhttp://www\&.freedesktop\&.org/software/dbus/\fR
+...\" created by instant / solbook-to-man, Thu 20 Mar 2014, 02:30
+...\" LSARC 2006/368 D-BUS Message Bus System 

@@ -1,0 +1,194 @@
+'\" te
+.\" Copyright (c) 2000, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1989 AT&T
+.TH mountall 1M "2008 年 12 月 17 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+mountall, umountall \- 挂载、卸载多个文件系统
+.SH 用法概要
+.LP
+.nf
+\fBmountall\fR [\fB-F\fR \fIFSType\fR] [\fB-l\fR | \fB-r\fR] [\fIfile_system_table\fR]
+.fi
+
+.LP
+.nf
+\fBumountall\fR [\fB-k\fR] [\fB-s\fR] [\fB-F\fR \fIFSType\fR] [\fB-l\fR | \fB-r\fR] [\fB-n\fR]  [\fB-Z\fR]
+.fi
+
+.LP
+.nf
+\fBumountall\fR [\fB-k\fR] [\fB-s\fR] [\fB-h\fR \fIhost\fR] [\fB-n\fR] [\fB-Z\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBmountall\fR 用来挂载文件系统表中指定的文件系统。文件系统表必须采用 \fBvfstab\fR(4) 格式。如果未指定 \fIfile_system_table\fR，则将使用 \fB/etc/vfstab\fR。如果指定 - 作为 \fIfile_system_table\fR，则 \fBmountall\fR 将从标准输入读取文件系统表。\fBmountall\fR 仅挂载 \fIfile_system_table\fR 中其 \fBmount at boot\fR 字段设置为 \fByes\fR 的那些文件系统。
+.sp
+.LP
+对于文件系统表中的每个文件系统，将执行以下逻辑：如果存在一个 file\fB/usr/lib/fs/\fIFSType\fR/fsckall\fR，其中 \fIFSType\fR 是文件系统的类型，则将该文件系统保存在一个列表中（稍后会将该列表作为参数一次性传递给 \fB/usr/lib/fs/\fIFSType\fR/fsckall\fR 脚本）。\fB/usr/lib/fs/\fIFSType\fR/fsckall\fR 脚本检查其参数列表中的所有文件系统以确定它们是否可以安全地挂载。如果不存在与文件系统的 \fIFSType\fR 对应的 \fB/usr/lib/fs/\fIFSType\fR/fsckall\fR 脚本，则将使用 \fBfsck\fR(1M) 单独检查该文件系统。如果文件系统看起来不可挂载，则在尝试挂载之前会使用 \fBfsck\fR 修复文件系统。对于在 \fBfsckdev\fR 字段中有一个 - 条目的文件系统，在挂载前不会对其进行检查。
+.sp
+.LP
+\fBumountall\fR 将卸载当前区域中除了 \fBroot\fR、\fB/usr\fR、\fB/var\fR、\fB/var/adm\fR、\fB/var/run\fR、\fB/proc\fR 和 \fB/dev/fd\fR 之外的所有已挂载文件系统。如果指定了 \fIFSType\fR，则 \fBmountall\fR 和 \fBumountall\fR 会将其操作对象限制为指定的 \fIFSType\fR。即使指定了 \fB-k\fR 选项，也不能担保 \fBumountall\fR 会卸载处于\fI繁忙\fR状态的文件系统。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fR
+.ad
+.RS 11n
+.rt  
+指定要挂载或卸载的文件系统的 \fIFSType\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR \fIhost\fR\fR
+.ad
+.RS 11n
+.rt  
+卸载 \fB/etc/mnttab\fR 中列出的从主机远程挂载的所有文件系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR\fR
+.ad
+.RS 11n
+.rt  
+使用 \fBfuser\fR \fB-k\fR \fImount-point\fR 命令。有关详细信息，请参见 \fBfuser\fR(1M)。\fB-k\fR 选项向使用该文件的每个进程发送 \fBSIGKILL\fR 信号。因为此选项要针对每个进程生成终止信号，因此终止消息可能不会立即显示。即使指定了 \fB-k\fR 选项，也不能担保 \fBumountall\fR 会卸载处于\fI繁忙\fR状态的文件系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 11n
+.rt  
+将操作对象限制为本地文件系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 11n
+.rt  
+列出将针对指定选项执行的操作，但不实际执行这些操作。在不使用 \fB-n\fR 选项的情况下重新执行命令将执行所列出的选项，并且会假定 \fB/etc/mnttab\fR 文件在重新执行命令之前的间隙内没有发生改变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.RS 11n
+.rt  
+将操作对象限制为远程文件系统类型。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 11n
+.rt  
+不并行执行 \fBumount\fR 操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Z\fR\fR
+.ad
+.RS 11n
+.rt  
+仅向在非全局区域中挂载的文件系统应用操作。缺省情况下，\fBumountall\fR 仅卸载当前区域中挂载的文件系统。如果在非全局区域中使用，则选项 \fB-Z\fR 将被忽略。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/mnttab\fR\fR
+.ad
+.sp .6
+.RS 4n
+已挂载的文件系统表
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/vfstab\fR\fR
+.ad
+.sp .6
+.RS 4n
+文件系统缺省值的表
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/fs/\fIFSType\fR/fsckall\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBmountall\fR 调用的用来对 \fIFSType\fR 类型的所有系统执行文件系统检查的脚本
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+_
+输出稳定性Uncommitted（未确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBfsck\fR(1M)、\fBfuser\fR(1M)、\fBmount\fR(1M)、\fBmnttab\fR(4)、\fBvfstab\fR(4)、\fBattributes\fR(5)
+.SH 诊断
+.sp
+.LP
+如果文件系统可挂载并且是整洁的，则不会输出任何消息。
+.sp
+.LP
+来自 \fBfsck\fR(1M) 和 \fBmount\fR(1M) 的错误和警告消息。
+.SH 附注
+.sp
+.LP
+目前，NFS 是 \fB-l\fR、\fB-r\fR 和 \fB-h\fR 选项唯一支持的远程文件系统。

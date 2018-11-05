@@ -1,0 +1,144 @@
+'\" te
+.\" Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+.TH proc_thr_kill 3C "9 Apr 2015" "SunOS 5.11" "Standard C Library Functions"
+.SH NAME
+proc_thr_kill, proc_thr_sigqueue, proc_thr_sigqueue_wait \- Send or queue a signal to a thread in a process.
+.SH SYNOPSIS
+.LP
+.nf
+#include <signal.h>
+.fi
+
+.LP
+.nf
+int proc_thr_kill(pid_t \fIpid\fR, pthread_t \fIthread\fR, int \fIsig\fR);
+.fi
+
+.LP
+.nf
+int proc_thr_sigqueue(pid_t \fIpid\fR, pthread_t \fIthread\fR, int \fIsig\fR,
+          const \fIunion sigval value\fR);
+.fi
+
+.LP
+.nf
+int proc_thr_sigqueue_wait(pid_t \fIpid\fR, pthread_t \fIthread\fR, int \fIsig\fR,
+          const \fIunion sigval value\fR, const \fIstruct timespec *timeout\fR);
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBproc_thr_kill()\fR function sends the signal specified by \fIsig\fR to the thread specified by \fIthread\fR in the process specified by \fIpid\fR. The \fIsig\fR argument must be one of the signals listed in \fBsignal.h\fR(3HEAD), with the exception of \fBSIGCANCEL\fR being reserved and off limits. If \fIsig\fR is 0, a validity check is performed for the existence of the target thread and no signal is sent.
+.sp
+.LP
+The \fBproc_thr_sigqueue()\fR and \fBproc_thr_sigqueue_wait()\fR functions cause the signal specified by \fIsig\fR to be sent with the value specified by \fIvalue\fR to the thread specified by \fIthread\fR in the process specified by \fIpid\fR. The \fIsig\fR argument must be one of the signals listed in \fBsiginfo.h\fR(3HEAD), with the exception of \fBSIGCANCEL\fR being reserved and off limits. If \fIsig\fR is 0, a validity check is performed for the existence of the target thread and no signal is sent.
+.sp
+.LP
+The \fBproc_thr_sigqueue()\fR function returns immediately, possibly failing with an error \fBEAGAIN\fR. In contrast, \fBproc_thr_sigqueue_wait()\fR will wait for resources to become available to queue the signal if the caller's process already has the maximum number of queued signals allowed per process pending. If the timeout argument is not NULL, \fBproc_thr_sigqueue_wait()\fR will wait up to the specified time interval for the necessary resources to become available. If the timeout argument is NULL, \fBproc_thr_sigqueue_wait()\fR will wait as long as necessary.
+.sp
+.LP
+For the \fBproc_thr_sigqueue()\fR and \fBproc_thr_sigqueue_wait()\fR functions, if \fBSA_SIGINFO\fR is set for \fIsig\fR in the target process and if the resources are available to queue the signal, the signal is queued and sent to the target thread. If \fBSA_SIGINFO\fR is not set for \fIsig\fR in the target process, then \fIsig\fR is sent at least once to the target thread. It is not specified whether \fIvalue\fR will be sent to the target thread as a result of this call.
+.SH RETURN VALUES
+.sp
+.LP
+Upon successful completion of \fBproc_thr_kill()\fR, \fBproc_thr_sigqueue()\fR, or \fBproc_thr_sigqueue_wait()\fR, the specified signal will be sent, and the function returns \fB0\fR. Otherwise, no signal is sent and the function returns an error number. It is not an error for the target thread to be a zombie thread.
+.SH ERRORS
+.sp
+.LP
+The \fBproc_thr_kill()\fR, \fBproc_thr_sigqueue()\fR, \fBproc_thr_sigqueue_wait()\fR functions fail if:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEINVAL\fR\fR
+.ad
+.RS 10n
+.rt  
+The value of \fIpid\fR is zero or negative. The value of \fIsig\fR is an invalid or unsupported signal number.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBESRCH\fR\fR
+.ad
+.RS 10n
+.rt  
+The target process or the target thread does not exist.
+.RE
+
+.sp
+.LP
+The \fBproc_thr_sigqueue()\fR and \fBproc_thr_sigqueue_wait()\fR functions fail if:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEAGAIN\fR\fR
+.ad
+.RS 10n
+.rt  
+No resources are available to queue the signal within the specified time interval. The process has already queued its maximum number of signals that are still pending at the receiver(s), or a system wide resource limit has been exceeded. The maximum number of outstanding queued signals that a process can have is defined by its \fBprocess.max-sigqueue-size\fR resource control.
+.RE
+
+.sp
+.LP
+The \fBproc_thr_sigqueue_wait()\fR function will fail if:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEFAULT\fR\fR
+.ad
+.RS 10n
+.rt  
+The timeout argument is not NULL and is an invalid address.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEINVAL\fR\fR
+.ad
+.RS 10n
+.rt  
+The timeout argument specifies an invalid time.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBEINTR\fR
+.ad
+.RS 10n
+.rt  
+The function is interrupted while waiting.
+.RE
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Interface StabilityCommitted
+_
+MT-LevelAsync-Signal-Safe
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBkill\fR(2), \fBpthread_kill\fR(3C), \fBpthread_sigmask\fR(3C), \fBpthread_sigqueue\fR(3C), \fBsigqueue\fR(3C), \fBsiginfo.h\fR(3HEAD), \fBsignal.h\fR(3HEAD), \fBattributes\fR(5), \fBresource-controls \fR(5)

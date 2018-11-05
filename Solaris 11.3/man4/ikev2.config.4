@@ -1,0 +1,987 @@
+'\" te
+.\" Copyright (c) 2010, 2015, Oracle and/or its affiliates. All rights reserved.
+.TH ikev2.config 4 "1 Apr 2015" "SunOS 5.11" "File Formats"
+.SH NAME
+ikev2.config \- configuration file for IKEv2 policy
+.SH SYNOPSIS
+.LP
+.nf
+\fB/etc/inet/ike/ikev2.config\fR
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fB/etc/inet/ike/ikev2.config\fR file contains rules for matching inbound IKE requests and preparing outbound \fBIKEv2\fR requests. This file is logically part of the peer authentication database (PAD) as described in RFC 4301.
+.sp
+.LP
+You can test the syntactic correctness of the IKEv2 configuration file and load the configuration file without starting the daemon by using the \fB-c\fR option of \fBin.ikev2d\fR(1M). You might need to use the \fB-f\fR option if it is not in \fB/etc/inet/ike/ikev2.config\fR.
+.sp
+.LP
+For \fBin.ikev2d\fR to verify the identity of a peer using certificates, it must be able to verify the certificate that contains that identity. In the case of self-signed certificates, the public certificate of the peer must be loaded into the local system's IKEv2 certificate keystore. For CA signed certificates, the public certificate of the signing CA, and any intermediatory certificates, must be loaded into the local system's IKEv2 keystore. See \fBikev2cert\fR(1M) for examples.
+.sp
+.LP
+The \fBikev2.config\fRpolicy file does not define certificate trust or validation policy. Instead, all certificates added to the local system's IKEv2 certificate keystore are trusted implicitly. Trust anchors and certificate validation policy are configured by invoking \fBkmfcfg\fR(1) to modify the IKEv2 specific KMF policy governing usage of the keystore. For additional details, see \fBin.ikev2d\fR(1M), \fBpktool\fR(1), and \fBkmfcfg\fR(1).
+.SS "Lexical Components"
+.sp
+.LP
+On any line, an unquoted \fB#\fR character introduces a comment. The remainder of that line is ignored. Additionally, on any line, an unquoted \fB//\fR sequence introduces a comment. The remainder of that line is ignored. 
+.sp
+.LP
+All keywords are case-sensitive.
+.sp
+.LP
+There are several special types of lexical tokens in the \fBikev2.config\fR file: 
+.sp
+.ne 2
+.mk
+.na
+\fB\fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+A decimal, hex, or octal number representation is as in C.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIIPaddr\fR/\fIprefix\fR/\fIrange\fR\fR
+.ad
+.sp .6
+.RS 4n
+An IPv4 or IPv6 address with an optional /\fINNN\fR suffix, (where \fINNN\fR is a \fInum\fR) that indicates an address (\fBCIDR\fR) prefix (for example, \fB10.1.2.0/24\fR). An optional /\fIADDR\fR suffix (where \fIADDR\fR is a second IP address) indicates an address/mask pair (for example, \fB10.1.2.0/255.255.255.0\fR). An optional -\fIADDR\fR suffix (where \fIADDR\fR is a second IPv4 address) indicates an inclusive range of addresses (for example, \fB10.1.2.0-10.1.2.255\fR). The \fB/\fR or \fB-\fR can be surrounded by an arbitrary amount of white space.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB{ XXX\fR | \fBYYY\fR | \fBZZZ }\fR\fR
+.ad
+.sp .6
+.RS 4n
+Either the words \fBXXX\fR, \fBYYY\fR, or \fBZZZ\fR, for example, { yes | no}.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIid-type\fR\fR
+.ad
+.sp .6
+.RS 4n
+An IKEv2 identity type. The value of the id-type is checked to ensure that the format matches the type. For example, an \fBEMAIL\fR id-type must contain an \fB@\fR character. IKEv2 identity types include:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDN\fR\fR
+.ad
+.RS 9n
+.rt  
+An X.509 distinguished name in text format.  For example, \fB"C=US, O=Oracle, CN=Example Name"\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBFQDN\fR\fR
+.ad
+.RS 9n
+.rt  
+A fully qualified domain name. A leading '.' might be used as a wildcard. For example, \fB"myhost.example.com"\fR or \fB".example.com"\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEMAIL\fR\fR
+.ad
+.RS 9n
+.rt  
+An email address. An empty value before the '\fB@\fR' symbol indicates a wildcard.  For example, 	\fB"joe.example@mail.example.com"\fR or \fB"@example.com"\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBIP\fR\fR
+.ad
+.RS 9n
+.rt  
+An IP address. Address ranges or prefixes might be used for wildcard matching. For example, \fB"10.1.2.3"\fR, \fB"10.0.1.1 - 10.0.1.15"\fR, or \fB"0.0.0.0/0"\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBIPV6\fR\fR
+.ad
+.RS 9n
+.rt  
+An IPv6 address. Address ranges or prefixes might be used for wildcard matching. For example, \fB"fe80::1"\fR, \fB"fe80::1 - fe80::12"\fR, or \fB"::/0"\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBKEYID\fR\fR
+.ad
+.RS 9n
+.rt  
+A key ID. Typically, this is the 160-bit hash of a certificate's public key. For example, \fB"3f:a0:6a:a1:e6:73:6b:c8:d7:7b:4d:de:b8:b4:3d:5d:ff:26:69:80"\fR.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauth-method\fR\fR
+.ad
+.sp .6
+.RS 4n
+An IKEv2 authentication method. IKEv2 authentication method values include:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpreshared\fR\fR
+.ad
+.RS 17n
+.rt  
+Authenticate using pre-shared keys. Refer to the \fBikev2.preshared\fR(4) man page.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcert\fR\fR
+.ad
+.RS 17n
+.rt  
+Authenticate using a certificate signature.  The signature method is determined automatically and  might be any of the methods described below.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrsa_sig\fR\fR
+.ad
+.RS 17n
+.rt  
+Authenticate using a RSA certificate signature.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdss_sig\fR\fR
+.ad
+.RS 17n
+.rt  
+Authenticate using a DSS certificate signature.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBec_sha256_sig\fR\fR
+.ad
+.RS 17n
+.rt  
+Authenticate using an ECDSA certificate signature with the SHA256 hash algorithm. The certificate must use a public key from the \fBsecp256r1\fR curve.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBec_sha384_sig\fR\fR
+.ad
+.RS 17n
+.rt  
+Authenticate using an ECDSA certificate signature with the SHA384 hash algorithm.  The certificate must use a public key from the \fBsecp384r1\fR curve.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBec_sha512_sig\fR\fR
+.ad
+.RS 17n
+.rt  
+Authenticate using an ECDSA certificate signature with the SHA512 hash algorithm.  The certificate must use a public key from the \fBsecp521r1\fR curve.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB"\fR\fIstring\fR\fB"\fR\fR
+.ad
+.sp .6
+.RS 4n
+A quoted string. 
+.sp
+Examples include:\fB"Label foo"\fR, or \fB"C=US, OU=Sun Microsystems\e\e, Inc., N=olemcd@eng.example.com"\fR
+.sp
+A backslash (\fB\e\fR) is an escape character. If the string needs an actual backslash, two must be specified.
+.RE
+
+.SS "File Body Entries"
+.sp
+.LP
+There are four main types of entries:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+IKEv2 SA transform defaults
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+IKEv2 SA transforms
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+IKEv2 rule defaults
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+IKEv2 rules
+.RE
+.sp
+.LP
+The IKEv2 SA transform defaults are as follows:
+.sp
+.ne 2
+.mk
+.na
+\fBIKEv2 SA transform defaults\fR
+.ad
+.sp .6
+.RS 4n
+These values are used as defaults for all subsequent \fBikesa_xform\fR entries in the file.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBikesa_lifetime_secs num\fR\fR
+.ad
+.RS 27n
+.rt  
+The default lifetime, in seconds, of an IKEv2 security association (SA).
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBIKEv2 SA transforms\fR
+.ad
+.sp .6
+.RS 4n
+An IKEv2 SA transform specifies a set of methods used to to protect and authenticate traffic for an IKEv2 security association, as well as additional parameters dependent on the security methods chosen.
+.sp
+During establishment of an IKEv2 SA, the initiator might offer several transforms; in this case, the responder will accept one of them, assuming it has at least one matching transform configured. The order of the transforms within this file determines the order of preference when multiple transforms are offered.
+.sp
+IKEv2 SA transforms may be configured globally, outside of any IKEv2 rule, or within an IKEv2 rule. Multiple transform entries at either scope accumulate.  However, if any transforms are specified within an IKEv2 rule, that set of transforms overrides the globally defined transforms for that rule only.
+.sp
+Each IKEv2 rule must include at least one transform, either directly within the rule, or inherited from global definitions. Globally defined transforms must appear before any IKEv2 rules to which they should apply.
+.sp
+This is the format of an IKEv2 SA transform:
+.sp
+.in +2
+.nf
+\fBikesa_xform { \fIparameter-list\fR }\fR
+.fi
+.in -2
+.sp
+
+The parameter-list is an unordered list of attribute value pairs. Unless specified as optional, attributes in 	the parameter-list must occur exactly once. The following attributes are defined:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdh_group \fInumber\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+The Oakley Diffie-Hellman group is used for IKEv2 SA key derivation.  The group numbers are defined in RFC 2409, Appendix A, RFC 3526, RFC 4753, and RFC 5114.
+.sp
+The list of acceptable values may be retrieved by using the following command:
+.sp
+.in +2
+.nf
+# \fBikeadm dump groups\fR
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBencr_alg { aes | 3des | camellia }\fR\fR
+.ad
+.sp .6
+.RS 4n
+An encryption algorithm.
+.sp
+The AES and CAMELLIA algorithms allows an optional key-size setting, using the syntax (low value to high value), the same as specified in \fBipsecconf\fR(1M) for the \fBkeylen\fR specifier. To specify a single AES or CAMELLIA key size, the low value must equal the high value or single number must be used. If no range is specified, all key sizes are allowed.
+.sp
+The list of supported encryption algorithms may be retrieved using the following command:
+.sp
+.in +2
+.nf
+# \fBikeadm dump encralgs\fR
+.fi
+.in -2
+.sp
+
+Note that the syntax described above uses abbreviated identifiers that omit the \fB-cbc\fR suffix.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauth_alg { md5 | sha | sha1 | sha256 | sha384 | sha512 }\fR\fR
+.ad
+.sp .6
+.RS 4n
+An authentication algorithm.
+.sp
+The list of supported authentication algorithms can be retrieved by using the following command:
+.sp
+.in +2
+.nf
+# \fBikeadm dump authalgs\fR
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprf { md5 | sha | sha1 | sha256 | sha384 | sha512 }\fR\fR
+.ad
+.sp .6
+.RS 4n
+Optional. The psuedo-random function to use. The same algorithms available for \fBauth_algs\fR may be used for \fBprf\fR. By default, the value specified for \fBauth_alg\fR will be used.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprf { md5 | sha | sha1 | sha256 | sha384 | sha512 }\fR\fR
+.ad
+.sp .6
+.RS 4n
+Optional. The psuedo-random function to use. The same algorithms available for \fBauth_algs\fR may be used for \fBprf\fR. By default, the value specified for \fBauth_alg\fR	 will be used.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBikesa_lifetime_secs num\fR\fR
+.ad
+.sp .6
+.RS 4n
+Optional. The lifetime for the IKEv2 SA.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBIKEv2 rule defaults\fR
+.ad
+.sp .6
+.RS 4n
+The following IKEv2 rule attributes can be prefigured by using file-level defaults. Values specified within any given rule override global defaults.
+.br
+.in +2
+\fBlocal_id\fR
+.in -2
+.br
+.in +2
+\fBremote_id\fR
+.in -2
+.br
+.in +2
+\fBauth_lifetime_secs\fR
+.in -2
+.br
+.in +2
+\fBchildsa_lifetime_secs\fR
+.in -2
+.br
+.in +2
+\fBchildsa_softlife_secs\fR
+.in -2
+.br
+.in +2
+\fBchildsa_idletime_secs\fR
+.in -2
+.br
+.in +2
+\fBchildsa_lifetime_kb\fR
+.in -2
+.br
+.in +2
+\fBchildsa_softlife_kb\fR
+.in -2
+.br
+.in +2
+\fBchildsa_pfs\fR
+.in -2
+In each case, the usage and required arguments for these keywords is the same as inside an IKEv2 rule.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBIKEv2 rules\fR
+.ad
+.sp .6
+.RS 4n
+An IKEv2 rule describes a set of peer system's with which the IKEv2 service is allowed to establish IKEv2 SAs, along with the local identity and other parameters to be used with that set of peers.
+.sp
+When a new IPsec SA is requested by the kernel, or a peer system attempts to initiate an IKEv2 SA, the set of IKEv2 rules is searched in the order they were added. Initially, a rule is found by matching the IP/IPv6 addresses of the local and peer system's. If multiple matches are possible based on addresses, a different rule may be selected during authentication based on the 	 peer's identity and the contents of any certificate request payloads.
+.sp
+At least one IKEv2 rule must be defined in the configuration file.
+.sp
+This is the format of an IKEv2 rule:
+.sp
+.in +2
+.nf
+{ \fIparameter-list\fR }
+.fi
+.in -2
+.sp
+
+The parameter-list is an unordered list of attributes, each with one or more additional parameters.  The following attributes are valid within an IKEv2 rule:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlabel string\fR\fR
+.ad
+.sp .6
+.RS 4n
+Required parameter. The string is used to identify the IKEv2 rule when using various administrative interfaces, and in debugging output.  Only one label parameter is allowed per rule.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlocal_addr \fIIPaddr/prefix/range\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+Required parameter. The local address, address prefix, or address range for this rule. Multiple \fBlocal_addr\fR parameters accumulate within a given rule.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBremote_addr \fIIPaddr/prefix/range\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+Required parameter. The remote address, address prefix, or address range for this rule.  Multiple               \fBremote_addr\fR parameters accumulate within a given rule.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauth_method auth-method\fR\fR
+.ad
+.sp .6
+.RS 4n
+Identifies the method to be used for both local and remote authentication during establishment of the IKEv2 SA. The values for \fBauth-type\fR are described in the Lexical Components section above. This attribute is required unless both \fBlocal_auth_method\fR and \fBremote_auth_method\fR are set, in which case it is disallowed.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlocal_auth_method auth-method\fR\fR
+.ad
+.sp .6
+.RS 4n
+Similar to \fBauth_method\fR, but identifies the method for authenticating the local system only.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBremote_auth_method auth-method\fR\fR
+.ad
+.sp .6
+.RS 4n
+Similar to \fBauth_method\fR, but identifies the method for authenticating the peer system only.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlocal_id id-type = "string"\fR\fR
+.ad
+.sp .6
+.RS 4n
+The local ID to use during authentication.
+.sp
+When \fBlocal_auth_method\fR is preshared, any valid id-type and value may be used. The id-type and value must match one of the \fBremote_id\fR parameters configured on the peer for authentication to succeed.
+.sp
+When \fBlocal_auth_method\fR uses certificates, \fBlocal_id\fR value will be used to select which certificate is used during authentication. There must be a certificate matching the value assigned to the id-type and the corresponding private key for this certificate present in the local system's IKEv2 keystore. The private key is used to generate the \fBAUTH\fR value in the IKEv2 protocol.
+.sp
+The receiving system will verify the \fBAUTH\fR value using the certificate identified here. This certificate may be sent to the peer during the IKEv2 protocol exchange (by default) or manually exchanged. See the \fBcert_payload_limit\fR parameter below for details.
+.sp
+The public certificates of the signing CAs and intermediaries also need to be present in the receiving system's IKEv2 keystore in order to verify the identity of the peer's certificate for the receiving system.
+.sp
+This attribute may occur any number of times within a rule. Multiple \fBlocal_id\fR attributes within a given rule accumulate. When pre-shared key authentication is in use, values beyond the first are not used. When certificate-based authentication is in use, all \fBlocal_id\fR values are considered. The best \fBlocal_id\fR is chosen using any certificate request payloads received from the peer and the remaining validity time of the relevant certificates.
+.sp
+If this attribute is omitted, the local IP address of the IKEv2 SA will be used as the \fBlocal_id\fR. In the case where the local system is behind a NAT, this will result in a \fBlocal_id\fR derived from the system's internal address, which is undesirable in most cases. For this reason, \fBlocal_id\fR should always be explicitly configured when NAT is in use.
+.sp
+The possible values for \fBid-type\fR and format of \fBstring\fR are described above in the Lexical Components section.
+.sp
+The \fBstring\fR values for \fBlocal_id\fR must not be wildcards.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBremote_id id-type = "string"\fR\fR
+.ad
+.br
+.na
+\fB\fBremote_id ANY\fR\fR
+.ad
+.sp .6
+.RS 4n
+The remote ID to use during authentication.
+.sp
+When \fBremote_auth_method\fR is preshared, any valid id-type and value may be used. The id-type and value must match one of the \fBlocal_id\fR parameters configured on the peer for authentication to succeed.
+.sp
+When \fBremote_auth_method\fR uses certificates, the remote ID will be used to select which certificate is used for authentication during IKEv2 SA establishment.
+.sp
+The peer may choose to send the certificate as a payload, in which case the remote ID value must be present in the certificate it sends. The public certificate of the signing CA also needs to be the local system's IKEV2 keystore so that it can verify the certificates signature.
+.sp
+If the peer system chooses not to send its certificate as a payload, the local system's IKEv2 keystore needs a copy of the peer's public certificate and the signing CA's certificate in order to verify its identity.
+.sp
+This attribute may occur any number of times within a rule. If it is omitted, the peer's IP address will be used to compute a default \fBremote_id\fR. Multiple \fBremote_id\fR attributes within a given rule accumulate. The identity asserted by the peer must match one of these values for the authentication to succeed.
+.sp
+The form \fBremote_id ANY\fR will allow any remote ID asserted by the peer. The identity still must be authenticated using certificates or pre-shared keys.
+.sp
+The possible values for \fBid-type\fR and format of \fBstring\fR are described above in the Lexical Components section.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrequired_issuer id-type = "string"\fR\fR
+.ad
+.sp .6
+.RS 4n
+Require that the peer's certificate be signed by particular issuer. Self-signed certificates are considered to be their own issuers, and can pass this check. This directive provides an additional verification step. It does not allow self-signed certificates not present in the keystore to be trusted.
+.sp
+If multiple \fBrequired_issuer\fR attributes are provided, they accumulate with the IKE rule. A peer's certificate is acceptable if it was issued by any of the \fBrequired_issuers\fR.
+.sp
+This parameter may only be used within IKE rules that employ certificates for remote authentication.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcert_payload_limit num\fR\fR
+.ad
+.sp .6
+.RS 4n
+Limit the number of certificate payloads sent during the IKEv2 AUTH exchange. By default, the local end-entity and all intermediate certificates are sent. Setting this attribute to 1 will cause only the end-entity certificate to be sent, while setting it to 0 will disable the sending of certificate payloads entirely. This attribute may be used to significantly reduce the amount of data exchanged during IKEv2 SA creation in the case where it is known that the peer system has some or all of the required certificates installed locally.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsend_cert_requests { yes | initiator-only | no }\fR\fR
+.ad
+.sp .6
+.RS 4n
+This attribute determines whether certificate request payloads are sent to the peer during the AUTH exchange. This parameter is optional, and useful only when the remote authentication method relies on certificates. The default value is \fByes\fR.
+.sp
+Certificate payloads help the peer select which local identity and certificate to use during authentication. By including this payload, the public key hashes of the trust-anchors in the local keystore are disclosed to the peer before the peer's identity has been authenticated.
+.sp
+Depending on the configuration, enabling certificate request payloads may allow untrusted third parties to gather information about the set of locally configured trust-anchors. This is especially true when this attribute is set to \fByes\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrequest_http_certs { yes | no }\fR\fR
+.ad
+.sp .6
+.RS 4n
+This attribute determines whether to allow the peer system to use HTTP (aka. hash and URL) certificate payloads during authentication. If this value is set and the peer sends HTTP certificate payloads during authentication, the IKEv2 daemon will retrieve certificates from the URLs specified and cache them locally.
+.sp
+Unlike other credentials exchanged during IKEv2 authentication, certificates downloaded via HTTP are not protected by the encryption mechanism of the IKEv2 SA.
+.sp
+Because certificate payload processing is performed before authentication is complete, enabling this option allows any remote system matching the rule's \fBremote_addr\fR attribute to cause \fBin.ikev2d\fR to download any arbitrary URL. Reasonable size limitations are enforced on the downloaded file.
+.sp
+The default value is \fBno\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcert_base_url "url"\fR\fR
+.ad
+.sp .6
+.RS 4n
+This attribute specifies the prefix to prepend to a certificate's SHA1 hash value when generating URLs for HTTP (aka. hash and URL) certificate payloads.  If this value is set and the peer system supports HTTP certificate payloads, the IKEv2 daemon will send an HTTP URL and confirmation hash in each certificate payload, rather than embedding the entire certificate. This reduces the size of IKEv2 protocol packets and helps to prevent fragmentation.
+.sp
+It is the administrator's responsibility to make sure that certificates are available for download at the generated URLs.  For example, a system using a local cert with \fBlabel=mycert\fR in the keystore with SHA1 hash "\fB3dc0279b27cd6b2d0bbc01c917d3f03dbed5d352\fR" and \fBcert_base_url = "http://pki.example.com/certs/"\fR would send a URL that is the concatenation of those two values.  It would be necessary to extract the public certificate \fBmycert\fR and store the file on the web server \fBpki.example.com\fR, in the \fBcerts\fR subdirectory, with filename equal to the sha1 hash value of the certificate.
+.sp
+Certificates files intended for use with HTTP certificate payloads must be in ASN.1 DER format. Use the \fBoutformat=der\fR option when exporting certificates using \fBikev2cert\fR to produce files in the correct format.
+.sp
+The following command may be used to generate the SHA1 hash of a certificate in the correct format to be used as the certificate's file name. This example uses certificate \fBlabel=mycert\fR.
+.sp
+.in +2
+.nf
+ikev2cert list objtype=cert label=mycert | \ 
+@ + nawk 'BEGIN {f=0} /SHA1 Cert/ {f=1;next}; \ 
+@ + {if (f) { gsub(/:/,""); print $1; } f=0}'
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauth_lifetime_secs num\fR\fR
+.ad
+.sp .6
+.RS 4n
+Optional. The time in seconds after creation during which this IKEv2 SA may be rekeyed. After this time, a IEv2 SA must be created.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchildsa_lifetime_secs num\fR\fR
+.ad
+.br
+.na
+\fB\fBchildsa_lifetime_kb num\fR\fR
+.ad
+.sp .6
+.RS 4n
+Optional. Determines the lifetime, in seconds or KB, of all IPsec SAs created using IKEv2 SAs established under this rule.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchildsa_softlife_secs num\fR\fR
+.ad
+.br
+.na
+\fB\fBchildsa_softlife_kb num\fR\fR
+.ad
+.sp .6
+.RS 4n
+Optional. Determines the soft lifetime, in seconds or KB, of all IPsec SAs created using IKEv2 SAs established under this rule. Once this value is depleted, the IKEv2 service will rekey the IPsec SA if possible.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchildsa_idletime_secs num\fR\fR
+.ad
+.sp .6
+.RS 4n
+Optional. Determines the idle time in seconds for all IPsec SAs created using IKEv2 SAs established under this rule. IPsec SAs that are idle will not be rekeyed when their soft lifetime expires.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchildsa_pfs { num | auto }\fR\fR
+.ad
+.sp .6
+.RS 4n
+Optional. Enables perfect forward secrecy for IPsec SA creation.  If selected, the Oakley group specified is used for PFS. Acceptable values are the same as for the \fBdh_group\fR parameter listed above. The value of auto may be used, in which case the same \fBdh_group\fR negotiated during IKEv2 SA establishment will be used.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBikesa_xform { \fIparameter-list\fR }\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies an IKEv2 SA transform specifically for this IKEv2 rule. Transforms defined within an IKEv2 rule accumulate and override any globally defined transforms. Refer the IKEv2 SA transforms section above for additional details.
+.RE
+
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRA Sample \fBikev2.config\fR File
+.sp
+.LP
+The following is an example of an \fBikev2.config\fR file:
+
+.sp
+.in +2
+.nf
+### BEGINNING OF FILE
+
+     #
+     # This default value will apply to all transforms that follow
+     #
+     ikesa_lifetime_secs 3600
+
+     #
+     # Global transform definitions.  The algorithms choices are
+     # based on RFC 4921.
+     #
+     # Group 20 is 384-bit ECP
+     ikesa_xform { encr_alg aes(256..256) auth_alg sha384 dh_group 20 }
+     # Group 19 is 256-bit ECP
+     ikesa_xform { encr_alg aes(128..128) auth_alg sha256 dh_group 19 }
+
+     #
+     # Basic example rules using pre-shared keys.  For these rules to
+     # function, the file /etc/inet/ike/ikev2.preshared must be
+     # populated with pre-shared keys for the local and remote
+     # addresses.
+     #
+     # In the next three examples, local_id and remote_id have
+     # been omitted, and will default to the actual addresses in
+     # use between the local system and the peer.
+     #
+     {
+        label "IP identities and PSK auth"
+	auth_method preshared
+	local_addr  10.0.0.1
+	remote_addr 10.0.0.2
+     }
+     {
+        label "IP address prefixes and PSK auth"
+	auth_method preshared
+        # Any of our IP addresses
+	local_addr  0.0.0.0/0
+	# Any peer on either of two subnets
+	remote_addr 10.0.0.0/24
+	remote_addr 10.1.0.0/24
+     }
+     {
+        label "IPv6 address prefixes and PSK auth"
+	auth_method preshared
+        # Any of our IPv6 addresses
+	local_addr  ::/0
+	# Any peer on our WAN
+	remote_addr fd23:0738:dc9d::/48
+     }
+
+     #
+     # Example rules using certificates and a wide range of ID
+     # types.  For these rules to function, certificates must be
+     # present in the PKCS#11 softtoken keystore for user
+     # ikeuser.  For local identities, certificate and private
+     # keys must be present.  In order to valididate peer
+     # identities, the appropriate trust anchors must be
+     # configured for CA signed certificates.  Any self-signed
+     # end-entity certificates must be present in the keystore or
+     # they will not be trusted.
+     #
+     {
+        label "Certificate auth with DN identities"
+	# Any type of certificate signature is allowed
+	auth_method cert
+	local_addr  10.0.0.1
+	remote_addr 10.2.0.0/24
+	local_id  DN = "C=US, O=Oracle, CN=Example IKEv2 Local"
+	remote_id DN = "C=US, O=Oracle, CN=Example IKEv2 Peer1"
+     }
+     {
+        label "Certificate auth with many peer ID types"
+	# Any type of certificate signature is allowed
+	auth_method cert
+	local_addr  10.0.0.1
+	remote_addr 10.3.0.0/24
+	local_id  DN    = "C=US, O=Oracle, CN=Example IKEv2 Local"
+
+	# Certificates will be searched based on which ID the peer
+	# asserts.
+	remote_id DN = "C=US, O=Oracle, CN=Example IKEv2 Peer2"
+	remote_id EMAIL = "jack@example.com"
+	remote_id EMAIL = "jill@example.com"
+	remote_id FQDN  = "generic.example.com"
+	remote_id IP    = "10.3.200.42"
+	# The identies used for AUTH are divorced from the type of
+	# address used to communicate
+	remote_id IPV6  = "fd23:0738:dc9d:1:1:2:3:4"
+	remote_id KEYID =
+            "3f:a0:6a:a1:e6:73:6b:c8:d7:7b:4d:de:b8:b4:3d:5d:ff:26:69:80"
+     }
+     {
+        label "Certificate auth with wildcard peer IDs"
+	auth_method cert
+	local_addr  10.0.0.1
+	remote_addr 10.4.0.0/24
+
+	# Wildcard local IDs are not allowed
+	local_id  DN    = "C=US, O=Oracle, CN=Example IKEv2 Local"
+
+        # Any email address in the example.com domain
+	remote_id EMAIL = "@example.com"
+	# Any subdomain of example.com
+	remote_id FQDN  = ".example.com"
+	# Any IP identity in the 10.4.x.y subnet
+	remote_id IP    = "10.4.0.0/16"
+	# Any IPv6 address in the fd23:0738:dc9d:2:: subnet
+	remote_id IPV6  = "fd23:0738:dc9d:2::/64"
+     }
+
+     #
+     # This example shows how to override the transform list for
+     # a rule.  In this example, the peer doesn't support ECDH so
+     # we need to fall back.  We also want to ensure the use of
+     # RSA signature authentication.
+     #
+     {
+        label "Override transforms"
+	auth_method rsa_sig
+	local_addr  10.0.0.1
+	remote_addr 10.5.1.13
+	local_id  DN = "C=US, O=Oracle, CN=Example IKEv2 Local"
+	remote_id DN = "C=US, O=Oracle, CN=Deficient IKEv2 Peer"
+
+	# Override the globally defined ikesa_xform list
+	# Group 16 is 4096-bit MODP
+        ikesa_xform { encr_alg aes(128..256) auth_alg sha1 dh_group 16 }
+	# Group 14 is 2048-bit MODP
+        ikesa_xform { encr_alg aes(128..256) auth_alg sha1 dh_group 14 }
+	# Group 2 is 1024-bit MODP
+        ikesa_xform { encr_alg aes(128..256) auth_alg sha1 dh_group 2  }
+     }
+      # Camellia is accepted as an alternative to AES. The key size has
+      # not been specified, so all supported key lengths are OK.
+        ikesa_xform { encr_alg camellia auth_alg sha1 dh_group 2  }
+     }
+     #
+     # This example shows how to mix authentication types.  The
+     # local system will use a pre-shared key to authenticate to
+     # the peer, while the peer's identity will be authenticated
+     # using a DSS certificate signature.
+     #
+     {
+        label "Mixed auth types"
+	local_auth_method preshared
+	remote_auth_method dss_sig
+	local_addr  10.0.0.1
+	remote_addr 10.6.0.0/16
+	# Pre-shared key auth can be used with any ID type.
+	local_id  EMAIL = "jack@example.com"
+	remote_id EMAIL = "jill@example.com"
+     }
+
+     #
+     # This example shows how to use the generic wildcard ID as well
+     # as the required_issuer attribute.  In this case, we will
+     # allow any peer on a remote subnet to connect so long as
+     # that peer presents a certificate issued by the signer.
+     #
+     {
+        label "Wildcard with required signer"
+	local_auth_method cert
+	remote_auth_method cert
+	local_addr  10.0.0.1
+	remote_addr 10.7.0.0/16
+	local_id  DN = "C=US, O=Oracle, CN=Example IKEv2 Local"
+	# Match any remote_id regardless of type
+	remote_id ANY
+	required_issuer DN = "C=US, O=Oracle, CN=Example IPsec Cert Signer"
+     }
+.fi
+.in -2
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availability\fBnetwork/ike\fR
+_
+Interface Stability\fBCommitted\fR
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBcryptoadm\fR(1M), \fBikeadm\fR(1M), \fBikev2.preshared\fR(4), \fBin.ikev2d\fR(1M), \fBipseckey\fR(1M), \fBipsecalgs\fR(1M), \fBipsecconf\fR(1M), \fBpktool\fR(1), \fBkmfcfg\fR(1), \fBsvccfg\fR(1M), \fBattributes\fR(5), \fBlabels\fR(5)

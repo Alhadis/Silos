@@ -1,0 +1,584 @@
+'\" te
+.\" Copyright (c) 2005, 2010, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1989 AT&T
+.\" Portions Copyright (c) 1992, X/Open Company Limited.All Rights Reserved.
+.\" Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH awk 1 "2010 年 7 月 9 日" "SunOS 5.11" "用户命令"
+.SH 名称
+awk \- 模式扫描和处理语言
+.SH 用法概要
+.LP
+.nf
+\fB/usr/bin/awk\fR [\fB-f\fR \fIprogfile\fR] [\fB-F\fIc\fR\fR] [' \fIprog\fR '] [\fIparameters\fR] [\fIfilename\fR]...
+.fi
+
+.LP
+.nf
+\fB/usr/xpg4/bin/awk\fR [\fB-F\fR\fIcERE\fR] [\fB-v\fR \fIassignment\fR]... \fI\&'program'\fR \fB-f\fR \fIprogfile\fR... 
+     [\fIargument\fR]...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBnawk\fR(1) 手册页对 \fB/usr/xpg4/bin/awk\fR 实用程序进行了介绍。
+.sp
+.LP
+\fB/usr/bin/awk\fR 实用程序扫描每个输入 \fIfilename\fR，以查找与 \fIprog\fR 指定的模式集中任意项匹配的行。\fIprog\fR 字符串必须包括在单引号 (\fB´\fR) 中，以免被 shell 调用。对于 \fIprog\fR 中的每种模式，当 \fIfilename\fR 的某行与该模式匹配时，可以执行关联的操作。模式操作语句集实际上可以显示为 \fIprog\fR 或显示在通过 \fB-f\fR \fIprogfile\fR 选项指定的文件中。输入文件按顺序进行读取；如果没有文件，则读取标准输入。文件名 \fB\&'-'\fR 表示标准输入。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIprogfile\fR\fR
+.ad
+.RS 15n
+.rt  
+\fBawk\fR 使用它从 \fIprogfile\fR 读取的模式集。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fIc\fR\fR
+.ad
+.RS 15n
+.rt  
+将字符 \fIc\fR 用作字段分隔符 (Field Separator, FS) 字符。请参见下文有关 \fBFS\fR 的讨论。
+.RE
+
+.SH 用法
+.SS "输入行"
+.sp
+.LP
+每个输入行都与每个模式操作语句的模式部分匹配；关联的操作针对每个匹配的模式执行。任何 \fIvar=value\fR 形式的 \fIfilename\fR 都被视为赋值，而非文件名，并在作为文件名本应打开时执行。按照这种方式赋值的 \fIVariables\fR 在 \fBBEGIN\fR 规则中不可用，并且在读取之前指定的文件后赋值。
+.sp
+.LP
+输入行通常由空格分隔的多个字段组成。（此缺省值可以使用 \fBFS\fR 内置变量或 \fB-F\fR\fIc\fR 选项进行更改。）缺省情况下忽略前导空格并使用空格和/或制表符分隔字段。但是，如果为 \fBFS\fR 赋予了不包含任何空格的值，则不会忽略前导空格。这些字段表示为 \fB$1\fR、\fB$2\fR、\fB\&. . .\fR ；\fB$0\fR 表示整行。
+.SS "模式操作语句"
+.sp
+.LP
+模式操作语句具有以下形式：
+.sp
+.in +2
+.nf
+\fIpattern\fR \fB{\fR \fIaction\fR \fB}\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+模式或操作都可以省略。如果没有操作，则列显匹配行。如果没有模式，则针对所有输入行执行操作。模式操作语句使用换行符或分号分隔。
+.sp
+.LP
+模式为关系表达式和正则表达式的任意布尔组合（\fB!\fR、||、\fB&&\fR 和圆括号）。关系表达式为以下形式之一：
+.sp
+.in +2
+.nf
+\fIexpression relop expression\fR
+\fIexpression matchop regular_expression\fR
+.fi
+.in -2
+
+.sp
+.LP
+其中 \fIrelop\fR 为 C 中六种关系运算符之中的任意一种，而 \fImatchop\fR 为 \fB~\fR（包含）或 \fB!~\fR（不包含）。\fIexpression\fR 为算术表达式、关系表达式、特殊表达式
+.sp
+.in +2
+.nf
+\fIvar\fR in \fIarray\fR
+.fi
+.in -2
+
+.sp
+.LP
+或者这些表达式的布尔组合。
+.sp
+.LP
+正则表达式在 \fBegrep\fR(1) 中介绍。在模式中，它们必须使用斜杠括起来。模式中独立的正则表达式应用于整行。正则表达式还可以出现在关系表达式中。一种模式可以由逗号分隔的两种模式组成；在这种情况下，针对第一种模式出现位置和第二种模式出现位置之间的所有行执行操作。
+.sp
+.LP
+特殊模式 \fBBEGIN\fR 和 \fBEND\fR 可以分别用于在读取第一个输入行之前和读取最后一个输入行之后捕获控制。这些关键字不与任何其他模式结合使用。
+.SS "内置变量"
+.sp
+.LP
+内置变量包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBFILENAME\fR\fR
+.ad
+.RS 12n
+.rt  
+当前输入文件的名称
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBFS\fR\fR
+.ad
+.RS 12n
+.rt  
+输入字段分隔符正则表达式（缺省值为空格和制表符）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNF\fR\fR
+.ad
+.RS 12n
+.rt  
+当前记录中字段的数量
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNR\fR\fR
+.ad
+.RS 12n
+.rt  
+当前记录的有序编号
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBOFMT\fR\fR
+.ad
+.RS 12n
+.rt  
+编号的输出格式（缺省值为 \fB%.6g\fR）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBOFS\fR\fR
+.ad
+.RS 12n
+.rt  
+输出字段分隔符（缺省值为空格）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBORS\fR\fR
+.ad
+.RS 12n
+.rt  
+输出记录分隔符（缺省值为换行符）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBRS\fR\fR
+.ad
+.RS 12n
+.rt  
+输入记录分隔符（缺省值为换行符）
+.RE
+
+.sp
+.LP
+操作是语句序列。语句可以为下列形式之一：
+.sp
+.in +2
+.nf
+if ( \fIexpression\fR ) \fIstatement\fR [ else \fIstatement\fR ]
+while ( \fIexpression\fR ) \fIstatement\fR 
+do \fIstatement\fR while ( \fIexpression\fR )
+for ( \fIexpression\fR ; \fIexpression\fR ; \fIexpression\fR ) \fIstatement\fR
+for ( \fIvar\fR in \fIarray\fR ) \fIstatement\fR 
+break
+continue
+{ [ \fIstatement\fR ] .\|.\|. }
+\fIexpression\fR      # commonly variable = expression
+print [ \fIexpression-list\fR ] [ >\fIexpression\fR ]
+printf format [ ,\fIexpression-list\fR ] [ >\fIexpression\fR ]
+next            # skip remaining patterns on this input line
+exit [expr]     # skip the rest of the input; exit status is expr
+.fi
+.in -2
+
+.sp
+.LP
+语句以分号、换行符或右大括号结束。空表达式列表代表整个输入行。表达式根据情况接受字符串或数字值，并使用运算符 \fB+\fR、\fB-\fR、\fB*\fR、\fB/\fR、\fB%\fR、\fB^\fR 和串联（通过空格表示）构建。运算符 \fB++\fR、\fB--\fR、\fB+=\fR、\fB-=\fR、\fB*=\fR、\fB/=\fR、\fB%=\fR、\fB^=\fR、\fB>\fR、\fB>=\fR、\fB<\fR、\fB<=\fR、\fB==\fR、\fB!=\fR 和 \fB?:\fR 也可用于表达式。变量可以为标量、数组元素（表示为 x[i]）或字段。变量初始化为空字符串或零。数组下标可以为任意字符串，而不一定是数字；这允许存在关联内存形式。字符串常量使用引号 (\fB""\fR) 括起来，在其中可识别常用的 C 语言转义符。
+.sp
+.LP
+\fBprint\fR 语句将其参数列显到标准输出，或者某个文件（如果 \fB>\fR\fIexpression\fR 存在），或者某个管道（如果 '\fB|\fR\fIcmd\fR' 存在）。print 语句生成的输出以输出记录分隔符结束，每个参数都使用当前的输出字段分隔符分隔。\fBprintf\fR 语句按照格式设置其表达式列表的格式（请参见 \fBprintf\fR(3C)）。
+.SS "内置函数"
+.sp
+.LP
+算术函数如下：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcos\fR(\fIx\fR)\fR
+.ad
+.RS 11n
+.rt  
+返回 \fIx\fR 的余弦，其中 \fIx\fR 用弧度表示。（仅适用于 \fB/usr/xpg4/bin/awk\fR。请参见 \fBnawk\fR(1)。）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsin\fR(\fIx\fR)\fR
+.ad
+.RS 11n
+.rt  
+返回 \fIx\fR 的正弦，其中 \fIx\fR 用弧度表示。（仅适用于 \fB/usr/xpg4/bin/awk\fR。请参见 \fBnawk\fR(1)。）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexp\fR(\fIx\fR)\fR
+.ad
+.RS 11n
+.rt  
+返回 \fIx\fR 的指数函数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlog\fR(\fIx\fR)\fR
+.ad
+.RS 11n
+.rt  
+返回 \fIx\fR 的自然对数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsqrt\fR(\fIx\fR)\fR
+.ad
+.RS 11n
+.rt  
+返回 \fIx\fR 的平方根。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint\fR(\fIx\fR)\fR
+.ad
+.RS 11n
+.rt  
+将其参数截断为整数。当 \fIx\fR > \fB0\fR 时，则将其截断为趋近 \fB0\fR 的值。
+.RE
+
+.sp
+.LP
+字符串函数如下：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBindex(\fR\fIs\fR\fB,\fR \fIt\fR\fB)\fR\fR
+.ad
+.sp .6
+.RS 4n
+返回字符串 \fIs\fR 中字符串 \fIt\fR 首次出现的位置，或者\fB0\fR （如果它从未出现过）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint(\fR\fIs\fR\fB)\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIs\fR 截断为整数值。如果未指定 \fIs\fR，则使用 $0。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlength(\fR\fIs\fR\fB)\fR\fR
+.ad
+.sp .6
+.RS 4n
+在其参数采用字符串的情况下返回其参数的长度，或者在没有参数的情况下返回整行的长度。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsplit(\fR\fIs\fR, \fIa\fR, \fIfs\fR\fB)\fR\fR
+.ad
+.sp .6
+.RS 4n
+将字符串 \fIs\fR 拆分为数组元素 \fIa\fR[\fI1\fR]、\fIa\fR[\fI2\fR]、 . . .\fIa\fR[\fIn\fR] 并返回 \fIn\fR。使用正则表达式 \fIfs\fR 或字段分隔符 \fBFS\fR（如果未指定 \fIfs\fR）完成分隔。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsprintf(\fR\fIfmt\fR, \fIexpr\fR, \fIexpr\fR, . . . \fB)\fR\fR
+.ad
+.sp .6
+.RS 4n
+按照 \fIfmt\fR 指定的 \fBprintf\fR(3C) 格式设置表达式的格式并返回生成的字符串。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsubstr(\fR\fIs\fR, \fIm\fR, \fIn\fR\fB)\fR\fR
+.ad
+.sp .6
+.RS 4n
+返回从 \fIm\fR 位置开始的 \fIn\fR 个字符的 \fIs\fR 子字符串。
+.RE
+
+.sp
+.LP
+输入/输出函数如下：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgetline\fR\fR
+.ad
+.RS 11n
+.rt  
+将 \fB$0\fR 设置为当前输入文件的下一条输入记录。\fBgetline\fR 返回\fB1\fR 表示成功输入，\fB0\fR 表示文件结束，\fB-1\fR 表示错误。
+.RE
+
+.SS "大型文件行为"
+.sp
+.LP
+有关 \fBawk\fR 遇到大于或等于 2 GB（2^31 字节）文件时行为的说明，请参见 \fBlargefile\fR(5)。
+.SH 示例
+.LP
+\fB示例 1 \fR列显长度超过 72 个字符的行
+.sp
+.LP
+下面的示例是一个可由 \fBawk -f examplescript\fR 样式命令执行的 \fBawk\fR 脚本。它列显长度超过 72 个字符的行：
+
+.sp
+.in +2
+.nf
+\fBlength > 72\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR按照相反的顺序列显字段
+.sp
+.LP
+下面的示例是一个可由 \fBawk -f examplescript\fR 样式命令执行的 \fBawk\fR 脚本。它按照相反的顺序列显前两个字段：
+
+.sp
+.in +2
+.nf
+\fB{ print $2, $1 }\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR按照相反的顺序列显字段并分隔输入字段
+.sp
+.LP
+下面的示例是一个可由 \fBawk -f examplescript\fR 样式命令执行的 \fBawk\fR 脚本。它以相反的顺序列显前两个输入字段，并使用逗号、空格或制表符分隔： 
+
+.sp
+.in +2
+.nf
+\fBBEGIN { FS = ",[ \et]*|[ \et]+" }
+      { print $2, $1 }\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+该示例仅适用于 \fB/usr/xpg4/bin/awk\fR。
+
+.LP
+\fB示例 4 \fR对第一列求和，列显总和与平均值。
+.sp
+.LP
+下面的示例是一个可由 \fBawk -f examplescript\fR 样式命令执行的 \fBawk\fR 脚本。它对第一列求和，并列显总和与平均值： 
+
+.sp
+.in +2
+.nf
+\fB{ s += $1 }
+END  { print "sum is", s, " average is", s/NR }\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR按照相反的顺序列显字段
+.sp
+.LP
+下面的示例是一个可由 \fBawk -f examplescript\fR 样式命令执行的 \fBawk\fR 脚本。它以相反的顺序列显字段：
+
+.sp
+.in +2
+.nf
+\fB{ for (i = NF; i > 0; \(mi\(mii) print $i }\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR列显 \fBstart/stop\fR 对之间的所有行
+.sp
+.LP
+下面的示例是一个可由 \fBawk -f examplescript\fR 样式命令执行的 \fBawk\fR 脚本。它列显 start/stop 对之间的所有行。
+
+.sp
+.in +2
+.nf
+\fB/start/, /stop/\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR列显第一个字段与前一个不同的所有行
+.sp
+.LP
+下面的示例是一个可由 \fBawk -f examplescript\fR 样式命令执行的 \fBawk\fR 脚本。它列显第一个字段与前一个不同的所有行。
+
+.sp
+.in +2
+.nf
+\fB$1 != prev { print; prev = $1 }\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 8 \fR列显文件并填入页码
+.sp
+.LP
+下面的示例是一个可由 \fBawk -f examplescript\fR 样式命令执行的 \fBawk\fR 脚本。它列显文件并从 5 开始填入页码：
+
+.sp
+.in +2
+.nf
+\fB/Page/	{ $2 = n++; }
+     	   { print }\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 9 \fR列显文件并对其页面编码
+.sp
+.LP
+假定该程序位于名为 \fBprog\fR 的文件中，则下面的示例列显 \fBinput\fR 文件并从 \fB5\fR 开始对其页面进行编码：
+
+.sp
+.in +2
+.nf
+example% \fBawk -f prog n=5 input\fR
+.fi
+.in -2
+.sp
+
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBawk\fR 执行的以下环境变量的说明，请参见 \fBenviron\fR(5)：\fBLANG\fR、\fBLC_ALL\fR、\fBLC_COLLATE\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR、\fBNLSPATH\fR 和 \fBPATH\fR。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_NUMERIC\fR\fR
+.ad
+.RS 14n
+.rt  
+确定解释数字输入时使用的基数字符，在数字和字符串值之间执行转换并设置数字输出的格式。不管语言环境是什么，句点字符（POSIX 语言环境的小数点字符）都为处理 \fBawk\fR 程序（包括命令行参数赋值）时可识别的小数点字符。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.SS "/usr/bin/awk"
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+CSINot Enabled（未启用）
+.TE
+
+.SS "/usr/xpg4/bin/awk"
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/xopen/xcu4
+_
+CSIEnabled（已启用）
+_
+接口稳定性Committed（已确定）
+_
+标准请参见 \fBstandards\fR(5)。
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBegrep\fR(1)、\fBgrep\fR(1)、\fBnawk\fR(1)、\fBsed\fR(1)、\fBprintf\fR(3C)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBlargefile\fR(5)、\fBstandards\fR(5)
+.SH 附注
+.sp
+.LP
+如果涉及字段，则输出中不保留输入空格。
+.sp
+.LP
+数字和字符串之间没有显式转换。要强制将表达式视为数字，请向其添加 \fB0\fR。要强制将表达式视为字符串，请将空字符串 (\fB""\fR) 与其串联。

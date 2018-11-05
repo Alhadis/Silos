@@ -1,0 +1,523 @@
+'\" te
+.\" Copyright (c) 2008, 2013, Oracle and/or its affiliates.All rights reserved.
+.TH ldaplist 1 "2013 年 11 月 19 日" "SunOS 5.11" "ユーザーコマンド"
+.SH 名前
+ldaplist \- 構成済みのプロファイルを使用した LDAP ディレクトリからのネーミング情報の検索および一覧表示
+.SH 形式
+.LP
+.nf
+\fB/usr/bin/ldaplist\fR [\fB-dlv\fR] [\fB-h\fR \fILDAP_server\fR[\fB:\fR\fIserverPort\fR] [\fB-M\fR \fIdomainName\fR] 
+   [\fB-N\fR \fIprofileName\fR] [\fB-a\fR \fIauthenticationMethod\fR] [\fB-P\fR \fIcertifPath\fR] 
+   [\fB-D\fR \fIbindDN\fR] [\fB-w\fR \fIbindPassword\fR] [\fB-j\fR \fIpasswdFile\fR]]
+   [\fIdatabase\fR [\fIkey\fR]...]
+.fi
+
+.LP
+.nf
+\fB/usr/bin/ldaplist\fR \fB-g\fR
+.fi
+
+.LP
+.nf
+\fB/usr/bin/ldaplist\fR \fB-h\fR
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fB-h\fR \fILDAP_server\fR\fB[:\fR\fIserverPort\fR\fB]\fR オプションが指定されている場合、\fBldaplist\fR はオプションによって指定されたサーバーへの接続を確立して、\fB-N\fR オプションで指定された \fIDUAProfile\fR を取得します。\fBldaplist\fR は、取得された構成で説明されているディレクトリからの情報を一覧表示します。
+.sp
+.LP
+デフォルトでは (\fB-h\fR \fILDAP_server\fR\fB[:\fR\fIserverPort\fR\fB]\fR オプションが指定されていない場合)、このユーティリティーは、クライアントの初期化フェーズ中に \fBldapclient\fR(1M) によって生成された LDAP 構成ファイルで定義されている LDAP ディレクトリサービスからのネーミング情報を検索して一覧表示します。このユーティリティーをデフォルトモードで使用するには、Oracle Solaris LDAP クライアントがあらかじめ設定されている必要があります。 
+.sp
+.LP
+このデータベースは、\fBnsswitch.conf\fR(4) で定義されているコンテナ名またはデータベース名のどちらかです。コンテナとは、ネームサービス情報を含むディレクトリ情報ツリー (DIT) 内のリーフ以外のエントリのことです。コンテナ名は、構成ファイルで定義されている \fBdefaultSearchBase\fR を基準としたコンテナの LDAP 相対識別名 (RDN) です。たとえば、\fBou=people\fR という名前のコンテナの場合、データベース名は \fBnsswitch.conf\fR で指定されたデータベースです。このデータベースはコンテナにマップされます。たとえば、\fBpasswd\fR は \fBou=people\fR にマップされます。無効なデータベースが指定されている場合、そのデータベースは汎用のコンテナ (たとえば、\fBnisMapName=name\fR) にマップされます。
+.sp
+.LP
+この鍵は、データベース内で検索される属性値です。同じデータベース内で検索される複数の鍵を指定できます。この鍵は、\fIattribute\fR=\fIvalue\fR または \fIvalue\fR の 2 つの形式のどちらかで指定できます。最初の場合は、\fBldaplist\fR からサーバーに検索キーが渡されます。後者の場合は、データベースの指定方法に応じて属性が割り当てられます。データベースがコンテナ名である場合は、「\fBcn\fR」属性タイプが使用されます。データベースが \fBnsswitch.conf\fR で定義されている有効なデータベース名である場合は、定義済みの属性タイプが使用されます (下の表を参照)。データベースが無効なデータベース名である場合は、\fBcn\fR が属性タイプとして使用されます。
+.sp
+.LP
+\fBldaplist\fR ユーティリティーは、\fIRFC 2307bis\fR (現在は IETF ドラフト) で定義されたスキーマに依存します。LDAP サーバー上に格納されるデータは、プロファイルにスキーママッピング定義が含まれいてないかぎり、このスキーマに基づいて格納される必要があります。スキーママッピングについての詳細は、\fBldapclient\fR(1M) を参照してください。次の表は、データベース名からコンテナへのデフォルトのマッピング、LDAP オブジェクトクラス、および鍵で定義されていない場合に使用される属性タイプを示しています。
+.sp
+.in +2
+.nf
+Database     Object Class     Attribute Type    Container
+
+aliases      mailGroup        cn                ou=Aliases
+automount    nisObject        cn                automountMapName=auto_*
+bootparams   bootableDevice   cn                ou=Ethers
+ethers       ieee802Device    cn                ou=Ethers
+group        posixgroup       cn                ou=Group
+hosts        ipHost           cn                ou=Hosts
+ipnodes      ipHost           cn                ou=Hosts
+netgroup     ipNetgroup       cn                ou=Netgroup
+netmasks     ipNetwork        ipnetworknumber   ou=Networks
+networks     ipNetwork        ipnetworknumber   ou=Networks
+passwd       posixAccount     uid               ou=People
+protocols    ipProtocol       cn                ou=Protocols
+publickey    nisKeyObject     uidnumber         ou=People
+                              cn                ou=Hosts
+rpc          oncRpc           cn                ou=Rpc
+services     ipService        cn                ou=Services
+printers     printerService   printer-uri       ou=printers
+auth_attr    SolarisAuthAttr  cn                ou=SolarisAuthAttr
+prof_attr    SolarisProfAttr  cn                ou=SolarisProfAttr
+exec_attr    SolarisExecAttr  cn                ou=SolarisProfAttr
+user_attr    SolarisUserAttr  uid               ou=People
+projects     SolarisProject   SolarisProjectID  ou=projects
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+システムが Trusted Extensions を使用して構成されている場合は、次のデータベースだけが使用できます。
+.sp
+.in +2
+.nf
+tnrhtp      ipTnetTemplate   ipTnetTemplateName ou=ipTnet
+tnrhdb      ipTnetHost       ipTnetNumber       ou=ipTnet
+.fi
+.in -2
+.sp
+
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBautomount\fR データベースの場合、コンテナ列の \fBauto_*\fR は \fBauto_home\fR、\fBauto_direct\fR、… を表します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBpublickey\fR データベースで、鍵が数字で始まっている場合は、UID 番号として解釈されます。鍵が数字以外で始まっている場合は、ホスト名として解釈されます。
+.RE
+.sp
+.LP
+\fBldaplist\fR ユーティリティーは、鍵の中にワイルドカード「\fB*\fR」を使用した部分文字列の検索をサポートしています。たとえば、「\fBmy*\fR」は、「\fBmy\fR」で始まるすべての文字列に一致します。一部のシェル環境では、ワイルドカードが含まれた鍵を引用することが必要な場合があります。
+.sp
+.LP
+鍵が指定されていない場合は、現在の検索 \fBbaseDN\fR 内のすべてのコンテナが一覧表示されます。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fIauthenticationMethod\fR\fR
+.ad
+.sp .6
+.RS 4n
+認証方法を指定します。デフォルト値は、プロファイルで構成されているものです。サポートされる認証方法は次のとおりです。
+.sp
+.in +2
+.nf
+simple
+sasl/CRAM-MD5
+sasl/DIGEST-MD5
+tls:simple
+tls:sasl/CRAM-MD5
+tls:sasl/DIGEST-MD5
+.fi
+.in -2
+.sp
+
+\fBsimple\fR を選択すると、パスワードがネットワーク経由で平文で送信されます。これを使用することは決してお勧めできません。 
+.sp
+さらに、認証を使用しないプロファイルを使用してクライアントが構成されている場合、つまり、\fIcredentialLevel\fR 属性が \fBanonymous\fR に設定されているか、または \fIauthenticationMethod\fR が \fBnone\fR に設定されている場合、ユーザーはこのオプションを使用して認証方法を指定する必要があります。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+エントリではなく、指定されたデータベースの属性を一覧表示します。デフォルトでは、エントリが一覧表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR \fIbindDN\fR\fR
+.ad
+.sp .6
+.RS 4n
+要求されたデータベースへの読み取り権を持つエントリを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR\fR
+.ad
+.sp .6
+.RS 4n
+データベースのマッピングを一覧表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.sp .6
+.RS 4n
+データベースのマッピングを一覧表示します。
+.sp
+このオプションは非推奨になりました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR \fILDAP_server[:serverPort]\fR\fR
+.ad
+.sp .6
+.RS 4n
+エントリが読み取られる LDAP サーバーのアドレス (または名前) とポートを指定します。\fBnsswitch.conf\fR ファイルに指定されている現在のネームサービスが使用されます。認証方法で TLS が指定されていないかぎり、ポートのデフォルト値は \fB389\fR です。この場合、デフォルトの LDAP サーバーポート番号は \fB636\fR です。
+.sp
+IPv6 アドレスのアドレスとポート番号を指定するための形式は次のとおりです。
+.sp
+.in +2
+.nf
+[\fIipv6_addr\fR]:\fIport\fR
+.fi
+.in -2
+.sp
+
+IPv4 アドレスのアドレスとポート番号を指定するには、次の形式を使用します。
+.sp
+.in +2
+.nf
+\fIipv4_addr\fR:\fIport\fR
+.fi
+.in -2
+.sp
+
+ホスト名を指定する場合は、次の形式を使用します。
+.sp
+.in +2
+.nf
+\fIhost_name\fR:\fIport\fR
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-j\fR \fIpasswdFile\fR\fR
+.ad
+.sp .6
+.RS 4n
+バインド DN のパスワードまたは SSL クライアントの鍵データベースのパスワードを含むファイルを指定します。パスワードを保護するには、このオプションをスクリプトで使用し、セキュリティー保護されたファイルにパスワードを保存します。 
+.sp
+このオプションは、\fB-w\fR オプションとは相互排他的です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+検索条件に一致する各エントリのすべての属性を一覧表示します。デフォルトでは、\fBldaplist\fR は、検索されたエントリの識別名のみを一覧表示します。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR \fIdomainName\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたサーバーによって提供されるドメインの名前を指定します。このオプションが指定されていない場合は、デフォルトドメイン名が使用されます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR \fIprofileName\fR\fR
+.ad
+.sp .6
+.RS 4n
+DUAProfile の名前を指定します。\fB-H\fR オプションで指定されたサーバー上に、このような名前を持つプロファイルが存在すると想定されます。デフォルト値は default です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIcertifPath\fR\fR
+.ad
+.sp .6
+.RS 4n
+証明書データベースの場所への証明書のパスを指定します。値は、セキュリティーデータベースファイルが置かれているパスです。これは、\fIauthenticationMethod\fR および \fIserviceAuthenticationMethod\fR 属性で指定される TLS サポートに使用されます。デフォルトは \fB/var/ldap\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-w\fR \fIbindPassword\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIbindDN\fR の認証に使用するパスワード。このパラメータがない場合、このコマンドはパスワードの入力を求めます。LDAP では、NULL パスワードはサポートされていません。 
+.sp
+認証に使用されるパスワードを指定するために \fB-w\fR \fIbind_password\fR を使用すると、システムのほかのユーザーが \fBps\fR コマンドを使用して、スクリプトファイルまたはシェルの履歴でそのパスワードを表示できるようになります。 
+.sp
+\fB-\fR の値がパスワードとして指定されている場合、このコマンドはパスワードの入力を求めます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+冗長モードを設定します。\fBldaplist\fR ユーティリティーは、エントリを検索するために使用されるフィルタも表示します。このフィルタには「\fB+++\fR」の接頭辞が付けられます。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRホストデータベース内のすべてのエントリの一覧表示
+.sp
+.LP
+次の例では、\fBhosts\fR データベース内のすべてのエントリを一覧表示します。 
+
+.sp
+.in +2
+.nf
+example% \fBldaplist hosts\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fR非標準データベース \fBou=new\fR 内のすべてのエントリの一覧表示
+.sp
+.LP
+次の例では、非標準データベース内のすべてのエントリを一覧表示します。
+
+.sp
+.in +2
+.nf
+example% \fBldaplist ou=new\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fR\fBpasswd\fR データベース内の \fBuser1\fR の検索
+.sp
+.LP
+次の例では、\fBpasswd\fR データベース内の \fBuser1\fR を検索します。
+
+.sp
+.in +2
+.nf
+example% \fBldaplist passwd user1\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fR\fBservices\fR データベース内の \fB4045\fR のサービスポートを持つエントリの検索
+.sp
+.LP
+次の例では、\fBservices\fR データベース内の \fB4045\fR のサービスポートを持つエントリを検索します。
+
+.sp
+.in +2
+.nf
+example% \fBldaplist services ipServicePort=4045\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 5 \fR\fBpasswd\fR データベース内の \fBnew\fR で始まるユーザー名を持つすべてのユーザーの検索
+.sp
+.LP
+次の例では、\fBpasswd\fR データベース内の \fBnew\fR で始まるユーザー名を持つすべてのユーザーを検索します。
+
+.sp
+.in +2
+.nf
+example% \fBldaplist passwd 'new*'\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 6 \fR\fBhosts\fR データベースの属性の一覧表示
+.sp
+.LP
+次の例では、\fBhosts\fR データベースの属性を一覧表示します。
+
+.sp
+.in +2
+.nf
+example% \fBldaplist -d hosts\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 7 \fR\fBpasswd\fR データベース内の \fBuser1\fR の検索
+.sp
+.LP
+次の例では、\fBpasswd\fR データベース内の \fBuser1\fR を検索します。LDAP サーバーが明示的に指定されています。
+
+.sp
+.in +2
+.nf
+example% \fBldaplist -H 10.10.10.10:3890 \e 
+            -M another.domain.name -N special_duaprofile \e
+            -D "cn=directory manager" -w secret \e
+            user1\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 8 \fRユーザーのすべての属性の一覧表示
+.sp
+.LP
+次の例では、\fBuser1\fR の \fBpasswd\fR、\fBshadow\fR、および \fBuser_attr\fR 属性を一覧表示します。非修飾の \fBuser_attr\fR エントリが、\fBSolarisAttrKeyValue\fR 属性とともに一覧表示されます。修飾されたエントリは、\fBSolarisUserAttrEntry\fR 属性を使用して別の行に一覧表示されます。
+
+.sp
+.in +2
+.nf
+example% ldaplist -l passwd user1
+        dn: uid=u14,ou=users,dc=system,dc=com
+        objectClass: posixAccount
+		objectClass: shadowAccount
+		objectClass: account
+		objectClass: top
+		objectClass: SolarisUserAttr
+		objectClass: SolarisQualifiedUserAttr
+		cn: user1
+		uidnumber: 317
+		gidnumber: 10
+		homedirectory: /export/home/user1
+		loginshell: /usr/bin/bash
+		uid: user1
+		userPassword: {crypt}UP
+		shadowInactive: 365
+		shadowExpire: 24472
+		shadowFlag: 0
+		SolarisUserType: normal
+		SolarisAttrKeyValue: profiles=Basic Solaris User
+		SolarisUserAttrEntry: leonardo:::profiles=System Administrator
+	    SolarisUserAttrEntry: @mynetgroup:::\
+		      profiles=Network Administrator;roles=admin
+    
+  
+.fi
+.in -2
+.sp
+
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+いくつかのエントリに正常に一致しました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+テーブルを正常に検索しましたが、一致が見つかりませんでした。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+エラーが発生した。エラーメッセージが出力されます。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/ldap/ldap_client_file\fR\fR
+.ad
+.br
+.na
+\fB\fB/var/ldap/ldap_client_cred\fR\fR
+.ad
+.RS 30n
+.rt  
+クライアントの LDAP 構成を含むファイル。これらのファイルを手動で変更しないでください。その内容は人間が読めるとは限りません。これらのファイルを更新するには、\fBldapclient\fR(1M) を使用します。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/network/nis
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBldapadd\fR(1), \fBldapdelete\fR(1), \fBldapmodify\fR(1), \fBldapmodrdn\fR(1), \fBldapsearch\fR(1), \fBidsconfig\fR(1M), \fBldap_cachemgr\fR(1M), \fBldapaddent\fR(1M), \fBldapclient\fR(1M), \fBresolv.conf\fR(4), \fBattributes\fR(5), \fBldap\fR(5)
+.SH 注意事項
+.sp
+.LP
+\fIRFC 2307bis\fR は、\fBLDAP\fR をネームサービスとして使用するためのアプローチを定義した、ドラフト段階にある IETF 情報ドキュメントです。 
+.sp
+.LP
+現在 \fBlibldap.so.5\fR では StartTLS がサポートされていないため、提供されるポート番号は、StartTLS シーケンスの一部として使用されるポートではなく、TLS オープン中に使用されるポートを示します。たとえば、\fB-h foo:1000 -a tls:simple\fR は、セキュリティーで保護されていないポート 1000 上のオープンな StartTLS シーケンスではなく、ホスト \fBfoo\fR のポート 1000 上の生の TLS オープンを示します。ポート 1000 がセキュリティーで保護されていない場合は、接続が確立されません。

@@ -1,0 +1,207 @@
+'\" te
+.\" Copyright (c) 2012, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH suri 5 "2015 年 3 月 9 日" "SunOS 5.11" "標準、環境、マクロ"
+.SH 名前
+suri \- ストレージ URI
+.SH 機能説明
+.sp
+.LP
+ストレージ URI はさまざまなノード全体でストレージオブジェクトを一意に識別します。
+.sp
+.LP
+次のストレージ URI がサポートされています。
+.SS "dev URI"
+.sp
+.in +2
+.nf
+dev:<local-path-under-/dev>
+dev:///<path-with-dev>
+dev:<absolute-path-with-dev>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+たとえば、
+.sp
+.in +2
+.nf
+dev:dsk/c0t0d0s0
+dev:///dev/dsk/c0t0d0s0
+dev:/dev/dsk/c0t0d0s0
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+dev URI は既存のデバイスの形式でオブジェクトを指定します。すべての形式の dev URI は機能的に同等です。権限セクションがなく、暗黙的「\fB/dev/\fR」接頭辞の付いた「\fBdev:dsk\fR」形式が通常推奨されます。パスは \fB/dev\fR 名前空間内のデバイスである必要があります。
+.sp
+.LP
+デバイスパスのコンポーネントには、POSIX.1-2008 ポータブルファイル名文字集合の 0-9a-zA-Z._- からの文字のみを含めることができます。
+.SS "論理ユニット URI"
+.sp
+.in +2
+.nf
+lu:luname.naa.<ID>
+lu:luname.eui.<ID>
+lu:initiator.naa.<ID>,target.naa.<ID>,luname.naa.<ID>
+lu:initiator.naa.<ID>,target.naa.<ID>,luname.eui.<ID>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+たとえば、
+.sp
+.in +2
+.nf
+lu:luname.naa.5000c5000288fa25
+lu:luname.eui.0021280001cf80f6
+lu:initiator.naa.2100001d38089fb0,target.naa.2100001d38089fb0,luname.naa.5000c5000288fa25
+lu:initiator.naa.2100001d38089fb0,target.naa.2100001d38089fb0,luname.eui.0021280001cf80f6
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+論理ユニット URI はファイバチャネルまたは Serial Attached SCSI 経由で接続された論理ユニットを指定します。luname のみの URI 形式では、ID は論理ユニット名を示します。initiator,target,luname 形式で、initiator はイニシエータポートを指定し、target はターゲットポートを指定し、それらはまとめて、luname のみの形式のように URI の luname 部分に名前が一致している必要がある論理ユニットへのパスを指定します。
+.sp
+.LP
+ID は 16 進数 (64/128 ビット) でフォーマットされた SCSI-3 VPD ページ (0x83) 論理ユニット名を使用して表されます。ID は大文字と小文字が区別されません。NAA または EUI-64 識別子に基づいた論理ユニット名のみがサポートされています。識別子の形式については、「注意事項」を参照してください。
+.sp
+.LP
+一般に、luname のみの URI と組み合わせてマルチパスを使用することが推奨されます。マルチパスが無効で、luname のみの URI が使用されている場合、指定した論理ユニットへのランダムパスが選択されます。このランダムパスの割り当てを回避するには、initiator,target,luname URI 形式を使用して論理ユニットへの特定のパスを選択できます。マルチパスが有効で、initiator,target,luname URI 形式を使用している場合、マルチパスフレームワークによって、論理ユニットにアクセスするために使用するパスが制御され、URI はアクセスパスではなく、ユニットを識別するためにのみ使用されます。
+.sp
+.LP
+イニシエータやターゲット ID が一致していないが、論理ユニットが論理ユニット名に基づいて見つかった場合、ユニットには代替パス経由でアクセスされます。
+.SS "iSCSI URI"
+.sp
+.in +2
+.nf
+iscsi:///luname.naa.<ID>
+iscsi:///luname.eui.<ID>
+iscsi://<host>[:<port>]/luname.naa.<ID>
+iscsi://<host>[:<port>]/luname.eui.<ID>
+iscsi:///target.<IQN>,lun.<LUN>
+iscsi://<host>[:<port>]/target.<IQN>,lun.<LUN>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+IQN は iSCSI Qualified Name (iSCSI 修飾名) を表し、型式は \fBiqn\fR.\fBYYYY-MM\fR.<\fBorg-naming-auth\fR>[:<\fBstring-defined-by-org\fR>] です。IQN 形式は、『RFC 3721, Internet Small Computer Systems Interface (iSCSI) Naming and Discovery』で定義され、詳しく説明されています。<\fBstring-defined-by-org\fR> を汎用一意識別子 (UUID) にすることをお勧めします。 
+.sp
+.LP
+イニシエータ、ターゲット、および LUN から論理ユニット名へのマッピングがイニシエータから独立するように構成されている場合、iSCSI URI のターゲット、LUN 形式の使用は、ホスト間でのみ転送可能になります。
+.sp
+.LP
+たとえば、
+.sp
+.in +2
+.nf
+iscsi:///luname.eui.0021280001cf80f6
+iscsi:///luname.naa.600144f03d70c80000004ea57da10001
+iscsi://[::1]/luname.naa.600144f03d70c80000004ea57da10001
+iscsi://127.0.0.1/luname.naa.600144f03d70c80000004ea57da10001
+iscsi://127.0.0.1:3260/luname.naa.600144f03d70c80000004ea57da10001
+iscsi://hostname:3620/luname.eui.0021280001cf80f6
+iscsi://hostname:3260/luname.naa.600144f03d70c80000004ea57da10001
+
+iscsi://127.0.0.1/target.iqn.com.sun:02:d0f2d311-f703,lun.0
+iscsi://127.0.0.1:3620/target.iqn.com.sun:02:d0f2d311-f703,lun.3
+iscsi:///target.iqn.com.sun:02:d0f2d311-f703,lun.6
+iscsi://[::1]/target.iqn.com.sun:02:d0f2d311-f703,lun.2
+iscsi://hostname:3620/target.iqn.com.sun:4db41b76-e3d7-cd2f-bf2d-9abef784d76c,lun.0
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+iSCSI URI は iSCSI プロトコル経由でアクセス可能な論理ユニット番号に基づいてオブジェクトを指定します。オプションの \fBhostname\fR[:<\fBport\fR>] 権限セクションは、コンシューマが送信先検出アドレスを設定するための情報を提供します。IPv6 アドレスは角括弧で囲む必要があります。
+.sp
+.LP
+ID の形式については、「論理ユニット URI」セクションで説明しています。NAA および EUI-64 ベースの識別子形式の詳細については、「注意事項」を参照してください。
+.SS "NFS URI"
+.sp
+.in +2
+.nf
+nfs://<user>:<group>@<host>[:<port>]/<nfs-share-path>/<file>
+.fi
+.in -2
+
+.sp
+.LP
+たとえば、
+.sp
+.in +2
+.nf
+nfs://admin:staff@host/export/test/nfs_file 
+nfs://admin:staff@host:1000/export/test/nfs_file
+.fi
+.in -2
+
+.sp
+.LP
+NFS URI は、指定された NFS ファイル上に作成された \fBlofi\fR デバイスに基づいてオブジェクトを指定します。NFS ファイルは、ユーザーとグループから取得された資格情報を使用してアクセスされます。ユーザーとグループは \fBusernames\fR または \fBuserids\fR として指定できます。ホストは IPv4 アドレス、IPv6 アドレス、またはホスト名として指定できます。IPv6 アドレスは角括弧で囲む必要があります。
+.SS "ファイル URI"
+.sp
+.in +2
+.nf
+file://<user>:<group>@<host>/<file-path>
+.fi
+.in -2
+
+.sp
+.LP
+たとえば、
+.sp
+.in +2
+.nf
+file://admin:staff@/filepath 
+file://admin:staff@localhost/filepath
+.fi
+.in -2
+
+.sp
+.LP
+ファイル URI は、指定されたローカルファイル上に作成された \fBlofi\fR デバイスに基づいてオブジェクトを指定します。ファイルは、ユーザーとグループから取得された資格情報を使用してアクセスされます。ユーザーとグループは \fBusernames\fR または \fBuserids\fR として指定できます。ホストを指定する必要はありませんが、指定する場合は \fBlocalhost\fR である必要があります。
+.SS "URI の取得"
+.sp
+.LP
+URI を手動で生成することによるエラーを避けるには、\fBsuriadm\fR(1M) サブコマンド \fBlookup-uri\fR を使用して、既存のシステムデバイスパスに基づいて URI を生成することをお勧めします。それらのデバイスパスはほかの手段で識別される必要があります。ファイバチャネルデバイスの場合、\fBfcadm\fR(1M) を使用できます。Serial Attached SCSI デバイスの場合、\fBsasinfo\fR(1M) を使用できます。iSCSI デバイスの場合、\fBiscsiadm\fR(1M) を使用できます。
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/library/storage/suri
+_
+インタフェースの安定性Commited
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBfcadm\fR(1M), \fBiscsiadm\fR(1M), \fBsasinfo\fR(1M), \fBsuriadm\fR(1M), \fBattributes\fR(5)
+.sp
+.LP
+Small Computer System Interface-3 (SCSI-3)
+.SH 注意事項
+.sp
+.LP
+NAA は Name Address Authority の略であり、形式とその識別子の長さを指定する識別子内のフィールドです。NAA 識別子の形式は、SCSI Primary Commands - 3 仕様の 7.6.3.6 NAA 識別子形式に関するセクションに定義されています。WWN (World Wide Name) 識別子では NAA 識別子形式が使われます。EUI-64 は、64 ビットの拡張一意識別子を表し、その形式は IEEE によって定義されています。

@@ -1,0 +1,504 @@
+'\" te
+.\" Copyright (c) 2009, 2015, Oracle and/or its affiliates. All rights reserved.
+.TH solaris10 5 "14 Jul 2015" "SunOS 5.11" "Standards, Environments, and Macros"
+.SH NAME
+solaris10 \- Solaris 10 branded zone
+.SH DESCRIPTION
+.sp
+.LP
+The \fBsolaris10\fR brand uses the branded zones framework described in \fBbrands\fR(5) to enable Solaris 10 binary applications to run unmodified on a machine with the latest Solaris Operating System kernel.
+.sp
+.LP
+Oracle Solaris 10 Zones are solaris10 branded zones that host x86 and SPARC Solaris 10 9/10 (or later released Oracle Solaris 10 update) user environments running on the Oracle Solaris 11 kernel.
+.sp
+.LP
+Note that it is possible to use an earlier Oracle Solaris 10 release if you first install the kernel patch 142909-17 (SPARC) or 142910-17 (x86/x64), or later version, on the original system.
+.sp
+.LP
+The \fBsolaris10\fR brand includes the tools necessary to install a Solaris 10 system image into a non-global zone. It also supports the tools necessary to migrate a Solaris 10 native zone to a \fBsolaris10\fR branded zone. The brand supports the execution of 32-bit and 64-bit Solaris 10 applications on either SPARC or x86 machines running the latest Solaris operating system.
+.SS "Configuration and Administration"
+.sp
+.LP
+The \fBsolaris10\fR brand supports the whole root non-global zone model. All of the required Solaris 10 software and any additional packages are installed into the private file systems of the zone. 
+.sp
+.LP
+The zone must reside on its own \fBzfs\fR(1M) dataset and only ZFS is supported. The ZFS dataset created automatically when the zone is installed or attached. If a ZFS dataset cannot be created, the zone is not installed or attached. 
+.sp
+.LP
+The \fBzonecfg\fR(1M) utility is used to configure a \fBsolaris10\fR branded zone. The \fBSYSsolaris10\fR template can be used when creating the zone or the configuration can be set up manually. Once a branded zone has been installed, that zone's brand cannot be changed or removed. The \fBzoneadm\fR(1M) utility is used to report the zone's brand type and administer the zone. The \fBzlogin\fR(1) utility is used to log in to the zone.
+.sp
+.LP
+The support for delegated ZFS dataset configurations is currently experimental and has not yet been tested.The \fB/dev/sound\fR device cannot be configured into the branded zone. In addition, \fBmdb\fR(1) and \fBdtrace\fR(1M) are not fully functional when used in the global zone to examine processes executing within a \fBsolaris10\fR branded zone.
+.sp
+.LP
+The following \fBzoneadm\fR(1M) resources and properties are not supported for this brand:
+.sp
+.in +2
+.nf
+autoshutdown=suspend
+anet:id
+device:id
+net:id
+virtual-cpu
+anet:mac
+ib-vhca
+ib-vhca:port
+.fi
+.in -2
+
+.sp
+.LP
+The following \fBzoneadm\fR(1M) resources and properties are supported by the live zone reconfiguration for \fBsolaris\fR brand:
+.sp
+.in +2
+.nf
+anet (with exceptions stated below)
+capped-memory
+dedicated-cpu
+device
+fs
+net (with exceptions stated below)
+pool
+scheduling-class
+zone.* rctls
+.fi
+.in -2
+
+.sp
+.LP
+The following \fBzoneadm\fR(1M) resources and properties are not supported by the live zone reconfiguration for \fBsolaris\fR brand:
+.sp
+.in +2
+.nf
+anet:allowed-address
+anet:configure-allowed-address
+anet:defrouter
+dataset
+file-mac-profile
+fs-allowed
+hostid
+limitpriv
+global-time
+net:allowed-address
+net:configure-allowed-address
+net:defrouter
+npiv
+tenant
+zpool
+.fi
+.in -2
+
+.sp
+.LP
+Any changes made to the listed unsupported resources and properties in the persistent configuration will be ignored by the live zone reconfiguration if they are applied to the running zone.
+.sp
+.LP
+Any attempts to modify the listed unsupported resources and properties in the live configuration will be refused.
+.sp
+.LP
+The \fBsolaris10\fR brand installer supports installing the zone from an image of an installed Solaris 10 system. This can be a full \fBcpio\fR(1), or \fBpax\fR(1) \fBxustar\fR archive. The \fBcpio\fR archive can be compressed with \fBgzip(1)\fR or \fBbzip2(1)\fR. The image can also be a level 0 \fBufsdump\fR(1M), or a path to the top-level of a Solaris 10 system's root directory tree. The zone cannot be installed from standard Solaris 10 distribution media. 
+.sp
+.LP
+When migrating from Solaris 10, it is possible that the zone is configured as a \fBsparseroot\fR zone. In this case, the zone should be readied on the host before the archive is made. This ensures that the inherited directories are included in the archive.
+.sp
+.LP
+The following \fBzonecfg\fR(1M) resources and properties are not supported for this brand:
+.sp
+.in +2
+.nf
+autoshutdown
+anet:evs
+anet:vport
+device:id
+file-mac-profile
+net:id
+tenant
+virtual-cpu
+anet:mac
+.fi
+.in -2
+
+.sp
+.LP
+There are specific defaults for properties supported for \fBsolaris10\fR brand as listed below:
+.sp
+.in +2
+.nf
+Resource                Property                    Default Value
+global                  zonepath                    /system/zones/%{zonename}
+                        autoboot                    false
+                        global-time                 false
+                        ip-type                     exclusive
+                        auto-shutdown               shutdown
+net                     configure-allowed-address   true
+anet                    mac-address                 auto
+                        lower-link                  auto
+                        link-protection             mac-nospoof
+.fi
+.in -2
+
+.sp
+.LP
+The ZFS dataset \fBcom.oracle.zones.solaris10:activebe\fR user property exists to support multiple boot environments for Solaris 10 branded zones. To activate a boot environment, the user has to set the \fBcom.oracle.zones.solaris10:activebe\fR property on the zone's ROOT dataset as shown below.
+.sp
+.in +2
+.nf
+# \fBzfs set com.oracle.zones.solaris10:activebe=\
+\fIboot environment name\fR \fIzone's ROOT dataset\fR\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+An installed Solaris 10 zone with more than one boot environment is required to have the \fBactivebe\fR property set. If the property is not set, or is set to a missing or invalid boot environment name, the zone will transition to unavailable state on next zone or system boot.  To resolve this, the activebe property must be corrected, and the zone must be attached with \fBzoneadm attach\fR. For more information, see examples 4 and 5.
+.SH SUB-COMMANDS
+.sp
+.LP
+The following arguments of \fBzoneadm\fR(1M) brand-specific subcommand are supported: 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBattach\fR [\fB-c\fR \fIsysidcfg\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Attach the specified Solaris 10 native zone image into the branded zone.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBclone\fR [\fB-c\fR \fBsysidcfg\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Install a zone by copying an existing installed zone. This subcommand is an alternative way to install the zone.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fBsysidcfg\fR\fR
+.ad
+.RS 15n
+.rt  
+Provides a \fIsysidcfg\fR file to apply after unconfiguration of the cloned zone.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstall\fR [\fB-a\fR \fIarchive\fR] [\fB-d\fR \fIpath\fR] [\fB-p\fR] [\fB-s\fR] [\fB-u\fR] [\fB-v\fR] \e\fR
+.ad
+.br
+.na
+\fB[\fB-c\fR \fBsysidcfg\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Install the specified Solaris 10 system image into the zone. Either the \fB-u\fR or \fB-p\fR option is required \fBand\fR either the \fB-a\fR or \fB-d\fR option is required.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fIarchive\fR\fR
+.ad
+.sp .6
+.RS 4n
+The path to a Unified Archive, \fBcpio\fR(1), \fBpax\fR(1) \fBxustar\fR, \fBzfs\fR archive, or a level \fB0\fR \fBufsdump\fR(1M) of an installed Solaris 10 system, an installed Solaris 10 native zone, or a solaris10 branded zone. The \fBcpio\fR and \fBzfs\fR archives can be compressed using \fBgzip\fR or \fBbzip2\fR. 
+.sp
+\fBarchiveadm\fR(1M) does not exist on Solaris 10. A Unified Archive that contains a solaris10 branded zone must be created from the global zone. Unified Archives may exist at a path, or a file, http, or https URI. If https is used, the \fB-x\fR option may be used to specify https security parameters.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIsysidcfg\fR\fR
+.ad
+.sp .6
+.RS 4n
+Provides a \fIsysidcfg\fR file to apply after installation. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+The path to the root directory of an installed Solaris 10 system.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+Preserve the system configuration after installing the zone. If installing from a Unified Archive and the archive is a recovery archive, \fB-p\fR is implied but can be overridden with \fB-u\fR.
+.sp
+.in +2
+.nf
+-x cert=\fB/path/cert\fR.pem
+-x cacert=\fB/path/cacert\fR.pem
+-x key=\fB/path/key\fR.pem
+.fi
+.in -2
+
+Use the specified certificate, CA certificate, and/or key for https access to the Unified Archive.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.sp .6
+.RS 4n
+Install silently.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+Run \fBsys-unconfig\fR on the zone after installing it. If installing from a Unified Archive and the archive is not a recovery archive, \fB-u\fR is implied.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+Verbose output from the install process.
+.RE
+
+.RE
+
+.SS "Application Support"
+.sp
+.LP
+The \fBsolaris10\fR zone only supports user-level Solaris 10 applications. You cannot use Solaris 10 device drivers or Solaris 10 kernel modules from inside a \fBsolaris10\fR zone. However, depending on the kernel module, you might be able to use the latest Solaris kernel module version with the Solaris 10 user-level application.
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRCreating a ZFS Flash Archive for Install
+.sp
+.LP
+The following example shows how to create an archive for a physical to virtual (P2V) migration. This is performed in the global zone of a system that is running Solaris 10. The Solaris 10 system must not have any non-global zones configured, installed, or running. The Solaris 10 system can use ZFS or UFS as its root file system.
+
+.sp
+.in +2
+.nf
+# flarcreate -n s10box -c /net/somehost/p2v/s10box.flar
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRInstalling a \fBsolaris10\fR Branded Zone Using a Flash Archive
+.sp
+.LP
+The following example installs a zone using the archive from Example 1. It assumes the zone has already been configured with\fBzonecfg\fR(1M) and has the brand property set to \fBsolaris10\fR.
+
+.sp
+.in +2
+.nf
+# zoneadm -z s10p2v install -a /net/somehost/p2v/s10box.flar -p
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRCreating a ZFS Archive for Install
+.sp
+.LP
+The following example shows how to create an archive for a virtual to virtual (V2V) migration. It assumes that the \fBzonepath\fR for the \fBsolaris10\fR branded zone is \fB/zones/v2vzone\fR.
+
+.sp
+.LP
+First, determine the name of \fBzonepath dataset\fR.
+
+.sp
+.in +2
+.nf
+# dataset=$(zfs list -H -o name /zones/v2vzone)
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Next, create a snapshot of the zone's datasets.
+
+.sp
+.in +2
+.nf
+# zfs snapshot -r $dataset@v2v
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Finally, generate a ZFS self-contained recursive stream that is compressed with \fBbzip2\fR.
+
+.sp
+.in +2
+.nf
+# zfs send -rc $dataset@v2v | bzip2 > /net/somehost/v2v/v2v.zfs.bz2
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 4 \fRInstalling a Zone Using a ZFS Archive
+.sp
+.LP
+The following example installs a zone using a ZFS archive. It assumes that the zone has already been configured using \fBzonecfg\fR(1M) and that the brand property is set to \fBsolaris10\fR.
+
+.sp
+.in +2
+.nf
+# zoneadm -z v2vzone install -a /net/somehost/v2v/v2v.zfs.bz2
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 5 \fRSetting the Zone's Active Boot Environment From the Global Zone
+.sp
+.in +2
+.nf
+# \fBzfs set com.oracle.zones.solaris10:activebe=zbe-1 \\fR
+    \fBrpool/export/zones/branded_zones/S10_zone/rpool/ROOT\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 6 \fRCreating a New Boot Environment From a Solaris10 Branded Zone
+.sp
+.LP
+The following example creates a new boot environment From a Solaris10 branded zone. The example also shows how to patch, activate, and boot to the new boot environment.
+
+.RS +4
+.TP
+1.
+Create a new boot environment.
+.sp
+.in +2
+.nf
+# \fBzfs snapshot rpool/ROOT/zbe-0@snap\fR
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBzfs clone -o mountpoint=/ -o canmount=noauto \
+    rpool/ROOT/zbe-0@snap rpool/ROOT/zbe-1\fR
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBzfs promote rpool/ROOT/zbe-1\fR
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+2.
+Patch the boot environment.
+.sp
+.in +2
+.nf
+# \fBzfs mount -o mountpoint=/mnt rpool/ROOT/zbe-1\fR
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBpatchadd -R /mnt -d /var/tmp/999999-01\fR
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBzfs unmount rpool/ROOT/zbe-1\fR
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+3.
+Activate the new boot environment and boot to it.
+.sp
+.in +2
+.nf
+# \fBzfs set com.oracle.zones.solaris10:activebe=zbe-1 rpool/ROOT\fR
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBshutdown -y -g 0 -r\fR
+.fi
+.in -2
+.sp
+
+.RE
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for a description of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/zones/brand/brand-solaris10
+_
+Interface StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBcpio\fR(1), \fBmdb\fR(1), \fBpax\fR(1), \fBzlogin\fR(1), \fBdtrace\fR(1M), \fBufsdump\fR(1M), \fBzfs\fR(1M), \fBzoneadm\fR(1M), \fBzonecfg\fR(1M), \fBattributes\fR(5), \fBbrands\fR(5), \fBzones\fR(5)

@@ -1,0 +1,385 @@
+'\" te
+.\" Copyright (c) 2006, 2012, Oracle and/or its affiliates. All rights reserved.
+.\" Copyright 1989 AT&T
+.TH kernel 1M "2007 年 11 月 27 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+kernel \- 基本的なオペレーティングシステムのサービスが含まれている UNIX システム実行可能ファイル
+.SH 形式
+.LP
+.nf
+\fBkernel-name\fR [\fB-asrvx\fR] [\fB-m \fIsmf_options\fR\fR] [\fB-i \fIaltinit\fR\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+オペレーティングシステムのイメージ、つまりカーネルは、イメージファイル (\fBunix\fR と \fBgenunix\fR) および任意の時点で読み込まれているモジュールから成る、ソフトウェアの集まりです。システムは、それを制御するカーネルがないと機能しません。
+.sp
+.LP
+カーネルは \fBboot\fR(1M) コマンドによってマシン固有の方法で読み込まれます。カーネルは、ディスク、\fBCD-ROM\fR、または DVD から (\fBディスクフルブート\fR)、あるいはネットワーク経由で (\fBディスクレスブート\fR) 読み込むことができます。どちらの場合も、\fB/platform\fR および \fB/kernel\fR の下のディレクトリが読み取り可能であることと、必要なカーネルサービスを実行できる実行可能コードを含んでいることが必要です。\fB-a\fR フラグを指定すると、カーネルとモジュールのデフォルトの場所とは異なるパス名をユーザーが指定できます。特定のカーネルを読み込む方法の詳細については、\fBboot\fR(1M) を参照してください。
+.sp
+.LP
+\fBmoddir\fR 変数には、モジュールディレクトリを空白で区切ったリストが含まれます。moddir は \fB/etc/system\fR ファイルで設定できます。最小限のデフォルトは次のとおりです。
+.sp
+.in +2
+.nf
+/platform/platform-name/kernel /kernel /usr/kernel
+.fi
+.in -2
+
+.sp
+.LP
+このデフォルトは、特定のプラットフォームでは補完される場合があります。多くの SPARC システムで、デフォルトパスが次のようにオーバーライドされることがよくあります。
+.sp
+.in +2
+.nf
+/platform/\fIplatform-name\fR/kernel:/platform/\fIhardware-class-name\fR\e
+     /kernel:/kernel:/usr/kernel
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+この \fIplatform-name\fR を調べるには、\fBuname\fR(1) の \fB-i\fR オプションを使用し、\fIhardware-class-name\fR を調べるには、\fBuname\fR(1) の \fB-m\fR オプションを使用します。
+.sp
+.LP
+カーネルの構成は \fB/etc/system\fR ファイルを使用して制御できます (\fBsystem\fR(4) を参照)。
+.sp
+.LP
+\fBgenunix\fR は、基本カーネルのプラットフォームに依存しないコンポーネントです。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+システムファイルを検索する場所、\fBroot\fR をマウントする場所、カーネル自体の名前をオーバーライドするかどうかなど、ユーザーに構成情報の入力を求めます。デフォルトの回答が角括弧 ([ ]) 内に表示され、ユーザーは RETURN を入力するだけでデフォルトの回答を使用できます (一部のキーボードでは、RETURN は ENTER というラベルになっています)。破損した \fB/etc/system\fR ファイルを修復するには、システム構成ファイルのパス名を求めるプロンプトに \fB/dev/null\fR と入力します。\fBsystem\fR(4) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fIaltinit\fR\fR
+.ad
+.sp .6
+.RS 4n
+代替実行可能ファイルを原始プロセスとして選択します。\fIaltinit\fR は実行可能ファイルへの有効なパスである必要があります。デフォルトの原始プロセスは \fBinit\fR(1M) です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fIsmf_options\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIsmf_options\fR には、サービス管理機能のブート動作を制御する次の 2 つのカテゴリのオプションが含まれています。 復旧オプションとメッセージオプションです。
+.sp
+メッセージオプションは、ブート中に \fBsmf\fR(5) が表示するメッセージの種類と量を決定します。サービスオプションは、システムのブートに使用されるサービスを決定します。 
+.sp
+復旧オプション
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdebug\fR\fR
+.ad
+.sp .6
+.RS 4n
+標準のサービスごとの出力およびすべての \fBsvc.startd\fR メッセージをログに出力します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fImilestone=[milestone]\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fImilestone\fR の指定に従って、一部の SMF サービスを一時的に無効にしてブートします。\fImilestone\fR には「none」、「single-user」、「multi-user」、「multi-user-server」、または「all」を指定できます。\fBsvcadm\fR(1M) の \fBmilestone\fR サブコマンドを参照してください。
+.RE
+
+メッセージオプション
+.sp
+.ne 2
+.mk
+.na
+\fB\fIquiet\fR\fR
+.ad
+.sp .6
+.RS 4n
+標準のサービスごとの出力および管理者の介入を必要とするエラーメッセージを出力します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIverbose\fR\fR
+.ad
+.sp .6
+.RS 4n
+標準のサービスごとの出力および追加の情報メッセージを出力します。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+再構成ブート。システムは、接続されているすべてのハードウェアデバイスのプローブを行い、\fB/dev\fR 内の論理ネームスペースを構成します。デバイスドライバの管理に関する詳細は、\fBadd_drv\fR(1M) および \fBrem_drv\fR(1M) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.sp .6
+.RS 4n
+init レベル「s」でのみブートします。\fBinit\fR(1M) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+詳細メッセージを有効にしてブートします。このフラグが指定されていない場合、メッセージは表示されますが、出力はシステムログファイルに送られます。\fBsyslogd\fR(1M) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.sp .6
+.RS 4n
+クラスタ化されたモードではブートしません。このオプションが効果を持つのは、このオプションをサポートしているバージョンの Sun Cluster ソフトウェアがインストールされている場合のみです。
+.RE
+
+.SH 使用例
+.sp
+.LP
+ブート方法の例と手順については、\fBboot\fR(1M) を参照してください。
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/kernel\fR\fR
+.ad
+.sp .6
+.RS 4n
+特定の命令セットに含まれるすべてのプラットフォームに共通する、システムのブートに必要なカーネルコンポーネントを含んでいます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/platform/\fIplatform-name\fR/kernel\fR\fR
+.ad
+.sp .6
+.RS 4n
+プラットフォーム固有のカーネルコンポーネント。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/platform/\fIhardware-class-name\fR\fR\fB/kernel\fR\fR
+.ad
+.sp .6
+.RS 4n
+このハードウェアクラスに固有のカーネルコンポーネント。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/kernel\fR\fR
+.ad
+.sp .6
+.RS 4n
+特定の命令セットに含まれるすべてのプラットフォームに共通するカーネルコンポーネントを含んでいます。
+.RE
+
+.sp
+.LP
+このセクションのディレクトリには、次のサブディレクトリが含まれることがあります。
+.sp
+.ne 2
+.mk
+.na
+\fBdrv\fR
+.ad
+.sp .6
+.RS 4n
+読み込み可能なデバイスドライバ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBexec\fR
+.ad
+.sp .6
+.RS 4n
+さまざまなファイル形式で保存されたプログラムを実行するモジュール。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBfs\fR
+.ad
+.sp .6
+.RS 4n
+ファイルシステムモジュール
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBmisc\fR
+.ad
+.sp .6
+.RS 4n
+各種のシステム関連モジュール
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBsched\fR
+.ad
+.sp .6
+.RS 4n
+オペレーティングシステムスケジューラ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBstrmod\fR
+.ad
+.sp .6
+.RS 4n
+System V STREAMS の読み込み可能なモジュール
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBsys\fR
+.ad
+.sp .6
+.RS 4n
+読み込み可能なシステムコール
+.RE
+
+.SS "SPARC"
+.sp
+.ne 2
+.mk
+.na
+\fBcpu\fR
+.ad
+.sp .6
+.RS 4n
+プロセッサ固有のモジュール
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBtod\fR
+.ad
+.sp .6
+.RS 4n
+時間ハードウェアインタフェースモジュール
+.RE
+
+.sp
+.LP
+64 ビット SPARC プラットフォームだけがサポートされているため、すべての SPARC 実行可能モジュールは、上記のディレクトリ内の \fBsparcv9\fR ディレクトリに格納されています。
+.SS "x86"
+.sp
+.ne 2
+.mk
+.na
+\fBmach\fR
+.ad
+.sp .6
+.RS 4n
+x86 ハードウェアのサポート
+.RE
+
+.sp
+.LP
+32 ビット x86 カーネルを構成するモジュールは上記のディレクトリに格納され、64 ビット x86 カーネルのコンポーネントは \fBamd64\fR サブディレクトリに格納されます。
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件T{
+system/library/processor, system/library/processorx
+T}
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBkmdb\fR(1), \fBuname\fR(1), \fBisainfo\fR(1), \fBadd_drv\fR(1M), \fBboot\fR(1M), \fBinit\fR(1M), \fBrem_drv\fR(1M), \fBsavecore\fR(1M), \fBsvc.startd\fR(1M), \fBsvcadm\fR(1M), \fBsyslogd\fR(1M), \fBsystem\fR(4), \fBattributes\fR(5), \fBsmf\fR(5), \fBdevfs\fR(7FS)
+.SS "SPARC のみ"
+.sp
+.LP
+\fBmonitor\fR(1M)
+.SH 診断
+.sp
+.LP
+カーネルはさまざまな警告とエラーメッセージを提供します。回復不可能な障害を検出した場合、カーネルはパニックを起こすか停止します。
+.SH 注意事項
+.sp
+.LP
+再構成ブートでは、設計上、システムから物理的に取り外されているデバイスの一部のクラスに対応する \fB/dev\fR のエントリが削除されません。 

@@ -1,0 +1,1130 @@
+'\" te
+.\" Copyright (c) 2007, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH fsstat 1M "2015 年 4 月 6 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+fsstat \- ファイルシステムの統計情報の報告
+.SH 形式
+.LP
+.nf
+\fBfsstat\fR [\fB-A|a|f|i|n|v|Z\fR] [\fB-T\fR d|u] [[\fB-z\fR \fIzone\fR]...]
+     {\fB-F\fR | {\fIfstype\fR|\fIpath\fR}...} [\fIinterval\fR [\fIcount\fR]]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBfsstat\fR は、カーネルファイル操作のアクティビティーをファイルシステムタイプ (\fIfstype\fR) またはパス名 (これがマウントポイントに変換されます) ごとに報告します。出力の最初の一連の行は、次の時点以降のすべてのアクティビティーを報告します。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ファイルシステムモジュールがロードされた時点 (\fIfstype\fR の場合)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ファイルシステムがマウントされた時点 (マウントポイントの場合)
+.RE
+.sp
+.LP
+統計情報は、\fIfstype\fR とマウントポイントのどちらのレベルでも、ファイルシステムに依存しない層で収集されます。ただし、統計情報の収集で、すべてのファイルシステムタイプが表されるわけではありません。(このマニュアルページの「注意事項」のセクションを参照)。
+.sp
+.LP
+\fBfsstat\fR の出力は、リクエストされたモード (オプション) に依存します。すべての統計情報フィールドが、最大 5 文字に収まる人間が読める形式に単位を自動的にスケールする「スマートナンバー」を使用して表示されます。例: 
+.sp
+.ne 2
+.mk
+.na
+\fB100\fR
+.ad
+.RS 11n
+.rt  
+を 100 として表示
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB2048\fR
+.ad
+.RS 11n
+.rt  
+を 2K として表示
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB3000000\fR
+.ad
+.RS 11n
+.rt  
+を 2.86M として表示
+.RE
+
+.sp
+.LP
+単位修飾子は、K (K バイト)、M (M バイト)、G (G バイト)、T (T バイト)、P (ペタバイト)、および E (エクサバイト) です。
+.sp
+.LP
+\fBfsstat\fR の実行中に、システムの状態が変化する場合があります。関連する場合は、次のいずれかの形式の状態変更メッセージが \fBfsstat\fR の出力に含まれます。
+.sp
+.in +2
+.nf
+<<mount point no longer available: {path}>>
+<<file system module no longer loaded: {fstype}>>
+<<zone no longer active: {zonename}>>
+<<zone now active: {zonename}>>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+状態変更メッセージが表示されたあと、\fBfsstat\fR は、引き続き指示どおりに統計情報を表示します。\fBfsstat\fR の報告対象のすべての \fIfstypes\fR およびマウントポイントが使用できなくなった場合、\fBfsstat\fR は終了します。
+.sp
+.LP
+ユーザーは、\fB-F\fR オプション (使用可能なすべてのファイルシステムタイプ) か、あるいは 1 つ以上の \fIfstypes\fR またはマウントポイント、あるいはその両方のリストを指定する必要があります。 
+.sp
+.LP
+デフォルトのレポートは、一般的なファイルシステムアクティビティーを表示します。この表示では、類似した操作が、次のような一般的なカテゴリに結合されます。
+.sp
+.ne 2
+.mk
+.na
+\fBnew file\fR
+.ad
+.RS 15n
+.rt  
+ファイルシステムオブジェクト (ファイル、ディレクトリ、シンボリックリンクなど) の作成操作の数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBname remov\fR
+.ad
+.RS 15n
+.rt  
+名前の削除操作の数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBname chng\fR
+.ad
+.RS 15n
+.rt  
+名前の変更操作の数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBattr get\fR
+.ad
+.RS 15n
+.rt  
+オブジェクト属性の取得操作の数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBattr set\fR
+.ad
+.RS 15n
+.rt  
+オブジェクト属性の変更操作の数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBlookup ops\fR
+.ad
+.RS 15n
+.rt  
+オブジェクトの検索操作の数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBrddir ops\fR
+.ad
+.RS 15n
+.rt  
+ディレクトリの読み取り操作の数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBread ops\fR
+.ad
+.RS 15n
+.rt  
+データの読み取り操作の数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBread bytes\fR
+.ad
+.RS 15n
+.rt  
+データの読み取り操作によって転送されたバイト数 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBwrite ops\fR
+.ad
+.RS 15n
+.rt  
+データの書き込み操作の数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBwrite bytes\fR
+.ad
+.RS 15n
+.rt  
+データの書き込み操作によって転送されたバイト数 
+.RE
+
+.sp
+.LP
+(\fIfstype\fR またはマウントポイント) に関して報告されるエンティティーは、最後の列に表示されます。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.RS 17n
+.rt  
+すべてのゾーンにまたがる指定された \fBfstype\fR の集計アクティビティーを報告します。これは、\fB-z\fR も \fB-Z\fR も指定されていない場合のデフォルトの動作です。
+.sp
+\fB-z\fR または \fB-Z\fR と組み合わせて使用された場合、\fB-A\fR オプションはさらに、すべてのゾーンにまたがる指定された \fBfstype\fR の集計を個別の行に報告します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 17n
+.rt  
+カーネル属性操作のアクティビティーを報告します。次の統計情報が報告されます。
+.sp
+.ne 2
+.mk
+.na
+\fBgetattr\fR
+.ad
+.RS 11n
+.rt  
+ファイル属性の取得呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBsetattr\fR
+.ad
+.RS 11n
+.rt  
+ファイル属性の変更呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBgetsec\fR
+.ad
+.RS 11n
+.rt  
+ファイルセキュリティー属性の取得呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBsetsec\fR
+.ad
+.RS 11n
+.rt  
+ファイルセキュリティー属性の変更呼び出しの数
+.RE
+
+(\fIfstype\fR またはマウントポイント) に関して報告されるエンティティーは、最後の列に表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fR
+.ad
+.RS 17n
+.rt  
+使用可能なすべてのファイルシステムタイプに関して報告します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.RS 17n
+.rt  
+すべてのカーネルファイル操作の完全なアクティビティーを報告します。各ファイル操作は、左の列に表示されます。操作ごとに、次の統計情報が報告されます。
+.sp
+.ne 2
+.mk
+.na
+\fB#ops\fR
+.ad
+.RS 9n
+.rt  
+この操作の呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBbytes\fR
+.ad
+.RS 9n
+.rt  
+バイト単位の平均転送サイズ (read、write、readdir にのみ適用されます) 
+.RE
+
+(\fIfstype\fR またはマウントポイント) に関して報告されるエンティティーは、最初の行に表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.RS 17n
+.rt  
+カーネル I/O 操作のアクティビティーを報告します。次の統計情報が報告されます。 
+.sp
+.ne 2
+.mk
+.na
+\fBread ops\fR
+.ad
+.RS 15n
+.rt  
+データの読み取り呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBread bytes\fR
+.ad
+.RS 15n
+.rt  
+読み取られたバイト数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBwrite ops\fR
+.ad
+.RS 15n
+.rt  
+データの書き込み呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBwrite bytes\fR
+.ad
+.RS 15n
+.rt  
+書き込まれたバイト数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBrddir ops\fR
+.ad
+.RS 15n
+.rt  
+ディレクトリの読み取り呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBrddir bytes\fR
+.ad
+.RS 15n
+.rt  
+ディレクトリを読み取ることによって読み取られたバイト数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBrwlock ops\fR
+.ad
+.RS 15n
+.rt  
+内部ファイルシステムのロック操作の数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBrwulock ops\fR
+.ad
+.RS 15n
+.rt  
+内部ファイルシステムのロック解除操作の数
+.RE
+
+(\fIfstype\fR またはマウントポイント) に関して報告されるエンティティーは、最後の列に表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 17n
+.rt  
+カーネル I/O 操作の待機時間情報を報告します。次の統計情報が報告されます。
+.sp
+.ne 2
+.mk
+.na
+\fBread ops\fR
+.ad
+.RS 14n
+.rt  
+データの読み取り呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBread bytes\fR
+.ad
+.RS 14n
+.rt  
+読み取られたバイト数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBread time\fR
+.ad
+.RS 14n
+.rt  
+平均読み取り待機時間
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBread actv\fR
+.ad
+.RS 14n
+.rt  
+アクティブな読み取り操作の平均数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBwrite ops\fR
+.ad
+.RS 14n
+.rt  
+データの書き込み呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBrdir ops\fR
+.ad
+.RS 14n
+.rt  
+ディレクトリの読み取り呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBrdir bytes\fR
+.ad
+.RS 14n
+.rt  
+ディレクトリを読み取ることによって読み取られたバイト数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBrdir time\fR
+.ad
+.RS 14n
+.rt  
+平均読み取りディレクトリ呼び出し待機時間
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBrdir activ\fR
+.ad
+.RS 14n
+.rt  
+アクティブな読み取りディレクトリ操作の平均数
+.RE
+
+(\fIfstype\fR またはマウントポイント) に関して報告されるエンティティーは、最後の列に表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 17n
+.rt  
+カーネルネーミング操作のアクティビティーを報告します。次の統計情報が報告されます。 
+.sp
+.ne 2
+.mk
+.na
+\fBlookup\fR
+.ad
+.RS 11n
+.rt  
+ファイル名の取得呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBcreat\fR
+.ad
+.RS 11n
+.rt  
+ファイルの作成呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBremov\fR
+.ad
+.RS 11n
+.rt  
+ファイルの削除呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBlink\fR
+.ad
+.RS 11n
+.rt  
+リンク呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBrenam\fR
+.ad
+.RS 11n
+.rt  
+ファイルの名前変更呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBmkdir\fR
+.ad
+.RS 11n
+.rt  
+ディレクトリの作成呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBrmdir\fR
+.ad
+.RS 11n
+.rt  
+ディレクトリの削除呼び出しの数 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBrddir\fR
+.ad
+.RS 11n
+.rt  
+ディレクトリの読み取り呼び出しの数 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBsymlink\fR
+.ad
+.RS 11n
+.rt  
+シンボリックリンクの作成呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBrdlink\fR
+.ad
+.RS 11n
+.rt  
+シンボリックリンクの読み取り呼び出しの数
+.RE
+
+(\fIfstype\fR またはマウントポイント) に関して報告されるエンティティーは、最後の列に表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 17n
+.rt  
+仮想メモリー操作の呼び出しのアクティビティーを報告します。次の統計情報が報告されます。
+.sp
+.ne 2
+.mk
+.na
+\fBmap\fR
+.ad
+.RS 10n
+.rt  
+ファイルのマッピング呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBaddmap\fR
+.ad
+.RS 10n
+.rt  
+マップされたファイルへの追加のマッピングの設定呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdelmap\fR
+.ad
+.RS 10n
+.rt  
+ファイルへのマッピングの削除呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBgetpag\fR
+.ad
+.RS 10n
+.rt  
+ファイルからのデータのページの取得呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBputpag\fR
+.ad
+.RS 10n
+.rt  
+ファイルへのデータのページの書き込み呼び出しの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBpagio\fR
+.ad
+.RS 10n
+.rt  
+ファイルシステムのスワップファイル内のページ転送呼び出しの数
+.RE
+
+(fstype またはマウントポイント) に関して報告されるエンティティーは、最後の列に表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fIu\fR|\fId\fR\fR
+.ad
+.RS 17n
+.rt  
+タイムスタンプを表示します。
+.sp
+時間の内部表現の出力表現には、\fIu\fR を指定します (\fBtime\fR(2) を参照)。標準の日付の形式には、\fId\fR を指定します。(\fBdate\fR(1) を参照)。タイムスタンプは、間隔が設定されている場合にのみ使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Z\fR\fR
+.ad
+.RS 17n
+.rt  
+各ゾーンのゾーンごとのアクティビティーを報告します。
+.sp
+\fB-Z\fR の指定は、\fB-z\fR と組み合わせて使用されると効果がありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR [\fIzonename\fR]\fR
+.ad
+.RS 17n
+.rt  
+指定されたゾーン内のアクティビティーに関して報告します。複数の \fB-z\fR オプションを指定すると、複数のゾーンをモニターできます。\fB-z\fR が指定されている場合、ユーザーには、明示的に指定されたゾーンの状態の変更のみが通知されます。
+.RE
+
+.SH オペランド
+.sp
+.LP
+次のオペランドがサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcount\fR\fR
+.ad
+.RS 12n
+.rt  
+\fIcount\fR 回のみ報告します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfstype\fR\fR
+.ad
+.RS 12n
+.rt  
+報告されるファイルシステムタイプを明示的に指定します。そのファイルシステムモジュールをロードする必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIinterval\fR\fR
+.ad
+.RS 12n
+.rt  
+各 \fIinterval\fR 秒ごとに報告します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIpath\fR\fR
+.ad
+.RS 12n
+.rt  
+報告されるマウントポイントのパスを指定します。パスがマウントポイントでない場合は、パスを含むマウントポイントが特定され、出力に表示されます。
+.RE
+
+.sp
+.LP
+\fIinterval\fR も \fIcount\fR も指定されていない場合は、1 つのレポートが出力され、\fBfsstat\fR は終了します。\fIinterval\fR は指定されているが、\fIcount\fR が指定されていない場合、\fBfsstat\fR は、コマンドが中断されるまで \fIinterval\fR 秒ごとに無期限にレポートを出力します。
+.SH 使用例
+.sp
+.LP
+いくつかの例では、\fBfsstat\fR の出力が 80–文字表示の幅を超えています。
+.LP
+\fB例 1 \fR一般的なアクティビティーの表示
+.sp
+.LP
+次の例では、すべてのファイルシステムタイプの一般的なアクティビティーを表示します。
+
+.sp
+.in +2
+.nf
+\fB$ fsstat -F\fR
+ new  name   name  attr   attr lookup rddir  read read  write write
+ file remov  chng   get    set    ops   ops   ops bytes   ops bytes
+  313K  214K 38.5K 2.16M 56.2K  8.36M 52.8K 19.7M 39.9G 18.8M 39.1G ufs
+     0     0     0 2.95K     0  3.81K   282 2.52K  466K     0     0 proc
+     0     0     0     0     0      0     0     0     0     0     0 nfs
+    10     8     2    86     9     98    15   413  103M 8.43K 1.05G zfs
+    13    14     4    98    16    125    10 1.01K  258M 15.9K  127M lofs
+8.73K 3.29K 5.25K 55.3K    37  1.20M    44 37.9K 38.3M 47.2K 35.9M tmpfs
+     0     0     0 4.93K     0      0     0 1.08K  913K     0     0 mntfs
+     3     2     1   503     3    897    13   122 25.8K   128  272K nfs3
+    10     8     0   615    10  10.1K    18    61 45.6K   292 2.26M nfs4
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRネーミングアクティビティーの表示
+.sp
+.LP
+次の例では、ufs、nfs、nfs3、nfs4、および tmpfs のネーミングアクティビティーを表示します。
+
+.sp
+.in +2
+.nf
+\fB$ fsstat -n ufs nfs nfs3 nfs4 tmpfs\fR
+lookup creat remov  link renam mkdir rmdir rddir symlnk rdlnk
+3.57M  3.10K   586     6    24   115   100 30.2K      5  330K ufs
+    0      0     0     0     0     0     0     0      0     0 nfs
+18.3K      3     5     0     0     0     0 1.03K      2   346 nfs3
+  535      0     0     0     0     0     0    46      0     4 nfs4
+  146     24    15     0     0     4     0     4      0     0 tmpfs
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fR属性アクティビティーの表示
+.sp
+.LP
+次の例では、FS タイプ ufs とマウントされたファイルシステム "/" および "/export/home" の属性アクティビティーを 3 回の繰り返しに 1 回、3 秒ごとに表示します。
+
+.sp
+.in +2
+.nf
+\fB# fsstat -a ufs / /export/home 3 3\fR
+getattr setattr getsec setsec
+  378K    91.9K  11.8K      0 ufs
+  367K    82.3K  11.6K      0 /
+ 11.3K     9.6K    198      0 /export/home
+ 4.97K    2.27K    163      0 ufs
+ 3.94K    1.36K    162      0 /
+ 1.03K      927      1      0 /export/home
+ 2.30K    1.06K     73      0 ufs
+ 1.95K      766     71      0 /
+   361      317      2      0 /export/home
+ 2.33K    1.06K     78      0 ufs
+ 1.64K      451     77      0 /
+   711      631      1      0 /export/home
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fRファイル操作の統計情報の表示
+.sp
+.LP
+次の例では、「/」の各ファイル操作の統計情報を (\fB-f\fR オプションを使用して) 表示します。
+
+.sp
+.in +2
+.nf
+\fB$ fsstat -f /\fR
+Mountpoint: /
+ operation  #ops  bytes
+      open 8.54K
+     close  9.8K
+      read 43.6K  65.9M
+     write 1.57K  2.99M
+     ioctl 2.06K
+     setfl     4
+   getattr 40.3K
+   setattr    38
+    access 9.19K
+    lookup  203K
+    create   595
+    remove    56
+      link     0
+    rename     9
+     mkdir    19
+     rmdir     0
+   readdir 2.02K  2.27M
+   symlink     4
+  readlink 8.31K
+     fsync   199
+  inactive 2.96K
+       fid     0
+    rwlock 47.2K
+  rwunlock 47.2K
+      seek 29.1K
+       cmp 42.9K
+    frlock 4.45K
+     space     8
+    realvp 3.25K
+   getpage  104K
+   putpage 2.69K
+       map 13.2K
+    addmap 34.4K
+    delmap 33.4K
+      poll   287
+      dump     0
+  pathconf    54
+    pageio     0
+   dumpctl     0
+   dispose 23.8K
+getsecattr   697
+setsecattr     0
+   shrlock     0
+   vnevent     0
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 5 \fRすべてのゾーンのゾーンごとの統計情報の表示
+.sp
+.LP
+次の例では、システム上の各ゾーンのゾーンごとの統計情報のほか、\fBfstype\fR \fBtmpfs\fR および \fBzfs\fR のシステム全体の集計を表示します。
+
+.sp
+.in +2
+.nf
+$ \fBfsstat -A -Z tmpfs zfs\fR
+new  name   name  attr  attr lookup rddir  read read  write write
+file remov  chng   get   set    ops   ops   ops bytes   ops bytes
+125K  116K 8.92K  846K 1.25K  1.36M   252 1013K  913M 1.52M 1.55G tmpfs
+98.9K 89.8K 8.87K 600K 1.19K  1.33M   226  394K  253M 1.04M 1.07G tmpfs:global
+2.49K 2.42K 32    20.5K  45   3.82K    26 56.8K 85.8M 43.9K 69.5M tmpfs:zone1
+23.3K 23.3K 13    226K   13   24.1K     0  562K  574M  452K  425M tmpfs:zone2
+82.7K 232K  77.6K 4.72M 73.6K 22.7M  464K 2.88M 6.17G  828K 8.19G zfs
+82.1K 231K  77.3K 4.46M 73.5K 21.8M  444K 2.53M 5.71G  809K 8.12G zfs:global
+102    88   28    83.3K    68  326K 3.16K  238K  307M 10.5K 54.2M zfs:zone1
+499   204   255   179K     34  599K 17.4K  125K  163M 8.85K 21.8M zfs:zone2
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 6 \fR特定のゾーンのゾーンごとの統計情報の表示
+.sp
+.LP
+次の例では、ゾーン \fBzone1\fR および \fBzone2\fR のゾーンごとの統計情報のほか、\fBfstype\fR \fBtmpfs\fR および \fBzfs\fR のシステム全体の集計を表示します。
+
+.sp
+.in +2
+.nf
+$ \fBfsstat -A -Z zone1 -z zone2 tmpfs zfs\fR
+new  name   name  attr  attr lookup rddir  read read  write write
+file remov  chng   get   set    ops   ops   ops bytes   ops bytes
+125K  116K 8.92K  846K 1.25K  1.36M   252 1013K  913M 1.52M 1.55G tmpfs
+2.49K 2.42K  32  20.5K   45   3.82K    26 56.8K 85.8M 43.9K 69.5M tmpfs:zone1
+23.3K 23.3K  13   226K    13  24.1K     0  562K  574M  452K  425M tmpfs:zone2
+82.7K 232K 77.6K 4.72M 73.6K  22.7M  464K 2.88M 6.17G  828K 8.19G zfs
+102    88    28  83.3K   68    326K 3.16K  238K  307M 10.5K 54.2M zfs:zone1
+499   204   255  179K    34    599K 17.4K  125K  163M 8.85K 21.8M zfs:zone2
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 7 \fR例 7 大域ゾーンのみの統計情報の表示
+.sp
+.LP
+次の例では、すべての \fBfstype\fR の大域ゾーンのアクティビティーのみを表示します。
+
+.sp
+.in +2
+.nf
+$ \fBfsstat -z global -F\fR
+new  name   name  attr  attr lookup rddir  read read  write write
+file remov  chng   get   set    ops   ops   ops bytes   ops bytes
+0     0     0     0     0      0     0     0     0     0     0 ufs:global
+0     0     0     171K  0   289K   2.05K  628K  262M  230K 10.6M proc:global
+0     0     0     0     0      0     0     0     0     0     0 nfs:global
+82.1K 231K 77.3K 4.46M 73.5K  21.8M 444K 2.53M 5.71G  809K 8.12G zfs:global
+0     0     0     357K  0      0     0     0     0     0     0 lofs:global
+98.9K 89.8K 8.87K 600K 1.19K  1.33M 226  394K  253M 1.04M 1.07G tmpfs:global
+0     0     0 15.4K     0      0     0   7.44K 1.03M   0     0 mntfs:global
+0     0     0 9.34K     0  9.24K     0     0     0     0     0 autofs:global
+0     0     0     0     0      0     0     0     0     0     0 nfs3:global
+2     3     0 9.16K    12   104K     4    46   179K   12 43.0K nfs4:global
+.fi
+.in -2
+.sp
+
+.SH 環境
+.sp
+.LP
+\fBfsstat\fR の実行に影響を与える次の環境変数についての詳細は、\fBenviron\fR(5) を参照してください。\fBLANG\fR、\fBLC_ALL\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR、\fBLC_TIME\fR、および \fBNLSPATH\fR。
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+正常終了。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+致命的なエラーが発生しました。致命的エラーは、失敗したシステムコールまたは別の内部エラーである可能性があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+無効なコマンド行オプションが指定されました。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+CSI有効
+_
+インタフェースの安定性下記を参照。
+.TE
+
+.sp
+.LP
+コマンド行オプションは「不確実」です。人間が読める形式の出力は、インタフェースとは見なされません。
+.SH 関連項目
+.sp
+.LP
+\fBdate\fR(1), \fBtime\fR(2), \fBattributes\fR(5)
+.SH 注意事項
+.sp
+.LP
+すべての表示オプション (\fB-a\fR、\fB-f\fR、\fB-i\fR、\fB-n\fR、\fB-v\fR) は相互に排他的です。これらのオプションを複数入力すると、エラーになります。
+.sp
+.LP
+\fIfstype\fR および \fIpath\fR オペランドは、コマンド行でオプションのあとで、かつ \fIinterval\fR または \fIcount\fR の前に指定する必要があります。たとえば、「\fBfsstat\fR \fB-a\fR \fI fstype\fR \fIinterval\fR」とします。設定は \fIfstype\fR に渡されるため、ユーザーが \fIfstype\fR (たとえば、ufs) と同じ名前を持つディレクトリの統計情報を表示する場合は、パスをあいまいさがないように (たとえば、./ufs と) 指定する必要があります。同様に、間隔またはカウントオペランドから数値の名前 (たとえば、「10」) を持つファイルを定義するには、それに応じて名前に接頭辞を付けるようにしてください (たとえば、./10)。
+.sp
+.LP
+間隔が使用されている場合、ヘッダーは、12 行を超える統計情報が表示され、現在の間隔で表示される一連の行が完了したあとに繰り返されます。
+.sp
+.LP
+すべての擬似ファイルシステムの統計情報は表示されません。\fB-F\fR オプションで表示された出力は、ロードされているファイルシステムタイプのうちのどれがサポートされているかを示します。
+.sp
+.LP
+バンドルされていないファイルシステムは、\fBfsstat\fR によって認識されない可能性があります。
+.sp
+.LP
+コマンド行オプションは「不確実」として分類され、変更される可能性があります。この出力は、インタフェースであるとは見なされません。\fBfsstat\fR のコマンド行オプションまたは出力のどちらかに依存した、より高レベルのソフトウェアツールの構築は推奨されていません。

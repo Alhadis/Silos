@@ -1,0 +1,164 @@
+'\" te
+.\" Copyright (c) 2002, 2013, Oracle and/or its affiliates. All rights reserved.
+.TH rbac 5 "14 Mar 2012" "SunOS 5.11" "Standards, Environments, and Macros"
+.SH NAME
+rbac, RBAC \- role-based access control
+.SH DESCRIPTION
+.sp
+.LP
+Role-based access control allows system administrators to delegate the administrative control of parts of the system to users. Users can be given the ability to run commands with additional privileges in two ways:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+by assigning a profile directly to the user, in which case no additional authentication is required
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+by creating a role and assigning the profiles to the role.  It can also be used to build restrictive environments for users by removing their ability to run commands they would normally be allowed to run.
+.RE
+.SS "Profiles"
+.sp
+.LP
+Profiles are named collections of commands and authorizations that are run with additional privilege and/or a specific real and effective UID and GID.  For example, most of the printer system can be managed by having the \fBlp\fR commands run with the UID or \fBlp\fR. Some commands need privileges as defined in \fBprivileges\fR(5) to run. For example, the "Process Management" profile allows a user to run the \fBkill\fR command with the \fBproc_owner\fR privilege so that it can send signals to processes it does not own.
+.sp
+.LP
+See \fBexec_attr\fR(4) and \fBprof_attr\fR(4) for information about how the administrator can extend the system-provided profiles and create their own. Profile configuration can be stored in any of the currently supported name services (files, NIS, LDAP).
+.sp
+.LP
+Profiles can also be used with the Service Management Facility (SMF) to control the privileges and UID/GID with which a service runs. See \fBsmf_security\fR(5) for more information.
+.SS "Roles"
+.sp
+.LP
+A role is a special shared account that cannot directly login to the system that can only be accessed by authorized users with the \fBsu\fR(1M) command or over the network with \fBssh\fR(1) when using host-based authentication or GSS-API authentication. It can not login with \fBrlogin\fR(1), \fBtelnet\fR(1), or \fBgdm\fR. 
+.sp
+.LP
+A role has a UID, a password, and a home directory just like a normal user. Authentication to the role can be either with the user's own password or with the per-role password (the \fBroleauth\fR keyword in \fBuser_attr\fR(4) controls that behavior on a per-role basis). Usually a role's login shell is one of the profile shells (\fBpfsh\fR(1), \fBpfksh\fR(1), \fBpfcsh\fR(1)) that are granted one or more Profiles, allowing the role to always execute commands with privilege.
+.sp
+.LP
+A role is normally needed only if a shared account environment is required. Usually assigning profiles directly to the user is sufficient.
+.sp
+.LP
+The root user can be configured to be a role using the \fBusermod\fR(1M) command. This ensures that only authorized users can become root even when the root password is more widely known.
+.sp
+.in +2
+.nf
+# usermod -K type=role root
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Making root a role does not restrict access to single user mode. The system console should be protected using other means, such as setting a security password with \fBeeprom\fR(1M).
+.SS "Authorizations"
+.sp
+.LP
+An authorization is a unique string that represents a user's right to perform some operation or class of operations. Authorizations are normally only checked by programs that always run with some privilege, for example the \fBsetuid\fR(2) programs such as \fBcdrw\fR(1) or the system \fBcron\fR(1M) daemon.
+.sp
+.LP
+Authorization definitions are stored in the \fBauth_attr\fR(4) database. For programming authorization checks, only the authorization name is significant.
+.sp
+.LP
+Some typical values in an \fBauth_attr\fR database are as follows:
+.sp
+.in +2
+.nf
+solaris.jobs.:::Cron and At Jobs::help=JobHeader.html
+solaris.jobs.grant:::Delegate Cron & At \e
+    Administration::help=JobsGrant.html
+solaris.jobs.admin:::Manage All Jobs::help=AuthJobsAdmin.html
+solaris.jobs.user:::Cron & At User::help=JobsUser.html
+.fi
+.in -2
+
+.sp
+.LP
+Authorization name strings ending with the \fBgrant\fR suffix are special authorizations that give a user the ability to delegate authorizations with the same prefix and functional area to other users.
+.sp
+.LP
+All authorization names starting with \fBsolaris\fR are reserved for allocation by the operating system vendor. Developers and administrators may create their own top level namespace; use of a unique identifier such as the company name, DNS domain name, or application name is suggested.
+.SS "Authorization Checks"
+.sp
+.LP
+To check authorizations from C code, developers should use the \fBchkauthattr\fR(3C) library function, which verifies whether or not a user has a given authorization.
+.sp
+.LP
+Authorizations can be explicitly checked in shell scripts by checking the output of the \fBauths\fR(1) utility. For example,
+.sp
+.in +2
+.nf
+for auth in `auths      | tr , " "` NOTFOUND
+do
+    ["$auth" = "solaris.date" ] && break      # authorization found
+done
+
+if [ "$auth" != "solaris.date" ]
+then
+    echo >&2 "$PROG: ERROR: you are not authorized to set the date"
+    exit 1
+fi
+.fi
+.in -2
+
+.sp
+.LP
+Authorizations are also used by the Service Management Facility (SMF) to control which users can change the state of a service or reconfigure a service. See \fBsmf_security\fR(5) for more information.
+.SS "Comparison with sudo(1M)"
+.sp
+.LP
+RBAC in Solaris provides a similar set of functionality to \fBsudo\fR(1M) that is often provided with UNIX or UNIX-like systems. It is provided on the Companion CD for Solaris.
+.sp
+.LP
+One of the most obvious differences between Solaris RBAC and \fBsudo\fR is the authentication model. In \fBsudo\fR, users reauthenticate as themselves. In Solaris RBAC, either no additional authentication is needed (when profiles are assigned directly to the user) or the user authenticates to a shared account called a role.
+.sp
+.LP
+Using the \fBNOPASSWD\fR functionality in \fBsudo\fR is similar to assigning the profile to the user and having the user execute the command using \fBpfexec\fR(1). For example, if \fBsudoers\fR(4) allows the user to run \fBkill\fR(1) as UID 0 but without authentication (\fBNOPASSWD\fR), the user would run:
+.sp
+.in +2
+.nf
+$ sudo kill -HUP 1235
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+In Solaris RBAC, if the user has a normal (that is, no profile) login shell, the user would execute the equivalent operation by being assigned the "Process Management" profile and would use \fBpfexec\fR as follows:
+.sp
+.in +2
+.nf
+$ pfexec kill -HUP 1235
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+If the user has a profile shell (such as \fBpfsh\fR) as the login shell, then \fBkill\fR will always run with the additional privilege without the need of a "prefix". For example,
+.sp
+.in +2
+.nf
+$ kill -HUP 1235
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+An RBAC role is similar in concept to the \fBUser_Alias\fR in \fBsudoers\fR(4), except that the role password rather than the user password is required.
+.sp
+.LP
+Execution profiles \fBexec_attr\fR(4) entries) in RBAC are similar to the \fBCmnd_Alias\fR in \fBsudoers\fR.
+.sp
+.LP
+There is currently no equivalent of the \fBHost_Alias\fR \fBsudo\fR(1M) functionality in Solaris RBAC.
+.SH SEE ALSO
+.sp
+.LP
+\fBauths\fR(1), \fBld.so.1\fR(1), \fBpfcsh\fR(1), \fBpfexec\fR(1), \fBpfksh\fR(1), \fBpfsh\fR(1), \fBroles\fR(1), \fBsudo\fR(1M), \fBexec_attr\fR(4), \fBprof_attr\fR(4), \fBuser_attr\fR(4), \fBsmf_security\fR(5)
+.sp
+.LP
+\fISecuring Users and Processes in Oracle Solaris 11.3\fR

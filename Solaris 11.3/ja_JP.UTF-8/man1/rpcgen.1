@@ -1,0 +1,567 @@
+'\" te
+.\" Copyright (c) 2009, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1989 AT&T
+.TH rpcgen 1 "2011 年 6 月 8 日" "SunOS 5.11" "ユーザーコマンド"
+.SH 名前
+rpcgen \- RPC プロトコルコンパイラ
+.SH 形式
+.LP
+.nf
+\fBrpcgen\fR \fIinfile\fR
+.fi
+
+.LP
+.nf
+\fBrpcgen\fR [\fB-a\fR] [\fB-A\fR] [\fB-b\fR] [\fB-C\fR] [\fB-D\fR \fIname\fR [= \fIvalue\fR]] [\fB-i\fR \fIsize\fR] 
+     [\fB-I\fR [\fB-K\fR \fIseconds\fR]] [\fB-L\fR] [\fB-M\fR] [\fB-N\fR] [\fB- T\fR] [\fB-v\fR] 
+     [\fB-Y\fR \fIpathname\fR] \fIinfile\fR
+.fi
+
+.LP
+.nf
+\fBrpcgen\fR [\fB-c\fR | \fB-h\fR | \fB-l\fR | \fB-m\fR | \fB-t\fR | \fB-Sc\fR | \fB-Ss\fR | \fB-Sm\fR] 
+     [\fB-o\fR \fIoutfile\fR] [\fIinfile\fR]
+.fi
+
+.LP
+.nf
+\fBrpcgen\fR [\fB-s\fR \fInettype\fR] [\fB-o\fR \fIoutfile\fR] [\fIinfile\fR]
+.fi
+
+.LP
+.nf
+\fBrpcgen\fR [\fB-n\fR \fInetid\fR] [\fB-o\fR \fIoutfile\fR] [\fIinfile\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBrpcgen\fR ユーティリティーは、\fBRPC\fR プロトコルを実装するための C コードを生成するツールです。\fBrpcgen\fR への入力は、\fBRPC\fR 言語 (Remote Procedure Call Language) として知られる C に似た言語です。
+.sp
+.LP
+通常、\fBrpcgen\fR ユーティリティーは最初の形式内で使用され、そこで 1 つの入力ファイルを受け取って 3 つの出力ファイルを生成します。\fIinfile\fR の名前が \fBproto.x\fR である場合、\fBrpcgen\fR はヘッダーを \fBproto.h\fR 内に、\fB XDR\fR ルーチンを \fBproto_xdr.c\fR 内に、サーバー側スタブを \fBproto_svc.c\fR 内に、クライアント側スタブを \fBproto_clnt.c\fR 内に生成します。\fB-T\fR オプションが指定されると、\fBRPC\fR ディスパッチテーブルも \fBproto_tbl.i\fR 内に生成します。
+.sp
+.LP
+\fBrpcgen\fR は、特定のアプリケーションに合わせてカスタマイズ可能なサンプルのクライアントおよびサーバーファイルも生成できます。\fB-Sc\fR、\fB-Ss\fR、および \fB-Sm\fR オプションは、それぞれサンプルのクライアント、サーバー、およびメイクファイルを生成します。\fB-a\fR オプションは、サンプルファイルを含むすべてのファイルを生成します。入力ファイルが \fBproto.x\fR である場合、クライアント側のサンプルファイルは \fBproto_client.c\fR に、サーバー側のサンプルファイルは \fBproto_server.c\fR に、サンプルのメイクファイルは \fBmakefile.proto\fR にそれぞれ書き込まれます。
+.sp
+.LP
+作成されたサーバーは、ポートモニター (\fBinetd\fR など) によって開始することも、単独で開始することもできます。ポートモニターで開始した場合、作成されるのは、ファイル記述子 \fB0\fR が渡されたトランスポート専用のサーバーです。トランスポートの名前を指定するには、環境変数 \fBPM_TRANSPORT\fR を設定する必要があります。\fBrpcgen\fR により生成されたサーバーは、実行時に、\fBNETPATH\fR 環境変数内で指定されたすべてのトランスポートのサーバーハンドルを作成するか、この環境変数が設定されていない場合は \fB/etc/netconfig\fR ファイルからのすべての可視トランスポートのサーバーハンドルを作成します。注: トランスポートは、コンパイル時ではなく、実行時に選択されます。サーバーが自己起動する場合、デフォルトで自らをバックグランドで実行します。特殊定義シンボル \fBRPC_SVC_FG\fR を使用して、サーバープロセスをフォアグラウンドで実行できます。
+.sp
+.LP
+2 番目の形式は、より高度な \fBRPC\fR サーバーの作成を可能にする特殊機能を提供します。これらの機能には、ユーザー指定の \fB#defines\fR および \fBRPC\fR ディスパッチテーブルのサポートが含まれています。\fBRPC\fR ディスパッチテーブル内のエントリには、次が含まれます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+そのプロシージャーに対応するサービスルーチンへのポインタ
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+入力および出力引数へのポインタ
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+これらのルーチンのサイズ
+.RE
+.sp
+.LP
+サーバーは、ディスパッチテーブルを使用して承認をチェックしてから、サービスルーチンを実行します。クライアントライブラリは、ディスパッチテーブルを使用して、ストレージ管理および \fBXDR\fR データ変換の詳細を処理できます。
+.sp
+.LP
+前述のほかの 3 つの形式は、すべての出力ファイルではなく、特定の出力ファイルのみを生成する場合に使用します。\fBrpcgen\fR の使用例については、下記の「使用例」のセクションを参照してください。\fB-s\fR オプションを指定して \fBrpcgen\fR を実行すると、特定のトランスポートクラス用のサーバーが作成されます。\fB-n\fR オプションを指定して実行すると、\fInetid\fR で指定されたトランスポート用のサーバーが作成されます。\fIinfile\fR が指定されていない場合、\fBrpcgen\fR は標準入力を受け入れます。
+.sp
+.LP
+2 番目の形式に記載されているすべてのオプションは、ほかの 3 つの形式で使用できますが、変更は指定された出力ファイルにのみ加えられます。
+.sp
+.LP
+入力ファイルは、C プリプロセッサ \fBcc\fR \fB-E\fR で実行されてから、\fBrpcgen\fR により実際に解釈されます。\fBrpcgen\fR は、出力ファイルのタイプごとに、\fBrpcgen\fR プログラマにより使用される特別なプリプロセッサシンボルを定義します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBRPC_HDR\fR\fR
+.ad
+.RS 12n
+.rt  
+ヘッダー内へのコンパイル時に定義されます
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBRPC_XDR\fR\fR
+.ad
+.RS 12n
+.rt  
+\fBXDR\fR ルーチン内へのコンパイル時に定義されます
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBRPC_SVC\fR\fR
+.ad
+.RS 12n
+.rt  
+サーバー側スタブ内へのコンパイル時に定義されます
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBRPC_CLNT\fR\fR
+.ad
+.RS 12n
+.rt  
+クライアント側スタブ内へのコンパイル時に定義されます
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBRPC_TBL\fR\fR
+.ad
+.RS 12n
+.rt  
+\fBRPC\fR ディスパッチテーブル内へのコンパイル時に定義されます
+.RE
+
+.sp
+.LP
+「\fB%\fR」で始まる行は、先頭の「\fB%\fR」が削除されるのを除き、\fBrpcgen\fR で解釈されずに出力ファイルに直接渡されます。C プリプロセッサのパス名を指定するには、\fB-Y\fR フラグを使用します。
+.sp
+.LP
+\fIinfile\fR 内で参照されるデータ型の場合、\fBrpcgen\fR は、データ型の名前に文字列 \fBxdr_\fR が付加されたルーチンが存在するものと見なします。このルーチンが \fBRPC\fR/\fBXDR\fR ライブラリに存在しない場合には、指定する必要があります。未定義のデータ型を指定すると、\fBXDR\fR ルーチンのカスタマイズが可能になります。
+.SS "サーバーエラーの報告"
+.sp
+.LP
+デフォルトでは、\fBproto_svc.c\fR により検出されたエラーが標準エラーまたはシステムログ、あるいはその両方に報告されます。
+.sp
+.LP
+この動作は、\fBRPC_MSGOUT\fR の定義を使ってファイルをコンパイルすることでオーバーライドできます (例: \fB-DRPC_MSGOUT=mymsgfunc\fR)。指定された関数は、エラーを報告するために呼び出されます。次の \fBprintf\fR のような署名に準拠している必要があります。
+.sp
+.in +2
+.nf
+extern void RPC_MSGOUT(const char *fmt, ...);
+.fi
+.in -2
+.sp
+
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 18n
+.rt  
+サンプルファイルを含むすべてのファイルを生成します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.RS 18n
+.rt  
+サーバーのメインプログラム内で自動 \fBMT\fR モードを有効にします。このモードでは、\fBRPC\fR ライブラリは、クライアントの要求を処理してスレッドを自動的に作成します。このオプションは、\fB-M\fR オプションを暗黙的にオンにすることで、マルチスレッドセーフのスタブを生成します。サーバーのマルチスレッドモードおよびパラメータは、\fBrpc_control\fR(3NSL) 呼び出しを使用して設定できます。\fBrpcgen\fR で生成されたコードは、自動 \fBMT\fR モードのデフォルト値を変更しません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.RS 18n
+.rt  
+下位互換性モード。以前のバージョンのオペレーティングシステム用のトランスポート固有 \fBRPC\fR コードを生成します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBXDR\fR ルーチン内にコンパイルします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR\fR
+.ad
+.RS 18n
+.rt  
+ANSI C コンパイラで使用可能なヘッダーおよびスタブファイルを生成します。このフラグを使用して生成されたヘッダーは、C++ プログラムでも使用できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR\fIname\fR\fB[=\fR\fIvalue\fR\fB]\fR\fR
+.ad
+.RS 18n
+.rt  
+シンボルの \fIname\fR を定義します。ソース内の \fB#define\fR 指令と同等です。\fIvalue\fR を指定しない場合、\fIvalue\fR は \fB1\fR として定義されます。このオプションは、複数回指定できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBC\fR データ定義内にコンパイルします (ヘッダー)。\fB-T\fR オプションを組み合わせて使用して、\fBRPC\fR ディスパッチテーブルをサポートするヘッダーを生成できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fIsize\fR\fR
+.ad
+.RS 18n
+.rt  
+インラインコードの生成を開始するサイズ。このオプションは、最適化に役立ちます。デフォルトの \fIsize\fR は 5 です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR\fR
+.ad
+.RS 18n
+.rt  
+サーバー側スタブ内で \fBinetd\fR(1M) のサポートをコンパイルします。この種のサーバーは、自己起動可能であるか、\fBinetd\fR で開始できます。サーバーが自己起動する場合、デフォルトで自らをバックグランドで実行します。特殊定義シンボル \fBRPC_SVC_FG\fR を使用してサーバープロセスをフォアグラウンドで実行することも、ユーザーが \fB-I\fR オプションなしで単純にコンパイルすることもできます。
+.sp
+保留中のクライアント要求が存在しない場合、\fBinetd\fR サーバーは 120 秒後に終了します (デフォルト)。デフォルトは、\fB-K\fR オプションを使って変更できます。\fBinetd\fR サーバーのすべてのエラーメッセージは、常に \fBsyslog\fR(3C) を使用して記録されます。
+.sp
+\fB注:\fR このオプションは、下位互換性のためだけにサポートされています。これは必ず、下位互換性コードを生成する \fB-b\fR オプションと組み合わせて使用してください。デフォルトでは (つまり \fB-b\fR が指定されていない場合)、\fBrpcgen\fR はポートモニターによって呼び出すことができるサーバーを生成します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-K\fR \fIseconds\fR\fR
+.ad
+.RS 18n
+.rt  
+デフォルトでは、\fBrpcgen\fR を使用して作成され、ポートモニターによって呼び出されたサービスは、要求の処理後 120 秒間待機してから終了します。この間隔は、\fB-K\fR フラグを使用して変更できます。要求を処理するとすぐに終了するサーバーを作成するには、\fB-K\fR \fB0\fR を使用します。決して終了しないサーバーを作成する場合、適切な引数は \fB-K\fR \fB-1\fR です。
+.sp
+サーバーのモニタリング時に、一部のポートモニターは、サービス要求に応答して\fB常に\fR新しいプロセスを生成します。この種のモニターでサーバーが使用されることがわかっている場合は、サーバーは完了するとすぐに終了するべきです。この種のサーバーでは、\fBrpcgen\fR を\fB-K\fR \fB0\fR とともに使用するようにしてください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 18n
+.rt  
+クライアント側スタブ内にコンパイルします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR\fR
+.ad
+.RS 18n
+.rt  
+サーバーがフォアグラウンドで開始される場合は、標準エラーに出力するのではなく、\fBsyslog\fR(3C) を使用してサーバーエラーを記録します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.RS 18n
+.rt  
+サーバー側スタブ内にコンパイルしますが、「メイン」ルーチンは生成しません。このオプションは、コールバックルーチンを実行する場合、および初期化を実行するための独自の「メイン」ルーチンを記述する必要のあるユーザーにとって役立ちます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBrpcgen\fR で生成されたコードとユーザーの記述したコードの間で引数および結果を渡すための、マルチスレッドセーフのスタブを生成します。このオプションは、コード内でスレッドを使用するユーザーにとって役立ちます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR\fR
+.ad
+.RS 18n
+.rt  
+このオプションを使用すると、プロシージャーに複数の引数を指定できます。また、C に非常によく似たパラメータ引き渡しスタイルも使用します。このため、引数をリモートプロシージャーに渡す場合、引数へのポインタを渡す必要はなく、引数自体を渡すことができます。この動作は、\fBrpcgen\fR で生成された以前のコードスタイルとは異なります。下位互換性を保つため、このオプションはデフォルトではありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR \fInetid\fR\fR
+.ad
+.RS 18n
+.rt  
+\fInetid\fR で指定されたトランスポート用に、サーバー側スタブ内にコンパイルします。\fBnetconfig\fR データベース内に \fInetid\fR 用のエントリが存在するはずです。このオプションを複数回指定して、複数のトランスポートを処理するサーバーをコンパイルできます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIoutfile\fR\fR
+.ad
+.RS 18n
+.rt  
+出力ファイルの名前を指定します。何も指定しない場合、標準出力が使用されます (\fB-c\fR、\fB-h\fR、\fB-l\fR、\fB-m\fR、\fB-n\fR、\fB-s\fR、\fB-Sc\fR、\fB-Sm\fR、\fB-Ss\fR、および \fB-t\fR モードのみ)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fInettype\fR\fR
+.ad
+.RS 18n
+.rt  
+クラス \fInettype\fR に属するすべてのトランスポート用に、サーバーサイドスタブ内にコンパイルします。サポートされるクラスは、\fBnetpath\fR、\fBvisible\fR、\fBcircuit_n\fR、\fBcircuit_v\fR、\fBdatagram_n\fR、\fB datagram_v\fR、\fBtcp\fR、および \fBudp\fR です (これらのクラスに関連付けられた意味については、\fBrpc\fR(3NSL) を参照)。このオプションは、複数回指定できます。\fB注:\fR トランスポートは、コンパイル時ではなく実行時に選択されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Sc\fR\fR
+.ad
+.RS 18n
+.rt  
+リモートプロシージャー呼び出しを使用するサンプルクライアントコードを生成します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Sm\fR\fR
+.ad
+.RS 18n
+.rt  
+アプリケーションのコンパイルに使用可能なサンプルメイクファイルを生成します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Ss\fR\fR
+.ad
+.RS 18n
+.rt  
+リモートプロシージャー呼び出しを使用するサンプルサーバーコードを生成します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBRPC\fR ディスパッチテーブル内にコンパイルします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fR
+.ad
+.RS 18n
+.rt  
+\fBRPC\fR ディスパッチテーブルをサポートするコードを生成します。
+.sp
+オプション \fB-c\fR、\fB-h\fR、\fB-l\fR、\fB-m\fR、\fB-s\fR、\fB-Sc\fR、\fB-Sm\fR、\fB-Ss\fR、および \fB-t\fR は、特定タイプのファイルを生成するために排他的に使用されますが、オプション \fB-D\fR および \fB- T\fR はグローバルで、ほかのオプションとともに使用できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 18n
+.rt  
+バージョン番号を表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Y\fR \fIpathname\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBrpcgen\fR が C プリプロセッサの検索を開始するディレクトリの名前を指定します。
+.RE
+
+.SH オペランド
+.sp
+.LP
+次のオペランドを指定できます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIinfile\fR\fR
+.ad
+.RS 10n
+.rt  
+入力ファイル
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fR出力ファイルとディスパッチテーブルの生成
+.sp
+.LP
+次に、エントリの例を挙げます。
+
+.sp
+.in +2
+.nf
+example% \fBrpcgen -T prot.x\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+5 つのファイル、\fBprot.h\fR、\fBprot_clnt.c\fR、\fBprot_svc.c\fR、\fBprot_xdr.c\fR、および \fBprot_tbl.i\fR をすべて生成します。
+
+.LP
+\fB例 2 \fR標準出力へのヘッダーの送信
+.sp
+.LP
+次の例では、C データ定義 (ヘッダー) を標準出力に送信します。
+
+.sp
+.in +2
+.nf
+example% \fBrpcgen -h prot.x\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fRテストバージョンの送信
+.sp
+.LP
+\fB-DTEST\fR のテストバージョン、クラス \fBdatagram_n\fR に属するすべてのトランスポートのサーバー側スタブを標準出力に送信するには、次を使用します。
+
+.sp
+.in +2
+.nf
+example% \fBrpcgen -s datagram_n -DTEST prot.x\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fRサーバー側スタブの作成
+.sp
+.LP
+\fInetid\fR \fBtcp\fR により示されるトランスポート用のサーバー側スタブを作成するには、次を使用します。
+
+.sp
+.in +2
+.nf
+example% \fBrpcgen -n tcp -o prot_svc.c prot.x\fR
+.fi
+.in -2
+.sp
+
+.SH 終了ステータス
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+正常終了。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB>\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+エラーが発生した。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件developer/base-developer-utilities
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBinetd\fR(1M)、\fBrpc\fR(3NSL)、\fBrpc_control\fR(3NSL)、\fBrpc_svc_calls\fR(3NSL)、\fBsyslog\fR(3C)、\fBnetconfig\fR(4)、\fBattributes\fR(5)
+.sp
+.LP
+\fI『ONC+ RPC Developer\&'s Guide』\fRの \fBrpcgen\fR に関する章。

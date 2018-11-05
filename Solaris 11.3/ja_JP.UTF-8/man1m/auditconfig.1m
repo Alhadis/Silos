@@ -1,0 +1,1206 @@
+'\" te
+.\" Copyright (c) 2004, 2012, Oracle and/or its affiliates. All rights reserved.
+.TH auditconfig 1M "2012 年 5 月 3 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+auditconfig \- 監査の構成
+.SH 形式
+.LP
+.nf
+\fBauditconfig\fR \fIsubcommand\fR...
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBauditconfig\fR は、カーネル監査パラメータを取得および設定するためのコマンド行インタフェースを提供します。
+.sp
+.LP
+監査サービスの持続値を取得または設定する場合を除き、この機能を使用できるのは、Solaris の監査機能が有効になっている場合だけです。
+.sp
+.LP
+キュー値ゼロ (\fB0\fR) は、システムデフォルトが有効であることを示します。
+.sp
+.LP
+\fBperzone\fR ポリシーの設定によって、\fBauditconfig\fR で制御される監査設定のスコープが決まります。\fBperzone\fR が設定されている場合、特に記載のないかぎり、値は非大域ゾーンを反映します。それ以外の場合、設定はシステム全体用です。\fBperzone\fR 設定に基づく制限は、適用されるオプションごとに記載されています。
+.sp
+.LP
+非大域ゾーン管理者は、\fBperzone\fR と \fBahlt\fR 以外のすべての監査ポリシーオプションを設定できます。\fBperzone\fR と \fBahlt\fR は大域ゾーンにのみ適用され、これらのポリシーを設定するには大域ゾーン管理者の特権が必要です。\fBperzone\fR と \fBahlt\fR については、後述の \fB-setpolicy\fR オプションで説明されています。
+.sp
+.LP
+このコマンドを使用できるのは、Audit Control 権利プロファイルを付与された管理者です。
+.SH オプション
+.sp
+.LP
+次のオプションがサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+監査サービスの持続値に加えて実行中システムの値を表示または設定します。
+.sp
+このオプションは、以下のサブコマンドのうちこれを示しているものでのみ使用できます。
+.RE
+
+.SH サブコマンド
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-aconf\fR\fR
+.ad
+.sp .6
+.RS 4n
+構成済みの帰属不可能な監査マスク \fBkmask\fR を、構成済みの帰属不可能な監査マスクに設定します。例: 
+.sp
+.in +2
+.nf
+# \fBauditconfig -aconf\fR
+Configured non-attributable event mask.
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-audit\fR \fIevent\fR \fIsorf\fR \fIretval\fR \fIstring\fR\fR
+.ad
+.sp .6
+.RS 4n
+このコマンドは、プロセスの監査特性を使用して、テキストトークン \fIstring\fR を含む監査イベント \fIevent\fR の監査レコードを構築します。リターントークンは、\fIsorf\fR (成功/失敗フラグ) と \fIretval\fR (戻り値) から構築されます。イベントの型は \fBchar*\fR、\fIsorf\fR は 0/1 (成功/失敗)、\fIretval\fR はエラー番号の値、\fIstring\fR の型は \fB*char\fR です。このコマンドは、シェルスクリプトで監査レコードを構築する場合に役立ちます。このオプションの例:
+.sp
+.in +2
+.nf
+# \fBauditconfig -audit AUE_ftpd 0 0 "test string"\fR
+#
+
+audit record from audit trail:
+    header,76,2,ftp access,,Fri Dec 08 08:44:02 2000, + 669 msec
+    subject,abc,root,other,root,other,104449,102336,235 197121 elbow
+    text,test string
+    return,success,0
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-chkaconf\fR\fR
+.ad
+.sp .6
+.RS 4n
+カーネルに設定された帰属不可能なイベントの構成を、監査サービスで構成されたエントリ (\fB-setnaflags\fR) に基づいてチェックします。カーネル監査イベントのアクティブクラスマスクが構成済みクラスマスクに一致しない場合、不一致が報告されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-chkconf\fR\fR
+.ad
+.sp .6
+.RS 4n
+カーネル監査イベント - クラスマッピングの構成をチェックします。カーネル監査イベントの実行時クラスマスクが構成済みクラスマスクに一致しない場合、不一致が報告されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+カーネル監査イベント - クラスマッピングを構成します。実行時クラスマッピングは、監査イベント - クラスデータベースファイル内のマッピングに一致するように変更されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getasid\fR\fR
+.ad
+.sp .6
+.RS 4n
+現在のプロセスの監査セッション ID を表示します。例: 
+.sp
+.in +2
+.nf
+# \fBauditconfig -getasid\fR
+audit session id = 102336
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getaudit\fR\fR
+.ad
+.sp .6
+.RS 4n
+現在のプロセスの監査特性を返します。
+.sp
+.in +2
+.nf
+# \fBauditconfig -getaudit\fR
+audit id = abc(666)
+process preselection mask = lo(0x1000,0x1000)
+terminal id (maj,min,host) = 235,197121,elbow(172.146.89.77)
+audit session id = 102336
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getauid\fR\fR
+.ad
+.sp .6
+.RS 4n
+現在のプロセスの監査 ID を表示します。例: 
+.sp
+.in +2
+.nf
+# \fBauditconfig -getauid\fR
+audit id = abc(666)
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getcar\fR\fR
+.ad
+.sp .6
+.RS 4n
+現在のアクティブルートの場所 (システムブート時にルート [または非大域ゾーンルート] からアンカーされている) を表示します。例: 
+.sp
+.in +2
+.nf
+# \fBauditconfig -getcar\fR
+current active root = /
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getclass\fR \fIevent\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたカーネル監査イベントに関連付けられた事前選択マスクを表示します。\fIevent\fR はカーネルイベント番号またはイベント名です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getcond\fR\fR
+.ad
+.sp .6
+.RS 4n
+カーネル監査の状況を表示します。表示される状況は、監査が有効になっていてオンになっている (カーネル監査モジュールが監査レコードを構築してキューに入れ、監査デーモンが実行されている) ことを意味するリテラル文字列 \fBauditing\fR、監査が有効になっているがオフになっている (カーネル監査モジュールが監査レコードを構築せずキューにも入れず、監査デーモンが実行されていない) ことを意味する \fBnoaudit\fR、監査モジュールが有効になっていない (\fBsystem\fR(4) でモジュールが除外されている) ことを意味する \fBdisabled\fR です。詳細については、\fBauditd\fR(1M) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getestate\fR \fIevent\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたイベント (文字列またはイベント番号) について、\fIevent\fR が割り当てられたクラスを出力します。例: 
+.sp
+.in +2
+.nf
+# \fBauditconfig -getestate 20\fR
+audit class mask for event AUE_REBOOT(20) = 0x800
+# auditconfig -getestate AUE_RENAME
+audit class mask for event AUE_RENAME(42) = 0x30
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getflags\fR\fR
+.ad
+.sp .6
+.RS 4n
+ユーザーのデフォルト監査事前選択フラグを表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getkaudit\fR\fR
+.ad
+.sp .6
+.RS 4n
+現在のゾーンの監査特性を取得します。例: 
+.sp
+.in +2
+.nf
+# \fBauditconfig -getkaudit\fR
+audit id = unknown(-2)
+process preselection mask = lo,na(0x1400,0x1400)
+terminal id (maj,min,host) = 0,0,(0.0.0.0)
+audit session id = 0
+.fi
+.in -2
+.sp
+
+監査ポリシー \fBperzone\fR が設定されていない場合、端末 ID は大域ゾーンのものです。それ以外の場合、非大域ゾーンの端末 ID です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getkmask\fR\fR
+.ad
+.sp .6
+.RS 4n
+現在のゾーンの帰属不可能な事前選択マスクを取得します。例: 
+.sp
+.in +2
+.nf
+# \fBauditconfig -getkmask\fR
+audit flags for non-attributable events = lo,na(0x1400,0x1400)
+.fi
+.in -2
+.sp
+
+監査ポリシー \fBperzone\fR が設定されていない場合、カーネルマスクは大域ゾーンのものです。それ以外の場合、非大域ゾーンのものです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getnaflags\fR\fR
+.ad
+.sp .6
+.RS 4n
+帰属不可能な監査フラグを表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getpinfo\fR \fIpid\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたプロセスの監査 ID、事前選択マスク、端末 ID、および監査セッション ID を表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getplugin\fR [\fIname\fR]\fR
+.ad
+.sp .6
+.RS 4n
+プラグイン名に関する情報を表示します。\fIname\fR が指定されなかった場合は、すべてのプラグインを表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-getpolicy\fR\fR
+.ad
+.sp .6
+.RS 4n
+カーネル監査ポリシーを表示します。\fBahlt\fR および \fBperzone\fR ポリシーは大域ゾーンの設定を反映します。\fBperzone\fR が設定されている場合、その他のポリシーはすべて非大域ゾーンの設定を反映します。\fBperzone\fR が設定されていない場合、ポリシーはマシン全体です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getremote\fR [\fIserver\fR|[\fIgroup\fR [\fIconnection_group\fR]]]\fR
+.ad
+.sp .6
+.RS 4n
+監査リモートサーバーに関する情報表示します。\fIserver\fR オプション引数を使用する場合、一般的な監査リモートサーバー構成のみが表示されます。オプション引数 \fIgroup\fR を使用する場合、すべての構成済み接続グループの情報が表示されます。グループ引数に加えて \fIconnection_group\fR 名が指定される場合、それぞれの接続グループの情報だけを表示します。
+.sp
+オプション引数を使用しない場合、一般的な監査リモートサーバー構成の詳細およびすべての接続グループの情報が表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getcwd\fR\fR
+.ad
+.sp .6
+.RS 4n
+現在の作業ディレクトリ (システムブート時にゾーンルートからアンカーされたもの) を表示します。例: 
+.sp
+.in +2
+.nf
+# \fBcd /usr/tmp\fR
+# \fBauditconfig -getcwd\fR
+current working directory = /var/tmp
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-getqbufsz\fR\fR
+.ad
+.sp .6
+.RS 4n
+監査キュー書き込みバッファーサイズを取得します。例: 
+.sp
+.in +2
+.nf
+# \fBauditconfig -getqbufsz\fR
+no configured audit queue size
+audit queue buffer size (bytes) = 1024
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-getqctrl\fR\fR
+.ad
+.sp .6
+.RS 4n
+監査キュー書き込みバッファーサイズ、監査キュー \fBhiwater\fR マーク、監査キュー \fBlowater\fR マーク、監査キュー \fBprod\fR 間隔 (ティック) を取得します。
+.sp
+.in +2
+.nf
+# \fBauditconfig -getqctrl\fR
+no configured audit queue lowater mark
+no configured audit queue hiwater mark
+no configured audit queue size
+no configured audit queue delay
+audit queue hiwater mark (records) = 100
+audit queue lowater mark (records) = 10
+audit queue buffer size (bytes) = 1024
+audit queue delay (ticks) = 20
+
+# auditconfig -setqbufsz 8192
+# auditconfig -t -setqbufsz 12288
+# auditconfig -setqdelay 20
+# auditconfig -t -setqdelay 25
+# auditconfig -getqctrl
+no configured audit queue lowater mark
+no configured audit queue hiwater mark
+configured audit queue buffer size (bytes) = 8192
+configured audit queue delay (ticks) = 20
+active audit queue hiwater mark (records) =     100
+active audit queue lowater mark (records) =     10
+active audit queue buffer size (bytes) = 12288
+active audit queue delay (ticks) = 25
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-getqdelay\fR\fR
+.ad
+.sp .6
+.RS 4n
+監査キューが出力の開始を促される間隔を取得します。例: 
+.sp
+.in +2
+.nf
+# \fBauditconfig -getqdelay\fR
+no configured audit queue delay
+audit queue delay (ticks) = 20
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-getqhiwater\fR\fR
+.ad
+.sp .6
+.RS 4n
+未配信監査レコードの、監査生成がブロックされる高位境界値を取得します。例: 
+.sp
+.in +2
+.nf
+# \fB\&./auditconfig -getqhiwater\fR
+no configured audit queue hiwater mark
+audit queue hiwater mark (records) = 100
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-getqlowater\fR\fR
+.ad
+.sp .6
+.RS 4n
+未配信監査レコードの、ブロックされたプロセスが再開される低位境界値を取得します。例: 
+.sp
+.in +2
+.nf
+# \fBauditconfig -getqlowater\fR
+no configured audit queue lowater mark
+audit queue lowater mark (records) = 10
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getstat\fR\fR
+.ad
+.sp .6
+.RS 4n
+現在の監査統計情報を表示します。例: 
+.sp
+.in +2
+.nf
+# \fBauditconfig -getstat\fR
+gen nona kern  aud  ctl  enq wrtn wblk rblk drop  tot  mem
+910    1  725  184    0  910  910    0  231    0   88   48
+.fi
+.in -2
+.sp
+
+\fB-getstat\fR 出力に含まれる見出しについては、\fBauditstat\fR(1M) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-gettid\fR\fR
+.ad
+.sp .6
+.RS 4n
+現在のプロセスの監査端末 ID を表示します。例: 
+.sp
+.in +2
+.nf
+# \fBauditconfig -gettid\fR
+terminal id (maj,min,host) = 235,197121,elbow(172.146.89.77)
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-lsevent\fR\fR
+.ad
+.sp .6
+.RS 4n
+現在構成されている (実行時) カーネルレベルおよびユーザーレベル監査イベント情報を表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-lspolicy\fR\fR
+.ad
+.sp .6
+.RS 4n
+カーネル監査ポリシーを各ポリシーの説明付きで表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setasid\fR \fIsession-ID\fR [\fIcmd\fR]\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fIsession-ID\fR でシェルまたは \fIcmd\fR を実行します。例: 
+.sp
+.in +2
+.nf
+# \fB\&./auditconfig -setasid 2000 /bin/ksh\fR
+#
+# \fB\&./auditconfig -getpinfo 104485\fR
+audit id = abc(666)
+process preselection mask = lo(0x1000,0x1000)
+terminal id (maj,min,host) = 235,197121,elbow(172.146.89.77)
+audit session id = 2000
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setaudit\fR \fIaudit-ID\fR \fIpreselect_flags\fR \fIterm-ID\fR \fIsession-ID\fR [\fIcmd\fR]\fR
+.ad
+.sp .6
+.RS 4n
+指定された監査特性でシェルまたは \fIcmd\fR を実行します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setauid\fR \fIaudit-ID\fR [\fIcmd\fR]\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fIaudit–ID\fR でシェルまたは \fIcmd\fR を実行します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setclass\fR \fIevent audit_flag\fR[\fI,audit_flag . . .\fR]\fR
+.ad
+.sp .6
+.RS 4n
+カーネルイベント \fIevent\fR を \fBaudit_flag\fR リストで指定されたクラスにマップします。\fIevent\fR はイベントの番号または名前です。\fIaudit_flag\fR は監査クラスを表す文字列です。詳細については、\fBaudit_flags\fR(5) を参照してください。\fBperzone\fR が設定されていない場合、このオプションは大域ゾーンでのみ有効です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setflags\fR \fIaudit_flags\fR\fR
+.ad
+.sp .6
+.RS 4n
+デフォルトのユーザー監査事前選択フラグを設定します。\fBaudit_flags\fR(5) を参照してください。デフォルト事前選択フラグとユーザー固有の監査フラグを組み合わせることで、ユーザーの監査事前選択マスクを形成します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setkaudit\fR \fIIP-address_type\fR \fIIP_address\fR\fR
+.ad
+.sp .6
+.RS 4n
+マシンの IP アドレスを指定された値に設定します。\fIIP-address_type\fR は \fBipv6\fR、\fBipv4\fR のいずれかです。
+.sp
+\fBperzone\fR が設定されていない場合、このオプションは大域ゾーンでのみ有効です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setkmask\fR \fIaudit_flags\fR\fR
+.ad
+.sp .6
+.RS 4n
+マシンの帰属不可能な事前選択フラグを設定します。
+.sp
+\fBperzone\fR が設定されていない場合、このオプションは大域ゾーンでのみ有効です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setnaflags\fR \fIaudit_flags\fR\fR
+.ad
+.sp .6
+.RS 4n
+帰属不可能な監査フラグを設定します。\fBaudit_flags\fR(5) を参照してください。帰属不可能な監査フラグは、アクションを認証済みユーザーに帰属させることができない場合にどのクラスのイベントを監査すべきかを定義します。ログインの失敗は、帰属不可能なイベントの一例です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setpmask\fR \fIpid\fR \fIflags\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたプロセスの事前選択マスクを設定します。\fIflags\fR は、\fBaudit_flags\fR(5) のものに似たフラグの ASCII 表現です。
+.sp
+\fBperzone\fR が設定されていない場合、このオプションは大域ゾーンでのみ有効です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setplugin\fR \fIplugin_name\fR \fBactive\fR|\fBinactive\fR [ \fIattributes\fR [\fIqsize\fR]]\fR
+.ad
+.br
+.na
+\fB\fB-setplugin\fR \fIplugin_name\fR [\fB active\fR|\fBinactive\fR] \fIattributes\fR [\fIqsize\fR]\fR
+.ad
+.sp .6
+.RS 4n
+プラグイン \fIplugin_name\fR を \fBactive\fR または \fBinactive\fR に構成します。プラグインの属性やキュー内の未処理監査レコード数を構成することもできます。関連する監査プラグインのマニュアルページおよび \fBauditd\fR(1M) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-setpolicy\fR [\fI+\fR|\fI-\fR]\fIpolicy_flag\fR[\fI,policy_flag ...\fR]\fR
+.ad
+.sp .6
+.RS 4n
+カーネル監査ポリシーを設定します。ポリシー \fIpolicy_flag\fR は監査ポリシーを示すリテラル文字列です。プレフィックス \fB+\fR は、指定されたポリシーを現在の監査ポリシーに追加します。接頭辞 \fB-\fR は、指定されたポリシーを現在の監査ポリシーから削除します。最初に大域ゾーンから \fBperzone\fR ポリシーが設定されていない場合は、非大域ゾーンからポリシーを設定できません。次に有効なポリシーフラグ文字列を示します。現在の有効な監査ポリシーフラグ文字列は、\fBauditconfig\fR \fB-lspolicy\fR でも一覧表示されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBall\fR\fR
+.ad
+.RS 16n
+.rt  
+現在のゾーンに適用されるポリシーをすべて取り込みます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBahlt\fR\fR
+.ad
+.RS 16n
+.rt  
+監査キューが高位境界値に達したかリソース不足により監査レコードを構築できないために配信不可能な非同期監査イベントが発生した場合、パニックが呼び出され、システムはコアをダンプします。デフォルトではレコードがドロップされ、ドロップレコード数のカウントが保持されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBarge\fR\fR
+.ad
+.RS 16n
+.rt  
+\fBexecv\fR(2) システムコール環境引数を監査レコードに取り込みます。この情報はデフォルトでは取り込まれません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBargv\fR\fR
+.ad
+.RS 16n
+.rt  
+\fBexecv\fR(2) システムコールパラメータ引数を監査レコードに取り込みます。この情報はデフォルトでは取り込まれません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcnt\fR\fR
+.ad
+.RS 16n
+.rt  
+監査リソースが使い果たされた際にプロセスを一時停止しません。代わりに監査レコードをドロップし、ドロップレコード数のカウントを保持します。デフォルトでは、監査リソースが使用可能になるまでプロセスが一時停止されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgroup\fR \fR
+.ad
+.RS 16n
+.rt  
+補助グループトークンを監査レコードに取り込みます。デフォルトではグループトークンは取り込まれません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnone\fR\fR
+.ad
+.RS 16n
+.rt  
+ポリシーを取り込みません。大域ゾーン以外で使用した場合、\fBahlt\fR および \fBperzone\fR ポリシーは変更されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpath\fR\fR
+.ad
+.RS 16n
+.rt  
+セカンダリパストークンを監査レコードに追加します。これらは通常、動的にリンクされた共有ライブラリまたはシェルスクリプト用コマンドインタプリタのパス名です。デフォルトではこれらは取り込まれません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBperzone\fR\fR
+.ad
+.RS 16n
+.rt  
+ゾーンごとに別々の構成、キュー、およびログを保持し、ゾーンごとに別々のバージョンの \fBauditd\fR(1M) を実行します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpublic\fR\fR
+.ad
+.RS 16n
+.rt  
+public ファイルを監査します。\fBpublic\fR特性 (ルートが所有、すべての人が読み取れる、すべての人が書き込めるわけではない) を満たすファイルの場合、読み取りタイプ処理はデフォルトでは監査されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtrail\fR\fR
+.ad
+.RS 16n
+.rt  
+トレーラトークンをすべての監査レコードに取り込みます。デフォルトではトレーラトークンは取り込まれません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBseq\fR\fR
+.ad
+.RS 16n
+.rt  
+シーケンストークンをすべての監査レコードの一部として取り込みます。デフォルトではシーケンストークンは取り込まれません。シーケンストークンは、シーケンス番号をすべての監査レコードに付加します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBwindata_down\fR\fR
+.ad
+.RS 16n
+.rt  
+ウィンドウ間で移動されたダウングレード済みデータを監査レコードに取り込みます。このポリシーを使用できるのは、システムが Trusted Extensions で構成されている場合だけです。デフォルトではこの情報は取り込まれません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBwindata_up\fR\fR
+.ad
+.RS 16n
+.rt  
+ウィンドウ間で移動された、アップグレード済みデータを監査レコードに取り込みます。このポリシーを使用できるのは、システムが Trusted Extensions で構成されている場合だけです。デフォルトではこの情報は取り込まれません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzonename\fR\fR
+.ad
+.RS 16n
+.rt  
+\fBzonename\fR トークンをすべての監査レコードの一部として取り込みます。デフォルトでは \fBzonename\fR トークンは取り込まれません。\fBzonename\fR トークンは、監査レコードが生成されたゾーンの名前を提供します。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setremote\fR \fIserver\fR \fBactive\fR|\fBinactive\fR [\fIattributes\fR]\fR
+.ad
+.br
+.na
+\fB\fB-setremote\fR \fIserver\fR [\fBactive\fR|\fBinactive\fR] \fI attributes\fR\fR
+.ad
+.sp .6
+.RS 4n
+主監査リモートサーバースイッチをアクティブまたは非アクティブに構成します。これが非アクティブに設定されている場合、すべての構成済み接続グループが非アクティブとみなされます。オプションで、一般的な監査リモートサーバー属性を構成します。詳細は、\fBars\fR(5) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fR
+.ad
+.br
+.na
+\fB\fB-setremote\fR \fBgroup\fR \fBactive\fR|\fBinactive\fR \fIgroup_name\fR [\fIattributes\fR]\fR
+.ad
+.br
+.na
+\fB\fB-setremote\fR \fBgroup\fR [\fBactive\fR|\fB inactive\fR] \fIgroup_name\fR \fIattributes\fR\fR
+.ad
+.sp .6
+.RS 4n
+監査リモートサーバー接続グループ group_name をアクティブまたは非アクティブに構成します。オプションで、それぞれの接続グループ属性を構成します。詳細は、\fBars\fR(5) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fR
+.ad
+.br
+.na
+\fB\fB-setremote\fR \fBgroup\fR \fBcreate\fR|\fBdestroy\fR \fIgroup_name\fR\fR
+.ad
+.sp .6
+.RS 4n
+監査リモートサーバー接続グループ \fIgroup_name\fR を作成または破棄します。詳細は、\fBars\fR(5) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-setqbufsz\fR \fIbuffer_size\fR\fR
+.ad
+.sp .6
+.RS 4n
+監査キュー書き込みバッファーサイズ (バイト) を設定します。ゼロ (\fB0\fR) は、未構成の値にリセットすることを示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-setqctrl\fR \fIhiwater\fR \fIlowater\fR \fIbufsz\fR \fIinterval\fR\fR
+.ad
+.sp .6
+.RS 4n
+監査キュー書き込みバッファーサイズ (バイト)、hiwater 監査レコードカウント、lowater 監査レコードカウント、およびウェイクアップ間隔 (ティック) を設定します。非大域ゾーンで有効になるのは、\fBperzone\fR が設定されている場合だけです。ゼロ (\fB0\fR) は、未構成の値にリセットすることを示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-setqdelay\fR \fIinterval\fR\fR
+.ad
+.sp .6
+.RS 4n
+監査キューのウェイクアップ間隔 (ティック) を設定します。これにより、カーネルが監査キューに対して監査レコードを監査トレールに書き込むことを要求する間隔が決まります。非大域ゾーンで有効になるのは、\fBperzone\fR が設定されている場合だけです。ゼロ (\fB0\fR) は、未構成の値にリセットすることを示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-setqhiwater\fR \fIhiwater\fR\fR
+.ad
+.sp .6
+.RS 4n
+監査レコード生成がブロックされる、監査キュー内の未配信監査レコード数を設定します。非大域ゾーンで有効になるのは、\fBperzone\fR が設定されている場合だけです。ゼロ (\fB0\fR) は、未構成の値にリセットすることを示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-setqlowater\fR \fIlowater\fR\fR
+.ad
+.sp .6
+.RS 4n
+ブロックされた監査プロセスがブロック解除される、監査キュー内の未配信監査レコード数を設定します。非大域ゾーンで有効になるのは、\fBperzone\fR が設定されている場合だけです。ゼロ (\fB0\fR) は、未構成の値にリセットすることを示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setsmask\fR \fIasid flags\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された監査セッション ID を持つすべてのプロセスの事前選択マスクを設定します。非大域ゾーンで有効になるのは、\fBperzone\fR が設定されている場合だけです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setstat\fR\fR
+.ad
+.sp .6
+.RS 4n
+監査統計カウンタをリセットします。非大域ゾーンで有効になるのは、\fBperzone\fR が設定されている場合だけです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setumask\fR \fIusername\fR|\fIauid flags\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたユーザー名または監査 ID を持つすべてのプロセスの事前選択マスクを設定します。非大域ゾーンで有効になるのは、\fBperzone\fR が設定されている場合だけです。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fR\fBauditconfig\fR を使用する
+.sp
+.LP
+次に \fBauditconfig\fR コマンドの例を示します。
+
+.sp
+.in +2
+.nf
+#
+# Map kernel audit event number 10 to the "fr" audit class.
+
+# \fBauditconfig -setclass 10 fr\fR
+
+#
+# Turn on inclusion of exec arguments in exec audit records.
+
+# \fBauditconfig -setpolicy +argv\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fR未処理監査レコード数のみを設定する
+.sp
+.LP
+次の一連のコマンドは、\fBaudit_binfile\fR プラグインのキューに未処理監査レコード数のみを設定します。
+
+.sp
+.in +2
+.nf
+# See if audit_binfile is active.
+% \fBauditconfig -getplugin audit_binfile\fR
+
+# Set to queue 20 unprocessed audit records.
+#
+% \fBauditconfig -setplugin audit_binfile "" 20\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fRキュー制御パラメータをリセットする
+.sp
+.LP
+次のコマンドは、アクティブな構成済みキュー制御パラメータをリセットします。
+
+.sp
+.in +2
+.nf
+# Get the audit remote server configuration
+\fBauditconfig -getremote\fR
+
+# Change an audit remote server attribute
+\fBauditconfig -setremote server \e
+"listen_address=10.0.0.1,max_startups=10:30:60"\fR
+
+# Create an audit remote server (wild card) connection group
+\fBauditconfig -setremote group create egg_farm\fR
+
+# Get a specific audit remote server connection group information
+\fBauditconfig -getremote group egg_farm\fR
+
+# Set a connection group attribute, activate the connection group
+\fBauditconfig -setremote group active egg_farm \e
+"hosts=tipo.cz.oracle.com,binfile_dir=/var/audit/ARS"\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fR監査リモートサーバーの構成
+.sp
+.LP
+次のコマンドは、監査リモートサーバーを構成します。
+
+.sp
+.in +2
+.nf
+# Get the audit remote server configuration
+\fBauditconfig -getremote\fR
+
+# Change an audit remote server attribute
+\fBauditconfig -setremote server \e
+"listen_address=10.0.0.1,max_startups=10:30:60"\fR
+
+# Create an audit remote server (wild card) connection group
+\fBauditconfig -setremote group create egg_farm\fR
+
+# Get a specific audit remote server connection group information
+\fBauditconfig -getremote group egg_farm\fR
+
+# Set a connection group attribute, activate the connection group
+auditconfig -setremote group active egg_farm \e
+"hosts=tipo.cz.oracle.com,binfile_dir=/var/audit/ARS"
+.fi
+.in -2
+.sp
+
+.SH 終了ステータス
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+正常終了。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+エラーが発生した。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/security/audit_event\fR\fR
+.ad
+.RS 29n
+.rt  
+監査システムで使用されるイベント定義を格納します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/security/audit_class\fR\fR
+.ad
+.RS 29n
+.rt  
+監査システムで使用されるクラス定義を格納します。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBaudit\fR(1M), \fBauditd\fR(1M), \fBauditstat\fR(1M), \fBpraudit\fR(1M), \fBexecv\fR(2), \fBaudit_class\fR(4), \fBaudit_event\fR(4), \fBsystem\fR(4), \fBars\fR(5), \fBattributes\fR(5), \fBaudit_binfile\fR(5), \fBaudit_flags\fR(5), \fBaudit_remote\fR(5), \fBaudit_syslog\fR(5)
+.sp
+.LP
+\fI『Securing Systems and Attached Devices in Oracle Solaris 11.3』\fRの監査に関するセクションを参照してください。
+.SH 注意事項
+.sp
+.LP
+\fB-setplugin\fR オプションを使ってプラグイン出力を選択した場合、\fB-setpolicy\fR \fB+cnt\fR オプションと \fB-setqhiwater\fR オプションに関するシステム動作が若干変更されます。\fB-setpolicy\fR \fB+cnt\fR を設定した場合、ディスク領域が解放されるまで、選択されたプラグインにデータが引き続き送信されます (\fBaudit_binary\fR プラグインの出力が停止していても)。\fB-setpolicy\fR \fB–cnt\fR を使用した場合のブロック動作については、前述の「\fBサブコマンド\fR」を参照してください。キュー高位境界値は、\fBqsize\fR 属性 (前述の \fB-setplugin\fR オプションの説明を参照) によってオーバーライドされないかぎり、\fBauditd\fR 内でキュー制限の上限として使用されます。
+.sp
+.LP
+プロセスベースの情報を変更または表示する \fBauditconfig\fR オプションは、\fBperzone\fR ポリシーの影響を受けません。端末 ID パラメータや監査キューパラメータなどのシステム監査データを変更するものは、\fBperzone \fR ポリシーが設定されていないかぎり、大域ゾーンでのみ有効です。\fBperzone\fR が設定されている場合、システム監査の表示は非大域ゾーンを反映します。それ以外の場合、大域ゾーンの設定を反映します。
+.sp
+.LP
+プラグイン (\fB-setplugin\fR) や監査リモートサーバー (\fB-setremote\fR) の設定を変更 (アクティブ化や非アクティブ化、各属性の変更など) しても、監査サービスがリフレッシュされるまでは適用されません。監査サービスをリフレッシュするには、\fBaudit\fR(1M) を使用します。

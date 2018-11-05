@@ -1,0 +1,292 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 2004, 2011, Oracle and/or its affiliates.All rights reserved.
+.TH su 1M "2011 年 4 月 26 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+su \- 成为超级用户或其他用户
+.SH 用法概要
+.LP
+.nf
+\fBsu\fR [\fB-\fR] [\fIusername\fR [arg...]]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBsu\fR 命令允许用户在不注销的情况下成为另一个用户或者承担某个角色。缺省情况下 \fIusername\fR 是 \fBroot\fR（超级用户）。
+.sp
+.LP
+要使用 \fBsu\fR，必须提供相应的口令（除非调用者已经是 \fBroot\fR）。如果口令不正确，\fBsu\fR 将创建一个新的 shell 进程，该进程将真实有效的用户 \fBID\fR、组 \fBID\fR 和补充组列表设置为指定的 \fIusername\fR 的相应内容。此外，新的 shell 的项目 ID 会设置为指定用户的缺省项目 ID。请参见 \fBgetprojent\fR(3PROJECT)、\fBsetproject\fR(3PROJECT)。新 shell 将是在 \fIusername\fR 的口令文件条目的 shell 字段中指定的 shell（请参见 \fBpasswd\fR(4)）。如果未指定任何 shell，将使用 \fB/usr/bin/sh\fR（请参见 \fBsh\fR(1)）。如果请求了超级用户特权，并且不能使用 \fBexec\fR(2) 调用超级用户的 shell，则使用 \fB/sbin/sh\fR 作为回退。要返回到正常用户 \fBID\fR 特权，请键入 \fBEOF\fR 字符 (CTRL-D) 退出新的 shell。
+.sp
+.LP
+在命令行上提供的其他任何参数都将传递给新 shell。在使用 \fBsh\fR 之类的程序时，\fB-c\fR \fIstring\fR 形式的 \fIarg\fR 将使用 shell 执行 \fIstring\fR，\fB-r\fR 的 \fIarg\fR 为用户提供受限 shell。
+.sp
+.LP
+要创建登录环境，命令 \fB“su –”\fR 将执行以下操作：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+除了已经传播的内容外，还会传播指定用户的环境中的 \fBLC*\fR 和 \fBLANG\fR 环境变量。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+传播用户环境中的 \fBTZ\fR。如果在用户的环境中没有 \fBTZ\fR，\fBsu\fR 将使用 \fB/etc/default/login\fR 中的 \fBTIMEZONE\fR 参数的 \fBTZ\fR 值。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+将 \fBMAIL\fR 设置为 \fB/var/mail/\fInew_user\fR\fR。
+.RE
+.sp
+.LP
+如果 \fBsu\fR 的第一个参数是连字符 (-)，则将环境更改为用户以指定用户身份实际登录时应有的环境。否则将继承环境，但 \fB$\fR\fBPATH\fR\fB\fR 除外，它由 \fB/etc/default/su\fR 中的 \fBPATH\fR 和 \fBSU\fR\fBPATH\fR 控制。
+.sp
+.LP
+所有使用 \fBsu\fR 成为其他用户的尝试都记录在日志文件 \fB/var/adm/sulog\fR 中（请参见 \fBsulog\fR(4)）。
+.SH 安全
+.sp
+.LP
+\fBsu\fR 使用 \fBpam\fR(3PAM) 和服务名称 \fBsu\fR 进行验证、帐户管理和凭证建立。
+.SH 示例
+.LP
+\fB示例 1 \fR成为用户 \fBbin\fR，同时保留以前导出的环境
+.sp
+.LP
+要在成为用户 \fBbin\fR 的同时保留您以前导出的环境，请执行：
+
+.sp
+.in +2
+.nf
+example% \fBsu bin\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR成为用户 \fBbin\fR，并更改为 \fBbin\fR 的登录环境
+.sp
+.LP
+要成为用户 \fBbin\fR 但将环境更改为 \fBbin\fR 最初登录时的环境，请执行：
+
+.sp
+.in +2
+.nf
+example% \fBsu - bin\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR使用用户 \fBbin\fR 的环境和权限执行命令
+.sp
+.LP
+要使用用户 \fBbin\fR 的临时环境和权限执行命令，请键入：
+
+.sp
+.in +2
+.nf
+example% \fBsu - bin -c "\fIcommand args\fR"\fR
+.fi
+.in -2
+.sp
+
+.SH 环境变量
+.sp
+.LP
+出于安全考虑，删除了带 \fBLD_\fR 前缀的变量。因此，在成为用户 \fBbin\fR 时，\fBsu bin\fR 将不会获取以前导出的带 \fBLD_\fR 前缀的变量。
+.sp
+.LP
+如果未在环境中设置任何 \fBLC_*\fR 变量（\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR、\fBLC_TIME\fR、\fBLC_COLLATE\fR、\fBLC_NUMERIC\fR 和 \fBLC_MONETARY\fR）（请参见 \fBenviron\fR(5)），则每个相应语言环境类别的 \fBsu\fR 运行行为由 \fBLANG\fR 环境变量的值确定。如果设置了 \fBLC_ALL\fR，则会使用其内容覆盖 \fBLANG\fR 和其他 \fBLC_*\fR 变量。如果在环境中未设以上任何变量，\fBsu\fR 的行为方式取决于 “C”（美国样式）语言环境。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_CTYPE\fR\fR
+.ad
+.RS 15n
+.rt  
+确定 \fBsu\fR 如何处理字符。\fBLC_CTYPE\fR 设置为有效值时，\fBsu\fR 可以显示和处理包含适用于该语言环境的有效字符的文本和文件名。\fBsu\fR 可以显示和处理扩展 Unix 代码（Extended Unix Code， \fBEUC\fR）字符，其中任何一个单独的字符都可以为 \fB1\fR、\fB2\fR 或 \fB3\fR 字节宽。\fBsu\fR 也可以处理 \fB1\fR、\fB2\fR 或更多列宽度的 \fBEUC\fR 字符。在 “C” 语言环境中，只有 ISO 8859-1 中的字符有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_MESSAGES\fR\fR
+.ad
+.RS 15n
+.rt  
+确定如何显示诊断和信息性消息。这包括消息的语言和风格，以及肯定性和否定性响应的正确形式。在 "C" 语言环境中，消息以程序自身中的缺省形式显示（大多数情况下，为美式英文）。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$\fR\fBHOME\fR\fB/.profile\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsh\fR 和 \fBksh\fR 的用户登录命令
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/passwd\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统的口令文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/profile\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统范围的 \fBsh\fR 和 \fBksh\fR 登录命令
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/sulog\fR\fR
+.ad
+.sp .6
+.RS 4n
+日志文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/default/su\fR\fR
+.ad
+.sp .6
+.RS 4n
+此文件中的缺省参数包括的： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSULOG\fR\fR
+.ad
+.RS 11n
+.rt  
+如果已定义，则所有对其他用户的 \fBsu\fR 尝试都会记录在指示的文件中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCONSOLE\fR\fR
+.ad
+.RS 11n
+.rt  
+如果已定义，则所有为了 \fBroot\fR 而 \fBsu\fR 的尝试都会记录在控制台上。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPATH\fR\fR
+.ad
+.RS 11n
+.rt  
+缺省路径 (\fB/usr/bin:\fR)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSU\fR\fBPATH\fR\fR
+.ad
+.RS 11n
+.rt  
+调用 \fBsu\fR 的用户到 \fBroot\fR 的缺省路径。 (\fB/usr/sbin:/usr/bin\fR)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSYSLOG\fR\fR
+.ad
+.RS 11n
+.rt  
+确定是否应使用 \fBsyslog\fR(3C) \fBLOG_AUTH\fR 工具记录所有 \fBsu\fR 尝试。\fBLOG_NOTICE\fR 消息是为 \fBsu\fR 向 root 生成的，\fBLOG_INFO\fR 消息是为 \fBsu\fR 向其他用户生成的，\fBLOG_CRIT\fR 消息是为失败的 \fBsu\fR 尝试生成的。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/default/login\fR\fR
+.ad
+.sp .6
+.RS 4n
+此文件中的缺省参数包括的：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSLEEPTIME\fR\fR
+.ad
+.RS 13n
+.rt  
+如果存在，则设置要等待的秒数，达到此秒数后会将登录失败消息输出到屏幕并允许另一次登录尝试。缺省值为 \fB4\fR 秒。最小值为 \fB0\fR 秒。最大值为 \fB5\fR 秒。
+.sp
+\fBsu\fR 和 \fBlogin\fR(1) 都受 \fBSLEEPTIME\fR 的值影响。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTIMEZONE\fR\fR
+.ad
+.RS 13n
+.rt  
+设置 shell 的 TZ 环境变量。
+.RE
+
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBcsh\fR(1)、\fBenv\fR(1)、\fBksh\fR(1)、\fBlogin\fR(1)、\fBroles\fR(1)、\fBsh\fR(1)、\fBsyslogd\fR(1M)、\fBexec\fR(2)、\fBgetprojent\fR(3PROJECT)、\fBsetproject\fR(3PROJECT)、\fBpam\fR(3PAM)、\fBpam_authenticate\fR(3PAM)、\fBpam_acct_mgmt\fR(3PAM)、\fBpam_setcred\fR(3PAM)、\fBpam.conf\fR(4)、\fBpasswd\fR(4)、\fBprofile\fR(4)、\fBsulog\fR(4)、\fBsyslog\fR(3C)、\fBattributes\fR(5)、\fBenviron\fR(5)

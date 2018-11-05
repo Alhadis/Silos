@@ -1,0 +1,274 @@
+'\" te
+.\" Copyright (c) 2008, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH audit_syslog 5 "2015 年 3 月 19 日" "SunOS 5.11" "標準、環境、マクロ"
+.SH 名前
+audit_syslog \- syslog メッセージへの Solaris 監査データのリアルタイム変換
+.SH 形式
+.LP
+.nf
+\fB/usr/lib/security/audit_syslog.so\fR
+.fi
+
+.SH 機能説明
+.sp
+.LP
+Solaris 監査の \fBaudit_syslog\fR プラグインモジュール (\fB/usr/lib/security/audit_syslog.so\fR) は、\fBsyslog.conf\fR(4) で構成されたとおりに、Solaris 監査データを syslog 形式の (テキスト) データにリアルタイムで変換し、syslog デーモンに送信します。プラグインのパスは、\fBauditconfig\fR(1M) ユーティリティーを使用して指定されます。
+.sp
+.LP
+\fBplugin\fR が \fBauditconfig\fR によってアクティブとして構成されている場合は、\fBsyslog\fR にメッセージが書き込まれます。プラグイン関連のすべての構成パラメータを変更するには、\fBauditconfig\fR \fB-setplugin\fR オプションを使用します。syslog メッセージは、\fBLOG_AUDIT\fR (\fBsyslog.conf\fR(4) の \fBaudit\fR) の機能コードと \fBLOG_NOTICE\fR の重要度を使用して生成されます。監査 \fBsyslog\fR メッセージには、バイナリ形式の監査ログ用に記述されたトークンから選択したデータが含まれます。(\fBaudit.log\fR(4) を参照)。すべての \fBsyslog\fR メッセージと同様に、\fBsyslog\fR ファイルの各行は \fBsyslog\fR ヘッダーとメッセージの 2 つの部分で構成されます。
+.sp
+.LP
+syslog ヘッダーには、メッセージが生成された日付と時間、送信元のホスト名、監査デーモンによって生成されたことを示す \fBauditd\fR、\fBsyslog\fR で内部的に使用される ID フィールド、および \fBsyslogd\fR 機能と重要度の値を示す \fBaudit.notice\fR が含まれます。\fBsyslog\fR ヘッダーは文字 \fB]\fR (すなわち、終了角括弧とスペース) で終わります。
+.sp
+.LP
+メッセージ部分は、ヘッダートークンから生成されたイベントタイプで始まります。以降のすべてのデータは、元の監査レコードに含まれ、1024 バイトの最大長の \fBsyslog\fR 行に余裕がある場合にのみ表示されます。次の例では、バックスラッシュ文字 (\fB\\fR) は継続することを示しています。つまり、実際の \fBsyslog\fR メッセージは 1 行で記述されています:
+.sp
+.in +2
+.nf
+Oct 31 11:38:08 smothers auditd: [ID 917521 audit.notice] chdir(2) ok\e
+session 401 by joeuser as root:other from myultra obj /export/home
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+前述の例では、\fBchdir(2)\fR はイベントタイプです。このフィールド以降は、次に説明する追加データです。このデータはソースの監査レコードに含まれていない場合、省略されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBok\fR または \fBfailed\fR\fR
+.ad
+.RS 23n
+.rt  
+return または exit トークンから生成されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsession \fI<#>\fR\fR\fR
+.ad
+.RS 23n
+.rt  
+\fI<#>\fR は subject トークンから生成されたセッション ID です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBby \fI<name>\fR\fR\fR
+.ad
+.RS 23n
+.rt  
+\fI<name>\fR は subject トークンから生成された監査 ID です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBas \fI<name>\fR:\fI<group>\fR\fR\fR
+.ad
+.RS 23n
+.rt  
+\fI<name>\fR は subject トークンから生成された実効ユーザー ID、\fI<group>\fR は実行グループ ID です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin\fR \fI<zone name>\fR\fR
+.ad
+.RS 23n
+.rt  
+ゾーン名。このフィールドは、\fBzonename\fR 監査ポリシーが設定されている場合にのみ生成されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfrom \fI<terminal>\fR\fR\fR
+.ad
+.RS 23n
+.rt  
+\fI<terminal>\fR は subject トークンから生成されたテキストのマシンアドレスです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBobj \fI<path>\fR\fR\fR
+.ad
+.RS 23n
+.rt  
+\fI<path>\fR は path トークンからのパスです。必要に応じて、パスを左側から切り捨てて、行に収めることができます。切り捨ては先行する省略符号 (\fB\&...\fR) で示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBproc_uid \fI<owner>\fR\fR\fR
+.ad
+.RS 23n
+.rt  
+\fI<owner>\fR はプロセス所有者の実効ユーザー ID です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBproc_auid \fI<owner>\fR\fR\fR
+.ad
+.RS 23n
+.rt  
+\fI<owner>\fR はプロセス所有者の監査 ID です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBargv \fI<arguments>\fR\fR\fR
+.ad
+.RS 23n
+.rt  
+\fBexec_args\fR トークンからの \fBexecv\fR(2) システムコールパラメータ引数が一覧表示されます。
+.sp
+引数を行に収めるために必要であれば、右側が切り捨てられることがあります。切り捨ては末尾の省略符号 (...) で示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBarge \fI<arguments>\fR\fR\fR
+.ad
+.RS 23n
+.rt  
+\fBexec_env\fR トークンからの \fBexecv\fR(2) システムコール環境引数が一覧表示されます。
+.sp
+引数を行に収めるために必要であれば、右側が切り捨てられることがあります。切り捨ては末尾の省略符号 (...) で示されます。
+.RE
+
+.sp
+.LP
+次に、\fBsyslog\fR メッセージの例を示します:
+.sp
+.in +2
+.nf
+Nov  4  8:27:07 smothers auditd: [ID 175219 audit.notice] 
+\esystem booted
+
+Nov  4  9:28:17 smothers auditd: [ID 752191 audit.notice] \e
+login - rlogin ok session 401 by joeuser as joeuser:staff from myultra
+
+Nov  4 10:29:27 smothers auditd: [ID 521917 audit.notice] \e
+access(2) ok session 255 by janeuser as janeuser:staff from  \e
+129.146.89.30 obj /etc/passwd
+.fi
+.in -2
+.sp
+
+.SH オブジェクト属性
+.sp
+.LP
+\fBp_flag\fR 属性は、\fBsyslog\fR デーモンに送信される監査データを、\fBflags\fR と \fBnaflags\fR (\fBauditconfig\fR(1M) を参照) および \fBuser_attr\fR(4) のユーザー固有の行から指定されたクラスよりもさらに絞り込むために使用されます。このパラメータはコンマで区切ったリストです。各項目は監査クラス (\fBaudit_class\fR(4) を参照) を表し、\fBaudit_flags\fR(5) で説明されている構文を使用して指定されます。デフォルト (空の \fBp_flags\fR が一覧表示される) では、監査レコードは生成されません。
+.SH 使用例
+.LP
+\fB例 1 \fR\fBplugin\fR 行の使用例:
+.sp
+.LP
+次に示す指定では、\fBplugin\fR (\fBflags\fR と \fBnaflags\fR の設定と組み合わせて) を使用すると、\fBlo\fR のクラスレコードを使用できますが、\fBam\fR のクラスレコードは失敗した場合にしか使用できません。\fBfm\fR クラスレコードを省略すると、\fBfm\fR クラスレコードが出力されません。\fBflags\fR と \fBnaflags\fR および \fBuser_attr\fR(4) を使用して定義されたものにはクラスを追加できないため、\fBpc\fR パラメータは影響を受けません。削除のみ可能です。
+
+.sp
+.in +2
+.nf
+auditconfig -setflags lo,am,fm
+auditconfig -setnaflags lo
+auditconfig -setplugin audit_syslog active "p_flags=lo,-am,pc"
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fR\fBall\fR の使用法:
+.sp
+.LP
+次に示す指定では、\fBall\fR では、1 つの例外を除いて、\fBflags\fR と \fBnaflags\fR (および \fBuser_attr\fR(4)) を使用して定義されたすべてのフラグを使用できます。\fBam\fR メタクラス (\fBss,as,ua\fR と同等) は、すべての \fBua\fR イベント (ただし、\fBss\fR と \fBas\fR は失敗イベントのみ) を出力するように変更されているという例外があります。
+
+.sp
+.in +2
+.nf
+auditconfig -setflags lo,am
+auditconfig -setnaflags lo
+auditconfig -setplugin audit_syslog active "p_flags=all,^+ss,^+as"
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+この例では、複数のクラスに含まれている可能性のある \fBss\fR または \fBas\fR クラスの一部の成功監査イベントが引き続き \fBsyslog\fR 出力に含まれることがあります。
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、\fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+\fB属性タイプ\fR\fB属性値\fR
+_
+MT レベルMT-安全
+_
+インタフェースの安定性下記を参照。
+.TE
+
+.sp
+.LP
+メッセージの形式および内容は「不確実」です。構成パラメータは「確実」です。
+.SH 関連項目
+.sp
+.LP
+\fBauditconfig\fR(1M)、\fBauditd\fR(1M)、\fBaudit_class\fR(4)、\fBsyslog.conf\fR(4)、\fBuser_attr\fR(4)、\fBattributes\fR(5)、\fBaudit_flags\fR(5)
+.sp
+.LP
+\fI『Managing Auditing in Oracle Solaris 11.3 』\fR
+.SH 注意事項
+.sp
+.LP
+\fBaudit_syslog\fR \fBplugin\fR をアクティブ化するには、\fBaudit\fR 機能および \fBnotice\fR 重要度の \fBsyslog\fR メッセージ、または Solaris 監査レコード用の前述のファイル内の syslog メッセージが格納されるように \fB/etc/syslog.conf\fR が構成されている必要があります。次に、\fBsyslog.conf\fR 内のこのような行の例を示します:
+.sp
+.in +2
+.nf
+audit.notice                /var/audit/audit.log
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBsyslog\fR からのメッセージは、UDP を使用してリモートの \fBsyslog\fR サーバーに送信されるため、配信が保証されなかったり、メッセージの正確な到達順序が保証されなかったりします。
+.sp
+.LP
+\fBplugin\fR 行に指定されたパラメータによってクラスが事前選択されていない場合は、\fBLOG_DAEMON\fR 機能コードが含まれる \fBsyslog\fR アラートを使用してエラーが報告されます。
+.sp
+.LP
+\fBaudit_syslog\fR(5) は、\fBaudit_binfile\fR(5) または \fBaudit_remote\fR(5) の代用ではありません。\fBsyslog\fR メッセージには限られたトークンのセットが含まれます。完全な監査レコードを取得するには、監査トレールファイル (\fBaudit.log\fR(4)) を使用します。
+.sp
+.LP
+\fBsyslog\fR ヘッダーの時間フィールドは \fBsyslog\fR(3C) によって生成され、バイナリ形式の監査ログにはだいたいの時間しか書き込まれません。通常は、時間フィールドには、1 秒か数秒程度の違いで表示されます。

@@ -1,0 +1,469 @@
+'\" te
+.\" Copyright (c) 2005, 2012, Oracle and/or its affiliates. All rights reserved.
+.TH cpustat 1M "27 Feb 2012" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+cpustat \- monitor system behavior using CPU performance counters
+.SH SYNOPSIS
+.LP
+.nf
+\fBcpustat\fR \fB-c\fR \fIeventspec\fR [\fB-c\fR \fIeventspec\fR]... [\fB-p\fR \fIperiod\fR] [\fB-T\fR u | d ]
+     [\fB-Dmnst\fR] [\fB-A\fR cor|soc|bins] [\fB-k\fR \fIkeys\fR] [\fB-o\fR \fIlimit\fR]
+     [\fB-I\fR \fIstatfile\fR] [\fB-O\fR \fIstatfile\fR] [\fIinterval\fR [\fIcount\fR]]
+.fi
+
+.LP
+.nf
+\fBcpustat\fR \fB-h\fR
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBcpustat\fR utility allows \fBCPU\fR performance counters to be used to monitor the overall behavior of the \fBCPU\fRs in the system.
+.sp
+.LP
+If \fIinterval\fR is specified, \fBcpustat\fR samples activity every \fIinterval\fR seconds, repeating forever. If a \fIcount\fR is specified, the statistics are repeated \fIcount\fR times. If neither are specified, an interval of five seconds is used, and there is no limit to the number of samples that are taken.
+.SH OPTIONS
+.sp
+.LP
+The following options are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fBcor\fR\fR
+.ad
+.sp .6
+.RS 4n
+Aggregate output by core ID. Data rows having the same core ID are aggregated into one row. The columns are replaced with subtotals, by default. The \fB-m\fR option prints column averages, instead.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fBsoc\fR\fR
+.ad
+.sp .6
+.RS 4n
+Aggregate output by socket ID. Data rows having the same socket ID are aggregated into one row. The columns are replaced with subtotals, by default. The \fB-m\fR option prints column averages, instead.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fBbins\fR\fR
+.ad
+.sp .6
+.RS 4n
+Aggregate the rows into a lesser number of bins within each sampling period, grouping them in the order in which they appear, and print the columnar subtotal over rows for each bin. The \fB-m\fR option may be used in order to compute the arithmetic mean instead of the subtotal. The \fB-k\fR sorting option may be used to change the row order prior to the binning step. The \fBsze\fR column prints the number of CPUs in each bin. The \fBBIN\fR column replaces the \fBCPU\fR column and prints the ordinal of each \fBbin\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIeventspec\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies a set of events for the \fBCPU\fR performance counters to monitor. The syntax of these event specifications is:
+.sp
+.in +2
+.nf
+[picn=]\fIeventn\fR[,attr[\fIn\fR][=\fIval\fR]][,[picn=]\fIeventn\fR
+     [,attr[n][=\fIval\fR]],...,]
+.fi
+.in -2
+.sp
+
+You can use the \fB-h\fR option to obtain a list of available events and attributes. This causes generation of the usage message. You can omit an explicit counter assignment, in which case \fBcpustat\fR attempts to choose a capable counter automatically. 
+.sp
+Attribute values can be expressed in hexadecimal, octal, or decimal notation, in a format suitable for \fBstrtoll\fR(3C). An attribute present in the event specification without an explicit value receives a default value of \fB1\fR. An attribute without a corresponding counter number is applied to all counters in the specification.
+.sp
+The semantics of these event specifications can be determined by reading the \fBCPU\fR manufacturer's documentation for the events.
+.sp
+Multiple \fB-c\fR options can be specified, in which case the command cycles between the different event settings on each sample.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR\fR
+.ad
+.sp .6
+.RS 4n
+Enables debug mode.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.sp .6
+.RS 4n
+Prints an extensive help message on how to use the utility and how to program the processor-dependent counters.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR \fIstatfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+Replay data previously saved in \fIstatfile\fR. Create data files for replay by specifying \fB-O\fR. This option is  especially useful for analyzing statistics on machines with large numbers of CPUs. The file may be reprocessed  multiple times using different sorting and aggregation options.
+.sp
+The \fB-I\fR option is incompatible with an interval and count specification.
+.sp
+Read from the standard input if the file name is \fB\(em\fR (hyphen).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR \fIkey1\fR,...\fR
+.ad
+.sp .6
+.RS 4n
+Sort rows within each sampling period from highest to lowest by \fIkey1\fR, then \fIkey2\fR, and so on. Each key is a comma-separated list of events. There may be multiple \fB-k\fR options specified.
+.sp
+When \fBcpustat\fR is run with multiple \fB-c\fR \fIevent-spec\fR options it produces a report of alternating \fIevent-spec\fRs. Specify multiple \fB-k\fR options to sort each \fIevent-spec\fR  differently. For each \fIevent-spec\fR, the first \fB-k\fR option whose keys contain a proper subset of the events in the \fIevent-spec\fR is used.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.sp .6
+.RS 4n
+Print the arithmetic mean value rather than the sum when the \fB-b\fR or \fB-i\fR is used to aggregate data over multiple CPUs.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+Omits all header output (useful if \fBcpustat\fR is the beginning of a pipeline).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+Print only the first \fInum\fR rows within each sampling period, after applying sorting and aggregation options.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-O\fR \fIstatfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+Save all data to \fIstatfile\fR. This data may be replayed at a later time using \fB-I\fR.
+.sp
+Write to the standard output if the file name is \fB\(em\fR (hyphen).
+.sp
+The purpose of \fB-O\fR is to capture all available data. It is incompatible with the data reduction options: \fB-A\fR, \fB-k\fR, \fB-m\fR and \fB-o\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIperiod\fR\fR
+.ad
+.sp .6
+.RS 4n
+Causes \fBcpustat\fR to cycle through the list of \fIeventspec\fRs every \fIperiod\fR seconds. The tool sleeps after each cycle until \fIperiod\fR seconds have elapsed since the first \fIeventspec\fR was measured. 
+.sp
+When this option is present, the optional \fIcount\fR parameter specifies the number of total cycles to make (instead of the number of total samples to take). If \fIperiod\fR is less than the number of \fIeventspec\fRs times \fIinterval\fR, the tool acts as it period is \fB0\fR. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.sp .6
+.RS 4n
+Creates an idle soaker thread to spin while system-only \fIeventspec\fRs are bound. One idle soaker thread is bound to each CPU in the current processor set. System-only \fIeventspec\fRs contain both the \fBnouser\fR and the \fBsys\fR tokens and measure events that occur while the CPU is operating in privileged mode. This option prevents the kernel's idle loop from running and triggering system-mode events. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fBu\fR | \fBd\fR\fR
+.ad
+.sp .6
+.RS 4n
+Display a time stamp.
+.sp
+Specify \fBu\fR for a printed representation of the internal representation of time. See \fBtime\fR(2). Specify \fBd\fR for standard date format. See \fBdate\fR(1).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+Prints an additional column of processor cycle counts, if available on the current architecture.
+.RE
+
+.SH USAGE
+.sp
+.LP
+A closely related utility, \fBcputrack\fR(1), can be used to monitor the behavior of individual applications with little or no interference from other activities on the system.
+.sp
+.LP
+The \fBcpustat\fR utility must be run by the super-user, as there is an intrinsic conflict between the use of the \fBCPU\fR performance counters system-wide by \fBcpustat\fR and the use of the \fBCPU\fR performance counters to monitor an individual process (for example, by \fBcputrack\fR.)
+.sp
+.LP
+Once any instance of this utility has started, no further per-process or per-\fBLWP\fR use of the counters is allowed until the last instance of the utility terminates.
+.sp
+.LP
+The times printed by the command correspond to the wallclock time when the hardware counters were actually sampled, instead of when the program told the kernel to sample them. The time is derived from the same timebase as \fBgethrtime\fR(3C). 
+.sp
+.LP
+The processor cycle counts enabled by the \fB-t\fR option always apply to both user and system modes, regardless of the settings applied to the performance counter registers.
+.sp
+.LP
+On some hardware platforms running in system mode using the "sys" token, the counters are implemented using 32-bit registers. While the kernel attempts to catch all overflows to synthesize 64-bit counters, because of hardware implementation restrictions, overflows can be lost unless the sampling interval is kept short enough. The events most prone to wrap are those that count processor clock cycles. If such an event is of interest, sampling should occur frequently so that less than 4 billion clock cycles can occur between samples.
+.sp
+.LP
+The output of cpustat is designed to be readily parseable by \fBnawk\fR(1) and \fBperl\fR(1), thereby allowing performance tools to be composed by embedding \fBcpustat\fR in scripts. Alternatively, tools can be constructed directly using the same \fBAPI\fRs that \fBcpustat\fR is built upon using the facilities of \fBlibcpc\fR(3LIB). See \fBcpc\fR(3CPC). 
+.sp
+.LP
+The \fBcpustat\fR utility only monitors the \fBCPU\fRs that are accessible to it in the current processor set. Thus, several instances of the utility can be running on the \fBCPU\fRs in different processor sets. See \fBpsrset\fR(1M) for more information about processor sets.
+.sp
+.LP
+Because \fBcpustat\fR uses \fBLWP\fRs bound to \fBCPU\fRs, the utility might have to be terminated before the configuration of the relevant processor can be changed.
+.SH EXAMPLES
+.SS "SPARC"
+.LP
+\fBExample 1 \fRMeasuring External Cache References and Misses
+.sp
+.LP
+The following example measures misses and references in the external cache. These occur while the processor is operating in user mode on an UltraSPARC machine.
+
+.sp
+.in +2
+.nf
+example% cpustat -c EC_ref,EC_misses 1 3
+
+    time cpu event      pic0      pic1
+   1.008   0  tick     69284      1647
+   1.008   1  tick     43284      1175
+   2.008   0  tick    179576      1834
+   2.008   1  tick    202022     12046
+   3.008   0  tick     93262       384
+   3.008   1  tick     63649      1118
+   3.008   2 total    651077     18204
+.fi
+.in -2
+.sp
+
+.SS "x86"
+.LP
+\fBExample 2 \fRMeasuring Branch Prediction Success on Pentium 4
+.sp
+.LP
+The following example measures branch mispredictions and total branch instructions in user and system mode on a Pentium 4 machine.
+
+.sp
+.in +2
+.nf
+ example% cpustat -c \e
+    pic12=branch_retired,emask12=0x4,pic14=branch_retired,\e
+    emask14=0xf,sys 1 3
+  
+    time cpu event      pic12     pic14
+   1.010   1  tick       458       684 
+   1.010   0  tick       305       511 
+   2.010   0  tick       181       269 
+   2.010   1  tick       469       684 
+   3.010   0  tick       182       269 
+   3.010   1  tick       468       684 
+   3.010   2 total      2063      3101 
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRCounting Memory Accesses on Opteron
+.sp
+.LP
+The following example determines the number of memory accesses made through each memory controller on an Opteron, broken down by internal memory latency:
+
+.sp
+.in +2
+.nf
+cpustat -c \e
+   pic0=NB_mem_ctrlr_page_access,umask0=0x01, \e
+   pic1=NB_mem_ctrlr_page_access,umask1=0x02, \e
+   pic2=NB_mem_ctrlr_page_access,umask2=0x04,sys \e
+   1
+
+    time cpu event      pic0      pic1      pic2
+   1.003   0  tick     41976     53519      7720
+   1.003   1  tick      5589     19402       731
+   2.003   1  tick      6011     17005       658
+   2.003   0  tick     43944     45473      7338
+   3.003   1  tick      7105     20177       762
+   3.003   0  tick     47045     48025      7119
+   4.003   0  tick     43224     46296      6694
+   4.003   1  tick      5366     19114       652
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 4 \fRDisplaying Multiple CPUs with a Filter
+.sp
+.LP
+The following command displays the three CPUs with the highest \fBDTLB_miss\fR rate.
+
+.sp
+.in +2
+.nf
+example% \fBcpustat -c DTLB_miss -k DTLB_miss -n 3 1 1\fR
+
+ time cpu event DTLB_miss
+1.040 115  tick       107
+1.006  18  tick        98
+1.045 126  tick        31
+1.046  96 total       236
+
+event DTLB_miss
+total       236
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 5 \fRAggregating Multiple CPUs into Quartiles by a Filter
+.sp
+.LP
+The following command aggregates 256 CPUs into quartiles by DTLB miss rate.
+
+.sp
+.in +2
+.nf
+example% \fBcpustat -c DTLB_miss -b 4 -k DTLB_miss -m 1 1\fR
+
+ time bin event DTLB_miss sze
+1.032   0  tick        46  24
+1.021   1  tick         3  24
+1.007   2  tick         2  24
+1.022   3  tick         0  24
+1.045   4 total        51  24
+
+event DTLB_miss
+total        51
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 6 \fRSorting Multiple Events
+.sp
+.LP
+The following sequence of commands sorts multiple events.
+
+.sp
+.in +2
+.nf
+example% \fBcpustat -O /tmp/OUT -c ITLB_miss,DTLB_miss -c PAPI_tot_ins 1 2\fR
+example% \fBcpustat  -I /tmp/OUT -b 4 -k ITLB_miss -k PAPI_tot_ins\fR
+
+ time bin event ITLB_miss DTLB_miss sze
+1.020   0  tick       129       673  24
+1.009   1  tick         0        61  24
+1.005   2  tick         0        79  24
+1.039   3  tick         0        64  24
+1.082   4 total       129       877  24
+
+ time bin event PAPI_tot_ins sze
+2.073   0  tick        51947  24
+2.020   1  tick        14976  24
+2.076   2  tick        14976  24
+2.004   3  tick        14976  24
+2.082   4 total        96875  24
+
+event ITLB_miss DTLB_miss PAPI_tot_ins
+total       129       877        96875
+.fi
+.in -2
+.sp
+
+.SH WARNINGS
+.sp
+.LP
+By running the \fBcpustat\fR command, the super-user forcibly invalidates all existing performance counter context. This can in turn cause all invocations of the \fBcputrack\fR command, and other users of performance counter context, to exit prematurely with unspecified errors.
+.sp
+.LP
+If \fBcpustat\fR is invoked on a system that has \fBCPU\fR performance counters which are not supported by Solaris, the following message appears:
+.sp
+.in +2
+.nf
+cpustat: cannot access performance counters - Operation not applicable
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+This error message implies that \fBcpc_open()\fR has failed and is documented in \fBcpc_open\fR(3CPC). Review this documentation for more information about the problem and possible solutions.
+.sp
+.LP
+If a short interval is requested, \fBcpustat\fR might not be able to keep up with the desired sample rate. In this case, some samples might be dropped.
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitydiagnostic/cpu-counters
+_
+Interface StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBcputrack\fR(1), \fBnawk\fR(1), \fBperl\fR(1), \fBiostat\fR(1M), \fBprstat\fR(1M), \fBpsrset\fR(1M), \fBvmstat\fR(1M), \fBcpc\fR(3CPC), \fBcpc_open\fR(3CPC), \fBcpc_bind_cpu\fR(3CPC), \fBgethrtime\fR(3C), \fBstrtoll\fR(3C), \fBlibcpc\fR(3LIB), \fBattributes\fR(5)
+.SH NOTES
+.sp
+.LP
+When \fBcpustat\fR is run on a Pentium 4 with HyperThreading enabled, a CPC set is bound to only one logical CPU of each physical CPU. See \fBcpc_bind_cpu\fR(3CPC).

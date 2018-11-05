@@ -1,0 +1,388 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 2008, Sun Microsystems, Inc. All Rights Reserved
+.TH rsh 1 "2008 年 12 月 23 日" "SunOS 5.11" "用户命令"
+.SH 名称
+rsh, remsh, remote_shell \- 远程 shell
+.SH 用法概要
+.LP
+.nf
+\fBrsh\fR [\fB-n\fR] [\fB-a\fR] [\fB-K\fR] [\fB-PN\fR | \fB-PO\fR] [\fB-x\fR] [\fB-f\fR | \fB-F\fR] [\fB-l\fR \fIusername\fR] 
+     [\fB-k\fR \fIrealm\fR] \fIhostname\fR \fIcommand\fR
+.fi
+
+.LP
+.nf
+\fBrsh\fR \fIhostname\fR [\fB-n\fR] [\fB-a\fR] [\fB-K\fR] [\fB-PN\fR | \fB-PO\fR] [\fB-x\fR] [\fB-f\fR | \fB-F\fR] 
+     [\fB-l\fR \fIusername\fR] [\fB-k\fR \fIrealm\fR] \fIcommand\fR
+.fi
+
+.LP
+.nf
+\fBremsh\fR [\fB-n\fR] [\fB-a\fR] [\fB-K\fR] [\fB-PN\fR | \fB-PO\fR] [\fB-x\fR] [\fB-f\fR | \fB-F\fR] [\fB-l\fR \fIusername\fR] 
+     [\fB-k\fR \fIrealm\fR] \fIhostname\fR \fIcommand\fR
+.fi
+
+.LP
+.nf
+\fBremsh\fR \fIhostname\fR [\fB-n\fR] [\fB-a\fR] [\fB-K\fR] [\fB-PN\fR | \fB-PO\fR] [\fB-x\fR] [\fB-f\fR | \fB-F\fR] 
+     [\fB-l\fR \fIusername\fR] [\fB-k\fR \fIrealm\fR] \fIcommand\fR
+.fi
+
+.LP
+.nf
+ \fIhostname\fR [\fB-n\fR] [\fB-a\fR] [\fB-PN\fR | \fB-PO\fR] [\fB-x\fR] [\fB-f\fR | \fB-F\fR] 
+     [\fB-l\fR \fIusername\fR] [\fB-k\fR \fIrealm\fR] \fIcommand\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBrsh\fR 实用程序会连接到指定的 \fIhostname\fR，并执行指定的 \fIcommand\fR。\fBrsh\fR 会将其标准输入复制到远程命令，将远程命令的标准输出复制到其标准输出，并将远程命令的标准错误复制到其标准错误。中断、退出和终止信号将传播到远程命令。\fBrsh\fR 通常在远程命令终止时终止。
+.sp
+.LP
+用户可选择采用 Kerberos V5 进行验证的安全 \fBrsh\fR 会话。此外也可以对网络会话通信进行加密。\fBrsh\fR 会话可使用以下 Kerberos 特定选项来执行 Kerberos 验证：\fB-a\fR、\fB-PN\fR 或 \fB-PO\fR、\fB-x\fR、\fB-f\fR 或 \fB-F\fR 以及 \fB-k\fR \fIrealm\fR。上述部分选项（\fB-a\fR、\fB-x\fR、\fB-PN\fR 或 \fB-PO\fR 以及 \fB-f\fR 或 \fB-F\fR）也可以在 \fBkrb5.conf\fR(4) 的 \fB [appdefaults]\fR 部分中指定。这些选项的用法及其预期行为将在下面的“选项”部分中讨论。使用 Kerberos 验证时，帐户授权将由 \fBkrb5_auth_rules\fR(5) 中的规则控制。如果此授权失败，则仅当在命令行上显式使用 \fB-PO\fR 选项或者在 \fBkrb5.conf\fR(4) 中指定了该选项时，才会回退到使用 \fBrhosts\fR 的常规 \fBrsh\fR 会话。此外，\fB-PN\fR 或 \fB-PO\fR、\fB-x\fR、\fB-f\fR 或 \fB-F\fR 以及 \fB-k\fR \fIrealm\fR 选项只是 \fB-a\fR 选项的超集。
+.sp
+.LP
+如果省略了 \fIcommand\fR，而非执行单一命令，那么 \fBrsh\fR 将使用 \fBrlogin\fR(1) 登录远程主机。
+.sp
+.LP
+\fBrsh\fR 不会返回 \fIcommand\fR 的退出状态代码。
+.sp
+.LP
+不带引号的 Shell 元字符将在本地计算机上解释，而带引号的元字符将在远程计算机上解释。请参见“示例”部分。
+.sp
+.LP
+如果特定用户的登录 shell 的初始化文件（\fB\&.cshrc\fR 等）中并无语言环境设置，\fBrsh\fR 将始终在 “C” 语言环境（而非远程计算机的缺省语言环境）中执行命令。
+.sp
+.LP
+命令会以未加密的形式发送至远程系统。所有后续的网络会话通信都会被加密。请参见 \fB-x\fR。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 15n
+.rt  
+显式启用 Kerberos 验证，并信任用于访问控制的 \fB\&.k5login\fR 文件。如果服务器端的 \fBin.rshd\fR(1M) 成功执行了授权检查，且 \fB\&.k5login\fR 文件允许访问，则允许用户执行命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.RS 15n
+.rt  
+将本地凭据（Kerberos 票证授予票证）的副本转发给远程系统。这是一个不可转发的票证授予票证。如果需要通过远程主机上其他使用 Kerberos 验证的网络服务的验证，则转发一个票证授予票证。例如，您在远程主机上的起始目录是通过 Kerberos V5 挂载的 \fBNFS\fR。在这种情况下，如果不转发本地凭据，您将无法访问起始目录。此选项与 \fB-F\fR 选项互斥。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fR
+.ad
+.RS 15n
+.rt  
+将本地凭据（Kerberos 票证授予票证）的可转发副本转发给远程系统。\fB-F\fR 选项提供的功能是 \fB-f\fR 选项所提供功能的超集。例如，使用 \fB-f\fR 选项时，如果在连接到远程主机之后试图通过远程命令调用带 \fB-f\fR 或 \fB-F\fR 选项的 \fB/usr/bin/ftp\fR、\fB/usr/bin/telnet\fR、\fB/usr/bin/rlogin\fR 或 \fB/usr/bin/rsh\fR，这些操作会失败。因此，您无法将单网络登录信任用到一个系统以外。此选项与 \fB-f\fR 选项互斥。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR \fIrealm\fR\fR
+.ad
+.RS 15n
+.rt  
+促使 \fBrsh\fR 获取 \fIrealm\fR（而非 \fBkrb5.conf\fR(4) 确定的远程主机领域）中的远程主机的票证。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-K\fR\fR
+.ad
+.RS 15n
+.rt  
+此选项会显式禁用 Kerberos 验证。它可用来覆盖 \fBkrb5.conf\fR(4) 中的 \fBautologin\fR 变量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-l\fR \fIusername\fR\fR
+.ad
+.RS 15n
+.rt  
+使用 \fIusername\fR（而非本地用户名）作为远程用户名。如果未使用此选项，远程用户名将与本地用户名相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 15n
+.rt  
+将 \fBrsh\fR 的输入重定向到 \fB/dev/null\fR。有时需要使用此选项来避免 \fBrsh\fR 与调用它的 shell 之间的不良交互。例如，如果在运行 \fBrsh\fR 时在后台调用了另一个 \fBrsh\fR，而未将其输入重定向到终端以外，则将发生阻塞，即使远程命令并未执行读取操作。\fB-n\fR 选项可防止这一问题。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-PO\fR\fR
+.ad
+.br
+.na
+\fB\fB-PN\fR\fR
+.ad
+.RS 15n
+.rt  
+显式请求新版 (\fB-PN\fR) 或旧版 (\fB-PO\fR) 的 Kerberos “\fBrcmd\fR” 协议。新协议避免了旧协议中常见的许多安全问题，安全性大幅提升，但它无法与早期的 (MIT/SEAM) 服务器互操作。缺省情况下会使用新协议，除非使用这些选项或通过 \fBkrb5.conf\fR(4) 进行了显式指定。使用旧 “\fBrcmd\fR” 协议时，如果 Kerberos 验证失败，系统会回退到常规的非 Kerberos \fBrsh\fR。使用更安全的新 “\fBrcmd\fR” 协议时，则不会发生这种情况。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.RS 15n
+.rt  
+使系统加密网络会话通信。请参见\fB\fR“说明”部分。
+.RE
+
+.sp
+.LP
+远程 shell 的类型（\fBsh\fR、\fBrsh\fR 或其他）将由远程系统上 \fB/etc/passwd\fR 文件中的用户条目决定。
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcommand\fR\fR
+.ad
+.RS 11n
+.rt  
+要在指定的 \fIhostname\fR 上执行的命令。
+.RE
+
+.SH 用法
+.sp
+.LP
+有关 \fBrsh\fR 和 \fBremsh\fR 遇到大于或等于 2 GB（2^31 字节）文件时行为的说明，请参见 \fBlargefile\fR(5)。
+.sp
+.LP
+\fBrsh\fR 和 \fBremsh\fR 命令支持 IPv6。请参见 \fBip6\fR(7P)。Kerberos V5 验证目前不支持 \fBIPv6\fR。
+.sp
+.LP
+主机名将在 \fIhosts\fR 数据库（包含在 \fB/etc/hosts\fR 文件和/或 Internet 域名数据库中）中提供。每台主机都有一个正式名称（数据库条目中的第一个名称），也可以有一个或多个别名。正式主机名或别名可通过 \fIhostname\fR 给定。
+.sp
+.LP
+如果执行 \fBrsh\fR 的初始文件名不是 \fBrsh\fR，则 \fBrsh\fR 将使用此名称作为其 \fIhostname\fR 参数。这可让您创建一个指向 \fBrsh\fR 的符号链接，当执行该链接时，将对该主机调用远程 shell。通过创建一个目录并使用常用主机名的符号链接进行填充，然后在 shell 搜索路径中包含该目录，可以运行 \fBrsh\fR（向 shell 中键入 \fIhostname\fR）。
+.sp
+.LP
+如果使用基名 \fBremsh\fR 来调用 \fBrsh\fR，那么 \fBrsh\fR 将检查是否存在文件 \fB/usr/bin/remsh\fR。如果该文件存在，则 \fBrsh\fR 将像 \fBremsh\fR 是 \fBrsh\fR 的别名一样进行操作。如果 \fB/usr/bin/remsh\fR 不存在，那么 \fBrsh\fR 的操作行为就像 \fBremsh\fR 是主机名一样。
+.sp
+.LP
+对于 Kerberos \fBrsh\fR 会话，每个用户都可在其起始目录中的 \fB\&.k5login\fR 文件中拥有一个专用验证列表。此文件中的每一行均应包含一个 \fIprincipal\fR/\fIinstance \fR@\fIrealm\fR 格式的 Kerberos 主体名称。如果存在一个 \fB~/.k5login\fR 文件，则当且仅当发起方用户通过了 \fB~/.k5login\fR 文件中所指定的某个主体的验证时，才会授予其对该帐户的访问权限。否则，当且仅当用户的已验证主体名称可以使用 \fIauthenticated-principal-name\fR -> \fIlocal-user-name\fR 映射规则映射至本地帐户名称时，才会授予发起方用户对该帐户的访问权限。\fB\&.k5login\fR 文件（用于访问控制）在 Kerberos 验证完成后才生效。
+.sp
+.LP
+对于非安全 \fBrsh\fR 会话，每个远程计算机可拥有名为 \fB/etc/hosts.equiv\fR 的文件，其中包含一个与其共享用户名的可信主机的名称列表。在本地计算机和远程计算机上拥有相同用户名的用户可从远程计算机的 \fB/etc/hosts.equiv\fR 文件中所列的计算机执行 \fBrsh\fR 操作。各个用户可在其起始目录中使用 .rhosts 文件建立一个效果类似的专用列表。此文件中的每一行都包含两个名称：主机名和用户名（用空格隔开）。该条目允许登录到该主机且具有该用户名的用户以远程用户身份使用 rsh 访问远程计算机。如果远程计算机上的 \fB/etc/hosts.equiv\fR 文件中不含该本地主机的名称，且远程用户的 \fB\&.rhosts\fR 文件中也不含该本地用户名和主机名，访问会被拒绝。\fB/etc/hosts.equiv\fR 和 \fB\&.rhosts\fR 文件中所列的主机名必须为列在 \fBhosts\fR 数据库中的正式主机名；在这些文件中不能使用别名。
+.sp
+.LP
+如果可信用户的帐户被锁定，则无法使用 \fBrsh\fR 以该可信用户的身份从可信主机登录。
+.sp
+.LP
+如果远程计算机拒绝访问，\fBrsh\fR 不会提示输入口令，除非省略了 \fIcommand\fR 参数。
+.SH 示例
+.LP
+\fB示例 1 \fR使用 rsh 附加文件
+.sp
+.LP
+以下命令会将远程文件 \fBlizard.file\fR 从计算机 \fBlizard\fR 附加到计算机 \fBexample\fR 上的文件 \fBexample.file\fR：
+
+.sp
+.in +2
+.nf
+example% \fBrsh lizard cat lizard.file >> example.file\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下命令会将计算机 \fBlizard\fR 上的文件 \fBlizard.file\fR 附加到文件 \fBlizard.file2\fR（也驻留在计算机 \fBlizard\fR 上）中：
+
+.sp
+.in +2
+.nf
+example% \fBrsh lizard cat lizard.file ">>" lizard.file2\fR
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+出现错误。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/hosts\fR\fR
+.ad
+.RS 23n
+.rt  
+Internet 主机表
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/hosts.equiv\fR\fR
+.ad
+.RS 23n
+.rt  
+可信的远程主机和用户
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/passwd\fR\fR
+.ad
+.RS 23n
+.rt  
+系统口令文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.k5login\fR\fR
+.ad
+.RS 23n
+.rt  
+包含允许访问的 Kerberos 主体的文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/krb5/krb5.conf\fR\fR
+.ad
+.RS 23n
+.rt  
+Kerberos 配置文件
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性service/network/network-clients
+_
+CSIEnabled（已启用）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBon\fR(1)、\fBrlogin\fR(1)、\fBssh\fR(1)、\fBtelnet\fR(1)、\fBvi\fR(1)、\fBin.rshd\fR(1M)、\fBhosts\fR(4)、\fBhosts.equiv\fR(4)、\fBkrb5.conf\fR(4)、\fBattributes\fR(5)、\fBkrb5_auth_rules\fR(5)、\fBlargefile\fR(5)、\fBip6\fR(7P)
+.SH 附注
+.sp
+.LP
+将系统列在 \fBhosts.equiv\fR 中时，它必须具有与本地安全相当的安全性。将不安全的系统列在 \fBhosts.equiv\fR 中可能会危及整个系统的安全性。
+.sp
+.LP
+您无法运行交互式命令（如 \fBvi\fR(1)）。如果您希望进行此操作，请使用 \fBrlogin\fR。
+.sp
+.LP
+停止信号仅停止本地 \fBrsh\fR 进程。这无疑是错误的，但是目前很难修复，其原因过于复杂，以致于无法在此处加以解释。
+.sp
+.LP
+不会将当前本地环境传递到远程 shell。
+.sp
+.LP
+有时出于某些原因需要使用 \fB-n\fR 选项。例如，命令:
+.sp
+.in +2
+.nf
+example% \fBrsh somehost dd if=/dev/nrmt0 bs=20b | tar xvpBf \(mi\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+将 shell 置于异常状态。很明显，\fBtar\fR 进程将在 \fBrsh\fR 进程之前终止。接着，\fBrsh\fR 命令试图写入“已损坏的管道”，而且与 shell 争用标准输入，而不是简单地终止。调用 \fBrsh\fR 时使用 \fB-n\fR 选项可避免此类事件。
+.sp
+.LP
+此错误仅在 \fBrsh\fR 位于管道开头且未读取标准输入时出现。如果 \fBrsh\fR 实际上需要读取标准输入，请勿使用 \fB-n\fR 选项。例如：
+.sp
+.in +2
+.nf
+example% \fBtar cf \(mi . | rsh sundial dd of=/dev/rmt0 obs=20b\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+不会产生该错误。如果您要在此类情形中使用 \fB-n\fR 选项，则 \fBrsh\fR 将错误地从 \fB/dev/null\fR（而非管道中）进行读取。
+.sp
+.LP
+对于大多数目的，应首选 \fBssh\fR(1) 而非 \fBrsh\fR。

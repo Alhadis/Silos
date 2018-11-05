@@ -1,0 +1,575 @@
+'\" te
+.\" Copyright (c) 2007, 2011, Oracle and/or its affiliates. All rights reserved.
+.\" Copyright 1989 AT&T
+.TH pkgadd 1M "2011 年 11 月 18 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+pkgadd \- システムへのソフトウェアパッケージの転送
+.SH 形式
+.LP
+.nf
+\fBpkgadd\fR [\fB-nv\fR] [\fB-a\fR \fIadmin\fR] [\fB-G\fR] [\fB-x\fR \fIproxy\fR] 
+     [ [\fB-M\fR] \fB-R\fR \fIroot_path\fR] [\fB-r\fR \fIresponse\fR] [\fB-k\fR \fIkeystore\fR] 
+     [\fB-P\fR \fIpasswd\fR] [\fB-V\fR \fIfs_file\fR] 
+     [\fB-d\fR \fIdevice\fR | \fB-d\fR \fIdatastream\fR \fIpkginst\fR | all] 
+     [\fIpkginst\fR | \fB-Y\fR \fIcategory\fR [\fI, category\fR]...]
+.fi
+
+.LP
+.nf
+\fBpkgadd\fR \fB-s\fR [\fB-d\fR \fIdevice\fR | \fB-d\fR \fIdatastream\fR \fIpkginst\fR | all] 
+     [\fIpkginst\fR | \fB-Y\fR \fIcategory\fR [\fI, category\fR]...]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBpkgadd\fR は、ソフトウェアパッケージの内容をインストール用の配布媒体またはディレクトリからシステムに転送します。\fB-d\fR \fIdevice\fR ソース指定子を指定せずに使用した場合、\fBpkgadd\fR はデフォルトのスプールディレクトリ (\fB/var/spool/pkg\fR) 内でパッケージを検索します。\fB-s\fR オプションを指定して使用した場合は、パッケージをインストールせずにスプールディレクトリに書き込みます。
+.sp
+.LP
+\fBpkgadd\fR ユーティリティーを使用するには、インストールされるパッケージのサイズ分の一時領域が必要です。\fBpkgadd\fR は \fB$TMPDIR\fR 環境変数があるかどうかを確認して、使用する一時ディレクトリを決定します。\fB$TMPDIR\fR が定義されていない場合、\fBpkgadd\fR は \fBstdio.h\fR の \fBP_tmpdir\fR を使用します。\fBP_tmpdir\fR にはデフォルトで \fB/var/tmp/\fR が設定されています。
+.sp
+.LP
+アンバンドルのパッケージやサードパーティーのパッケージの中には、\fBpkgadd\fR の最新バージョンと完全な互換性がないものがあります。これらのパッケージについては、インストールの開始時だけでなくインストールの全体を通してユーザーとの対話が必要になるか、またはリクエストスクリプトを root ユーザーとして実行する必要があります。
+.sp
+.LP
+これらの古い (Solaris 2.4 より前にリリースされた) パッケージをインストールするには、次の環境変数を設定します: \fBNONABI_SCRIPTS=TRUE\fR。
+.sp
+.LP
+この環境変数が設定されている場合にかぎり、\fBpkgadd\fR でインストール中のキーボードによる対話が可能になり、パッケージスクリプトが \fBroot\fR として実行されます。
+.sp
+.LP
+(\fBnoaccess\fR (デフォルト) や \fBinstall\fR ユーザーではなく) \fBroot\fR ユーザーとして実行する必要があるパッケージリクエストスクリプトがある場合は、\fBadmin\fR(4) ファイルで \fBrscript_alt\fR パラメータを使用して適切な選択を行います。\fBadmin\fR(4) を参照してください。
+.sp
+.LP
+Solaris 8 および Solaris 9 では、リクエストスクリプトを実行するときのデフォルトユーザーはオペレーティングシステムのパッチレベルに応じて \fBroot\fR か \fBnobody\fR のいずれかでした。現在のリリースでは、デフォルトユーザーは \fBnoaccess\fR です。
+.sp
+.LP
+パッケージコマンドは、\fBlargefile\fR(5) を認識します。これらのコマンドは、2G バイトより大きなファイルを、より小さなファイルと同様に処理します。\fBpkgadd\fR、\fBpkgtrans\fR(1)、およびその他のパッケージコマンドは、現在の実装では最大 4G バイトまでのデータストリームを処理できます。
+.sp
+.LP
+「形式」に示した \fB-d\fR、\fB-Y\fR、および \fIpkginst\fR 引数については、「オプション」の次にある「オペランド」で説明します。
+.SH オプション
+.sp
+.LP
+サポートされているオプションについて、次に説明します。\fB-d\fR \fIdevice\fR ソース指定子については、あとの「オペランド」で説明します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-a\fR \fIadmin\fR\fR
+.ad
+.sp .6
+.RS 4n
+デフォルトの管理ファイルの代わりに使用するインストール管理ファイル (\fIadmin\fR) を定義します。トークン \fBnone\fR は、\fIadmin\fR ファイルの使用をオーバーライドするため、ユーザーとの対話が必要になります。フルパス名が指定されない場合、\fBpkgadd\fR は最初に現在の作業ディレクトリで管理ファイルを検索します。指定された管理ファイルが現在の作業ディレクトリに存在しない場合、\fBpkgadd\fR は \fB/var/sadm/install/admin\fR ディレクトリで管理ファイルを検索します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-G\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションは推奨されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR \fIkeystore\fR\fR
+.ad
+.sp .6
+.RS 4n
+パッケージ内で見つかったデジタル署名を検証するときに、信頼できる認証局の証明書を取得する場所として \fIkeystore\fR を使用します。キーストアが指定されていない場合は、デフォルトのキーストアの場所で有効な信頼できる証明書が検索されます。詳細は、「\fBキーストアの場所\fR」を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR\fR
+.ad
+.sp .6
+.RS 4n
+クライアントのマウントポイントを決定するときに \fB$\fR\fIroot_path\fR\fB/etc/vfstab\fR ファイルを使用しないように \fBpkgadd\fR に指示します。このオプションは、マウントポイントがサーバー上で適切であり、サーバーの動作が Solaris 2.5 以前のリリースと適合することを前提としています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+非対話型モードでインストールを実行します。インストールされたファイルのリストを出力しません。デフォルトのモードは対話型です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIpasswd\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-k\fR で指定されたキーストアを復号化するために使用するパスワード (必要な場合)。このオプションの引数の形式の詳細は、「\fBパスフレーズの引数\fR」を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-r\fR \fIresponse\fR\fR
+.ad
+.sp .6
+.RS 4n
+直前の \fBpkgask\fR(1M) セッションの出力に含まれるファイルまたはディレクトリを指定します。このファイルは、対話型モードでパッケージからリクエストされる対話の応答を提供します。\fIresponse\fR はフルパス名である必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIroot_path\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIroot_path\fR として使用するディレクトリのフルパス名を定義します。すべてのファイル (パッケージシステム情報ファイルを含む) は \fIroot_path\fR から始まるディレクトリツリーに再配置されます。\fIroot_path\fR は、サーバーからクライアントにインストールするときに指定できます (たとえば、\fB/export/root/client1\fR)。
+.LP
+注 - 
+.sp
+.RS 2
+いかなる非大域ゾーンのルートファイルシステムも \fB-R\fR で参照しないでください。この操作によって、大域ゾーンのファイルシステムを損傷したり、大域ゾーンのセキュリティを損ねたり、非大域ゾーンのファイルシステムを損傷する可能性があります。\fBzones\fR(5) を参照してください。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-s\fR \fIspool\fR\fR
+.ad
+.sp .6
+.RS 4n
+パッケージをインストールせずに \fIspool\fR ディレクトリに書き込みます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIpkginst\fR\fB/install\fR ディレクトリに存在し、\fBpkgadd\fR によって実行されるすべてのスクリプトを追跡します。このオプションは、手続き型および非手続き型スクリプトをデバッグするときに使用します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR \fIfs_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+クライアントのファイルシステムをマップする代替の \fIfs_file\fR を指定します。たとえば、\fB$\fR\fIroot_path\fR\fB/etc/vfstab\fR ファイルが存在しない場合や信頼できない場合などに使用します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fIproxy\fR\fR
+.ad
+.sp .6
+.RS 4n
+パッケージをダウンロードするときに使用する HTTP[S] プロキシを指定します。プロキシの書式は \fIhost\fR:\fIport\fR です。ここで、\fIhost\fR は HTTP[S] プロキシのホスト名、\fIport\fR はそのプロキシに関連付けられたポート番号です。このスイッチは、プロキシを指定するほかのすべての方法をオーバーライドします。デフォルトのプロキシを指定する代わりの方法については、「環境変数」を参照してください。
+.RE
+
+.sp
+.LP
+オプションもオペランドも指定しないで実行すると、\fBpkgadd\fR は \fB/var/spool/pkg\fR (デフォルトのスプールディレクトリ) を使用します。
+.SH オペランド
+.sp
+.LP
+次のオペランドがサポートされています。
+.SS "ソース"
+.sp
+.LP
+デフォルトでは、pkgadd はインストールまたはスプールするパッケージのインスタンスを検索するときに \fB/var/spool/pkg\fR ディレクトリを検索します。オプションで次を使用して、インストールまたはスプールされるパッケージインスタンスのソースを指定することもできます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdevice\fR\fR
+.ad
+.br
+.na
+\fB\fB-d\fR \fIdatastream\fR \fIpkgname\fR,... | \fBall\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIdevice\fR からパッケージをインストールまたはコピーします。\fIdevice\fR には次のいずれかを指定できます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ディレクトリのフルパス名、あるいはテープまたはリムーバブルメディアの識別子 (たとえば、\fB/var/tmp\fR)。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBpkgtrans\fR によって作成されたデータストリーム (\fBpkgtrans\fR(1) を参照)。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBpkgtrans\fR によって作成されたデータストリームを指す URL。サポートされている URI (Universal Resource Identifier) は、\fBhttp:\fR と \fBhttps:\fR です。
+.RE
+上記の \fB-d\fR 指定子の 2 番目の形式は、データストリームを指定するときに使用する構文を示しています。この場合は、パッケージ名のコンマ区切りリストか、キーワード \fBall\fR のいずれかを指定する必要があります。
+.RE
+
+.SS "インスタンス"
+.sp
+.LP
+デフォルトでは、\fBpkgadd\fR は指定したソースを検索し、ユーザーがソース上で見つかったどのパッケージインスタンスをインストールするかを選択できる対話式メニューを表示します。代わりの方法として次を使用して、インストールするパッケージインスタンスを指定することもできます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIpkginst\fR\fR
+.ad
+.sp .6
+.RS 4n
+インストールするパッケージインスタンスまたはインスタンスのリスト。ソース媒体で使用可能なすべてのパッケージを参照するには、トークン \fBall\fR を使用します。パッケージのすべてのインスタンスを指定するには、書式 \fIpkginst\fR\fB\&.*\fR を使用します。
+.sp
+シェルによっては、アスタリスク文字 (\fB*\fR) が特殊な意味を持つことがあり、 * をエスケープしなければならない場合があります。C シェルの場合は、アスタリスクを単一引用符 (\fB\&'\fR) で囲むか、アスタリスクの前にバックスラッシュ (\fB\\fR) を付ける必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Y\fR \fIcategory\fR[,\fIcategory\fR...]\fR
+.ad
+.sp .6
+.RS 4n
+パッケージの \fBpkginfo\fR(4) ファイルに格納されている \fBCATEGORY\fR パラメータの値に基づいてパッケージをインストールします。\fBCATEGORY\fR が指定したカテゴリのいずれかに一致するソース媒体上のすべてのパッケージがインストールまたはスプール用に選択されます。
+.RE
+
+.SH キーストアの場所
+.sp
+.LP
+\fBpkgadd\fR などのパッケージは、パッケージ内で見つかったすべての署名の署名検証を行うために、信頼できる証明書のセットを使用します。パッケージに署名が 1 つも含まれていない場合は、署名の検証が省略されます。証明書はさまざまな場所にある可能性があります。\fB-k\fR \fIkeystore\fR が指定され、\fIkeystore\fR がディレクトリである場合、\fIkeystore\fR は使用される証明書のベースディレクトリと見なされます。\fIkeystore\fR がファイルである場合は、このファイル自体に必要な鍵と証明書がすべて含まれていると見なされます。\fB-k\fR が指定されていない場合は、ベースディレクトリとして \fB/var/sadm/security\fR が使用されます。
+.sp
+.LP
+指定したベースディレクトリ内で検索されるストアの場所は、検索を行なっているアプリケーションと検索されるストアの種類によって異なります。次のディレクトリが指定された順序で検索されます。
+.RS +4
+.TP
+1.
+\fI<store_dir>\fR/\fI<app_name>\fR/\fI<store_type>\fR
+.RE
+.RS +4
+.TP
+2.
+\fI<store_dir>\fR/\fI<store_type>\fR
+.RE
+.sp
+.LP
+ここで、\fI<store_dir>\fR は \fB-k\fR で指定されたディレクトリであり、\fI<app_name>\fR は検索を行なっているアプリケーションの名前であり、\fI<store_type>\fR は \fBkeystore\fR (非公開鍵の場合)、\fBcertstore\fR (信頼できない公開鍵証明書の場合)、\fBtruststore\fR (信頼できる認証局の証明書の場合) のいずれかです。
+.sp
+.LP
+たとえば、\fB-k\fR \fB/export/certs\fR を指定して \fBpkgadd\fR を実行した場合は、信頼できるストアを見つけるために次の場所が連続して検索されます。
+.RS +4
+.TP
+1.
+/export/certs/pkgadd/truststore
+.RE
+.RS +4
+.TP
+2.
+/export/certs/truststore
+.RE
+.sp
+.LP
+この検索順序により、管理者はほとんどのアプリケーションに対して 1 つの場所を用意し、特定のアプリケーションに対して特別な証明書の場所を用意することができます。
+.SH キーストアと証明書の形式
+.sp
+.LP
+\fBpkgtrans\fR などのパッケージングユーティリティーは、パッケージに署名し、必要に応じてパッケージを検証するために、鍵と証明書のセットにアクセスする必要があります。
+.sp
+.LP
+「\fBキーストアの場所\fR」に示した検索パターンに従って見つかったキーストアファイルは、それぞれ自己完結型の PKCS#12 形式ファイルである必要があります。
+.sp
+.LP
+\fBpkgtrans\fR でパッケージに署名するときに \fBcertstore\fR に複数の公開鍵証明書が含まれている場合、パッケージへの署名時に \fB-a\fR オプションで公開鍵を識別して選択できるようにするには、各公開鍵に \fBfriendlyName\fR 属性が含まれている必要があります。さらに、\fB-a\fR で選択した公開鍵証明書と \fBcertstore\fR で見つかった公開鍵証明書に対して、キーストア内に関連する秘密鍵が存在する必要があります。
+.sp
+.LP
+いくつかのブラウザやユーティリティーを使用して、証明書と鍵を PKCS#12 キーストアにエクスポートおよびインポートできます。たとえば、OpenSSL ツールキットを使用して、信頼できる証明書を Mozilla からエクスポートし、それを \fBpkgadd\fR で使用する PKCS#12 キーストアにインポートできます。
+.SH パスフレーズの引数
+.sp
+.LP
+\fBpkgtrans\fR と \fBpkgadd\fR は、パスワードの引数を受け入れます。通常は \fB-p\fR を使用してパスワードを指定します。これらにより、パスワードをさまざまなソースから取得できます。これらのオプションはどちらも 1 つの引数を取ります。その書式を次に示します。パスワードの引数が 1 つも指定されていないが、パスワードが必要な場合、ユーザーはパスワードを入力するように求められます。通常、これは現在の端末からエコーをオフにした状態で読み取られます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpass:\fIpassword\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+実際のパスワードは \fIpassword\fR です。パスワードは \fBps\fR などのユーティリティーで表示できるため、この書式はセキュリティーが重要でない場合にのみ使用するようにしてください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBenv:\fIvar\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+パスワードを環境変数 \fIvar\fR から取得します。一部のプラットフォームではほかのプロセスの環境を表示できるため、このオプションは注意して使用するようにしてください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfile:\fIpathname\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIpathname\fR に含まれる 1 行目がパスワードです。\fIpathname\fR は通常のファイルを参照する必要はありません。デバイスや名前付きパイプなども参照できます。たとえば、標準入力からパスワードを読み取るには、\fBfile:/dev/stdin\fR を使用します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconsole\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB/dev/tty\fR からパスワードを読み取ります。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRSolaris DVD からパッケージをインストールする
+.sp
+.LP
+次の例は、Solaris DVD からパッケージをインストールします。インストールするパッケージの名前を入力するように求められます。
+
+.sp
+.in +2
+.nf
+example# \fBpkgadd -d /cdrom/cdrom0/s0/Solaris_10/Product\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRデータストリームから一連のパッケージをインストールする
+.sp
+.LP
+次に示すコマンド例は、\fB-d\fR ソース指定子で指定されたデータストリーム内のすべてのパッケージをインストールします。このコマンドを実行する前に、\fBpkgtrans\fR(1) コマンドを使ってこのデータストリームを作成しておく必要があります。
+
+.sp
+.in +2
+.nf
+example# \fBpkgadd -d /var/tmp/datastream all\fR 
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+キーワード \fBall\fR は、指定されたデータストリーム内で見つかったすべてのパッケージがインストールされることを表します。
+
+.SH 終了ステータス
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+正常終了
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+致命的エラーが発生したことを表します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.sp .6
+.RS 4n
+警告。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.sp .6
+.RS 4n
+割り込み。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR\fR
+.ad
+.sp .6
+.RS 4n
+管理。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB5\fR\fR
+.ad
+.sp .6
+.RS 4n
+管理。対話が必要。\fBpkgadd\fR \fB-n\fR を使用しないこと。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB10\fR\fR
+.ad
+.sp .6
+.RS 4n
+すべてのパッケージのインストール後にリブートする。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB20\fR\fR
+.ad
+.sp .6
+.RS 4n
+このパッケージのインストール後にリブートする。
+.RE
+
+.SH 環境
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHTTPPROXY\fR\fR
+.ad
+.sp .6
+.RS 4n
+HTTP プロキシホストを指定します。管理ファイルの設定と \fBhttp_proxy\fR 環境変数をオーバーライドします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHTTPPROXYPORT\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBHTTPPROXY\fR で指定したホストに接続するときに使用するポートを指定します。\fBHTTPPROXY\fR が設定されていない場合は、無視されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhttp_proxy\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロキシのホストとポートを指定するための URL 書式。管理ファイルの設定をオーバーライドします。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/sadm/install/logs/\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpkgadd\fR がソフトウェアインストールのインスタンスを記録する場所。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件package/svr4
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBpkginfo\fR(1), \fBpkgmk\fR(1), \fBpkgparam\fR(1), \fBpkgproto\fR(1), \fBpkgtrans\fR(1), \fBinstallf\fR(1M), \fBpkgadm\fR(1M), \fBpkgask\fR(1M), \fBpkgchk\fR(1M), \fBpkgrm\fR(1M), \fBremovef\fR(1M), \fBadmin\fR(4), \fBpkginfo\fR(4), \fBattributes\fR(5), \fBlargefile\fR(5), \fBzones\fR(5)
+.sp
+.LP
+\fI『Packaging and Delivering Software With the Image Packaging System in Oracle Solaris 11.3 』\fR
+.sp
+.LP
+\fBhttp://www.openssl.org\fR
+.SH 注意事項
+.sp
+.LP
+パッケージをスプールディレクトリに転送するときは、\fB-r\fR、\fB-n\fR、および \fB-a\fR オプションを使用できません。
+.sp
+.LP
+\fB-r\fR オプションを使用して、ファイル名だけでなくディレクトリ名も指定できます。このディレクトリには、関連するパッケージの名前を共有する多数の応答ファイルを格納できます。これは、たとえば、1 回の \fBpkgadd\fR 呼び出しで複数の対話型パッケージを追加するときに使用できます。この場合は、パッケージごとに応答ファイルが必要です。パッケージと同じ名前 (たとえば、\fBpkinst1\fR や \fBpkinst2\fR) の応答ファイルを作成した場合は、\fB-r\fR オプションのあとに、これらの応答ファイルが存在するディレクトリを指定します。
+.sp
+.LP
+\fB-n\fR オプションを指定した場合は、インストールを完了するために対話が必要になると、インストールが中断します。
+.sp
+.LP
+デフォルトの \fIadmin\fR ファイルの制限が厳しすぎる場合は、パッケージのインストールを完全に非対話形式で実行できるように管理ファイルを変更できます。詳細は、\fBadmin\fR(4) を参照してください。
+.sp
+.LP
+\fB-d\fR でパッケージストリームが指定され、そのストリーム内にデジタル署名が見つかった場合は、デフォルトの動作として、見つかった証明書と署名を検証しようとします。この動作は、\fBadmin\fR ファイルの設定でオーバーライドできます。詳細は、\fBadmin\fR(4) を参照してください。

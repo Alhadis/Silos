@@ -1,0 +1,544 @@
+'\" te
+.\" Copyright (c) 2002, 2012, Oracle and/or its affiliates.All rights reserved.
+.TH ldapaddent 1M "2011 年 4 月 8 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+ldapaddent \- 根据对应的 /etc 文件创建 LDAP 条目
+.SH 用法概要
+.LP
+.nf
+\fBldapaddent\fR [\fB-cpv\fR] [\fB-a\fR \fIauthenticationMethod\fR] [\fB-b\fR \fIbaseDN\fR]
+     \fB-D\fR \fIbindDN\fR [\fB-w\fR \fIbind_password\fR] [\fB-j\fR \fIpasswdFile\fR] [\fB-f\fR \fIfilename\fR]
+     \fIdatabase\fR
+.fi
+
+.LP
+.nf
+\fBldapaddent\fR [\fB-cpv\fR] \fB-a\fR sasl/GSSAPI [\fB-b\fR \fIbaseDN\fR] [\fB-f\fR \fIfilename\fR]
+     \fIdatabase\fR
+.fi
+
+.LP
+.nf
+\fBldapaddent\fR \fB-d\fR [\fB-v\fR] [\fB-a\fR \fIauthenticationMethod\fR] [\fB-D\fR \fIbindDN\fR]
+     [\fB-w\fR \fIbind_password\fR] [\fB-j\fR \fIpasswdFile\fR] \fIdatabase\fR
+.fi
+
+.LP
+.nf
+\fBldapaddent\fR [\fB-cpv\fR] \fB-h\fR \fILDAP_server\fR[:\fIserverPort\fR] [\fB-M\fR \fIdomainName\fR]
+     [\fB-N\fR \fIprofileName\fR]  [\fB-P\fR \fIcertifPath\fR] [\fB-a\fR \fIauthenticationMethod\fR]
+     [\fB-b\fR \fIbaseDN\fR] \fB-D\fR \fIbindDN\fR [\fB-w\fR \fIbind_password\fR] [\fB-f\fR \fIfilename\fR]
+     [\fB-j\fR \fIpasswdFile\fR] \fIdatabase\fR
+.fi
+
+.LP
+.nf
+\fBldapaddent\fR [\fB-cpv\fR] \fB-h\fR \fILDAP_server\fR[:\fIserverPort\fR] [\fB-M\fR \fIdomainName\fR]
+     [\fB-N\fR \fIprofileName\fR]  [\fB-P\fR \fIcertifPath\fR] [\fB-a\fR \fIauthenticationMethod\fR]
+     [\fB-b\fR \fIbaseDN\fR] [\fB-f\fR \fIfilename\fR] \fIdatabase\fR
+.fi
+
+.LP
+.nf
+\fBldapaddent\fR \fB-d\fR [\fB-v\fR] \fB-h\fR \fILDAP_server\fR[:\fIserverPort\fR] [\fB-M\fR \fIdomainName\fR]
+     [\fB-N\fR \fIprofileName\fR]  [\fB-P\fR \fIcertifPath\fR] [\fB-a\fR \fIauthenticationMethod\fR]
+     [\fB-b\fR \fIbaseDN\fR] \fB-D\fR \fIbindDN\fR [\fB-w\fR \fIbind_password\fR] [\fB-j\fR \fIpasswdFile\fR]
+     \fIdatabase\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBldapaddent\fR 可根据 LDAP 容器对应的 \fB/etc\fR 文件在该容器中创建条目。此操作是针对在管理 Solaris 系统时使用的每个标准容器定制的。\fIdatabase\fR 参数用于指定所处理的数据的类型。此类型的合法值为 \fBaliases\fR、\fBauto_*\fR、\fBbootparams\fR、\fBethers\fR、\fBgroup\fR、\fBhosts\fR（包括 IPv4 和 IPv6 地址）、\fBipnodes\fR（\fBhosts\fR 的别名）、\fBnetgroup\fR、\fBnetmasks\fR、\fBnetworks\fR、\fBpasswd\fR、\fBshadow\fR、\fBprotocols\fR、\fBpublickey\fR、\fBrpc\fR 和 \fBservices\fR 之一。除了前述值以外，\fIdatabase\fR 参数还可以为与 RBAC 有关的文件之一（请参见 \fBrbac\fR(5)）：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/user_attr\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/security/auth_attr\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/security/prof_attr\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/security/exec_attr\fR
+.RE
+.sp
+.LP
+缺省情况下，\fBldapaddent\fR 会从标准输入中读取数据，然后将此数据添加至与命令行中指定的数据库关联的 LDAP 容器。可从中读取数据的输入文件是使用 \fB-f\fR 选项指定的。 
+.sp
+.LP
+如果您指定 \fB-h\fR 选项，\fBldapaddent\fR 将会与该选项指示的服务器建立连接，以便获取 \fB-N\fR 选项指定的 \fBDUAProfile\fR。条目将存储在所获取的配置描述的目录中。
+.sp
+.LP
+缺省情况下（如果未指定 \fB-h\fR 选项），条目会存储在基于客户机配置的目录中。要在缺省模式下使用该实用程序，必须提前设置 Solaris LDAP 客户机。
+.sp
+.LP
+可以使用 \fB-b\fR 选项覆盖条目的写入位置。 
+.sp
+.LP
+如果目录中存在要添加的条目，该命令将会显示错误并退出，除非使用了 \fB-c\fR 选项。 
+.sp
+.LP
+尽管存在 \fBshadow\fR 数据库类型，但不存在对应的 \fBshadow\fR 容器。\fBshadow\fR 和 \fBpasswd\fR 数据均存储在 \fBpeople\fR 容器自身中。类似地，\fBnetworks\fR 和 \fBnetmasks\fR 数据库中的数据存储在 \fBnetworks\fR 容器中。
+.sp
+.LP
+\fBuser_attr\fR 数据缺省情况下存储在 \fBpeople\fR 容器中。\fBprof_attr\fR 和 \fBexec_attr\fR 数据缺省情况下存储在 \fBSolarisProfAttr\fR 容器中。
+.sp
+.LP
+在尝试添加 \fBshadow\fR 数据库中的条目之前，您必须先添加 \fBpasswd\fR 数据库中的条目。添加没有对应的 \fBpasswd\fR 条目的 \fBshadow\fR 条目将会失败。
+.sp
+.LP
+\fBpasswd\fR 数据库必须位于 \fBuser_attr\fR 数据库之前。
+.sp
+.LP
+为了提高性能，应按照以下建议顺序装入数据库： 
+.RS +4
+.TP
+.ie t \(bu
+.el o
+装入 \fBpasswd\fR 数据库后再装入 \fBshadow\fR 数据库
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+装入 \fBnetworks\fR 数据库后再装入 \fBnetmasks\fR 数据库
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+装入 \fBbootparams\fR 数据库后再装入 \fBethers\fR 数据库
+.RE
+.sp
+.LP
+只会将所遇到的给定类型的第一个条目添加到 LDAP 服务器中。\fBldapaddent\fR 命令会跳过所有重复的条目。
+.SH 选项
+.sp
+.LP
+\fBldapaddent\fR 命令支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fIauthenticationMethod\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定验证方法。缺省值是配置文件中配置的值。支持的验证方法包括：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsimple\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsasl/CRAM-MD5\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsasl/DIGEST-MD5\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsasl/GSSAPI\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBtls:simple\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBtls:sasl/CRAM-MD5\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBtls:sasl/DIGEST-MD5\fR
+.RE
+选择 \fBsimple\fR 将导致口令以明文形式在网络中发送。强烈建议不要使用该方法。此外，如果客户端配置有不使用验证的配置文件，也就是说，如果 \fBcredentialLevel\fR 属性设置为 \fBanonymous\fR 或者 \fBauthenticationMethod\fR 设置为 \fBnone\fR，则用户必须使用此选项来提供验证方法。如果验证方法是 \fBsasl/GSSAPI\fR，则不需要使用 \fIbindDN\fR 和 \fIbindPassword\fR，并且必须将 \fB/etc/nsswitch.conf\fR 的 \fBhosts\fR 和 \fBipnodes\fR 字段配置为：
+.sp
+.in +2
+.nf
+hosts: dns files
+ipnodes: dns files
+.fi
+.in -2
+
+请参见 \fBnsswitch.conf\fR(4)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR \fIbaseDN\fR\fR
+.ad
+.sp .6
+.RS 4n
+在 \fIbaseDN\fR 目录中创建条目。\fIbaseDN\fR 与客户机的缺省搜索基无关，而表示用于创建条目的实际位置。如果未指定此参数，则会使用为服务或缺省容器定义的第一个搜索描述符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.sp .6
+.RS 4n
+即使出现目录服务器错误后也继续将条目添加到目录中。如果目录服务器没有响应，存在验证问题或者存在输入数据错误，则不会添加条目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR \fIbindDN\fR\fR
+.ad
+.sp .6
+.RS 4n
+创建对 \fIbaseDN\fR 拥有写入权限的条目。与 \fB-d\fR 选项一起使用时，此条目将仅需要读取权限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+以适合给定数据库的格式将 LDAP 容器转储到标准输出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfilename\fR\fR
+.ad
+.sp .6
+.RS 4n
+表示要以 \fB/etc/\fR 文件格式读取的输入文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR \fILDAP_server\fR[:\fI serverPort\fR]\fR
+.ad
+.sp .6
+.RS 4n
+指定用于存储条目的 LDAP 服务器的地址（或名称）以及可选端口。系统会使用 \fBnsswitch.conf\fR 文件中指定的当前命名服务。该端口的缺省值为 \fB389\fR，除非 TLS 指定为验证方法。在这种情况下，缺省 LDAP 服务器端口号为 \fB636\fR。
+.sp
+用于指定 IPv6 的地址和端口号的格式如下：
+.sp
+.in +2
+.nf
+[\fIipv6_addr\fR]:\fIport\fR
+.fi
+.in -2
+.sp
+
+要为 IPv4 指定地址和端口号，请使用以下格式：
+.sp
+.in +2
+.nf
+\fIipv4_addr\fR:\fIport\fR
+.fi
+.in -2
+.sp
+
+如果指定了主机名，请使用以下格式：
+.sp
+.in +2
+.nf
+\fIhost_name\fR:\fIport\fR
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-j\fR \fIpasswdFile\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定绑定 DN 的口令或 SSL 客户机密钥数据库的口令所在的文件。要保护口令，请在脚本中使用此选项，并将口令存放在安全文件中。此选项与 \fB-w\fR 选项互斥。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR \fIdomainName\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定服务器负责的域的名称。如果未指定，将使用缺省域名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR \fIprofileName\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 \fBDUAProfile\fR 名称。系统假定具有此名称的配置文件存在于由 \fB-h\fR 选项指定的服务器上。否则，将使用缺省 \fBDUAProfile\fR。缺省值为 \fBdefault\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIcertifPath\fR\fR
+.ad
+.sp .6
+.RS 4n
+证书数据库的位置的证书路径。该值为安全数据库文件所在的路径。该值用于 TLS 支持，TLS 支持在 \fBauthenticationMethod\fR 和 \fBserviceAuthenticationMethod\fR 属性中指定。缺省值为 \fB/var/ldap\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+从文件中装入口令信息时处理 \fBpassword\fR 字段。缺省情况下，\fBpassword\fR 字段将被忽略，因为该字段通常无效，但实际的口令显示在 \fBshadow\fR 文件中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-w\fR \fIbindPassword\fR\fR
+.ad
+.sp .6
+.RS 4n
+要用于验证 \fIbindDN\fR 的口令。如果缺少此参数，该命令将会提示输入口令。LDAP 中不支持 \fBNULL\fR 口令。
+.sp
+使用 \fB-w\fR \fIbindPassword\fR 指定要用于验证的口令时，系统的其他用户可通过 \fBps\fR 命令在脚本文件中或在 shell 历史记录中看到该口令。
+.sp
+如果您提供 “\fB-\fR”（连字符）作为口令，系统将会提示您输入口令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+详细模式。 
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdatabase\fR\fR
+.ad
+.sp .6
+.RS 4n
+数据库名称或服务名称。支持的值包括：\fBaliases\fR、\fBauto_*\fR、\fBbootparams\fR、\fBethers\fR、\fBgroup\fR、\fBhosts\fR（包括 IPv6 地址）、\fBnetgroup\fR、\fBnetmasks\fR、\fBnetworks\fR、\fBpasswd\fR、\fBshadow\fR、\fBprotocols\fR、\fBpublickey\fR、\fBrpc\fR 和 \fBservices\fR。还支持 \fBauth_attr\fR、\fBprof_attr\fR、\fBexec_attr\fR、\fBuser_attr\fR 和 \fBprojects\fR。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR将口令条目添加到目录服务器
+.sp
+.LP
+以下示例说明了如何将口令条目添加到目录服务器：
+
+.sp
+.in +2
+.nf
+example# \fBldapaddent -D "cn=directory manager" -w secret \e
+      -f /etc/passwd passwd\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR添加组条目
+.sp
+.LP
+以下示例说明了如何使用 \fBsasl/CRAM-MD5\fR 作为验证方法来将 \fBgroup\fR 条目添加到目录服务器：
+
+.sp
+.in +2
+.nf
+example# \fBldapaddent -D "cn=directory manager" -w secret \e
+     -a "sasl/CRAM-MD5" -f /etc/group group\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR添加 \fBauto_master\fR 条目
+.sp
+.LP
+以下示例说明了如何将 \fBauto_master\fR 条目添加到目录服务器：
+
+.sp
+.in +2
+.nf
+example# \fBldapaddent -D "cn=directory manager" -w secret \e
+     -f /etc/auto_master auto_master\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR将 \fBpasswd\fR 条目从目录转储到文件
+.sp
+.LP
+以下示例说明了如何将 \fBpassword\fR 条目从目录转储到文件 \fBfoo\fR：
+
+.sp
+.in +2
+.nf
+example# \fBldapaddent -d passwd > foo\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR将口令条目添加到特定的目录服务器
+.sp
+.LP
+以下示例说明了如何将口令条目添加到所指定的目录服务器：
+
+.sp
+.in +2
+.nf
+example# \fBldapaddent -h 10.10.10.10:3890 \e
+-M another.domain.name -N special_duaprofile \e
+-D "cn=directory manager" -w secret \e
+-f /etc/passwd passwd\fR
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功完成。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB>\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+出现错误。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/ldap/ldap_client_file\fR\fR
+.ad
+.br
+.na
+\fB\fB /var/ldap/ldap_client_cred\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含客户机的 LDAP 配置的文件。这些文件将无法进行手动修改。其内容不保证是用户可读的。使用 \fBldapclient\fR(1M) 可以更新这些文件。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/network/nis
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBldaplist\fR(1)、\fBldapmodify\fR(1)、\fBldapmodrdn\fR(1)、\fBldapsearch\fR(1)、\fBidsconfig\fR(1M)、\fBldapclient\fR(1M)、\fBnsswitch.conf\fR(4)、\fBattributes\fR(5)
+.sp
+.LP
+\fI《Securing Systems and Attached Devices in Oracle Solaris 11.3》\fR
+.SH 注意
+.sp
+.LP
+当前 \fBlibldap.so.5\fR 不支持 StartTLS，因此提供的端口号是指 TLS 打开期间使用的端口，而不是用作 StartTLS 系列一部分的端口。例如：
+.sp
+.in +2
+.nf
+-h foo:1000 -a tls:simple
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+上例引用的是在主机 \fBfoo\fR 端口 1000 上打开的原始 TLS，而非在不安全的端口 1000 上打开的 StartTLS 系列。如果端口 1000 是不安全的，将不会进行连接。

@@ -1,0 +1,259 @@
+'\" te
+.\" Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved
+.TH asr-notify 1M "2011 年 8 月 16 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+asr-notify \- 障害管理イベント用の Auto Service Request 通知デーモン
+.SH 形式
+.LP
+.nf
+\fB/usr/lib/fm/notify/asr-notify\fR [\fB-\fR \fI\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBasr-notify\fR は、障害管理ライフサイクルイベントに登録し、SMF サービス構成リポジトリに格納された一連の通知設定に基づいて HTTPS/XML 通知を生成するデーモンです。
+.sp
+.LP
+\fBasradm\fR(1M) コマンドを使用するか SMF 自動登録プロパティーを設定することで Oracle の ASR (Auto Service Request) サービスが登録されると、サービスにメッセージが送信されます。自動登録プロパティーが設定されている場合、サービスは起動時またはリフレッシュ時に登録を試みます。登録が失敗すると、このサービスは保守モードになります。登録が成功すると、SMF 自動登録プロパティーが削除されます。
+.sp
+.LP
+\fBasr-notify\fR は、サービス FMRI の下でサービス管理機能 \fBsmf\fR(5) によって管理されます:
+.sp
+.in +2
+.nf
+svc:/system/fm/asr-notify:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有効化、無効化、または再起動要求など、このサービスに関する管理操作は、\fBsvcadm\fR(1M) を使用して実行できます。サービスステータスを照会するには、\fBsvcs\fR(1) コマンドを使用します。
+.sp
+.LP
+ASR 通知設定は、\fBsvccfg\fR(1M) を使用して設定されます。
+.SS "プロパティー"
+.sp
+.LP
+次のサービスプロパティーを設定できます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig\fR/\fIrootdir\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは \fBastring\fR プロパティーで、デフォルトは \fB/\fR です。設定されている場合は、指定されたルートディレクトリが、\fBasr-notify\fR によって評価されるすべてのパス名に使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig\fR/\fIhttp_timeout\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは、エラーが生成されるまでの HTTP 接続の待機秒数を設定する整数プロパティーです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig\fR/\fIendpoint\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは、登録やすべてのメッセージテレメトリで使用されるエンドポイント URL を設定する \fBastring\fR プロパティーです。このエンドポイント URL は、多くのホストインスタンスからのテレメトリを集約するローカル ASR マネージャーに設定できます。設定されていない場合、すべてのテレメトリが Oracle Auto Service Request サービスに直接送信されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBautoreg\fR/\fIuser\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは、自動登録に使用される My Oracle Support ユーザー名を設定するために使用される \fBastring\fR プロパティーです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBautoreg\fR/\fIpassword\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは、自動登録に使用される My Oracle Support パスワードを設定するために使用される \fBastring\fR プロパティーです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBautoreg\fR/\fIproxy-host\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは、HTTP プロキシ \fIhostname\fR:\fIport\fR の設定に使用される \fBastring\fR プロパティーで、HTTP プロキシを使ってインターネットに接続する場合にのみ設定する必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBautoreg\fR/\fIproxy-user\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは、HTTP プロキシユーザー名の設定に使用される \fBastring\fR プロパティーで、HTTP プロキシが資格を必要とする場合にのみ設定する必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBautoreg\fR/\fIproxy-password\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは、HTTP プロキシパスワードの設定に使用される \fBastring\fR プロパティーで、HTTP プロキシが資格を必要とする場合にのみ設定する必要があります。
+.RE
+
+.SS "メッセージ"
+.sp
+.LP
+このサービスは次のタイプのメッセージを送信します。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+障害メッセージ (FMA 障害が作成された場合)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+システムがまだアクティブであることを示すための日単位のハートビートメッセージ
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+動作中コンポーネントの完全な目録を提供するための、週単位の継続的な監査メッセージ
+.RE
+.sp
+.LP
+各メッセージの内容は、ASR メッセージ XML スキーマに準拠する XML ドキュメントです。各メッセージは、共通のメッセージヘッダーで始まり、そのあとにイベント固有の内容が続きます。
+.sp
+.LP
+ASR イベントヘッダー情報:
+.sp
+.in +2
+.nf
+XML Element     Description
+------------    -----------
+site-id         the serial number of the host sending
+                the event
+host-id         the hostname(1) of the system that the
+                message is about
+message-uuid    a unique id generated for each message
+message-time    local time on the system that generated
+                the message
+system-id       the serial number of the system that the
+                message is about
+asset-id        the registered service tag for the system
+product-id      the unique product identifier for the system
+product-name    the name of the product for the system
+event           element containing fault specific event
+                information
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+イベントの障害固有の内容は、primary-event-information XML 要素内に含まれています。
+.sp
+.in +2
+.nf
+XML Element     Description
+-----------     -----------
+message-id      the knowledge article message ID
+event-uuid      the FMA event UUID
+event-time      the time that the FMA event was generated
+severity        the severity of the FMA event
+component       element containing list of suspects
+summary         a short summary of the event
+description     event description
+payload         the raw FMA event contents
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+障害イベントに関連付けられた疑わしい FRU ごとに、component 内に hardware-component 要素が含まれています。
+.sp
+.in +2
+.nf
+XML Element              Description
+-----------              -----------
+name                     the component path name of the FRU
+serial                   the FRU serial number
+part                     the FRU part number
+revision                 the FRU revision level
+additional-information   a list of additional properties
+                         containing values such as FRU
+                         manufacturer and FRU model
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+一部の障害は、ハードウェアの問題ではなくソフトウェアの問題に関連付けられている可能性があります。この場合、障害イベントの component リスト内に software-module 要素が含まれています。
+.sp
+.in +2
+.nf
+XML Element              Description
+-----------              -----------
+name                     the name or FMRI of the software
+                         module in error
+description              a description of the software
+                         module error
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+ハートビートイベントには追加データは含まれておらず、監査イベントにはシステムから使用可能なすべての hardware-component、software-package、および software-module 要素のリストが含まれています。
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/fault-management/asr-notify
+_
+インタフェースの安定性不確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBsvcs\fR(1), \fBasradm\fR(1M), \fBsvcadm\fR(1M), \fBsvccfg\fR(1M), \fBsyslogd\fR(1M), \fBattributes\fR(5), \fBsmf\fR(5)

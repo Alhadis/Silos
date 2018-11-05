@@ -1,0 +1,740 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 2009, 2011, Oracle and/or its affiliates.All rights reserved. 
+.\" Portions Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\" Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH cpio 1 "2011 年 7 月 7 日" "SunOS 5.11" "用户命令"
+.SH 名称
+cpio \- 将文件复制进/复制出归档
+.SH 用法概要
+.LP
+.nf
+\fBcpio\fR \fB-i\fR [\fB-bBcdfkmPrsStuvV6@/\fR] [\fB-C\fR \fIbufsize\fR] [\fB-E\fR \fIfile\fR] 
+     [\fB-H\fR \fIheader\fR] [\fB-I\fR \fI\fR [\fB-M\fR \fImessage\fR]] [\fB-R\fR \fIid\fR] [\fIpattern\fR]...
+.fi
+
+.LP
+.nf
+\fBcpio\fR \fB-o\fR [\fB-aABcLPvV@/\fR] [\fB-C\fR \fIbufsize\fR] [\fB-H\fR \fIheader\fR] 
+     [\fB-O\fR \fIfile\fR [\fB-M\fR \fImessage\fR]]
+.fi
+
+.LP
+.nf
+\fBcpio\fR \fB-p\fR [\fB-adlLmPuvV@/\fR] [\fB-R\fR \fIid\fR] \fIdirectory\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBcpio\fR 命令将文件复制进/复制出 \fBcpio\fR 归档。\fBcpio\fR 归档可以跨多个卷。通过 \fB-i\fR、\fB-o\fR 和 \fB-p\fR 选项选择要执行的操作。下面的列表描述了每个操作。这些操作是互斥的。
+.SS "Copy In 模式"
+.sp
+.LP
+\fBcpio\fR \fB-i\fR (copy in) 从标准输入提取文件，标准输入采用的是前面某个 \fBcpio\fR \fB-o\fR 命令的产物。只会选择其名称与 \fIpattern\fR 之一匹配的文件。有关 \fIpattern\fR 的更多信息，请参见 \fBsh\fR(1) 和 OPERANDS。提取的文件将根据下述选项有条件地复制到当前目录树中。文件的权限是前面的 \fBcpio -o\fR 命令的权限。所有者和组与当前用户相同，除非当前用户具有 \fB{PRIV_FILE_CHOWN_SELF}\fR 特权。请参见 \fBchown\fR(2)。如果确实具有该特权，则所有者和用户与从前面的 \fBcpio -o\fR 命令获得的结果相同。请注意，如果 \fBcpio\fR \fB-i\fR 尝试创建的文件已存在并且该现有文件同龄或者更年轻（\fB更新\fR），则 \fBcpio\fR 会输出一条警告消息并且不会替换该文件。\fB-u\fR 选项可用来无条件地覆盖现有文件。
+.SS "Copy Out 模式"
+.sp
+.LP
+\fBcpio\fR \fB-o\fR (copy out) 从标准输入读取文件路径名列表并将这些文件连同路径名和状态信息以 \fBcpio\fR 归档的形式复制到标准输出。输出将被缺省填充到一个 8192 字节边界中或者填充到用户指定的块大小（采用 \fB-B\fR 或 \fB-C\fR 选项）或者在必要时填充到依赖于设备的某个块大小（例如使用 CTC 磁带时）。
+.SS "Pass 模式"
+.sp
+.LP
+\fBcpio\fR \fB-p\fR (pass) 从标准输入读取文件路径名列表并根据下述选项有条件地将这些文件复制到目标目录树中。
+.sp
+.LP
+如果源文件的底层文件系统支持检测由 \fBpathconf\fR(2) 报告的孔，该文件是一个稀疏文件，并且目标文件是可检索的，则稀疏文件中的孔将保留为传递模式，否则将以零来填充孔。
+.sp
+.LP
+\fBcpio\fR 接受四字节的字。
+.sp
+.LP
+如果向字符设备进行写入时 (\fB-o\fR) 或者从字符设备进行读取时 (\fB-i\fR)，\fBcpio\fR 到达了介质的末尾，并且没有使用 \fB-O\fR 和 \fB-I\fR 选项，则 \fBcpio\fR 将输出以下消息：
+.sp
+.in +2
+.nf
+To continue, type device/file name when ready.
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+要继续，您必须更换介质并键入字符特殊设备名，然后按 RETURN。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.RS 6n
+.rt  
+(copy in) 从标准输入读取归档并有条件地提取其中包含的文件，然后将这些文件放置到当前目录树中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR\fR
+.ad
+.RS 6n
+.rt  
+(copy out) 从标准输入中读取文件路径名列表并将这些文件以 \fBcpio\fR 归档的形式复制到标准输出中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 6n
+.rt  
+(pass) 从标准输入中读取文件路径名列表并有条件地将这些文件复制到目标目录树中。
+.RE
+
+.sp
+.LP
+以下选项可以按任何顺序附加到 \fB-i\fR、\fB-o\fR 或 \fB-p\fR 选项之后。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-0\fR\fR
+.ad
+.RS 14n
+.rt  
+读取由一个空字符（而非换行）终止的文件名列表，以便可以归档其名称包含 NEWLINES 的文件。将 \fBfind\fR 与 \fB-print0\fR 选项一起使用是生成这样的文件名列表的一种方法。 
+.sp
+此选项可以在 copy-out 和 copy-pass 模式中使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 14n
+.rt  
+在复制输入文件后重置输入文件的访问时间，使 \fBcpio\fR 的访问不可见。当指定了 \fBcpio\fR \fB-pla\fR 时不会重置链接的文件的访问时间。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.RS 14n
+.rt  
+将文件附加到归档。\fB-A\fR 选项需要 \fB-O\fR 选项。仅对是文件的归档或者位于硬盘分区上的归档有效。对在归档的现有部分中链接的文件的影响不可预测。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.RS 14n
+.rt  
+反转每个字内字节的顺序。只能与 \fB-i\fR 选项一起使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-B\fR\fR
+.ad
+.RS 14n
+.rt  
+阻止向/从记录输入/输出 5120 字节。当未使用此选项和 \fB-C\fR 选项时，缺省的缓冲区大小为 8192 字节。\fB-B\fR 不适用于 \fB-p\fR (pass) 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 14n
+.rt  
+以 \fBASCII\fR 字符形式读取或写入标头信息以实现可移植性。没有与此标头格式相关的 \fBUID\fR 或 \fBGID\fR 限制。在基于 SVR4 的计算机之间使用此选项，或者在未知计算机之间使用 \fB-H\fR \fB odc\fR 选项。\fB-c\fR 选项表示使用扩展的设备编号，这只在基于 SVR4 的系统上受支持。当在 SunOS 4 或 Interactive UNIX 与 Solaris 2.6 操作环境或兼容版本之间传输文件时，请使用 \fB-H\fR \fBodc\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR \fIbufsize\fR\fR
+.ad
+.RS 14n
+.rt  
+阻止向/从记录输入/输出 \fIbufsize\fR 字节，\fIbufsize\fR 将由一个正整数替换。当未使用此选项和 \fB-B\fR 选项时，缺省的缓冲区大小为 8192 字节。\fB-C\fR 不适用于 \fB-p\fR (pass) 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.RS 14n
+.rt  
+根据需要创建目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-E\fR \fIfile\fR\fR
+.ad
+.RS 14n
+.rt  
+指定包含要从归档中提取的文件名列表（一行一个文件名）的一个输入文件 (\fIfile\fR)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.RS 14n
+.rt  
+复制进所有文件，但 \fIpattern\fR 中的文件除外。有关 \fIpattern\fR 的说明，请参见“操作数”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-H\fR \fIheader\fR\fR
+.ad
+.RS 14n
+.rt  
+读取或写入 \fIheader\fR 格式的标头信息。当原始和目标计算机属于不同的类型时，请始终使用此选项或 \fB-c\fR 选项。此选项与 \fB-c\fR 和 \fB-6\fR 选项互斥。
+.sp
+适用于 \fIheader\fR 的有效值为：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbar\fR\fR
+.ad
+.RS 17n
+.rt  
+\fBbar\fR 标头和格式。只能与 \fB-i\fR 选项一起使用（只读）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcrc\fR | \fBCRC\fR\fR
+.ad
+.RS 17n
+.rt  
+具有扩展设备编号和一个附加的每文件校验和的 \fBASCII\fR 标头。没有与此标头格式相关的 \fBUID\fR 或 \fBGID\fR 限制。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBodc\fR\fR
+.ad
+.RS 17n
+.rt  
+具有小设备编号的 \fBASCII\fR 标头。这是 IEEE/P1003 数据交换标准 cpio 标头和格式。它具有任何标头格式的最大范围的可移植性。它是用于在遵守 POSIX 的系统之间传输文件的正式格式（请参见 \fBstandards\fR(5)）。请使用此格式与 SunOS 4 和 Interactive UNIX 进行通信。此标头格式允许将最大为 262143 的 \fBUID\fR 和 \fBGID\fR 存储在标头中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtar\fR | \fBTAR\fR\fR
+.ad
+.RS 17n
+.rt  
+\fBtar\fR 标头和格式。这是旧式的 \fBtar\fR 标头格式，允许将最大为 2097151 的 \fBUID\fR 和 \fBGID\fR 存储在标头中。提供它只是为了读取传统归档文件，即与选项 \fB-i\fR 一起使用。
+.sp
+同时指定此归档格式和选项 \fB-o\fR 等效于指定 “ustar” 格式：输出归档为 \fBustar\fR 格式，并且必须使用 \fB-H\fR \fBustar\fR 进行读取。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBustar\fR | \fBUSTAR\fR\fR
+.ad
+.RS 17n
+.rt  
+IEEE/P1003 数据交换标准 tar 标头和格式。此标头格式允许将最大为 2097151 的 \fBUID\fR 和 \fBGID\fR 存储在标头中。
+.RE
+
+其 \fBUID\fR 和 \fBGID\fR 大于上述限制的文件将以 \fBUID\fR 和 \fBGID\fR \fB60001\fR 进行归档。要传输大文件（8 Gb — 1 字节），则标头格式只能为 \fBtar|TAR\fR、\fBustar|USTAR\fR 或 \fBodc\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR \fIfile\fR\fR
+.ad
+.RS 14n
+.rt  
+将 \fIfile\fR 的内容读取为输入归档，而不是标准输入。如果 \fIfile\fR 是一个字符特殊设备，并且已完全读取了当前介质，请更换介质并按 RETURN 以继续读取下一介质。此选项仅可与 \fB-i\fR 选项一起使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR\fR
+.ad
+.RS 14n
+.rt  
+尝试跳过可能会遇到的已损坏文件和 I/O 错误。如果您要从已损坏的或乱序的介质复制文件，则此选项允许您仅读取标头良好的那些文件。对于包含其他 \fB cpio\fR 归档的 \fBcpio\fR 归档，如果遇到了错误，\fBcpio\fR 可以提前终止。\fBcpio\fR 将查找下一个良好的标头（这可能是一个较小归档的标头）并且在到达较小归档的尾部时终止。只能与 \fB-i\fR 选项一起使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 14n
+.rt  
+在 pass 模式中，请尽可能在源和目标之间创建硬链接。如果还指定了 \fB-L\fR 选项，则硬链接指向由符号链接引用的文件。否则，硬链接指向符号链接本身。只能与 \fB-p\fR 选项一起使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR\fR
+.ad
+.RS 14n
+.rt  
+跟随符号链接。如果遇到了指向目录的符号链接，则会使用链接的名称归档链接引用的目录。否则，将使用链接的名称归档链接引用的文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.RS 14n
+.rt  
+保留以前的文件修改时间。此选项对正在复制的目录不起作用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR \fImessage\fR\fR
+.ad
+.RS 14n
+.rt  
+定义当切换介质时要使用的 \fImessage\fR。当使用 \fB-O\fR 或 \fB-I\fR 选项并指定了一个字符特殊设备时，您可以使用此选项来定义当到达了介质的末尾时要输出的消息。可以在 \fImessage\fR 中放置一个 \fB%d\fR 以输出需要继续使用的下一个介质的序号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-O\fR \fIfile\fR\fR
+.ad
+.RS 14n
+.rt  
+将 \fBcpio\fR 的输出定向到 \fIfile\fR 而不是标准输出。如果 \fIfile\fR 是一个字符特殊设备并且当前介质已满，请更换介质并键入一个回车符以继续使用下一个介质。只能与 \fB-o\fR 选项一起使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR\fR
+.ad
+.RS 14n
+.rt  
+保留 \fBACL\fR。如果为输出使用了此选项，则会将现有的 \fBACL\fR 连同其他属性（扩展属性除外）一起写入到标准输出。\fBACL\fR 将被创建为具有特殊文件类型的特殊文件。如果为输入使用了此选项，则会从标准输入中提取现有的 \fBACL\fR 连同其他属性。此选项可以识别特殊文件类型。请注意，如果以前版本的 \fBcpio\fR 提取具有 \fBACL\fR 的 \fBcpio\fR 归档，则会发生错误。此选项不应当与 \fB-c\fR 选项一起使用，因为可能不是所有系统都提供了 \fBACL\fR 支持，因此不可移植。可使用 \fBASCII\fR 标头实现可移植性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.RS 14n
+.rt  
+以交互方式重命名文件。如果用户单独键入了一个回车符，则会跳过文件。如果用户键入了一个 ``.''，则会保留原始路径名。不可与 \fBcpio\fR \fB-p\fR 一起使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIid\fR\fR
+.ad
+.RS 14n
+.rt  
+重新向用户 ID 分配每个文件的所有权和组信息。（ID 必须是 \fBpasswd\fR 数据库中的一个有效的登录 ID。）只有当该 id 是调用用户或超级用户时，此选项才有效。请参见\fB\fR“附注”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 14n
+.rt  
+交换每半个字内的字节。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR\fR
+.ad
+.RS 14n
+.rt  
+交换每个字内的半个字。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.RS 14n
+.rt  
+列显包含输入内容的表。如果内容表中的任何文件具有扩展属性，则还会列出这些扩展属性。不会创建文件。\fB-t\fR 和 \fB-V\fR 是互斥的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.RS 14n
+.rt  
+无条件地进行复制。通常，较旧的文件不会被同名的较新文件替换，但是较旧的目录会更新为较新的目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 14n
+.rt  
+详细模式。列显文件和扩展属性名的列表。当与 \fB-t\fR 选项一起使用时，内容表看起来像 \fBls\fR \fB-l\fR 命令的输出（请参见 \fBls\fR(1)）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR\fR
+.ad
+.RS 14n
+.rt  
+特别详细。为读取或写入的每个文件列显一个点。非常适用于在不输出所有文件名的情况下让用户确信 \fBcpio\fR 正在工作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-6\fR\fR
+.ad
+.RS 14n
+.rt  
+处理 UNIX 系统第六版归档格式的文件。只能与 \fB-i\fR 选项一起使用。此选项与 \fB-c\fR 和 \fB-H\fR 选项互斥。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-@\fR\fR
+.ad
+.RS 14n
+.rt  
+在归档中包括扩展属性。缺省情况下，\fBcpio\fR 不会将扩展属性放置在归档中。使用此标志时，\fBcpio\fR 会在文件上查找要放置在归档中的扩展属性并且像常规文件一样将其添加到归档中。扩展属性文件将作为具有特殊文件类型的特殊文件添加到归档中。当 \fB-@\fR 标志与 \fB-i\fR 或 \fB-p\fR 一起使用时，它指示 \fBcpio\fR 将扩展属性数据与常规文件数据一起恢复。只能作为常规文件提取操作的一部分从归档中提取扩展属性文件。显式提取属性记录的尝试将被忽略。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-/\fR\fR
+.ad
+.RS 14n
+.rt  
+在归档中包括系统属性。缺省情况下，\fBcpio\fR 不会将系统属性放置在归档中。使用此标志时，\fBcpio\fR 会在文件上查找要放置在归档中的系统属性并且像常规文件一样将其添加到归档中。扩展属性文件将作为具有特殊文件类型的特殊文件添加到归档中。当 \fB-/\fR 标志与 \fB-i\fR 或 \fB-p\fR 一起使用时，它指示 \fBcpio\fR 将扩展系统属性数据与常规文件数据一起恢复。只能作为常规文件提取操作的一部分从归档中提取扩展系统属性文件。显式提取属性记录的尝试将被忽略。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdirectory\fR\fR
+.ad
+.RS 13n
+.rt  
+要用作 \fBcpio\fR \fB-p\fR 的目标的现有目录的路径名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIpattern\fR\fR
+.ad
+.RS 13n
+.rt  
+一些表达式，其使用的模式匹配表示法与 shell 用于文件名模式匹配的表示法（请参见 \fBsh\fR(1)）类似（类似于正则表达式）。系统定义了以下元字符：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB*\fR\fR
+.ad
+.RS 9n
+.rt  
+匹配任何字符串，包括空字符串。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB?\fR\fR
+.ad
+.RS 9n
+.rt  
+匹配任何单个字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[...]\fR\fR
+.ad
+.RS 9n
+.rt  
+匹配其中包围的任意一个字符。由 `-' 分隔的字符对将匹配该对之间的任何符号（内含），如系统缺省整理序列所定义。如果左 \fB`['\fR 后的第一个字符是 \fB`!'\fR，则结果不确定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!\fR\fR
+.ad
+.RS 9n
+.rt  
+!（叹号）的意思为\fI不是\fR。例如，\fB!abc*\fR 模式将排除以 \fBabc\fR 开头的所有文件。
+.RE
+
+在 \fIpattern\fR 中，元字符 \fB?\fR、\fB*\fR 和 \fB[\fR . . .\fB]\fR 匹配斜杠 (\fB/\fR) 字符，反斜杠 (\fB\\fR) 是一个转义字符。可以指定 \fIpattern\fR 的多个实例，并且如果未指定 \fIpattern\fR，则 \fIpattern\fR 的缺省值为 \fB*\fR（即选择所有文件）。
+.sp
+每个模式都必须括在双引号中。否则，可能会使用当前目录中某个文件的名称。
+.RE
+
+.SH 用法
+.sp
+.LP
+有关 \fBcpio\fR 遇到大于或等于 2 GB（2^31 字节）文件时行为的说明，请参见 \fBlargefile\fR(5)。
+.SH 示例
+.sp
+.LP
+以下示例显示了 \fBcpio\fR 的三种用法。
+.LP
+\fB示例 1 \fR使用标准输入
+.sp
+.in +2
+.nf
+example% \fBls | cpio -oc > ../newfile\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如以上示例所示，当通过管道将标准输入定向到 \fBcpio\fR \fB-o\fR 时，它将文件组合到一起，以便它们可以被定向 (>) 到单个文件 (\fB\&../newfile\fR)。\fB-c\fR 选项确保文件可以移植到其他计算机（与 \fB-H\fR 选项一样）。您可以使用 \fBfind\fR(1)、\fBecho\fR(1)、\fBcat\fR(1) 等等（而非 \fBls\fR(1)）来将名称列表定向到 \fBcpio\fR。您可以将输出定向到设备而非文件。
+
+.LP
+\fB示例 2 \fR将文件提取到目录中
+.sp
+.in +2
+.nf
+example% \fBcat newfile | cpio -icd "memo/a1" "memo/b*"\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+在此示例中，\fBcpio\fR \fB-i\fR 使用 \fBcpio\fR \fB-o\fR 的输出文件（用 \fBcat\fR 命令通过管道定向的），提取与模式（\fBmemo/a1\fR、\fBmemo/b*\fR）匹配的那些文件，根据需要在当前目录下创建目录（\fB-d\fR 选项），并将文件放置到合适的目录中。如果输入文件创建有可移植的标头，请使用 \fB-c\fR 选项。如果没有指定模式，则会将 \fBnewfile\fR 中的所有文件放置到目录中。
+
+.LP
+\fB示例 3 \fR将文件复制或链接到另一目录
+.sp
+.in +2
+.nf
+example% \fBfind . -depth -print | cpio -pdlmv newdir\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+在此示例中，\fBcpio\fR \fB-p\fR 接受通过管道定向到它的文件名并将这些文件复制或链接到（\fB-l\fR 选项）另一目录（\fBnewdir\fR）。\fB-d\fR 选项指示根据需要创建目录。\fB-m\fR 选项指示保留修改时间。（使用 \fBfind\fR(1) 的 \fB-depth\fR 选项为 \fBcpio\fR 生成路径名非常重要。这将消除 \fBcpio\fR 试图在只读目录下创建文件时可能会出现的问题。）目标目录 \fBnewdir\fR 必须存在。
+
+.sp
+.LP
+请注意，当您将 \fBcpio\fR 与 \fBfind\fR 一起使用时，如果将 \fB-L\fR 选项与 \fBcpio\fR 一起使用，则必须将 \fB-follow\fR 选项与 \fBfind\fR 一起使用，反之亦然。否则，将会出现非预期的结果。
+.sp
+.LP
+对于多卷盘归档，请卸载旧卷，挂载新卷，然后通过键入下一个设备的名称（可能与第一个卷盘相同）继续使用下一个磁带。要停止，请键入一个 RETURN，\fBcpio\fR 将终止。
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBcpio\fR 执行的以下环境变量的说明，请参见 \fBenviron\fR(5)：\fBLC_COLLATE\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR、\fBLC_TIME\fR、\fBTZ\fR 和 \fBNLSPATH\fR。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTMPDIR\fR\fR
+.ad
+.RS 10n
+.rt  
+缺省情况下，\fBcpio\fR 在 \fB/var/tmp\fR 中创建其临时文件。否则，它将使用 \fBTMPDIR\fR 指定的目录。
+.RE
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+CSIEnabled（已启用）
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBar\fR(1)、\fBcat\fR(1)、\fBecho\fR(1)、\fBfind\fR(1)、\fBls\fR(1)、\fBpax\fR(1)、\fBsetfacl\fR(1)、\fBsh\fR(1)、\fBtar\fR(1)、\fBchown\fR(2)、\fBarchives.h\fR(3HEAD)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBfsattr\fR(5)、\fBlargefile\fR(5)、\fBstandards\fR(5)
+.SH 附注
+.sp
+.LP
+\fBcpio\fR 归档中允许的最大路径名长度是由所涉及的标头类型确定的。下表显示了每个受支持归档标头类型的正确值。
+.sp
+
+.sp
+.TS
+tab();
+cw(1.83i) cw(1.83i) cw(1.83i) 
+lw(1.83i) lw(1.83i) lw(1.83i) 
+.
+标头类型命令行选项最大路径名长度
+BINARY“\fB-o\fR”256
+POSIX“\fB-oH\fR odc”256
+ASCII“\fB-oc\fR”1023
+CRC“\fB-oH\fR crc”1023
+USTAR“\fB-oH\fR ustar”255
+.TE
+
+.sp
+.LP
+当指定了命令行选项 “\fB-o\fR \fB-H\fR \fBtar\fR” 时，所创建的归档是 \fBUSTAR\fR 类型的。这意味着使用命令行选项 “\fB-i\fR \fB- H\fR \fBtar\fR” 读取此同一归档是错误的。应当使用命令行选项 “\fB-i\fR \fB-H\fR \fBustar\fR” 读取归档。选项 “\fB-i\fR \fB-H\fR \fBtar\fR” 引用较旧的 tar 归档格式。
+.sp
+.LP
+如果文件的 \fBUID\fR 或 \fBGID\fR 太大，选定的标头格式无法将其容纳，则会输出一条错误消息。可使用 \fB-H\fR \fBcrc\fR 或 \fB-c\fR 创建允许所有 \fBUID\fR 或 \fBGID\fR 值的归档。
+.sp
+.LP
+只有超级用户可以复制特殊文件。
+.sp
+.LP
+块是以 512 字节为单位报告的。
+.sp
+.LP
+如果文件具有 \fB000\fR 权限，包含 0 个字符以上的数据，并且用户不是 root，则不会保存或恢复该文件。
+.sp
+.LP
+如果 cpio 是具有 \fB{PRIV_FILE_CHOWN_SELF}\fR 特权的用户在 \fBCopy In\fR 或 \fBPass\fR 模式下调用的，特别是在 \fB{_POSIX_CHOWN_RESTRICTED}\fR 没有生效的系统上（有效地向所有用户授予了此特权而未被覆盖时），提取的或复制的文件会具有由原始归档文件的权限确定的所有者和组，而这可能不同于调用用户确定的所有者和组。这可能不是用户想要的结果。如果您指定了用户的 id，如果需要，可以使用 \fB-R\fR 选项来保留文件所有权。
+.sp
+.LP
+存储在标头 (\fB/usr/include/archives.h\fR) 中的 inode 编号是一个无符号短整数（2 个字节）。这将 inode 编号的范围限制为从 \fB0\fR 到 \fB65535\fR。硬链接的文件必须位于此 inode 范围内。在来自不同供应商的计算机之间移动 \fBcpio\fR 归档时，这可能是个问题。
+.sp
+.LP
+当将文件从磁带检索或复制到硬盘时，必须使用与之前将文件从硬盘复制到磁带时使用的分块因子相同的分块因子。因此，必须指定 \fB-B\fR 或 \fB-C\fR 选项。
+.sp
+.LP
+在 \fB-p\fR 和 \fB-o\fR 处理期间，\fBcpio\fR 会将 stdin 上提供的文件列表缓存到一个临时文件中。
+.sp
+.LP
+对于大文件，应当使用新的 \fBpax\fR(1) 格式以及支持该格式的某个命令（例如 \fBtar\fR）。\fBcpio\fR 命令不再是当前 POSIX 标准的一部分并且已过时，建议使用 \fBpax\fR。

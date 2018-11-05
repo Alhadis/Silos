@@ -1,0 +1,323 @@
+'\" te
+.\" Copyright (c) 1996, 2015, Oracle and/or its affiliates.All rights reserved
+.TH bfs 1 "2015 年 5 月 20 日" "SunOS 5.11" "用户命令"
+.SH 名称
+bfs \- 大型文件扫描程序
+.SH 用法概要
+.LP
+.nf
+\fB/usr/bin/bfs\fR [\fB-\fR] \fIfilename\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBbfs\fR 命令（几乎）与 \fBed\fR(1) 一样，但是它是只读的，并且处理大得多的文件。文件最大可以为 1024K 字节和 32K 行，每行最多 512 个字符，包括换行符（16 位计算机最多 255 个字符）。\fBbfs\fR 扫描文件通常比 \fBed\fR(1) 更高效，因为不会将文件复制到缓冲区。它最适合识别大型文件的各个部分，可使用 \fBcsplit\fR(1) 将大型文件分割成更易于管理的片段以供编辑。
+.sp
+.LP
+通常，列显扫描的文件的大小，即使用 \fBw\fR（写）命令写入的任何文件的大小。可选的 \fB-\fR 禁止列显大小。如果键入了 \fBP\fR 和回车符，则通过 \fB*\fR 提示输入，如 \fBed\fR(1) 中所述。提示可以通过再次输入 \fBP\fR 和回车符重新禁用。请注意，如果提示处于启用状态，则会提供消息以响应错误。
+.sp
+.LP
+支持 \fBed\fR(1) 下介绍的所有地址表达式。另外，除了 \fB/\fR 和 \fB?\fR 以外，正则表达式还可以使用另外两个符号括起来：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>\fR\fR
+.ad
+.RS 5n
+.rt  
+指示向下搜索并不折返，
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB<\fR\fR
+.ad
+.RS 5n
+.rt  
+指示向上搜索并不折返。
+.RE
+
+.sp
+.LP
+标记名称略有不同；即仅使用从 \fBa\fR 到 \fBz\fR 的字母，并且会记住所有 26 个标记。
+.SS "bfs 命令"
+.sp
+.LP
+\fBe\fR、\fBg\fR、\fBv\fR、\fBk\fR、\fBp\fR、\fBq\fR、\fBw\fR、\fB=\fR、\fB!\fR 和空命令的运行方式如 \fBed\fR(1) 中所述。接受 \fB---\fR、\fB+++-\fR、\fB+++=\fR、\fB-12\fR 和 \fB+4p\fR 等命令。请注意 \fB1,10p\fR 和 \fB 1,10\fR 都将列显前十行。\fBf\fR 命令仅列显扫描的文件名称；没有 \fIremembered\fR 文件名。\fBw\fR 命令与输出转换、截断或处理无关（请参见下面的 \fBxo\fR、\fBxt\fR 和 \fBxc\fR 命令）。以下其他命令可用：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBxf\fR\fIfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+从指定的 \fIfile\fR 获取其他命令。当达到文件的末尾时，则会收到中断信号或发生错误，从包含 \fBxf\fR 的文件继续读取。\fBxf\fR 命令的嵌套深度可以为 10。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBxn\fR\fR
+.ad
+.sp .6
+.RS 4n
+列出当前使用的标记（标记通过 \fBk\fR 命令设置）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBxo\fR [\fIfile\fR]\fR
+.ad
+.sp .6
+.RS 4n
+来自 \fBp\fR 和空命令的其他输出会转移到指定的 \fIfile\fR（如果需要，会在 666 模式下创建，即可由任何人读取和写入）中，除非您的 \fBumask\fR 设置（请参见 \fBumask\fR(1)）另有说明。如果 \fIfile\fR 缺失，则将输出转移到标准输出。请注意每次转移都会导致文件的截断或创建。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB:\fR\fIlabel\fR\fR
+.ad
+.sp .6
+.RS 4n
+这会在命令文件中放入一个 \fIlabel\fR。\fIlabel\fR 以换行符结束，并且忽略 \fB:\fR（冒号）和 \fIlabel\fR 开头之间的空格。此命令还可以用于将注释插入命令文件，因为不需要引用标签。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB( \fB\&.\fR, \fB\&.\fR)\fBxb\fR/\fIregular expression\fR/\fIlabel\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果命令成功，则会跳转到 \fIlabel\fR（不管是向上还是向下）。在任何以下情况中，它将失败：
+.RS +4
+.TP
+1.
+地址未介于 \fB1\fR 和 \fB$\fR 之间。
+.RE
+.RS +4
+.TP
+2.
+第二个地址小于第一个地址。
+.RE
+.RS +4
+.TP
+3.
+正则表达式与指定范围内的至少一行不匹配，包括第一行和最后一行。
+.RE
+成功时，将 \fB\&.\fR（点）设置为匹配的行，并跳转到 \fIlabel\fR。此命令是唯一不针对错误地址发出错误消息的命令，所以它可以用于在执行其他命令之前测试地址是否错误。请注意 \fBxb/^/ label\fR 命令是无条件的跳转。
+.sp
+仅在从除终端以外的其他位置进行读取时，才允许使用 \fBxb\fR 命令。如果从管道进行读取，则仅可以向下跳转。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBxt\fR \fInumber\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBp\fR 和空命令的输出截断为最多 \fInumber\fR 个字符。初始值为 \fB255\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBxv\fR [\fIdigit\fR] [\fIspaces\fR] [\fIvalue\fR]\fR
+.ad
+.sp .6
+.RS 4n
+变量名称是 \fBxv\fR 后面指定的 \fIdigit\fR。\fBxv5100\fR 或 \fBxv5 100\fR 命令都将值 \fB100\fR 赋予变量 \fB5\fR。\fBxv61,100p\fR 命令将值 \fB1,100p\fR 赋予变量 \fB6\fR。要引用某个变量，请将 \fB%\fR 放在变量名称前面。例如，对变量 \fB5\fR 和 \fB6\fR 使用上面的赋值：  
+.sp
+.in +2
+.nf
+1,%5p
+1,%5
+%6
+.fi
+.in -2
+.sp
+
+都将列显前 100 行。 
+.sp
+\fBg/%5/p\fR
+.sp
+将全局搜索字符 \fB100\fR 并列显包含匹配项的每一行。要转义 \fB%\fR 的特殊含义，必须在它前面加上 \fB\\fR。 
+.sp
+\fBg/".*\%\fR[cds]\fB/p\fR
+.sp
+可以用于匹配和列出字符、十进制整数或字符串的 %c、%d 或 %s 格式（例如，类似 \fBprintf\fR 的语句）。\fBxv\fR 命令的另一个功能是将 \fBUNIX\fR 系统命令输出的第一行存储到变量中。唯一的要求是 \fIvalue\fR 的第一个字符为 \fB!\fR。例如： 
+.sp
+.in +2
+.nf
+\&.w junk
+xv5!cat junk
+!rm junk
+!echo "%5"
+xv6!expr %6 + 1
+.fi
+.in -2
+.sp
+
+将当前行放入变量 \fB35\fR 中、将其列显出来，并将变量 \fB36\fR 增加一。要将 \fB!\fR 的特殊含义转义为 \fIvalue\fR 的第一个字符，请在它前面加上 \fB\\fR。 
+.sp
+\fBxv7\!date\fR
+.sp
+将值 \fB!date\fR 存储到变量 \fB7\fR 中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBxbz\fR \fIlabel\fR\fR
+.ad
+.br
+.na
+\fB\fBxbn\fR \fIlabel\fR\fR
+.ad
+.sp .6
+.RS 4n
+这两个命令将分别测试因执行 \fBUNIX\fR 系统命令 (\fB!\fR\fBcommand\fR) 或非零值上次保存在指定标签中的 \fIreturn code\fR。下面的两个示例都搜索接下来包含字符串 \fBsize\fR 的五行：
+.sp
+.ne 2
+.mk
+.na
+\fB示例 1：\fR
+.ad
+.RS 15n
+.rt  
+.sp
+.in +2
+.nf
+xv55
+: l
+/size/
+xv5!expr %5 \(mi 1
+!if 0%5 != 0 exit 2
+xbn l
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB示例 2：\fR
+.ad
+.RS 15n
+.rt  
+.sp
+.in +2
+.nf
+xv45
+: l
+/size/
+xv4!expr %4 \(mi 1
+!if 0%4 = 0 exit 2
+xbz l
+.fi
+.in -2
+.sp
+
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBxc\fR [\fBswitch\fR]\fR
+.ad
+.sp .6
+.RS 4n
+如果 \fBswitch\fR 为 \fB1\fR，则处理 \fBp\fR 和空命令的输出；如果 \fBswitch\fR 为 \fB0\fR，则不处理。无参数时，\fBxc\fR 反转 \fBswitch\fR。最初，\fBswitch\fR 设置为不处理。处理过的输出将由制表符和空格组成的字符串缩减为一个空格并禁止显示空白行。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfilename\fR\fR
+.ad
+.RS 12n
+.rt  
+任何不超过 1024K 字节和 32K 行的文件，每行最多 512 个字符，包括换行符（16 位计算机最多 255 个字符）。\fIfilename\fR 可以是使用 \fBcsplit\fR(1) 分隔成更易于管理的多个部分以供编辑的较大文件的一个部分。
+.RE
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功完成，没有任何文件或命令错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBcsplit\fR(1)、\fBed\fR(1)、\fBumask\fR(1)、\fBattributes\fR(5)
+.SH 诊断
+.sp
+.LP
+如果禁用提示，则消息是表示命令中错误的 \fB?\fR。当启用提示时，则显示不需要加以说明的错误消息。
+.SH 附注
+.sp
+.LP
+\fBbfs\fR 实用程序可能会在未来的 Oracle Solaris 发行版中删除。

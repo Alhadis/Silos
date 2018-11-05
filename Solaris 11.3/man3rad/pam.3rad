@@ -1,0 +1,338 @@
+'\" t
+.\"     Title: pam
+.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\"      Date: 08/20/2015
+.\"    Manual: RAD Module Definitions
+.\"    Source: SunOS 5.11
+.\"  Language: English
+.\"
+.TH "PAM" "3rad" "08/20/2015" "SunOS 5.11" "RAD Module Definitions"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+pam
+.SH "SYNOPSIS"
+.SS "interface Authentication"
+.sp
+.nf
+string\ \&user\ \&;
+.
+string[]\ \&roles\ \&;
+.
+integer\ \&connectionTimeout\ \&;
+.fi
+.sp
+.nf
+Block\ \&login(string\ \&locale,
+.
+\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&string\ \&username);
+.fi
+.sp
+.nf
+Block\ \&assume(string\ \&locale,
+.
+\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&string\ \&rolename);
+.fi
+.sp
+.nf
+Block\ \&submit(secret[]\ \&responses);
+.fi
+.sp
+.nf
+opaque\ \&createToken();
+.fi
+.sp
+.nf
+redeemToken(string\ \&user,
+.
+\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&opaque\ \&token);
+.fi
+.sp
+.nf
+complete();
+.fi
+.SH "DESCRIPTION"
+.PP
+\fBapi com\&.oracle\&.solaris\&.rad\&.pam\fR
+.PP
+This API exposes PAM authentication to
+\fBrad(1m)\fR
+clients\&.
+.SH "INTERFACES"
+.SS "interface Authentication"
+.PP
+.PP
+The
+authentication
+interface implements a PAM exchange to authenticate
+\fBrad(1m)\fR
+clients\&. Handles to this type of object can be retrieved from the RAD server using an object name built with:
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  1." 4.2
+.\}
+the "com\&.oracle\&.solaris\&.rad\&.pam" domain name
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  2." 4.2
+.\}
+a key named "type" paired with a value of "Authentication"
+.RE
+.PP
+The
+login()
+method begins a PAM conversation to authenticate as a user, while
+assume()
+does the same for a role\&. Each returns a list of
+Block
+objects encapsulating the status of the conversation, the messages that should be displayed, and the input that should be collected\&.
+.PP
+At each step, when the requested input has been collected, it is submitted using
+submit()\&. This method also returns a list of
+Block
+objects, allowing the conversation to continue indefinitely until authentication is complete\&.
+.PP
+When any of the three returns a
+Block
+whose
+type
+is
+SUCCESS, authentication has succeeded and
+complete()
+should be called to close the conversation\&.
+.PP
+A typical algorithm for walking through this conversation might be:
+.PP
+\fBExample\ \&1.\ \&Authentication interface (Python)\fR
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+import rad\&.connect as radcon
+import rad\&.auth as rada
+
+# Create a connection
+rc=radcon\&.connect_tls("host")
+# Get a native\-looking python object that throws RAD exceptions
+auth = rada\&.RadAuth(rc)
+# login with username and password
+auth\&.pam_login("garypen", "******")
+print rc
+rc\&.close()
+print rc
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+This example uses the rad\&.auth module which makes simplifying assumptions that the PAM interaction is as for a default Solaris install\&. If you wish to do something more flexible, you will need to interact directly with the PAM module binding\&.
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBAuthentication Properties\fR
+.RS 4
+.PP
+\fBstring\fR\ \&\fBuser\fR
+(\fIread\-only\fR, \fInullable\fR) \(em gets the username of the connected user
+.PP
+\fBstring[]\fR\ \&\fBroles\fR
+(\fIread\-only\fR) \(em gets the list of roles available to the connected user
+.PP
+\fBinteger\fR\ \&\fBconnectionTimeout\fR
+(\fIread\-only\fR) \(em the PAM conversation timeout, in seconds
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBAuthentication Methods\fR
+.RS 4
+.PP
+\fBBlock\fR
+\fBlogin\fR(\fBstring\fR\ \&\fIlocale\fR, \fBstring\fR\ \&\fIusername\fR)
+.RS 4
+.PP
+begins a PAM conversation to authenticate as the specified user
+.PP
+\fBArguments:\fR
+.PP
+\fIlocale\fR
+.PP
+\fIusername\fR
+.PP
+\fBResult:\fR
+.PP
+\fBBlock\fR
+.PP
+\fBError:\fR
+.PP
+\fI(no type)\fR
+.RE
+.PP
+\fBBlock\fR
+\fBassume\fR(\fBstring\fR\ \&\fIlocale\fR, \fBstring\fR\ \&\fIrolename\fR)
+.RS 4
+.PP
+begins a PAM conversation to authenticate as the specified role
+.PP
+Like
+login(),
+.PP
+\fBArguments:\fR
+.PP
+\fIlocale\fR
+.PP
+\fIrolename\fR
+.PP
+\fBResult:\fR
+.PP
+\fBBlock\fR
+.PP
+\fBError:\fR
+.PP
+\fI(no type)\fR
+.RE
+.PP
+\fBBlock\fR
+\fBsubmit\fR(\fBsecret[]\fR\ \&\fIresponses\fR)
+.RS 4
+.PP
+continues a PAM conversation with information collected from the previous step
+.PP
+\fBArguments:\fR
+.PP
+\fIresponses\fR
+.PP
+\fBResult:\fR
+.PP
+\fBBlock\fR
+.PP
+\fBError:\fR
+.PP
+\fI(no type)\fR
+.RE
+.PP
+\fBopaque\fR
+\fBcreateToken\fR()
+.RS 4
+.PP
+Creates a single\-use token that can be
+redeemed
+later to authenticate a connection as a clone of the caller\'s\&. In addition to being single\-use, the token has a limited lifetime\&.
+.PP
+\fBResult:\fR
+.PP
+\fBopaque\fR
+.PP
+\fBError:\fR
+.PP
+\fI(no type)\fR
+.RE
+.PP
+\fBredeemToken\fR(\fBstring\fR\ \&\fIuser\fR, \fBopaque\fR\ \&\fItoken\fR)
+.RS 4
+.PP
+Redeems a token, authenticating the current connection with the credentials in place when the token was
+created\&.
+.PP
+\fBArguments:\fR
+.PP
+\fIuser\fR
+.PP
+\fItoken\fR
+.PP
+\fBError:\fR
+.PP
+\fI(no type)\fR
+.RE
+.PP
+\fBcomplete\fR()
+.RS 4
+.PP
+completes the PAM conversation with the RAD server
+.RE
+.RE
+.SH "ENUMERATED TYPES"
+.PP
+\fBenum MsgType\fR
+.RS 4
+.PP
+PROMPT_ECHO_OFF
+(0) \(em a request for non\-sensitive information, such as a username
+.PP
+PROMPT_ECHO_ON
+(1) \(em a request for secure/sensitive information, such as a password or passphrase
+.PP
+ERROR_MSG
+(2) \(em an error message to display to the user attempting authentication
+.PP
+TEXT_INFO
+(3) \(em an informational message to display to the user attempting authentication
+.RE
+.PP
+\fBenum BlockType\fR
+.RS 4
+.PP
+CONV
+(0) \(em conversation must continue
+.PP
+SUCCESS
+(1) \(em authentication has succeeded
+.PP
+ERROR
+(2) \(em authentication has failed
+.RE
+.SH "STRUCTURE TYPES"
+.PP
+\fBstruct Message\fR
+.RS 4
+.PP
+\fBFields:\fR
+.PP
+\fBMsgType\fR\ \&\fIstyle\fR
+\(em this message\'s type
+.PP
+\fBstring\fR\ \&\fImessage\fR
+\(em the message text
+.RE
+.PP
+\fBstruct Block\fR
+.RS 4
+.PP
+\fBFields:\fR
+.PP
+\fBBlockType\fR\ \&\fItype\fR
+\(em the status of the conversation
+.PP
+\fBMessage\fR\fB[]\fR\ \&\fImessages\fR
+(\fInullable\fR) \(em the messages to display to the user
+.RE
+.PP
+\fBVersion:\fR
+(1\&.0)

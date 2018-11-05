@@ -1,0 +1,388 @@
+'\" te
+.\" Copyright (c) 2008, 2013, Oracle and/or its affiliates.All rights reserved.
+.TH fwflash 1M "2012 年 2 月 14 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+fwflash \- 固件查询与更新实用程序
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/fwflash\fR [\fB-l\fR [\fB-c\fR \fIdevice_class\fR | \fBALL\fR ]]
+     | [\fB-v\fR] | [\fB-h\fR]
+.fi
+
+.LP
+.nf
+\fBfwflash\fR [\fB-f\fR \fIfile1\fR,\fIfile2\fR,\fIfile3\fR,... | \fB-r\fR \fIfile\fR]
+     [\fB-y\fR] [\fB-d\fR \fIdevice_path\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBfwflash\fR 命令将二进制映像文件写入与 Solaris 主机连接的可执行 flash 操作的受支持设备。如果设备支持，此命令还能够将固件读取到文件中。由于更改设备的固件可能严重影响系统的稳定性，只有特权为 \fBAll\fR 的用户才能执行此命令。可以向授权运行 \fBfwflash\fR 的用户授予 “Firmware Flash Update”（固件 Flash 更新）权限配置文件。
+.sp
+.LP
+上述第一种形式的命令可提供设备的信息。它列出系统中 \fBfwflash\fR 支持进行固件升级的所有当前可用设备。您可以过滤列表操作，只显示指定类别的设备。第二种形式的命令可实现从指定设备读取固件映像或将固件映像写入到指定设备的操作。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIdevice_class\fR\fR
+.ad
+.sp .6
+.RS 4n
+可选参数，仅在与 \fB-l\fR 选项一起使用时有效。使用此选项时，此命令仅列出特定类别的设备。不会列举其他任何设备类别。当前支持的类别包括 \fBIB\fR、\fBenclosure\fR、\fBdisk\fR 或 \fBALL\fR。如果没有为 \fB-l\fR 选项指定 \fB-c\fR，则类别缺省设置为 \fBALL\fR。
+.sp
+此选项将搜索限制在指定类别内。使用 \fBIB\fR 表示 InfiniBand、\fBenclosure\fR 表示 SCSI 套件、\fBdisk\fR 表示 SCSI/SATA/SAS/FC 磁盘。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdev_path\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIdev_path\fR 为用户希望通过 \fB-f\fR 或 \fB- r\fR 操作修改的设备的绝对路径名称。如果找不到设备，此命令会失败。如果指定了 \fB-d\fR 选项，还必须指定 \fB-f\fR 或 \fB- r\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfile1\fR,\fI file2\fR,\fIfile3\fR,...\fR
+.ad
+.sp .6
+.RS 4n
+指定要向设备写入的一个或多个二进制固件映像文件的路径。\fBfwflash\fR 将验证每个文件是否为指定设备的有效固件映像。如果不是，此命令将失败并生成一条相应的错误消息。
+.sp
+如果指定了多个固件映像文件，则按照命令行中的顺序验证每个映像并将映像 flash 写入到设备中。如果有任一指定文件不能成功进行 flash 写入，将显示一条相应的消息。
+.sp
+将新固件映像 flash 写入到设备后，必须重新引导才能正确激活新固件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示 \fBfwflash\fR 的命令行用法消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+列出系统中可以升级固件的设备并显示每个设备或设备类别的特定信息。
+.sp
+对于 InfiniBand (IB) 设备，列出操作显示当前为 HCA 设置的 \fBguid\fR（Globally Unique Identifier，全局唯一标识符）以及当前安装的固件版本。HCA 有四个单独的 \fBguid\fR；可以将其中两个设置为同一值。
+.sp
+对于 SCSI 套件服务（\fBses\fR 或 \fBsgen\fR）设备，则显示可识别的目标端口全球名称（如果存在）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定从设备中读取固件时创建的文件的路径。\fB-f\fR 和 \fB-r\fR 选项互斥。
+.sp
+并非所有可执行 flash 操作的设备都支持从设备中读回固件映像。目前，只有 InfiniBand (IB) 设备支持此操作。如果所选设备不支持此操作，将显示一条消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示 \fBfwflash\fR 版本信息并退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-y\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅在指定 flash 读取 (\fB-r\fR) 或写入 (\fB-f\fR) 操作时有效。使用此选项时，\fBfwflash\fR 在运行时不会提示用户确认并且以非交互方式运行。请注意，所有选项都不允许向设备中强制 flash 写入不兼容的固件映像。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR输入不带参数的命令
+.sp
+.LP
+以下命令显示输入不带参数的命令时的 \fBfwflash\fR。
+
+.sp
+.in +2
+.nf
+example# \fBfwflash\fR
+Usage: 
+Usage:
+      fwflash [-l [-c device_class | ALL]] | [-v] | [-h]
+      fwflash [-f file1,file2,file3,... | -r file] [-y] -d device_path
+
+      -l              list flashable devices in this system
+      -c device_class limit search to a specific class
+                      eg IB for InfiniBand, ses for SCSI Enclosures
+      -v              print version number of fwflash utility
+      -h              print this usage message
+
+      -f file1,file2,file3,...
+                      firmware image file list to flash
+      -r file         file to dump device firmware to
+      -y              answer Yes/Y/y to prompts
+      -d device_path  pathname of device to be flashed
+
+      If -d device_path is specified, then one of -f <files>
+      or -r <file> must also be specified
+
+      If multiple firmware images are required to be flashed
+      they must be listed together, separated by commas. The
+      images will be flashed in the order specified.
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR列出可执行 flash 操作的设备
+.sp
+.LP
+以下命令列出可执行 flash 操作的设备。
+
+.sp
+.in +2
+.nf
+example# \fBfwflash -l\fR
+List of available devices:
+Device[0],  /devices/pci@0,0/pci8086,3595@2/pci8086,32a@0,2/\e
+            pci15b3,5a46@c/pci15b3,5a44@0:devctl
+    Class [IB]
+        GUID: System Image - 0002c901081e33b3
+              Node         - 0000000000003446
+              Port 1       - 0002c901081e33b1
+              Port 2       - 0002c901081e33b2
+        Firmware revision: 2.7.8100
+               Product            : 375-3606-03
+               PSID               : SUN0150000009
+               Description        : Sun Falcon QDR 
+Device[1],  /devices/pci@0,0/pci8086,3597@4/pci15b3,6278@0:devctl
+    Class [IB]
+        GUID: System Image - 0002c9010a99e3b3
+              Node         - 0002c9010a99e3b0
+              Port 1       - 0002c9010a99e3b1
+              Port 2       - 0002c9010a99e3b2
+        Firmware revision: 2.7.8100
+               Product            : 375-3606-03
+               PSID               : SUN0150000009
+               Description        : Sun Falcon QDR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+此外，对于显示为 SCSI 套件服务设备的 SAS 扩展器，输出可能如下所示：
+
+.sp
+.in +2
+.nf
+example# \fBfwflash -l\fR
+List of available devices:
+Device[0] /devices/pci@0/pci@0/pci@2/scsi@0/ses@3,0:ses
+  Class [sgen]
+        Target port WWN  : 500605b00002453d
+        Vendor           : SUN
+        Product          : 16Disk Backplane
+        Firmware revision: 5021
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fRFlash 升级 IB HCA 设备
+.sp
+.LP
+以下命令 flash 升级 IB HCA 设备。
+
+.sp
+.in +2
+.nf
+example# \fBfwflash -f ./version.3.2.0000 \e
+   -d /devices/pci@0,0/pci8086,3597@4/pci15b3,6278@0:devctl\fR
+About to update firmware on:
+  /devices/pci@0,0/pci8086,3597@4/pci15b3,6278@0:devctl
+Continue (Y/N): \fBY\fR
+
+Updating . . . . . . . . . . . .
+Done.  New image will be active after the system is rebooted.
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+请注意，系统会在升级前提示用户，而且用户必须重新引导主机才能激活新固件映像。
+
+.sp
+.LP
+以下命令向命令中添加 \fB-y\fR 选项。
+
+.sp
+.in +2
+.nf
+example# \fBfwflash -y -f ./version.3.2.0000 \e
+   -d /devices/pci@0,0/pci8086,3597@4/pci15b3,6278@0:devctl\fR
+About to update firmware on:
+  /devices/pci@0,0/pci8086,3597@4/pci15b3,6278@0:devctl
+
+Updating . . . . . . . . . . . .
+Done.  New image will be active after the system is rebooted.
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR将设备固件读取到文件中
+.sp
+.LP
+以下所示的命令将设备固件读取到文件中。此命令使用 \fB-y\fR 选项，读取时不提示用户。
+
+.sp
+.in +2
+.nf
+example# \fBfwflash -y -r /firmware.bin \e
+   -d /devices/pci@1d,700000/pci@1/pci15b3,5a44@0:devctl\fR
+About to read firmware on:
+         /devices/pci@1d,700000/pci@1/pci15b3,5a44@0:devctl
+to filename: /firmware.bin
+
+Reading . . .
+Done.
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR找不到可执行 flash 操作的设备时
+.sp
+.LP
+以下所示命令输出通知用户在系统中找不到可执行 flash 操作的受支持设备：
+
+.sp
+.in +2
+.nf
+example# \fBfwflash -l\fR
+fwflash: No flashable devices attached with the ses driver in this system
+fwflash: No flashable devices attached with the sgen driver in this system
+fwflash: No flashable devices attached with the hermon driver in this system
+fwflash: No flashable devices in this system
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fB/usr/lib/fwflash/identify\fR 中的每个插件都会依次装入并遍历系统设备树，从而确定当前连接的设备中是否有可执行 flash 操作的设备。有关当前支持的设备类型和驱动程序的列表，请参见下文中的“附注”\fB\fR部分。
+
+.SH 返回值
+.sp
+.LP
+\fBfwflash\fR 命令返回以下值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+失败
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/flash/fwflash
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBattributes\fR(5)、\fBhermon\fR(7D)、\fBses\fR(7D)
+.sp
+.LP
+InfiniBand 行业协会网站 http://www.infinibandta.org
+.sp
+.LP
+SCSI 存储接口委员会网站 http://www.t10.org
+.sp
+.LP
+《\fISCSI Primary Commands-4, SPC4\fR》
+.sp
+.LP
+《\fISCSI Enclosure Services-2, SES2\fR》
+.sp
+.LP
+《\fISerial Attached SCSI-2, SAS2\fR》
+.SH 附注
+.sp
+.LP
+\fBfwflash\fR 命令支持：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+包含 AMD 或 Intel 并行 flash 部件的 InfiniBand 主机通道适配器 (InfiniBand Host Channel Adapter, IB HCA)。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+附带 \fBses\fR(7D) 驱动程序的 SCSI 附件服务设备，例如 SAS 扩展器。
+.RE

@@ -1,0 +1,1628 @@
+'\" te
+.\" Copyright (c) 2005, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH zfs_share 1M "2015 年 5 月 19 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+zfs_share \- 共享和取消共享 ZFS 文件系统
+.SH 用法概要
+.LP
+.nf
+\fBzfs\fR \fBhelp\fR \fIsubcommand\fR | help | \fIproperty\fR \fIproperty-name\fR | \fIpermission\fR
+.fi
+
+.LP
+.nf
+\fBzfs\fR \fBhelp\fR -l \fBproperties\fR
+.fi
+
+.LP
+.nf
+\fBzfs\fR \fBdestroy\fR \fIshare\fR
+.fi
+
+.LP
+.nf
+\fBzfs\fR \fBget\fR [\fB-rHpe\fR|\fB-d\fR \fImax\fR][\fB-o\fR all | \fIfield\fR[,...]] [\fB-s\fR \fIsource\fR[,...]]
+     all | \fIproperty\fR[,...] \fIfilesystem\fR|\fIvolume\fR|\fIsnapshot\fR|\fIshare\fR ...
+.fi
+
+.LP
+.nf
+\fBzfs\fR \fBget\fR share [\fIfilesystem\fR]
+.fi
+
+.LP
+.nf
+\fBzfs\fR [-r] \fBset\fR [-r | -c] \fIfilesystem\fR|\fIvolume\fR|\fIsnapshot\fR|\fIshare\fR ...
+.fi
+
+.LP
+.nf
+\fBzfs\fR [-r] \fBset\fR share.nfs=on | off \fIfilesystem\fR
+.fi
+
+.LP
+.nf
+\fBzfs\fR [-r] \fBset\fR share.smb=on | off \fIfilesystem\fR
+.fi
+
+.LP
+.nf
+\fBzfs\fR \fBshare\fR \fB-u\fR [\fB-o property\fR=\fIvalue\fR]...  \fIfilesystem%share\fR
+.fi
+
+.LP
+.nf
+\fBzfs\fR \fBshare\fR \fIfilesystem|mountpoint|filesystem%share\fR
+.fi
+
+.LP
+.nf
+\fBzfs\fR \fBshare\fR \fB-a\fR | \fB-r\fR \fIfilesystem\fR
+.fi
+
+.LP
+.nf
+\fBzfs\fR \fBunshare\fR \fIfilesystem|mountpoint|filesystem%share\fR
+.fi
+
+.LP
+.nf
+\fBzfs\fR \fBunshare\fR \fB-a\fR | \fB-r\fR \fIfilesystem\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+通过设置 \fBshare.nfs\fR 或 \fBshare.smb\fR 属性，可以为 ZFS 文件系统创建 NFS 共享或 SMB 共享。也可以使用 \fBzfs share\fR 和 \fBzfs unshare\fR 命令发布或取消发布 ZFS 共享。
+.SS "共享 ZFS 文件系统"
+.sp
+.LP
+通过设置或继承 \fBshare.nfs=on\fR 或 \fBshare.smb=on\fR 属性值可以共享文件系统。例如：
+.sp
+.in +2
+.nf
+# zfs set share.nfs=on tank/home
+# zfs set share.smb=on tank/data
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+上述简单语法自动创建和发布文件系统共享。此方法称为\fB自动\fR共享。有关更多信息，请参见“示例”部分。
+.sp
+.LP
+自动共享是只读的，从父文件系统继承其所有属性。此方法允许单独通过继承启用共享（如果需要），而不必为每个后代文件系统创建共享。自动共享的发布共享名称 \fBshare.name\fR 根据数据集挂载点生成。
+.sp
+.LP
+例如，\fBtank/home\fR 的 \fIshare.name\fR 为 \fBtank_home\fR。
+.sp
+.LP
+文件系统的自动共享名称显示为 \fBfilesystem\fR%。例如，\fBtank/home\fR%。
+.sp
+.LP
+也可以使用 \fBzfs share\fR 命令创建和发布共享，如下所示：
+.sp
+.in +2
+.nf
+# zfs share -o share.smb=on sandbox/myfs%myshare
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+上述语法创建并发布\fB指定\fR的共享。当您需要通过 NFS 或 SMB 协议共享文件系统中的子目录时，这种方法更为灵活。有关更多信息，请参见“示例”部分。
+.sp
+.LP
+\fBlistshares\fR 池属性用于确定在使用 \fBzfs list\fR 命令时是否显示共享信息。有关更多信息，请参见 \fBzpool\fR(1M)。
+.SS "本机共享文件系统属性"
+.sp
+.LP
+文件系统属性分为两种类型：本机属性和用户定义的（或\fB用户\fR）属性。本机属性用于显示信息或控制 ZFS 行为。此外，本机属性分为可编辑属性和只读属性。
+.sp
+.LP
+属性继承自父项，但子项所覆盖的除外。有些属性仅适用于某些类型的数据集（文件系统、卷或快照）。
+.sp
+.LP
+以下本机属性可用于更改 ZFS 文件系统的行为，共享某个文件系统时通常会使用这些本机属性。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnbmand\fR=\fBon\fR | \fBoff\fR\fR
+.ad
+.sp .6
+.RS 4n
+控制是否应该用 \fBnbmand\fR（非分块强制性锁定）挂载文件系统。此选项用于 \fBSMB\fR 客户机。对此属性所做的更改只有在卸载文件系统并重新挂载后才有效。有关 \fBnbmand\fR 挂载的更多信息，请参见 \fBmount\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreadonly\fR=\fBon\fR | \fBoff\fR\fR
+.ad
+.sp .6
+.RS 4n
+控制是否可以修改此数据集。缺省值为 \fBoff\fR（关闭）。
+.sp
+该属性也可通过其简短列名 \fBrdonly\fR 来引用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs\fR=\fBon\fR | \fBoff\fR\fR
+.ad
+.sp .6
+.RS 4n
+控制是否作为 NFS 共享创建和发布 ZFS 数据集。也可以使用 \fBzfs share\fR 命令为 ZFS 数据集发布指定 NFS 共享，使用 \fBzfs unshare\fR 命令为 ZFS 数据集取消发布指定 NFS 共享。两种发布 NFS 共享的方法均需要事先设置 NFS 共享属性。有关设置 NFS 共享属性的信息，请参见以下 \fBzfs set\fR 命令语法。
+.sp
+更改了 \fBshare.nfs\fR 属性时，只有在此属性以前设置为 \fBoff\fR 或在更改此属性前已发布共享的情况下，才会使用已通过 \fBzfs set\fR 命令设置的任何新选项重新发布文件系统共享及继承此属性的任何子项。如果新属性值是 \fBoff\fR，则撤销发布文件系统共享。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.smb\fR=\fBon\fR | \fBoff\fR\fR
+.ad
+.sp .6
+.RS 4n
+控制是否作为 SMB 共享创建和发布 ZFS 数据集。也可以使用 \fBzfs share\fR 命令为 ZFS 数据集发布指定 SMB 共享，使用 \fBzfs unshare\fR 命令为 ZFS 数据集取消发布指定 SMB 共享。两种发布 SMB 共享的方法均需要事先设置 SMB 共享属性。有关设置 SMB 共享属性的信息，请参见以下 \fBzfs set\fR 命令语法。
+.sp
+在创建 SMB 共享时，以 \fB\&.zfs/shares\fR 目录中的条目显示 SMB 共享名称。您可以使用 \fBls\fR 或 \fBchmod\fR 命令在此目录的条目上显示共享级别的 ACL。
+.sp
+当属性从 off 更改为 on 时，任何继承该属性的共享将使用其当前选项重新共享。当属性设置为 off 时，将取消共享继承该属性的共享。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvscan\fR=\fBon\fR | \fBoff\fR\fR
+.ad
+.sp .6
+.RS 4n
+控制打开和关闭常规文件时是否应为其扫描病毒。除了启用此属性以外，为了进行病毒扫描也必须启用病毒扫描服务。缺省值为 \fBoff\fR（关闭）。
+.RE
+
+.sp
+.LP
+在创建文件系统后无法更改以下属性，因此在创建文件系统时应设置这些属性。如果未使用 \fBzfs create\fR 或 \fBzpool create\fR 命令设置属性，则从父数据集继承这些属性。如果在这些功能获得支持以前已创建的父数据集缺少这些属性，则新文件系统将为这些属性采用缺省值。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcasesensitivity\fR=\fBsensitive\fR | \fBinsensitive\fR | \fBmixed\fR\fR
+.ad
+.sp .6
+.RS 4n
+指示文件系统使用的文件名匹配算法是否应区分大小写、不区分大小写或允许混用大小写的组合匹配方式。\fBcasesensitivity\fR 属性的缺省值为 \fBmixed\fR。传统上，UNIX 和 POSIX 文件系统的文件名区分大小写。
+.sp
+\fBcasesensitivity\fR 属性的值 \fBmixed\fR 指示文件系统对区分大小写和不区分大小写的匹配行为要求均可支持。当前，在支持混合行为的文件系统上，不区分大小写的匹配行为仅限于 Solaris SMB 服务器产品。有关 \fBmixed\fR 值行为的更多信息，请参见\fI《Managing ZFS File Systems in Oracle Solaris 11.3》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnormalization\fR = \fBnone\fR | \fBformC\fR | \fBformD\fR | \fBformKC\fR | \fBformKD\fR\fR
+.ad
+.sp .6
+.RS 4n
+指示每当比较两个文件名时，文件系统是否应为文件名执行 \fBunicode\fR 标准化，以及应使用哪种标准化算法。文件名在存储时始终保持未修改状态，并将其标准化作为任何比较进程的一部分。如果将此属性设置为 \fBnone\fR 以外的合法值，并且不指定 \fButf8only\fR 属性，则 \fButf8only\fR 属性自动设置为 \fBon\fR。\fBnormalization\fR 属性的缺省值为 \fBnone\fR。在创建文件系统后无法更改此属性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fButf8only\fR=\fBon\fR | \fBoff\fR\fR
+.ad
+.sp .6
+.RS 4n
+指示在文件名含有 \fBUTF-8\fR 字符代码集中不存在的字符情况下，文件系统是否应拒绝此类文件名。如果已将此属性显式设置为 \fBoff\fR，则不允许将规范化属性显式设置或常规设置为 \fBnone\fR。\fButf8only\fR 属性的缺省值为 \fBoff\fR。在创建文件系统后无法更改此属性。
+.RE
+
+.SS "特定的 NFS 或 SMB 属性"
+.sp
+.LP
+除了本机属性和用户属性以外，您还可以指定控制文件系统共享方式的属性。以下这一组与共享相关的属性可分为 3 个类别：全局属性（适用于 NFS 和 SMB 共享）、特定于 NFS 的属性以及特定于 SMB 的属性。 
+.sp
+.LP
+全局共享属性大部分为只读属性，也有少部分例外。以下全局共享属性适用于 NFS 或 SMB 共享或者已共享或即将共享的文件系统：
+.sp
+\fB表 1 \fR全局共享属性说明
+.sp
+.TS
+tab();
+cw(1.15i) cw(2.38i) cw(.81i) cw(1.15i) 
+lw(1.15i) lw(2.38i) lw(.81i) lw(1.15i) 
+.
+属性说明可继承值
+_
+\fBshare.desc\fRT{
+该可编辑属性提供用户定义的说明，可以在文件系统或共享上进行设置。缺省值为无说明。
+T}是\fIstring\fR
+\fBshare.fs\fRT{
+该只读属性标识共享的文件系统名称。
+T}否\fIfilesystem\fR
+\fBshare.name\fRT{
+该只读属性标识共享的共享名称。
+T}否\fIshare-name\fR
+\fBshare.auto\fRT{
+该可编辑属性启用自动共享，只能在要共享的文件系统上进行设置。
+T}否on 或 off
+\fBshare.path\fRT{
+该可编辑属性设置共享的共享路径。
+T}否\fImountpoint-relative-path\fR
+\fBshare.point\fRT{
+该只读属性标识现有共享的绝对路径，该路径根据 \fBshare.path\fR 属性的当前值，相对于数据集挂载点派生。
+T}否\fIpath\fR
+\fBshare.protocols\fRT{
+该只读属性标识为文件系统或共享建立的协议。
+T}否\fBprotocol-list\fR
+\fBshare.state\fRT{
+该只读属性标识共享的当前状态。
+T}否unshared、shared 或 failed
+.TE
+
+.sp
+.LP
+以下共享属性特定于 NFS 协议。所有特定于 NFS 共享的属性均可编辑和继承。其中大部分属性的缺省值为 off，除非另行说明。
+.sp
+.LP
+以下是 NFS 共享属性说明。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs\fR\fR
+.ad
+.sp .6
+.RS 4n
+确定是否通过 NFS 协议共享文件系统。值：\fBon\fR 或 \fBoff\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.aclok\fR\fR
+.ad
+.sp .6
+.RS 4n
+确定 NFSv2 客户机访问控制，在服务器上设置了该属性时，将为所有客户机提供最高访问权限。如果未设置该属性，将为所有客户机提供最低访问权限。值：\fBon\fR 或 \fBoff\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.aclfab\fR\fR
+.ad
+.sp .6
+.RS 4n
+确定是否编制 ACL 权限。值：\fBon\fR 或 \fBoff\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.anon\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 UID 设置为未知用户的有效用户 ID。缺省情况下，为未知用户提供的有效 UID 为 \fBnobody\fR。如果 UID 设置为 -1，则拒绝访问。值：\fIuid\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.euc-cn\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 NFS 字符编码设置为 \fBeuc-cn\fR（中文）。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.euc-jpms\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 NFS 字符编码设置为 \fBeuc-jpms\fR（与 MicroSoft 兼容的日文）。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.euc-kr\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 NFS 字符编码设置为 \fBeuc-kr\fR（韩文）。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.euc-tw\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 NFS 字符编码设置为 \fBeuc-tw\fR（繁体中文）。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.iso8859-1\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 NFS 字符编码设置为 ISO 8859–1（拉丁文 1）。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.iso8859-2\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 NFS 字符编码设置为 ISO 8859–2（拉丁文 2）。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.iso8859-5\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 NFS 字符编码设置为 ISO 8859–5（拉丁文/西里尔文）。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.iso8859-6\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 NFS 字符编码设置为 ISO 8859–6（阿拉伯文）。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.iso8859-7\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 NFS 字符编码设置为 ISO 8859–7（希腊文）。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.iso8859-8\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 NFS 字符编码设置为 ISO 8859–8（希伯来文）。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.iso8859-9\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 NFS 字符编码设置为 ISO 8859–9（土耳其文）。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.iso8859-13\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 NFS 字符编码设置为 ISO 8859–13（波罗的海文）。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.iso8859-15\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 NFS 字符编码设置为 ISO 8859–15（西欧语言）。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.koi8-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 NFS 字符编码设置为 ISO KOI8–R（俄文/西里尔文）。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.cksum\fR\fR
+.ad
+.sp .6
+.RS 4n
+尚未实现。值：\fIstring\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.index\fR\fR
+.ad
+.sp .6
+.RS 4n
+确定 NFS URL 引用目录时装入的是文件而非包含此文件的目录列表。值：\fIfilename\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.log\fR\fR
+.ad
+.sp .6
+.RS 4n
+为指定的文件系统启用 NFSv2 或 NFSv3 服务器日志记录。该标记在 \fB/etc/nfs/nfslog.conf\fR 文件中定义。如果未指定任何标记，将使用与 \fB/etc/nfs/nfslog.conf\fR 文件中的全局标记关联的缺省值。值：\fItag\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.nosub\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁止 NFSv2 或 NFSv3 客户机挂载共享目录的子目录。值：\fBon\fR 或 \fBoff\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.nosuid\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁止 NFS 客户机使用 \fBsetuid\fR 或 \fBsetguid\fR 权限创建文件。如果启用该属性，NFS 服务器将忽略任何启用 \fBsetuid\fR 或 \fBsetgid\fR 权限的尝试，且不进行任何提示。值：\fBon\fR 或 \fBoff\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.public\fR\fR
+.ad
+.sp .6
+.RS 4n
+将公共文件句柄的位置从根目录更改为启用了 NFS 的浏览器和客户机的共享目录。值：\fBon\fR 或 \fBoff\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec\fR\fR
+.ad
+.sp .6
+.RS 4n
+将缺省安全模式设置为 \fBSYS\fR。\fBSYS\fR 安全模式使用 \fBAUTH_SYS\fR 验证，这意味着用户的 UID 和 GID 在网络中以明文形式传递，不通过 NFS 服务器验证。值：\fIsecurity-mode-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.default.none\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的缺省安全模式设置为无。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.default.ro\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的缺省安全模式设置为只读访问权限。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.default.root\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的缺省安全模式设置为 root 访问权限。缺省情况下，没有系统拥有 root 访问权限。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.default.root_mapping\fR\fR
+.ad
+.sp .6
+.RS 4n
+将特定 \fIUID\fR 的缺省安全模式设置为 root 访问权限。缺省情况下，没有用户拥有 root 访问权限。值：\fIUID\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.default.rw\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的缺省安全模式设置为读写访问权限。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.default.window\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置在缺省安全模式下 NFS 服务器所允许的请求者凭证的最大生命周期（以秒为单位）。缺省值为 30000 秒（8.3 小时）。值：\fIseconds\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.dh.none\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的 Diffie Helman (dh) 安全模式设置为无。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.dh.ro\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的 dh 安全模式设置为只读访问权限。值：\fIaccess-list\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.dh.root\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的 dh 安全模式设置为 root 访问权限。缺省情况下，没有系统拥有 root 访问权限。值：\fIaccess-list\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.dh.root_mapping\fR\fR
+.ad
+.sp .6
+.RS 4n
+将特定 \fIUID\fR 的 dh 安全模式设置为 root 访问权限。缺省情况下，没有用户拥有 root 访问权限。值：\fIUID\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.dh.rw\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的缺省安全模式设置为读写访问权限。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.dh.window\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置在 dh 安全模式下 NFS 服务器所允许的请求者凭证的最大生命周期（以秒为单位）。缺省值为 30000 秒（8.3 小时）。值：\fIseconds\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5.none\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的 Kerberos V5 (krb5) 安全模式设置为无。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5.ro\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的 krb5 安全模式设置为只读访问权限。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5.root\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的 krb5 安全模式设置为 root 访问权限。缺省情况下，没有系统拥有 root 访问权限。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5.root_mapping\fR\fR
+.ad
+.sp .6
+.RS 4n
+将特定 \fIUID\fR 的 krb5 安全模式设置为 root 访问权限。缺省情况下，没有用户拥有 root 访问权限。值：\fIUID\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5.rw\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的 krb5 安全模式设置为读写访问权限。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5.window\fR\fR
+.ad
+.sp .6
+.RS 4n
+未对 krb5 安全模式实现该属性。值：N/A
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5i.none\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 Kerberos V5 (krb5i) 安全模式设置为无。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5i.ro\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的 krb5i 安全模式设置为只读访问权限。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5i.root\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的 krb5i 安全模式设置为 root 访问权限。缺省情况下，没有系统拥有 root 访问权限。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5i.root_mapping\fR\fR
+.ad
+.sp .6
+.RS 4n
+将特定 \fIUID\fR 的 krb5i 安全模式设置为 root 访问权限。缺省情况下，没有用户拥有 root 访问权限。值：\fIUID\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5i.rw\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的 krb5i 安全模式设置为读写访问权限。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5i.window\fR\fR
+.ad
+.sp .6
+.RS 4n
+该属性对 krb5i 安全模式不可用。值：N/A
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5p.none\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的 Kerberos V5 (krb5i) 安全模式设置为无。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5p.ro\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的 krb5p 安全模式设置为只读访问权限。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5p.root\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的 krb5p 安全模式设置为 root 访问权限。缺省情况下，没有系统拥有 root 访问权限。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5p.root_mapping\fR\fR
+.ad
+.sp .6
+.RS 4n
+将特定 \fIUID\fR 的 krb5p 安全模式设置为 root 访问权限。缺省情况下，没有用户拥有 root 访问权限。值：\fIUID\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5p.rw\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的 krb5i 安全模式设置为读写访问权限。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5p.window\fR\fR
+.ad
+.sp .6
+.RS 4n
+未对 krb5p 安全模式实现该属性。值：N/A
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.none.none\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的安全模式设置为无。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.none.ro\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的安全模式设置为只读访问权限。值：\fIaccess-list\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.none.root\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的安全模式设置为 root 访问权限。缺省情况下，没有系统拥有 root 访问权限。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.none.root_mapping\fR\fR
+.ad
+.sp .6
+.RS 4n
+将特定 \fIUID\fR 的安全模式设置为 root 访问权限。缺省情况下，没有用户拥有 root 访问权限。值：\fIUID\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.none.rw\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的安全模式设置为读写访问权限。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.none.window\fR\fR
+.ad
+.sp .6
+.RS 4n
+未实现该属性。值：\fIseconds\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.sys.resvport\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置在访问 \fBAUTH_SYS\fR 共享资源时客户机是否需要某个保留端口。值：on或off。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.sys.none\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的 \fBSYS\fR 安全模式设置为无。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.sys.ro\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的 SYS 安全模式设置为只读访问权限。值：\fIaccess-list\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.sys.root\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的 SYS 安全模式设置为 root 访问权限。缺省情况下，没有系统拥有 root 访问权限。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.sys.root_mapping\fR\fR
+.ad
+.sp .6
+.RS 4n
+将特定 \fIUID\fR 的安全模式设置为 root 访问权限。缺省情况下，没有用户拥有 root 访问权限。值：\fIUID\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.sys.rw\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIaccess-list\fR 的安全模式设置为读写访问权限。值：\fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.sys.window\fR\fR
+.ad
+.sp .6
+.RS 4n
+未对 \fBSYS\fR 安全模式实现该属性。值：\fIseconds\fR
+.RE
+
+.sp
+.LP
+以下共享属性特定于 SMB 协议。所有特定于 SMB 共享的属性均可编辑和继承。
+.sp
+\fB表 2 \fRSMB 共享属性说明
+.sp
+.TS
+tab();
+cw(1.56i) cw(2.46i) cw(1.48i) 
+lw(1.56i) lw(2.46i) lw(1.48i) 
+.
+属性说明值
+_
+\fBshare.smb\fRT{
+确定是否通过 SMB 协议共享文件系统。缺省值为 \fBoff\fR。
+T}\fBon\fR 或 \fBoff\fR
+\fBshare.smb.ad-container\fRT{
+允许在 AD 容器中发布 SMB 共享。缺省值为 \fBoff\fR（关闭）。
+T}\fIstring\fR
+\fBshare.smb.abe\fRT{
+启用基于访问权限的枚举 (Access-Based Enumeration, ABE) 支持。缺省值为 "\fBoff\fR"。
+T}\fIshare-name\fR
+\fBshare.smb.csc\fRT{
+启用客户端缓存支持。缺省值为 disabled。
+T}\fBdisabled\fR、\fBmanual\fR、\fBauto\fR 或 \fBvdo\fR
+\fBshare.smb.catia\fRT{
+启用 CATIA 转换支持。缺省值为 \fBoff\fR（关闭）。
+T}\fBon\fR 或 \fBoff\fR
+\fBshare.smb.dfsroot\fRT{
+启用 DFS 根支持。缺省值为 \fBoff\fR（关闭）。
+T}\fBon\fR 或 \fBoff\fR
+\fBshare.smb.guestok\fRT{
+启用来宾访问。缺省值为 \fBoff\fR（关闭）。
+T}\fBon\fR 或 \fBoff\fR
+\fBshare.smb.ro\fRT{
+将 SMB 共享设置为只读。可以指定 \fBon\fR、\fBoff\fR 或名称列表 (\fIaccess-list\fR)。缺省值为 \fBoff\fR（关闭）。
+T}\fIaccess-list\fR
+\fBshare.smb.rw\fRT{
+将 SMB 共享设置为读写。可以指定 \fBon\fR、\fBoff\fR 或名称列表 (\fIaccess-list\fR)。缺省值为 \fBon\fR。
+T}\fIaccess-list\fR
+\fBshare.smb.none\fRT{
+将 \fIaccess-list\fR 中指定用户的 SMB 共享设置为 \fBoff\fR。
+T}\fIaccess-list\fR
+.TE
+
+.SH 子命令
+.sp
+.LP
+修改状态的所有子命令将以原始形式永久记录到池中。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs ?\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示帮助消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs help\fR \fIcommand\fR | help | \fIproperty\fR \fIproperty-name\fR | \fIpermission\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示 \fBzfs\fR 命令的用法信息。可以显示特定命令、属性或委托权限的帮助。如果显示特定命令或属性的帮助，将显示命令语法或属性值。在不带任何参数的情况下使用 \fBzfs help\fR 将显示完整的 \fBzfs\fR 命令列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs help\fR \fB-l\fR \fBproperties\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示 \fBzfs\fR 属性信息，包括是否可以编辑和继承属性值以及可能的属性值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs create\fR [\fB-p\fR] [\fB-o\fR \fBshare.nfs=on | share.smb=on\fR \fB-o\fR ... \fIfilesystem\fR\fR
+.ad
+.sp .6
+.RS 4n
+创建新的 \fBZFS\fR 文件系统。该文件系统会根据从父项继承的 \fBmountpoint\fR 属性自动挂载。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIproperty\fR=\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+与在创建数据集时调用命令 \fBzfs set\fR \fIproperty\fR=\fIvalue\fR 一样设置指定的属性。在创建时也可设置任何可编辑的 \fBZFS\fR 属性。可以指定多个 \fB-o\fR 选项。如果在多个 \fB-o\fR 选项中指定了相同的属性，则会导致错误。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs destroy\fR [\fIshare\fR\fR
+.ad
+.sp .6
+.RS 4n
+销毁指定的文件系统共享。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs get\fR [\fB-r\fR|\fB-d\fR \fIdepth\fR] [\fB-Hp\fR] [\fB-o\fR \fBall\fR | \fIfield\fR[,...] [\fB-s\fR \fIsource\fR[,...]] \fB all\fR | \fIproperty\fR[,...] \fIdataset\fR| \fIdataset%namedshare\fR ...\fR
+.ad
+.sp .6
+.RS 4n
+显示给定数据集的属性。如果未指定任何数据集，则该命令将显示系统中所有数据集的属性。对于每个属性，将显示以下列：
+.sp
+.in +2
+.nf
+     name      Dataset name
+     property  Property name
+     value     Property value
+     source    Property source. Can either be local, default,
+               temporary, inherited, or none (-).
+.fi
+.in -2
+.sp
+
+缺省情况下，将显示除 \fBRECEIVED\fR 列之外的所有列；使用 \fB-o\fR 选项指定特定列或所有列。此命令接受“本机属性”和“用户属性”一节中介绍的逗号分隔的属性列表。
+.sp
+特殊值 \fBall\fR 可用于显示应用于给定数据集的类型（文件系统、卷或快照）的所有属性。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+递归显示任何子项的属性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdepth\fR\fR
+.ad
+.sp .6
+.RS 4n
+递归显示数据集的任何子项，并将递归限制为 \fIdepth\fR。深度为 \fB1\fR 时将仅显示数据集及其直接子项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-H\fR\fR
+.ad
+.sp .6
+.RS 4n
+以更容易被脚本解析的格式显示输出。将省略所有标题，并通过单个制表符而不是任意数量的空格显式分隔各个字段。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIfield\fR\fR
+.ad
+.sp .6
+.RS 4n
+将显示字段集。包括一个或多个：
+.sp
+.in +2
+.nf
+name,property,value,received,source
+.fi
+.in -2
+.sp
+
+以逗号分隔的列表形式显示多个字段。缺省值为:
+.sp
+.in +2
+.nf
+name,property,value,source
+.fi
+.in -2
+.sp
+
+关键字 \fBall\fR 指定所有资源。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIsource\fR\fR
+.ad
+.sp .6
+.RS 4n
+将显示逗号分隔的源列表。将忽略来自此列表中的源之外的某个源的属性。每个源必须是以下源之一：
+.sp
+.in +2
+.nf
+local,default,inherited,temporary,received,none
+.fi
+.in -2
+.sp
+
+缺省值是所有源。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示可解析（确切）值中的数字。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs get share\fR [\fIfilesystem\fR]\fR
+.ad
+.sp .6
+.RS 4n
+显示定义的所有共享，或显示为指定文件系统定义的共享。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs set\fR \fBshare.nfs\fR=on | \fBshare.smb=on\fR [\fBdesc\fR=\fIdescription\fR], \fIfilesystem\fR | \fIfilesystem%share\fR\fR
+.ad
+.sp .6
+.RS 4n
+通过将 \fBshare.nfs\fR 或 \fBshare.smb\fR 属性设置为 \fBon\fR，为 ZFS 数据集定义 NFS 或 SMB 文件共享属性。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs set\fR [\fB-r\fR] \fIproperty\fR=\fIvalue\fR \fIfilesystem|volume|snapshot|share\fR ...\fR
+.ad
+.sp .6
+.RS 4n
+针对每个文件系统或文件系统共享，将该属性设置为给定值。只能编辑某些属性。有关可设置哪些属性和可接受值的更多信息，请参见相应章节。有关更多信息，请参见“NFS 共享属性说明”部分或“SMB 共享属性说明”部分。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+在子数据集的整个子树中递归应用设置的有效值。根据属性，可以设置或继承有效值。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs share\fR [\fB-u\fR] \fB-o\fR \fIproperty=value\fR ... \fIfilesystem%share\fR\fR
+.ad
+.br
+.na
+\fB\fBzfs share\fR \fIfilesystem|mountpoint|filesystem%share\fR\fR
+.ad
+.br
+.na
+\fB\fB zfs share\fR \fB-a\fR \fB-r\fR | \fIfilesystem\fR\fR
+.ad
+.sp .6
+.RS 4n
+根据共享属性值为 ZFS 数据集创建和发布 NFS 或 SMB 共享。
+.sp
+通过 NFS 或 SMB 协议共享数据集意味着，数据集数据将在网络上可用。设置了 \fBshare.nfs\fR 或 \fBshare.smb\fR 属性的 ZFS 数据集将在引导系统时自动共享。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+创建一个共享但不立即共享它。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIproperty=value\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用指定的共享属性值共享 ZFS 文件系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+根据共享属性值以及 \fBshare.nfs\fR 和 \fBshare.smb\fR 属性的设置，共享所有 ZFS 文件系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+将共享操作以递归方式应用于所有文件系统以及指定文件系统下的共享。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfilesystem\fR | \fIfilesystem%share\fR\fR
+.ad
+.sp .6
+.RS 4n
+共享指定的文件系统或指定的文件系统共享。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs unshare\fR \fIfilesystem|mountpoint|filesystem%share\fR\fR
+.ad
+.br
+.na
+\fB\fBzfs unshare\fR \fB-a\fR | \fB-r\fR |\fIfilesystem\fR\fR
+.ad
+.sp .6
+.RS 4n
+取消共享设置了 \fBshare.nfs\fR 或 \fBshare.smb\fR 属性的所有 ZFS 数据集。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+取消共享所有共享的 ZFS 文件系统。自动在引导过程中调用。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+将取消共享操作以递归方式应用于所有文件系统以及指定文件系统下的共享。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfilesystem|mountpoint|filesystem%share\fR\fR
+.ad
+.sp .6
+.RS 4n
+取消共享指定的文件系统。也可以为该命令指定系统上共享的 \fBZFS\fR 文件系统的路径。
+.RE
+
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR创建 ZFS 文件系统的 NFS 或 SMB 共享
+.sp
+.LP
+以下示例显示了如何以不同方式共享 ZFS 文件系统。
+
+.sp
+.LP
+可在创建 ZFS 文件系统时共享该文件系统。例如：
+
+.sp
+.in +2
+.nf
+# \fBzfs create -o share.nfs=on tank/workspace\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+还可以应用共享属性。
+
+.sp
+.in +2
+.nf
+# \fBzfs set share.nfs.nosuid=on tank/workspace\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+确认是否共享文件系统。例如：
+
+.sp
+.in +2
+.nf
+# \fBgrep workspace /etc/dfs/sharetab\fR
+/tank/workspace tank_workspace  nfs     nosuid,sec=sys,rw
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+自动共享后代文件系统。例如：
+
+.sp
+.in +2
+.nf
+# \fBzfs create tank/workspace/fs1\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可在创建文件系统后共享文件系统。例如：
+
+.sp
+.in +2
+.nf
+# \fBzfs set share.smb=on tank/data\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR为 ZFS 文件系统创建更为复杂的 SMB 共享
+.sp
+.LP
+以下示例显示了如何创建 SMB，此 SMB 使用 ABE（Access-Based Enumeration，基于访问权限的枚举）确定哪些用户可以查看其有权访问的文件。创建了一个 \fBshare.smb.abe\fR 属性设置为 on 的名为 \fB%shareabe\fR 的共享。并在同一文件系统上创建了一个 \fBshare.smb.abe\fR 设置为 off 的名为 \fB%sharenoabe\fR 的新共享。 
+
+.sp
+.in +2
+.nf
+# \fBzfs share -o share.smb=on -o share.smb.abe=on tank/users/files%shareabe\fR
+# \fBzfs share -o share.smb=off tank/users/files%sharenoabe\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+要允许特定用户查看 \fBsharenoabe\fR 共享中的所有文件，其他用户只能查看 \fBshareabe\fR 共享中其有权访问的文件，您需要修改共享权限（可在 \fB/tank/users/files/.zfs/shares\fR 目录中访问）。
+
+.LP
+\fB示例 3 \fR添加或更改 ZFS 文件系统上的共享属性
+.sp
+.LP
+可以通过 NFS 和 SMB 这两个协议共享文件系统。例如：
+
+.sp
+.in +2
+.nf
+# \fBzfs set share.nfs=on tank/data\fR
+# \fBzfs set share.smb=on tank/data\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以进一步添加或更改共享属性。例如：
+
+.sp
+.in +2
+.nf
+# \fBzfs set share.nfs.ro=on tank/data\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR显示 NFS 或 SMB 共享信息
+.sp
+.LP
+显示 NFS 或 SMB 共享信息。
+
+.sp
+.LP
+确认在共享了父文件系统时是否共享了后代文件系统。例如：
+
+.sp
+.in +2
+.nf
+# \fBzfs get -r share.nfs tank/workspace\fR
+NAME                 PROPERTY   VALUE  SOURCE
+tank/workspace       share.nfs  on     local
+tank/workspace%      share.nfs  on     inherited from tank/workspace
+tank/workspace/fs1   share.nfs  on     inherited from tank/workspace
+tank/workspace/fs1%  share.nfs  on     inherited from tank/workspace
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功完成。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+出现错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定的命令行选项无效。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/file-system/zfs
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBshare\fR(1M)、\fBshare_nfs\fR(1M)、\fBshare_smb\fR(1M)、\fBunshare\fR(1M)、\fBzfs\fR(1M)、\fBzpool\fR(1M)、\fBchmod\fR(2)、\fBchown\fR(2)、\fBstat\fR(2)、\fBwrite\fR(2)、\fBfsync\fR(3C)、\fBdfstab\fR(4)、\fBvfstab\fR(4)、\fBattributes\fR(5)
+.sp
+.LP
+有关使用其他 \fBZFS\fR 功能的信息，请参见 \fBzfs_allow\fR(1M)、\fBzfs_encrypt\fR(1M)、\fBzfs\fR(1M) 和\fI《Managing ZFS File Systems in Oracle Solaris 11.3》\fR。

@@ -1,0 +1,166 @@
+'\" te
+.\" Copyright (c) 1999, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1989 AT&T
+.TH acctcon 1M "2011 年 8 月 16 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+acctcon, acctcon1, acctcon2 \- 连接时间记帐
+.SH 用法概要
+.LP
+.nf
+\fB/usr/lib/acct/acctcon\fR [\fB-l\fR \fIlineuse\fR] [\fB-o\fR \fIreboot\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/acctcon1\fR [\fB-p\fR] [\fB-t\fR] [\fB-l\fR \fIlineuse\fR] [\fB-o\fR \fIreboot\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/acctcon2\fR 
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBacctcon\fR 将一系列登录/注销记录转换为总记帐记录（请参见 \fBacct.h\fR(3HEAD) 中的 \fBtacct\fR 格式）。从标准输入中读取登录/注销记录。文件 \fB/var/adm/wtmpx\fR 通常是登录/注销记录的源；但是，因为它可能包含已损坏的记录或系统日期更改，所以应首先使用 \fBwtmpfix\fR 对其进行修复。然后，可以将文件 \fB/var/adm/wtmpx\fR 的修复版本重定向到 \fBacctcon\fR。\fBtacct\fR 记录写入到标准输出。
+.sp
+.LP
+\fBacctcon\fR 是程序 \fBacctcon1\fR 和 \fBacctcon2\fR 的组合。\fBacctcon1\fR 将登录/注销记录（从修复的 \fB/var/adm/wtmpx\fR 文件中获取）转换为 ASCII 输出。\fBacctcon2\fR 读取 \fBacctcon1\fR 生成的 ASCII 记录并将它们转换为 \fBtacct\fR 记录。\fBacctcon1\fR 可以与下面所述的 \fB-l\fR 和 \fB-o\fR 选项以及 \fB-p\fR 和 \fB-t\fR 选项结合使用。
+.SH 选项
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 14n
+.rt  
+仅列显输入，显示行名称、登录名和时间（采用数字和日期/时间格式）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.RS 14n
+.rt  
+\fBacctcon1\fR 维护用户在其上登录的行列表。当它到达输入的末尾时，将发出仍显示为处于活动状态的各行的会话记录。它通常假定其输入为当前文件，从而它使用当前时间作为仍在进行中的每个会话的结束时间。\fB-t\fR 标志会使它改用在输入中发现的最后时间，从而确保非当前文件的数字合理且可重复。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIlineuse\fR\fR
+.ad
+.RS 14n
+.rt  
+创建 \fIlineuse\fR 以包含行使用情况摘要，其中显示行名称、使用的分钟数、已用时间占总时间的百分比、占用的会话数、登录次数和注销次数。该文件可帮助跟踪行使用情况，标识错误行，以及查找软件和硬件异常。挂起、终止 \fBlogin\fR(1) 以及终止登录 shell 都会生成注销记录，因此注销次数通常是会话数的三到四倍。请参见 \fBinit\fR(1M) 和 \fButmpx\fR(4)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIreboot\fR\fR
+.ad
+.RS 14n
+.rt  
+将会用记帐期间的总体记录填充 \fBreboot\fR，其中给出了开始时间、结束时间、重新引导次数以及日期更改次数。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR使用 \fBacctcon\fR 命令。
+.sp
+.LP
+通常按如下方式使用 \fBacctcon\fR 命令：
+
+.sp
+.in +2
+.nf
+example% acctcon \fB-l\fR lineuse \fB-o\fR reboots < tmpwtmp > ctacct
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+通常按如下方式使用 \fBacctcon1\fR 和 \fBacctcon2\fR 命令：
+
+.sp
+.in +2
+.nf
+example% acctcon1 \fB-l\fR lineuse \fB-o\fR reboots < tmpwtmp | sort +1n +2 > ctmp
+example% acctcon2 < ctmp > ctacct 
+.fi
+.in -2
+.sp
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/wtmpx\fR\fR
+.ad
+.RS 18n
+.rt  
+有关用户访问和管理信息的历史记录
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/accounting/legacy-accounting
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBacctcom\fR(1)、\fBlogin\fR(1)、\fBacct\fR(1M)、\fBacctcms\fR(1M)、\fBacctmerg\fR(1M)、\fBacctprc\fR(1M)、\fBacctsh\fR(1M)、\fBfwtmp\fR(1M)、\fBinit\fR(1M)、\fBrunacct\fR(1M)、\fBacct\fR(2)、\fBacct.h\fR(3HEAD)、\fButmpx\fR(4)、\fBattributes\fR(5)
+.sp
+.LP
+\fIIntroduction to Oracle Solaris 11.3                 Administration\fR
+.SH 附注
+.sp
+.LP
+日期更改会使行使用情况报告显得混乱。使用以 \fB/var/adm/wtmpx\fR 文件作为参数的 \fBwtmpfix\fR（请参见 \fBfwtmp\fR(1M)）可以更正此情况。
+.sp
+.LP
+在任何给定命令的单个调用过程中，\fBacctcon\fR、\fBacctcon1\fR 和 \fBacctcon2\fR 命令最多可以处理：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+6000 个不同会话
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+1000 个不同终端行
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+2000 个不同登录名
+.RE
+.sp
+.LP
+如果在某个时刻这些项中的任一项的实际数目超过了最大值，该命令将不会成功。

@@ -1,0 +1,163 @@
+'\" te
+.\" Copyright (c) 2015, Oracle and/or its affiliates. All rights             reserved.
+.TH getrandom 2 "29 Jun 2015" "SunOS 5.11" "System Calls"
+.SH NAME
+getrandom, getentropy \- retrieve data from the kernel random pool
+.SH SYNOPSIS
+.LP
+.nf
+#include <sys/random.h>
+int getrandom(void *buf, size_t buflen, unsigned int flags);
+int getentropy(void *buf, size_t buflen);
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBgetrandom()\fR function can be used to request \fBbuflen\fR bytes of data from the kernel random pool, which is to be placed into the buffer, pointed to by \fBbuf\fR. It is recommended to use the \fBgetrandom()\fR function instead of \fBopen\fR(2) and \fBread\fR(2) functions on the \fB/dev/random\fR or \fB/dev/urandom\fR device.
+.sp
+.LP
+The random data returned by the \fBgetrandom()\fR function is processed by a FIPS 140-2 approved deterministic random bit generator (DRBG).
+.sp
+.LP
+If the \fBGRND_RANDOM\fR flag is set, then the implementation uses the same pool as \fB/dev/random\fR, otherwise the \fB/dev/urandom\fR pool is used.
+.sp
+.LP
+If no entropy is available in the pool, the \fBgetrandom()\fR function will block unless the \fBGRND_NONBLOCK\fR flag is set. In this case, the function returns \fB-1\fR and \fBerrno\fR is set to \fBEAGAIN\fR. Note that the number of bytes returned can be the number of bytes requested or \fB0\fR. Callers need to check the return value to determine if random bytes were returned. This means this is not an acceptable calling sequence:
+.sp
+.in +2
+.nf
+(void) getrandom(&buf, sizeof (buf), 0);
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The \fBgetentropy()\fR function is blocked and is expected to be used only to seed a userspace implementation of a random bit generator.
+.SH RETURN VALUES
+.sp
+.LP
+Upon successful completion, the \fBgetrandom()\fR function returns the number of bytes written to \fBbuf\fR. Otherwise, it returns \fB0\fR and sets \fBerrno\fR to indicate the error.
+.sp
+.LP
+Upon successful completion, the \fBgetentropy()\fR function returns \fB0\fR. Otherwise, it returns \fB-1\fR and sets \fBerrno\fR to indicate the error.
+.SH ERRORS
+.sp
+.LP
+The \fBgetrandom()\fR and \fBgetentropy()\fR functions fail if:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEINVAL\fR\fR
+.ad
+.RS 10n
+.rt  
+The flags are not set to \fBGRND_RANDOM\fR, \fBGRND_NONBLOCK\fR or both, or \fBbufsz\fR is \fB<= 0 or > 1024\fR\&.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEFAULT\fR\fR
+.ad
+.RS 10n
+.rt  
+\fBbuf\fR is an invalid address.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEAGAIN\fR\fR
+.ad
+.RS 10n
+.rt  
+No entropy is available and \fBGRND_NONBLOCK\fR is set.
+.RE
+
+.sp
+.LP
+The \fBgetentropy()\fR call also fail if:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEIO\fR\fR
+.ad
+.RS 7n
+.rt  
+More than 256 bytes are requested, or the returned amount of entropy does not match the request.
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRUsing the\fBgetrandom()\fR function
+.sp
+.in +2
+.nf
+#include <sys/random.h>
+#include <stdlib.h>
+\&.
+size_t bufsz = 1024;
+char *buf;
+int ret;
+\&.
+\&...
+buf = malloc(bufsz);
+\&...
+ret = getrandom(buf, bufsz, GRND_RANDOM);
+if (ret != bufsz) {
+                 perror("getrandom failed");
+                 ...
+                  }
+\&...
+.fi
+.in -2
+
+.LP
+\fBExample 2 \fRUsing the \fBgetentropy()\fR function
+.sp
+.in +2
+.nf
+#include <sys/random.h>
+#include <stdlib.h>
+\&.
+size_t entsz = 128;
+char *entropy;
+int err;
+\&.
+\&...
+entropy = malloc(entsz);
+\&...
+err = getentropy(entropy, entsz);
+if (err != 0) {
+                 perror("getentropy failed");
+                 ...
+              }
+/* Use entropy to seed our RNG */
+.fi
+.in -2
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Interface StabilityCommitted
+_
+MT-LevelMT-Safe
+.TE
+

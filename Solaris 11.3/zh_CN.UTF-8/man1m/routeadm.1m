@@ -1,0 +1,425 @@
+'\" te
+.\" Copyright (c) 2006, 2011, Oracle and/or its affiliates.All rights reserved.
+.TH routeadm 1M "2011 年 5 月 3 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+routeadm \- IP 转发和路由配置
+.SH 用法概要
+.LP
+.nf
+\fBrouteadm\fR [\fB-p\fR [\fIoption\fR]]
+.fi
+
+.LP
+.nf
+\fBrouteadm\fR [\fB-R\fR \fIroot-dir\fR] [\fB-e\fR \fIoption\fR ...] [\fB-d\fR \fIoption\fR...]
+ [\fB-r\fR \fIoption\fR...] [\fB-s\fR \fIvar\fR=\fIvalue\fR]
+.fi
+
+.LP
+.nf
+\fBrouteadm\fR [\fB-l\fR \fIfmri\fR]
+.fi
+
+.LP
+.nf
+\fBrouteadm\fR [\fB-m\fR \fIfmri\fR \fIkey\fR=\fIvalue\fR [\fIkey\fR=\fIvalue\fR]...]
+.fi
+
+.LP
+.nf
+\fBrouteadm\fR [\fB-u\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBrouteadm\fR 命令用于管理系统范围的 IP 转发和路由配置。IP 转发是指将 IP 包从一个网络传递到另一个网络的过程；IP 路由是指使用路由协议确定路由。
+.sp
+.LP
+IP 路由功能也表示为服务管理工具 (service management facility, SMF) 中的服务，可通过 \fBsvcadm\fR(1M) 并使用以下故障管理资源标识符 (fault management resource identifiers FMRI) 管理这些功能：
+.sp
+.in +2
+.nf
+svc:/network/routing/route:default
+svc:/network/routing/ripng:default
+.fi
+.in -2
+
+.sp
+.LP
+相关示例，请参见“示例”部分。
+.sp
+.LP
+除启用和禁用路由和转发之外，\fBrouteadm\fR 还用于与基于 SMF 的路由守护进程服务进行交互。路由守护进程服务由存在的 \fBrouteadm\fR 应用程序属性组标识，\fBrouteadm\fR 使用该属性组管理给定服务。路由守护进程服务还可在 \fBrouting\fR 应用程序属性组中指定与其操作相关的属性，通过 \fBrouteadm\fR \fB-m\fR 可修改这些属性。如果指定了没有此类属性组的服务的 FMRI，则会发出一个错误且不执行操作。如果路由守护进程未转换为 SMF，可以使用 \fBipv4\fI[或 6]\fR-routing-daemon\fR、\fBipv4\fI[或 6]\fR-routing-daemon-args\fR 和 \fBipv4\fI[或 6]\fR-routing-stop-cmd\fR 变量为 IPv4 或 IPv6 路由指定相应的守护进程。之后，\fBrouteadm\fR 将根据需要使用 \fBsvc:/network/routing/legacy-routing:ipv4\fR\fI[或 6]\fR 服务运行该守护进程。在发出启用 (\fB-e\fR)、禁用 (\fB-d\fR) 或更新 (\fB-u\fR) 命令时，会发生此转换过程。
+.sp
+.LP
+上述“用法概要”部分中的第一条用法用于报告当前配置。
+.SH 选项
+.sp
+.LP
+支持以下命令行选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR [\fIoption\fR]\fR
+.ad
+.sp .6
+.RS 4n
+以可解析格式列显配置。如果指定了 \fIoption\fR，则仅显示指定选项或变量的配置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIroot-dir\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 \fBrouteadm\fR 应用更改的其他根目录。该选项在通过 JumpStart 脚本应用更改时非常有用，在这类脚本中，要修改的系统的根目录挂载在其他位置。
+.LP
+注 - 
+.sp
+.RS 2
+不得使用 \fB-R\fR 选项引用任何非全局区域的根文件系统。否则，可能会损坏全局区域的文件系统，危及全局区域的安全性，或者损坏非全局区域的文件系统。请参见 \fBzones\fR(5)。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fIoption\fR...\fR
+.ad
+.sp .6
+.RS 4n
+启用指定的选项。其作用是使关联的服务准备启用。通过 \fBrouting-svcs\fR 变量，可指定要在后续引导时或在 \fBrouteadm\fR \fB-u\fR 运行时启用的路由守护进程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIoption\fR...\fR
+.ad
+.sp .6
+.RS 4n
+禁用指定的选项。其作用是使关联的服务准备禁用。通过 \fBrouting-svcs\fR 变量，可指定要在后续引导时或在运行 \fBrouteadm\fR \fB-u\fR 时禁用的路由守护进程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIfmri\fR\fR
+.ad
+.sp .6
+.RS 4n
+列出 SMF 路由守护进程服务的路由应用程序属性组中的所有属性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fIfmri\fR \fIkey\fR=\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 SMF 路由守护进程服务的路由应用程序属性组中的属性 \fIkey\fR 的属性值更改为 \fIvalue\fR。对于多值属性，可在修改操作中多次使用属性名，并添加每个关联值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIoption...\fR\fR
+.ad
+.sp .6
+.RS 4n
+将指定的选项恢复为系统缺省值。系统缺省值在每个 \fIoption\fR 的说明中指定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+将当前所配置的选项应用于正在运行的系统。这些选项包括启用或禁用 IP 转发以及启动或终止路由守护进程（如果指定了路由守护进程）。对于那些设置为缺省值的设置，该选项不会为其更改系统的状态。如果管理员想不通过重新引导来应用更改，可使用该选项。此外，该选项会将非 SMF 配置从调用守护进程停止命令（可能包含一组参数）升级为只启用相应服务。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIkey\fR=\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+以逗号分隔（逗号后不加空格）的列表为特定变量指定字符串值。如果指定了无效选项，将显示一条警告消息并退出程序。可以指定以下变量：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrouting-svcs=\fR\fIfmrilist\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定要启用的路由守护进程服务。将根据 \fBrouteadm\fR 应用程序属性组中的属性值，确定路由守护进程服务是 IPv4 还是 IPv6（进而确定在 \fBrouteadm\fR \fB-e\fR/\fB-d\fR \fBipv4\fR\fI(6)\fR\fB-routing\fR 运行时是启用还是禁用 ipv4(6)）。缺省值：\fBroute:default ripng:default\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv4-routing-daemon=\fI<full_path_to_routing_daemon>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定在启用了 \fBipv4-routing\fR 时要启动的路由守护进程。指定的路由守护进程必须是可执行的二进制文件或 shell 脚本。如果指定的程序映射到某个 SMF 服务，将使用该服务，并且在启用时将该程序的守护进程参数传输到该服务的属性。缺省值：\fB""\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv4-routing-daemon-args=\fI<args>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定在启用了 \fBipv4-routing\fR 时要传送给 \fBipv4-routing-daemon\fR 的启动参数。缺省值：无参数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv4-routing-stop-cmd=\fI<command>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定在禁用了 \fBipv4-routing\fR 时停止路由守护进程要执行的命令。\fI<command>\fR 可以是一个可执行的二进制文件或 shell 脚本，也可以是一个可通过 \fBsystem\fR(3C) 解析的字符串。缺省值：\fB""\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv6-routing-daemon=\fI<full_path_to_routing_daemon>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定在启用了 \fBipv6-routing\fR 时要启动的路由守护进程。指定的路由守护进程必须是可执行的二进制文件或 shell 脚本。如果指定的程序映射到某个 SMF 服务，将使用该服务，并且在启用时将该程序的守护进程参数传输到该服务的属性。缺省值：\fB""\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv6-routing-daemon-args=\fI<args>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定在启用了 \fBipv6-routing\fR 时要传送给 \fBipv6-routing-daemon\fR 的启动参数。缺省值：\fB""\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv6-routing-stop-cmd=\fI<command>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定在禁用了 \fBipv6-routing\fR 时停止路由守护进程要执行的命令。\fI<command>\fR 可以是一个可执行的二进制文件或 shell 脚本，也可以是一个可通过 \fBsystem\fR(3C) 解析的字符串。缺省值：\fB""\fR
+.RE
+
+.RE
+
+.sp
+.LP
+可以在命令行上指定多个 \fB-e\fR、\fB-d\fR 和 \fB-r\fR 选项。由 \fB-e\fR、\fB-d\fR 和 \fB-r\fR 所做的更改是持久性的，但不会应用到正在运行的系统，除非随后使用 \fB-u\fR 选项调用 \fBrouteadm\fR。
+.sp
+.LP
+可使用以下选项作为 \fB-e\fR、\fB-d\fR 和 \fB-r\fR 选项的参数（如上面的 \fIoption...\fR 中所示）。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv4-forwarding\fR\fR
+.ad
+.sp .6
+.RS 4n
+控制所有 IPv4 接口的全局转发配置。系统缺省值为 \fBdisabled\fR。如果启用，IP 会在适当时向（从）接口转发 IPv4 包。如果禁用，IP 不会在适当时向（从）接口转发 IPv4 包。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv4-routing\fR\fR
+.ad
+.sp .6
+.RS 4n
+确定是否有某个 IPv4 路由守护进程在运行。系统缺省值是 \fBenabled\fR，除非存在 \fB/etc/defaultrouter\fR 文件（请参见 \fBdefaultrouter\fR(4)），在这种情况下，缺省值是 \fBdisabled\fR。此选项的值反映所有 IPv4 路由服务的状态，因此如果有任何 IPv4 路由服务处于启用状态，\fBipv4-routing\fR 的值为 enabled。这允许用户使用 \fBsvcadm\fR(1M) 以及通过 \fBrouteadm\fR 与路由服务进行交互。如果用户显式启用了 \fBipv4-routing\fR，则通过 \fBrouting-svcs\fR 变量指定的 IPv4 路由服务将准备在下次引导时启用。缺省情况下指定 \fBin.routed\fR (\fBsvc:/network/routing/route:default\fR) 的 SMF 路由守护进程服务。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv6-forwarding\fR\fR
+.ad
+.sp .6
+.RS 4n
+控制所有 IPv6 接口的全局转发配置。系统缺省值为 \fBdisabled\fR。如果启用，IP 会在适当时向（从）接口转发 IPv6 包。如果禁用，IP 不会在适当时向（从）接口转发 IPv6 包。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv6-routing\fR\fR
+.ad
+.sp .6
+.RS 4n
+确定是否有某个 IPv6 路由守护进程在运行。系统缺省值为 \fBdisabled\fR。此选项的值反映所有 IPv6 路由服务的状态，因此如果有任何 IPv6 路由服务处于启用状态，\fBipv6-routing\fR 的值为 enabled。这允许用户通过 \fBsvcadm\fR(1M) 以及 \fBrouteadm\fR 与路由服务进行交互。如果用户显式启用了 \fBipv6-routing\fR，则通过 \fBrouting-svcs\fR 变量指定的 IPv6 路由服务将准备在下次引导时启用。缺省情况下指定 \fBin.ripngd\fR (\fBsvc:/network/routing/ripng:default\fR) 的 SMF 路由守护进程服务。
+.RE
+
+.sp
+.LP
+转发和路由设置相关但不相互依赖。例如，路由器通常转发 IP 包并使用某种路由协议，但没有任何限制会阻止管理员配置路由器只转发包而不使用路由协议。在这种情况下，管理员应启用转发，禁用路由并使用静态路由填充路由器的路由表。
+.sp
+.LP
+转发设置是全局设置。每个接口还具有一个 \fBIFF_ROUTER\fR 转发标志，用于确定包是否可通过特定接口转发。该标志可通过 \fBifconfig\fR(1M) 的路由器选项进行独立控制。全局转发设置发生更改（即发出 \fB-u\fR 将值从 \fBenabled\fR 更改为 \fBdisabled\fR 或反向操作）时，系统中的所有接口标志将同时发生更改以反映新的全局策略。通过 DHCP 配置的接口自动清除其特定于接口的 \fBIFF_ROUTER\fR 标志。
+.sp
+.LP
+通过 \fBifconfig\fR 激活了新接口时，将根据当前的全局转发值设置特定于接口的转发标志值。因此，转发值将构成所有新接口的“缺省值”。
+.SH 示例
+.LP
+\fB示例 1 \fR启用 IPv4 转发
+.sp
+.LP
+缺省情况下，禁用 IPv4 转发。以下命令启用 IPv4 转发：
+
+.sp
+.in +2
+.nf
+example# \fBrouteadm -e ipv4-forwarding\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR将所配置的设置应用于正在运行的系统
+.sp
+.LP
+在上一示例中，系统设置发生了更改，但这些更改在下次重新引导之前不会生效，除非使用如下命令：
+
+.sp
+.in +2
+.nf
+example# \fBrouteadm -u\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR将设置恢复为其缺省值
+.sp
+.LP
+要将第一个示例中更改的设置恢复为其缺省值，请输入以下命令：
+
+.sp
+.in +2
+.nf
+example# \fBrouteadm -r ipv4-forwarding\fR
+example# \fBrouteadm -u\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR使用 \fB-q\fR 标志启动 \fBin.routed\fR
+.sp
+.LP
+设置 \fB-q\fR 标志在 SMF 服务中表现为将 \fBquiet_mode\fR 属性设置为 true。以下命令序列使用 \fB-q\fR 标志启动 \fBin.routed\fR：
+
+.sp
+.in +2
+.nf
+example# \fBrouteadm -m route:default quiet_mode=true\fR
+example# \fBrouteadm -e ipv4-routing -u\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有关属性名称及其与守护进程行为的关联的详细信息，请参见 \fBin.routed\fR(1M)。
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 7n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!=0\fR\fR
+.ad
+.RS 7n
+.rt  
+获取或修改系统配置时出错。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/routing.conf\fR\fR
+.ad
+.RS 26n
+.rt  
+IP 转发和路由的参数。（不用于编辑。）
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBifconfig\fR(1M)、\fBin.routed\fR(1M)、\fBipadm\fR(1M)、\fBsvcadm\fR(1M)、\fBgateways\fR(4)、\fBattributes\fR(5)、\fBsmf\fR(5)

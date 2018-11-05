@@ -1,0 +1,359 @@
+'\" te
+.\" Copyright (c) 2009, 2015, Oracle and/or its affiliates. All rights       reserved.
+.TH tcpkey 1M "23 Mar 2015" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+tcpkey \- Manages the Security AssociationDatabase (SADB) for TCP
+.SH SYNOPSIS
+.LP
+.nf
+\fBtcpkey\fR [ \fB-nvp\fR ]
+.fi
+
+.LP
+.nf
+\fBtcpkey\fR [ \fB-nv\fR ] \fB-f\fR \fBfilename\fR
+.fi
+
+.LP
+.nf
+\fBtcpkey\fR \fB-c\fR \fBfilename\fR
+.fi
+
+.LP
+.nf
+\fBtcpkey\fR [\fB-nvp\fR ] [ \fBdelete | get\fR ] { \fIEXTENSION value..\fR }
+.fi
+
+.LP
+.nf
+\fBtcpkey\fR [ \fB-nvp\fR ] \fBflush\fR
+.fi
+
+.LP
+.nf
+\fBtcpkey\fR [\fB-nvp\fR ] \fBdump\fR
+.fi
+
+.LP
+.nf
+\fBtcpkey\fR [\fB-nv\fR] \fB-s\fR \fIfilename\fR
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBtcpkey\fR command is used to manually manipulate the tcp(7p) MD5 security association database.
+.sp
+.LP
+\fBtcpkey\fR uses a \fBPF_KEY\fR socket and the message types \fBSADB_ADD\fR, \fBSADB_DELETE\fR, \fBSADB_GET\fR, \fBSADB_UPDATE\fR, and \fBSADB_FLUSH\fR. You must be a superuser to use this command.
+.SH OPTIONS
+.sp
+.LP
+The following options are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR [\fIfilename\fR]\fR
+.ad
+.RS 17n
+.rt  
+Analogous to the \fB-f\fR option, except that the input is not executed but only checked for syntactical correctness. Errors are reported to \fBstderr\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR [\fIfilename\fR]\fR
+.ad
+.RS 17n
+.rt  
+Reads commands from an input file. The lines of the input file are identical to the command line language.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 17n
+.rt  
+Prevents attempts to print host and network names symbolically when reporting actions. This is useful, when all the name servers are down or are not reachable.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 17n
+.rt  
+Paranoid. Does not print any keying material. Instead of an actual hexadecimal digit, it prints an X when this flag is turned on.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR [\fIfilename\fR]\fR
+.ad
+.RS 17n
+.rt  
+The opposite of the \fB-f\fR option. If '-' is given for a filename, then the output goes to the standard output. A snapshot of all current entries will be output in a form readable by the \fB-f\fR option.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 17n
+.rt  
+Verbose. Prints the messages being sent to the \fBPF_KEY\fR socket, and prints raw seconds values for lifetimes.
+.RE
+
+.SH SUB-COMMANDS
+.sp
+.LP
+The following subcommands are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBadd\fR\fR
+.ad
+.RS 10n
+.rt  
+Adds an SA. The \fBadd\fR subcommand involves the transfer of keying material, and therefore it cannot be invoked from the shell, lest the keys are visible in ps(1) output. It can be used either from the interactive \f(CWtcpkey>\fR prompt or in a command file specified by the \fB-f\fR option. The \fBadd\fR subcommand accepts all extension-value pairs described below.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete\fR\fR
+.ad
+.RS 10n
+.rt  
+Deletes a specific SA. If the SA is in use, it will be marked delete and will not be used for a new connection setup, whereas, any existing connections will continue to use it.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBget\fR\fR
+.ad
+.RS 10n
+.rt  
+Looks up and displays a security association.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBflush\fR\fR
+.ad
+.RS 10n
+.rt  
+Removes all SAs.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdump\fR\fR
+.ad
+.RS 10n
+.rt  
+Displays all SAs.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhelp\fR\fR
+.ad
+.RS 10n
+.rt  
+Prints a help message.
+.RE
+
+.SS "EXTENSION VALUE TYPES"
+.sp
+.LP
+Commands like add, delete, get, and update require certain extensions and associated values to be specified.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauth_alg\fR <\fIstring\fR>\fR
+.ad
+.RS 23n
+.rt  
+Specifies the authentication algorithm. Currently only md5 is supported
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsrc address | name\fR\fR
+.ad
+.br
+.na
+\fB\fBsrc6 IPv6 address\fR\fR
+.ad
+.RS 23n
+.rt  
+Source address of the SA.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdst <addr>|<name>\fR\fR
+.ad
+.br
+.na
+\fB\fBdst6 IPv6 address\fR\fR
+.ad
+.RS 23n
+.rt  
+Destination address of the SA.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsport\fR <\fIportnum\fR>\fR
+.ad
+.RS 23n
+.rt  
+Source port number
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdport\fR <\fIportnum\fR>\fR
+.ad
+.RS 23n
+.rt  
+Destination port number
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauthstring\fR <\fIstring\fR>\fR
+.ad
+.RS 23n
+.rt  
+MD5 authentication string. If the string contains space, it must be enclosed in double quotes. Only ASCII characters are supported, and hexadecimal keys are not supported.Maximum string length can be 128 characters.
+.RE
+
+.sp
+.LP
+SAs can only be setup between the same \fBinet\fR family.
+.SH EXAMPLES
+.LP
+\fBExample 1 \fREmptying all SAs
+.sp
+.LP
+The following example shows how to empty all SAs.
+
+.sp
+.in +2
+.nf
+example# \fBtcpkey flush\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRAdding an SA
+.sp
+.LP
+The following example shows how to add an SA.
+
+.sp
+.in +2
+.nf
+example# \fBtcpkey\fR
+      tcpkey> \fBadd src 192.168.1.1 dst 192.168.1.2 dport 32000 authalg md5 \
+              authstring sunmicro\fR
+      tcpkey> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRDisplaying all SAs
+.sp
+.LP
+The following example shows to display all SAs.
+
+.sp
+.in +2
+.nf
+example# tcpkey dump
+     Base message (version 2) type DUMP, SA type TCP Signature.
+     Message length 576 bytes, seq=2, pid=100939.
+     SA: Authentication algorithm = MD5
+     SRC: Source address (proto=6/tcp)
+     SRC: AF_INET: port 0, 192.168.1.1 <unknown>.
+     DST: Destination address (proto=6/tcp)
+     DST: AF_INET: port 32000, 192.168.1.2 <unknown>.
+     AST: Authentication string.
+     AST: sunmicro
+.fi
+.in -2
+.sp
+
+.SH FILES
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/secret/tcpkeys\fR\fR
+.ad
+.RS 28n
+.rt  
+Default configuration file used at boot time. See  "Service Management Facility" and SECURITY for more information.
+.RE
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Interface StabilityCommitted
+_
+Availabilitysystem/network
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBtcp\fR(7P), \fBgetsocket\fR(3C)

@@ -1,0 +1,642 @@
+'\" te
+.\" Copyright 1987, 1989 by the Student Information Processing Board of the Massachusetts Institute of Technology.For copying and distribution information, please see the file kerberosv5/mit-sipb-copyright.h.
+.\" Portions Copyright (c) 2008, 2012, Oracle and/or its affiliates.All rights reserved.
+.TH kinit 1 "2012 年 6 月 20 日" "SunOS 5.11" "用户命令"
+.SH 名称
+kinit \- 获取和缓存 Kerberos 票证授予票证 (ticket-granting ticket)
+.SH 用法概要
+.LP
+.nf
+\fB/usr/bin/kinit\fR [\fB-ARvV\fR] [\fB-p\fR | \fB-P\fR] [\fB-f\fR | \fB-F\fR] [\fB-a\fR] [\fB-c\fR \fIcache_name\fR] 
+     [\fB-C\fR] [\fB-E\fR] [\fB-k\fR [\fB-t\fR \fIkeytab_file\fR]] [\fB-l\fR \fIlifetime\fR]
+     [\fB-r\fR \fIrenewable_life\fR] [\fB-s\fR \fIstart_time\fR] [\fB-n\fR] [\fB-S\fR \fIservice_name\fR]
+     [\fB-X\fR \fBattribute\fR[\fB=\fR\fIvalue\fR]] [\fB-T\fR \fIarmor_ccache\fR] [\fIprincipal\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBkinit\fR 命令用于获取和缓存 \fIprincipal\fR 的初始票证授予票证（凭证）。此票证用于 Kerberos 系统进行验证。只有拥有 Kerberos 主体的用户才可以使用 Kerberos 系统。有关 Kerberos 主体的信息，请参见 \fBkerberos\fR(5)。 
+.sp
+.LP
+当使用 \fBkinit\fR 而未指定选项时，实用程序将提示您输入 \fIprincipal\fR 和 Kerberos 口令，并尝试使用本地 Kerberos 服务器验证您的登录。如果需要，可以在命令行上指定 \fIprincipal\fR。
+.sp
+.LP
+如果登录尝试通过了 Kerberos 的验证，\fBkinit\fR 将检索您的初始票证授予票证并将其放到票证高速缓存中。缺省情况下，票证存储在 \fB/tmp/krb5cc_\fIuid\fR\fR 文件中，其中 \fIuid\fR 表示用户标识号。票证将在指定的生命周期后过期，之后必须再次运行 \fBkinit\fR。高速缓存中的任何现有内容都将被 \fBkinit\fR 销毁。
+.sp
+.LP
+对于 \fIlifetime\fR 和 \fIrenewable_life\fR，在命令行中指定的值将覆盖在 Kerberos 配置文件中指定的值。
+.sp
+.LP
+\fBkdestroy\fR(1) 命令可用于在结束登录会话之前销毁任何活动票证。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 24n
+.rt  
+请求具有本地地址的票证。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.RS 24n
+.rt  
+请求无地址的票证。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIcache_name\fR\fR
+.ad
+.RS 24n
+.rt  
+使用 \fIcache_name\fR 作为凭证（票证）高速缓存名称和位置。如果未使用此选项，将使用缺省高速缓存名称和位置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR\fR
+.ad
+.RS 24n
+.rt  
+请求标准化主体名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-E\fR\fR
+.ad
+.RS 24n
+.rt  
+将主体名称视为企业名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.RS 24n
+.rt  
+请求可转发票证。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fR
+.ad
+.RS 24n
+.rt  
+不可转发。请求不可转发票证。
+.sp
+在一个主机上获取的票证通常不可在其他主机上使用。客户机可以请求将票证标记为可转发。在票证上设置 \fBTKT_FLG_FORWARDABLE\fR 标志后，用户可以使用此票证来请求具有其他 \fBIP\fR 地址的新票证。这样，用户可以使用当前凭证来获取在其他计算机上有效的凭证。此选项允许用户显式获取不可转发票证。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR [\fB-t\fR \fIkeytab_file\fR]\fR
+.ad
+.RS 24n
+.rt  
+请求从本地主机的 \fIkeytab\fR 文件中的密钥获取主机票证。可使用 \fB-t\fR \fIkeytab_file\fR 选项来指定 keytab 文件的名称和位置。否则，将使用缺省名称和位置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIlifetime\fR\fR
+.ad
+.RS 24n
+.rt  
+请求生命周期为 \fIlifetime\fR 的票证。如果不指定 \fB-l\fR 选项，将使用缺省票证生命周期（由各个站点配置）。如果指定的生命周期大于最大票证生命周期（由各个站点配置），则会将票证的生命周期设置为最大生命周期。有关可以为 \fIlifetime\fR 指定的有效持续时间格式，请参见“\fB时间\fR\fB格式\fR”部分。有关 \fBgetprinc\fR 命令如何验证服务器主体的生命周期值，请参见 \fBkdc.conf\fR(4) 和 \fBkadmin\fR(1M)。
+.sp
+返回的票证生命周期是下列值中的最小值：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在命令行上指定的值。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在 \fBKDC\fR 配置文件中指定的值。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在 Kerberos 数据库中为服务器主体指定的值。对 \fBkinit\fR 而言，该值是 \fBkrbtgt/\fIrealm name\fR\fR。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在 Kerberos 数据库中为用户主体指定的值。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 24n
+.rt  
+请求匿名处理。 
+.sp
+支持两种匿名主体类型。对于完全匿名 Kerberos，需要在 KDC 上配置 \fBpkinit\fR 并在客户机的 \fBkrb5.conf\fR 中配置 \fBpkinit_anchors\fR。然后使用 \fB-n\fR 选项并以 \fB @\fIREALM\fR\fR 形式（空主体名称后跟有 @ 符号和领域名称）指定主体。如果 KDC 允许，将返回匿名票证。 
+.sp
+此外还支持另一种形式的匿名票证。这类公开领域的票证隐藏客户机身份但不隐藏客户机领域。对于此模式，请使用 \fBkinit -n\fR 并以常规形式指定主体名称。如果 KDC 支持，将用匿名主体替换主体（但不替换领域）。自发行版 1.8 起，MIT Kerberos KDC 仅支持完全匿名操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 24n
+.rt  
+请求可代理票证。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR\fR
+.ad
+.RS 24n
+.rt  
+不可代理。请求不可代理票证。
+.sp
+可代理票证是这样一种票证：它允许您为服务获取一个 \fBIP\fR 地址与票证授权票证的 IP 地址不同的票证。此选项允许用户显式获取不可代理票证。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIrenewable_life\fR\fR
+.ad
+.RS 24n
+.rt  
+请求总生命周期为 \fIrenewable_life\fR 的可更新票证。有关可以为 \fIrenewable_life\fR 指定的有效持续时间格式，请参见“\fB时间\fR\fB格式\fR”部分。有关 \fBgetprinc\fR 命令如何验证服务器主体的生命周期值，请参见 \fBkdc.conf\fR(4) 和 \fBkadmin\fR(1M)。
+.sp
+为票证返回的可更新生命周期是下列值中的最小值：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在命令行上指定的值。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在 \fBKDC\fR 配置文件中指定的值。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在 Kerberos 数据库中为服务器主体指定的值。对 \fBkinit\fR 而言，该值是 \fBkrbtgt/\fIrealm name\fR\fR。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在 Kerberos 数据库中为用户主体指定的值。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR\fR
+.ad
+.RS 24n
+.rt  
+请求更新票证授予票证。请注意，过期票证即使仍在可更新生命周期内也无法更新。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIstart_time\fR\fR
+.ad
+.RS 24n
+.rt  
+请求以后生效的票证，该票证从 \fIstart_time\fR 开始生效。以后生效的票证是在设有 \fIinvalid\fR 标志的情况下发出的，并且在使用前需要馈送回 \fBKDC\fR。有关可以为 \fIstart_time\fR 设置的有效绝对时间或持续时间格式，请参见“\fB时间\fR\fB格式\fR”部分。\fBkinit\fR 首先尝试匹配绝对时间，然后再尝试匹配持续时间。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR \fIservice_name\fR\fR
+.ad
+.RS 24n
+.rt  
+指定在获取初始票证时使用的备用服务名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fIarmor_ccache\fR\fR
+.ad
+.RS 24n
+.rt  
+如果 KDC 支持，指定已包含票证的凭证高速缓存 (\fBccache\fR) 的名称。此 \fBccache\fR 用于封装请求，这样攻击者必须同时拥有封装票证的密钥和用于验证的主体的密钥才能攻击请求。 
+.sp
+封装还可以确保来自 KDC 的响应在传输过程中不会被修改。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 24n
+.rt  
+请求将高速缓存中的票证授权票证（设置了 \fIinvalid\fR 标志）传递到 \fBKDC\fR 进行验证。如果票证处于其请求的时间范围内，将使用通过验证的票证来替换高速缓存中的内容。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR\fR
+.ad
+.RS 24n
+.rt  
+详细输出。向用户显示更多信息，例如确认验证和版本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-X\fR \fB\fIattribute\fR[=\fIvalue\fR]\fR\fR
+.ad
+.RS 24n
+.rt  
+指定要传递给预验证插件的预验证属性和值。可接受的 \fIattribute\fR 和 \fIvalue\fR 值因预验证插件而异。可以多次指定此选项以指定多个属性。如果未指定值，则假定为 \fByes\fR。 
+.sp
+OpenSSL \fBpkinit\fR 预验证机制可识别下列属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBX509_user_identity=URI\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定到何处查找用户的 X509 身份信息。
+.sp
+有效的 URI 类型为 \fBFILE\fR、\fBDIR\fR、\fBPKCS11\fR、\fBPKCS12\fR 和 \fBENV\fR。有关详细信息，请参见“\fBPKINIT URI 类型\fR”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBX509_anchors=URI\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定到何处查找可信 X509 锚信息。
+.sp
+有效的 URI 类型为 \fBFILE\fR 和 \fBDIR\fR。有关详细信息，请参见“\fBPKINIT URI 类型\fR”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBflag_RSA_PROTOCOL[=yes]\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定使用 RSA 而不是缺省的 Diffie-Hellman 协议。
+.RE
+
+.RE
+
+.SS "PKINIT URI 类型"
+.sp
+.ne 2
+.mk
+.na
+\fBFILE:\fIfile-name\fR[,\fIkey-file-name\fR]\fR
+.ad
+.sp .6
+.RS 4n
+此选项的行为特定于上下文。
+.sp
+.ne 2
+.mk
+.na
+\fBX509_user_identity\fR
+.ad
+.RS 22n
+.rt  
+\fIfile-name\fR 指定包含用户证书的 PEM 格式文件的名称。如果未指定 \fIkey-file-name\fR，则认为用户的私钥也在 \fIfile-name\fR 中。否则，将使用 \fIkey-file-name\fR 作为包含私钥的文件的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBX509_anchors\fR
+.ad
+.RS 22n
+.rt  
+\fIfile-name\fR 被认为是 OpenSSL 式 ca-bundle 文件的名称。\fBca-bundle\fR 文件应采用 base-64 编码。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBDIR:\fIdirectory-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项的行为特定于上下文。
+.sp
+.ne 2
+.mk
+.na
+\fBX509_user_identity\fR
+.ad
+.RS 22n
+.rt  
+\fIdirectory-name\fR 指定包含名为 \fB*.crt\fR 和 \fB*.key\fR 的文件的目录，其中文件名的第一部分是相同的，以便成对匹配证书和私钥文件。如果找到文件名以 \fB\&.crt\fR 结尾的文件，则假定以 \fB\&.key\fR 结尾的匹配文件中包含私钥。如果找不到这类文件，则不使用 \fB\&.crt\fR 文件中的证书。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBX509_anchors\fR
+.ad
+.RS 22n
+.rt  
+\fIdirectory-name\fR 被认为是 OpenSSL 式散列 CA 目录，其中每个 CA 证书都存储在一个名为 \fBhash-of-ca-cert.\fR\fI#\fR 的文件中。建议使用此基础结构，但这样会检查目录中的所有文件，如果其中包含证书（PEM 格式），则使用相应的文件。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBPKCS12:\fIpkcs12-file-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIpkcs12-file-nam\fRe 是包含用户证书和私钥的 \fBPKCS #12\fR 格式文件的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBPKCS11:[slotid=\fIslot-id\fR][:token=\fItoken-label\fR][:certid=\fIcert-id\fR][:certlabel=\fIcert-label\fR]\fR
+.ad
+.sp .6
+.RS 4n
+所有关键字和值都是可选的。PKCS11 模块（例如 \fBopensc-pkcs11.so\fR）必须安装为 \fBlibpkcs11\fR(3LIB) 下的加密提供程序。可以指定 \fBslotid=\fR 和/或 \fBtoken=\fR 以强制使用特定智能卡读取器或令牌（如果有多个可用）。可以指定 \fBcertid=\fR 和/或 \fBcertlabel=\fR 以强制选择设备上的特定证书。有关选择特定证书供 \fBpkinit\fR 使用的更多方法，请参见 \fBpkinit_cert_match\fR 配置选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBENV:\fIenvironment-variable-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIenvironment-variable-name\fR 指定环境变量的名称，其值已设置为与以前的某个值相符合。例如 \fBENV:X509_PROXY\fR，其中环境变量 \fBX509_PROXY\fR 已设置为 \fBFILE:/tmp/my_proxy.pem\fR。
+.RE
+
+.SS "时间格式"
+.sp
+.LP
+下列绝对时间格式可用于 \fB-s\fR \fIstart_time\fR 选项。这些示例中的日期和时间为 1999 年 7 月 2 日 1:35:30 p.m。 
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) cw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+绝对时间格式示例 
+\fIyymmddhhmm\fR[\fIss\fR]990702133530
+\fIhhmm\fR[\fIss\fR]133530
+\fIyy\fR.\fImm\fR.\fBdd\fR.\fIhh\fR.\fImm\fR.\fIss\fR99:07:02:13:35:30
+\fIhh\fR:\fImm\fR[:\fIss\fR]13:35:30
+\fIldate\fR:\fIltime\fR07-07-99:13:35:30
+\fBdd\fR-\fImonth\fR-\fIyyyy\fR:\fIhh\fR:\fImm\fR[:\fIss\fR]02-july-1999:13:35:30
+.TE
+
+.sp
+.in +2
+.nf
+Variable   
+.fi
+.in -2
+.sp
+
+.sp
+
+.sp
+.TS
+tab();
+cw(0i) cw(5.5i) 
+lw(0i) lw(5.5i) 
+.
+变量说明
+\fBdd\fR日
+\fIhh\fR时（24 小时制）
+\fImm\fR分
+\fIss\fR秒
+\fIyy\fRT{
+一个世纪内的年份（0-68 表示 2000 至 2068；69-99 表示 1969 至 1999）
+T}
+\fIyyyy\fR年份（包括世纪）
+\fImonth\fRT{
+语言环境的月份名称的全称或缩写。
+T}
+\fIldate\fR语言环境的相应日期表示形式
+\fIltime\fR语言环境的相应时间表示形式
+.TE
+
+.sp
+.LP
+下列持续时间格式可用于 \fB-l\fR \fIlifetime\fR、\fB-r\fR \fIrenewable_life\fR 和 \fB-s\fR \fIstart_time\fR 选项。这些示例中的持续时间为 14 天 7 小时 5 分 30 秒。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) cw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+持续时间格式示例
+\fI#\fRd14d
+\fI#\fRh7h
+\fI#\fRm5m
+\fI#\fRs30s
+\fI#\fRd\fI#\fRh\fI#\fRm\fI#\fRs14d7h5m30s 
+\fI#\fRh\fI#\fRm[\fI#\fRs]7h5m30s
+\fIdays\fR-\fIhh\fR:\fImm\fR:\fIss\fR14-07:05:30
+\fIhours\fR:\fImm\fR[:\fIss\fR]7:05:30
+.TE
+
+.sp
+
+.sp
+.TS
+tab();
+cw(2.75i) cw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+分隔符说明
+d天数
+h小时数 
+m分钟数
+s秒数
+.TE
+
+.sp
+
+.sp
+.TS
+tab();
+cw(2.75i) cw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+变量说明
+\fI#\fR数字
+\fIdays\fR天数
+\fIhours\fR小时数
+\fIhh\fR时（24 小时制）
+\fImm\fR分
+\fIss\fR秒
+.TE
+
+.SH 环境变量
+.sp
+.LP
+\fBkinit\fR 使用以下环境变量：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBKRB5CCNAME\fR\fR
+.ad
+.RS 14n
+.rt  
+凭证（票证）高速缓存的位置。有关语法和详细信息，请参见 \fBkrb5envvar\fR(5)。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/tmp/krb5cc_\fIuid\fR\fR\fR
+.ad
+.RS 25n
+.rt  
+缺省凭证高速缓存（\fIuid\fR 是用户的十进制 \fBUID\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/krb5/krb5.keytab\fR\fR
+.ad
+.RS 25n
+.rt  
+本地主机的 \fBkeytab\fR 文件的缺省位置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/krb5/krb5.conf\fR\fR
+.ad
+.RS 25n
+.rt  
+本地主机的配置文件的缺省位置。请参见 \fBkrb5.conf\fR(4)。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性service/security/kerberos-5
+_
+接口稳定性请参见下文。
+.TE
+
+.sp
+.LP
+命令参数是 "Committed"（已确定）。命令输出是 "Uncommitted"（未确定）。
+.SH 另请参见
+.sp
+.LP
+\fBkdestroy\fR(1)、\fBklist\fR(1)、\fBkadmin\fR(1M)、\fBktkt_warnd\fR(1M)、\fBlibpkcs11\fR(3LIB)、\fBkdc.conf\fR(4)、\fBkrb5.conf\fR(4)、\fBattributes\fR(5)、\fBkerberos\fR(5)、\fBkrb5envvar\fR(5)、\fBpam_krb5\fR(5)
+.SH 附注
+.sp
+.LP
+如果成功，\fBkinit\fR 将在初始凭证（票证授予票证）即将过期时通知 \fBktkt_warnd\fR(1M) 去警告用户。

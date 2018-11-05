@@ -1,0 +1,265 @@
+'\" te
+.\" Copyright (c) 2014, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH compliance 1M "2015 年 2 月 25 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+compliance \- 管理安全合规性测试
+.SH 用法概要
+.LP
+.nf
+\fBcompliance list\fR [\fB-v\fR] [\fB-p\fR]
+.fi
+
+.LP
+.nf
+\fBcompliance list\fR \fB-b\fR [\fB-v\fR] [\fB-p\fR] [\fIbenchmark\fR ...]
+.fi
+
+.LP
+.nf
+\fBcompliance list\fR \fB-a\fR [\fB-v\fR] [\fIassessment\fR ...] 
+.fi
+
+.LP
+.nf
+\fBcompliance guide\fR [\fB-p\fR \fIprofile\fR] [\fB-b\fR \fIbenchmark\fR] [\fB-o\fR \fIfile\fR]
+.fi
+
+.LP
+.nf
+\fBcompliance guide\fR \fB-a\fR
+.fi
+
+.LP
+.nf
+\fBcompliance assess\fR [\fB-p\fR \fIprofile\fR] [ \fB-b\fR \fIbenchmark\fR] [ \fB-a\fR \fIassessment\fR]
+.fi
+
+.LP
+.nf
+\fBcompliance report\fR [\fB-f\fR \fIformat\fR] [\fB-s\fR \fIwhat\fR] [\fB-a\fR \fIassessment\fR] [\fB-o\fR \fIfile\fR]
+.fi
+
+.LP
+.nf
+\fBcompliance delete\fR \fIassessment\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+compliance 程序管理安全合规性策略。此命令有六个子命令：\fBlist\fR、\fBguide\fR、\fBassess\fR、\fBreport\fR、\fBdelete\fR 和 \fBtailor\fR。
+.sp
+.LP
+compliance 程序使用基准和配置文件生成安全评估和报告。评估是根据某个基准对系统的安全配置所做的评估。基准是以可解释的编程方式指定的系统安全参数的可接受范围。配置文件选择在评估时要评估基准测试中的哪些测试；将指定一组配置文件作为基准测试的一部分。报告是显示评估结果的一种形式。定制 (tailoring) 指定基准测试外部的配置文件。
+.sp
+.LP
+\fBlist\fR 命令列出关于所安装的指定基准和执行的评估的信息。缺省情况下，每行列出一个基准和评估。如果指定了 \fB-v\fR 选项，则输出中还将包括关于每个策略或评估的其他描述性信息。\fB-b\fR 选项将信息限定于基准，而 \fB-a\fR 选项将信息限定于评估。如果指定了 \fB-p\fR 选项，则会列出每个基准的配置文件。\fB-a\fR 选项不能与 \fB-b\fR 或 \fB-p\fR 一起指定。如果提供了 benchmark 参数，则会将信息限定于匹配的基准。如果提供了 assessment 参数，则会将信息限定于匹配的评估。
+.sp
+.LP
+\fBassess\fR 命令根据基准测试当前的系统配置并创建结果系统信息库。可以使用 \fB-b\fR 选项来指定基准；如果未指定，则该值缺省为 solaris。benchmark 参数可以是某个已安装的指定基准，也可以是 XCCDF （Extensible Configuration Checklist Description Format，可扩展配置核对表描述格式）格式的某个基准的绝对路径名。可以使用 \fB-p\fR 选项将评估限定于指定的配置文件；如果未指定，则该值缺省为基准定义的第一个配置文件（如果存在）。\fB-t\fR 选项指定应针对指定的定制进行评估；因为定制隐式指定了基准测试和配置文件，所以不能将 \fB-b\fR 和 \fB-p\fR 选项与 \fB-t\fR 选项一起使用。可以使用 \fB-a\fR 选项指定评估系统信息库的名称；如果未指定，则该值缺省为基于执行评估时的评估参数。用户必须具有所有区域特权和 solaris.compliance.assess 授权才能执行评估；分配有 "Compliance Assessor"（合规性评估者）权限配置文件的用户有权执行评估。
+.sp
+.LP
+\fBreport\fR 命令提供评估所需格式的报告的位置，并且在需要时生成所需格式的报告。可以使用 \fB-a\fR 选项指定评估系统信息库的名称；如果未指定，则该值缺省为最近执行的评估。如果未指定 \fB-o\fR 选项，则报告位于评估存储中；分配有 "Compliance Reporter"（合规性报告者）或 "Compliance Assessor"（合规性评估者）权限配置文件的用户有权生成这类报告。如果指定了 \fB-o\fR 选项，则报告位于 \fIpathname\fR。可以通过 \fB-f\fR 选项选择合规报告的格式。格式选项包括 \fBlog\fR、\fBxccdf\fR 和 \fBhtml\fR。缺省格式为 \fBhtml\fR 格式。
+.sp
+.LP
+对于 \fBhtml\fR 格式的报告，可以使用 \fB-s\fR 选项选择应当在报告中显示哪些结果类型。缺省情况下，除了 notselected 或 notapplicable 之外，所有结果类型都将显示在报告中。\fBwhat\fR 操作数是除了缺省类型之外要显示的结果类型的逗号分隔列表。可以通过在各个结果类型前加上 \fB-\fR 来隐藏相应的结果类型，而使 \fBwhat\fR 列表以 \fB=\fR 开头则可以确切地指定应当包括哪些结果类型。结果类型有：pass、fixed、notchecked、notapplicable、notselected、informational、unknown、error 或 fail。
+.sp
+.LP
+\fBdelete\fR 命令为指定的 \fIassessment\fR 删除结果系统信息库，包括所有关联的报告。
+.sp
+.LP
+\fBtailor\fR 子命令允许用户创建、查看、编辑和管理定制。有关更多详细信息，请参见 \fBcompliance-tailor\fR(1M)。
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功完成
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 6n
+.rt  
+用法错误
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 6n
+.rt  
+\fBassess\fR 命令可能返回此值指示该命令成功但所评估的系统不合规。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>2\fR\fR
+.ad
+.RS 6n
+.rt  
+程序失败
+.RE
+
+.SH 基准
+.sp
+.LP
+随 \fBcompliance\fR 命令提供了一个由供应商定义的名为 \fBsolaris\fR 的基准。此基准的配置文件作为阈值指定，以便个别配置参数具有更高安全设置的系统可以通过此配置文件。\fBsolaris\fR 基准包括一个 Baseline 配置文件，该配置文件对应于全新安装的 Oracle Solaris 实例的缺省安全配置设置；以及一个与供应商建议的配置对应的 Recommended 配置文件，该配置文件适用于不要求与以前 Oracle Solaris 版本兼容的系统。
+.SH 示例
+.LP
+\fB示例 1 \fR显示系统上已安装的指定基准
+.sp
+.LP
+以下示例展示了如何显示系统上已安装的指定基准：
+
+.sp
+.in +2
+.nf
+% \fBcompliance list -bv\fR
+cis.v1.0
+       CIS Solaris 11 Security Benchmark, v1.0.0
+pci.v2.0
+       Payment Card Industry Data Security Standard, v2.0
+solaris
+       Solaris Security Policy
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR显示 Solaris 基准的配置文件
+.sp
+.LP
+以下示例展示了如何显示 solaris 基准的配置文件：
+
+.sp
+.in +2
+.nf
+% \fBcompliance list -bp solaris\fR
+solaris: Baseline Recommended
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR使用 Solaris 基准的 Recommended 配置文件来评估系统
+.sp
+.LP
+以下示例展示了如何使用 Solaris 基准的 Recommended 配置文件执行系统评估并将结果存储在 \fBCHECK\fR 系统信息库中：
+
+.sp
+.in +2
+.nf
+% \fBcompliance assess -p Recommended -b solaris -a CHECK\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR创建包括 \fBnotselected\fR 结果类型项的报告
+.sp
+.LP
+以下示例展示了如何生成包括 \fBnotselected\fR 结果类型项但隐藏 \fBinformational\fR 结果类型的报告：
+
+.sp
+.in +2
+.nf
+% \fBcompliance report -s notselected,-informational -a CHECK\fR
+/var/share/compliance/assessments/CHECK/report.-informational,notselected.html
+.fi
+.in -2
+.sp
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/compliance\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含合规程序、数据和测试基准的目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/compliance/benchmarks\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含打包的合规基准的目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/share/compliance\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含合规评估和报告的目录。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性T{
+security/compliancesecurity/compliance/benchmark/solaris-policy
+T}
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBattributes\fR(5)、\fBcompliance-tailor\fR(1M)
+.sp
+.LP
+Solaris 安全准则
+.SH 附注
+.sp
+.LP
+\fBcompliance\fR 命令仅针对当前操作系统映像执行。如果需要验证其他区域或域，则应当另外调用 \fBcompliance\fR。
+.sp
+.LP
+用户可以使用以下命令来确定用于评估的 \fBsolaris\fR 基准的版本：
+.sp
+.in +2
+.nf
+% \fBpkg info solaris-policy\fR
+.fi
+.in -2
+.sp
+

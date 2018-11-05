@@ -1,0 +1,82 @@
+'\" te
+.\" Copyright (c) 2012, 2014, Oracle and/or its affiliates.All rights reserved.
+.TH datasets 5 "2014 年 2 月 27 日" "SunOS 5.11" "标准、环境和宏"
+.SH 名称
+datasets \- Oracle Solaris ZFS 数据集组织
+.SH 描述
+.sp
+.LP
+Oracle Solaris 会安装到一组有层次的 ZFS 数据集上，这些数据集具有定义完备的名称。ZFS 数据集由文件系统和卷组成，存储在全局区域的可引导 ZFS 存储池中。快照也是 ZFS 数据集，但不在此处讨论。
+.sp
+.LP
+数据集通过以下安装工具之一自动创建：自动化安装程序、文本安装程序或 GUI 安装程序。对于非全局区域，数据集是在区域安装过程中由区域标记创建的，可能会与此处所述的分层结构不同，此处所述的分层结构适用于 \fBsolaris\fR(5) 标记和全局区域。
+.SS "rpool 数据集"
+.sp
+.LP
+\fBrpool\fR 是可引导 ZFS 存储池中顶级数据集的缺省名称，它会挂载在 \fB/rpool\fR 下。可引导 ZFS 存储池与常规 ZFS 存储池相比具有某些限制。这些限制在 Oracle Solaris 11 信息库的“Oracle Solaris 管理：ZFS 文件系统”部分中进行了介绍。
+.sp
+.LP
+管理员可以在顶级数据集下的任何位置创建数据集，但在 '\fBROOT/be-<name>\fR' 数据集中创建的数据集会专门由 \fBbeadm\fR(1M) 处理，以后会对此进行讨论。
+.SS "ROOT 数据集"
+.sp
+.LP
+这是一个容器数据集，该数据集不会在操作期间由 Solaris 挂载。该数据集可收集一组相关数据集，每个数据集构成一个 ZFS 引导环境 (Boot Environment, BE)。安装时会创建一个引导环境。而其他引导环境则由 \fBpkg\fR(1) 创建，并可通过 \fBbeadm\fR 修改、创建或销毁。
+.sp
+.LP
+在全局区域中，ROOT 数据集必须存储在一个缺省名称为 '\fBrpool\fR' 的可引导 ZFS 存储池中。对于非全局区域，ROOT 数据集将存储在每个区域的区域路径下叶名称为 '\fBrpool\fR' 的数据集中。
+.sp
+.LP
+以下列表显示了在 ROOT 数据集下创建的数据集。该列表将使用缺省存储池名称。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrpool/ROOT/solaris\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是缺省数据集，该数据集是为系统中安装的第一个引导环境创建的。该数据集包含根文件系统，并挂载到 '/' 上。
+.sp
+该数据集的叶组件的名称与相关引导环境的名称相对应。由管理员作为 '\fBROOT/<be-name>\fR' 数据集的子项创建的任何数据集都与该引导环境相关联，这些数据集可由 \fBbeadm\fR 作为该引导环境的一部分创建、克隆和销毁，并可为其创建快照。在 '\fBROOT/<be-name>\fR' 下创建的新数据集应设置 zfs 属性 '\fBcanmount=noauto\fR'，以便这些数据集可以根据需要由 \fBbeadm\fR 挂载。
+.sp
+属于一个引导环境中的映像的所有打包内容都必须完全驻留在该引导环境中的数据集内。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrpool/ROOT/solaris/var\fR\fR
+.ad
+.sp .6
+.RS 4n
+该数据集与每个引导环境相关联，其中包含该引导环境的 \fB/var\fR 文件系统。
+.RE
+
+.SS "转储数据集"
+.sp
+.LP
+\fBrpool/dump\fR 是在安装过程中创建的 ZFS 卷，用作系统故障转储工具的缺省转储设备。该数据集会在所有引导环境之间共享。可以使用 \fBdumpadm\fR(1M) 管理故障转储工具，可以使用 \fBzfs\fR(1M) 调整转储设备大小。\fBrpool/dump\fR 数据集不会位于非全局区域中。可以使用其他设备，而不是使用 \fBrpool/dump\fR。
+.SS "交换数据集"
+.sp
+.LP
+\fBrpool/swap\fR 是在安装过程中创建的 ZFS zvol，用作系统的缺省交换区域。该数据集会在所有引导环境之间共享。使用 \fBswap\fR(1M)可以添加或删除交换卷。使用 \fBzfs\fR 可以调整交换卷大小。\fBrpool/swap\fR 数据集不会位于非全局区域中。可以使用其他交换卷以及 \fBrpool/swap\fR 来替代。
+.SS "\fBrpool/VARSHARE\fR"
+.sp
+.LP
+\fBrpool/VARSHARE\fR 是在安装或升级过程中创建的数据集，不属于任何引导环境。而该数据集会在所有引导环境之间共享，并会在引导期间由该引导环境自动挂载。其中包含 \fB/var\fR 中的未打包内容。例如，审计信息存储在 \fB/var/audit\fR 中，核心文件存储在 \fB/var/cores\fR 中，已保存的故障转储存储在 \fB/var/crash\fR 中，系统邮件存储在 \fB/var/mail\fR 中。
+.sp
+.LP
+\fBrpool/VARSHARE\fR 是供 Oracle Solaris 使用的保留项。不支持在 \fBrpool/VARSHARE\fR 下创建数据集。
+.SS "\fBrpool/VARSHARE/zones\fR"
+.sp
+.LP
+\fBrpool/VARSHARE/zones\fR 是与在 \fB/system/zones\fR 挂载的每个引导环境关联的数据集，是 zonepath 数据集的缺省父项。
+.SS "\fBrpool/export/home\fR"
+.sp
+.LP
+\fBrpool/export/home\fR 是在安装过程中创建的数据集，可用作用户起始目录。如果没有将 -d 选项传递给 \fBuseradd\fR(1M) 以指定另一个目录，该数据集就是用户起始目录的缺省位置。如果用户起始目录不存在，并且父目录是 ZFS 数据集的挂载点（例如 \fBrpool/export/home\fR），则会创建该数据集的子项，并将其挂载在指定位置。这些数据集会在所有引导环境之间共享。
+.SH 另请参见
+.sp
+.LP
+\fBbeadm\fR(1M)、\fBdumpadm\fR(1M)、\fBswap\fR(1M)、\fBuseradd\fR(1M)、\fBzfs\fR(1M)、\fBzoneadm\fR(1M)、\fBzpool\fR(1M)、\fBbrands\fR(5)、\fBfilesystem\fR(5)、\fBpkg\fR(5)、\fBsolaris\fR(5)

@@ -1,0 +1,1546 @@
+'\" te
+.\" Copyright (c) 2007, 2012, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1989 AT&T
+.\" Portions Copyright (c) 1982-2007 AT&T Knowledge Ventures
+.TH set 1 "2011 年 7 月 12 日" "SunOS 5.11" "用户命令"
+.SH 名称
+set, unset, setenv, unsetenv, export \- shell 内置函数，用于确定当前 shell 及其后代的环境变量特征。
+.SH 用法概要
+.SS "sh"
+.LP
+.nf
+\fBset\fR [\fB--aefhkntuvx\fR [\fIargument \fR]]...
+.fi
+
+.LP
+.nf
+\fBunset\fR [\fIname\fR]...
+.fi
+
+.LP
+.nf
+\fBexport\fR [\fIname\fR]...
+.fi
+
+.SS "csh"
+.LP
+.nf
+\fBset\fR [\fIvar\fR [= \fI value\fR]]
+.fi
+
+.LP
+.nf
+\fBset\fR \fIvar\fR [\fIn\fR] = \fI word\fR
+.fi
+
+.LP
+.nf
+\fBunset\fR \fIpattern\fR
+.fi
+
+.LP
+.nf
+\fBsetenv\fR [\fIVAR\fR [\fI word\fR]]
+.fi
+
+.LP
+.nf
+\fBunsetenv\fR \fIvariable\fR
+.fi
+
+.SS "ksh88"
+.LP
+.nf
+\fBset\fR [±abCefhkmnopstuvx] [±o \fI option\fR]... [±A \fIname\fR] [\fIarg\fR]...
+.fi
+
+.LP
+.nf
+\fBunset\fR [\fB-f\fR] \fIname\fR... 
+.fi
+
+.LP
+.nf
+\fB**export\fR [\fIname\fR [=\fI value\fR]]...
+.fi
+
+.LP
+.nf
+\fB**export\fR [\fB-p\fR]
+.fi
+
+.SS "ksh"
+.LP
+.nf
+\fB+set\fR [±abCefGhkmnoprstuvx] [±o \fI option\fR]... [±A \fIvname\fR] [\fIarg\fR]...
+.fi
+
+.LP
+.nf
+\fB+unset\fR [\fB-fnv\fR] \fIvname\fR... 
+.fi
+
+.LP
+.nf
+\fB++export\fR [\fB-p\fR] [\fIname\fR[=\fI value\fR]]...
+.fi
+
+.SH 描述
+.SS "sh"
+.sp
+.LP
+\fBset\fR 内置命令具有以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB--\fR\fR
+.ad
+.RS 6n
+.rt  
+不更改任何标志。在将 \fB$1\fR 设置为 \fB-\fR 时，此选项非常有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 6n
+.rt  
+标记已修改或创建的变量以便导出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.RS 6n
+.rt  
+当命令以非零退出状态退出时立即退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.RS 6n
+.rt  
+禁用文件名生成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.RS 6n
+.rt  
+在定义函数时查找并记住函数命令。函数命令的位置通常在执行函数时确定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR\fR
+.ad
+.RS 6n
+.rt  
+将所有关键字参数放在命令的环境中，而不仅仅是命令名称前面的参数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 6n
+.rt  
+读取命令，但不执行这些命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.RS 6n
+.rt  
+读取和执行一个命令后退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.RS 6n
+.rt  
+替换时将 unset 的变量视为错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 6n
+.rt  
+在读取 shell 输入行时列显这些行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.RS 6n
+.rt  
+在执行命令及其参数时列显这些命令及其参数。
+.RE
+
+.sp
+.LP
+使用 \fB+\fR（而非 \fB-\fR）将导致禁用这些标志。此外，还可以在调用 shell 时使用这些标志。当前标志集可在 \fB$-\fR 中找到。其余的 \fIargument\fR 属于位置参数，将按顺序分配到 \fB$1\fR、\fB$2\fR、\fB . . . \fR。如果未指定任何 \fIargument\fR，将输出所有名称的值。
+.sp
+.LP
+对于每个 \fIname\fR，\fBunset\fR 将删除对应的变量或函数值。变量 \fBPATH\fR、\fB PS1\fR、\fBPS2\fR、\fBMAILCHECK\fR 和 \fBIF\fR 无法取消设置。
+.sp
+.LP
+通过内置 \fBexport\fR，为特定 \fIname\fR 添加标记，以便自动导出到随后执行命令所在的 \fIenvironment\fR 中。如果未指定任何参数，将列出当前执行 shell 期间已标记为导出的变量名称。函数名称\fB不会\fR导出。
+.SS "csh"
+.sp
+.LP
+未指定参数时，\fBset\fR 将显示所有 shell 变量的值。多词值将显示为带括号的列表。单独指定了 \fIvar\fR 参数时，\fBset\fR 会将一个空值赋给变量 \fIvar\fR。通过使用格式为 \fIvar\fR \fB=\fR \fI value\fR 的参数，\fBset\fR 将 \fIvalue\fR 分配给 \fI var\fR，其中 \fIvalue\fR 是以下之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIword\fR\fR
+.ad
+.RS 15n
+.rt  
+单个词（或括在引号中的字符串）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(\fR\fIwordlist\fR\fB )\fR\fR
+.ad
+.RS 15n
+.rt  
+括在括号中的以空格分隔的词列表。
+.RE
+
+.sp
+.LP
+Value 是在赋值前将扩展的命令和文件名。\fBset\fR \fIvar\fR\fB[\fR\fI n\fR\fB]=\fR\fIword\fR 的格式将使用 \fIword \fR 替换多词值中的第 \fIn\fR 个词。
+.sp
+.LP
+\fBunset\fR 将删除名称与 \fIpattern\fR 匹配（文件名替换）的变量。使用 `\fBunset *\fR' 将删除所有变量。
+.sp
+.LP
+未指定参数时，\fBsetenv\fR 将显示所有环境变量。使用 \fIVAR\fR 参数，\fBsetenv\fR 可将环境变量 \fB\fR\fIVAR\fR\fB\fR 设置为空值 (Null)（根据约定，通常要为环境变量指定大写字母的名称）。同时指定 \fIVAR\fR 和 \fI word\fR 参数，\fBsetenv\fR 可将 \fI VAR\fR 设置为 \fIword\fR，该参数必须是单个词或带引号的字符串。\fBPATH\fR 变量可以使用多个 \fIword\fR 参数，各参数以冒号分隔（请参见“示例”部分）。最常用的环境变量 \fBUSER\fR、\fB TERM\fR 和 \fBPATH\fR 会自动从 \fBcsh\fR 变量 \fBuser\fR、\fBterm\fR 和 \fBpath\fR 中导出和导入。如需更改这些变量，请使用 \fBsetenv\fR。此外，每当 \fBcsh\fR 变量 \fBcwd\fR 改变时，shell 都会根据它设置 \fBPWD\fR 环境变量。
+.sp
+.LP
+在 C shell 中更改环境变量 \fBLC_CTYPE\fR、\fBLC_MESSAGES\fR、\fB LC_TIME\fR、\fBLC_COLLATE\fR、\fBLC_NUMERIC\fR 和 \fB LC_MONETARY\fR 时，这些变量将立即生效。有关这些环境变量的说明，请参见 \fBenviron\fR(5)。
+.sp
+.LP
+\fBunsetenv\fR 将删除环境中的 \fIvariable\fR。与使用 \fBunset\fR 时一样，不会执行模式匹配。
+.SS "ksh88"
+.sp
+.LP
+内置 \fBset\fR 的标志具有以下含义：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.RS 13n
+.rt  
+数组赋值。取消设置变量 \fIname\fR，并按顺序从 \fIarg\fR 列表中分配值。如果使用了 \fB+A\fR，则不会首先取消设置变量 \fIname\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 13n
+.rt  
+自动导出已定义的所有后续变量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.RS 13n
+.rt  
+使 shell 以异步方式将后台作业完成情况通知用户。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR\fR
+.ad
+.RS 13n
+.rt  
+防止现有文件被 shell 的 \fB >\fR 重定向运算符覆盖。\fB>|\fR 重定向运算符会覆盖单个文件的此 noclobber 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.RS 13n
+.rt  
+如果命令具有非零退出状态，则执行 \fBERR\fR 陷阱（如果已设置）并退出。该模式在读取配置文件时被禁用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.RS 13n
+.rt  
+禁用文件名生成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.RS 13n
+.rt  
+每个命令在第一次遇到时将成为被跟踪别名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR\fR
+.ad
+.RS 13n
+.rt  
+将所有的变量赋值参数放在命令的环境中，而不仅仅是命令名称前面的参数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.RS 13n
+.rt  
+后台作业在单独的进程组中运行，并在完成时输出一行。在完成消息中报告后台作业的退出状态。在具有作业控制的系统上，为交互式 shell 自动启用该标志。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 13n
+.rt  
+读取命令并检查其中是否存在语法错误，但不执行这些命令。对于交互式 shell，忽略此命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB+o\fR\fR
+.ad
+.RS 13n
+.rt  
+以适合的格式将当前的选项设置写入标准输出，以便作为命令重新输入 shell 来实现相同的选项设置。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIoption\fR\fR
+.ad
+.RS 13n
+.rt  
+\fIoption\fR 参数可以为下列选项名称之一： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBallexport\fR\fR
+.ad
+.RS 14n
+.rt  
+与 \fB-a\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBerrexit\fR\fR
+.ad
+.RS 14n
+.rt  
+与 \fB-e\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbgnice\fR\fR
+.ad
+.RS 14n
+.rt  
+以较低的优先级运行所有后台作业。这是缺省模式。通过 \fBemacs\fR 可进入 \fBemacs\fR 样式的内嵌编辑器来输入命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgmacs\fR\fR
+.ad
+.RS 14n
+.rt  
+使您进入 \fBgmacs\fR 样式的内嵌编辑器，以便输入命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBignoreeof\fR\fR
+.ad
+.RS 14n
+.rt  
+此 shell 不会在文件结尾退出。必须使用 \fBexit\fR 命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkeyword\fR\fR
+.ad
+.RS 14n
+.rt  
+与 \fB-k\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmarkdirs\fR\fR
+.ad
+.RS 14n
+.rt  
+文件名生成操作生成的所有目录名称都附加有结尾 \fB/\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmonitor\fR\fR
+.ad
+.RS 14n
+.rt  
+与 \fB-m\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoclobber\fR\fR
+.ad
+.RS 14n
+.rt  
+阻止重定向运算符 \fB>\fR 截断现有文件。启用时，需要使用 \fB>|\fR 运算符才能截断文件。与 \fB-C\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoexec\fR\fR
+.ad
+.RS 14n
+.rt  
+与 \fB-n\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoglob\fR\fR
+.ad
+.RS 14n
+.rt  
+与 \fB-f\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnolog\fR\fR
+.ad
+.RS 14n
+.rt  
+不在历史记录文件中保存函数定义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnotify\fR\fR
+.ad
+.RS 14n
+.rt  
+与 \fB-b\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnounset\fR\fR
+.ad
+.RS 14n
+.rt  
+与 \fB-u\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprivileged\fR\fR
+.ad
+.RS 14n
+.rt  
+与 \fB-p\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBverbose\fR\fR
+.ad
+.RS 14n
+.rt  
+与 \fB-v\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtrackall\fR\fR
+.ad
+.RS 14n
+.rt  
+与 \fB-h\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvi\fR\fR
+.ad
+.RS 14n
+.rt  
+使您进入 \fBvi\fR 样式的内联编辑器的插入模式，直到您键入转义符 \fB033\fR 为止。这会使您进入控制模式。回车可发送此行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBviraw\fR\fR
+.ad
+.RS 14n
+.rt  
+各个字符在 \fBvi\fR 模式下键入时处理。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBxtrace\fR\fR
+.ad
+.RS 14n
+.rt  
+与 \fB-x\fR 相同。
+.RE
+
+.RE
+
+.sp
+.LP
+如果不提供选项名称，将输出当前的选项设置。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 7n
+.rt  
+禁用 \fB$HOME/.profile\fR 文件的处理操作，并使用文件 \fB/etc/suid_profile\fR（而非 \fBENV\fR 文件）。当有效 UID 不等于实际 UID 时或者有效 GID 不等于实际 GID 时，将启用此模式。禁用此模式会导致将有效 UID 和 GID 设置为实际 UID 和 GID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 7n
+.rt  
+按字典顺序对位置参数进行排序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.RS 7n
+.rt  
+读取和执行一个命令后退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.RS 7n
+.rt  
+替换时会将未设置的参数视为错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 7n
+.rt  
+在读取 shell 输入行时列显这些行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.RS 7n
+.rt  
+在执行命令及其参数时列显这些命令及其参数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-\fR\fR
+.ad
+.RS 7n
+.rt  
+关闭 \fB-x\fR 和 \fB-v\fR 标志，并停止检查参数的标志。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB–\fR\fR
+.ad
+.RS 7n
+.rt  
+不更改任何标志。在将 \fB$1\fR 设置为以 \fB-\fR 开头的值时，此选项非常有用。如果此标志后没有任何参数，则取消设置位置参数。
+.RE
+
+.sp
+.LP
+使用 \fB+\fR（而非 \fB-\fR）将导致禁用这些标志。此外，还可以在调用 shell 时使用这些标志。当前标志集可在 \fB$-\fR 中找到。除非指定了 \fB-A\fR，否则其余参数都是位置参数，并将按顺序分配给 \fB$1\fR \fB$2\fR . . 。如果不指定参数，则在标准输出中输出所有变量的名称和值。
+.sp
+.LP
+\fIname\fR 列表指定的变量将被取消分配，也就是说，它们的值和属性将被清除。\fBreadonly\fR 变量无法取消设置。如果设置了 \fB-f\fR 标志，name 是指 \fBfunction\fR 的名称。取消设置 \fBERRNO\fR、\fBLINENO\fR、\fBMAILCHECK\fR、\fBOPTARG\fR、\fBOPTIND\fR、\fBRANDOM\fR、\fBSECONDS\fR、\fBTMOUT\fR 和 \fB_\fR 将删除它们的特殊含义，即使随后指定了这些变量也是如此。
+.sp
+.LP
+使用 \fBunset\fR 时，\fIname\fR 列表指定的变量将被取消分配，即这些变量的值和属性将被清除。\fBreadonly\fR 变量无法取消设置。如果设置了 \fB-f\fR 标志，name 是指 \fBfunction\fR 的名称。取消设置 \fBERRNO\fR、\fBLINENO\fR、\fBMAILCHECK\fR、\fBOPTARG\fR、\fBOPTIND\fR、\fBRANDOM\fR、\fBSECONDS\fR、\fBTMOUT\fR 和 \fB_\fR 将删除它们的特殊含义，即使随后指定了这些变量也是如此。
+.sp
+.LP
+通过内置的 \fBexport\fR 操作，可以为指定的\fI名称\fR添加标记，以便自动导出到随后执行的命令所在的\fB环境\fR。
+.sp
+.LP
+指定 \fB-p\fR 时，\fBexport\fR 按以下格式将所有导出变量的名称和值写入到标准输出中：
+.sp
+.in +2
+.nf
+"export %s=%s\en", \fIname\fR, \fIvalue\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果 \fIname\fR 已设置并且：
+.sp
+.in +2
+.nf
+"export %s\en", \fIname\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果 \fIname\fR 未设置。
+.sp
+.LP
+shell 会设置输出的格式，包括适当使用引号，以便适合作为实现相同导出结果的命令重新输入 shell，但以下情况除外：
+.RS +4
+.TP
+1.
+无法重置带值的只读变量。
+.RE
+.RS +4
+.TP
+2.
+如果在保存状态时以及将保存的输出重新输入 shell 时之间为变量分配一个值，则输出时取消设置的变量不能重置为取消设置状态。
+.RE
+.sp
+.LP
+在本手册页上，前面带有一个或两个 \fB*\fR（星号）的 \fBksh88\fR(1) 命令将专门通过以下方式进行处理：
+.RS +4
+.TP
+1.
+命令完成时，该命令前面的变量赋值列表仍然有效。
+.RE
+.RS +4
+.TP
+2.
+在变量赋值之后处理 I/O 重定向。
+.RE
+.RS +4
+.TP
+3.
+脚本中包含的错误会导致其中止。
+.RE
+.RS +4
+.TP
+4.
+如果字的后面是前面加有 \fB**\fR 的命令且字为变量赋值的格式，则使用与变量赋值相同的规则扩展这些字。这表示在 \fB=\fR 符号之后执行波浪号替换，并且不执行字拆分和文件名生成。
+.RE
+.SS "ksh"
+.sp
+.LP
+\fBset\fR 可设置或取消设置选项和位置参数。如果为选项指定了 \fB-\fR，则表示要设置这些选项。如果为选项指定了 \fB+\fR，则表示要取消设置这些选项。
+.sp
+.LP
+未指定任何选项或参数的 \fBset\fR 将按当前区域设置中的整理序列显示所有 shell 变量的名称和值。这些值将用括号括起，以便适合重新输入到 shell。
+.sp
+.LP
+如果不指定任何参数（甚至不指定选项参数的结尾 \fB--\fR），位置参数将保持不变。除非指定了 \fB-A\fR 选项，否则位置参数将替换为参数列表。在设置位置参数时，第一个 \fB--\fR 参数将被忽略。
+.sp
+.LP
+为了向后兼容性，不指定任何选项的 \fBset\fR 命令（其第一个参数为 \fB-\fR）将禁用 \fB-v\fR 和 \fB-x\fR 选项。如果指定了任何额外的参数，它们将替换位置参数。
+.sp
+.LP
+\fBksh\fR 中要设置的选项包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 15n
+.rt  
+为每个名称中不包含 a .（已在当前 shell 环境中指定了某个值）的变量设置导出属性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fIname\fR\fR
+.ad
+.RS 15n
+.rt  
+将参数按顺序分配给名为 \fIname\fR（以下标 \fB0\fR 开头）的数组，而不分配给位置参数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.RS 15n
+.rt  
+一旦检测到有后台作业已完成，shell 就会将消息写入标准错误，而不是等待下一提示。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-B\fR\fR
+.ad
+.RS 15n
+.rt  
+启用 \fB{...}\fR 组扩展。缺省情况下为启用状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR\fR
+.ad
+.RS 15n
+.rt  
+防止使用 > 重定向运算符覆盖现有常规文件。\fB>|\fR 重定向运算符将覆盖此 \fBnoclobber\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.RS 15n
+.rt  
+处于\fB非零\fR退出状态的简单命令会导致 shell 退出，除非该简单命令：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+包含在 \fB&&\fR 或 \fB||\fR 列表中
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+紧跟在 \fBif\fR、\fB while\fR 或 \fBuntil\fR 之后
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+包含在管道中并后跟 \fB!\fR
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.RS 15n
+.rt  
+路径名扩展已禁用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-G\fR\fR
+.ad
+.RS 15n
+.rt  
+使 \fB**\fR 本身也与路径名扩展期间的所有子目录匹配。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.RS 15n
+.rt  
+已过时。使名称中包含别名语法的每个命令在第一次遇到时变为被跟踪别名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-H\fR\fR
+.ad
+.RS 15n
+.rt  
+启用与 csh 类似的 \fB!\fR 样式的历史记录扩展。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR\fR
+.ad
+.RS 15n
+.rt  
+此选项已过时。所有采取 \fIname\fR\fB = \fR\fIvalue\fR 这种形式的参数将被删除，并放入命令的变量赋值列表中。通常，变量赋值必须位于命令参数之前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.RS 15n
+.rt  
+启用之后，shell 将在单独的进程组中运行后台作业，并在完成时显示一行。在支持作业控制的系统上，缺省情况下为交互式 shell 启用此模式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 15n
+.rt  
+shell 将读取命令并检查是否存在语法错误，但不会执行命令。通常在调用命令时指定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR [\fIoption\fR]\fR
+.ad
+.RS 15n
+.rt  
+如果不指定选项，选项及其当前设置的列表将写入到标准输出。当使用 \fB+\fR 进行调用时，选项将以一种可再次输入 shell 的格式写入，以便恢复设置。重复此选项可以启用或禁用多个选项。 
+.sp
+\fIoption\fR 的值必须为下列值之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBallexport\fR\fR
+.ad
+.RS 15n
+.rt  
+与 \fB-a\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbgnice\fR\fR
+.ad
+.RS 15n
+.rt  
+以较低的优先级运行所有后台作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbraceexpand\fR\fR
+.ad
+.RS 15n
+.rt  
+与 \fB-B\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBemacs\fR\fR
+.ad
+.RS 15n
+.rt  
+启用或禁用 \fBemacs\fR 编辑模式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBerrexit\fR\fR
+.ad
+.RS 15n
+.rt  
+与 \fB-e\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBglobstar\fR\fR
+.ad
+.RS 15n
+.rt  
+等效于 \fB-G\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgmacs\fR\fR
+.ad
+.RS 15n
+.rt  
+启用或禁用 \fBgmacs\fR。除了对 CTRL-T 的处理方式不同以外，\fBgmacs\fR 编辑模式与 \fBemacs\fR 编辑模式相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhistexpand\fR\fR
+.ad
+.RS 15n
+.rt  
+与 \fB-H\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBignoreeof\fR\fR
+.ad
+.RS 15n
+.rt  
+交互式 shell 不在文件结尾退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkeyword\fR\fR
+.ad
+.RS 15n
+.rt  
+与 \fB-k\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmarkdirs\fR\fR
+.ad
+.RS 15n
+.rt  
+文件名生成操作生成的所有目录名称都附加有结尾 \fB/\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmonitor\fR\fR
+.ad
+.RS 15n
+.rt  
+与 \fB-m\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmultiline\fR\fR
+.ad
+.RS 15n
+.rt  
+编辑长度超过窗口宽度的行时使用多行显示。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoclobber\fR\fR
+.ad
+.RS 15n
+.rt  
+与 \fB-C\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoexec\fR\fR
+.ad
+.RS 15n
+.rt  
+与 \fB-n\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoglob\fR\fR
+.ad
+.RS 15n
+.rt  
+与 \fB-f\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnolog\fR\fR
+.ad
+.RS 15n
+.rt  
+无作用。仅用于实现向后兼容性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnotify\fR\fR
+.ad
+.RS 15n
+.rt  
+与 \fB-b\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnounset\fR\fR
+.ad
+.RS 15n
+.rt  
+与 \fB-u\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpipefail\fR\fR
+.ad
+.RS 15n
+.rt  
+所有管道组件完成后，才会完成管道。而且，管道的退出状态将是最后一个以\fB非零\fR退出状态退出的命令的值。如果所有命令均返回零退出状态，则管道的退出状态将为\fB零\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprivileged\fR\fR
+.ad
+.RS 15n
+.rt  
+与 \fB-p\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshowme\fR\fR
+.ad
+.RS 15n
+.rt  
+将跟踪前缀为 ; 的简单命令，跟踪方式与已启用但未执行 \fB-x\fR 的情况相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtrackall\fR\fR
+.ad
+.RS 15n
+.rt  
+与 \fB-h\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBverbose\fR\fR
+.ad
+.RS 15n
+.rt  
+与 \fB-v\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvi\fR\fR
+.ad
+.RS 15n
+.rt  
+启用或禁用 \fBvi\fR 编辑模式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBviraw\fR\fR
+.ad
+.RS 15n
+.rt  
+不在使用 vi 编辑模式时使用标准输入模式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBxtrace\fR\fR
+.ad
+.RS 15n
+.rt  
+与 \fB-x\fR 相同。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 15n
+.rt  
+特权模式。禁用 \fB-p\fR 会将有效用户 ID 设置为实际用户 ID，将有效组 ID 设置为实际组 ID。启用 \fB-p\fR 会将有效用户 ID 和有效组 ID 恢复为调用 shell 时的值。每当实际用户 ID 和有效用户 ID 不相等或实际组 ID 和有效组 ID 不相等时，都将启用 \fB-p\fR 选项。当 \fB-p\fR 为启用状态时，不会处理用户配置文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.RS 15n
+.rt  
+受限。启用受限 shell。此选项一旦启用便不能取消设置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 15n
+.rt  
+对位置参数进行排序
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.RS 15n
+.rt  
+已过时。shell 将读取一个命令，然后退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.RS 15n
+.rt  
+如果启用，shell 将在尝试扩展已取消设置的变量时显示一条错误消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 15n
+.rt  
+详细模式。shell 将在读取时将它的输入显示为标准错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.RS 15n
+.rt  
+执行跟踪。shell 将在所有扩展完成之后、执行之前显示每个命令，命令前面带有扩展的 \fBPS4\fR 参数值。
+.RE
+
+.sp
+.LP
+\fB ksh\fR 中的 \fBset\fR 将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。
+.RE
+
+.sp
+.LP
+对于指定的每个名称，\fBunset\fR 将从当前 shell 执行环境中取消设置变量或函数（如果指定了 \fB-f\fR）。无法取消设置只读变量。
+.sp
+.LP
+\fBksh\fR 中 \fBunset\fR 的选项包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.RS 6n
+.rt  
+当 \fIname\fR 表示函数名称时，shell 将取消设置函数定义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 6n
+.rt  
+如果 \fIname\fR 表示一个作为引用项的变量，将取消设置变量 \fIname\fR，而不是它所引用的变量。否则，此选项等效于 \fB-v\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 6n
+.rt  
+当 \fIname\fR 表示的是变量名称时，shell 将取消设置该变量名称，并将其从环境中删除。这是缺省行为。
+.RE
+
+.sp
+.LP
+\fBksh\fR 中的 \fBunset\fR 将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功完成。已成功取消设置所有名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误，或无法取消设置一个或多个 \fIname\fR 操作数
+.RE
+
+.sp
+.LP
+\fBexport\fR 命令将对每个通过名称指定的变量设置导出属性，以便将其导出到随后执行的命令的环境。如果指定了 \fB=\fR\fIvalue\fR，则会将变量 \fIname\fR 设置为 \fIvalue\fR。
+.sp
+.LP
+如果不指定任何 \fIname\fR，所有导出的变量的名称和值将写入到标准输出。
+.sp
+.LP
+\fBexport\fR 作为声明命令内置在 shell 中，因此不会对参数执行字段分隔和路径名扩展操作。值会进行波浪号扩展。
+.sp
+.LP
+\fBksh\fR 中 \fBexport\fR 的选项包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 6n
+.rt  
+使输出采用 \fBexport\fR 命令的形式，以便可以作为 shell 的输入用于重新创建当前的导出。
+.RE
+
+.sp
+.LP
+\fBksh\fR 中的 \fBexport\fR 将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。
+.RE
+
+.sp
+.LP
+在本手册页上，前面带一个或两个 \fB+\fR 的 \fBksh\fR(1) 命令将专门通过以下方式进行处理：
+.RS +4
+.TP
+1.
+命令完成时，该命令前面的变量赋值列表仍然有效。
+.RE
+.RS +4
+.TP
+2.
+在变量赋值之后处理 I/O 重定向。
+.RE
+.RS +4
+.TP
+3.
+脚本中包含的错误会导致其中止。
+.RE
+.RS +4
+.TP
+4.
+它们不是有效的函数名称。
+.RE
+.RS +4
+.TP
+5.
+如果字的后面是前面加有 \fB++\fR 的命令且字为变量赋值的格式，则使用与变量赋值相同的规则扩展这些字。这意味着将在 \fB=\fR 符号之后执行波浪号替换，并且不执行字段分割和文件名生成。
+.RE
+.SH 示例
+.SS "csh"
+.sp
+.LP
+以下示例设置了 \fBPATH\fR 变量，以便按以下顺序依次在 \fB/bin\fR、\fB/usr/bin\fR 和 \fB/usr/sbin\fR 目录中搜索文件：
+.sp
+.in +2
+.nf
+setenv PATH "/bin:/usr/bin:/usr/sbin"
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBcsh\fR(1)、\fBksh\fR(1)、\fBksh88\fR(1)、\fBread\fR(1)、\fBsh\fR(1)、\fBtypeset\fR(1)、\fBattributes\fR(5)、\fBenviron\fR(5)

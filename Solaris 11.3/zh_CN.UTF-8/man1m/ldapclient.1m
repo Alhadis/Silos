@@ -1,0 +1,1005 @@
+'\" te
+.\" Copyright (c) 2009, 2012, Oracle and/or its affiliates.All rights reserved.
+.TH ldapclient 1M "2012 年 6 月 1 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+ldapclient \- 初始化 LDAP 客户机或以 LDIF 格式输出 LDAP 客户机配置文件
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/ldapclient\fR [\fB-v\fR | \fB-q\fR] init [\fB-a\fR profileName=\fIprofileName\fR]
+     [\fB-a\fR domainName=\fIdomain\fR] [\fB-a\fR proxyDN=\fIproxyDN\fR]
+     [\fB-a\fR proxyPassword=\fIpassword\fR]
+     [\fB-a\fR authenticationMethod=\fIauthenticationMethod\fR]
+     [\fB-a\fR enableShadowUpdate=true | false]
+     [\fB-a\fR adminDN=\fIadminDN\fR]
+     [\fB-a\fR adminPassword=\fIadminPassword\fR]
+     [\fB-a\fR certificatePath=\fIpath\fR] [\fB-d\fR \fIbindDN\fR] [\fB-w\fR \fIbindPassword\fR]
+     [\fB-j\fR \fIpasswdFile\fR] [\fB-y\fR \fIpasswdFile\fR]
+     [\fB-z\fR \fIadminrPasswdFile\fR] \fILDAP_server\fR[:\fIport_number\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ldapclient\fR [\fB-v\fR | \fB-q\fR] manual [\fB-a\fR attrName=\fIattrVal\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ldapclient\fR [\fB-v\fR | \fB-q\fR] mod [\fB-a\fR attrName=\fIattrVal\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ldapclient\fR [\fB-v\fR | \fB-q\fR] list
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ldapclient\fR [\fB-v\fR | \fB-q\fR] uninit
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ldapclient\fR [\fB-v\fR | \fB-q\fR] genprofile \fB-a\fR profileName=\fIprofileName\fR
+     [\fB-a\fR attrName=\fIattrVal\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBldapclient\fR 实用程序可用于： 
+.RS +4
+.TP
+.ie t \(bu
+.el o
+初始化 LDAP 客户机
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在 LDAP 客户机上恢复网络服务环境
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+以用户可读的格式列出 LDAP 客户机高速缓存的内容。
+.RE
+.sp
+.LP
+\fBinit\fR 形式的 \fBldapclient\fR 实用程序用于自动初始化 LDAP 客户机，它使用 \fBLDAP_server\fR 指定的 LDAP 服务器上存储的配置文件来进行初始化。LDAP 客户机将使用指定配置文件中的属性来确定 LDAP 客户机的配置。使用配置文件，可以轻松安装 LDAP 客户机并传播对 LDAP 客户机的配置更改。\fBldap_cachemgr\fR(1M) 实用程序将在 LDAP 客户机高速缓存过期时通过读取配置文件对客户机的配置进行更新。有关配置文件的更多信息，请参见 IETF 文档《\fIA Configuration Schema for LDAP Based Directory User Agents\fR》。
+.sp
+.LP
+\fBmanual\fR 形式的 \fBldapclient\fR 实用程序用于手动初始化 LDAP 客户机。LDAP 客户机将使用命令行中指定的属性。任何未指定的属性都将赋予其缺省值。必须在 \fBdefaultServerList\fR 或 \fBpreferredServerList\fR 属性中至少指定一个服务器。如果未设置客户机的 \fBdomainName\fR，则必须指定 \fBdomainName\fR 属性。
+.sp
+.LP
+\fBmod\fR 形式的 \fBldapclient\fR 实用程序用于修改手动设置的 LDAP 客户机配置。此选项仅修改命令行中指定的 LDAP 客户机配置属性。\fBmod\fR 选项只能用于使用 \fBmanual\fR 选项初始化的 LDAP 客户机。
+.sp
+.LP
+无论使用何种方法进行初始化，要将客户机配置为使用代理 \fBcredentialLevel\fR，都必须通过 \fB-a\fR \fBproxyDN=\fIproxyDN\fR\fR 和 \fB-a\fR \fBproxyPassword=\fI proxyPassword\fR\fR 选项提供代理凭证。但是，如果未指定 \fB-a\fR \fBproxyPassword=\fIproxyPassword\fR\fR，\fBldapclient\fR 将会提示您输入口令。请注意，LDAP 中不允许使用 \fINULL\fR 口令。如果 \fBcredentialLevel\fR 配置为 self（自我模式），则 \fBauthenticationMethod\fR 必须为 \fBsasl/GSSAPI\fR。
+.sp
+.LP
+类似地，要将客户机配置为启用影子信息更新并使用代理 credentialLevel，必须通过 \fB-a\fR \fBadminDN=\fR\fIadminDN\fR 和 \fB-a\fR \fBadminPassword=\fR\fI adminPassword\fR 提供管理员凭证。但是，如果 \fBcredentialLevel\fR 配置为 self，影子信息更新将不需要管理员凭证。
+.sp
+.LP
+特定于命名服务的配置属性存储在 \fBsvc:/network/ldap/client\fR SMF 服务中。不建议直接修改 SMF 属性。请改用此工具。
+.sp
+.LP
+其他配置可以在安装期间修改。这些信息会备份至 \fB/var/ldap/restore\fR。初始化期间通常会修改的文件如下：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/nsswitch.conf\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/defaultdomain\fR（如果存在）
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/var/yp/binding/`domainname`\fR（用于 NIS [YP] 客户机）
+.RE
+.sp
+.LP
+LDAP 配置是在位置配置文件中管理的；这会影响何时以及如何使 LDAP 配置成为持久性的。有关位置配置文件的更多信息，请参阅 \fBnetcfg\fR(1M)，有关在使用自动网络配置时应如何管理 LDAP 配置的更多详细信息，请参阅下文中的“与位置配置文件交互”部分。
+.sp
+.LP
+\fBldapclient\fR 不会将客户机设置为使用 DNS 解析主机名，而只会将 \fB/etc/nsswitch.ldap\fR 复制到 \fB/etc/nsswitch.conf\fR。如果您倾向使用 DNS 进行主机解析，请参见 DNS 文档了解有关设置 DNS 的信息。请参见 \fBresolv.conf\fR(4)。如果您要使用 \fBsasl/GSSAPI\fR 作为验证方法，则必须使用 DNS 进行 \fBhosts\fR 和 \fBipnodes\fR 解析。
+.sp
+.LP
+\fBlist\fR 形式的 \fBldapclient\fR 实用程序用于列出 LDAP 客户机配置。输出将是用户可读的。LDAP 配置文件并不保证是用户可读的。请注意，出于安全原因，将不会显示 adminDN 和 adminPassword 的值。
+.sp
+.LP
+\fBuninit\fR 形式的 \fBldapclient\fR 实用程序用于取消对网络服务环境的初始化，并将其恢复到上次使用 \fBinit\fR 或 \fBmanual\fR 执行 \fBldapclient\fR 之前的状态。只有当计算机是使用 \fBinit\fR 或 \fBmanual\fR 形式的 \fBldapclient\fR 进行初始化的，恢复操作才会成功，因为该命令使用这些选项创建的备份文件。
+.sp
+.LP
+\fBgenprofile\fR 选项用于根据命令行中指定的属性将 LDIF 格式的配置文件写入标准输出。然后，可以将此配置文件装入 LDAP 服务器以用作客户机配置文件，此配置文件可通过 \fBldapclient init\fR 命令下载。可以通过 \fBldapadd\fR(1) 或特定于服务器的任何导入工具，将 LDIF 格式的配置文件装入目录服务器。请注意，\fBproxyDN\fR、\fBproxyPassword\fR、\fBcertificatePath\fR、\fBdomainName\fR、\fBenableShadowUpdate\fR、\fBadminDN\fR 和 \fBadminPassword\fR 属性并非此配置文件的一部分，因此不允许使用。
+.sp
+.LP
+您必须拥有超级用户特权才能运行 \fBldapclient\fR 命令，但使用 \fBgenprofile\fR 选项时除外。
+.sp
+.LP
+要访问目录中存储的信息，客户机可以通过验证方式连接目录，也可以使用不进行验证的连接。LDAP 客户机配置为具有 \fBanonymous\fR 或 \fBproxy\fR 凭证级别。在第一种情况下，客户机连接目录时不进行验证。在第二种情况下，客户机连接目录时按以下方式进行验证：读取访问使用代理标识验证，写入访问使用管理员标识验证（如果配置了 \fBenableShadowUpdate\fR）。在第三种情况下，客户机连接目录时使用 Kerberos 主体进行验证，LDAP 服务器可将该主体映射到 LDAP 标识。有关标识映射的详细信息，请参阅\fI《Working With Oracle Solaris 11.3 Directory and         Naming Services: LDAP》\fR中有关实现安全性的章节或相应的目录服务器文档。
+.sp
+.LP
+如果客户机配置为使用标识，您可以配置客户机要使用的验证方法。LDAP 客户机支持以下验证方法：
+.br
+.in +2
+\fBnone\fR
+.in -2
+.br
+.in +2
+\fBsimple\fR
+.in -2
+.br
+.in +2
+\fBsasl/CRAM-MD5\fR
+.in -2
+.br
+.in +2
+\fBsasl/DIGEST-MD5\fR
+.in -2
+.br
+.in +2
+\fBsasl/GSSAPI\fR
+.in -2
+.br
+.in +2
+\fBtls:simple\fR
+.in -2
+.br
+.in +2
+\fBtls:sasl/CRAM-MD5\fR
+.in -2
+.br
+.in +2
+\fBtls:sasl/DIGEST-MD5\fR
+.in -2
+.sp
+.LP
+请注意，某些目录服务器可能不支持以上所有验证方法。对于 \fBsimple\fR，请注意绑定口令将以明文形式发送到 LDAP 服务器。对于使用 TLS（transport layer security，传输层安全）的验证方法，将对整个会话进行加密。您需要安装相应的证书数据库，才能使用 TLS。
+.SS "与位置配置文件交互"
+.sp
+.LP
+如上文提到的，LDAP 配置是在位置配置文件中管理的（有关位置配置文件的更多信息，请参阅 \fBnetcfg\fR(1M)）。这些配置文件要么是固定的，表示以传统方式管理网络配置；要么是反应性的，表示自动管理网络配置，并会根据配置文件中指定的策略规则对网络环境的变化作出反应。
+.sp
+.LP
+当某个固定位置（当前只能有一个，即 \fBDefaultFixed\fR 位置）处于活动状态时，对 SMF 系统信息库所做的更改（包括使用 \fBldapclient\fR 等工具所做的间接更改）将在该位置被禁用时应用于该位置，因此，如果以后重新启用了该位置，更改将被恢复。
+.sp
+.LP
+当反应性位置处于活动状态时，不应将更改直接应用于 SMF 系统信息库；这些更改不会保留在位置配置文件中，因此如果禁用该位置，或者刷新或重新启动系统的网络配置（由 \fBsvc:/network/physical:default \fR 和 \fBsvc:/network/location:default\fR 管理），更改将会丢失。应使用 \fBnetcfg\fR(1M) 命令将更改应用于位置本身；这样会将更改保存到位置配置文件系统信息库中，还会将其应用于 SMF 系统信息库（如果更改是针对当前活动的位置进行的）。
+.sp
+.LP
+当前对位置的 LDAP 配置提供的支持非常有限。用户必须在 \fBldap-nameservice-servers\fR 属性中指定可从中获取完整的配置文件的一个服务器名称。不可以指定其他参数。此外，如果某个位置中不包括 LDAP 配置，则在启用该位置时，相关的 LDAP 服务将被禁用。
+.sp
+.LP
+通过创建发出适当 \fBldapclient\fR 命令以配置 LDAP 的脚本来提供更加复杂的 LDAP 配置；之后可以使用该脚本来创建可根据需要启用/禁用的 ENM 配置文件。有关 ENM 配置文件的更多信息，请参阅 \fBnetcfg\fR(1M)。
+.SS "命令"
+.sp
+.LP
+所支持的命令如下：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinit\fR\fR
+.ad
+.sp .6
+.RS 4n
+基于服务器中的配置文件初始化客户机。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmanual\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用指定的属性值手动初始化客户机。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmod\fR\fR
+.ad
+.sp .6
+.RS 4n
+在手动初始化客户机后修改配置文件中的属性值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlist\fR\fR
+.ad
+.sp .6
+.RS 4n
+以用户可读的格式将 LDAP 客户机高速缓存的内容写入标准输出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuninit\fR\fR
+.ad
+.sp .6
+.RS 4n
+取消 LDAP 客户机初始化（假定使用了 \fBldapclient\fR 来初始化客户机）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgenprofile\fR\fR
+.ad
+.sp .6
+.RS 4n
+通过此命令的 \fBinit\fR 形式生成 LDIF 格式的配置文件，该配置文件随后可存储在目录中供客户机使用。
+.RE
+
+.SS "属性"
+.sp
+.LP
+支持以下属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBadminDN\fR\fR
+.ad
+.sp .6
+.RS 4n
+为用于影子信息更新的管理员标识指定绑定标识名。如果凭证级别为 \fBproxy\fR 并且 \fBenableShadowUpdate\fR 设置为 \fBtrue\fR，则必须指定此选项。没有缺省值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBadminPassword\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定管理员口令。如果凭证级别为 \fBproxy\fR 并且 \fBenableShadowUpdate\fR 设置为 \fBtrue\fR，则必须指定此选项。没有缺省值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBattributeMap\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定从服务定义的属性到备用架构中属性的映射。该选项可用于更改给定服务使用的缺省架构。在配置文件 IETF 草案中定义了 \fBattributeMap\fR 的语法。可以多次指定此选项。所有服务的缺省值为 \fINULL\fR。在以下示例中， 
+.sp
+.in +2
+.nf
+attributeMap: passwd:uid=employeeNumber
+.fi
+.in -2
+.sp
+
+对于 \fBpasswd\fR 服务，LDAP 客户机将使用 LDAP 属性 \fBemployeeNumber\fR 而不是 \fBuid\fR。这是一个多值属性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauthenticationMethod\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定所有服务使用的缺省验证方法，除非被 \fBserviceAuthenticationMethod\fR 属性覆盖。可以使用分号分隔的列表来指定多个值。缺省值为 \fBnone\fR。对于使用 \fBcredentialLevel\fR 并且 \fBcredentialLevel\fR 为 \fBanonymous\fR 的服务，此属性将被忽略。即使 \fBcredentialLevel\fR 是 anonymous，\fBpam_ldap\fR 等服务也会使用此属性。支持的验证方法如上所述。如果 authenticationMethod 为 \fBsasl/GSSAPI\fR，则必须将 \fB/etc/nsswitch.conf\fR 的 \fBhosts\fR 和 \fBipnodes\fR 配置为支持 DNS，例如：
+.sp
+.in +2
+.nf
+hosts: dns files
+ipnodes: dns files
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbindTimeLimit\fR\fR
+.ad
+.sp .6
+.RS 4n
+客户机在执行绑定操作时最多能使用的时间（以秒为单位）。请将此属性设置为一个正整数。缺省值为 30。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcertificatePath\fR\fR
+.ad
+.sp .6
+.RS 4n
+证书数据库的位置的证书路径。该值为安全数据库文件所在的路径。该值用于 TLS 支持，TLS 支持在 \fBauthenticationMethod\fR 和 \fBserviceAuthenticationMethod\fR 属性中指定。缺省值为 \fB/var/ldap\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcredentialLevel\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定客户机联系目录时应使用的凭证级别。支持的凭证级别为 \fBanonymous\fR、\fBproxy\fR 和 \fBself\fR。如果凭证级别指定为 \fBproxy\fR，则必须指定 \fBauthenticationMethod\fR 属性来确定验证机制。同样，如果凭证级别为 \fBproxy\fR 并且至少有一种验证方法需要绑定 DN，则必须设置 \fBproxyDN\fR 和 \fBproxyPassword\fR 属性值。此外，如果将 \fBenableShadowUpdate\fR 设置为 \fBtrue\fR，则还必须设置 \fBadminDN\fR 和 \fBadminPassword\fR 值。如果凭证级别指定为 self，则 \fBauthenticationMethod\fR 必须为 \fBsasl/GSSAPI\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdefaultSearchBase\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定缺省的搜索基 DN。无缺省值。\fBserviceSearchDescriptor\fR 属性可用于覆盖给定服务的 \fBdefaultSearchBase\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdefaultSearchScope=one | sub\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定客户机搜索操作的缺省搜索范围。可以通过指定 \fBserviceSearchDescriptor\fR 覆盖给定服务的此缺省范围。缺省范围为一级搜索。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdefaultServerList\fR\fR
+.ad
+.sp .6
+.RS 4n
+由空格分隔的服务器名称或服务器地址列表（IPv4 或 IPv6）。如果您指定服务器名称，请确保 LDAP 客户机可在没有 LDAP 名称服务的情况下对名称进行解析。您必须使用 \fBfiles\fR 或 \fBdns\fR 解析 LDAP 服务器的名称。如果无法解析 LDAP 服务器名称，命名服务将会失败。
+.sp
+端口号为可选。如果未指定，则会使用缺省的 LDAP 服务器端口号 389，但在验证方法中指定了 TLS 时除外。在这种情况下，缺省 LDAP 服务器端口号为 636。
+.sp
+为 IPv6 地址指定端口号的格式为：
+.sp
+.in +2
+.nf
+[ipv6_addr]:port
+.fi
+.in -2
+
+要为 IPv4 地址指定端口号，请使用以下格式：
+.sp
+.in +2
+.nf
+ipv4_addr:port
+.fi
+.in -2
+
+如果指定了主机名，请使用以下格式：
+.sp
+.in +2
+.nf
+host_name:port
+.fi
+.in -2
+
+如果您使用 TLS，LDAP 服务器的主机名必须与 TLS 证书中的主机名匹配。通常，TLS 证书中的主机名为全限定域名。对于 TLS，LDAP 服务器主机地址必须解析为 TLS 证书中的主机名。您必须使用 \fBfiles\fR 或 \fBdns\fR 来解析主机地址。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdomainName\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 DNS 域名。这将成为计算机的缺省域。缺省值是当前域名。此属性仅在客户机初始化时使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBenableShadowUpdate=true | false\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定是否允许客户机更新影子信息。如果设置为 \fBtrue\fR 并且凭证级别是 \fBproxy\fR，则必须指定 \fBadminDN\fR 和 \fBadminPassword\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfollowReferrals=true | false\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定引用设置。设置为 true 意味着自动接受引用，设置为 false 会导致不遵循引用。缺省值为 true。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBobjectclassMap\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定从服务定义的 \fBobjectclass\fR 到备用架构中 \fBobjectclass\fR 的映射。该选项可用于更改给定服务使用的缺省架构。在配置文件 IETF 草案中定义了 \fBobjectclassMap\fR 的语法。可以多次指定此选项。所有服务的缺省值为 \fINULL\fR。在以下示例中，
+.sp
+.in +2
+.nf
+objectclassMap=passwd:posixAccount=unixAccount 
+.fi
+.in -2
+.sp
+
+对于 \fBpasswd\fR 服务，LDAP 客户机将使用 \fBunixAccount\fR 而非 \fBposixAccount\fR 的 LDAP \fBobjectclass\fR。这是一个多值属性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpreferredServerList\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定要在 \fBdefaultServerList\fR 属性指定的服务器之前联系的服务器，可使用以空格分隔的服务器名称或服务器地址列表（IPv4 或 IPv6）。如果您指定服务器名称，请确保 LDAP 客户机可在没有 LDAP 名称服务的情况下对名称进行解析。您必须使用 \fBfiles\fR 或 \fBdns\fR 解析 LDAP 服务器的名称。如果无法解析 LDAP 服务器名称，命名服务将会失败。
+.sp
+端口号为可选。如果未指定，则会使用缺省的 LDAP 服务器端口号 389，但在验证方法中指定了 TLS 时除外。在这种情况下，缺省 LDAP 服务器端口号为 636。
+.sp
+为 IPv6 地址指定端口号的格式为：
+.sp
+.in +2
+.nf
+[ipv6_addr]:port
+.fi
+.in -2
+
+要为 IPv4 地址指定端口号，请使用以下格式：
+.sp
+.in +2
+.nf
+ipv4_addr:port
+.fi
+.in -2
+
+如果指定了主机名，请使用以下格式：
+.sp
+.in +2
+.nf
+host_name:port
+.fi
+.in -2
+
+如果您使用 TLS，LDAP 服务器的主机名必须与 TLS 证书中的主机名匹配。通常，TLS 证书中的主机名为全限定域名。对于 TLS，LDAP 服务器主机地址必须解析为 TLS 证书中的主机名。您必须使用 \fBfiles\fR 或 \fBdns\fR 来解析主机地址。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprofileName\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定配置文件名称。对于 \fBldapclient init\fR，此属性为现有配置文件的名称，该配置文件可以定期下载，下载间隔取决于 \fBprofileTTL\fR 属性的值。对于 \fBldapclient genprofile\fR，此属性为要生成的配置文件的名称。缺省值为 \fBdefault\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprofileTTL\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定用于获取客户机信息的 TTL 值（以秒为单位）。只有当计算机是使用客户机配置文件初始化的，此属性才有意义。如果您不希望 \fBldap_cachemgr\fR(1M) 尝试通过 LDAP 服务器刷新 LDAP 客户机配置，请将 \fBprofileTTL\fR 设置为 0（零）。有效值为 0（零，表示无期限）或正整数（以秒为单位）。缺省值为 12 小时。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBproxyDN\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定代理标识的绑定标识名。如果凭证级别为 \fBproxy\fR 并且至少有一种验证方法需要绑定 DN，则必须使用此选项。没有缺省值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBproxyPassword\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定客户机代理口令。如果凭证级别为 \fBproxy\fR 并且至少有一种验证方法需要绑定 DN，则必须使用此选项。无缺省值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsearchTimeLimit\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 LDAP 搜索操作允许的最大秒数。缺省值是 30 秒。服务器可能具有自己的搜索时间限制。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBserviceAuthenticationMethod\fR\fR
+.ad
+.sp .6
+.RS 4n
+以 \fIservicename\fR:\fBauthenticationmethod\fR 格式指定服务要使用的验证方法，例如：
+.sp
+.in +2
+.nf
+pam_ldap:tls:simple
+.fi
+.in -2
+
+如果有多种验证方法，请使用分号分隔的列表。缺省值为无服务验证方法，在这种情况下，每种服务都将缺省为 \fBauthenticationMethod\fR 值。支持的验证方法如上所述。
+.sp
+以下三种服务支持此功能：\fBpasswd-cmd\fR、\fBkeyserv\fR 和 \fBpam_ldap\fR。\fBpasswd-cmd\fR 服务用于定义 \fBpasswd\fR(1) 用来更改用户的口令及其他属性的验证方法。\fBkeyserv\fR 服务用于标识 \fBchkey\fR(1) 和 \fBnewkey\fR(1M) 实用程序要使用的验证方法。\fBpam_ldap\fR 服务用于定义在配置了 \fBpam_ldap\fR(5) 时对用户进行验证要使用的验证方法。如果没有为上述服务设置此属性，可以使用 \fBauthenticationMethod\fR 属性定义验证方法。这是一个多值属性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBserviceCredentialLevel\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定服务要使用的凭证级别。可以用空格分隔的列表指定多个值。所有服务的缺省值为 \fINULL\fR。支持的凭证级别为 \fBanonymous\fR 或 \fBproxy\fR。目前，没有服务使用此属性。这是一个多值属性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBserviceSearchDescriptor\fR\fR
+.ad
+.sp .6
+.RS 4n
+覆盖给定服务的缺省 LDAP 搜索基 DN。此描述符的格式还允许覆盖每个服务的缺省搜索范围和搜索过滤器。在配置文件 IETF 草案中定义了 \fBserviceSearchDescriptor\fR 的语法。所有服务的缺省值为 \fINULL\fR。这是一个多值属性。在以下示例中，
+.sp
+.in +2
+.nf
+serviceSearchDescriptor=passwd:ou=people,dc=a1,dc=acme,dc=com?one
+.fi
+.in -2
+.sp
+
+对于 \fBpasswd\fR 服务，LDAP 客户机将在 \fBou=people,dc=a1,dc=acme,dc=com\fR 而不是 \fBou=people,\fIdefaultSearchBase\fR\fR 中执行一级搜索。
+.RE
+
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fBattrName=\fR\fIattrValue\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 \fBattrName\fR 及其值。有关可能的属性名称和值的完整列表，请参见\fB\fR“用法概要”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR \fIbindDN\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定具有所请求数据库的读取权限的条目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-j\fR \fIpasswdFile\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定绑定 DN 的口令或 SSL 客户机密钥数据库的口令所在的文件。要保护口令，请在脚本中使用此选项，并将口令存放在安全文件中。此选项与 \fB-w\fR 选项互斥。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR\fR
+.ad
+.sp .6
+.RS 4n
+静默模式。不生成任何输出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+详细输出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-w\fR \fIbindPassword\fR\fR
+.ad
+.sp .6
+.RS 4n
+用于验证绑定 DN 的口令。如果缺少此参数，该命令将会提示输入口令。LDAP 中不支持 \fBNULL\fR 口令。
+.sp
+使用 \fB-w\fR \fIbindPassword\fR 指定要用于验证的口令时，系统的其他用户可通过 \fBps\fR 命令在脚本文件中或在 shell 历史记录中看到该口令。
+.sp
+如果您提供 “\fB-\fR”（连字符）作为口令，该命令将会提示您输入口令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-y\fR \fIpasswdFile\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定代理 DN 的口令所在的文件。要保护口令，请在脚本中使用此选项，并将口令存放在安全文件中。此选项与 \fB-a\fR \fIproxyPassword\fR 选项互斥。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fIadminrPasswdFile\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 \fBadminDN\fR 的口令所在的文件。要保护口令，请在脚本中使用此选项，并将口令存放在安全文件中。此选项与 \fB-a\fR \fIadminPassword\fR 选项互斥。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fILDAP_server\fR\fR
+.ad
+.sp .6
+.RS 4n
+从中装入配置文件的 LDAP 服务器的地址或名称。系统会使用 \fBnsswitch.conf\fR 文件中指定的当前命名服务。装入配置文件后，将使用配置文件中指定的 \fBpreferredServerList\fR 和 \fBdefaultServerList\fR。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR使用指定 LDAP 服务器上存储的缺省配置文件设置客户机
+.sp
+.LP
+以下示例说明了如何使用指定 LDAP 服务器上存储的缺省配置文件设置客户机。只有当配置文件中的凭证级别设置为 \fBanonymous\fR 或验证方法设置为 \fBnone\fR 时，此命令才会成功。
+
+.sp
+.in +2
+.nf
+example# \fBldapclient init 172.16.100.1\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR使用指定 LDAP 服务器上存储的 \fBsimple\fR 配置文件设置客户机
+.sp
+.LP
+以下示例说明了如何使用指定 LDAP 服务器上存储的 \fBsimple\fR 配置文件设置客户机。domainname 设置为 \fBxyz.mycompany.com\fR，proxyPassword 设置为 \fBsecret\fR。
+
+.sp
+.in +2
+.nf
+example# \fBldapclient init -a profileName=simple \e
+-a domainName=xyz.mycompany.com \e
+-a proxyDN=cn=proxyagent,ou=profile,dc=xyz,dc=mycompany,dc=com \e
+-a proxyPassword=secret '['fe80::a00:20ff:fea3:388']':386\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR设置仅使用一台服务器的客户机
+.sp
+.LP
+以下示例说明了如何设置仅使用一台服务器的客户机。验证方法设置为 \fBnone\fR，搜索基设置为 \fBdc=mycompany,dc=com\fR。
+
+.sp
+.in +2
+.nf
+example# \fBldapclient manual -a authenticationMethod=none \e
+-a defaultSearchBase=dc=mycompany,dc=com \e
+-a defaultServerList=172.16.100.1\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR设置仅使用一台服务器的不遵循引用的客户机
+.sp
+.LP
+以下示例说明了如何设置仅使用一台服务器的客户机。凭证级别设置为 \fBproxy\fR。验证方法设置为 \fBsasl/CRAM-MD5\fR，并且选择不遵循引用。域名设置为 \fBxyz.mycompany.com\fR，并且 LDAP 服务器在 IP 地址 \fB172.16.100.1\fR 的 386 端口上运行。
+
+.sp
+.in +2
+.nf
+example# \fBldapclient manual \e
+-a credentialLevel=proxy \e
+-a authenticationMethod=sasl/CRAM-MD5 \e
+-a proxyPassword=secret \e
+-a proxyDN=cn=proxyagent,ou=profile,dc=xyz,dc=mycompany,dc=com \e
+-a defaultSearchBase=dc=xyz,dc=mycompany,dc=com \e
+-a domainName=xyz.mycompany.com \e
+-a followReferrals=false \e
+-a defaultServerList=172.16.100.1:386\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR使用 \fBgenprofile\fR 仅设置 \fBdefaultSearchBase\fR 和服务器地址
+.sp
+.LP
+以下示例说明了如何使用 \fBgenprofile\fR 命令设置 \fBdefaultSearchBase\fR 和服务器地址。
+
+.sp
+.in +2
+.nf
+example# \fBldapclient genprofile -a profileName=myprofile \e
+-a defaultSearchBase=dc=eng,dc=sun,dc=com \e
+-a "defaultServerList=172.16.100.1 172.16.234.15:386" \e
+> myprofile.ldif\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR在 IPv6 服务器上创建配置文件
+.sp
+.LP
+以下示例可在 IPv6 服务器上创建配置文件
+
+.sp
+.in +2
+.nf
+example# \fBldapclient genprofile -a profileName=eng \e
+-a credentialLevel=proxy \e
+-a authenticationMethod=sasl/DIGEST-MD5 \e
+-a defaultSearchBase=dc=eng,dc=acme,dc=com \e
+-a "serviceSearchDescriptor=passwd:ou=people,dc=a1,dc=acme,dc=com?one"\e
+-a preferredServerList= '['fe80::a00:20ff:fea3:388']' \e
+-a "defaultServerList='['fec0::111:a00:20ff:fea3:edcf']' \e
+    '['fec0::111:a00:20ff:feb5:e41']'" > eng.ldif\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR创建覆盖每个缺省值的配置文件
+.sp
+.LP
+以下示例显示了覆盖每个缺省值的配置文件。
+
+.sp
+.in +2
+.nf
+example# \fBldapclient genprofile -a profileName=eng \e
+-a credentialLevel=proxy -a authenticationMethod=sasl/DIGEST-MD5 \e
+-a bindTimeLimit=20 \e
+-a defaultSearchBase=dc=eng,dc=acme,dc=com \e
+-a "serviceSearchDescriptor=passwd:ou=people,dc=a1,dc=acme,dc=com?one"\e
+-a serviceAuthenticationMethod=pam_ldap:tls:simple \e
+-a defaultSearchScope=sub \e
+-a attributeMap=passwd:uid=employeeNumber \e
+-a objectclassMap=passwd:posixAccount=unixAccount \e
+-a followReferrals=false -a profileTTL=6000 \e
+-a preferredServerList=172.16.100.30 -a searchTimeLimit=30 \e
+-a "defaultServerList=172.16.200.1 172.16.100.1 192.168.5.6" > eng.ldif\fR
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB0\fR
+.ad
+.RS 5n
+.rt  
+该命令已成功执行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB1\fR
+.ad
+.RS 5n
+.rt  
+出现错误。输出了错误消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB2\fR
+.ad
+.RS 5n
+.rt  
+需要 \fBproxyDN\fR 和 \fBproxyPassword\fR 属性，但未提供这两个属性。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/ldap/ldap_client_cred\fR\fR
+.ad
+.br
+.na
+\fB\fB/var/ldap/ldap_client_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含客户机的 LDAP 配置。这些文件将无法进行手动修改。其内容不保证是用户可读的。使用 \fBldapclient\fR 可以更新这些文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/defaultdomain\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统缺省域名，与 LDAP 服务器中数据的域名匹配。请参见 \fBdefaultdomain\fR(4)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/nsswitch.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+用于名称服务转换的配置文件。请参见 \fBnsswitch.conf\fR(4)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/nsswitch.ldap\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 LDAP 和文件配置的名称服务转换的样例配置文件。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/network/nis
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBchkey\fR(1)、\fBldapadd\fR(1)、\fBldapdelete\fR(1)、\fBldaplist\fR(1)、\fBldapmodify\fR(1)、\fBldapmodrdn\fR(1)、\fBldapsearch\fR(1)、\fBidsconfig\fR(1M)、\fBldapaddent\fR(1M)、\fBldap_cachemgr\fR(1M)、\fBnetcfg\fR(1M)、\fBdefaultdomain\fR(4)、\fBnsswitch.conf\fR(4)、\fBresolv.conf\fR(4)、\fBattributes\fR(5)
+.SH 注意
+.sp
+.LP
+当前 \fBlibldap.so.5\fR 不支持 \fBStartTLS\fR，因此提供的端口号是指 TLS 打开期间使用的端口，而不是用作 \fBStartTLS\fR 系列一部分的端口。为避免超时延迟，建议不要混合使用 TLS 和非 TLS 验证机制。
+.sp
+.LP
+例如：
+.sp
+.in +2
+.nf
+-h foo:1000 -a authenticationMethod=tls:simple
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\&...或者：
+.sp
+.in +2
+.nf
+defaultServerList= foo:1000
+authenticationMethod= tls:simple
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+上例引用的是在主机 \fBfoo\fR 端口 1000 上打开的原始 TLS，而非在不安全的端口 1000 上打开的 StartTLS 系列。如果端口 1000 是不安全的，将不会进行连接。
+.sp
+.LP
+在采用以下设置的第二个示例中，在尝试通过不安全的绑定连接到 \fBfoo:636\fR 时，将导致出现明显的超时延迟。
+.sp
+.in +2
+.nf
+defaultServerList= foo:636 foo:389
+authenticationMethod= simple
+.fi
+.in -2
+.sp
+

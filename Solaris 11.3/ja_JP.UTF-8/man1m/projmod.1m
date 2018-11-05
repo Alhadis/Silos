@@ -1,0 +1,600 @@
+'\" te
+.\" Copyright (c) 2007, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH projmod 1M "2015 年 5 月 20 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+projmod \- システム上にあるプロジェクトの情報の変更
+.SH 形式
+.LP
+.nf
+\fBprojmod\fR [\fB-n\fR] [\fB-A\fR|\fB-f\fR \fIfilename\fR | -]
+.fi
+
+.LP
+.nf
+\fBprojmod\fR [\fB-n\fR] [\fB-A\fR|\fB-f\fR \fIfilename\fR | -] [\fB-p\fR \fIprojid\fR [\fB-o\fR]] 
+     [\fB-c\fR \fIcomment\fR] [\fB-a\fR|\fB-s\fR|\fB-r\fR] [\fB-U\fR \fIuser\fR [,\fIuser\fR]... ] 
+     [\fB-G\fR \fIgroup\fR [,\fIgroup\fR]... ] 
+     [ [\fB-K\fR \fIname\fR [=\fIvalue\fR [,\fIvalue\fR]...]...]] 
+     [\fB-l\fR \fInew_projectname\fR] \fIproject\fR
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBprojmod\fR ユーティリティーは、システム上のプロジェクトの定義を変更します。\fBprojmod\fR は、指定されたプロジェクトの定義を変更し、システムファイルやファイルシステムにプロジェクト関連の適切な変更を加えます。 
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.RS 29n
+.rt  
+プロジェクトがアクティブな場合は、システムのプロジェクトデータベースに定義されているプロジェクトのリソース制御をプロジェクトに適用します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 29n
+.rt  
+\fB-U\fR、\fB-G\fR、または \fB-K\fR オプションで指定されたユーザー、グループ、属性、または属性値を、既存のメンバーまたは属性リストを置き換えるのではなく、プロジェクトに追加するように指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIcomment\fR\fR
+.ad
+.RS 29n
+.rt  
+\fIcomment\fR をテキスト文字列で指定します。通常、\fIcomment\fR にはプロジェクトの簡単な説明が含まれます。この情報は、プロジェクトの \fB/etc/project\fR エントリに保存されます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.RS 29n
+.rt  
+\fB-A\fR オプションでのみ有効です。プロジェクトに \fBproject.pool\fR 属性がない場合、その実行中のすべてのプロセスが、プロセスのゾーンのデフォルトのプールにバインドされます。これは、\fBpoolbind\fR(1M) または \fBpsrset\fR(1M) によって手動のバインディングが行われており、管理者が \fBproject\fR(4) に \fBproject.pool=pool_default\fR を設定した場合のように、プロジェクト全体をデフォルトのプールにバインドする場合に役立ちます。
+.sp
+プロジェクトから \fBproject.pool\fR 属性を削除する場合は、このオプションを使用して、プロジェクトをデフォルトのプールに再バインドします。このオプションを指定しないと、プロジェクトで \fBproject.pool\fR または \fBproject.mcb\fR 属性を指定していない場合、プロジェクトに対するプロセスは、すでにバインドされているプールや pset に引き続きバインドされたままになります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfilename\fR | –\fR
+.ad
+.RS 29n
+.rt  
+変更または検証するプロジェクトファイルを指定するか、検証する標準入力からの入力を指定します。「オペランド」で説明されているとおり、\fBprojmod\fR コマンド行でプロジェクトを指定しない場合、\fBprojmod\fR は \fB-f\fR の引数を検証します。このオプションを使用しない場合は、システムプロジェクトファイル \fB/etc/project\fR が変更されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-G\fR \fIgroup\fR [,\fIgroup\fR...]\fR
+.ad
+.RS 29n
+.rt  
+プロジェクトのメンバーグループの置換リストを指定します。\fB-a\fR または \fB-r\fR オプションと組み合わせて使用される場合、このオプションは、プロジェクトで追加または削除するグループのリストを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-K\fR \fIname\fR[=\fIvalue\fR[,\fIvalue\fR...]\fR
+.ad
+.RS 29n
+.rt  
+プロジェクトのプロジェクト属性の置換リストを指定します。\fB-a\fR、\fB-r\fR、または \fB-s\fR オプションと組み合わせて使用される場合、このオプションは、プロジェクトで追加、削除、または置換する属性値のリストを指定します。属性はセミコロン (\fB;\fR) で区切る必要があります。複数の \fB-K\fR オプションを指定すると、たとえば次のように、複数のキーの値を設定、追加、削除、または置換できます。
+.sp
+.in +2
+.nf
+-K \fIkey1\fR=\fIvalue1\fR -K "\fIkey2\fR=(\fIvalue2a\fR),(\fIvalue2b\fR)"
+.fi
+.in -2
+
+リソース制御属性では、キーの値の指定に括弧が使用されます。括弧は多くのユーザーシェルで特殊文字として解釈されるため、括弧を含んでいる \fB-K\fR の引数は、上記の例および後述の「使用例」のように二重引用符で囲むのが最善です。プロジェクトに指定できるリソース制御については、\fBresource-controls \fR(5) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fInew_projectname\fR\fR
+.ad
+.RS 29n
+.rt  
+プロジェクトの新しいプロジェクト名を指定します。\fInew_projectname\fR 引数は、英字、数字、ピリオド (\fB\&.\fR)、下線 (\fB_\fR)、およびハイフン (\fB-\fR) のセットに含まれる文字から成る文字列です。最初の文字は英字にするようにしてください。これらの要件が満たされていない場合は、エラーメッセージが書き込まれます。また、プロジェクト名はプロジェクトファイル内で一意である必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 29n
+.rt  
+構文検査。既存のシステムプロジェクトファイルおよび変更についてのみ、形式を検査します。プロジェクト属性で指定されているユーザー名、グループ名、リソースなど、既存のプロジェクトファイルの内容は検査されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR\fR
+.ad
+.RS 29n
+.rt  
+このオプションを使用すると、\fB-p\fR オプションで指定されたプロジェクト ID はプロジェクトファイル内で重複が許されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIprojid\fR\fR
+.ad
+.RS 29n
+.rt  
+プロジェクトの新しいプロジェクト \fBID\fR を指定します。これは、\fBparam.h\fR で定義されている \fBMAXUID\fR より小さく、かつ負でない 10 進整数である必要があります。\fB-o\fR オプションが指定されていない場合、この値はプロジェクトファイル内で一意である必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.RS 29n
+.rt  
+\fB-U\fR、\fB-G\fR、または \fB-K\fR オプションで指定されたユーザー、グループ、属性、または属性値を、既存のメンバーまたは属性リストを置き換えるのではなく、プロジェクトから削除するように指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 29n
+.rt  
+\fB-K\fR オプションで指定された属性リストの値を置き換えるように指定します。属性が存在しない場合、それらは a オプションが使用された場合と同様に追加されます。このオプションは \fB-U\fR または \fB-G\fR オプションには影響を与えません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-U\fR \fIuser\fR [,\fIuser\fR...]\fR
+.ad
+.RS 29n
+.rt  
+プロジェクトのメンバーユーザーの置換リストを指定します。\fB-a\fR または \fB-r\fR オプションと組み合わせて使用される場合、このオプションは、プロジェクトで追加または削除するユーザーのリストを指定します。
+.RE
+
+.SH オペランド
+.sp
+.LP
+次のオペランドがサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIproject\fR \fR
+.ad
+.RS 12n
+.rt  
+変更または表示する既存のプロジェクトの名前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fI(なし)\fR\fR
+.ad
+.RS 12n
+.rt  
+オペランドが指定されていない場合、プロジェクトを変更することなくプロジェクトファイルが検証されます。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fR\fB-K\fR オプションを使用して属性値を追加する
+.sp
+.LP
+次の \fBproject\fR(4) エントリについて考えてみます。
+
+.sp
+.in +2
+.nf
+salesaudit:111:Auditing Project::sales,finance: \e
+  process.max-file-size=(priv,52428800,deny); \e
+  task.max-lwps=(priv,100,deny)
+.fi
+.in -2
+
+.sp
+.LP
+上記は、\fB/etc/project\fR には 1 行で表示されます。この例と以降の例では、\fBproject\fR エントリの属性フィールドに注目します。つまり、最後のフィールド、最後のセミコロンに続くフィールドです。
+
+.sp
+.LP
+プロジェクト \fBsalesaudit\fR の属性フィールドには、次のリソース制御が記述されています。
+
+.sp
+.in +2
+.nf
+task.max-lwps=(priv,1000,signal=KILL)
+.fi
+.in -2
+
+.sp
+.LP
+次の \fBprojmod\fR コマンドは、上記のエントリにアクション節を追加します。
+
+.sp
+.in +2
+.nf
+# projmod -a -K "task.max-lwps=(priv,100,deny)" salesaudit 
+.fi
+.in -2
+
+.sp
+.LP
+その結果、\fBsalesaudit\fR のエントリの属性フィールドは次のようになります。
+
+.sp
+.in +2
+.nf
+task.max-lwps=(priv,100,deny),(priv,1000,signal=KILL)
+.fi
+.in -2
+
+.LP
+\fB例 2 \fR\fB-K\fR オプションを使用して属性値を置換する
+.sp
+.LP
+プロジェクト \fBsalesaudit\fR の \fBproject\fR(4) エントリの属性フィールドに、次のリソース制御が記述されているとします。
+
+.sp
+.in +2
+.nf
+task.max-lwps=(priv,100,deny),(priv,1000,signal=KILL)
+.fi
+.in -2
+
+.sp
+.LP
+次の \fBprojmod\fR コマンドは、コマンドに指定されたアクション節で上記のエントリのアクション節を置換します。
+
+.sp
+.in +2
+.nf
+# projmod -s -K "task.max-lwps=(priv,500,signal=SIGSTOP)" salesaudit 
+.fi
+.in -2
+
+.sp
+.LP
+その結果、\fBsalesaudit\fR のエントリの属性フィールドは次のようになります。
+
+.sp
+.in +2
+.nf
+task.max-lwps=(priv,500,signal=SIGSTOP)
+.fi
+.in -2
+
+.LP
+\fB例 3 \fR\fB-K\fR オプションを使用して属性値を削除する
+.sp
+.LP
+プロジェクト \fBsalesaudit\fR の \fBproject\fR(4) エントリの属性フィールドに、次のリソース制御が記述されているとします。
+
+.sp
+.in +2
+.nf
+task.max-lwps=(priv,100,deny),(priv,1000,signal=KILL)
+.fi
+.in -2
+
+.sp
+.LP
+次の \fBprojmod\fR コマンドは、上記のエントリから最初のアクション節を削除します。
+
+.sp
+.in +2
+.nf
+# projmod -r -K "task.max-lwps=(priv,100,deny)" salesaudit 
+.fi
+.in -2
+
+.sp
+.LP
+その結果、\fBsalesaudit\fR のエントリの属性フィールドは次のようになります。
+
+.sp
+.in +2
+.nf
+task.max-lwps=(priv,1000,signal=KILL)
+.fi
+.in -2
+
+.LP
+\fB例 4 \fR複数の属性値を指定する
+.sp
+.LP
+プロジェクト \fBsalesaudit\fR で次のリソース制御を実現する場合を考えてみます。
+
+.sp
+.in +2
+.nf
+task.max-lwps=(priv,100,deny)
+process.max-file-size=(priv,50MB,deny)
+.fi
+.in -2
+
+.sp
+.LP
+次の \fBprojmod\fR コマンドは、\fBsalesaudit\fR にこれらのリソース制御を追加します。
+
+.sp
+.in +2
+.nf
+# projmod -a -K "task.max-lwps=(priv,100,deny)" \e
+-K "process.max-file-size=(priv,50MB,deny)" salesaudit 
+.fi
+.in -2
+
+.sp
+.LP
+その結果、\fBsalesaudit\fR のエントリの属性フィールドは次のようになります。
+
+.sp
+.in +2
+.nf
+task.max-lwps=(priv,100,deny);process.max-file-size=(priv,52428800,deny)
+.fi
+.in -2
+
+.sp
+.LP
+この例では、修飾子と倍率の使用よるリソース制御 \fBprocess.max-file-size\fR への効果に注目してください。\fBprojmod\fR では次のように指定されています。
+
+.sp
+.in +2
+.nf
+"process.max-file-size=(priv,50MB,deny)"
+.fi
+.in -2
+
+.sp
+.LP
+\fB/etc/project\fR では次のようになっています。
+
+.sp
+.in +2
+.nf
+process.max-file-size=(priv,52428800,deny)
+.fi
+.in -2
+
+.sp
+.LP
+つまり、\fB50MB\fR が \fB52428800\fR に展開されています。リソース制御に使用できる修飾子 (MB など) と倍率は、\fBresource-controls \fR(5) に指定されています。
+
+.LP
+\fB例 5 \fRプロジェクトにプールをバインドする
+.sp
+.LP
+次のコマンドは、プロジェクト \fBsales\fR の \fBproject.pool\fR 属性を設定します。
+
+.sp
+.in +2
+.nf
+# projmod -a -K project.pool=salespool sales
+.fi
+.in -2
+
+.LP
+\fB例 6 \fR\fB標準入力\fRからの入力を評価する
+.sp
+.LP
+次のコマンドは、プロジェクト名のオペランドなしで \fB-f\fR オプションを使用して、NIS プロジェクトマップの内容を評価します。
+
+.sp
+.in +2
+.nf
+# ypcat project | projmod -f -
+.fi
+.in -2
+
+.SH 終了ステータス
+.sp
+.LP
+エラーが発生した場合、\fBprojmod\fR はエラーメッセージを出力し、次のいずれかの値で終了します。 
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+正常終了。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 6n
+.rt  
+コマンド構文が無効でした。\fBprojmod\fR の使用法に関するメッセージが表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.RS 6n
+.rt  
+オプションに無効な引数が指定されました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR\fR
+.ad
+.RS 6n
+.rt  
+\fB-p\fR オプションで指定された \fIprojid\fR はすでに使用されています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB5\fR\fR
+.ad
+.RS 6n
+.rt  
+プロジェクトファイルにエラーがあります。\fBproject\fR(4) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB6\fR\fR
+.ad
+.RS 6n
+.rt  
+変更するプロジェクト、グループ、ユーザー、またはリソースが存在しません。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB9\fR\fR
+.ad
+.RS 6n
+.rt  
+プロジェクトはすでに使用されています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB10\fR\fR
+.ad
+.RS 6n
+.rt  
+\fB/etc/project\fR ファイルを更新できません。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/group\fR\fR
+.ad
+.RS 16n
+.rt  
+グループ定義を含むシステムファイル
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/project\fR\fR
+.ad
+.RS 16n
+.rt  
+システムプロジェクトファイル
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/passwd\fR\fR
+.ad
+.RS 16n
+.rt  
+システムパスワードファイル
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/shadow\fR\fR
+.ad
+.RS 16n
+.rt  
+ユーザーの暗号化パスワードおよび関連情報を含むシステムファイル
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(5.5i) |cw(0i) 
+lw(5.5i) |lw(0i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性下記を参照。
+.TE
+
+.sp
+.LP
+この呼び出しは開発中です。人間が読める形式の出力は不安定 (Unstable) です。
+.SH 関連項目
+.sp
+.LP
+\fBgroupadd\fR(1M)、\fBgroupdel\fR(1M)、\fBgroupmod\fR(1M)、\fBprojadd\fR(1M)、\fBprojdel\fR(1M)、\fBuseradd\fR(1M)、\fBuserdel\fR(1M)、\fBusermod\fR(1M)、\fBpasswd\fR(4)、\fBproject\fR(4)、\fBattributes\fR(5)、\fBresource-controls \fR(5)
+.SH 注意事項
+.sp
+.LP
+\fBprojmod\fR ユーティリティーは、ローカルの \fB/etc/project\fR ファイル内のプロジェクト定義だけを変更します。\fBNIS\fR や \fBLDAP\fR などのネットワークネームサービスを使用してローカルファイルに追加エントリが補完されている場合、ネットワークネームサービスによって指定された情報は \fBprojmod\fR では変更できません。ただし、\fBprojmod\fR は外部ネームサービスと照合して、プロジェクト名およびプロジェクト \fBID\fR が一意であることを確認します。 

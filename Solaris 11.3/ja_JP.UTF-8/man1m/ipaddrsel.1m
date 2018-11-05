@@ -1,0 +1,260 @@
+'\" te
+.\" Copyright (c) 2006, 2012, Oracle and/or its affiliates. All rights reserved.
+.TH ipaddrsel 1M "2012 年 5 月 22 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+ipaddrsel \- IPv6 デフォルトアドレス選択の構成
+.SH 形式
+.LP
+.nf
+\fB/usr/sbin/ipaddrsel\fR 
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipaddrsel\fR \fB-f\fR \fIfile\fR
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipaddrsel\fR \fB-d\fR
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBipaddrsel\fR ユーティリティーは、IPv6 デフォルトアドレス選択ポリシーテーブルを構成するために使用します。このポリシーテーブルは、IPv6 の発信元アドレス選択および着信先アドレス順序付けで名前を \fBAF_INET6\fR アドレスに解決するときに使用される最長接頭辞一致検索テーブルです。発信元アドレス選択でポリシーテーブルを使用する方法については、\fBinet6\fR(7P) を参照してください。着信先アドレス順序付けでポリシーテーブルを使用する方法については、\fBgetaddrinfo\fR(3SOCKET) を参照してください。
+.sp
+.LP
+変更されていないポリシーテーブルは、すべての一般的な IPv6 配備で有効です。このテーブルは、IPv6 発信元アドレス選択または着信先アドレス順序付けメカニズムのデフォルト動作では不十分な状況が存在する場合にのみ変更します。このような状況の例については、使用例のセクションを参照してください。提供されたデフォルトのテーブルを変更する前に、アドレス指定方法を慎重に検討すべきです。
+.sp
+.LP
+引数を指定せずに \fBipaddrsel\fR コマンドを発行すると、現在使用しているアドレス選択ポリシーが表示されます。出力の形式は、\fB-f\fR オプションに指定できる構成ファイルの形式と互換性があります。
+.LP
+注 - 
+.sp
+.RS 2
+\fBifconfig\fR(1M) の \fBusesrc\fR サブコマンドを特定の物理インタフェースに適用すると、\fBusesrc\fR で指定された選択ポリシーによって、\fBipaddrsel\fR で指定された発信元アドレス選択ポリシーがオーバーライドされます。これは、ローカルに生成されたパケットや、\fBbind\fR(3SOCKET) を使用してゼロ以外の発信元アドレスを選択しないアプリケーションにも当てはまります。
+.RE
+.SS "構成ファイル"
+.sp
+.LP
+\fB-f\fR オプションに指定できる構成ファイルには、コメント行とポリシーエントリのいずれかを含めることができます。コメント行は、最初の空白以外の文字が「\fB#\fR」であり、\fBipaddrsel\fR ユーティリティーによって無視されます。ポリシーエントリ行の形式は次のとおりです。
+.sp
+.in +2
+.nf
+\fIprefix\fR/\fIprefix_length\fR \fIprecedence\fR \fIlabel\fR [# \fIcomment\fR]
+.fi
+.in -2
+
+.sp
+.LP
+\fIprefix\fR は、\fBinet\fR(3SOCKET) と一致する形式の IPv6 接頭辞です。\fIprefix_length\fR は、0 から 128 までの整数です。IPv6 の発信元アドレス選択および着信先アドレス順序付けアルゴリズムでは、このテーブル内の接頭辞を使用して接頭辞最長一致検索を実行することによって、アドレスの優先度またはラベルが決定されます (IP ルーティングテーブルを使用して接頭辞最長一致検索を実行することによって、着信先の次ホップが決定されるのとよく似ています)。
+.sp
+.LP
+この優先度は、着信先アドレス順序付けメカニズムが名前検索で返されたアドレスをソートする方法を表す負でない整数です。一般に、優先度の高いアドレスは優先度の低いアドレスより前になります。ただし、好ましくない発信元アドレスを含む着信先など、ほかの要因によってこれらの優先度値がオーバーライドされることがあります。
+.sp
+.LP
+このラベルは、\fINULL\fR 終端を含まない最大 15 文字の文字列です。このラベルを使用すると、特定の発信元アドレスの接頭辞を同じラベルの着信先アドレスの接頭辞とともに使用できるようになります。特に、特定の着信先アドレスについては、IPv6 発信元アドレス選択アルゴリズムによって、ラベルがその着信先と同じである発信元アドレスが優先されます。
+.sp
+.LP
+ラベルのあとには省略可能なコメントを付けることができます。
+.sp
+.LP
+このファイルには、デフォルトのポリシーエントリ (\fIprefix\fR および \fIprefix_length\fR が \fB::0/0\fR であるエントリ) が含まれている必要があります。これは、可能なすべてのアドレスがポリシーと一致するようにするためです。
+.SH オプション
+.sp
+.LP
+\fBippadrsel\fR ユーティリティーは、次のオプションをサポートします。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfile\fR\fR
+.ad
+.RS 11n
+.rt  
+アドレス選択ポリシーテーブルを \fIfile\fR に指定したポリシーで置換します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.RS 11n
+.rt  
+カーネルのアドレス選択ポリシーテーブルをデフォルトのテーブルに戻します。この方法で \fBipaddrsel\fR を呼び出すと、現在実行中のカーネルのポリシーテーブルのみが変更され、構成ファイル \fB/etc/inet/ipaddrsel.conf\fR は変更されません。構成ファイルをそのデフォルト設定に戻すには、\fBipaddrsel\fR \fB-d\fR を使用し、\fBipaddrsel\fR の出力を \fB/etc/inet/ipaddrsel.conf\fR にリダイレクトすることによって、テーブルの内容を構成ファイルにダンプします。 
+.sp
+.in +2
+.nf
+example# \fBipaddrsel -d\fR
+example# \fBipaddrsel > /etc/inet/ipaddrsel.conf\fR
+.fi
+.in -2
+.sp
+
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fR\fB/etc/inet/ipaddrsel.conf\fR のデフォルトポリシー
+.sp
+.LP
+次の例は、\fB/etc/inet/ipaddrsel.conf\fR に格納されているデフォルトポリシーです。
+
+.sp
+.in +2
+.nf
+# Prefix                            Precedence Label
+::1/128                             50 Loopback
+::/96                               20 IPv4_Compatible
+::ffff:0.0.0.0/96                   10 IPv4
+2002::/16                           30 6to4
+::/0                                40 Default
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRリンクローカルアドレスおよびサイトローカルアドレスに低い優先度を割り当てる
+.sp
+.LP
+デフォルトでは、着信先アドレス順序付けルールによって、小さいスコープを持つアドレスが大きいスコープを持つアドレスより前にソートされます。たとえば、名前がグローバルアドレスとサイトローカルアドレスに解決される場合は、サイトローカルアドレスがグローバルアドレスより前に順序付けられます。管理者は、次のテーブルに示すように、小さいスコープを持つアドレスに低い優先度を割り当てることによって、この順序付けルールをオーバーライドできます。
+
+.sp
+.in +2
+.nf
+# Prefix                             Precedence Label
+::1/128                              50 Loopback
+::/0                                 40 Default
+2002::/16                            30 6to4
+fec0::/10                            27 Site-Local
+fe80::/10                            23 Link-Local
+::/96                                20 IPv4_Compatible
+::ffff:0.0.0.0/96                    10 IPv4
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fRIPv4 の着信先に高い優先度を割り当てる
+.sp
+.LP
+名前の検索では、デフォルトで IPv6 アドレスが IPv4 アドレスより前に順序付けられます。デフォルトのテーブルでは、\fB::ffff:0.0.0.0/96\fR がもっとも低い優先度を持っています。次の例では、IPv4 アドレスが高い優先度を割り当てられ、IPv6 の着信先より前に順序付けられます。
+
+.sp
+.in +2
+.nf
+# Prefix                             Precedence Label
+::1/128                              50 Loopback
+::/0                                 40 Default
+2002::/16                            30 6to4
+::/96                                20 IPv4_Compatible
+::ffff:0.0.0.0/96                    60 IPv4
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fR特定の発信元アドレスが使用されるようにする
+.sp
+.LP
+この例では、特定のネットワーク内の着信先と通信する場合にのみ、特定の発信元アドレスが使用されるようになります。
+
+.sp
+.LP
+次のポリシーテーブルは、ローカルシステム上の特定の発信元アドレス \fB2001:1111:1111::1\fR にラベル 5 を割り当てます。このテーブルは、ネットワーク \fB2001:2222:2222::/48\fR に同じラベルを割り当てます。このポリシーの結果、発信元アドレス \fB2001:1111:1111::1\fR は、ネットワーク \fB2001:2222:2222::/48\fR に含まれる着信先と通信する場合にのみ使用されます。この例では、このネットワークは特定のクライアントのネットワークを表す \fBClientNet\fR です。
+
+.sp
+.in +2
+.nf
+# Prefix                              Precedence Label
+::1/128                               50 Loopback
+2001:1111:1111::1/128                 40 ClientNet
+2001:2222:2222::/48                   40 ClientNet
+::/0                                  40 Default
+2002::/16                             30 6to4
+::/96                                 20 IPv4_Compatible
+::ffff:0.0.0.0/96                     10 IPv4
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+この例は、ローカルシステムに 1 つの物理インタフェースがあり、その物理インタフェースにグローバル接頭辞が割り当てられていることを前提としています。
+
+.SH 終了ステータス
+.sp
+.LP
+\fBipaddrsel\fR は、次の終了値を返します。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+\fBipaddrsel\fR が正常に完了しました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB>\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+エラーが発生した。障害が発生した場合、カーネルの現在のポリシーテーブルは変更されません。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ipaddrsel.conf\fR\fR
+.ad
+.RS 28n
+.rt  
+ブート時にインストールされる IPv6 デフォルトアドレス選択ポリシーを含むファイル。このファイルは、インターネットサービスが起動する前に読み込まれます。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBnscd\fR(1M), \fBinet\fR(3SOCKET), \fBgetaddrinfo\fR(3SOCKET), \fBipaddrsel.conf\fR(4), \fBattributes\fR(5), \fBinet6\fR(7P)
+.SH 注意事項
+.sp
+.LP
+\fBnscd\fR(1M) によって保持される ipnodes キャッシュには、着信先アドレス順序付けアルゴリズムを使用して順序付けられたアドレスが含まれており、それがブートシーケンスで \fBnscd\fR より前に \fBipaddrsel\fR が呼び出される理由の 1 つになっています。\fBnscd\fR の起動後に \fBipaddrsel\fR を使用してアドレス選択ポリシーを変更した場合は、次のコマンドを呼び出して、\fBnscd\fR の ipnodes キャッシュを無効にすべきです:
+.sp
+.in +2
+.nf
+example# \fB/usr/sbin/nscd -i ipnodes\fR
+.fi
+.in -2
+.sp
+

@@ -1,0 +1,600 @@
+'\" te
+.\" Copyright (c) 2007, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH projmod 1M "2015 年 5 月 20 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+projmod \- 修改系统中的项目信息
+.SH 用法概要
+.LP
+.nf
+\fBprojmod\fR [\fB-n\fR] [\fB-A\fR|\fB-f\fR \fIfilename\fR | -]
+.fi
+
+.LP
+.nf
+\fBprojmod\fR [\fB-n\fR] [\fB-A\fR|\fB-f\fR \fIfilename\fR | -] [\fB-p\fR \fIprojid\fR [\fB-o\fR]] 
+     [\fB-c\fR \fIcomment\fR] [\fB-a\fR|\fB-s\fR|\fB-r\fR] [\fB-U\fR \fIuser\fR [,\fIuser\fR]... ] 
+     [\fB-G\fR \fIgroup\fR [,\fIgroup\fR]... ] 
+     [ [\fB-K\fR \fIname\fR [=\fIvalue\fR [,\fIvalue\fR]...]...]] 
+     [\fB-l\fR \fInew_projectname\fR] \fIproject\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBprojmod\fR 实用程序用于修改系统中的项目定义。\fBprojmod\fR 可以更改指定项目的定义并对系统文件和文件系统进行与项目相关的相应更改。 
+.SH 选项
+.sp
+.LP
+支持以下选项： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.RS 29n
+.rt  
+将系统项目数据库中定义的项目资源控制应用于项目（如果项目处于活动状态）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 29n
+.rt  
+指定应将 \fB-U\fR、\fB-G\fR 或 \fB-K\fR 选项指定的用户、组、属性或属性值添加到项目中，而不是替换现有的成员或属性列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIcomment\fR\fR
+.ad
+.RS 29n
+.rt  
+将 \fIcomment\fR 指定为文本字符串。通常，\fIcomment\fR 包含项目的简短说明。此信息存储在项目的 \fB/etc/project\fR 条目中。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.RS 29n
+.rt  
+仅在与 \fB-A\fR 选项一起使用时有效。如果项目没有 \fBproject.pool \fR属性，则将其所有正在运行的进程绑定到该进程所在区域的缺省池。如果已通过 \fBpoolbind\fR(1M) 或 \fBpsrset\fR(1M) 执行手动绑定，而管理员希望将整个项目重新绑定到缺省池，则该选项将非常有用，如同已在 \fBproject\fR(4) 中设置了 \fBproject.pool=pool_default\fR。
+.sp
+从项目中删除 \fBproject.pool\fR 属性后，使用此选项可将项目重新绑定到缺省池。若不使用此选项，如果项目未指定 \fBproject.pool\fR 或 \fBproject.mcb\fR 属性，则项目中的进程将保持与任何已绑定的池或 pset 的绑定不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfilename\fR | –\fR
+.ad
+.RS 29n
+.rt  
+指定要修改或验证的项目文件或指定 stdin 输入用于验证。如“操作数”部分的说明，如果您没有在 \fBprojmod\fR 命令行中指定项目，\fBprojmod\fR 将验证 \fB-f\fR 的参数。如果没有使用此选项，将修改系统项目文件 \fB/etc/project\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-G\fR \fIgroup\fR [,\fIgroup\fR...]\fR
+.ad
+.RS 29n
+.rt  
+指定项目成员组的替换列表。与 \fB-a\fR 或 \fB-r\fR 选项结合使用时，此选项将指定要添加到项目中或从中删除的组的列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-K\fR \fIname\fR[=\fIvalue\fR[,\fIvalue\fR...]\fR
+.ad
+.RS 29n
+.rt  
+指定项目的项目属性替换列表。与 \fB-a\fR、\fB-r\fR 或 \fB-s\fR 选项结合使用时，此选项将指定要在项目中添加、删除或替换的属性值列表。属性必须以分号 (\fB;\fR) 进行分隔。可以指定多个 \fB-K\fR 选项以设置、添加、删除或替换多个键的值，例如：
+.sp
+.in +2
+.nf
+-K \fIkey1\fR=\fIvalue1\fR -K "\fIkey2\fR=(\fIvalue2a\fR),(\fIvalue2b\fR)"
+.fi
+.in -2
+
+资源控制属性使用括号来指定键值。由于许多用户 shell 都将括号解释为特殊字符，因此最好使用双引号将包含括号的 \fB-K\fR 参数括起来，如上例和下文的“示例”部分所示。有关可以为项目指定的资源控制的说明，请参见 \fBresource-controls \fR(5)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fInew_projectname\fR\fR
+.ad
+.RS 29n
+.rt  
+指定项目的新项目名称。\fInew_projectname\fR 参数是一个以下字符组成的字符串：字母字符、数字字符、句点 (\fB\&.\fR)、下划线 (\fB_\fR) 和连字符 (\fB-\fR)。第一个字符应为字母。如果不满足这些限制，将写入一条错误消息。项目名称在项目文件中还必须是唯一的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 29n
+.rt  
+语法检查。仅检查现有系统项目文件格式和相关修改。不检查现有项目文件内容，例如项目属性中指定的用户名、组名和资源。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR\fR
+.ad
+.RS 29n
+.rt  
+此选项允许 \fB-p\fR 选项指定的项目 ID 在项目文件中不唯一。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIprojid\fR\fR
+.ad
+.RS 29n
+.rt  
+为项目指定新的项目 \fBID\fR。该值必须为小于 \fBparam.h\fR 中定义的 \fBMAXUID\fR 的非负十进制整数。如果未指定 \fB-o\fR 选项，此值在项目文件中必须是唯一的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.RS 29n
+.rt  
+指定应从项目中删除由 \fB-U\fR、\fB-G\fR 或 \fB-K\fR 选项指定的用户、组、属性或属性值，而不是替换现有成员或属性列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 29n
+.rt  
+指定应替换 \fB-K\fR 选项指定的属性列表中相应属性的值。如果属性不存在，会像使用 a 选项一样添加这些属性。此选项不会对 \fB-U\fR 或 \fB-G\fR 选项造成任何影响。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-U\fR \fIuser\fR [,\fIuser\fR...]\fR
+.ad
+.RS 29n
+.rt  
+指定项目的成员用户的替换列表。与 \fB-a\fR 或 \fB-r\fR 选项结合使用时，该选项会指定要在项目中添加或删除的用户列表。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIproject\fR\fR
+.ad
+.RS 11n
+.rt  
+要修改或显示的现有项目名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fI(none)\fR\fR
+.ad
+.RS 11n
+.rt  
+如果没有给定任何操作数，将验证项目文件而不修改任何项目。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR使用 \fB-K\fR 选项添加属性值
+.sp
+.LP
+请考虑以下 \fBproject\fR(4) 条目：
+
+.sp
+.in +2
+.nf
+salesaudit:111:Auditing Project::sales,finance: \e
+  process.max-file-size=(priv,52428800,deny); \e
+  task.max-lwps=(priv,100,deny)
+.fi
+.in -2
+
+.sp
+.LP
+以上条目在 \fB/etc/project\fR 中将显示为一行。对于本例和以下示例，重点在于 \fBproject\fR 条目中的属性字段。即，最后一个字段，也就是最后一个分号后面的字段。
+
+.sp
+.LP
+项目 \fBsalesaudit\fR 的属性字段列出了以下资源控制：
+
+.sp
+.in +2
+.nf
+task.max-lwps=(priv,1000,signal=KILL)
+.fi
+.in -2
+
+.sp
+.LP
+以下 \fBprojmod\fR 命令将操作子句添加到以上条目中：
+
+.sp
+.in +2
+.nf
+# projmod -a -K "task.max-lwps=(priv,100,deny)" salesaudit 
+.fi
+.in -2
+
+.sp
+.LP
+在 \fBsalesaudit\fR 的条目中将生成以下属性字段：
+
+.sp
+.in +2
+.nf
+task.max-lwps=(priv,100,deny),(priv,1000,signal=KILL)
+.fi
+.in -2
+
+.LP
+\fB示例 2 \fR使用 \fB-K\fR 选项替换属性值
+.sp
+.LP
+假定项目 \fBsalesaudit\fR 的 \fBproject\fR(4) 条目中的属性字段列出了以下资源控制：
+
+.sp
+.in +2
+.nf
+task.max-lwps=(priv,100,deny),(priv,1000,signal=KILL)
+.fi
+.in -2
+
+.sp
+.LP
+以下 \fBprojmod\fR 命令使用命令中指定的操作子句替换以上条目中的操作子句：
+
+.sp
+.in +2
+.nf
+# projmod -s -K "task.max-lwps=(priv,500,signal=SIGSTOP)" salesaudit 
+.fi
+.in -2
+
+.sp
+.LP
+在 \fBsalesaudit\fR 的条目中将生成以下属性字段：
+
+.sp
+.in +2
+.nf
+task.max-lwps=(priv,500,signal=SIGSTOP)
+.fi
+.in -2
+
+.LP
+\fB示例 3 \fR使用 \fB-K\fR 选项删除属性值
+.sp
+.LP
+假定项目 \fBsalesaudit\fR 的 \fBproject\fR(4) 条目中的属性字段列出了以下资源控制：
+
+.sp
+.in +2
+.nf
+task.max-lwps=(priv,100,deny),(priv,1000,signal=KILL)
+.fi
+.in -2
+
+.sp
+.LP
+以下 \fBprojmod\fR 命令删除以上条目中的第一个操作子句：
+
+.sp
+.in +2
+.nf
+# projmod -r -K "task.max-lwps=(priv,100,deny)" salesaudit 
+.fi
+.in -2
+
+.sp
+.LP
+在 \fBsalesaudit\fR 的条目中将生成以下属性字段：
+
+.sp
+.in +2
+.nf
+task.max-lwps=(priv,1000,signal=KILL)
+.fi
+.in -2
+
+.LP
+\fB示例 4 \fR指定多个属性值
+.sp
+.LP
+假定您要对项目 \fBsalesaudit\fR 实现以下资源控制：
+
+.sp
+.in +2
+.nf
+task.max-lwps=(priv,100,deny)
+process.max-file-size=(priv,50MB,deny)
+.fi
+.in -2
+
+.sp
+.LP
+以下 \fBprojmod\fR 命令为 \fBsalesaudit\fR 添加这些资源控制：
+
+.sp
+.in +2
+.nf
+# projmod -a -K "task.max-lwps=(priv,100,deny)" \e
+-K "process.max-file-size=(priv,50MB,deny)" salesaudit 
+.fi
+.in -2
+
+.sp
+.LP
+在 \fBsalesaudit\fR 的条目中将生成以下属性字段：
+
+.sp
+.in +2
+.nf
+task.max-lwps=(priv,100,deny);process.max-file-size=(priv,52428800,deny)
+.fi
+.in -2
+
+.sp
+.LP
+请注意此示例中使用的修饰符和比例系数对资源控制 \fBprocess.max-file-size\fR 的作用。\fBprojmod\fR 中指定的内容：
+
+.sp
+.in +2
+.nf
+"process.max-file-size=(priv,50MB,deny)"
+.fi
+.in -2
+
+.sp
+.LP
+在 \fB/etc/project\fR 中将变为：
+
+.sp
+.in +2
+.nf
+process.max-file-size=(priv,52428800,deny)
+.fi
+.in -2
+
+.sp
+.LP
+即，\fB50MB\fR 扩展为 \fB52428800\fR。可用于资源控制的修饰符（例如 MB）以及比例系数是在 \fBresource-controls \fR(5) 中指定的。
+
+.LP
+\fB示例 5 \fR将池绑定到项目
+.sp
+.LP
+以下命令设置项目 \fBsales\fR 的 \fBproject.pool\fR 属性。
+
+.sp
+.in +2
+.nf
+# projmod -a -K project.pool=salespool sales
+.fi
+.in -2
+
+.LP
+\fB示例 6 \fR评估 \fBstdin\fR 中的输入
+.sp
+.LP
+以下命令使用不带项目名称操作数的 \fB-f\fR 选项评估 NIS 项目图的内容。
+
+.sp
+.in +2
+.nf
+# ypcat project | projmod -f -
+.fi
+.in -2
+
+.SH 退出状态
+.sp
+.LP
+如果出现错误，\fBprojmod\fR 将输出错误消息并以下列某一值退出： 
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功完成。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 6n
+.rt  
+命令语法无效。将显示 \fBprojmod\fR 的用法消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.RS 6n
+.rt  
+为选项提供的参数无效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR\fR
+.ad
+.RS 6n
+.rt  
+使用 \fB-p\fR 选项指定的 \fIprojid\fR 已在使用中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB5\fR\fR
+.ad
+.RS 6n
+.rt  
+项目文件中包含错误。请参见 \fBproject\fR(4)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB6\fR\fR
+.ad
+.RS 6n
+.rt  
+要修改的项目、组、用户或资源不存在。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB9\fR\fR
+.ad
+.RS 6n
+.rt  
+项目已在使用中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB10\fR\fR
+.ad
+.RS 6n
+.rt  
+无法更新 \fB/etc/project\fR 文件。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/group\fR\fR
+.ad
+.RS 16n
+.rt  
+包含组定义的系统文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/project\fR\fR
+.ad
+.RS 16n
+.rt  
+系统项目文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/passwd\fR\fR
+.ad
+.RS 16n
+.rt  
+系统口令文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/shadow\fR\fR
+.ad
+.RS 16n
+.rt  
+包含用户加密口令和相关信息的系统文件
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(5.5i) |cw(0i) 
+lw(5.5i) |lw(0i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性请参见下文。
+.TE
+
+.sp
+.LP
+调用正在发展中。用户可读的输出不稳定。
+.SH 另请参见
+.sp
+.LP
+\fBgroupadd\fR(1M)、\fBgroupdel\fR(1M)、\fBgroupmod\fR(1M)、\fBprojadd\fR(1M)、\fBprojdel\fR(1M)、\fBuseradd\fR(1M)、\fBuserdel\fR(1M)、\fBusermod\fR(1M)、\fBpasswd\fR(4)、\fBproject\fR(4)、\fBattributes\fR(5)、\fBresource-controls \fR(5)
+.SH 附注
+.sp
+.LP
+\fBprojmod\fR 实用程序仅在本地 \fB/etc/project\fR 文件中修改项目定义。如果在使用网络名称服务（如 \fBNIS\fR 或 \fBLDAP\fR）为本地文件补充其他条目，\fBprojmod\fR 将无法更改网络名称服务提供的信息。但是，\fBprojmod\fR 将依据外部名称服务验证项目名称和项目 \fBID\fR 的唯一性。 

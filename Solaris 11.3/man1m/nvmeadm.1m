@@ -1,0 +1,658 @@
+'\" te
+.\" Copyright (c) 2014, 2015, Oracle and/or its affiliates. All rights reserved.
+.TH nvmeadm 1M "April 17, 2015" "SunOS 5.11" "System Administration Commands"
+.sp
+.SH NAME
+nvmeadm \- NVM Express (NVMe) controller command line interface\&.
+.sp
+.SH SYNOPSIS
+.LP
+.nf
+\fBnvmeadm [subcommand] [options] [\fIcontroller_name\fR]\&.\&.\&.\fR
+.fi
+.sp
+.SH DESCRIPTION
+.sp
+The \fBnvmeadm\fR utility is a command line interface that collects and modifies the controller and device configuration on an NVM Express (NVMe) subsystem\&. This includes the controller, an NVMe flash device, and the NVMe interface between them\&.
+.sp
+\fBnvmeadm\fR is implemented as a set of subcommands, described below\&.
+.sp
+.SH SUB-COMMANDS
+.sp
+The following subcommands are supported by \fBnvmeadm\fR\&.
+.sp
+For help on a specific subcommand, type: nvmeadm <subcommand> --help
+.sp
+.in +2
+.nf
+Available subcommands:
+  list          List information for the specified 
+                controller\&. If no \fIcontroller_name\fR is 
+                specified, list all controllers\&.
+
+  namespace     List Namespace(s) on the specified controller\&.
+
+  getlog        List NVMe log pages of the specified controller\&.
+
+  getfeature    List NVMe features of the specified controller\&.
+
+  format        Low level format the namespace(s) for the 
+                specified controller\&. Stop all IO to the NVMe 
+                device before attempting to format it\&.
+
+  erase         Erase all namespace media for the specified 
+                controller\&. Stop all IO to the NVMe device 
+                before attempting this action\&.
+ 
+  export        Backup controller settings to an XML file\&.
+
+  import        Restore controller block size and metadata size
+                settings from an XML file\&. Stop all IO to the 
+                NVMe device before attempting this action\&.
+.fi
+.in -2
+.sp
+.in +2
+.nf
+  offline       Take controller namespace offline\&.
+
+  online        Bring controller namespace online\&.
+.fi
+.in -2
+.sp
+Details on each subcommand, including supported options, are listed below\&.
+.sp
+Note -
+.sp
+.RS 2
+If no \fIcontroller_name\fR is specified, the required information for ALL NVMe controllers will be returned\&.
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlist\fR\fR
+.ad
+.RS 14n
+.rt
+Lists information for the specified controller\&.
+.sp
+.in +2
+.nf
+Options:
+
+  -v, --verbose
+.fi
+.in -2
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnamespace\fR\fR
+.ad
+.RS 14n
+.rt
+Lists information for the namespaces of the specified controller\&.
+.sp
+.in +2
+.nf
+Options:
+
+  -n, --namespace <argument>
+  -v, --verbose
+.fi
+.in -2
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgetlog\fR\fR
+.ad
+.RS 14n
+.rt
+Lists NVMe log pages of the specified controller\&. There are three types of log pages: error information, health information, and vendor-specific information\&.
+.sp
+.in +2
+.nf
+Options:
+
+  -e, --error <argument>
+  -h, --health
+  -s, --vendor_specific <argument>
+.fi
+.in -2
+.sp
+Error information is extended error information for commands\&. If a number is specified for the argument, the last number of the error logs will be displayed\&. Otherwise, the last 1 error log is returned\&.
+.sp
+Health information includes SMART data accumulated over the life of the controller and is retained across power cycles\&. It includes critical warnings about the controller and device status, such as temperature threshold, available spare, device life status, and various I/O statistics used for calculating I/O performance\&.
+.sp
+Vendor-specific information is extended information about the controller provided by the vendor\&. This option requires an argument that specifies the directory to which vendor-specific log pages will be saved\&.
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgetfeature\fR\fR
+.ad
+.RS 14n
+.rt
+Lists NVMe features of the specified controller\&.
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fBformat\fR\fR
+.ad
+.RS 14n
+.rt
+Low Level format a/all namespace(s) using a specified LBA format (block size and metadata size) for the specified controller\&. All data will be destroyed after a low level format\&. Stop all IO to the NVMe device before attempting to format it (not necessary when simply listing the format details of a device using the -l or --list option)\&.
+.sp
+.in +2
+.nf
+Options:
+
+  -a, --all
+  -b, --blocksize <argument>
+  -f, --format
+  -l, --list
+  -m, --metadatasize <argument>
+  -n, --namespace <argument>
+.fi
+.in -2
+.sp
+Note -
+.sp
+.RS 2
+The controller might not support format/erase of a single namespace\&. In this case, use the \fB-a\fR option to confirm format/erase of all namespaces\&.
+.sp
+.RE
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fBerase\fR
+.ad
+.RS 14n
+.rt
+Erases the NVMe namespace media for the specified controller\&. All data will be destroyed after an erase\&. Stop all IO to the NVMe device before attempting this action\&.
+.sp
+.in +2
+.nf
+Options:
+
+  -a, --all
+  -n, --namespace <argument>
+.fi
+.in -2
+.sp
+Note -
+.sp
+.RS 2
+The controller might not support format/erase of a single namespace\&. In this case, use the \fB-a\fR option to confirm format/erase of all namespaces\&.
+.sp
+.RE
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fBexport\fR
+.ad
+.RS 14n
+.rt
+Exports the configuration information for the specified controller to an xml file\&.
+.sp
+.in +2
+.nf
+Options:
+
+  -f, --filename <argument>
+.fi
+.in -2
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fBimport\fR\fR
+.ad
+.RS 14n
+.rt
+Imports the controller configuration information in the xml file to the specified controller\&. Only block size and metadata size information can be imported\&. Stop all IO to the NVMe device before attempting this action\&.
+.sp
+.in +2
+.nf
+Options:
+
+  -f, --filename <argument>
+.fi
+.in -2
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fBoffline\fR\fR
+.ad
+.RS 14n
+.rt
+Remove a/all namespace(s) and their associated system block device(s) for the specified controller\&.
+.sp
+.in +2
+.nf
+Options:
+
+  -a, --all
+  -n, --namespace <argument>
+.fi
+.in -2
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fBonline\fR
+.ad
+.RS 14n
+.rt
+Bring a/all namespce(s) for the specified controller online and present block device(s) to the system\&.
+.sp
+.in +2
+.nf
+Options:
+
+  -a, --all
+  -n, --namespace <argument>
+.fi
+.in -2
+.RE
+.sp
+.SH OPTIONS
+.sp
+The following general options are supported with nvmeadm\&.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-?\fR, \fB--help\fR\fR
+.ad
+.RS 14n
+.rt
+Displays usage information\&.
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR\fR
+.ad
+.RS 14n
+.rt
+Displays the version of the nvmeadm command\&.
+.RE
+.sp
+The following subcommand options are supported\&. Refer to the subcommands section to see which options are supported for each subcommand\&.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-?\fR, \fB--help\fR\fR
+.ad
+.br
+.sp .6
+.RS 4n
+Displays usage information\&.
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR, \fB--all\fR\fR
+.ad
+.br
+.sp .6
+.RS 4n
+Selects all namespaces on the specified controller\&.
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR, \fB--blocksize\fR \fB<argument>\fR\fR
+.ad
+.br
+.sp .6
+.RS 4n
+Specifies the LBA data size of a namespace on the specified controller\&. This option requires an argument for blocksize\&. Supported block sizes depend on the controller (see examples)\&. This option is only used with the \fBformat\fR subcommand\&.
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR, \fB--error\fR \fB<argument>\fR\fR
+.ad
+.br
+.sp .6
+.RS 4n
+Retrieves the extended error information\&. This option requires an argument\&. If a number is specified for the argument, the last number of the error logs will be displayed\&. Otherwise, the last 1 error log is returned\&. This option is only used with the \fBgetlog\fR subcommand\&.
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR, \fB--filename\fR \fB<argument>\fR\fR
+.ad
+.br
+.sp .6
+.RS 4n
+Specifies the source or target file\&. This option requires an argument that specifies the name of the source or target file\&. This option is only used for configuration import/export\&.
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR, \fB--format\fR\fR
+.ad
+.br
+.sp .6
+.RS 4n
+Formats the NVMe namespace(s) media on the specified controller\&. This option is only used with the \fBformat\fR subcommand\&. When formatting a namespace, this option requires additional options to specify the logical block size and metadata size\&.
+.sp
+Required additional options: \fB-b\fR, \fB-m\fR and \fB-a\fR\&. Optional additional option: \fB-n\fR\&. The \fB-b\fR, \fB-m\fR and \fB-n\fR options require arguments\&.
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR, \fB--health\fR\fR
+.ad
+.br
+.sp .6
+.RS 4n
+Retrieves the health (SMART) information of the specified controller\&. The information is over the life of the controller and is retained across power cycles\&. This option is only used with the \fBgetlog\fR subcommand\&.
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR, \fB--list\fR\fR
+.ad
+.br
+.sp .6
+.RS 4n
+Lists the LBA formats supported by the specified controller\&. Each LBA format contains LBA size and metadata size\&. This option is only used with the \fBformat\fR subcommand\&.
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR, \fB--metadatasize\fR \fB<argument>\fR\fR
+.ad
+.br
+.sp .6
+.RS 4n
+Specifies the metadata size of a namespace on the specified controller\&. This option requires an argument for metadatasize\&. Supported metadata sizes depend on the supported block sizes (see examples)\&. This option is only used with the \fBformat\fR subcommand\&.
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR, \fB--namespace\fR \fB<argument>\fR\fR
+.ad
+.br
+.sp .6
+.RS 4n
+Selects the namespace on the specified controller\&. This option requires an argument specifying the namespace\&. Use the namespace subcommand without options to display available namespaces\&.
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR, \fB--vendor_specific\fR \fB<argument>\fR\fR
+.ad
+.br
+.sp .6
+.RS 4n
+Retrieves the vendor-specific error information of the specified controller\&. This option requires an argument that specifies the directory to which the log pages will be saved\&. This option is only used with the \fBgetlog\fR subcommand\&.
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR, \fB--verbose\fR\fR
+.ad
+.br
+.sp .6
+.RS 4n
+Displays detailed information of a controller or device/namespace, based on the invoked subcommand\&.
+.RE
+.sp
+.SH EXAMPLES
+
+.LP
+\fBExample 1\fR Listing all NVMe Controllers
+.sp
+The following command lists all NVMe controllers on the host\&.
+.sp
+.in +2
+.nf
+# \fBnvmeadm list\fR
+SUNW-NVME-1
+.fi
+.in -2
+.sp
+.LP
+\fBExample 2\fR Listing all NVMe Controllers With Details
+.sp
+The following command lists details in verbose mode for all NVMe controllers on the host\&.
+.sp
+.in +2
+.nf
+# \fBnvmeadm list -v\fR				
+SUNW-NVME-1
+        PCI Vendor ID:                  8086
+        Serial Number:                  CVMD424000211P6IGN
+        Model Number:                   INTEL SSDPE2ME016T4S
+        Firmware Revision:              8DV1RA03
+        Number of Namespaces:           1
+.fi
+.in -2
+.sp
+.LP
+\fBExample 3\fR Listing a Particular NVMe Controller With Details
+.sp
+The following command lists NVMe controller details in verbose mode for the controller named SUNW-NVME-1\&.
+.sp
+.in +2
+.nf
+# \fBnvmeadm list -v SUNW-NVME-1\fR 
+SUNW-NVME-1
+        PCI Vendor ID:                  8086
+        Serial Number:                  CVMD424000211P6IGN
+        Model Number:                   INTEL SSDPE2ME016T4S
+        Firmware Revision:              8DV1RA03
+        Number of Namespaces:           1
+.fi
+.in -2
+.sp
+.LP
+\fBExample 4\fR Listing Namespaces
+.sp
+The following command lists all namespaces on all NVMe controllers\&.
+.sp
+.in +2
+.nf
+# \fBnvmeadm namespace\fR
+SUNW-NVME-1
+        Namespace: 1
+.fi
+.in -2
+.sp
+.LP
+\fBExample 5\fR Listing a Given Namespace in Verbose Mode
+.sp
+The following command lists details in verbose mode of namespace 1 on the controller named SUNW-NVME-1\&.
+.sp
+.in +2
+.nf
+# \fBnvmeadm namespace -n 1 -v SUNW-NVME-1\fR
+SUNW-NVME-1
+		Namespace: 1
+			Block Size:                     512
+			Capacity:                       3125627568
+			Metadata Size:                  0
+			Block Device Name:              /dev/rdsk/c3t1d0s2
+			Status:                         online
+.fi
+.in -2
+.sp
+.LP
+\fBExample 6\fR Listing the Supported LBA Format (Block and Metadata Sizes)
+.sp
+The following command lists the LBA format information supported for the controller(s)\&. Use this information when formatting a namespace for a specific controller\&.
+.sp
+.in +2
+.nf
+# \fBnvmeadm format -l\fR
+SUNW-NVME-1
+        LBA Format: 1
+                Block Size:                     512
+                Metadata Size:                  0
+        LBA Format: 2
+                Block Size:                     512
+                Metadata Size:                  8
+        LBA Format: 3
+                Block Size:                     512
+                Metadata Size:                  16
+        LBA Format: 4
+                Block Size:                     4096
+                Metadata Size:                  0
+        LBA Format: 5
+                Block Size:                     4096
+                Metadata Size:                  8
+        LBA Format: 6
+                Block Size:                     4096
+                Metadata Size:                  64
+.fi
+.in -2
+.sp
+.LP
+\fBExample 7\fR Offline a Given Namespace\&.
+.sp
+The following commands removes a given namespace\&.
+.sp
+.in +2
+.nf
+# \fBnvmeadm offline -n 1 SUNW-NVME-1\fR
+.fi
+.in -2
+.sp
+.LP
+\fBExample 8\fR Formatting a Given Namespace
+.sp
+The following command formats namespace 1 on the controller named SUNW-NVME-1 to an LBA format supported by the controller\&. All IO to the NVMe device must be stopped before attempting this action\&.
+.sp
+.in +2
+.nf
+# \fBnvmeadm format -f -a -b 4096 -m 0 -n 1 SUNW-NVME-1\fR
+.fi
+.in -2
+.sp
+.LP
+\fBExample 9\fR Erasing a Given Namespace
+.sp
+The following command erases namespace 1 on the controller named SUNW-NVME-1\&. All IO to the NVMe device must be stopped before attempting this action\&.
+.sp
+.in +2
+.nf
+# \fBnvmeadm erase -a -n 1 SUNW-NVME-1\fR
+.fi
+.in -2
+.sp
+.LP
+\fBExample 10\fR Listing the Smart/health Information of a Controller
+.sp
+The following command lists the smart/health information of the controller named SUNW-NVME-1\&.
+.sp
+.in +2
+.nf
+# nvmeadm getlog -h SUNW-NVME-1
+SUNW-NVME-1
+SMART/Health Information:
+        Critical Warning: 0
+        Temperature: 297 Kelvin
+        Available Spare: 100 percent
+        Available Spare Threshold: 10 percent
+        Percentage Used: 0 percent
+        Data Unit Read: 98470 of 512k bytes\&.
+        Data Unit Written: 0 of 512k bytes\&.
+        Number of Host Read Commands: 12811
+        Number of Host Write Commands: 0
+        Controller Busy Time in Minutes: 0
+        Number of Power Cycle: 45
+        Number of Power On Hours: 6
+        Number of Unsafe Shutdown: 37
+        Number of Media Errors: 0
+        Number of Error Info Log Entries: 0
+.fi
+.in -2
+.sp
+.LP
+\fBExample 11\fR Export Controller Settings to a File
+.sp
+The following command exports NVMe configuration from a controller named SUNW-NVME-1 to an XML file\&.
+.sp
+.in +2
+.nf
+# \fBnvmeadm export -f format\&.xml SUNW-NVME-1\fR
+.fi
+.in -2
+.sp
+.LP
+\fBExample 12\fR Import Controller Settings from a File
+.sp
+The following command imports NVMe configuration from an XML file to a controller named SUNW-NVME-2\&. Only block size and metadata size information can be imported\&. All IO to the NVMe device must be stopped before attempting this action\&.
+.sp
+.in +2
+.nf
+# \fBnvmeadm import -f format\&.xml SUNW-NVME-2\fR
+.fi
+.in -2
+.sp
+.SH FILES
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/log/ssm/nvmeadm\&.log\fR\fR
+.ad
+.RS 28n
+.rt
+Log file for nvmeadm\&.
+.RE
+.sp
+.SH ATTRIBUTES
+.sp
+See attributes(5) for descriptions of the following attributes:
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/storage/nvme-utilities
+_
+Interface StabilityCommitted
+.TE
+.sp
+.SH SEE ALSO
+.sp
+http://www.oracle.com/goto/ohmp/solarisdocs
+.sp
+Copyright (c) 2014, 2015, Oracle and/or its affiliates\&. All rights reserved\&.

@@ -1,0 +1,1443 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright 1992, X/Open Company Limited All Rights Reserved
+.\" Portions Copyright (c) 2005, 2010, Oracle and/or its affiliates.All rights reserved.
+.\" Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase"this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH nawk 1 "2010 年 7 月 9 日" "SunOS 5.11" "用户命令"
+.SH 名称
+nawk \- 模式扫描和处理语言
+.SH 用法概要
+.LP
+.nf
+\fB/usr/bin/nawk\fR [\fB-F\fR \fIERE\fR] [\fB-v\fR \fIassignment\fR] \fI\&'program'\fR | \fB-f\fR \fIprogfile\fR... 
+     [\fIargument\fR]...
+.fi
+
+.LP
+.nf
+\fB/usr/xpg4/bin/awk\fR [\fB-F\fR \fIERE\fR] [\fB-v\fR \fIassignment\fR]... \fI\&'program'\fR | \fB-f\fR \fIprogfile\fR... 
+     [\fIargument\fR]...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fB/usr/bin/nawk\fR 和 \fB/usr/xpg4/bin/awk\fR 实用程序可以执行用 \fBnawk\fR 编程语言编写的程序 (\fIprogram\fR)；该语言专门用于处理文本数据。\fBnawk\fR \fIprogram\fR 是一系列模式以及对应的操作。指定 \fIprogram\fR 的字符串必须括在单引号 (') 中以防止其被 shell 解释。可以在命令行中将模式 - 操作语句序列指定为 \fIprogram\fR，也可在一个或多个 \fB-f\fR\fIprogfile\fR 选项指定的文件中指定该序列。在读取到与某个模式匹配的输入时，将执行与该模式关联的操作。
+.sp
+.LP
+输入解释为一系列记录。缺省情况下，一个记录就是一行，但可使用 \fBRS\fR 内置变量更改此设置。每个输入记录与 \fIprogram\fR 中的每个模式进行匹配。对于每个匹配的模式，将执行关联的操作。
+.sp
+.LP
+\fBnawk\fR 实用程序将每个输入记录解释为一系列字段；缺省情况下，其中的一个字段就是一个非空白字符组成的字符串。可以使用 \fBFS\fR 内置变量或 \fB-F\fR\fIERE\fR 选项更改这种缺省的空白字符分隔符（空白和/或制表符）。\fBnawk\fR 实用程序用记录 \fB$1\fR 表示第一个字段，用记录 \fB$2\fR 表示第二个字段，依此类推。符号 \fB$0\fR 指整个记录；设置其他任何字段将导致对 \fB$0\fR 重新求值。赋值给 \fB$0\fR 将重置所有字段以及 \fBNF\fR 内置变量的值。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR \fIERE\fR\fR
+.ad
+.RS 17n
+.rt  
+将输入字段分隔符定义为扩展正则表达式 \fIERE\fR，然后再读取任何输入（可以是字符）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIprogfile\fR\fR
+.ad
+.RS 17n
+.rt  
+指定文件包含 \fBnawk\fR 程序的 \fIprogfile\fR 文件的路径名。如果指定了此选项的多个实例，则按指定顺序将指定为 \fIprogfile\fR 的文件串联起来就是 \fBnawk\fR 程序。也可以在命令行中以单个参数形式指定 \fBnawk\fR 程序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR \fIassignment\fR\fR
+.ad
+.RS 17n
+.rt  
+\fIassignment\fR 参数和形式必须与 \fIassignment\fR 操作数相同。赋值的形式为 \fIvar=value\fR，其中 \fIvar\fR 是下文中描述的其中一个变量的名称。指定的赋值发生在执行 \fBnawk\fR 程序之前，其中包括与 \fBBEGIN\fR 模式关联的操作（如果有）。可以多次指定此选项。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIprogram\fR\fR
+.ad
+.RS 12n
+.rt  
+如果未指定 \fB-f\fR 选项，则 \fBnawk\fR 的第一个操作数是 \fBnawk\fR 程序的文本。应用程序提供的 \fIprogram\fR 操作数是作为 \fBnawk\fR 的单个参数提供的。如果文本不以换行符结尾，则 \fBnawk\fR 在解释文本时会将其当成以换行符结尾。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIargument\fR\fR
+.ad
+.RS 12n
+.rt  
+可以混合以下两种类型的 \fIargument\fR： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfile\fR\fR
+.ad
+.RS 14n
+.rt  
+包含要读取的输入的文件的路径名，根据程序中的模式集匹配。如果未指定 \fIfile\fR 操作数，或者如果 \fIfile\fR 操作数为 \fB-\fR，则会使用标准输入。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIassignment\fR\fR
+.ad
+.RS 14n
+.rt  
+以下划线或者可移植字符集中的字母字符开头并且后跟一系列下划线、数字和可移植字符集中的字母的操作数，后接 \fB=\fR 字符指定一个变量赋值，而不是路径名。\fB=\fR 之前的字符表示 \fBnawk\fR 变量的名称。如果该名称是 \fBnawk\fR 保留字，则行为未定义。解释符号后面的字符时，就像其出现在 \fBnawk\fR 程序中一样，前后加双引号 (\fB"\fR) 字符，就如同 \fBSTRING\fR 令牌；但是，如果最后一个字符是未转义的斜杠，则将其解释为文本反斜杠，而不是序列 \fB\\fR 的第一个字符。向变量赋予该 \fBSTRING\fR 令牌的值。如果该值被视为 \fInumeric\fRstring\fI，\fR则向变量赋予其数值。每个此类变量赋值仅在处理以下 \fIfile\fR（如果有）之前执行。因此，在第一个 \fBfile\fR 参数之前的赋值会在 \fBBEGIN\fR 操作（如果有）之后执行，而在最后一个 \fIfile\fR 参数之后的赋值则在 \fBEND\fR 操作（如果有）之前执行。如果没有 \fIfile\fR 参数，则赋值在处理标准输入之前执行。
+.RE
+
+.RE
+
+.SH 输入文件
+.sp
+.LP
+来自以下任何来源的 \fBnawk\fR 程序输入文件：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+任何 \fIfile\fR 操作数或其等效项，通过修改 \fBnawk\fR 变量 \fBARGV\fR 和 \fBARGC\fR 获得
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+没有任何 \fIfile\fR 操作数时的标准输入
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBgetline\fR 函数的参数
+.RE
+.sp
+.LP
+必须是文本文件。不管是否将变量 \fBRS\fR 设置为换行符之外的值，对于这些行，实现支持以最多 \fB{LINE_MAX}\fR 字节的指定分隔符结尾的记录，并且可以支持更长的记录。
+.sp
+.LP
+如果指定了 \fB-\fR\fBf\fR \fIprogfile\fR，则由每个 \fIprogfile\fR 选项-参数指定的文件必须是包含 \fBnawk\fR 程序的文本文件。
+.sp
+.LP
+仅当未指定任何 \fIfile\fR 操作数，或者某个 \fIfile\fR 操作数为 \fB-\fR 时，才使用标准输入。
+.SH 扩展描述
+.sp
+.LP
+\fBnawk\fR 程序由以下形式的模式-操作对组成：
+.sp
+.in +2
+.nf
+pattern { \fIaction\fR }
+.fi
+.in -2
+
+.sp
+.LP
+可以省略模式或操作（包括大括号字符）。模式-操作语句用冒号或换行符分隔。
+.sp
+.LP
+缺少模式时将匹配任何输入记录，缺少操作时等效于将匹配输入记录写入到标准输出的操作。
+.sp
+.LP
+开始执行 \fBnawk\fR 程序时，先执行与所有 \fBBEGIN\fR 模式关联的操作，执行顺序为其在程序中发生的顺序。然后，通过从文件中读取数据处理每个 \fIfile\fR 操作数（如果未指定文件，则为标准输入），直到遇到记录分隔符（缺省情况下为换行符）：使用 \fBFS\fR 的当前值将当前记录拆分到字段中，按发生顺序为程序中的每个模式求值，以及执行与当前记录匹配的每个模式关联的操作。先执行匹配模式的操作，然后才对后续模式求值。最后，执行与所有 \fBEND\fR 模式关联的操作，执行顺序为其在程序中发生的顺序。
+.SS "nawk 中的表达式"
+.sp
+.LP
+表达式描述在 \fIpatterns\fR 和 \fIactions\fR 中使用的计算。在下表中按组列出了有效的表达式运算，优先级最高的运算在前，优先级最低的运算在后，优先级相同的运算符用横线分组。在表达式求值时，如果语法不明确，优先级较高的运算符先于优先级较低运算符求值。在此表中，\fIexpr\fR、\fIexpr1\fR、\fIexpr2\fR 和 \fIexpr3\fR 表示任意表达式，而 \fIlvalue\fR 表示可对其赋值的任意实体（即，在赋值运算符的左侧）。
+.sp
+
+.sp
+.TS
+tab();
+cw(1.38i) cw(1.38i) cw(1.35i) cw(1.39i) 
+lw(1.38i) lw(1.38i) lw(1.35i) lw(1.39i) 
+.
+\fB语法\fR\fB名称\fR\fB结果类型\fR\fB关联\fR
+_
+( \fIexpr\fR )分组\fIexpr\fR 的类型不适用
+_
+$\fIexpr\fR字段引用字符串不适用
+_
+++ \fIlvalue\fR前增量数字不适用
+ --\fIlvalue\fR前减量数字不适用
+\fIlvalue\fR ++后增量数字不适用
+\fIlvalue\fR --后减量 数字不适用
+_
+\fIexpr\fR ^ \fIexpr\fR求幂数字右
+_
+! \fIexpr\fR逻辑 NOT数字不适用
++ \fIexpr\fR一元加数字不适用
+- \fIexpr\fR一元减数字不适用
+_
+\fIexpr\fR * \fIexpr\fR乘数字左
+\fIexpr\fR / \fIexpr\fR除数字左
+\fIexpr\fR % \fIexpr\fR模数数字左
+_
+\fIexpr\fR + \fIexpr\fR加数字左
+\fIexpr\fR - \fIexpr\fR减数字 左
+_
+\fIexpr\fR \fIexpr\fR字符串串联字符串左
+_
+\fIexpr\fR < \fIexpr\fR小于数字none
+\fIexpr\fR <= \fIexpr\fR小于或等于数字none
+\fIexpr\fR != \fIexpr\fR不等于数字none
+\fIexpr\fR == \fIexpr\fR等于数字none
+\fIexpr\fR > \fIexpr\fR大于数字none
+\fIexpr\fR >= \fIexpr\fR大于或等于数字none
+_
+\fIexpr\fR ~ \fIexpr\fRERE 匹配数字none
+\fIexpr\fR !~ \fIexpr\fRERE 不匹配 数字none
+_
+\fIexpr\fR in array数组成员数字左
+( \fIindex\fR ) in多维数组数字左
+    \fIarray\fR    成员
+_
+\fBexpr\fR && \fIexpr\fR逻辑 AND数字左
+_
+\fBexpr\fR | | \fIexpr\fR逻辑 OR数字左
+_
+\fIexpr1\fR ? \fIexpr2\fR条件表达式选择的右
+    : \fIexpr3\fR   \fIexpr2\fR 或 \fIexpr3\fR 的类型
+_
+\fIlvalue\fR ^= \fIexpr\fR求幂数字右 
+赋值
+\fIlvalue\fR %= \fIexpr\fR模数赋值数字右
+\fIlvalue\fR *= \fIexpr\fR乘数字右
+赋值
+\fIlvalue\fR /= \fIexpr\fR商赋值数字右
+\fIlvalue\fR += \fIexpr\fR和赋值数字右
+\fIlvalue\fR -= \fIexpr\fR差赋值数字右
+\fIlvalue\fR = \fIexpr\fR赋值\fIexpr\fR 的类型右
+.TE
+
+.sp
+.LP
+每个表达式的值为字符串和/或数字。除了声明用于特定上下文以外，表达式的值隐式转换为使用表达式的上下文所需的类型。字符串值通过以下等效调用转换为数值：
+.sp
+.in +2
+.nf
+setlocale(LC_NUMERIC, "");
+\fInumeric_value\fR = atof(\fIstring_value\fR);
+.fi
+.in -2
+
+.sp
+.LP
+恰好为整数的数值通过等效调用 \fBsprintf\fR 函数转换为字符串，以字符串 \fB%d\fR 作为 \fBfmt\fR 参数，以被转换的数值作为第一个也是唯一一个 \fIexpr\fR 参数。任何其他数值通过等效调用 \fBsprintf\fR 函数转换为字符串，以变量 \fBCONVFMT\fR 的值作为 \fBfmt\fR 参数，以被转换的数值作为第一个也是唯一一个 \fIexpr\fR 参数。
+.sp
+.LP
+在以下情况下，将字符串值视为 \fInumeric string\fR：
+.RS +4
+.TP
+1.
+忽略任何前导和结尾空白字符。
+.RE
+.RS +4
+.TP
+2.
+如果第一个未忽略的字符为 \fB+\fR 或 \fB-\fR，则将其忽略。
+.RE
+.RS +4
+.TP
+3.
+如果剩余的未忽略字符从词法上可识别为 \fBNUMBER\fR 标记，则将该字符串视为\fI数字字符串\fR。
+.RE
+.sp
+.LP
+如果在以上步骤中忽略了 \fB-\fR 字符，则 \fInumeric string\fR 的数值是识别的 \fBNUMBER\fR 标记的数值的负值。否则，\fInumeric string\fR 的数值是识别的 \fBNUMBER\fR 标记的数值。某个字符串是否为 \fInumeric string\fR 仅在使用了本节所述条件的上下文中才有意义。
+.sp
+.LP
+在布尔上下文中使用表达式时，如果该表达式有数值，则将值零视为 false，将任何其他值都视为 true。否则，将空字符串值视为 false，将任何其他值都视为 true。布尔上下文为以下情况之一：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+条件表达式的第一个子表达式。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+对其进行逻辑 NOT、逻辑 \fBAND\fR 或逻辑 OR 运算的表达式。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBfor\fR 语句的第二个表达式。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBif\fR 语句的表达式。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBwhile\fR 或 \fBdo\fR \fB\&. . .\fR \fBwhile\fR 语句中的 \fBwhile\fR 字句的表达式。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+用作模式的表达式（像在整体程序结构中一样）。
+.RE
+.sp
+.LP
+\fBnawk\fR 语言提供了用于存储数值或字符串的数组。数组不需要声明。这些数组最初是空的，其大小会动态变化。下标（即元素标识符）是字符串，提供某种类型的关联数组功能。可以使用后跟一个带括号的下标的数组名称作为 \fIlvalue\fR 以及作为表达式，如语法中所述。没有下标的数组名称仅在下列上下文中使用：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+函数定义中或函数调用中的参数。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在使用关键字 \fBin\fR 后的 \fBNAME\fR 标记。
+.RE
+.sp
+.LP
+一个有效的数组 \fIindex\fR 包含一个或多个逗号分隔的表达式，类似于有些编程语言中多维数组的索引方式。因为 \fBnawk\fR 数组是真正的一维数组，这样的逗号分隔列表会转换成单个字符串：串联独立表达式的字符串值，每个值使用 \fBSUBSEP\fR 变量的值互相分隔。
+.sp
+.LP
+因此，以下两种索引运算是等效的：
+.sp
+.in +2
+.nf
+var[expr1, expr2, ... exprn]
+var[expr1 SUBSEP expr2 SUBSEP ... SUBSEP exprn]
+.fi
+.in -2
+
+.sp
+.LP
+与 \fBin\fR 运算符一起使用的多维 \fIindex\fR 必须放在括号中。测试特定数组元素是否存在的 \fBin\fR 运算符不会创建不存在的元素。其他对不存在的数组元素的任何引用都会自动创建相应的数组元素。
+.SS "变量和特殊变量"
+.sp
+.LP
+可通过引用变量在 \fBnawk\fR 程序中使用变量。除了函数参数以外，变量都不是显式声明的。未初始化的标量变量和数组元素有一个零数值和一个空字符串值。
+.sp
+.LP
+指定字段变量的方式是 \fB$\fR 后跟一个数值或数值表达式。未指定求值为任何非负整数的字段数值 \fIexpression\fR 的影响。在此上下文中，未初始化的变量或字符串值不需要转换为数值。可通过为字段变量赋值来创建新的字段变量。引用不存在的字段（即 \fB$NF\fR 之后的字段）将产生空字符串。但是，为不存在的字段赋值（例如，\fB$(NF+2) = 5\fR）将增加 \fBNF\fR 的值，创建以空字符串为值的任何中间字段，并导致重新计算 \fB$0\fR 的值，字段被 \fBOFS\fR 的值分隔。每个字段变量在创建时都有一个字符串值。如果该字符串因为出现了小数点字符从当前语言环境更改为句点字符的情况而被视为 \fInumeric string\fR（请参见上文中的“nawk 中的表达式”\fB\fR），则字段变量也具有该 \fInumeric string\fR 的数值。
+.SS "/usr/bin/nawk、/usr/xpg4/bin/awk"
+.sp
+.LP
+\fBnawk\fR 可设置以下 \fB/usr/bin/nawk\fR 和 \fB/usr/xpg4/bin/awk\fR 都支持的特殊变量：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBARGC\fR\fR
+.ad
+.RS 12n
+.rt  
+\fBARGV\fR 数组中的元素数目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBARGV\fR\fR
+.ad
+.RS 12n
+.rt  
+除了选项和 \fIprogram\fR 参数以外的命令行参数数组的编号为从零到 \fBARGC\fR-1。
+.sp
+可以在 \fBARGV\fR 中修改或添加参数；可以更改 \fBARGC\fR。在每个输入文件结束时，\fBnawk\fR 将 \fBARGV\fR 的下一个非空元素到 \fBARGC\fR-1 的当前值（含）视为下一个输入文件的名称。将 \fBARGV\fR 的某个元素设置为空表示不将其视为输入文件。名称 \fB-\fR 表示标准输入。如果某个参数匹配某个 \fIassignment\fR 操作数的格式，则将此参数视为赋值，而不是 \fIfile\fR 参数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBENVIRON\fR\fR
+.ad
+.RS 12n
+.rt  
+变量 \fBENVIRON\fR 是表示环境值的一个数组。数组的索引是由环境变量名称组成的字符串，每个数组元素的值是一个由该变量的值组成的字符串。如果某个环境变量的值被视为 \fInumeric string\fR，则数组元素也有其数值。
+.sp
+在 \fBnawk\fR 行为受环境变量（包括 \fBnawk\fR 通过 \fBsystem\fR 函数或者通过使用 \fBprint\fR 语句、\fBprintf\fR 语句或 \fBgetline\fR 函数进行流水线重定向的所有命令的环境）影响的所有情况下，所用的环境是开始执行 \fBnawk\fR 时的环境。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBFILENAME\fR\fR
+.ad
+.RS 12n
+.rt  
+当前输入文件的路径名。在 \fBBEGIN\fR 操作内部，该值未定义。在 \fBEND\fR 操作内部，该值为最后处理的输入文件的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBFNR\fR\fR
+.ad
+.RS 12n
+.rt  
+当前文件中当前记录的序号。在 \fBBEGIN\fR 操作内部，该值为零。在 \fBEND\fR 操作内部，该值为最后处理的文件中最后处理的记录的编号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBFS\fR\fR
+.ad
+.RS 12n
+.rt  
+输入字段分隔符正则表达式；缺省情况下为一个空格字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNF\fR\fR
+.ad
+.RS 12n
+.rt  
+当前记录中的字段数。在 \fBBEGIN\fR 操作内部，除非以前执行了不带 \fIvar\fR 参数的 \fBgetline\fR 函数，否则 \fBNF\fR 的使用处于未定义状态。在 \fBEND\fR 操作内部，除非在进入 \fBEND\fR 操作之前执行了后续的重定向的 \fBgetline\fR 函数，并且不带 \fIvar\fR 参数，否则 \fBNF\fR 将保留其拥有的上一个读取记录的值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNR\fR\fR
+.ad
+.RS 12n
+.rt  
+从开始输入时计算的当前记录的序号。在 \fBBEGIN\fR 操作内部，该值为零。在 \fBEND\fR 操作内部，该值为最后处理的记录的编号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBOFMT\fR\fR
+.ad
+.RS 12n
+.rt  
+缺省情况下，用于在输出语句 \fB"%.6g"\fR 中将数字转换为字符串的 \fBprintf\fR 格式。如果 \fBOFMT\fR 值不是浮点格式规范，则不指定转换的结果。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBOFS\fR\fR
+.ad
+.RS 12n
+.rt  
+\fBprint\fR 语句输出字段分隔符；缺省情况下为空格字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBORS\fR\fR
+.ad
+.RS 12n
+.rt  
+\fBprint\fR 输出记录分隔符；缺省情况下为换行符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLENGTH\fR\fR
+.ad
+.RS 12n
+.rt  
+\fBmatch\fR 函数匹配的字符串的长度。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBRS\fR\fR
+.ad
+.RS 12n
+.rt  
+\fBRS\fR 的字符串值的第一个字符是输入记录分隔符；缺省情况下为换行符。如果 \fBRS\fR 包含多个字符，则不指定结果。如果 \fBRS\fR 为空，则使用一个或多个空白行序列分隔记录。前导或结尾空白行不会在输入开头或结尾产生任何空记录；不管 \fBFS\fR 的值是什么，字符分隔符始终为换行符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBRSTART\fR\fR
+.ad
+.RS 12n
+.rt  
+\fBmatch\fR 函数匹配的字符串的起始位置，从 1 开始编号。这始终等效于 \fBmatch\fR 函数的返回值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSUBSEP\fR\fR
+.ad
+.RS 12n
+.rt  
+多维数组的下标分隔符字符串。缺省值为 \fB\034\fR。
+.RE
+
+.SS "/usr/xpg4/bin/awk"
+.sp
+.LP
+\fB/usr/xpg4/bin/awk\fR 仅支持以下变量：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCONVFMT\fR\fR
+.ad
+.RS 11n
+.rt  
+将数字转换为字符串的 \fBprintf\fR 格式（使用 \fBOFMT\fR 的输出语句除外）。缺省值为 \fB%.6g\fR。
+.RE
+
+.SS "正则表达式"
+.sp
+.LP
+\fB/usr/xpg4/bin/nawk\fR 实用程序利用扩展正则表达式表示法（请参见 \fBregex\fR(5)），但它允许使用 C 语言约定对 ERE 中的特殊字符转义，这些字符是 \fB\\\fR、\fB\a\fR、\fB\b\fR、\fB\f\fR、\fB\n\fR、\fB\r\fR、\fB\t\fR、\fB\v\fR 以及在下表中指定的字符。这些转义序列在方括号表达式内外可识别。记录不需要用换行符分隔，字符串常量可以包含换行符，因此，即使 \fB\n\fR 序列在 \fBnawk\fR ERE 中也是有效的。在正则表达式中使用斜杠字符需要转义，如下表中所示：
+.sp
+
+.sp
+.TS
+tab();
+lw(.61i) lw(2.44i) lw(2.44i) 
+lw(.61i) lw(2.44i) lw(2.44i) 
+.
+\fBEscape Sequence\fR\fB说明\fR\fB含义\fR
+_
+\fB\"\fR反斜杠引号引号字符
+_
+\fB\/\fR反斜杠斜杠斜杠字符
+_
+\fB\\fR\fIddd\fRT{
+一个反斜杠字符后跟由一位、二位或三位八进制数字字符 (01234567) 组成的最长序列。所有数字均为 0（即 NULL 字符的表示形式）时的行为未定义。
+T}T{
+用一位、二位或三位八进制整数编码的字符。多字节字符要求多个串联的转义序列，其中包括每个字节的前导 \。
+T}
+_
+\fB\\fR\fIc\fRT{
+一个反斜杠字符后跟此表中未描述的任何字符或特殊字符（\fB\\\fR、\fB\a\fR、\fB\b\fR、\fB\f\fR、\fB\n\fR、\fB\r\fR、\fB\t\fR、\fB\v\fR）。 
+T}未定义
+.TE
+
+.sp
+.LP
+正则表达式可以使用两种正则表达式匹配运算符 \fB~\fR 和 \fB! ~\fR 之一来匹配某个特定的字段或字符串。这些运算符将其右侧操作数解释为正则表达式，将其左侧操作数解释为字符串。如果正则表达式匹配字符串，则 \fB~\fR 表达式的求值结果为 \fB1\fR，\fB! ~\fR 表达式的求值结果为 \fB0\fR。如果正则表达式不匹配字符串，则 \fB~\fR 表达式的求值结果为 \fB0\fR，\fB! ~\fR 表达式的求值结果为 \fB1\fR。如果右侧操作数是除词法标记 \fBERE\fR 以外的任何表达式，则将该表达式的字符串值解释为扩展正则表达式，其中包括上文中所述的转义约定。请注意，同样是这些转义约定也可用于确定字符串文本（词法标记 \fBSTRING\fR）的值，并且，在此上下文中使用字符串文本时，可以再次应用转义约定。
+.sp
+.LP
+当 \fBERE\fR 标记在非 \fB~\fR 或 \fB! ~\fR 运算符右侧那样的任何上下文中显示为表达式，或者显示为下文中所述的内置函数参数时，结果表达式的值等效于：
+.sp
+.in +2
+.nf
+$0 ~ /\fIere\fR/
+.fi
+.in -2
+
+.sp
+.LP
+\fBgsub\fR、\fBmatch\fR、\fBsub\fR 函数的 \fIere\fR 参数以及 \fBsplit\fR 函数的 \fIfs\fR 参数（请参见“字符串函数”\fB\fR）被解释为扩展正则表达式。这些表达式可以是 \fBERE\fR 标记或任意表达式，可通过与 \fB~\fR 或 \fB! ~\fR 运算符右侧相同的方式进行解释。
+.sp
+.LP
+扩展正则表达式可用于分隔字段：使用 \fB-F\fR \fIERE\fR 选项，或者将包含表达式的字符串赋值给内置变量 \fBFS\fR。\fBFS\fR 变量的缺省值是单个空格字符。下面描述了 \fBFS\fR 行为：
+.RS +4
+.TP
+1.
+如果 \fBFS\fR 是单个字符：  
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果 \fBFS\fR 是空格字符，则跳过前导和结尾空白字符；字段用包含一个或多个空白字符的字符集分隔。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+否则，如果 \fBFS\fR 是任何其他字符 \fIc\fR，则字段由出现的每个 \fIc\fR 分隔。
+.RE
+.RE
+.RS +4
+.TP
+2.
+否则，将 \fBFS\fR 的字符串值视为扩展正则表达式。出现了每个匹配扩展正则表达式的序列分隔字段。
+.RE
+.sp
+.LP
+除了在 \fBgsub\fR、\fBmatch\fR、\fBsplit\fR 和 \fBsub\fR 内置函数中以外，正则表达式匹配都基于输入记录。也就是说，记录分隔符字符（变量 \fBRS\fR 的值的第一个字符，缺省情况下为换行符）不能嵌入在表达式中，没有任何表达式与记录分隔符字符匹配。如果记录分隔符不是换行符，则可以匹配表达式中嵌入的换行符。在这四个内置函数中，正则表达式匹配基于文本字符串。因此，任何字符（包括换行符和记录分隔符）可以嵌入在模式中，相应的模式可匹配任何字符。但是，在所有 \fBnawk\fR 正则表达式匹配中，在模式、输入记录或文本字符串中使用一个或多个 NULL 字符将产生未定义的结果。
+.SS "模式"
+.sp
+.LP
+\fIpattern\fR 是任意有效的 \fIexpression\fR，由两个用逗号分隔的表达式指定的范围，或者两种特殊模式 \fBBEGIN\fR 或 \fBEND\fR 之一。
+.SS "特殊模式"
+.sp
+.LP
+\fBnawk\fR 实用程序可识别两种特殊模式 \fBBEGIN\fR 和 \fBEND\fR。每个 \fBBEGIN\fR 模式匹配一次，其关联操作在读取输入的第一个记录之前执行（可能通过某个以前的 \fBBEGIN\fR 操作中使用 \fBgetline\fR 执行时除外），并且在命令行赋值完成之前执行。每个 \fBEND\fR 模式匹配一次，其关联操作在读取输入的最后一个记录之后执行。这两种模式都有关联的操作。
+.sp
+.LP
+\fBBEGIN\fR 和 \fBEND\fR 不与其他模式组合。允许多个 \fBBEGIN\fR 和 \fBEND\fR 模式。与 \fBBEGIN\fR 模式关联的操作执行的顺序在程序中指定，与 \fBEND\fR 模式关联的操作也一样。在程序中，\fBEND\fR 模式可以在 \fBBEGIN\fR 模式之前。
+.sp
+.LP
+如果 \fBnawk\fR 程序仅包含具有模式 \fBBEGIN\fR 的操作，\fBBEGIN\fR 操作不含任何 \fBgetline\fR 函数，则在执行了最后一个 \fBBEGIN\fR 操作中的最后一个语句之后，\fBnawk\fR 将退出，但不读取其输入。如果 \fBnawk\fR 程序仅包含具有模式 \fBEND\fR 的操作，或者仅包含具有模式 \fBBEGIN\fR 和 \fBEND\fR 的操作，则将读取输入，然后再执行 \fBEND\fR 操作中的语句。
+.SS "表达式模式"
+.sp
+.LP
+对表达式模式求值时，将其视为布尔上下文中的表达式。如果结果为 true，则将模式视为匹配，并执行关联的操作（如果有）。如果结果为 false，则不执行操作。
+.SS "模式范围"
+.sp
+.LP
+一个模式范围包含用逗号分隔的两个表达式。在这种情况下，将为第一个表达式的一个匹配项与第二个表达式的后续匹配项之间（含）的所有记录执行操作。此时，可以重复模式范围，重复的起始输入记录是匹配范围末尾的后续输入记录。
+.SS "操作"
+.sp
+.LP
+操作是语句序列。语句可以为下列形式之一：
+.sp
+.in +2
+.nf
+if ( \fIexpression\fR ) \fIstatement\fR [ else \fIstatement\fR ]
+while ( \fIexpression\fR ) \fIstatement\fR 
+do \fIstatement\fR while ( \fIexpression\fR )
+for ( \fIexpression\fR ; \fIexpression\fR ; \fIexpression\fR ) \fIstatement\fR 
+for ( \fIvar\fR in \fIarray\fR ) \fIstatement\fR 
+delete \fIarray\fR[\fIsubscript\fR] #delete an array element
+break
+continue
+{ [ \fIstatement\fR ] .\|.\|. }
+\fIexpression\fR        # commonly variable = expression
+print [ \fIexpression-list\fR ] [ >\fIexpression\fR ]
+printf format [ ,\fIexpression-list\fR ] [ >\fIexpression\fR ]
+next              # skip remaining patterns on this input line
+exit [expr] # skip the rest of the input; exit status is expr
+return [expr]
+.fi
+.in -2
+
+.sp
+.LP
+任何单个语句都可替换为括在大括号中的语句列表。语句以换行符或分号结尾，并按其出现的顺序执行。
+.sp
+.LP
+\fBnext\fR 语句会导致放弃对当前输入记录的所有进一步处理。如果在 \fBBEGIN\fR 或 \fBEND\fR 操作中出现 \fBnext\fR 语句或者调用了该语句，则行为未定义。
+.sp
+.LP
+\fBexit\fR 语句调用所有 \fBEND\fR 操作，调用的顺序为这些操作在程序源中的发生顺序，然后终止程序，不读取后续输入。\fBEND\fR 操作中的 \fBexit\fR 语句会终止程序，不再执行 \fBEND\fR 操作。如果在 \fBexit\fR 语句中指定了表达式，那么，除非遇到了后续错误，或者执行了带表达式的后续 \fBexit\fR 语句，否则表达式的数值为 \fBnawk\fR 的退出状态。
+.SS "输出语句"
+.sp
+.LP
+缺省情况下，\fBprint\fR 和 \fBprintf\fR 语句都写入到标准输出。输出写入到由 \fIoutput_redirection\fR 指定的位置（如果提供了一个这样的位置），如下所示：
+.sp
+.in +2
+.nf
+\fB>\fR \fIexpression\fR\fB>>\fR \fIexpression\fR\fB|\fR \fIexpression\fR
+.fi
+.in -2
+
+.sp
+.LP
+在所有情况下，将对 \fIexpression\fR 求值以生成一个字符串，该字符串用作要写入到的完整路径名（适用于 \fB>\fR 或 \fB>>\fR），或者用作要执行的命令（适用于 \fB|\fR）。使用前两种形式时，如果该名称的文件当前未打开，则将其打开；在必要时创建该文件，并使用第一种形式，截断文件。然后，将输出附加到文件末尾。只要文件保持打开状态，将 \fIexpression\fR 求值结果为相同字符串值的后续调用会直接将输出附加到文件末尾。文件将保持打开状态，直到调用 \fBclose\fR 函数；调用该函数时将使用求值结果为相同字符串值的表达式。
+.sp
+.LP
+第三种形式将输出写入到传输到某个命令的输入的流上。如果当前打开的流中没有任何一个流以 \fIexpression\fR 的值作为其命令名称，则将创建该流。创建的流等效于通过调用 \fBpopen\fR(3C) 函数创建的流，该函数以 \fIexpression\fR 的值作为 \fIcommand\fR 参数，以 \fBw\fR 的值作为 \fImode\fR 参数。只要流保持打开状态，将 \fIexpression\fR 求值结果为相同字符串值的后续调用会将输出写入到现有的流。流将保持打开状态，直到调用 \fBclose\fR 函数；调用该函数时将使用求值结果为相同字符串值的表达式。同时，流将会关闭，就像是调用了 \fBpclose\fR 函数一样。
+.sp
+.LP
+这些输出语句会采用一个逗号分隔的 \fIexpression\fR \fIs\fR 列表，它们在语法中被非终端符号 \fBexpr_list\fR、\fBprint_expr_list\fR 或 \fBprint_expr_list_opt\fR 引用。此列表在此处称为\fI表达式列表\fR，每个成员称为\fI表达式参数\fR。
+.sp
+.LP
+\fBprint\fR 语句将每个表达式参数的值写入到用当前输出字段分隔符（请参见上文中的变量 \fBOFS\fR）分隔的指示输出流上，并用输出记录分隔符结尾（请参见上文中的变量 \fBORS\fR）。所有表达式参数都作为字符串使用，在必要时进行转换；但使用 \fBOFMT\fR 中的 \fBprintf\fR 格式，而不是 \fBCONVFMT\fR 中的值。空表达式列表代表整个输入记录 \fB(\fR$0\fB)\fR。
+.sp
+.LP
+\fBprintf\fR 语句根据类似于在本文档中用于描述文件格式的文件格式表示法的表示法来生成输出。按指定方式生成输出时，以第一个表达式参数作为字符串 \fBformat\fR，后续的表达式参数作为字符串 \fBarg1\fR 到 \fBargn\fR（含），但有以下例外：
+.RS +4
+.TP
+1.
+\fIformat\fR 是一个实际的字符串，而不是图形表示形式。因此，其中不能包含空字符位置。在任何非转换规范的 \fIflag\fR 的上下文中，\fIformat\fR 字符串中的空格字符都被视为复制到输出的普通字符。
+.RE
+.RS +4
+.TP
+2.
+如果字符集包含 Delta 字符，并且该字符出现在 \fIformat\fR 字符串中，则将其视为复制到输出的普通字符。
+.RE
+.RS +4
+.TP
+3.
+以反斜杠字符开头的 \fIescape sequences\fR 被视为复制到输出的普通字符序列。请注意，同样是这些序列，当它们以文本字符串的形式出现时，\fBnawk\fR 会对其进行词法上的解释，但 \fBprintf\fR 语句不会对它们特殊对待。
+.RE
+.RS +4
+.TP
+4.
+可以将 \fIfield width\fR 或 \fIprecision\fR 指定为 \fB*\fR 字符，而不是数字字符串。在这种情况下，将提取表达式列表中的下一个参数，取其数值作为字段宽度或精度。
+.RE
+.RS +4
+.TP
+5.
+该实现之前或之后没有来自 \fBd\fR 或 \fBu\fR 转换规范的输出（包含 \fIformat\fR 字符串未指定的空白字符）。
+.RE
+.RS +4
+.TP
+6.
+该实现之前或之后没有来自 \fBo\fR 转换规范的输出（包含 \fIformat\fR 字符串未指定的前导零）。
+.RE
+.RS +4
+.TP
+7.
+对于 \fBc\fR 转换规范：如果参数是数值，则其编码为该值的字符为输出。如果该值为零或者不是字符集中任何字符的编码，则行为未定义。如果参数没有数值，则字符串值的第一个字符为输出；如果字符串不包含任何字符，则行为未定义。
+.RE
+.RS +4
+.TP
+8.
+对于使用参数的每个替换规范，将对下一个表达式参数求值。除了 \fBc\fR 转换以外，还会将值转换成转换规范的相应类型。
+.RE
+.RS +4
+.TP
+9.
+如果表达式参数不够，无法满足 \fIformat\fR 字符串中的所有转换规范，则行为未定义。
+.RE
+.RS +4
+.TP
+10.
+如果 \fIformat\fR 字符串中的任一字符序列以 % 字符开头，但未形成有效的转换规范，则行为未指定。
+.RE
+.sp
+.LP
+\fBprint\fR 和 \fBprintf\fR 至少可以输出 \fB{LINE_MAX}\fR 个字节。
+.SS "函数"
+.sp
+.LP
+\fBnawk\fR 语言有各种内置函数：算术函数、字符串函数、输入/输出函数和一般函数。
+.SS "算术函数"
+.sp
+.LP
+算术函数除了 \fBint\fR 以外都基于 \fBISO\fR \fBC\fR 标准。在 \fBISO\fR \fBC\fR 标准指定返回错误或者指定行为未定义的情况下，行为未定义。虽然语法允许内置函数不带参数或括号，但是，除非参数或括号是以下列表中指示的可选项（显示在方括号 \fB[ ]\fR 中的选项），否则这种用法未定义。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBatan2(\fR\fIy\fR,\fIx\fR\fB)\fR\fR
+.ad
+.RS 17n
+.rt  
+返回 \fIy\fR/\fIx\fR 的反正切。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcos\fR(\fIx\fR)\fR
+.ad
+.RS 17n
+.rt  
+返回 \fIx\fR 的余弦，其中 \fIx\fR 以弧度为单位。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsin\fR(\fIx\fR)\fR
+.ad
+.RS 17n
+.rt  
+返回 \fIx\fR 的正弦，其中 \fIx\fR 以弧度为单位。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexp\fR(\fIx\fR)\fR
+.ad
+.RS 17n
+.rt  
+返回 \fIx\fR 的指数函数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlog\fR(\fIx\fR)\fR
+.ad
+.RS 17n
+.rt  
+返回 \fIx\fR 的自然对数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsqrt\fR(\fIx\fR)\fR
+.ad
+.RS 17n
+.rt  
+返回 \fIx\fR 的平方根。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint\fR(\fIx\fR)\fR
+.ad
+.RS 17n
+.rt  
+将其参数截断为整数。当 \fIx\fR > 0 时，向 0 的方向截断。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrand()\fR\fR
+.ad
+.RS 17n
+.rt  
+返回一个随机数 \fIn\fR，使得 0 ≤ \fIn\fR < 1。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsrand\fR([\fBexpr\fR])\fR
+.ad
+.RS 17n
+.rt  
+将 \fBrand\fR 的种子值设置为 \fIexpr\fR；省略 \fIexpr\fR 时，使用当天的时间。返回上一个种子值。
+.RE
+
+.SS "字符串函数"
+.sp
+.LP
+将支持以下列表中的字符串函数。虽然语法允许内置函数不带参数或括号，但是，除非参数或括号是以下列表中指示的可选项（显示在方括号 \fB[ ]\fR 中的选项），否则这种用法未定义。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgsub\fR(\fIere\fR,\fIrepl\fR[, \fIin\fR])\fR
+.ad
+.sp .6
+.RS 4n
+行为像 \fBsub\fR（请参见下文），但将替换 \fB$0\fR 中或者指定的 \fIin\fR 参数中出现的所有正则表达式（就像 \fBed\fR 实用程序全局替换）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBindex\fR(\fIs\fR,\fIt\fR)\fR
+.ad
+.sp .6
+.RS 4n
+返回在字符串 \fIs\fR 中的位置（以字符数为单位），从 1 开始编号，其中字符串 \fIt\fR 先出现；如果没有该字符串，则返回零。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlength\fR[([\fIs\fR])]\fR
+.ad
+.sp .6
+.RS 4n
+返回其字符串参数的长度（以字符数为单位），或者整个记录 \fB$0\fR 的长度（在没有参数的情况下）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmatch\fR(\fIs\fR,\fIere\fR)\fR
+.ad
+.sp .6
+.RS 4n
+返回在字符串 \fIs\fR 中的位置（以字符数为单位），从 1 开始编号，其中会出现扩展正则表达式 \fIere\fR；如果不出现该表达式，则返回零。\fBRSTART\fR 设置为起始位置（与返回值相同），未找到匹配项时设置为零；\fBRLENGTH\fR 设置为匹配字符串的长度，未找到匹配项时设置为 -1。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsplit\fR(\fIs\fR,\fIa\fR[, \fIfs\fR])\fR
+.ad
+.sp .6
+.RS 4n
+将字符串 \fIs\fR 拆分成数组元素 \fIa\fR[1]、\fIa\fR[2]、\fB\&...\fR、\fIa\fR[\fIn\fR]，并返回 \fIn\fR。拆分使用扩展正则表达式 \fIfs\fR 完成；如果未指定 \fIfs\fR，则使用字段分隔符 \fBFS\fR 完成。每个数组元素在创建时都有一个字符串值。如果赋值给任何数组元素的字符串因为出现了小数点字符从当前语言环境更改为句点字符的情况而被视为 \fInumeric string\fR，则数组元素也具有该 \fInumeric string\fR 的数值。\fIfs\fR 的值为空字符串时的效果未指定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsprintf\fR(\fBfmt\fR,\fIexpr\fR,\fIexpr\fR,\fB\&...\fR)\fR
+.ad
+.sp .6
+.RS 4n
+根据 \fIfmt\fR 提供的 \fBprintf\fR 格式设置表达式格式，并返回结果字符串。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsub\fR(\fIere\fR,\fIrepl\fR[, \fIin\fR])\fR
+.ad
+.sp .6
+.RS 4n
+替换字符串 n 中扩展正则表达式 \fBERE\fR 的第一个实例位置处的字符串 \fIrepl\fR，并返回替换的数量。出现在字符串 \fIrepl\fR 中的和符号 (\fB&\fR) 替换成 n 中匹配正则表达式的字符串。前面带反斜杠 (\fB\\fR) 的和符号将解释成文本和符号字符。出现的两个连续反斜杠将解释成单个文本反斜杠字符。出现的其他任何反斜杠（例如，在任何其他字符之前）将视为文本反斜杠字符。如果 \fIrepl\fR 是字符串文本，则对和符号字符串的处理发生在所有词法处理（包括任何词法反斜杠转义序列处理）之后。如果指定了 \fBin\fR，但它不是 \fBlvalue\fR，则行为未定义。如果省略了 in，则 \fBnawk\fR 将使用当前记录 (\fB$0\fR) 取代它。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsubstr\fR(\fIs\fR,\fIm\fR[, \fIn\fR])\fR
+.ad
+.sp .6
+.RS 4n
+返回 \fIs\fR 的最多 \fIn\fR 个字符的子字符串，起始位置为 \fIm\fR，编号从 1 开始。如果缺少 \fIn\fR，则子字符串的长度受字符串 \fIs\fR 的长度限制。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtolower\fR(\fIs\fR)\fR
+.ad
+.sp .6
+.RS 4n
+返回一个基于字符串 \fIs\fR 的字符串。\fIs\fR 中被指定为具有按当前语言环境的 \fBLC_CTYPE\fR 类别所做的 \fBtolower\fR 映射的每个大写字母字符，在返回字符串中将替换成该映射指定的小写字母。\fIs\fR 中的其他字符在返回字符串中不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtoupper\fR(\fIs\fR)\fR
+.ad
+.sp .6
+.RS 4n
+返回一个基于字符串 \fIs\fR 的字符串。\fIs\fR 中被指定为具有按当前语言环境的 \fBLC_CTYPE\fR 类别所做的 \fBtoupper\fR 映射的每个小写字母字符，在返回字符串中将替换成该映射指定的大写字母。\fIs\fR 中的其他字符在返回字符串中不变。
+.RE
+
+.sp
+.LP
+所有以 \fIERE\fR 作为参数的前置函数都应有一个模式或者如下定义的字符串值正则表达式。
+.SS "输入/输出函数和一般函数"
+.sp
+.LP
+输入/输出函数和一般函数包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBclose(\fR\fIexpression\fR)\fR
+.ad
+.RS 27n
+.rt  
+关闭 \fBprint\fR 或 \fBprintf\fR 语句打开的文件或管道，或者关闭对具有相同字符串值 \fIexpression\fR 的 \fBgetline\fR 调用。如果关闭成功，则该函数返回 \fB0\fR，否则返回非零值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIexpression\fR|\fBgetline\fR[\fIvar\fR]\fR
+.ad
+.RS 27n
+.rt  
+从传输自某个命令输出的流中读取输入记录。如果当前打开的流中没有任何一个流以 \fIexpression\fR 的值作为其命令名称，则将创建该流。创建的流等效于通过调用 \fBpopen\fR 函数创建的流，该函数以 \fIexpression\fR 的值作为 \fIcommand\fR 参数，以 \fBr\fR 的值作为 \fImode\fR 参数。只要流保持打开状态，将 \fIexpression\fR 求值为相同字符串值的后续调用就会从该文件读取后续记录。流将保持打开状态，直到调用 \fBclose\fR 函数；调用该函数时将使用求值结果为相同字符串值的表达式。同时，流将会关闭，就像是调用了 \fBpclose\fR 函数一样。如果缺少 \fIvar\fR，则设置 \fB$0\fR 和 \fBNF\fR。否则设置 \fIvar\fR。
+.sp
+如果 \fB|\fR 左侧（到包含 \fBgetline\fR 的表达式的开头）存在不带括号的运算符（包括串联），\fBgetline\fR 运算符可能会形成有歧义的结构。在 \fB$\fR 运算符的上下文中，\fB|\fR 的行为就好像它的优先级低于 \fB$\fR 时一样。对其他运算符求值的结果未指定，所有此类对可移植应用程序的使用都必须正确地放在括号中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgetline\fR\fR
+.ad
+.RS 30n
+.rt  
+将 \fB$0\fR 设置为当前输入文件中的下一个输入记录。这种形式的 \fBgetline\fR 设置 \fBNF\fR、\fBNR\fR 和 \fBFNR\fR 变量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgetline\fR \fIvar\fR\fR
+.ad
+.RS 30n
+.rt  
+将变量 \fIvar\fR 设置为当前输入文件中的下一个输入记录。这种形式的 \fBgetline\fR 设置 \fBFNR\fR 和 \fBNR\fR 变量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgetline\fR [\fIvar\fR] \fB<\fR \fIexpression\fR\fR
+.ad
+.RS 30n
+.rt  
+从指定文件中读取下一个输入记录。对 \fIexpression\fR 求值可生成一个用作完整路径名的字符串。如果该名称的文件当前未打开，则将其打开。只要流保持打开状态，将 \fIexpression\fR 求值为相同字符串值的后续调用就会从该文件读取后续记录。文件将保持打开状态，直到调用 \fBclose\fR 函数；调用该函数时将使用求值结果为相同字符串值的表达式。如果缺少 \fIvar\fR，则设置 \fB$0\fR 和 \fBNF\fR。否则设置 \fIvar\fR。
+.sp
+如果 \fB<\fR 右侧（直到包含 \fBgetline\fR 的表达式的结尾）存在不带括号的二进制运算符（包括串联），\fBgetline\fR 运算符可能会形成有歧义的结构。对这种运算符求值的结果未指定，所有此类对可移植应用程序的使用都必须正确地放在括号中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsystem\fR(\fIexpression\fR)\fR
+.ad
+.RS 30n
+.rt  
+通过等效于 \fBsystem\fR(3C) 函数的方式执行 \fIexpression\fR 指定的命令，并返回命令的退出状态。
+.RE
+
+.sp
+.LP
+所有形式的 \fBgetline\fR 返回 \fB1\fR 表示成功输入，返回 \fB0\fR 表示文件结尾，返回 \fB-1\fR 表示错误。
+.sp
+.LP
+在使用字符串作为文件或管道名称的情况下，字符串在文本上必须完全相同。术语“相同字符串值”意指“等效字符串”，即使字符串的差别仅在于空格字符，它们也代表了不同的文件。
+.SS "用户定义的函数"
+.sp
+.LP
+\fBnawk\fR 语言还提供用户定义的函数。可将此类函数定义为：
+.sp
+.in +2
+.nf
+\fBfunction\fR \fIname\fR(\fIargs\fR,\|.\|.\|.) { \fIstatements\fR }
+.fi
+.in -2
+
+.sp
+.LP
+可在 \fBnawk\fR 程序中的任何位置引用函数；特别是，可以先使用再定义。函数的作用域是全局的。
+.sp
+.LP
+函数参数可以为标量或数组；如果将数组名称作为函数用作标量的参数传递，或者将标量表达式作为函数用作数组的参数传递，则行为未定义。如果是标量，函数参数通过值传递；如果是数组名称，则通过引用传递。参数名称是函数的局部名称；所有其他变量名称是全局的。同一个名称不能同时用作参数名称以及函数或特殊 \fBnawk\fR 变量的名称。同一个名称不能同时用作全局范围的变量名称以及函数名称。同一个名称不能在同一个作用域中同时用作标量变量和数组。
+.sp
+.LP
+函数定义中的参数数量不需要与函数调用中的参数数量一致。多余的形式参数可用作局部变量。如果函数调用中提供的参数数量少于函数定义中的数量，则在函数主体中用作标量的多余参数用空字符串值和数值零进行初始化，在函数主体中用作数组的多余参数则初始化为空数组。如果函数调用中提供的参数多于函数定义中的参数，则行为未定义。
+.sp
+.LP
+在调用函数时，函数名称与左括号之间不能有空格。函数调用可以嵌套，可以对函数执行递归调用。当从任何嵌套或递归函数调用返回时，发出调用的函数的所有参数的值不变，但通过引用传递的数组参数除外。可以使用 \fBreturn\fR 语句返回一个值。如果 \fBreturn\fR 语句出现在函数定义外部，则行为未定义。
+.sp
+.LP
+在函数定义中，可选择将换行符放在左括号之前或者右括号之后。函数定义可以出现在程序中允许 \fIpattern-action\fR 对的任何地方。
+.SH 用法
+.sp
+.LP
+\fBindex\fR、\fBlength\fR、\fBmatch\fR 和 \fBsubstr\fR 函数不能与 \fBISO C\fR 标准中的类似函数混淆；\fBnawk\fR 版本处理字符，而 \fBISO C\fR 标准处理字节。
+.sp
+.LP
+因为串联运算用相邻的表达式（而不是显式运算符）表示，因此经常有必要使用括号来实现正确的求值优先级。
+.sp
+.LP
+有关 \fBnawk\fR 遇到大于或等于 2 GB（2^31 字节）文件时行为的说明，请参见 \fBlargefile\fR(5)。
+.SH 示例
+.sp
+.LP
+对于使用 \fBsh\fR 的应用程序，在命令行中指定的 \fBnawk\fR 程序最容易用单引号指定（例如 \fB\&'\fR\fIprogram\fR\fB\&'\fR），因为 \fBnawk\fR 程序通常包含对 shell 来说特殊的字符（包括双引号）。如果 \fBnawk\fR 程序包含单引号字符，通常最容易的做法是以单引号中的字符串形式指定多数程序，shell 将这些字符串与带引号的单引号字符串串联。例如：
+.sp
+.in +2
+.nf
+nawk '/'\e''/ { print "quote:", $0 }'
+.fi
+.in -2
+
+.sp
+.LP
+列显包含单引号字符的标准输入中的所有行，前缀为 \fBquote:\fR。
+.sp
+.LP
+以下是简单 \fBnawk\fR 程序的一些示例：
+.LP
+\fB示例 1 \fR将字段 3 大于 5 的所有输入行写入到标准输出：
+.sp
+.in +2
+.nf
+\fB$3 > 5\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR写入每第十行：
+.sp
+.in +2
+.nf
+\fB(NR % 10) == 0\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR写入子字符串与正则表达式匹配的任何行：
+.sp
+.in +2
+.nf
+\fB/(G|D)(2[0-9][[:alpha:]]*)/\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR列显子字符串包含 G 或 D 的任何行，后接一系列数字和字符：
+.sp
+.LP
+此示例使用字符类 \fBdigit\fR 和 \fBalpha\fR 分别匹配独立于语言的数字和字母字符。
+
+.sp
+.in +2
+.nf
+\fB/(G|D)([[:digit:][:alpha:]]*)/\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR写入其中的第二个字段匹配正则表达式但第四个字段不匹配的任何行：
+.sp
+.in +2
+.nf
+\fB$2 ~ /xyz/ && $4 !~ /xyz/\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR写入其中的第二个字段包含反斜杠的任何行：
+.sp
+.in +2
+.nf
+\fB$2 ~ /\e\e/\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR写入其中的第二个字段包含反斜杠的任何行（备用方法）：
+.sp
+.LP
+请注意，反斜杠转义会解释两次，一次是在对字符串进行词法处理时，一次是在处理正则表达式时。
+
+.sp
+.in +2
+.nf
+\fB$2 ~ "\e\e\e\e"\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 8 \fR写入每行中的第二个到最后一个字段，用冒号分隔字段：
+.sp
+.in +2
+.nf
+\fB{OFS=":";print $(NF-1), $NF}\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 9 \fR写入行编号以及每行中的字段数：
+.sp
+.LP
+将表示行号、冒号和字段数的三个字符串串联起来，然后将该字符串写入到标准输出。
+
+.sp
+.in +2
+.nf
+\fB{print NR ":" NF}\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 10 \fR写入长度超过 72 个字符的行：
+.sp
+.in +2
+.nf
+\fB{length($0) > 72}\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 11 \fR按相反顺序写入前两个字段，用 OFS 分隔：
+.sp
+.in +2
+.nf
+\fB{ print $2, $1 }\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 12 \fR同样，输入字段用逗号或者空格和制表符分隔，或者同时使用两者：
+.sp
+.in +2
+.nf
+\fBBEGIN { FS = ",[\et]*|[\et]+" }
+      { print $2, $1 }\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 13 \fR将第一列相加，列显总和与平均值：
+.sp
+.in +2
+.nf
+\fB{s += $1 }
+END {print "sum is ", s, " average is", s/NR}\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 14 \fR按逆序写入字段，一个字段占一行（一行进，多行出）：
+.sp
+.in +2
+.nf
+\fB{ for (i = NF; i > 0; --i) print $i }\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 15 \fR写入字符串 "start" 和 "stop" 之间的所有行：
+.sp
+.in +2
+.nf
+\fB/start/, /stop/\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 16 \fR写入其第一个字段不同于上一行的所有行：
+.sp
+.in +2
+.nf
+\fB$1 != prev { print; prev = $1 }\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 17 \fR模拟 echo 命令：
+.sp
+.in +2
+.nf
+\fBBEGIN  {
+       for (i = 1; i < ARGC; ++i)
+             printf "%s%s", ARGV[i], i==ARGC-1?"\en":""
+       }\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 18 \fR写入 PATH 环境变量中包含的路径前缀，一个占一行：
+.sp
+.in +2
+.nf
+\fBBEGIN  {
+       n = split (ENVIRON["PATH"], path, ":")
+       for (i = 1; i <= n; ++i)
+              print path[i]
+       }\fR 
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 19 \fR列显文件 "input"，从 5 开始填充页码：
+.sp
+.LP
+如果有一个名为 \fBinput\fR 的文件，其中包含以下形式的页眉：
+
+.sp
+.in +2
+.nf
+Page#
+.fi
+.in -2
+
+.sp
+.LP
+以及一个名为 \fBprogram\fR 的文件，其中包含
+
+.sp
+.in +2
+.nf
+/Page/{ $2 = n++; }
+{ print }
+.fi
+.in -2
+
+.sp
+.LP
+则命令行
+
+.sp
+.in +2
+.nf
+\fBnawk -f program n=5 input\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+列显文件 \fBinput\fR，从 5 开始填充页码。
+
+.SH 环境变量
+.sp
+.LP
+有关影响执行的环境变量 \fBLC_COLLATE\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR 和 \fBNLSPATH\fR 的说明，请参见 \fBenviron\fR(5)。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_NUMERIC\fR\fR
+.ad
+.RS 14n
+.rt  
+确定解释数字输入时使用的基数字符，在数字和字符串值之间执行转换并设置数字输出的格式。不管语言环境是什么，句点字符（POSIX 语言环境的小数点字符）都为处理 \fBawk\fR 程序（包括命令行参数赋值）时可识别的小数点字符。
+.RE
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+所有输入文件均已成功处理。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。
+.RE
+
+.sp
+.LP
+可以使用 \fBexit\fR 表达式在程序中更改退出状态。
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.SS "/usr/bin/nawk"
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SS "/usr/xpg4/bin/awk"
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/xopen/xcu4
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBawk\fR(1)、\fBed\fR(1)、\fBegrep\fR(1)、\fBgrep\fR(1)、\fBlex\fR(1)、\fBsed\fR(1)、\fBpopen\fR(3C)、\fBprintf\fR(3C)、\fBsystem\fR(3C)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBlargefile\fR(5)、\fBregex\fR(5)、\fBXPG4\fR(5)
+.sp
+.LP
+由 Aho、A.V.、B. W. Kernighan 和 P. J. Weinberger 合著的《\fIThe AWK Programming Language\fR》，Addison-Wesley 出版，1988。
+.SH 诊断
+.sp
+.LP
+如果指定了任意 \fIfile\fR 操作数，并且指定的文件无法访问，则 \fBnawk\fR 将写入一条标准错误诊断消息并终止，而不进行任何后续操作。
+.sp
+.LP
+如果 \fIprogram\fR 操作数或 \fIprogfile\fR 操作数指定的程序不是有效的 \fBnawk\fR 程序（如“扩展说明”\fB\fR中指定的程序），则行为未定义。
+.SH 附注
+.sp
+.LP
+如果涉及字段，则输出中不保留输入空格。
+.sp
+.LP
+数字和字符串之间没有显式转换。要强制将表达式作为数值处理，可为其加 0；要强制将其作为字符串处理，可为其串联空字符串 (\fB""\fR)。

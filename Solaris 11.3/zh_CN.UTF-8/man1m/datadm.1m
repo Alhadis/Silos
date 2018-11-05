@@ -1,0 +1,206 @@
+'\" te
+.\" Copyright (c) 2010, 2011, Oracle and/or its affiliates.All rights reserved.
+.TH datadm 1M "21 Dec 2011" "SunOS 5.11" "系统管理命令"
+.SH 名称
+datadm \- 维护 DAT 静态注册表文件
+.SH 用法概要
+.LP
+.nf
+\fB/usr/bin/datadm\fR [\fB-v\fR] [\fB-u\fR] [\fB-a\fR service_provider.conf] 
+     [\fB-r\fR service_provider.conf]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBdatadm\fR 实用程序维护 DAT 静态注册表文件 \fBdat.conf\fR(4)。
+.sp
+.LP
+该管理配置程序允许 uDAPL 服务提供者在 \fBdat.conf\fR 文件中添加和删除自身。
+.sp
+.LP
+安装服务提供者支持的接口适配器之后，您可以从系统中添加或删除这些适配器。您可以使用 \fBdatadm\fR 更新 \fBdat.conf\fR 文件，以反映系统的当前状态。将会为当前安装的所有服务提供者重新生成一组新的接口适配器。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fBservice_provider.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fBservice_provider.conf\fR(4) 文件中的每个设备条目枚举为一系列接口适配器，即，可供 uDAPL 使用者使用的外部网络接口。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fBservice_provider.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除与 \fBservice_provider.conf\fR(4) 文件中的设备条目对应的接口适配器列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+更新 \fBdat.conf\fR 以反映系统的当前状态，系统中将包含一组用于 DAT 静态注册表当前所列服务提供者的最新接口适配器。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示 DAT 静态注册表文件 \fBdat.conf\fR。 
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR枚举设备条目
+.sp
+.LP
+以下示例将 \fBservice_provider.conf\fR(4) 文件中的设备条目枚举为 \fBdat.conf\fR(4) 文件中的接口适配器。 
+
+.sp
+.LP
+假定 \fBSUNW\fR 具有支持设备 \fBhermon\fR 的服务提供者库。它已将 \fBservice_provider.conf\fR(4) 文件安装在目录 \fB/usr/share/dat/SUNWudaplt.conf\fR 中，其中的单个条目如下所示：
+
+.sp
+.in +2
+.nf
+driver_name=hermon u1.2 nonthreadsafe default\e
+    udapl_tavor.so.1 SUNW.1.0 ""
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBhermon\fR 是具有两个端口的 Infiniband 主机通道适配器。两个 IB 端口都存在于单个 IB 分区 \fB0x8001\fR。如果了创建 IB 分区并对每个端口（名为 \fBp8001.ibd0\fR 和 \fBp8001.ibd1\fR）激活 (plumb) 该分区，则会有两个 IB 分区实例。有关创建 IB 分区数据链路的更多信息，请参见 \fBdladm\fR(1M)。
+
+.sp
+.in +2
+.nf
+# \fBdladm show-part\fR
+
+LINK           PKEY      OVER       STATE      FLAGS
+p8001.ibd0     8001      ibd0       unknown    ----
+p8001.ibd1     8001      ibd1       unknown    ----
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+运行命令：
+
+.sp
+.in +2
+.nf
+# \fBdatadm -a /usr/share/dat/SUNWudaplt.conf\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\&...将两个新条目（如果它们尚不存在）附加到 \fB/etc/dat/dat.conf\fR 文件中：
+
+.sp
+.in +2
+.nf
+p8001.ibd0 u1.2 nonthreadsafe default udapl_tavor.so.1 SUNW.1.0 ""
+"driver_name=hermon"
+p8001.ibd1 u1.2 nonthreadsafe default udapl_tavor.so.1 SUNW.1.0 ""
+"driver_name=hermon"
+.fi
+.in -2
+
+.LP
+\fB示例 2 \fR更新 \fBdat.conf\fR 以反映系统的当前状态
+.sp
+.LP
+将新 IB 分区 \fB0x8002\fR 添加到包含主机通道适配器端口 1 的上述示例。如果在端口 1/分区 \fB0x8002\fR 上创建新 IB 分区，并将分区链路名称指定为 \fBp8002.ibd0\fR，则会产生第三个 IB 分区实例：\fBp8002.ibd0\fR。
+
+.sp
+.in +2
+.nf
+# \fBdladm show-part\fR
+LINK           PKEY      OVER       STATE      FLAGS
+p8001.ibd0     8001      ibd0       unknown    ----
+p8001.ibd1     8001      ibd1       unknown    ----
+p8002.ibd0     8000      ibd0       unknown    ----
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+运行 \fBdatadm -u\fR 命令，将会更新 \fB/etc/dat/dat.conf\fR 文件（其中会添加一个新条目），以反映系统的当前状态。
+
+.sp
+.LP
+\fBdatadm -v\fR 显示 \fB/etc/dat/dat.conf\fR 文件中现在包含三个条目：
+
+.sp
+.in +2
+.nf
+p8001.ibd0 u1.2 nonthreadsafe default udapl_tavor.so.1 SUNW.1.0 ""
+"driver_name=hermon" 
+p8001.ibd1 u1.2 nonthreadsafe default udapl_tavor.so.1 SUNW.1.0 ""
+"driver_name=hermon"
+p8002.ibd0 u1.2 nonthreadsafe default udapl_tavor.so.1 SUNW.1.0 ""
+"driver_name=hermon"
+.fi
+.in -2
+.sp
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/dat/dat.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+DAT 静态注册表文件
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/io/infiniband/udapl
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBdladm\fR(1M)、\fBpkgadd\fR(1M)、\fBpkgrm\fR(1M)、\fBlibdat\fR(3LIB)、\fBdat.conf\fR(4)、\fBservice_provider.conf\fR(4)、\fBattributes\fR(5)

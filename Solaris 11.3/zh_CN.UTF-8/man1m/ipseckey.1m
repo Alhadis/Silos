@@ -1,0 +1,1512 @@
+'\" te
+.\" Copyright (c) 2008, 2012, Oracle and/or its affiliates.All rights reserved.
+.TH ipseckey 1M "2012 年 6 月 12 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+ipseckey \- 手动处理 IPsec 安全关联数据库 (Security Association Database, SADB)
+.SH 用法概要
+.LP
+.nf
+\fBipseckey\fR [\fB-nvp\fR]
+.fi
+
+.LP
+.nf
+\fBipseckey\fR [\fB-nvp\fR] \fB-f\fR \fIfilename\fR
+.fi
+
+.LP
+.nf
+\fBipseckey\fR \fB-c\fR \fIfilename\fR
+.fi
+
+.LP
+.nf
+\fBipseckey\fR [\fB-nvp\fR] [delete | delete-pair | get] SA_TYPE {EXTENSION \fIvalue\fR...}
+.fi
+
+.LP
+.nf
+\fBipseckey\fR [\fB-np\fR] [monitor | passive_monitor | pmonitor]
+.fi
+
+.LP
+.nf
+\fBipseckey\fR [\fB-nvp\fR] flush {SA_TYPE}
+.fi
+
+.LP
+.nf
+\fBipseckey\fR [\fB-nvp\fR] dump {SA_TYPE}
+.fi
+
+.LP
+.nf
+\fBipseckey\fR [\fB-nvp\fR] save SA_TYPE {\fIfilename\fR}
+.fi
+
+.LP
+.nf
+\fBipseckey\fR [\fB-nvp\fR] \fB-s\fR \fIfilename\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBipseckey\fR 命令用于手动处理以下网络安全服务的安全关联数据库：\fBipsecah\fR(7P) 和 \fBipsecesp\fR(7P)。可以使用 \fBipseckey\fR 命令设置在没有自动化密钥管理可用时通信方之间的安全关联。
+.sp
+.LP
+尽管 \fBipseckey\fR 实用程序仅包含数量有限的几个常规选项，则它支持丰富的命令语言。用户可以指定使用专用于手动加密的程序接口发送请求。请参见 \fBpf_key\fR(7P)。在不带任何参数的情况下调用 \fBipseckey\fR 时，它将进入交互模式，在标准输出中输出提示，并接受来自标准输入的命令，直到到达文件结尾为止。某些命令要求显式指定安全关联 (“\fBSA\fR”) 类型，而其他命令允许不指定 \fBSA\fR 类型并对所有 \fBSA\fR 类型都起作用。 
+.sp
+.LP
+\fBipseckey\fR 使用 \fBPF_KEY\fR 套接字以及以下消息类型：\fBSADB_ADD\fR、\fBSADB_DELETE\fR、\fBSADB_GET\fR、\fBSADB_UPDATE\fR、\fBSADB_FLUSH\fR 和 \fBSADB_X_PROMISC\fR。因此，您必须是超级用户才能使用该命令。
+.sp
+.LP
+\fBipseckey\fR 处理敏感的加密密钥信息。有关如何安全使用该命令的详细信息，请参见“\fB安全\fR”部分。
+.SH 选项
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR [\fIfilename\fR]\fR
+.ad
+.sp .6
+.RS 4n
+该选项与 \fB-f\fR 选项（请参见下文）类似，只不过不执行输入而仅检查语法是否正确。相应错误将报告到 \fBstderr\fR。该选项仅用于调试配置，不用于执行更改。有关更多信息，请参见\fB\fR“安全”部分和“服务管理工具”。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR [\fIfilename\fR]\fR
+.ad
+.sp .6
+.RS 4n
+从输入文件 \fIfilename\fR 中读取命令。输入文件行与命令行语言相同。\fBload\fR 命令提供类似功能。\fB-s\fR 选项或 \fBsave\fR 命令可以生成 \fB-f\fR 参数可读的文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+防止在报告操作时尝试以符号方式输出主机和网络名称。此选项非常有用，例如，当关闭或无法访问所有名称服务器时。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+偏执。不输出任何加密材料，即使在保存 \fBSA\fR 时也如此。启用此标志时输出 \fBX\fR，而非实际的十六进制数字。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR [\fIfilename\fR]\fR
+.ad
+.sp .6
+.RS 4n
+与 \fB-f\fR 选项相反。如果为 \fIfilename\fR 指定 '\fB-\fR'，则输出转为标准输出。当前的所有 \fBSA\fR 表的快照将以 \fB-f\fR 选项可读的格式输出。输出将是一系列的 \fBadd\fR 命令，但某些名称未使用。之所以发生这种情况，是因为一个名称可能通常表示多个地址。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+详细模式。列显正发送到 \fBPF_KEY\fR 套接字的消息，并列显生命周期的原始秒数值。
+.RE
+
+.SH 命令
+.sp
+.ne 2
+.mk
+.na
+\fB\fBadd\fR\fR
+.ad
+.sp .6
+.RS 4n
+添加 \fBSA\fR。由于该命令涉及加密材料的传送，因此不能从 shell 调用，以免密钥可在 \fBps\fR(1) 输出中看到。该命令可以在交互式 \fBipseckey>\fR 提示下使用，或在 \fB-f\fR 命令指定的命令文件中使用。\fBadd\fR 命令接受如下所述的所有扩展-值对。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBupdate\fR\fR
+.ad
+.sp .6
+.RS 4n
+更新 \fBSA\fR 生命周期，如果是 larval（雏形）\fBSA\fR（中止的自动化密钥管理所遗留的），还更新加密材料和其他扩展。与 \fBadd\fR 类似，不能从 shell 调用该命令，因为使用 \fBps\fR(1) 命令会看到加密材料。该命令可以在交互式 \fBipseckey>\fR 提示下使用，或在 \fB-f\fR 命令指定的命令文件中使用。\fBupdate\fR 命令接受所有的扩展-值对，但通常仅用于 \fBSA\fR 生命周期更新。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBupdate-pair\fR\fR
+.ad
+.sp .6
+.RS 4n
+与 update 一样，但更新将应用于 SA 及其配对的 SA（如果存在一个）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete\fR\fR
+.ad
+.sp .6
+.RS 4n
+从特定 \fBSADB\fR 中删除特定的 \fBSA\fR。该命令需要 IPsec \fBSA\fR 的 \fBspi\fR 扩展和 \fBdest\fR 扩展。对于删除消息而言，其他扩展-值对不是必要的。如果要删除的 SA 与另一 SA 是一对，则不仅会删除该 SA，还会更新配对的 SA ，指示它现在不成对。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete-pair\fR\fR
+.ad
+.sp .6
+.RS 4n
+从特定 SADB 中删除特定的 SA。如果该 SA 与另一 SA 是一对，后者也会被删除。该命令需要 IPsec SA 或其配对 SA 的 \fBspi\fR 扩展和 \fBdest\fR 扩展。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBget\fR\fR
+.ad
+.sp .6
+.RS 4n
+从特定 \fBSADB\fR 中查找安全关联并显示。与 \fBdelete\fR 类似，该命令仅需要 IPsec SA 的 \fBspi\fR 和 \fBdest\fR 扩展。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBflush\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除指定 \fBSA_TYPE\fR 的所有 \fBSA\fR 或所有类型的所有 \fBSA\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmonitor\fR\fR
+.ad
+.sp .6
+.RS 4n
+连续报告任何 \fBPF_KEY\fR 消息。该命令可使用 \fBSADB_X_PROMISC\fR 消息类型，使常规 \fBPF_KEY\fR 套接字不会接收的消息可以接收到。请参见 \fBpf_key\fR(7P)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpassive_monitor\fR\fR
+.ad
+.sp .6
+.RS 4n
+除了不使用 \fBSADB_X_PROMISC\fR 消息类型外，其他方面都与 monitor 类似。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpmonitor\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpassive_monitor\fR 的同义词。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdump\fR\fR
+.ad
+.sp .6
+.RS 4n
+将显示指定 \fBSA\fR 类型的所有 \fBSA\fR 或所有的 \fBSA\fR。由于该命令会生成大量的数据，因此不能保证所有的 \fBSA\fR 信息都能成功传送，甚至该命令可能无法完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsave\fR\fR
+.ad
+.sp .6
+.RS 4n
+是模拟 \fB-s\fR 选项的命令。提供该命令是为了对特定 \fBSA\fR 类型（例如 \fBesp\fR 或 \fBah\fR）创建快照。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhelp\fR\fR
+.ad
+.sp .6
+.RS 4n
+列显命令的简短摘要。
+.RE
+
+.SS "\fBSA_TYPE\fR"
+.sp
+.ne 2
+.mk
+.na
+\fB\fBall\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定所有已知的 \fBSA\fR 类型。该类型仅用于 \fBflush\fR 和 \fBdump\fR 命令。其作用与在这些命令中不指定 \fBSA\fR 类型相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBah\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 IPsec 验证头 (“\fBAH\fR”) \fBSA\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBesp\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 IPsec 封装安全有效负荷 (“\fBESP\fR”) \fBSA\fR。
+.RE
+
+.SH 扩展值类型
+.sp
+.LP
+\fBadd\fR、\fBdelete\fR、\fBget\fR 和 \fBupdate\fR 这类命令要求指定特定扩展和关联值。此处列出了这些扩展，并在其后给出了使用这些扩展的命令以及需要它们的命令。当前说明的要求基于 \fBSA\fR 的 IPsec 定义。所需的扩展在以后可能会发生更改。\fB<number>\fR 可以是十六进制 (\fB0xnnn\fR)、十进制 (\fBnnn\fR) 或八进制 (\fB0nnn\fR)。\fB<string>\fR 是一个文本字符串。\fB<hexstr>\fR 是带有位长度的长十六进制数。扩展通常与值成对出现，但某些扩展在其后需要两个值。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBspi \fI<number>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 \fBSA\fR 的安全参数索引。\fBadd\fR、\fBdelete\fR、\fBget\fR 和 \fBupdate\fR 命令需要该扩展。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpair-spi \fI<number>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpair-spi\fR 与 \fBadd\fR 或 \fBupdate\fR 命令一起使用时，所添加或更新的 SA 将与 \fBpair-spi\fR 定义的 SA 配对。可以通过单个命令更新或删除 SA 对。
+.sp
+构成一对的两个 SA 必须位于同一 IP 地址对间的两个不同方向。如果指定的 SA 中有任何一个已与另一 SA 配对，该命令将失败。
+.sp
+如果命令中使用了 pair-spi 标记但 pair-spi 定义的 SA 不存在，该命令将失败。如果命令是 \fBadd\fR 并且配对失败，将删除所要添加的 SA。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinbound | outbound\fR\fR
+.ad
+.sp .6
+.RS 4n
+这些可选标志指定 SA 的方向。在 \fBadd\fR 命令中指定了 \fBinbound\fR 或 \fBoutbound\fR 标志时，内核会将新 SA 插入指定散列表，从而可加快查找速度。如果省略该标志，内核将基于通过 \fBsrc\fR 和 \fBdst\fR 扩展指定的 IP 地址来确定将新 SA 插入哪个散列表。
+.sp
+这些标志与 \fBupdate\fR、\fBdelete\fR、\fBupdate-pair\fR 或 \fBget\fR 命令一起使用时，会为内核提供应在哪个散列表中查找 SA 的提示。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreplay\fR \fI<number>\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定重播窗口大小。如果未指定，则假定重播窗口大小为零。不建议手动添加的 \fBSA\fR 包含重播窗口。该扩展由 \fBadd\fR 和 \fBupdate\fR 命令使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreplay_value\fR \fI<number>\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 SA 的重播值。该扩展由 \fBadd\fR 和 \fBupdate\fR 命令使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstate \fI<string>\fR|\fI<number>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+通过数字值或以下字符串指定 \fBSA\fR 状态：“\fBlarval\fR”、“\fBmature\fR”、“\fBdying\fR” 或 “\fBdead\fR”。如果未指定，缺省值为 \fBmature\fR。该扩展由 \fBadd\fR 和 \fBupdate\fR 命令使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauth_alg \fI<string>\fR|\fI<number>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBauthalg <string>|<number>\fR\fR
+.ad
+.sp .6
+.RS 4n
+通过数字值或表示算法名称的字符串为 \fBSA\fR 指定验证算法。当前验证算法包含： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHMAC-MD5\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBmd5\fR、\fBhmac-md5\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHMAC-SH-1\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsha\fR、\fBsha-1\fR、\fBhmac-sha1\fR、\fBhmac-sha\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHMAC-SHA-256\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsha256\fR、\fBsha-256\fR、\fBhmac-sha256\fR、\fBhmac-sha-256\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHMAC-SHA-384\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsha384\fR、\fBsha-384\fR、\fBhmac-sha384\fR、\fBhmac-sha-384\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHMAC-SHA-512\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsha512\fR、\fBsha-512\fR、\fBhmac-sha512\fR、\fBhmac-sha-512\fR
+.RE
+
+通常，算法名称具有多个同义词。对于特定 \fBSA\fR 类型，\fBadd\fR 命令需要该扩展。\fBupdate\fR 命令也使用该扩展。
+.sp
+使用 \fBipsecalgs\fR(1M) 命令可获取完整的验证算法列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBencr_alg \fI<string>\fR|\fI<number>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBencralg \fI<string>\fR|\fI<number>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+通过数字值或表示算法名称的字符串为 SA 指定加密算法。当前加密算法包含 DES (“\fBdes\fR”)、三重 DES (“\fB3des\fR”)、Blowfish (“blowfish”) 和 AES (“aes”)。对于特定 \fBSA\fR 类型，add 命令需要该扩展。\fBupdate\fR 命令也使用该扩展。
+.sp
+使用 \fBipsecalgs\fR(1M) 命令可获取完整的加密算法列表。
+.RE
+
+.sp
+.LP
+接下来的 6 个扩展是生命周期扩展。有两种类型：“\fBhard\fR” 和 “\fBsoft\fR”。如果 \fBhard\fR 生命周期到期，系统将自动删除 \fBSA\fR。如果 \fBsoft\fR 生命周期到期，系统将传送 \fBSADB_EXPIRE\fR 消息并将其状态从 \fBmature\fR 降级为 \fBdying\fR。请参见 \fBpf_key\fR(7P)。对 \fBkey\fR 执行 \fBmonitor\fR 命令可查看 \fBSADB_EXPIRE\fR 消息。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBidle_addtime\fR \fI<number>\fR\fR
+.ad
+.br
+.na
+\fB\fBidle_usetime\fR \fI<number>\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定在对未使用的 SA 进行重新验证之前，该 SA 可以存在的秒数。如果未提供该扩展，缺省值是 \fBhard_addtime\fR 的一半（请参见下文）。该扩展由 \fBadd\fR 和 \fBupdate\fR 命令使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsoft_bytes \fI<number>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBhard_bytes \fI<number>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定该 \fBSA\fR 可以保护的字节数。如果未提供该扩展，缺省值是零，这意味着基于所保护的字节数，\fBSA\fR 将不过期。该扩展由 \fBadd\fR 和 \fBupdate\fR 命令使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsoft_addtime \fI<number>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBhard_addtime \fI<number>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定从 larval \fBSA\fR 添加或更新该 SA 后，该 \fBSA\fR 可以存在的秒数。更新 mature（成熟）\fBSA\fR 不会重置添加它时的初始时间。如果未提供该扩展，缺省值是零，这意味着基于 SA 在添加之后可存在的时间，\fBSA\fR 将不过期。该扩展由 \fBadd\fR 和 \fBupdate\fR 命令使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsoft_usetime \fI<number>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBhard_usetime \fI<number>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定该 \fBSA\fR 在首次使用后可以存在的秒数。如果未提供该扩展，缺省值是零，这意味着基于 SA 在添加之后可存在的时间，\fBSA\fR 将不过期。该扩展由 \fBadd\fR 和 \fBupdate\fR 命令使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsaddr \fIaddress\fR | \fIname\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBsrcaddr \fIaddress\fR | \fIname\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBsaddr6 \fIIPv6 address\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBsrcaddr6 \fIIPv6 address\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBsrc \fIaddress\fR | \fIname\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBsrc6 \fIIPv6 address\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsrcaddr \fIaddress\fR\fR 和 \fBsrc \fIaddress\fR\fR 是指示 \fBSA\fR 源地址的同义词。如果未指定，源地址要么为未设置状态，要么设置为通配符地址（如果提供了目标地址）。不指定源地址对 IPsec \fBSA\fR 是有效的。以后的 \fBSA\fR 类型可能会更改此假设。该扩展由 \fBadd\fR、\fBupdate\fR、\fBget\fR 和 \fBdelete\fR 命令使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdaddr \fI<address>\fR|\fI<name>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBdstaddr \fI<address>\fR|\fI<name>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBdaddr6 \fI<IPv6 address>\fR|\fI <name>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBdstaddr6 \fI<IPv6 address>\fR|\fI<name>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBdst \fI<addr>\fR|\fI<name>\fR\fR\fR
+.ad
+.br
+.na
+\fB\fBdst6 \fI <IPv6 address>\fR|\fI<name>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBdstaddr \fI<addr>\fR\fR 和 \fBdst \fI<addr>\fR\fR 是指示 \fBSA\fR 目标地址的同义词。如果未指定，目标地址将为未设置状态。由于 IPsec \fBSA\fR 要求有指定的目标地址和 \fBspi\fR 以便识别，\fBadd\fR、\fBupdate\fR、\fBget\fR 和 \fBdelete\fR 命令需要该扩展具有特定值。
+.sp
+如果指定了名称，\fBipseckey\fR 将尝试对该名称可以识别的所有目标地址对应的多个 \fBSA\fR 调用该命令。这与 \fBipsecconf\fR 处理地址的方式类似。
+.sp
+如果指定了 \fBdst6\fR 或 \fBdstaddr6\fR，仅使用名称可识别的 IPv6 地址。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsport\fR \fI<portnum>\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsport\fR 指定 SA 的源端口号。该项应与上层协议（请参见下文）结合使用，但不一定要如此。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdport\fR \fI<portnum>\fR\fR
+.ad
+.sp .6
+.RS 4n
+sport 指定 SA 的目标端口号。该项应与上层协议（请参见下文）结合使用，但不一定要如此。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBencap\fR \fI<protocol>\fR\fR
+.ad
+.sp .6
+.RS 4n
+识别用于封装 NAT-traversal IPsec 包的协议。以下是其他 NAT-traversal 参数 (\fBnat_*\fR)。\fI<protocol>\fR 当前唯一可接受的值是 \fBudp\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBproto\fR \fI<protocol number>\fR\fR
+.ad
+.br
+.na
+\fB\fBulp\fR \fI<protocol number>\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBproto\fR 及其同义词 \fBulp\fR 指定 SA 的 IP 协议编号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnat_loc\fR \fI<address>\fR|\fI<name>\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果 SA 中的本地地址（源地址或目标地址）在 NAT 之后，该扩展指示 NAT 节点的全局可路由的地址。如果指定了 \fBnat_lport\fR（请参见下文），该地址可以与 SA 的本地地址匹配。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnat_rem\fR \fI<address>\fR|\fI<name>\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果 SA 中的远程地址（源地址或目标地址）在 NAT 之后，该扩展指示节点的内部（即 NAT 之后）地址。如果指定了 \fBnat_rport\fR（请参见下文），该地址可以与 SA 的本地地址匹配。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnat_lport\fR \fI<portnum>\fR\fR
+.ad
+.sp .6
+.RS 4n
+识别发生 ESP 封装的本地 UDP 端口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnat_rport\fR \fI<portnum>\fR\fR
+.ad
+.sp .6
+.RS 4n
+识别发生 ESP 封装的远程 UDP 端口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBisrc\fR \fI<address>\fR | \fI<name>\fR[/\fI<prefix>\fR]\fR
+.ad
+.br
+.na
+\fB\fBinnersrc\fR \fI<address>\fR | \fI<name>\fR[/\fI<prefix> \fR]\fR
+.ad
+.br
+.na
+\fB\fBisrc6\fR \fI<address>\fR | \fI<name>\fR[/\fI<prefix>\fR]\fR
+.ad
+.br
+.na
+\fB\fBinnersrc6\fR \fI<address>\fR | \fI<name>\fR[/\fI <prefix>\fR]\fR
+.ad
+.br
+.na
+\fB\fBproxyaddr\fR \fI<address>\fR | \fI<name>\fR[/\fI<prefix>\fR]\fR
+.ad
+.br
+.na
+\fB\fBproxy\fR \fI<address>\fR | \fI<name>\fR[/\fI <prefix>\fR]\fR
+.ad
+.sp .6
+.RS 4n
+\fBisrc\fR \fI<address>\fR[/\fI<prefix>\fR] 和 \fBinnersrc\fR \fI<address>\fR[/\fI<prefix>\fR] 是同义词。它们指示隧道模式 SA 的内部源地址。
+.sp
+内部源可以是前缀，而非地址。与其他地址扩展一样，存在特定于 IPv6 的格式。在此类情况下，仅使用特定于 IPv6 的地址或前缀。
+.sp
+以前的版本将该值称为代理地址。该用法虽然已过时，但仍会保留。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBidst\fR \fI<address>\fR | \fI<name>\fR[/\fI<prefix>\fR]\fR
+.ad
+.br
+.na
+\fB\fBinnerdst\fR \fI<address>\fR | \fI<name>\fR[/\fI<prefix> \fR]\fR
+.ad
+.br
+.na
+\fB\fBidst6\fR \fI<address>\fR | \fI<name>\fR[/\fI<prefix>\fR]\fR
+.ad
+.br
+.na
+\fB\fBinnerdst6\fR \fI<address>\fR | \fI<name>\fR[/\fI <prefix>\fR]\fR
+.ad
+.sp .6
+.RS 4n
+\fBidst\fR \fI<address>\fR[/\fI<prefix>\fR] 和 \fBinnerdst\fR \fI<address>\fR[/\fI<prefix>\fR] 是同义词。它们指示隧道模式 SA 的内部目标地址。
+.sp
+内部目标可以是前缀，而非地址。与其他地址扩展一样，存在特定于 IPv6 的格式。在此类情况下，仅使用特定于 IPv6 的地址或前缀。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinnersport\fR \fI<portnum>\fR\fR
+.ad
+.br
+.na
+\fB\fBisport\fR \fI<portnum>\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBinnersport\fR 指定隧道模式 SA 内部头的源端口号。该项应与上层协议（请参见下文）结合使用，但不一定要如此。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinnerdport\fR \fI<portnum>\fR\fR
+.ad
+.br
+.na
+\fB\fBidport\fR \fI<portnum>\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBinnerdport\fR 指定隧道模式 SA 内部头的目标端口号。该项应与上层协议（请参见下文）结合使用，但不一定要如此。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBiproto\fR \fI<protocol number>\fR\fBiulp\fR \fI<protocol number>\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBiproto\fR 及其同义词 \fBiulp\fR 指定隧道模式 SA 内部头的 IP 协议编号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauthkey \fI<hexstring>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+为该 \fBSA\fR 指定验证密钥。将该密钥表示为十六进制数组成的字符串，并以可选 \fB/\fR 结尾，例如 \fB123/12\fR。位数从最高有效位开始倒计数。例如，要表示三个 '1' 位，正确的语法是字符串 “\fBe/3\fR”。对于多密钥算法，该字符串是串联的多个密钥。该扩展由 \fBadd\fR 和 \fBupdate\fR 命令使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBencrkey \fI<hexstring>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+为该 \fBSA\fR 指定加密密钥。encrkey 的语法与 \fBauthkey\fR 相同。多密钥加密算法的一个具体示例是 \fB3des\fR，它将自身表示为一个 192 位的密钥，即包含三个 64 位奇偶数的 \fBDES\fR 密钥。该扩展由 \fBadd\fR 和 \fBupdate\fR 命令使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreserved_bits\fR \fI<number>\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fBencrkey\fR 字符串的最后 \fI<number>\fR 位标记为 \fBPF_KEY\fR 消息中的保留字。该选项仅用于测试特定的加密算法。
+.RE
+
+.sp
+.LP
+证书标识在自动化密钥管理中非常有用，因为这类标识将 \fBSA\fR 与大多数自动化密钥管理协议中使用的公钥证书相关联。这类标识对手动添加的 \fBSA\fR 用处不大。与其他扩展不同的是，\fBsrcidtype\fR 接受两个值：\fItype\fR 和实际的 \fIvalue\fR。此类型可以是以下类型之一： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprefix\fR\fR
+.ad
+.sp .6
+.RS 4n
+地址前缀。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfqdn\fR\fR
+.ad
+.sp .6
+.RS 4n
+全限定域名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdomain\fR\fR
+.ad
+.sp .6
+.RS 4n
+域名，\fBfqdn\fR 的同义词。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuser_fqdn\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB\fIuser\fR@\fIfqdn\fR\fR 格式的用户标识。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmailbox\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBuser_fqdn\fR 的同义词。
+.RE
+
+.sp
+.LP
+\fIvalue\fR 是一个应能标识证书的任意文本字符串。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsrcidtype \fI<type, value>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+为该 \fBSA\fR 指定源证书标识。该扩展由 \fBadd\fR 和 \fBupdate\fR 命令使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdstidtype \fI<type, value>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+为该 \fBSA\fR 指定目标证书标识。该扩展由 \fBadd\fR 和 \fBupdate\fR 命令使用
+.RE
+
+.sp
+.LP
+标签扩展用于在 Trusted Extensions 中将敏感标签与安全关联内传输的通信相关联。除非启用了 Trusted Extensions，否则不允许使用这些扩展。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlabel\fR \fIlabel\fR\fR
+.ad
+.sp .6
+.RS 4n
+定义该 SA 传输的通信的敏感标签。在未使用 Trusted Extensions 的系统中不允许使用此标签。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBouter-label\fR \fIlabel\fR\fR
+.ad
+.sp .6
+.RS 4n
+定义属于该 SA 的密文通信的敏感度；该标签将出现在外部包头中。在未使用 Trusted Extensions 的系统中不允许使用此标签。该扩展使用不当可能会导致绕开标签策略。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBimplicit-label\fR \fIlabel\fR\fR
+.ad
+.sp .6
+.RS 4n
+定义属于该 SA 的密文通信的敏感度并请求该 SA 不包含显式线上标签。在未使用 Trusted Extensions 的系统中不允许使用此标签。该扩展使用不当可能会导致绕开标签策略。
+.RE
+
+.SS "隧道模式 SA 与传输模式 SA"
+.sp
+.LP
+如果 “proto” 值是 4 (\fBipip\fR) 或 41 (\fBipv6\fR) \fB并且\fR已指定内部地址或内部端口值，IPsec SA 为隧道模式 SA。否则，SA 为传输模式 SA。
+.SH 安全
+.sp
+.LP
+加密材料非常敏感，应尽可能随机生成。已知一些算法具有弱密钥。IPsec 算法具有内置的弱密钥检查，因此如果新添加的 \fBSA\fR 中有弱密钥，\fBadd\fR 命令将失败，并返回一个无效值。
+.sp
+.LP
+\fBipseckey\fR 命令允许特权用户输入加密密钥信息。如果对手获取了对此类信息的访问，则会影响 IPsec 通信的安全。使用 \fBipseckey\fR 命令时，应考虑下列问题。
+.RS +4
+.TP
+1.
+\fBTTY\fR 是否会通过网络（交互模式）？ 
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果是，加密材料的安全即为此 \fBTTY\fR 的通信的网络路径的安全。在明文 \fBtelnet\fR 或 \fBrlogin\fR 会话中使用 \fBipseckey\fR 存在风险。 
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果存在读取窗口事件的隐藏程序，甚至本地窗口也可能受到攻击。
+.RE
+.RE
+.RS +4
+.TP
+2.
+文件是否能通过网络访问，或者是否完全公开（\fB-f\fR 选项）？
+.RS +4
+.TP
+.ie t \(bu
+.el o
+挂载在网络中的文件可在读取时被对手发现。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+包含加密材料的完全公开文件同样存在风险。
+.RE
+.RE
+.RS +4
+.TP
+3.
+\fBipseckey\fR 命令设计为由 \fBmanual-key\fR \fBsmf\fR(5) 服务进行管理。由于 \fBsmf\fR(5) 日志文件是完全公开的文件，因此 \fBipseckey\fR 不在这些日志文件中记录任何语法错误，因为这些错误可能包含机密信息。
+.sp
+如果启用了 \fBmanual-key\fR \fBsmf\fR(5) 服务，发现语法错误时，该服务会进入维护模式。日志文件会指出存在语法错误，但不指出错误内容。
+.sp
+管理员应从命令行使用 \fBipseckey\fR \fB-c\fR \fIfilename\fR 来找出错误原因。请参见\fB\fR“选项”部分。
+.RE
+.sp
+.LP
+如果您的源地址是可通过网络查找的主机，并且您的命名系统本身已泄密，使用的所有名称都将不可信任。
+.sp
+.LP
+安全漏洞通常在于工具的不当应用，而不在于工具本身。管理员在使用 \fBipseckey\fR 时务必小心谨慎。最安全的运行模式可能是在控制台或其他硬连接的 \fBTTY\fR 中运行。
+.sp
+.LP
+有关此主题的其他信息，请参见 Matt Blaze 在 Bruce Schneier 编著的《\fIApplied Cryptography: Protocols, Algorithms, and Source Code in C\fR》中撰写的后记。
+.SS "服务管理工具"
+.sp
+.LP
+IPsec 手动密钥由服务管理工具 \fBsmf\fR(5) 管理。下面列出的服务管理 IPsec 的组件。这些服务按如下方式交付：
+.sp
+.in +2
+.nf
+svc:/network/ipsec/policy:default (enabled)
+svc:/network/ipsec/ipsecalgs:default (enabled)
+svc:/network/ipsec/manual-key:default (disabled)
+svc:/network/ipsec/ike:default (disabled)
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+手动密钥服务以禁用状态交付。系统管理员必须先按本手册页中所述手动创建 IPsec 安全关联 (Security Association, SA)，然后才能启用该服务。
+.sp
+.LP
+策略服务以启用状态交付，但没有配置文件，因此，在起始状态下，数据包不受 IPsec 保护。创建配置文件 \fB/etc/inet/ipsecinit.conf\fR 和刷新服务（\fBsvcadm refresh\fR，请参见下文）后，会应用该配置文件中包含的策略。如果该文件中存在错误，该服务会进入维护模式。请参见 \fBipsecconf\fR(1M)。
+.sp
+.LP
+以禁用状态交付的服务之所以按该方式交付是因为：系统管理员必须先为其创建配置文件，然后才能启用这些服务。有关 \fBike\fR 服务，请参见 \fBike.config\fR(4)。
+.sp
+.LP
+有关 \fBipsecalgs\fR 服务，请参见 \fBipsecalgs\fR(1M)。
+.sp
+.LP
+正确的管理步骤是先为每项服务创建配置文件，然后使用 \fBsvcadm\fR(1M) 启用每项服务。
+.sp
+.LP
+如果需要更改配置，应先编辑配置文件，然后再刷新服务，如下所示：
+.sp
+.in +2
+.nf
+example# \fBsvcadm refresh manual-key\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fB警告：\fR为了避免 \fBipseckey\fR 提示有重复关联，在从 \fBsmf\fR(5) 运行 \fBipseckey\fR 命令时，\fBipseckey\fR 命令会在添加配置文件中定义的任何新安全关联之前，清空安全关联数据库 (Security Association Data Base, SADB)。这与命令行方式的行为不同，从命令行运行时，在添加新安全关联之前不会清空 SADB。
+.sp
+.LP
+\fBsmf\fR(5) 框架将在服务特定的日志文件中记录发现的任何错误。可使用以下任一命令检查 \fBlogfile\fR 属性：
+.sp
+.in +2
+.nf
+example# \fBsvcs -l manual-key\fR
+example# \fBsvcprop manual-key\fR
+example# \fBsvccfg -s manual-key listprop\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+为 \fBmanual-key\fR 服务定义了以下属性：
+.sp
+.in +2
+.nf
+config/config_file
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+分配了以下授权的用户可以使用 \fBsvccfg\fR(1M) 修改此属性：
+.sp
+.in +2
+.nf
+solaris.smf.value.ipsec
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+请参见 \fBauths\fR(1)、\fBuser_attr\fR(4)、\fBrbac\fR(5)。
+.sp
+.LP
+必须先使用 \fBsvcadm\fR(1M) 刷新该服务，新属性才能生效。使用 \fBsvcprop\fR(1) 命令可以查看不可修改的常规属性。
+.sp
+.in +2
+.nf
+# \fBsvccfg -s ipsec/manual-key setprop config/config_file = \e
+/new/config_file\fR
+# \fBsvcadm refresh manual-key\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以使用 \fBsvcadm\fR(1M) 来对此服务执行管理操作（如启用、禁用、刷新和请求重新启动）。分配有以下授权的用户可以执行这些操作：
+.sp
+.in +2
+.nf
+solaris.smf.manage.ipsec
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以使用 \fBsvcs\fR(1) 命令来查询服务的状态。
+.sp
+.LP
+\fBipseckey\fR 命令设计为在 \fBsmf\fR(5) 管理下运行。尽管可以从命令行运行 \fBipsecconf\fR 命令，但是不建议采用这种方法。如果要从命令行运行 \fBipseckey\fR 命令，应该首先禁用 \fBmanual-key\fR \fBsmf\fR(5) 服务。请参见 \fBsvcadm\fR(1M)。
+.sp
+.LP
+请注意，与 IPsec 及 IKE 策略和配置不同的是，IPsec 加密材料\fB不是\fR由位置配置文件管理的。通常假定此数据用于系统，且不会随位置的更改而更改。
+.SH 示例
+.LP
+\fB示例 1 \fR清空所有 \fBSA\fR
+.sp
+.LP
+清空所有 \fBSA\fR：
+
+.sp
+.in +2
+.nf
+example# \fBipseckey flush\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR仅清空 IPsec AH \fBSA\fR
+.sp
+.LP
+仅清空 IPsec \fBAH\fR \fBSA\fR：
+
+.sp
+.in +2
+.nf
+example# \fBipseckey flush ah\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR将所有 \fBSA\fR 保存到标准输出
+.sp
+.LP
+将所有 \fBSA\fR 保存到标准输出：
+
+.sp
+.in +2
+.nf
+example# \fBipseckey save all\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR将 \fBESP\fR \fBSA\fR 保存到文件 \fB/tmp/snapshot\fR
+.sp
+.LP
+将 \fBESP\fR \fBSA\fR 保存到文件 \fB/tmp/snapshot\fR：
+
+.sp
+.in +2
+.nf
+example# \fBipseckey save esp /tmp/snapshot\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR删除 IPsec \fBSA\fR
+.sp
+.LP
+删除 IPsec \fBSA\fR，仅需要 \fBSPI\fR 和目标地址：
+
+.sp
+.in +2
+.nf
+example# \fBipseckey delete esp spi 0x2112 dst 224.0.0.1\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+替代方法是删除 SA 及 SA 对（如果有）：
+
+.sp
+.in +2
+.nf
+example# \fBipseckey delete-pair esp spi 0x2112 dst 224.0.0.1\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR获取有关 IPsec \fBSA\fR 的信息
+.sp
+.LP
+同样，获取有关 \fBSA\fR 的信息仅需要目标地址和 \fBSPI\fR：
+
+.sp
+.in +2
+.nf
+example# \fBipseckey get ah spi 0x5150 dst mypeer\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR添加或更新 IPsec \fBSA\fR
+.sp
+.LP
+添加或更新 \fBSA\fR 需要进入交互模式：
+
+.sp
+.in +2
+.nf
+example# \fBipseckey\fR
+ipseckey> \fBadd ah spi 0x90125 src me.domain.com dst you.domain.com \e
+          authalg md5 authkey 1234567890abcdef1234567890abcdef\fR
+ipseckey> \fBupdate ah spi 0x90125 dst you.domain.com hard_bytes \e
+          16000000\fR
+ipseckey> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+将两个链接在一起的 SA 作为一对添加：
+
+.sp
+.in +2
+.nf
+example# \fBipseckey\fR
+ipseckey> \fBadd esp spi 0x2345 src me.domain.com dst you.domain.com \e
+   authalg md5 authkey bde359723576fdea08e56cbe876e24ad \e
+   encralg des encrkey be02938e7def2839\fR
+ipseckey> \fBadd esp spi 0x5432 src me.domain.com dst you.domain.com \e
+   authalg md5 authkey bde359723576fdea08e56cbe876e24ad \e
+   encralg des encrkey be02938e7def2839 pair-spi 0x2345\fR
+ipseckey> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 8 \fR添加相反方向的 \fBSA\fR
+.sp
+.LP
+对于 IPsec，\fBSA\fR 是单向的。要实现安全通信，需要在相反方向添加第二个 \fBSA\fR。对等计算机也需要添加两个 \fBSA\fR。 
+
+.sp
+.in +2
+.nf
+example# \fBipseckey\fR 
+ipseckey> \fBadd ah spi 0x2112 src you.domain.com dst me.domain.com \e
+          authalg md5 authkey bde359723576fdea08e56cbe876e24ad \e
+          hard_bytes 16000000\fR
+ipseckey> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 9 \fR监视 \fBPF_KEY\fR 消息
+.sp
+.LP
+监视 \fBPF_KEY\fR 消息非常简单： 
+
+.sp
+.in +2
+.nf
+example# \fBipseckey monitor\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 10 \fR在文件中使用命令
+.sp
+.LP
+可以将命令放置在的文件中，通过 \fB-f\fR 选项来解析这些命令。该文件可以包含以 “#” 符号开头的注释行。例如： 
+
+.sp
+.in +2
+.nf
+# This is a sample file for flushing out the ESP table and 
+# adding a pair of SAs. 
+
+flush esp 
+
+### Watch out!  I have keying material in this file.  See the 
+### SECURITY section in this manual page for why this can be 
+### dangerous .
+
+add esp spi 0x2112 src me.domain.com dst you.domain.com \e
+    authalg md5 authkey bde359723576fdea08e56cbe876e24ad \e
+    encralg des encrkey be02938e7def2839 hard_usetime 28800 
+add esp spi 0x5150 src you.domain.com dst me.domain.com \e
+    authalg md5 authkey 930987dbe09743ade09d92b4097d9e93 \e
+    encralg des encrkey 8bd4a52e10127deb hard_usetime 28800
+
+## End of file  -  This is a gratuitous comment
+.fi
+.in -2
+
+.LP
+\fB示例 11 \fR为 IPv6 地址添加 SA
+.sp
+.LP
+以下命令以交互模式输入，将创建一个保护站点本地地址之间的 IPv6 通信的 SA
+
+.sp
+.in +2
+.nf
+example # \fBipseckey\fR
+ipseckey> \fBadd esp spi 0x6789 src6 fec0:bbbb::4483 dst6 fec0:bbbb::7843\e
+           authalg md5 authkey bde359723576fdea08e56cbe876e24ad \e
+          encralg des encrkey be02938e7def2839 hard_usetime 28800\fR
+ipseckey>\fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 12 \fR将两个 SA 链接为一对
+.sp
+.LP
+以下命令将两个 SA 链接在一起作为一对：
+
+.sp
+.in +2
+.nf
+example# \fBipseckey update esp spi 0x123456 dst 192.168.99.2 \e
+pair-spi 0x654321\fR
+.fi
+.in -2
+.sp
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/secret/ipseckeys\fR\fR
+.ad
+.sp .6
+.RS 4n
+引导时使用的缺省配置文件。有关更多信息，请参见“服务管理工具”和\fB\fR“安全”部分。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBps\fR(1)、\fBsvcprop\fR(1)、\fBsvcs\fR(1)、\fBipsecconf\fR(1M)、\fBipsecalgs\fR(1M)、\fBroute\fR(1M)、\fBsvcadm\fR(1M)、\fBsvccfg\fR(1M)、\fBike.config\fR(4)、\fBattributes\fR(5)、\fBsmf\fR(5)、\fBipsec\fR(7P)、\fBipsecah\fR(7P)、\fBipsecesp\fR(7P)、\fBpf_key\fR(7P)
+.sp
+.LP
+由 Schneier, B. 编著的《\fIApplied Cryptography: Protocols, Algorithms, and Source Code in C\fR》第二版。纽约：John Wiley & Sons 出版，1996 年。
+.SH 诊断
+.sp
+.LP
+\fBipseckey\fR 命令解析配置文件并报告发现的任何错误。如果存在多个错误，\fBipseckey\fR 会报告尽可能多的错误。
+.sp
+.LP
+\fBipseckey\fR 命令不会尝试使用存在语法错误的上述命令\fB\fR。\fB\fR某个命令可能在语法上正确，但可能由于内核拒绝了发往 \fBpf_key\fR(7P) 的请求而生成错误。之所以发生这种情况，可能是因为密钥的长度无效或指定的算法不受支持。
+.sp
+.LP
+如果配置文件中存在任何错误，ipseckey 会报告有效命令数目和解析的命令总数。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBParse error on line \fIN\fR.\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果以交互方式使用 \fBipseckey\fR 会输出用法信息，此时会改为输出上述信息。通常前面有其他诊断信息。由于\fB\fR上述命令可以使用反斜杠字符分隔行，从而涵盖配置文件中的多个行，因此该消息并不总能指出配置文件中导致错误的具体行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBUnexpected end of command line.\fR\fR
+.ad
+.sp .6
+.RS 4n
+命令行中应提供其他参数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBUnknown\fR
+.ad
+.sp .6
+.RS 4n
+特定扩展的值未知。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBAddress type \fIN\fR not supported.\fR\fR
+.ad
+.sp .6
+.RS 4n
+名称-地址查找返回了不受支持的地址系列。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fIN\fR is not a bit specifier\fR\fR
+.ad
+.br
+.na
+\fB\fBbit length \fIN\fR is too big for\fR\fR
+.ad
+.br
+.na
+\fB\fBstring is not a hex string\fR\fR
+.ad
+.sp .6
+.RS 4n
+加密材料未正确输入。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCan only specify single\fR\fR
+.ad
+.sp .6
+.RS 4n
+输入了重复的扩展。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDon't use extension for \fI<string>\fR for \fI<command>\fR\&.\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用了命令未使用的扩展。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBOne of the entered values is incorrect: Diagnostic code \fINN\fR: \fI<msg>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是常规的参数无效错误。诊断代码和消息可提供有关哪个值不正确及其原因的更详细信息。
+.RE
+
+.SH 附注
+.sp
+.LP
+尽管 ipseckey 的名称显示是其 IPsec 专用命令，但 \fBipseckey\fR 实际上与 \fBroute\fR(1M) 类似，因为它是一个连接基于套接字的管理引擎的命令行接口。对于ipseckey，该引擎是 \fBPF_KEY\fR。\fBPF_KEY\fR 最初是在美国海军研究实验室 (United States Naval Research Laboratory, NRL) 开发的。
+.sp
+.LP
+要以手动加密方式确保计算机安全通信，所有通信方都必须添加 \fBSA\fR。如果希望两个节点实现安全通信，这两个节点都需要添加相应的 \fBSA\fR。
+.sp
+.LP
+随着其他安全协议添加到 \fBPF_KEY\fR 中，以后也可以在其他名称下调用 \fBipseckey\fR。
+.sp
+.LP
+该命令需要有 \fBsys_ip_config\fR 特权才能操作，可以在全局区域和独占 IP 区域中运行。可以通过 \fBipseckey\fR 为全局区域设置安全关联，以保护系统中共享 IP 区域的通信。

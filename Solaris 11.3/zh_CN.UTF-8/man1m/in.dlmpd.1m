@@ -1,0 +1,72 @@
+'\" te
+.\" Copyright (c) 2011, 2013, Oracle and/or its affiliates.All rights reserved.
+.TH in.dlmpd 1M "2012 年 12 月 18 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+in.dlmpd \- DLMP 聚合探测守护进程
+.SH 用法概要
+.LP
+.nf
+\fB/usr/lib/inet/in.dlmpd\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBin.dlmpd\fR 守护进程可对 DLMP 模式聚合执行基于探测器的故障和修复检测。
+.sp
+.LP
+缺省情况下，所有 DLMP 聚合都启用基于探测器的故障和修复检测。可以通过将聚合的 "probe-enabled" 链路属性设置为 "false" 来为每个聚合禁用该检测。在这种情况下，特定聚合中底层端口的运行状况将仅依赖于该端口的链路状态。
+.sp
+.LP
+即使启用了基于探测器的故障检测，基于探测器的故障和修复检测也只在管理员为聚合配置了 "probe-ip" 链路属性后才会启动。此链路属性配置源 IP 地址以及可选目标 IP 地址的列表。此列表中的 IP 地址如果配置为活动的 (plumbed) 主地址或 VNIC，\fBin.dlmpd\fR 就会使用此列表中的 IP 地址进行 ICMP 探测。IPv4 和 IPv6 都受支持。但请注意，\fBin.dlmpd\fR 将忽略不是链路本地地址的 IPv6 地址。
+.sp
+.LP
+在 DLMP 聚合中，与 "probe-ip" 配置匹配的每个源 IP 地址都与一个底层端口关联，通过该端口发送/接收源 IP 地址的传入通信流量和传出通信流量（包括 ICMP 探测器及其 ack）。\fBin.dlmpd\fR 守护进程定期向配置的目标发出单播 ICMP 包；如果未配置任何目标，\fBin.dlmpd\fR 将首先使用给定的源 IP 地址发出 ICMP 多播包来发现目标。通过监视 ICMP ack 的确认或丢失，\fBin.dlmpd\fR 守护进程可以确定与源 IP 地址关联的端口的运行状况。如果特定端口的所有目标都无法访问，则会将该端口声明为“ICMP 出现故障”。如果该端口至少有一个目标可通过 ICMP 探测器访问，则会将该端口标记为“ICMP 处于活动状态”。
+.sp
+.LP
+根据 "probe-ip" 链路属性的配置方式以及配置的源 IP 地址与聚合端口的关联方式，可能会存在不与任何配置的 "probe-ip" 源 IP 地址关联的端口。
+.sp
+.LP
+这些端口的运行状况由另一种探测器机制（即，传递式探测器）确定。\fBin.dlmpd\fR 守护进程定期在“ICMP 处于活动状态”的端口和未执行 ICMP 探测的端口之间发送/接收专用的第 2 层 (L2) 探测器。如果某个端口可以访问任何“ICMP 处于活动状态”的端口，则会将该端口声明为与该“ICMP 处于活动状态”的端口位于相同的“岛”上，并且也会将其视为处于活动状态。此状态称为“L2 处于活动状态”。
+.sp
+.LP
+如果某个端口既不是“ICMP 处于活动状态”也不是“L2 处于活动状态”，则会将该端口声明为“出现故障”；如果该端口是“ICMP 处于活动状态”或“L2 处于活动状态”，则会声明其为“处于活动状态”（或已恢复）。 
+.sp
+.LP
+如果所有底层端口都处于“出现故障”状态，则 \fBin.dlmpd\fR 守护进程会以循环方式将某个底层端口指定为“ICMP 探测者”以检测可能的恢复。所有 ICMP 探测器都会仅通过此端口发送。传递式探测会按之前的方式继续进行。一旦“ICMP 探测者”检测到 ICMP 探测器成功，该端口与其岛中的所有其他端口就都会“处于活动状态”。
+.SS "SMF 管理"
+.sp
+.LP
+\fBin.dlmpd\fR 守护进程服务由服务管理工具 \fBsmf\fR(5) 管理，其服务标识符为： 
+.sp
+.in +2
+.nf
+svc:/network/dlmp:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以使用 \fBsvcadm\fR(1M) 来对此服务执行管理操作（如启用、禁用或请求重新启动）。
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBdladm\fR(1M)、\fBdlstat\fR(1M)、\fBsvcadm\fR(1M)、\fBattributes\fR(5)、\fBsmf\fR(5)、\fBicmp\fR(7P)、\fBicmp6\fR(7P)

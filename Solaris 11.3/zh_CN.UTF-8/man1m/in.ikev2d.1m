@@ -1,0 +1,594 @@
+'\" te
+.\" Copyright (c) 2012, 2014, Oracle and/or its affiliates.All rights reserved
+.TH in.ikev2d 1M "2014 年 1 月 2 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+in.ikev2d \- Internet 密钥交换版本 2 (Internet Key Exchange Version 2, IKEv2) 的守护进程
+.SH 用法概要
+.LP
+.nf
+\fB/usr/lib/inet/in.ikev2d\fR [\fB-d\fR] [\fB-f\fR \fIfilename\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/inet/in.ikev2d\fR \fB-c\fR [\fB-f\fR \fIfilename\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBin.ikev2d\fR 守护进程使用 RFC 5996 中定义的 Internet 密钥交换版本 2 (Internet Key Exchange Version 2, IKEv2) 协议为 IPsec 执行自动化密钥管理。
+.sp
+.LP
+\fBin.ikev2d\fR 支持以下功能：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+使用预先共享密钥、DSS 签名、RSA 签名或椭圆曲线数字签名算法 (Elliptic Curve Digital Signature Algorithm, ECDSA) 进行 IKE 验证。支持自签名证书和 CA 签名的证书。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+使用 RFC 3526、RFC 5114、RFC 5903 和 RFC 5996 中定义的 MODP 组 1、2、5、14、15、16、22、23 和 24 以及 ECP 组 19、20、21、25 和 26 派生 Diffie-Hellman 密钥。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+使用经过验证的加密算法进行安全 IKEv2 交换保护。
+.sp
+加密算法：AES、3DES。
+.sp
+验证算法：HMAC-MD5、HMAC-MD5-128、HMAC-SHA-1、HMAC-SHA1-160、HMAC-SHA256、HMAC-SHA384 或 HMAC-SHA512。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBin.ikev2d\fR 中的加密限于 IKEv2 验证和密钥交换。有关 IPsec 保护选项的信息，请参见 \fBipsecesp\fR(7P)。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+请注意，\fBin.ikev2d\fR 使用以上定义的算法来保护其与对等点的交换。用于保护实际 IPsec 通信的算法 (ESP/AH) 及关联密钥在这些 IKEv2 交换中协商。为 IPsec 选择的实际算法不在本手册页中介绍的 \fBin.ikev2d\fR 配置文件中定义，因为这些算法实际上是在 IPsec 策略中定义的。\fBin.ikev2d\fR 和 IPsec 所用的算法可能有差异。有关 IPsec 策略的更多详细信息，请参见 \fBipsecconf\fR(1M) 和 \fBipsecalgs\fR(1M)。
+.RE
+.sp
+.LP
+\fBin.ikev2d\fR 由 \fBike\fR \fBsmf\fR(5) 服务的 \fBikev2\fR 实例管理：
+.sp
+.in +2
+.nf
+svc:/network/ipsec/ike:ikev2
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+该服务交付时处于禁用状态，因为需要先创建配置文件，然后才能启用该服务。有关此文件的格式，请参见 \fBikev2.config\fR(4)。一般情况下，此服务与 svc:/network/ipsec/policy 服务配合使用，因此也必须配置并启用该服务。有关该服务的详细信息，请参见 \fBipsecconf\fR(1M)。
+.sp
+.LP
+有关服务管理工具的信息，请参见 \fBsmf\fR(5)。
+.sp
+.LP
+\fBin.ikev2d\fR 发送并处理与使用 IKEv2 协议的对等系统的 IKEv2 协议交换。此操作在端口 500 或 4500 上使用 UDP 套接字完成。\fBin.ikev2d\fR 还会处理来自内核中 IPsec 模块的加密信息请求。这些消息通过 \fBpf_key\fR(7P) 中所述的特殊套接字发送。
+.sp
+.LP
+\fBin.ikev2d\fR 还使用 \fBPF_KEY\fR 接口将协商的 SA 添加到内容 SADB 中，并检查传入请求是否与本地 IPsec 策略匹配。
+.sp
+.LP
+如果已经在运行 \fBin.iked\fR(1M) IKEv1 守护进程，则 \fBin.ikev2d\fR 守护进程在共存模式下运行。\fBin.iked\fR 侦听 IKEv1 和 IKEv2 通信并将任何 IKEv2 通信转发到 \fBin.ikev2d\fR。\fBin.ikev2d\fR 将检测是否存在 IKEv1 守护进程；如果存在，则将返回到独立模式。因为两个守护进程使用相同的 UDP 端口（500 和 4500）进行网络通信，因此必须采用共存模式。
+.sp
+.LP
+\fBin.ikev2d\fR 将使用 RFC 5996 定义的 IKEv2 协议来管理所有 IKE 交换。它可以与 \fBin.iked\fR(1M) 共存，后者使用 RFC 2409 定义的 IKE 协议版本管理 IKE 交换。
+.sp
+.LP
+\fBin.iked\fR(1M) 的配置在 \fBike.config\fR(4) 中定义。\fBin.ikev2d\fR 的配置在 \fBikev2.config\fR(4) 中定义。每个守护进程都有自己的一组配置文件。
+.sp
+.LP
+如果同时启用了两个守护进程，则应小心避免重叠配置规则，即允许两个守护进程为同一对本地和远程地址启动会话的规则。如果在 IKE/IKEv2 混合环境中的 IKE(v2) 规则内使用了前缀或通配符 \fIremote_addr\fR/\fI local_addr\fR 值，则需要特别小心。
+.sp
+.LP
+为了遵守最小特权原则，IKEv2 的所有管理任务都应在网络 IPsec 管理权限配置文件下完成。请参见 \fBrbac\fR(5)。要保留恰当的文件权限和所有权，应使用 \fBpfedit\fR(1M) 来修改配置文件。
+.sp
+.LP
+例如：
+.sp
+.in +2
+.nf
+$ \fBpfedit /etc/inet/ike/ikev2.config\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBin.ikev2d\fR 以 \fBikeuser\fR 身份运行，其所有配置、日志以及密钥和证书库都归此用户 ID 所有。所有权和权限必须保持这种方式，否则正在运行的 \fBin.ikev2d\fR 守护进程将无法读取其配置或密钥库内容。
+.sp
+.LP
+\fBikeadm\fR(1M) 命令可以管理正在运行的 \fBin.ikev2d\fR 守护进程。有关详细信息和示例，请参见 \fBikeadm\fR(1M) 手册页。
+.sp
+.LP
+\fBpktool\fR(1) 用于管理 X.509 证书以及 Solaris 上用户本地证书的关联私钥。IKEv2 使用 \fBikev2cert\fR(1M) 作为其 \fBikeuser\fR（正在运行的 \fBin.ikev2d\fR 守护进程的用户 ID）密钥库的证书管理接口。\fBikev2cert\fR(1M) 只是围绕 \fBpktool\fR(1) 的一个包装，使其以 \fBikeuser\fR 身份运行并写入和访问 IKEv2 密钥库。
+.sp
+.LP
+证书策略由 Solaris 密钥管理框架 (Key Management Framework, KMF) 控制。要更改为 \fBin.ikev2d\fR 提供的缺省策略，必须对 IKEv2 角色的 KMF 配置文件运行 \fBkmfcfg\fR(1)。例如，要忽略证书中未知的扩展密钥使用扩展，可发出以下命令：
+.sp
+.in +2
+.nf
+$ \fBpfexec kmfcfg modify \e
+dbfile=/etc/inet/ike/kmf-policy.xml policy=default \e
+ignore-unknown-eku=true\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有关有效的配置选项，请参见 \fBkmfcfg\fR(1)。
+.sp
+.LP
+通过发出以下命令，\fBin.ikev2d\fR 守护进程可以得到对其配置（包括预先共享的密钥和证书）的任何更改的通知：
+.sp
+.in +2
+.nf
+# \fBsvcadm refresh network/ipsec/ike:ikev2\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+继续执行命令的替代方法是使用 \fBikeadm\fR(1M) 命令之一，如 \fBread rules\fR 或 \fBread preshared\fR。
+.SS "服务管理工具"
+.sp
+.LP
+IKE 守护进程 (\fBin.ikev2d\fR) 由服务管理工具 \fBsmf\fR(5) 管理。以下服务组可管理 IPsec 组件：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsvc:/network/ipsec/ipsecalgs\fR（请参见 \fBipsecalgs\fR(1M)）
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsvc:/network/ipsec/policy\fR（请参见 \fBipsecconf\fR(1M)）
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsvc:/network/ipsec/manual-key\fR（请参见 \fBipseckey\fR(1M)）
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsvc:/network/ipsec/ike:ikev2\fR（请参见本手册页）
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsvc:/network/ipsec/ike:default\fR（请参见 \fBin.iked\fR(1M)）
+.RE
+.sp
+.LP
+\fBmanual-key\fR 和 \fBike\fR 服务交付时处于禁用状态，因为系统管理员必须为每项服务创建配置文件，如上面列出的各个手册页中所述。
+.sp
+.LP
+正确的管理过程是为与站点安全策略相关的服务集创建配置文件，然后使用 \fBsvcadm\fR(1M) 启用每项服务。
+.sp
+.LP
+\fBike\fR 服务依赖 \fBipsecalgs\fR 和 \fBpolicy\fR 服务。因此，应该在启用 \fBike\fR 服务前启用这两项服务。
+.sp
+.LP
+下面这部分介绍了一些 \fBin.ikev2d\fR 使用的 \fBsmf\fR(5) 属性。这些属性应该极少需要更改其缺省值。如果更改了其中任何一个属性，则需要刷新 \fBike:ikev2\fR 服务以使相应的值在 \fBsmf\fR(5) 数据库中得到更新。
+.sp
+.LP
+因为守护进程 \fBin.ikev2d\fR 仅在启动时读取这些属性，因此 \fBike:ikev2\fR 服务还需要在修改属性后重新启动。例如：
+.sp
+.in +2
+.nf
+example# \fBsvcadm refresh ike:ikev2\fR
+example# \fBsvcadm restart ike:ikev2\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有关其他说明，请参见下面的具体属性。
+.sp
+.LP
+可通过使用 \fBikeadm\fR(1M) 将最常见的配置更改应用于正在运行的守护进程。
+.sp
+.LP
+请注意，重新启动守护进程将销毁所有现有的 IKEv2 SA 及其关联的 CHILD SA。将向每个对等点发送删除通知，必须重新建立所有 SA。
+.sp
+.LP
+以下属性是针对 \fBike\fR 服务的 \fBikev2\fR 实例定义的：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/config_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+定义要使用的配置文件。缺省值为 \fB/etc/inet/ike/ikev2.config\fR。有关此文件的格式，请参见 \fBikev2.config\fR(4)。此属性具有与 \fB-f\fR 标志相同的效果。请参见“选项”部分的 \fB-f\fR 说明。请注意，此文件必须归用户 ID \fBikeuser\fR 所有。
+.sp
+要让正在运行的守护进程读取备用文件，请参见 \fBikeadm\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/debug_level\fR\fR
+.ad
+.sp .6
+.RS 4n
+定义写入 \fBdebug_logfile\fR 文件的调试输出的数量，如下所述。此选项的缺省值为 \fBop\fR 或 \fBoperator\fR。该属性可控制对于重新读取配置文件等事件信息的记录。在 \fBikeadm\fR(1M) 手册页中列出了 \fBdebug_level\fR 的可接受值。值 \fBverbose\fR 适用于解决一般的协议问题。
+.sp
+例如：
+.sp
+.in +2
+.nf
+example# \fBsvccfg -s ike:ikev2 setprop config/debug_level = verbose\fR
+.fi
+.in -2
+.sp
+
+启动错误消息由 \fBsmf\fR(5) 框架记录，并记录在特定于服务的日志文件中。使用命令 \fBsvcs -xv ike:ikev2\fR 可确定 SMF 启动日志的名称。
+.sp
+要更改正在运行的守护进程的调试级别以进行调试，请参见 \fBikeadm\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/debug_logfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+定义调试输出应写入的位置。在此处写入的消息来自 \fBin.ikev2d\fR 中的调试代码。务必将此参数设置为用户 \fBikeuser\fR 拥有的目录，否则守护进程将无法启动。使用以下命令可检查 \fBlogfile\fR 属性：
+.sp
+.in +2
+.nf
+example# \fBsvccfg -s ike:ikev2 listprop config/debug_logfile\fR
+.fi
+.in -2
+.sp
+
+应同时检查 SMF 日志文件和调试日志文件中的错误。
+.sp
+要将调试输出重定向到正在运行的守护进程，请参见 \fBikeadm\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/ignore_errors\fR\fR
+.ad
+.sp .6
+.RS 4n
+控制 \fBin.ikev2d\fR 行为的布尔值，表示配置文件有语法错误、配置错误、缺少预先共享的密钥、缺少证书之类的错误。缺省值为 \fBfalse\fR，如果配置无效，会导致 \fBin.ikev2d\fR 进入维护模式。
+.sp
+将该值设置为 True 会导致 IKE 服务保持联机状态，但正确的操作应是管理员通过 \fBikeadm\fR(1M) 配置正在运行的守护进程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/min_threads\fR\fR
+.ad
+.sp .6
+.RS 4n
+为守护进程的动态调整大小的线程池强制设置最小线程数量。此值采用启发式设置，正常情况下不需要更改。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/max_threads\fR\fR
+.ad
+.sp .6
+.RS 4n
+限制守护进程的动态调整大小的线程池的最大线程数量。此值采用启发式设置，正常情况下不需要更改。\fBin.ikev2d\fR 进程中有一些线程不计入此限制，因此正在运行的守护进程中的线程总数可能会超过 \fBmax_threads\fR。未完成的并发 CRL 和 OCSP 检索操作的总数受 \fBmax_threads\fR 限制。如果正在使用这些 PKI 功能，则在调整 \fBmax_threads\fR 之前，应仔细考虑这一点。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/response_wait_time\fR\fR
+.ad
+.sp .6
+.RS 4n
+IKEv2 等待对等点对其任何请求做出响应的秒数。正常情况下，此值不必调优。不能将此值简单地视为最坏情况下的网络往返时间值，因为对等系统可能需要执行耗时的操作（如 CRL 检索）以响应请求。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkcs11_token/uri\fR\fR
+.ad
+.sp .6
+.RS 4n
+采用 PKCS#11 URI 格式的硬件令牌；例如：
+.sp
+.in +2
+.nf
+# \fBsvccfg -s ike:ikev2 setprop pkcs11_token/uri = \e
+\&'pkcs11:token=Hardware Token Name'\fR
+.fi
+.in -2
+.sp
+
+此值缺省为 Metaslot，表示密钥和证书将存储在用户 \fBikeuser\fR 的 softtoken 密钥库中，通过 PIN 保护。更改此值可指定 PKCS#11 硬件令牌。有关 softtoken 密钥库的详细信息，请参见 \fBpkcs11_softtoken\fR(5)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkcs11_token/pin\fR\fR
+.ad
+.sp .6
+.RS 4n
+PKCS#11 softtoken 密钥库的 PIN。
+.sp
+无人参与的 \fBin.ikev2d\fR 启动必须设置此 PIN。如果没有此 PIN，\fBin.ikev2d\fR 将无法访问其密钥库中的任何私钥。缺省情况下，PIN 未配置，密钥库未初始化。管理员必须运行 \fBikev2cert\fR(1M) 来设置 PIN 并初始化密钥库。对于自动启动，PIN 值必须存储在特殊的 \fBsmf\fR(5) 属性中。
+.sp
+对于软令牌（缺省设置）：
+.sp
+.in +2
+.nf
+# \fBikev2cert setpin\fR
+.fi
+.in -2
+.sp
+
+可通过以下命令查看令牌的当前状态：
+.sp
+.in +2
+.nf
+# \fBikev2cert tokens\fR
+.fi
+.in -2
+.sp
+
+对于硬件令牌，不使用 \fBikev2cert\fR(1M)，因为硬件令牌不属于文件系统，没有权限或所有权。可以使用 \fBpktool\fR(1) 直接处理硬件：
+.sp
+.in +2
+.nf
+# \fBpktool setpin token=\fItoken_name\fR\fR
+.fi
+.in -2
+.sp
+
+然后，将 PIN 值存储在一个特殊的 \fBsmf\fR(5) 属性中；需要特殊授权才能从该属性中读取或向该属性写入。请参见 \fBsmf_security\fR(5)。
+.sp
+.in +2
+.nf
+# \fBsvccfg -s ike:ikev2 editprop\fR
+.fi
+.in -2
+.sp
+
+在编辑器中：
+.sp
+.in +2
+.nf
+setprop pkcs11_token/pin = \fIpin_value\fR
+refresh
+.fi
+.in -2
+.sp
+
+如果安全策略规定 PIN 不能存储在 SMF 中，则可将此属性留空；管理员可以运行以下命令以交互方式将正在运行的守护进程中的 softtoken 解锁：
+.sp
+.in +2
+.nf
+# \fBikeadm -v2 token login "Sun Metaslot"\fR
+.fi
+.in -2
+.sp
+
+对于硬件令牌，可在以上命令中替换令牌标签名称。
+.sp
+要在守护进程仍在运行的情况下以可追溯方式登录令牌，可按以下顺序操作：
+.RS +4
+.TP
+1.
+初始化令牌（如果尚未执行此操作的话）。未初始化的令牌的缺省 PIN 为 \fBchangeme\fR。系统提示时，将此 PIN 设置为一个强口令短语。
+.sp
+.in +2
+.nf
+# \fBikev2cert setpin\fR
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+2.
+使用 \fBsvccfg\fR(1M) 设置 PIN 属性。
+.sp
+.in +2
+.nf
+# \fBsvccfg -s ike:ikev2 editprop\fR
+.fi
+.in -2
+.sp
+
+将 PIN 传递给正在运行的守护进程以解锁令牌。
+.sp
+.in +2
+.nf
+# \fBikeadm -v2 token login "Sun Metaslot"\fR
+.fi
+.in -2
+.sp
+
+请参见下文中对令牌登录授权的讨论。
+.RE
+分配有网络 IPsec 管理权限配置文件的用户可以使用 \fBsvccfg\fR(1M) 修改这些属性。请参见 \fBprof_attr\fR(4) 手册页。
+.sp
+可以使用 \fBsvcprop\fR(1) 命令查看其他属性。它们的功能未定义，不支持对其进行修改。
+.sp
+分别使用 \fBikeadm\fR 令牌登录和 \fBikeadm\fR 令牌注销可以解除锁定或锁定 PKCS#11 令牌对象。网络 IPsec 管理权限配置文件支持用户登录 PKCS#11 令牌对象以及从中注销。请参见 \fBprof_attr\fR(4) 手册页。
+.sp
+请参见 \fBauths\fR(1)、\fBikeadm\fR(1M)、\fBuser_attr\fR(4)、\fBrbac\fR(5) 和 \fBikev2cert\fR(1M)。
+.RE
+
+.sp
+.LP
+需要先使用 \fBsvcadm\fR(1M) 刷新服务，然后新属性值才能生效。通常，可以通过 \fBsvcprop\fR(1) 命令查看不可修改的属性。
+.sp
+.in +2
+.nf
+# \fBsvccfg -s ipsec/ike:ikev2 setprop config/config_file = \e
+/new/config_file\fR
+       # \fBsvcadm refresh ike:ikev2\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以使用 \fBsvcadm\fR(1M) 对此服务执行管理操作（如启用、禁用、刷新和请求重新启动）。分配有网络 IPsec 管理权限配置文件的用户可以执行这些操作。
+.sp
+.LP
+可以使用 \fBsvcs\fR(1) 命令来查询服务的状态。
+.sp
+.LP
+\fBin.ikev2d\fR 守护进程设计为在 \fBsmf\fR(5) 管理下运行。尽管可以从命令行运行 \fBin.ikev2d\fR 命令，但是不建议采用这种方法。如果要从命令行运行 \fBin.ikev2d\fR 命令，应该先禁用 \fBike\fR \fBsmf\fR(5) 服务。请参见 \fBsvcadm\fR(1M)。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.sp .6
+.RS 4n
+检查配置文件的语法。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用调试模式。进程会保持与控制终端的连接，并生成大量调试输出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfilename\fR\fR
+.ad
+.sp .6
+.RS 4n
+应使用文件名，而不是 \fB/etc/inet/ike/ikev2.config\fR。有关此文件的格式，请参见 \fBikev2.config\fR(4)。
+.RE
+
+.SH 安全
+.sp
+.LP
+该程序的映像中具有敏感的私钥加密信息。由于这些文件包含敏感的加密信息，因此在对正在运行的 \fBin.ikev2d\fR 守护进程进行任何核心转储或系统转储时都应该谨慎。使用 \fBcoreadm\fR(1M) 命令可限制正在运行的 \fBin.ikev2d\fR 守护进程生成的任何核心文件。
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ike/ikev2.config\fR\fR
+.ad
+.sp .6
+.RS 4n
+缺省配置文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ike/ikev2.preshared\fR\fR
+.ad
+.sp .6
+.RS 4n
+用于 IKE SA 验证的缺省 IKEv2 预先共享的机密文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ike/kmf-policy.xml\fR\fR
+.ad
+.sp .6
+.RS 4n
+缺省的 IKEv2 KMF 策略配置文件。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性network/ike
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBauths\fR(1)、\fBkmfcfg\fR(1)、\fBpktool\fR(1)、\fBsvcprop\fR(1)、\fBsvcs\fR(1)、\fBcoreadm\fR(1M)、\fBikeadm\fR(1M)、\fBikev2cert\fR(1M)、\fBin.iked\fR(1M)、\fBipsecalgs\fR(1M)、\fBipsecconf\fR(1M)、\fBipseckey\fR(1M)、\fBpfedit\fR(1M)、\fBsvcadm\fR(1M)、\fBsvccfg\fR(1M)、\fBike.config\fR(4)、\fBikev2.config\fR(4)、\fBikev2.preshared\fR(4)、\fBprof_attr\fR(4)、\fBuser_attr\fR(4)、\fBattributes\fR(5)、\fBpkcs11_softtoken\fR(5)、\fBrbac\fR(5)、\fBsmf\fR(5)、\fBsmf_security\fR(5)、\fBipsecesp\fR(7P)、\fBpf_key\fR(7P)
+.sp
+.LP
+由 Harkins, Dan 和 Carrel, Dave. 合著的《Internet Key Exchange (IKE)》，RFC 2409。Network Working Group 出版。1998 年 11 月。
+.sp
+.LP
+由 Maughan, Douglas、Schertler, M.、Schneider, M. 和 Turner, J. 合著的《Internet Security Association and Key Management Protocol (ISAKMP)》，RFC 2408。Network Working Group 出版。1998 年 11 月。
+.sp
+.LP
+由 Piper, Derrell 编著的《The Internet IP Security Domain of Interpretation for ISAKMP》，RFC 2407。Network Working Group 出版。1998 年 11 月。
+.sp
+.LP
+由 Fu, D. 和 Solinos, J. 合著的《ECP Groups for IKE and IKEv2》，RFC 4753。Network Working Group 出版。2007 年 1 月。
+.sp
+.LP
+由 Lepinski, M. 和 Kent, S. 合著的《Additional Diffie-Hellman Groups for Use with IETF Standards》，RFC 5114。Network Working Group 出版。2008 年 1 月。
+.sp
+.LP
+由 Kaufman, C.、Hoffman, P.、Nir, Y. 和 P.Eronen 合著的《Internet Key Exchange Protocol Version 2 (IKEv2)》， RFC 5996。2010 年 9 月。

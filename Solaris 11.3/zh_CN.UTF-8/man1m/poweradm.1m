@@ -1,0 +1,518 @@
+'\" te
+.\" Copyright (c) 2012, Oracle and/or its affiliates.All rights reserved
+.TH poweradm 1M "2012 年 5 月 3 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+poweradm \- 管理电源管理属性
+.SH 用法概要
+.LP
+.nf
+\fBpoweradm\fR [\fB-v\fR] get [\fB-a\fR all|smf|platform|current] \fIproperty\fR ...
+.fi
+
+.LP
+.nf
+\fBpoweradm\fR [\fB-v\fR] set \fIproperty\fR=\fIvalue\fR ...
+.fi
+
+.LP
+.nf
+\fBpoweradm\fR [\fB-v\fR] list
+.fi
+
+.LP
+.nf
+\fBpoweradm\fR show
+.fi
+
+.LP
+.nf
+\fBpoweradm\fR \fB-?\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBpoweradm\fR 程序用于显示和管理 Solaris 实例中的电源管理设置。
+.sp
+.LP
+电源管理属性及其值存储在服务管理工具中（请参见 \fBsmf\fR(5)）。
+.sp
+.LP
+所有用户都可以运行\fB\fR“用法概要”部分中给出的 \fBlist\fR、\fBget\fR 以及 \fBshow\fR 形式。这些命令允许所有用户查看 Solaris 实例中当前的电源管理设置。
+.sp
+.LP
+只有属于 "Maintenance and Repair"（维护和修复）RBAC 配置文件的用户和角色才可以执行\fB\fR“用法概要”部分给出的 \fBset\fR 形式的 \fBpoweradm\fR。另请参见下文的\fB\fR“附注”部分。
+.sp
+.LP
+\fBpoweradm\fR 支持以下服务属性：
+.sp
+.in +2
+.nf
+administrative-authority
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+此属性的值应指定为字符串，可以具有以下值：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsmf\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBplatform\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBnone\fR
+.RE
+.sp
+.LP
+\fBplatform\fR 是缺省值。此属性的意义在于它指定了 Solaris 内核中电源管理的管理控制源。即，此属性指示 Solaris 内核中 \fBtime-to-full-capacity\fR 和 \fBtime-to-minimum-responsiveness\fR 设置的来源。只有具有相应特权的 Solaris 用户才可以设置此属性。
+.sp
+.LP
+当 \fBadministrative-authority\fR 设置为 \fBplatform\fR 时，将从平台代码中获取 \fBtime-to-full-capacity\fR 和 \fBtime-to-minimum-responsiveness\fR 的值。使用 \fBpoweradm\fR 命令在 SMF 中设置这些值不会对内核中的值产生任何影响。\fBpoweradm list\fR 命令将指出内核当前使用的是平台值。由于这些值是由平台管理员更改的，因此将在内核中修改它们。此外，用于在 Solaris 内核中启用或禁用电源管理的命令也将来自平台代码。在运行虚拟机的系统上，虚拟机管理程序或虚拟机管理器可以是该属性的源。
+.sp
+.LP
+当 \fBadministrative-authority\fR 设置为 \fBsmf\fR 时，将从 SMF 中获取 \fBtime-to-full-capacity\fR 和 \fBtime-to-minimum-responsiveness\fR 的值。由于 SMF 中的这些值是由 Solaris 管理员更改的，因此它们将应用于内核。当 administrative-authority 设置为 \fBsmf\fR 时，在平台中设置这些值不会对内核中的值产生任何影响。在这种情况下，\fBpoweradm\fR 命令将指出内核当前使用的是来自 SMF 的值。Solaris 管理员更改这些值时，也将在内核中修改这些值。
+.sp
+.LP
+当 \fBadministrative-authority\fR 设置为 \fBnone\fR 时，Solaris 内核中的电源管理处于禁用状态，但电源服务仍将继续运行。将忽略来自平台的任何电源管理指令，也将忽略 SMF 中的设置。仅当 \fBadministrative-authority\fR 设置为其他任一值时，Solaris 内核中的电源管理才会使用来自指定源的设置重新启动。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtime-to-full-capacity\fR\fR
+.ad
+.sp .6
+.RS 4n
+以微秒为单位指定。
+.sp
+此参数限制系统处于活动状态时允许进行的动态容量调整。
+.sp
+此参数定义系统从任何较低容量/低速响应状态返回到其全部容量（重新置备系统使之可用）允许使用的最大时间，在此时间范围内系统可使用任何或所有 PM 功能来达到其全部容量。
+.sp
+缺省情况下，从平台（例如 \fBi86pc\fR）中获取此值，因为 \fBadministrative-authority\fR 的缺省设置为 \fBplatform\fR。
+.sp
+如果 \fBadministrative-authority\fR 设置为 \fBsmf\fR，将从电源服务（即 SMF）提供的定义中获取此值。在安装时此值设置为 \fBundefined\fR。如果 Solaris 管理员选择修改此属性，必须选取适合工作负荷或应用程序需要的值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtime-to-minimum-responsiveness\fR\fR
+.ad
+.sp .6
+.RS 4n
+以毫秒为单位指定。
+.sp
+该参数限制系统处于非活动状态时允许进行的动态容量调整。
+.sp
+此参数定义系统返回到其活动状态（即达到满足上述 time-to-full-capacity 限制所需的最小容量）允许使用的时间。
+.sp
+中等大小的值（几秒钟）允许将平台上的硬件组件或子系统置于低速响应的非活动状态；较大的值（例如，30 秒到几分钟）允许将整个系统暂停，如使用挂起到内存技术。
+.sp
+缺省情况下，从平台（例如 \fBi86pc\fR）中获取此值，因为 \fBadministrative-authority\fR 的缺省设置为 \fBplatform\fR。
+.sp
+如果 \fBadministrative-authority\fR 设置为 \fBsmf\fR，将从电源服务（即 SMF）提供的定义中获取此值。在安装时此值设置为 \fBundefined\fR。如果 Solaris 管理员选择修改此属性，必须选取适合工作负荷或应用程序需要的值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsuspend-enable\fR\fR
+.ad
+.sp .6
+.RS 4n
+缺省情况下，不允许运行 Solaris 的计算机尝试执行挂起操作。将此属性设置为 \fBtrue\fR 将允许计算机尝试执行挂起操作。\fBadministrative-authority\fR 的值不会对此属性产生任何影响。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBplatform-disabled\fR\fR
+.ad
+.sp .6
+.RS 4n
+无法通过 \fBpoweradm\fR 命令更改此属性。可以通过运行 \fBlist\fR 子命令来查看 \fBplatform-disabled\fR 的值。如果设置为 \fBtrue\fR 且 \fBadministrative-authority\fR 设置为 \fBplatform\fR，则平台已禁用了电源管理。如果设置为 \fBfalse\fR，则将通过其他属性的值控制电源管理，如上所述。\fBshow\fR 子命令的输出将显示这些属性的值。在运行虚拟机的系统上，虚拟机管理程序或虚拟机管理器可以是 \fBplatform-disabled\fR 的源。\fBplatform-disabled\fR 的缺省值为 \fBfalse\fR。
+.RE
+
+.SH 选项
+.sp
+.LP
+支持以下选项。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-?\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示可用子命令和选项的用法概要。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+提供详细的输出。可与以下列出的任何子命令结合使用。
+.RE
+
+.SH 子命令
+.sp
+.LP
+支持以下子命令：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBget\fR [\fB-a\fR \fBall\fR|\fBsmf\fR|\fBplatform\fR|\fBcurrent\fR]\fR
+.ad
+.sp .6
+.RS 4n
+检索指定属性的当前值。\fB-a\fR 选项可用于指示值的源：SMF (\fBsmf\fR)、平台 (\fBplatform\fR)、内核当前使用的值 (\fBcurrent\fR) 或上述所有项 (\fBall\fR)。缺省情况下，如果没有指定任何源，则会使用 \fBcurrent\fR。
+.sp
+\fBadministrative-authority\fR 和 \fBsuspend-enable\fR 属性没有平台值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset\fR \fIproperty\fR=\fIvalue\fR...\fR
+.ad
+.sp .6
+.RS 4n
+将指定的 \fIproperty\fR 更改为给定 \fIvalue\fR。\fBadministrative-authority\fR 和 \fBsuspend-enable\fR 属性会自动同步为内核中的新值。当且仅当 \fBadministrative-authority\fR 设置为 \fBsmf\fR 时，属性 \fBtime-to-full-capacity\fR 和 \fBtime-to-minimum-responsiveness\fR 才会同步到内核。如果使用了 \fB-v\fR 选项，但由于 \fBadministrative-authority\fR 未设置为 \fBsmf\fR 而无法立即更新内核，将会发出警告消息。
+.sp
+只有属于 "Maintenance and Repair"（维护和修复）RBAC 配置文件的用户和角色才可以执行 \fBset\fR 子命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlist\fR\fR
+.ad
+.sp .6
+.RS 4n
+列出所有可用的电源管理属性值并指示电源管理是否处于活动状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshow\fR\fR
+.ad
+.sp .6
+.RS 4n
+输出用户可读的文本，其中指出是由平台还是由 Solaris 实例控制电源管理，电源管理是否已启用，如果启用了电源管理，还提供 \fBtime-to-full-capacity\fR 和 \fBtime-to-minimum-responsiveness\fR 的值。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR设置由平台控制电源管理
+.sp
+.LP
+以下命令设置由平台控制电源管理。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm set administrative-authority=platform\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR禁用电源管理
+.sp
+.LP
+以下命令将禁用电源管理。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm set administrative-authority=none\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR设置有用参数
+.sp
+.LP
+以下命令序列将 \fBtime-to-full-capacity\fR 设置为 300 微秒，将 \fBtime-to-minimum-responsiveness\fR 设置为 500 微秒，并将这些新值通知给 Solaris 实例。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm set time-to-full-capacity=300\fR
+# \fBpoweradm set time-to-minimum-responsiveness=500\fR
+# \fBpoweradm set administrative-authority=smf\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR禁用挂起和恢复
+.sp
+.LP
+以下命令禁用挂起和恢复。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm set suspend-enable=false\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR列出电源管理属性
+.sp
+.LP
+以下命令列出所有可用的电源管理属性。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm list\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR获取属性值
+.sp
+.LP
+以下命令显示 \fBtime-to-full-capacity\fR 的当前值。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm get time-to-full-capacity\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR显示平台设置的属性值
+.sp
+.LP
+以下命令检索由平台设置的 \fBtime-to-full-capacity\fR 值。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm get -a platform time-to-full-capacity\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+请注意，仅当 \fBadministrative-authority\fR 设置为 platform 时，该值才会与当前值相同。请参见上面关于 \fBadministrative-authority\fR 属性的说明。
+
+.LP
+\fB示例 8 \fR显示 Solaris 实例设置的属性值
+.sp
+.LP
+以下命令检索由 Solaris 实例设置的 \fBtime-to-full-capacity\fR 值。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm get -a smf time-to-full-capacity\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+请注意，仅当 \fBadministrative-authority\fR 设置为 \fBsmf\fR 时，该值才会与当前值相同。请参见上面关于 \fBadministrative-authority\fR 属性的说明。
+
+.LP
+\fB示例 9 \fR调用 \fBshow\fR 子命令
+.sp
+.LP
+以下示例命令说明了调用 \fBpoweradm show\fR 时可能处于的四种状态。
+
+.sp
+.LP
+调用以下命令时平台禁用了电源管理。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm show\fR
+Power management is disabled with the hardware platform as the authority
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+调用以下命令时 Solaris 管理员禁用了电源管理。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm show\fR
+Power management is disabled with the Solaris instance as the authority
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+调用以下命令时平台启用了电源管理。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm show\fR
+Power management is enabled with the hardware platform as the authority
+time-to-full-capacity 300 microseconds
+time-to-minimum-responsiveness 500 milliseconds
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+调用以下命令时 Solaris 实例启用了电源管理。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm show\fR
+Power management is enabled with the Solaris instance as the authority
+time-to-full-capacity 300 microseconds
+time-to-minimum-responsiveness 500 milliseconds
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+出现错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定的命令行选项无效。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/kernel/power
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBattributes\fR(5)、\fBsmf\fR(5)、\fBsmf_security\fR(5)
+.SH 附注
+.sp
+.LP
+电源服务由服务管理工具 \fBsmf\fR(5) 管理，其服务标识符为：
+.sp
+.in +2
+.nf
+svc:/system/power:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可由 \fBpoweradm\fR 设置的属性在该服务中定义为：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBactive_control\fR/\fBadministrative-authority\fR，在上面的 \fBadministrative-authority\fR 中进行了介绍。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBactive_config\fR/\fBtime-to-full-capacity\fR，在上面的 \fBtime-to-full-capacity\fR 中进行了介绍。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBactive_config\fR/\fBtime-to-minimum-responsiveness\fR，在上面的 \fBtime-to-minimum-responsiveness\fR 中进行了介绍。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsuspend\fR/\fBsuspend-enable\fR，在上面的 \fBsuspend-enable\fR 中进行了介绍。
+.RE
+.sp
+.LP
+如果服务处于禁用状态，以后不会将任何电源管理设置上载到内核中。只有在下次重新引导之后才会撤消现有设置。禁用所有电源管理的最佳方式是将 \fBadministrative-authority\fR 设置为 \fBnone\fR。
+.sp
+.LP
+如果先将 \fBadministrative-authority\fR 设置为 \fBsmf\fR 值，然后再设置 \fBtime-to-full-capacity\fR 和 \fBtime-to-minimum-responsiveness\fR，服务将进入维护模式。在这种情况下，先将 \fBadministrative-authority\fR 设置为 \fBnone\fR 值，然后将 \fBtime-to-full-capacity\fR 和 \fBtime-to-minimum-responsiveness\fR 设置为所需值，清除服务，随后将 administrative-authority 设置为 \fBsmf\fR。
+.sp
+.LP
+要设置 \fBactive_config\fR 和 \fBsuspend\fR 属性组中的属性，需要 \fBsolaris.smf.value.power_config\fR 授权。要设置 \fBactive_control\fR 属性组中的属性，需要 \fBsolaris.smf.value.power_control\fR 授权。这两种授权都属于 "Maintenance and Repair"（维护和修复）配置文件。

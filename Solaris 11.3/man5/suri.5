@@ -1,0 +1,207 @@
+'\" te
+.\" Copyright (c) 2012, 2015, Oracle and/or its affiliates. All rights       reserved.
+.TH suri 5 "9 Mar 2015" "SunOS 5.11" "Standards, Environments, and Macros"
+.SH NAME
+suri \- storage URIs
+.SH DESCRIPTION
+.sp
+.LP
+Storage URIs uniquely identify storage objects across different nodes.
+.sp
+.LP
+The following Storage URIs are supported:
+.SS "Dev URI"
+.sp
+.in +2
+.nf
+dev:<local-path-under-/dev>
+dev:///<path-with-dev>
+dev:<absolute-path-with-dev>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Examples:
+.sp
+.in +2
+.nf
+dev:dsk/c0t0d0s0
+dev:///dev/dsk/c0t0d0s0
+dev:/dev/dsk/c0t0d0s0
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The dev URI specifies an object in the form of an existing device. All forms of the dev URI are functionally equivalent. The "\fBdev:dsk\fR" format with no authority section and an implied "\fB/dev/\fR" prefix is usually preferred. The path must be a device in the \fB/dev\fR name space.
+.sp
+.LP
+Components of the device path may only include characters from POSIX.1-2008 Portable Filename Character Set, 0-9a-zA-Z._-.
+.SS "Logical Unit URI"
+.sp
+.in +2
+.nf
+lu:luname.naa.<ID>
+lu:luname.eui.<ID>
+lu:initiator.naa.<ID>,target.naa.<ID>,luname.naa.<ID>
+lu:initiator.naa.<ID>,target.naa.<ID>,luname.eui.<ID>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Examples:
+.sp
+.in +2
+.nf
+lu:luname.naa.5000c5000288fa25
+lu:luname.eui.0021280001cf80f6
+lu:initiator.naa.2100001d38089fb0,target.naa.2100001d38089fb0,luname.naa.5000c5000288fa25
+lu:initiator.naa.2100001d38089fb0,target.naa.2100001d38089fb0,luname.eui.0021280001cf80f6
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Logical unit URI specifies a logical unit attached via fibre channel or serial-attached SCSI. In the luname-only URI form, the ID describes a logical unit name. In the initiator,target,luname form, an initiator specifies an initiator port and a target specifies a target port, and together they specify a path to the logical unit whose name must match the URI's luname part as in the luname-only form.
+.sp
+.LP
+IDs are represented by using the SCSI-3 VPD page (0x83) logical unit names formatted as hexadecimal numbers (64/128 bits). IDs are case insensitive. Only logical unit names based on NAA or EUI-64 identifiers are supported. See NOTES for information on identifier formats.
+.sp
+.LP
+In general it is recommended using multipathing in conjunction with luname-only URIs. If multipathing is disabled and a luname-only URI is used, a random path to the specified logical unit will be chosen. To avoid this random path assignment an initiator,target,luname URI form can be used to select a specific path to a logical unit.  If multipathing is enabled and an initiator,target,luname URI form is used then the multipathing framework controls which paths are used to access the logical unit and the URI is only used to identify the unit, not the access path.
+.sp
+.LP
+If an initiator or/and a target IDs are not matched but the logical unit is found based on a logical unit name, the unit will be accessed via an alternate path.
+.SS "iSCSI URI"
+.sp
+.in +2
+.nf
+iscsi:///luname.naa.<ID>
+iscsi:///luname.eui.<ID>
+iscsi://<host>[:<port>]/luname.naa.<ID>
+iscsi://<host>[:<port>]/luname.eui.<ID>
+iscsi:///target.<IQN>,lun.<LUN>
+iscsi://<host>[:<port>]/target.<IQN>,lun.<LUN>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+IQN stands for iSCSI Qualified Name, which has the form \fBiqn\fR.\fBYYYY-MM\fR.<\fBorg-naming-auth\fR>[:<\fBstring-defined-by-org\fR>]. IQN format is defined and elaborated with examples in RFC 3721 on Internet Small Computer Systems Interface (iSCSI) Naming and Discovery. It is recommended that <\fBstring-defined-by-org\fR> be a Universally Unique Identifier (UUID). 
+.sp
+.LP
+Note that usage of the target, LUN form of the iSCSI URI will only be transferrable between hosts if the mapping from initiator, target, and LUN to the logical unit name is configured to be independant of the initiator.
+.sp
+.LP
+Examples:
+.sp
+.in +2
+.nf
+iscsi:///luname.eui.0021280001cf80f6
+iscsi:///luname.naa.600144f03d70c80000004ea57da10001
+iscsi://[::1]/luname.naa.600144f03d70c80000004ea57da10001
+iscsi://127.0.0.1/luname.naa.600144f03d70c80000004ea57da10001
+iscsi://127.0.0.1:3260/luname.naa.600144f03d70c80000004ea57da10001
+iscsi://hostname:3620/luname.eui.0021280001cf80f6
+iscsi://hostname:3260/luname.naa.600144f03d70c80000004ea57da10001
+
+iscsi://127.0.0.1/target.iqn.com.sun:02:d0f2d311-f703,lun.0
+iscsi://127.0.0.1:3620/target.iqn.com.sun:02:d0f2d311-f703,lun.3
+iscsi:///target.iqn.com.sun:02:d0f2d311-f703,lun.6
+iscsi://[::1]/target.iqn.com.sun:02:d0f2d311-f703,lun.2
+iscsi://hostname:3620/target.iqn.com.sun:4db41b76-e3d7-cd2f-bf2d-9abef784d76c,lun.0
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The iSCSI URI specifies an object based on a logical unit number accessible via iSCSI protocol. Optional \fBhostname\fR[:<\fBport\fR>] authority section provides information for a consumer to set up a send-targets discovery address.  IPv6 addresses must be enclosed in square brackets.
+.sp
+.LP
+Format of an ID is explained in the "Logical Unit URI" section. See NOTES for information on NAA and EUI-64 based identifier format.
+.SS "NFS URI"
+.sp
+.in +2
+.nf
+nfs://<user>:<group>@<host>[:<port>]/<nfs-share-path>/<file>
+.fi
+.in -2
+
+.sp
+.LP
+Examples:
+.sp
+.in +2
+.nf
+nfs://admin:staff@host/export/test/nfs_file 
+nfs://admin:staff@host:1000/export/test/nfs_file
+.fi
+.in -2
+
+.sp
+.LP
+The NFS URI specifies an object based on \fBlofi\fR device created on the given NFS file. The NFS file will be accessed with credentials derived from user and group. User and group can be given as \fBusernames\fR or \fBuserids\fR. The host can be given as an IPv4 address, IPv6 address, or as a hostname. IPv6 addresses must be enclosed in square brackets.
+.SS "file URI"
+.sp
+.in +2
+.nf
+file://<user>:<group>@<host>/<file-path>
+.fi
+.in -2
+
+.sp
+.LP
+Examples:
+.sp
+.in +2
+.nf
+file://admin:staff@/filepath 
+file://admin:staff@localhost/filepath
+.fi
+.in -2
+
+.sp
+.LP
+The file URI specifies an object based on \fBlofi\fR device created on the given local file. The file will be accessed with credentials derived from user and group. User and group can be given as \fBusernames\fR or \fBuserids\fR. The host does not need to be specified, but must be \fBlocalhost\fR when given.
+.SS "Getting URIs"
+.sp
+.LP
+To avoid errors by generating URIs manually, the \fBsuriadm\fR(1M) subcommand \fBlookup-uri\fR is recommended to be used to generate URIs based on existing system device paths. Such device paths must be identified via other means. For Fibre Channel devices, \fBfcadm\fR(1M) may be used. For Serial Attached SCSI devices, \fBsasinfo\fR(1M) may be used. For iSCSI devices, \fBiscsiadm\fR(1M) may be used.
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/library/storage/suri
+_
+Interface StabilityCommited
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBfcadm\fR(1M), \fBiscsiadm\fR(1M), \fBsasinfo\fR(1M), \fBsuriadm\fR(1M), \fBattributes\fR(5)
+.sp
+.LP
+Small Computer System Interface-3 (SCSI-3)
+.SH NOTES
+.sp
+.LP
+NAA stands for Name Address Authority and it is a field within an identifier that specifies the format and length of that identifier. NAA identifier format is defined in SCSI Primary Commands - 3 specification, section 7.6.3.6 NAA identifier format. WWN (World Wide Name) identifiers use an NAA identifier format. EUI-64 stands for 64-bit extended unique identifier and its format is defined by IEEE.

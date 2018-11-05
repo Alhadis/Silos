@@ -1,0 +1,967 @@
+'\" te
+.\" Copyright (c) 2008, 2014, Oracle and/or its affiliates.All rights reserved.
+.TH elfedit 1 "2014 年 4 月 23 日" "SunOS 5.11" "ユーザーコマンド"
+.SH 名前
+elfedit \- ELF ファイルの検査または編集
+.SH 形式
+.LP
+.nf
+\fBelfedit\fR [\fB-adr\fR] [\fB-e\fR \fIcmd\fR] [\fB-L\fR \fIpath\fR]
+     [\fB-o\fR \fBdefault\fR | \fBsimple\fR | \fBnum\fR] [\fIinfile\fR] [\fIoutfile\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBelfedit\fR は、既存の ELF オブジェクトの内容を検査または変更するためのツールです。ELF ヘッダー、セクションヘッダーテーブル、プログラムヘッダーテーブル、動的セクション、ハードウェアおよびソフトウェア機能、文字列テーブル、シンボルテーブルなどの、オブジェクトに含まれているほとんどの ELF データへのアクセスが提供されます。
+.SS "構文"
+.sp
+.LP
+\fBelfedit\fR は、コマンド行 (\fB-e\fR オプション) または標準入力からのコマンドを処理します。標準入力が端末である場合、\fBelfedit\fR では端末編集機能のほか、広範囲のコマンド完了が提供されます。ELF では、特殊な整数値やビットマスクのために多くの標準の記号名が使用されます。\fBelfedit\fR は、このような名前に関する、可能性のあるほとんどの完了を認識します。\fBelfedit\fR コマンドの入力中はいつでも TAB キーを押すことができ、それにより、\fBelfedit\fR は現在のカーソル位置にあるテキストの使用法に関するメッセージや既知の完了を表示します。
+.sp
+.LP
+\fBelfedit\fR の機能は、モジュールの形式で構成されています。各モジュールは、関連する機能に焦点を絞った一連のコマンドを提供します。コマンドは、モジュールとコマンド名をコロン (\fB:\fR) の区切り記号で結合する (空白は入れない) ことによって指定されます。たとえば、\fBdyn:runpath\fR は、\fBdyn\fR モジュールによって提供される \fBrunpath\fR コマンドを示します。モジュール名は一意である必要があります。特定のモジュール内のコマンド名はそのモジュール内では一意ですが、その同じコマンド名を複数のモジュールで使用できます。
+.sp
+.LP
+一部のモジュールでは、コマンドの 1 つが、そのモジュールのデフォルトコマンドとして指定されます。このコマンドは、ユーザーがモジュール名のみを指定した場合に実行されます。ほとんどの \fBelfedit\fR モジュールでは、そのモジュールがサポートする ELF ファイルの部分に関して \fBelfdump\fR ユーティリティーによって表示されるのと同じ情報を生成する、dump という名前のコマンドが提供されます。モジュールでは一般に、dump がデフォルトコマンドとして指定されます。
+.sp
+.LP
+\fBelfedit\fR コマンドを実行するために使用される構文は、UNIX コマンド行ユーティリティーを使用しているすべてのユーザーが使いやすいように考慮されています。この構文は、空白で区切られたトークンで構成されます。最初のトークンはコマンド名です。コマンドのあとに、ハイフン (\fB-\fR) 文字で始まる引数である各オプションが指定されます。オプションのあとに、プレーン引数 (オペランド) が指定されます。特定のコマンドに対してオプションやオペランドを \fB0\fR 個以上指定できますが、この両方が存在する場合は、常にオプションをプレーン引数の前に指定します。特殊オプション \fB--\fR (2 つのハイフン) を使用して、オプションの終わりを表すことができます。このオプションが見つかると、残りの引数はすべて、\fB-\fR で始まっていたとしてもプレーン引数であると見なされます。
+.sp
+.LP
+\fBelfedit\fR トークン内の文字の解釈は、使用されている引用の形式によって異なります。
+.sp
+.ne 2
+.mk
+.na
+\fB引用なし\fR
+.ad
+.sp .6
+.RS 4n
+単一引用符 (') または二重引用符 (“) の外側では、バックスラッシュ (\) がエスケープ文字として機能します。バックスラッシュ文字が見つかると、\fBelfedit\fR はこの文字を無視し、後続の文字を (その文字自体がバックスラッシュであっても) 文字どおりに処理します。この機能を使用すると、文字列を 2 つの個別のトークンに分割しなくても、コマンドの文字列引数に空白文字を挿入できます。同様に、この機能を使用すると、引用符またはバックスラッシュをリテラル文字として挿入できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB単一引用符\fR
+.ad
+.sp .6
+.RS 4n
+単一引用符 (') 内では、空白文字によってトークンは区切られず、空白文字はトークン内のリテラル文字として解釈されます。二重引用符 (“) およびバックスラッシュ (\) 文字はリテラル文字として解釈され、特別な意味を持ちません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB二重引用符\fR
+.ad
+.sp .6
+.RS 4n
+二重引用符 (“) 内では、空白文字によってトークンは区切られません。単一引用符文字は文字どおり解釈され、引用機能を持ちません。バックスラッシュ (\) は、文字列リテラル内の C プログラミング言語で使用される場合と同様に動作するエスケープ文字です。
+.sp
+.ne 2
+.mk
+.na
+\fB\a\fR
+.ad
+.RS 8n
+.rt  
+警告 (ベル)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\b\fR
+.ad
+.RS 8n
+.rt  
+バックスペース
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\f\fR
+.ad
+.RS 8n
+.rt  
+フォームフィード
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\n\fR
+.ad
+.RS 8n
+.rt  
+改行
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\r\fR
+.ad
+.RS 8n
+.rt  
+復帰
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\t\fR
+.ad
+.RS 8n
+.rt  
+水平タブ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\v\fR
+.ad
+.RS 8n
+.rt  
+垂直タブ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\\\fR
+.ad
+.RS 8n
+.rt  
+バックスラッシュ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\'\fR
+.ad
+.RS 8n
+.rt  
+単一引用符
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\”\fR
+.ad
+.RS 8n
+.rt  
+二重引用符
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\\fBooo\fR\fR
+.ad
+.RS 8n
+.rt  
+8 進数の定数で、\fBooo\fR は 1 つから 3 つまでの 8 進数 (0...7) です
+.RE
+
+バックスラッシュのあとのその他の文字はすべてエラーです。
+.RE
+
+.sp
+.LP
+コアのコマンドは、\fBsys\fR という名前の内部モジュールに属しています。その他のモジュールはすべて、動的にロード可能な共有可能オブジェクトとしてパッケージ化されます。\fBelfedit\fR は、特定のモジュールを必要とするコマンドが実行された場合、または \fBsys:load\fR コマンド実行の結果として、必要に応じてモジュールをロードします。その特殊な組み込みステータスのため、さらにはそのコマンドが頻繁に使用されるため、\fBelfedit\fR では、\fBsys:\fR 接頭辞を含めなくても \fBsys\fR モジュールのコマンドを指定できます (たとえば、\fBsys:load\fR ではなく \fBload\fR)。その他のすべてのモジュールのコマンドにアクセスするには、完全な \fImodule\fR\fB:\fR\fIcmd\fR 形式を指定する必要があります。
+.sp
+.LP
+\fBelfedit\fR は、次の標準モジュールとともに提供されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcap\fR\fR
+.ad
+.RS 11n
+.rt  
+機能セクション
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdyn\fR\fR
+.ad
+.RS 11n
+.rt  
+動的セクション
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBehdr\fR\fR
+.ad
+.RS 11n
+.rt  
+ELF ヘッダー
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreloc\fR\fR
+.ad
+.RS 11n
+.rt  
+再配置セクション
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBphdr\fR\fR
+.ad
+.RS 11n
+.rt  
+プログラムヘッダー配列
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshdr\fR\fR
+.ad
+.RS 11n
+.rt  
+セクションヘッダー配列
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstr\fR\fR
+.ad
+.RS 11n
+.rt  
+文字列テーブルセクション
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsym\fR\fR
+.ad
+.RS 11n
+.rt  
+シンボルテーブルセクション
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsyminfo\fR\fR
+.ad
+.RS 11n
+.rt  
+\fBSyminfo\fR セクション
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsys\fR\fR
+.ad
+.RS 11n
+.rt  
+コアに組み込まれた \fBelfedit\fR コマンド
+.RE
+
+.SS "ステータスおよびコマンドドキュメント"
+.sp
+.LP
+ステータスおよびコマンドドキュメント
+.sp
+.LP
+status (\fBsys:status\fR) コマンドは、現在の \fBelfedit\fR セッションに関する情報を表示します。 
+.RS +4
+.TP
+.ie t \(bu
+.el o
+入力および出力ファイル
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+オプション設定
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+モジュール検索パス
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ロードされたモジュール
+.RE
+.sp
+.LP
+どの \fBelfedit\fR モジュールにも、コマンドごとの広範囲なオンラインドキュメントが、UNIX のマニュアルページと同様の形式で含まれています。\fBhelp\fR (\fBsys:help\fR) コマンドは、この情報を表示するために使用されます。\fBelfedit\fR についての詳細を表示するには、\fBelfedit\fR を起動し、ヘルプコマンドを引数なしで使用します。
+.sp
+.in +2
+.nf
+% \fBelfedit\fR
+> help
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBelfedit\fR はウェルカムメッセージと、\fBelfedit\fR およびヘルプシステムの使用方法に関する詳細情報を表示します。
+.sp
+.LP
+モジュールのサマリー情報を取得するには:
+.sp
+.in +2
+.nf
+> \fBhelp module\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+モジュールが提供する特定のコマンドの詳細なドキュメントを取得するには、次のようにします。
+.sp
+.in +2
+.nf
+> \fBhelp module:command\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+例としての \fBdyn\fR モジュールおよび \fBdyn:runpath\fR コマンドの使用:
+.sp
+.in +2
+.nf
+> \fBhelp dyn\fR
+> \fBhelp dyn:runpath\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+help (\fBsys:help\fR) を使用すると、それ自体に関するヘルプを取得できます。
+.sp
+.in +2
+.nf
+> \fBhelp help\fR
+.fi
+.in -2
+.sp
+
+.SS "モジュール検索パス"
+.sp
+.LP
+\fBelfedit\fR モジュールは、必要に応じてロードされる共有可能オブジェクトとして実装されます。あるモジュールが必要になると、\fBelfedit\fR は、そのモジュールを実装している共有可能オブジェクトを見つけるためにモジュールパスを検索します。このときのパスは、一連のディレクトリ名をコロン (\fB:\fR) 文字で区切ったものです。そのパスには、通常の文字に加えて、次のいずれかのトークンも含めることができます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%i\fR\fR
+.ad
+.RS 6n
+.rt  
+現在の命令セットアーキテクチャー (ISA) の名前 (\fBsparc\fR、\fBsparcv9\fR、\fBi386\fR、\fBamd64\fR) に展開されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%I\fR\fR
+.ad
+.RS 6n
+.rt  
+64 ビット ISA に展開されます。これは 64 ビットバージョンの \fBelfedit\fR では \fB%i\fR と同じものですが、32 ビットバージョンでは空の文字列に展開されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%o\fR\fR
+.ad
+.RS 6n
+.rt  
+変更対象のパスの古い値まで展開されます。これは、デフォルトのパスの前またはあとにディレクトリを追加する場合に役立ちます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%r\fR\fR
+.ad
+.RS 6n
+.rt  
+\fBelfedit\fR プログラムを保持しているファイルシステムツリーのルート。\fBelfedit\fR がこのツリー内の \fBusr/bin/elfedit\fR としてインストールされていることを前提にしています。標準のシステムでは、これは単純に標準のシステムのルートディレクトリ (\fB/\fR) です。\fBelfedit\fR のコピーをほかの場所にインストールできる開発システムでは、\fB%r\fR を使用することにより、一致した一連のモジュールが使用されることを保証できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%%\fR\fR
+.ad
+.RS 6n
+.rt  
+1 つの \fB%\fR 文字に展開されます。
+.RE
+
+.sp
+.LP
+\fBelfedit\fR のデフォルトのモジュール検索パスは次のとおりです。
+.sp
+.in +2
+.nf
+%r/usr/lib/elfedit/%I
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+トークンを展開すると、これは次のようになります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/elfedit\fR\fR
+.ad
+.RS 28n
+.rt  
+32 ビットの \fBelfedit\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/elfedit/sparcv9\fR\fR
+.ad
+.RS 28n
+.rt  
+64 ビットの \fBelfedit\fR (\fBsparc\fR)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/elfedit/amd64\fR\fR
+.ad
+.RS 28n
+.rt  
+64 ビットの \fBelfedit\fR (\fBx86\fR)
+.RE
+
+.sp
+.LP
+デフォルト検索パスは、\fBELFEDIT_PATH\fR 環境変数を設定するか、または \fB-L\fR コマンド行オプションを使用することによって変更できます。この両方を指定した場合は、\fB-L\fR オプションが環境変数より優先されます。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBautoprint\fR モードを有効にします。\fBautoprint\fR が有効になっている場合、\fBelfedit\fR は、ELF ファイルが変更されたときに生成される変更された値を出力します。この出力は、\fB-o\fR オプションを使用して変更できる現在の出力形式で示されます。デフォルトの出力形式は、\fBelfdump\fR(1) ユーティリティーによって使用される形式です。\fBautoprint\fR モードは、\fBelfedit\fR が対話的に使用されている場合 (\fB標準入力\fRと\fB標準出力\fRが端末である場合) にデフォルトになります。そのため、\fB-a\fR オプションは、\fBelfedit\fR が非対話型コンテキストで使用されている場合にのみ意味を持ちます。対話型セッションで \fBautoprint\fR を無効にするには、\fBelfedit\fR コマンドを使用します。
+.sp
+.in +2
+.nf
+> \fBset a off\fR
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションが設定されていると、\fBelfedit\fR は、処理されている ELF オブジェクトの内部の動作や詳細が記述された情報メッセージを発行します。これは、内部で実行されている動作を深く理解したい場合に役立ちます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fIcmd\fR\fR
+.ad
+.sp .6
+.RS 4n
+編集コマンドを指定します。複数の \fB-e\fR オプションを指定できます。コマンド行に編集コマンドが存在する場合、\fBelfedit\fR はバッチモードで動作します。ファイルを開いたあと、\fBelfedit\fR は各コマンドを指定された順序で実行します。そのあと、変更されたファイルが保存され、\fBelfedit\fR が終了します。バッチモードは、シェルスクリプトやメイクファイルから単純な操作を実行する場合に役立ちます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBelfedit\fR モジュールを検索するためのデフォルトのパスを設定します。モジュールは、このマニュアルページの「\fBモジュール検索パス\fR」セクションで説明されています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fBdefault\fR | \fBsimple\fR | \fBnum\fR\fR
+.ad
+.sp .6
+.RS 4n
+ELF データを表示するために使用される形式。このオプションによって、セッションの現在の形式が確立されます。この形式は、\fBelfedit\fR セッション内から set (\fBsys:set\fR) コマンドを使用するか、またはセッション内で実行される個々のコマンドに \fB-o\fR オプションを指定することによって変更できます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdefault\fR\fR
+.ad
+.RS 11n
+.rt  
+デフォルトの形式では、人間が見ることを目的にした形式で出力を表示します。この形式は、\fBelfdump\fR ユーティリティーによって使用される形式と同じです。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnum\fR\fR
+.ad
+.RS 11n
+.rt  
+整数値は常に、整数の形式で表示されます。文字列は、包含する文字列テーブルへの整数オフセットとして表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsimple\fR\fR
+.ad
+.RS 11n
+.rt  
+ELF ファイル内から文字列を表示する場合は、文字列のみが表示されます。整数値は、可能な場合は記号定数として表示され、それ以外の場合は整数の形式で表示されます。タイトルやヘッダーなどの補足的な出力は表示されません。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+読み取り専用モード。入力ファイルは読み取り専用アクセス用に開かれ、編集セッションの結果は保存されません。\fBelfedit\fR では、\fB-r\fR が指定された場合、\fIoutfile\fR 引数は許可されません。ファイルを変更する意図がない場合は、読み取り専用モードを強くお勧めします。誤った変更に対する追加の保護を提供することに加えて、ユーザーが書き込み権を持っていないファイルの検査も可能になります。 
+.RE
+
+.SH オペランド
+.sp
+.LP
+次のオペランドがサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIinfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+処理する ELF オブジェクトを含む入力ファイル。 
+.sp
+実行可能ファイル (\fBET_EXEC\fR)、共有オブジェクト (\fBET_DYN\fR)、または再配置可能オブジェクトファイル、(\fBET_REL\fR) を指定できます。アーカイブは、直接にはサポートされていません。アーカイブ内のオブジェクトを編集するには、オブジェクトを抽出し、そのコピーを編集してから、それをアーカイブ内に戻す必要があります。
+.sp
+\fIinfile\fR が存在しない場合、\fBelfedit\fR は、\fBsys:\fR モジュールからのコマンドの実行のみが許可される制限されたモードで実行されます。このモードは主に、help (\fBsys:help\fR) コマンドから使用可能なコマンドドキュメントへのアクセスを許可するためのものです。
+.sp
+\fIinfile\fR が存在し、\fIoutfile\fR が指定されていない場合、\fBelfedit\fR は所定のファイルを編集し、その結果を同じファイルに書き込むため、元のファイルの内容が上書きされます。通常、\fBelfedit\fR をこのモードで使用することはやめ、出力ファイルを指定することをお勧めします。結果として得られるファイルがテストされ、検証されたあと、そのファイルを元のファイルの場所に移動できます。
+.sp
+\fB-r\fR オプションを使用すると、\fIinfile\fR を読み取り専用アクセス用に開くことができます。これは、変更したくない既存のファイルを検査する場合に役立ちます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIoutfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+出力ファイル。\fIinfile\fR と \fIoutfile\fR の両方が存在する場合は、\fIinfile\fR が読み取り専用アクセス用に開かれ、変更されたオブジェクト内容が \fIoutfile\fR に書き込まれます。
+.RE
+
+.SH 使用法
+.sp
+.LP
+システムでサポートされている場合、\fBelfedit\fR は 64 ビットアプリケーションとして実行されるため、2G バイト (2^31 バイト) 以上のファイルを処理できます。
+.sp
+.LP
+起動時に、\fBelfedit\fR は \fBlibelf\fR を使用して入力ファイルを開き、その内容のコピーを編集のためにメモリー内にキャッシュします。そのあと、1 つ以上のコマンドを実行できます。変更されたオブジェクトを必要に応じて出力ファイルに書き込むことによってセッションが完了し、次に終了します。
+.sp
+.LP
+\fIinfile\fR が存在しない場合、\fBelfedit\fR は、\fBsys\fR モジュールからのコマンドの実行のみが許可される制限されたモードで実行されます。このモードは主に、help (\fBsys:help\fR) コマンドから使用可能なコマンドドキュメントへのアクセスを許可するためのものです。
+.sp
+.LP
+1 つ以上の \fB-e\fR オプションが指定されている場合、指定されたコマンドは指定された順序で実行されます。\fBelfedit\fR は、指定されたコマンドの直後に write (\fBsys:write\fR) と quit (\fBsys:quit\fR) への暗黙の呼び出しを追加します。それにより、出力ファイルが書き込まれ、\fBelfedit\fR プロセスが終了します。シェルスクリプトやメイクファイルでは、この形式の使用が便利です。
+.sp
+.LP
+\fB-e\fR オプションが指定されていない場合、\fBelfedit\fR は\fB標準入力\fRからコマンドを読み取り、それらのコマンドを指定された順序で実行します。呼び出し側は、このモードで実行中に作業を保存して終了するには write (\fBsys:write\fR) コマンドと quit (\fBsys:quit\fR) コマンドを明示的に発行する必要があります。
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+正常終了。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+致命的なエラーが発生しました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+無効なコマンド行オプションが指定された。
+.RE
+
+.SH 使用例
+.sp
+.LP
+次の例では、シェルプロンプト (\fB%\fR) と \fBelfedit\fR プロンプト (\fB>\fR) での \fBelfedit\fR の対話型使用が示されています。ユーザーは、これらのいずれの文字も入力しないでください。
+.LP
+\fB例 1 \fR実行可能ファイルの実行パスの変更
+.sp
+.LP
+次の例では、共有可能オブジェクト用の \fBlib\fR ディレクトリに隣接する \fBbin\fR ディレクトリ内に、\fBprog\fR という名前の実行可能ファイルがインストールされていることを前提にしています。次のコマンドは、その実行可能ファイルの \fBrunpath\fR を \fBlib\fR ディレクトリに設定します。
+
+.sp
+.in +2
+.nf
+% \fBelfedit -e 'dyn:runpath $ORIGIN/../lib'\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fB-e\fR オプションの引数での単一引用符の使用は、シェルがこのコマンド全体を \fBelfedit\fR に確実に 1 つの引数として渡すようにするために必要です。
+
+.sp
+.LP
+あるいは、\fBelfedit\fR を非バッチモードで使用することによって、同じ操作を実行できます。 
+
+.sp
+.in +2
+.nf
+% \fBelfedit prog\fR
+> \fBdyn:runpath $ORIGIN/../lib\fR
+      index  tag         value
+       [30]  RUNPATH     0x3e6      $ORIGIN/../lib
+> \fBwrite\fR
+> \fBquit\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBrunpath\fR などの要素や、必要なエントリの追加または変更は、オブジェクト内に\fBパディング\fRが存在する場合にのみ実現できる可能性があります。「\fB注意事項\fR」を参照してください。
+
+.LP
+\fB例 2 \fRハードウェア機能ビットの削除
+.sp
+.LP
+実行のためにオプションハードウェアのサポートを必要とするオブジェクトは、必要な機能を指定したビットのマスクを含む機能セクションを使用して構築されます。実行時リンカー (\fBld.so.1\fR) は、このマスクを実行中のシステムの属性に対してチェックして、現在のシステムが特定のオブジェクトを実行できるかどうかを判定します。そのシステム上で使用できない機能を必要とするプログラムは、実行を妨げられます。
+
+.sp
+.LP
+このチェックによって、必要なハードウェアサポートを明示的にチェックしない不備なプログラムが紛らわしい方法でクラッシュすることが防止されます。ただし、記述されるプログラムが、実行時にシステムの機能を明示的にチェックすることは不便な場合があります。このようなプログラムは、ハードウェアでサポートされている場合に使用する最適化されたコードを備える一方、それ以外の場合は、より低速ではあっても実行可能な汎用のフォールバックバージョンを提供していることがあります。この場合は、ハードウェア互換性マスクによって、このようなプログラムの古いハードウェア上での実行が妨げられます。このような場合は、関連するビットをマスクから削除すると、そのプログラムを実行できます。 
+
+.sp
+.LP
+次の例では、SSE3 CPU 拡張機能を使用する x86 バイナリから \fBAV_386_SSE\fR3 ハードウェア機能を削除します。これにより、SSE3 を使用するための機能を検証する責任が、実行時リンカーからプログラム自体に移転されます。
+
+.sp
+.in +2
+.nf
+% \fBelfedit -e 'cap:hw1 -and -cmp sse3' prog\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fRオブジェクトからの情報の読み取り
+.sp
+.LP
+\fBelfedit\fR を使用すると、対象を絞った特定の情報をオブジェクトから抽出できます。次のシェルコマンドは、ファイル \fB/usr/bin/ls\fR に含まれているセクションヘッダーの数を読み取ります。
+
+.sp
+.in +2
+.nf
+% \fBSHNUM=`elfedit -r -onum -e 'ehdr:e_shnum' /usr/bin/ls`\fR
+% \fBecho $SHNUM\fR
+29
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Solaris のバージョンや、使用しているマシンの種類に応じて、異なる値が取得されることがあります。\fB-r\fR オプションを指定すると、ファイルが読み取り専用で開かれるため、通常のアクセス権を持つユーザーはファイルを開くことができ、また重要なシステム実行可能ファイルが誤って破損されることが防止されます。\fBnum\fR 出力形式は、無関係なテキストを含まない、目的の値のみを取得するために使用されます。
+
+.sp
+.LP
+同様に、次のコマンドは、シンボル \fBunlink\fR のシンボルの型を C 実行時ライブラリから抽出します。 
+
+.sp
+.in +2
+.nf
+% \fBTYPE=`elfedit -r -osimple -e 'sym:st_type unlink' \e
+      /lib/libc.so`\fR
+% \fBecho $TYPE\fR
+STT_FUNC
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fR実行可能ファイルの ASLR 設定の指定
+.sp
+.LP
+実行可能ファイルのデフォルトのアドレス空間配置のランダム化 (ASLR) 動作は、\fBDT_SUNW_ASLR\fR 動的セクションエントリを使って指定します。次に、指定されたプログラムの ASLR を有効または無効にする方法を示します。
+
+.sp
+.in +2
+.nf
+% \fBelfedit prog\fR
+> \fBdyn:sunw_aslr enable\fR
+      index  tag         value
+       [40]  SUNW_ASLR   0x2           ENABLE
+> \fBdyn:sunw_aslr disable\fR
+      index  tag         value
+      [40]   SUNW_ASLR   0x1           DISABLE
+.fi
+.in -2
+.sp
+
+.SH 環境
+.sp
+.ne 2
+.mk
+.na
+\fB\fBELFEDIT_PATH\fR\fR
+.ad
+.sp .6
+.RS 4n
+デフォルトのモジュール検索パスを変更します。モジュール検索パスは、このマニュアルページの「\fBモジュール検索パス\fR」セクションで説明されています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLD_NOEXEC_64\fR\fR
+.ad
+.sp .6
+.RS 4n
+64 ビットの \fBelfedit\fR の自動実行を抑止します。デフォルトでは、64 ビットバージョンの \fBelfedit\fR は、システムが 64 ビットに対応している場合に実行されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPAGER\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBelfedit\fR から画面への出力を対話的に提供します。設定されていない場合は、\fBmore\fR が使用されます。\fBmore\fR(1) を参照してください。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/elfedit\fR\fR
+.ad
+.sp .6
+.RS 4n
+編集コマンドを提供するために必要に応じてロードされる \fBelfedit\fR モジュールのデフォルトディレクトリ。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB~/.teclarc\fR\fR
+.ad
+.sp .6
+.RS 4n
+コマンド行編集のための個人用 \fBtecla\fR カスタマイズファイル。\fBtecla\fR(5) を参照してください。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/linker
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBdump\fR(1), \fBelfdump\fR(1), \fBld.so.1\fR(1), \fBmore\fR(1), \fBnm\fR(1), \fBpvs\fR(1), \fBsxadm\fR(1M), \fBelf\fR(3ELF), \fBlibelf\fR(3LIB), \fBtecla\fR(5), \fBattributes\fR(5)
+.sp
+.LP
+\fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fR
+.SH 警告
+.sp
+.LP
+\fBelfedit\fR は、ELF システムのテストおよび開発のためのツールとして設計されています。このツールでは、オブジェクト内のほぼすべての ELF メタデータの検査および変更のための機能が提供されます。無効な、または使用できない ELF ファイルを生成する可能性のある編集でも、何も出力せずに許可されます。ユーザーは、ELF の形式と、それを制御している規則や規約に関する知識を持っているものと想定されています。\fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fROracle Solaris 11.3 Linkers and Libraries Guide \fB\fRが役立ちます。
+.sp
+.LP
+\fBelfedit\fR を使用すると、ユーザーはオブジェクト内の ELF メタデータを変更できますが、実際のプログラムのコードを理解したり、変更したりすることはできません。そのため、タイプ、サイズ、配置などの ELF 属性を、そのファイルの実際の内容に一致しない方法で設定すると、壊れていて、使用できない出力オブジェクトが生成される可能性があります。このような変更はリンカーコンポーネントのテストに役立つ場合がありますが、それ以外の場合は避けるようにしてください。
+.sp
+.LP
+\fBdyn:runpath\fR コマンドを使用してオブジェクトの \fBrunpath\fR を変更するなどの、より高いレベルの操作は安全であり、このセクションで詳細に説明している種類のリスクを冒すことなく実行できます。
+.SH 注意事項
+.sp
+.LP
+\fBelfedit\fR でサポートされているすべての ELF 操作を、すべての ELF オブジェクトに対して正常に実行できるわけではありません。\fBelfedit\fR は、ファイル内にある既存のセクションによって制約されます。
+.sp
+.LP
+特に注意する点の 1 つは、\fBelfedit\fR が特定のオブジェクトの \fBrunpath\fR を変更できない可能性があることです。\fBrunpath\fR を変更するには、次の条件を満たしている必要があります。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+目的の文字列が動的な文字列テーブル内にすでに存在するか、またはこのセクション内に新しい文字列を追加するための予約された十分な領域が存在する必要があります。オブジェクトに文字列テーブルの予約領域が存在する場合は、\fB\&.dynamic DT_SUNW_STRPAD\fR 要素の値がその領域のサイズを示します。これをチェックするには、次の \fBelfedit\fR コマンドを使用できます。
+.sp
+.in +2
+.nf
+% \fBelfedit -r -e 'dyn:tag DT_SUNW_STRPAD' file\fR
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+動的セクションにすでに \fBrunpath\fR 要素が存在するか、またはこの要素を入力できる使用可能な未使用の動的スロットが存在する必要があります。既存の \fBrunpath\fR の存在をテストするには、次のようにします。
+.sp
+.in +2
+.nf
+% \fBelfedit -r -e 'dyn:runpath' file\fR
+.fi
+.in -2
+.sp
+
+動的セクションは、タイプ \fBDT_NULL\fR の要素を使用して、そのセクション内にある配列を終了します。最後の \fBDT_NULL\fR は変更できませんが、この要素が複数存在する場合、\fBelfedit\fR はそのいずれかを \fBrunpath\fR 要素に変換できます。追加の動的スロットをテストするには、次のようにします。
+.sp
+.in +2
+.nf
+% \fBelfedit -r -e 'dyn:tag DT_NULL' file\fR
+.fi
+.in -2
+.sp
+
+.RE
+.sp
+.LP
+古いオブジェクトには、このような操作を完了するために必要な追加の領域が存在しません。これに必要な領域は、Solaris Express Community Edition リリースで導入されました。
+.sp
+.LP
+ある操作が失敗した場合は、\fB-d\fR (debug) オプションを使用して出力された詳細情報が、その原因を見つけるために非常に役立ちます。
+.sp
+.LP
+\fBelfedit\fR モジュールは、ELF 構造内のフィールドを直接操作するコマンドはそのフィールドと同じ名前を持つが、より高いレベルの概念を実装するコマンドはそれに当てはまらないという規約に従っています。たとえば、ELF ヘッダー内の \fBe_flags\fR フィールドを操作するためのコマンドには \fBehdr:e_flags\fR という名前が付けられています。そのため一般には、モジュールを識別し、ELF フィールドの名前を持つコマンドを探すことによって、そのフィールドを変更するためのコマンドが見つかります。

@@ -1,0 +1,2979 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 2010, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH csh 1 "2015 年 4 月 6 日" "SunOS 5.11" "用户命令"
+.SH 名称
+csh \- 其语法类似 C 语法的 shell 命令解释器
+.SH 用法概要
+.LP
+.nf
+\fBcsh\fR [\fB-bcefinstvVxX\fR] [\fIargument\fR]...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBcsh\fR（C shell）是一个具有类 C 语言语法的命令解释器。它为交互用户提供了 Bourne shell 没有的许多便利功能，包括文件名完成、命令别名设置、历史记录替换、作业控制以及许多内置命令。与 Bourne shell 一样，C shell 提供了变量、命令和文件名替换。
+.SS "初始化和终止"
+.sp
+.LP
+首次启动时，C shell 通常执行您的起始目录中 \fB\&.cshrc\fR 文件中的命令（如果该文件可以读取，并且您是该文件的所有者或者您的实际组 \fBID\fR 与它的组 \fBID\fR 匹配）。如果该 shell 是通过以 `\fB-\fR' 开头的命令调用的，则当由 \fBlogin\fR(1) 启动时，该 shell 将作为\fB登录\fR shell 运行。
+.sp
+.LP
+如果 shell 是一个登录 shell，则调用顺序如下所述：首先，执行 \fB/etc/.login\fR 中的命令。其次，执行您的\fB起始目录\fR中 \fB\&.cshrc\fR 文件中的命令。然后，shell 将执行您的起始目录中 \fB\&.login\fR 文件中的命令；将向此文件应用与 \fB\&.cshrc\fR 相同的权限检查。通常，\fB\&.login\fR 文件包含用来指定终端类型和环境的命令。（有关文件解释器的说明，请参见 \fBCommand Execution\fR 和 \fBexec\fR(2)。）
+.sp
+.LP
+当登录 shell 终止时，它将执行您的起始目录中 \fB\&.logout\fR 文件中的命令；将向此文件应用与 \fB\&.cshrc\fR 相同的权限检查。
+.SS "交互式操作"
+.sp
+.LP
+在启动处理完成后，交互式 C shell 将开始从终端读取命令，提示您输入 \fBhostname\fR\fB%\fR（对于特权用户，则为 \fBhostname\fR\fB#\fR）。然后，shell 将重复执行以下操作：读取一行命令输入并将其拆分为\fI词\fR。此词序列将被放置在历史记录列表上并进行解析，如“用法”中所述。最后，shell 执行当前行中的每个命令。
+.SS "非交互式操作"
+.sp
+.LP
+当以非交互方式运行时，shell 不会从终端提示您进行输入。非交互式 C shell 可以执行在命令行上作为 \fIargument\fR 提供的命令，或者解释来自文件（也称为脚本）的命令。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.RS 6n
+.rt  
+强制选项处理“中断”。后续命令行参数将不再被解释为 C shell 选项。这允许在不发生混乱的情况下将选项传递给脚本。除非提供了此选项，否则 shell 不会运行 set-user-ID 或 set-group-ID 脚本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 6n
+.rt  
+执行第一个 \fIargument\fR，必须提供该参数。剩余的参数将被放置在 \fBargv\fR（参数列表变量）中，并直接传递给 \fBcsh\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.RS 6n
+.rt  
+如果命令异常终止或者生成了非零退出状态，则退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.RS 6n
+.rt  
+快速启动。在启动时既不读取 \fB\&.cshrc\fR 文件也不读取 \fB\&.login\fR 文件（如果是登录 shell）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.RS 6n
+.rt  
+强制交互。提示进行命令行输入，即使标准输入看起来不像是一个终端（字符特殊设备）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 6n
+.rt  
+进行解析（解释），但不执行命令。此选项可用来检查 C shell 脚本的语法错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 6n
+.rt  
+从标准输入获取命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.RS 6n
+.rt  
+读取并执行单个命令行。可以使用 `\fB\\fR'（反斜杠）对每个换行符进行转义以将命令行延续至后续的输入行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 6n
+.rt  
+详细模式。设置 \fBverbose\fR 预定义变量。在历史记录替换之后但在其他替换和执行之前回显命令输入。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR\fR
+.ad
+.RS 6n
+.rt  
+在读取 \fB\&.cshrc\fR 之前设置 \fBverbose\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.RS 6n
+.rt  
+回显。设置 \fBecho\fR 变量。在所有替换之后且即将执行之前回显命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-X\fR\fR
+.ad
+.RS 6n
+.rt  
+在读取 \fB\&.cshrc\fR 之前设置 \fBecho\fR。
+.RE
+
+.sp
+.LP
+如果未使用 \fB-c\fR、\fB-i\fR、\fB-s\fR 或 \fB-t\fR 选项，会将第一个非选项 \fIargument\fR 作为命令或脚本的名称。它作为参数零传递，并且后续参数将被添加到该命令或脚本的参数列表中。
+.SH 用法
+.SS "完成文件名"
+.sp
+.LP
+当通过设置变量 \fBfilec\fR 启用了此功能时，交互式 C shell 可以完成键入了一部分的文件名或用户名。当终端输入行上某个明确的部分文件名后跟有一个 \fBESC\fR 字符时，shell 将填入工作目录中某个匹配文件名的剩余字符。
+.sp
+.LP
+如果某个部分文件名后跟 \fBEOF\fR 字符（通常键入为 Ctrl-d），则 shell 将列出所有匹配的文件名。然后，它再提示一次，并提供迄今为止键入的不完整命令行。
+.sp
+.LP
+当最后的（部分）词以波浪号 (\fB~\fR) 开头时，shell 将尝试以用户名完成，而不是使用工作目录中的文件。
+.sp
+.LP
+存在错误或多个匹配项时，终端铃声将会发出信号。可以通过设置变量 \fBnobeep\fR 来抑制该铃声信号。您可以通过在变量 \fBfignore\fR 中列出特定的后缀来排除具有这些后缀的文件。不过，如果唯一的可能完成项包括列表中的某个后缀，则不会忽略该后缀。\fBfignore\fR 不会影响通过 \fBEOF\fR 字符列出的文件名。
+.SS "词汇结构"
+.sp
+.LP
+Shell 在空格字符和制表符处将输入行拆分为词，但下面单独指出的情况例外。字符 \fB&\fR、\fB|\fR、\fB;\fR、\fB<\fR、\fB>\fR、\fB(\fR 和 \fB)\fR 将成为单独的词；如果是成对的，则字符对将成为单个词。这些 shell 元字符可以成为其他词的一部分，并且可以通过在其前面使用一个 `\fB\\fR'（反斜杠）来禁止其特殊含义。前面带有 \fB\\fR 的换行符等效于空格字符。
+.sp
+.LP
+此外，括在成对的单引号 (\fB\&'\fR)、双引号 (\fB"\fR) 或反引号 (\fB`\fR) 中的字符串将成为词的一部分。这样的字符串中的元字符（包括任何空格或制表符）不会成为单独的词。在反引号 (\fB`\fR) 或双引号 (\fB"\fR) 字符对内，前面带有 `\fB\\fR'（反斜杠）的换行符将成为一个真正的换行符。下文中的\fB变量替换\fR、\fB命令替换\fR和\fB文件名\fR\fB替换\fR中介绍了每种类型的引号的作用。
+.sp
+.LP
+如果 shell 的输入不是一个终端，则 \fB#\fR 字符会引入一个持续到输入行末尾的注释。当它前面带有一个 \fB\\fR 或者括在成对的引号中时，其特殊含义会被禁止。
+.SS "命令行解析"
+.sp
+.LP
+\fI简单命令\fR由词序列组成。第一个词（不是 I/O 重定向的一部分）指定要执行的命令。一个简单命令或者由 \fB|\fR 或 \fB|&\fR 字符分隔的一组简单命令将形成一个\fI管道\fR。使用 \fB|\fR 时，前面的命令的标准输出将被重定向到跟随其后的命令的标准输入。使用 \fB| &\fR 时，标准错误和标准输出都将通过管道进行重定向。
+.sp
+.LP
+管道可以由分号 ( \fB;\fR ) 予以分隔，在这种情况下，它们按顺序执行。由 \fB&&\fR 或 \fB| |\fR 分隔的管道将形成条件序列，其中，右侧管道的执行分别取决于左侧管道成功与否。
+.sp
+.LP
+管道或序列可以放在括号 `()' 内以构成可以作为某个管道或序列的一部分的一个简单命令。
+.sp
+.LP
+通过附加一个 `\fB&\fR\&'，管道序列可以按异步方式执行或者“在后台”执行；shell 在发出提示之前不会等待序列完成，而是会立即显示作业编号（请参见下文中的\fB作业控制\fR）、关联的进程 ID 以及提示。
+.SS "历史记录替换"
+.sp
+.LP
+历史记录替换允许您在当前正在键入的命令行中使用以前的命令行中的词。这简化了复杂命令或参数的拼写更正和重复输入。命令行保存在历史记录列表中，该列表的大小由 \fBhistory\fR 变量控制。在任何情况下都会保留最近的命令。历史记录替换以 \fB!\fR 开头（但是您可以通过 \fBhistchars\fR 变量对此进行更改）并且可以发生在命令行的任何位置；历史记录替换不可以嵌套。可以使用 \fB\\fR 对 \fB!\fR 进行转义以禁止其特殊含义。
+.sp
+.LP
+包含历史记录替换的输入行在被扩展后会在终端上回显，但该回显发生在任何其他替换发生之前或命令执行之前。
+.SS "事件定义符"
+.sp
+.LP
+事件定义符是对历史记录列表中某个命令行条目的引用。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!\fR\fR
+.ad
+.sp .6
+.RS 4n
+启动历史记录替换，除非其后跟有空格字符、tab、换行符、\fB=\fR 或 \fB(\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!!\fR\fR
+.ad
+.sp .6
+.RS 4n
+引用前一个命令。单独使用时，此替换重复前一个命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!\fR\fIn\fR\fR
+.ad
+.sp .6
+.RS 4n
+引用命令行 \fIn\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!\fR\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+引用当前命令行减 \fIn\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!\fR\fIstr\fR\fR
+.ad
+.sp .6
+.RS 4n
+引用以 \fIstr\fR 开头的最近命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!?\fR\fIstr\fR\fB?\fR\fR
+.ad
+.sp .6
+.RS 4n
+引用包含 \fIstr\fR 的最近命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!?\fR\fIstr\fR\fB?\fR \fIadditional\fR\fR
+.ad
+.sp .6
+.RS 4n
+引用包含 \fIstr\fR 的最近命令并将 \fIadditional\fR 附加到该被引用的命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!{\fR\fIcommand\fR\fB}\fR \fIadditional\fR\fR
+.ad
+.sp .6
+.RS 4n
+引用以 \fIcommand\fR 开头的最近命令并将 \fIadditional\fR 附加到该被引用的命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB^\fR\fIprevious_word\fR\fB^\fR\fIreplacement\fR\fB^\fR\fR
+.ad
+.sp .6
+.RS 4n
+重复前一个命令行，将字符串 \fIprevious_word\fR 替换为字符串 \fIreplacement\fR。这等效于以下历史记录替换：
+.sp
+.in +2
+.nf
+!:s/\fIprevious_word\fR/\fIreplacement\fR/.
+.fi
+.in -2
+.sp
+
+要重新执行之前的某个特定命令并进行这样的替换，比如说，重复执行命令 #6，请使用以下命令：
+.sp
+.in +2
+.nf
+!:6s/\fIprevious_word\fR/\fIreplacement\fR/.
+.fi
+.in -2
+.sp
+
+.RE
+
+.SS "词定义符"
+.sp
+.LP
+`\fB:\fR'（冒号）将事件指定与词定义符相隔离。如果词定义符以 \fB^\fR、\fB$\fR、\fB*\fR、\fB-\fR 或 \fB%\fR 开头，则可以省略冒号。如果将从前一个命令选择词，则在事件指定中可以忽略第二个 \fB!\fR 字符。例如，\fB!!:1\fR 和 \fB!:1\fR 都引用前一个命令中的第一个词，而 \fB!!$\fR 和 \fB!$\fR 都引用前一个命令中的最后一个词。词定义符包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB#\fR\fR
+.ad
+.RS 7n
+.rt  
+迄今为止键入的整个命令行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 7n
+.rt  
+输入的第一个词（命令）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIn\fR\fR
+.ad
+.RS 7n
+.rt  
+第 \fIn\fR 个参数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB^\fR\fR
+.ad
+.RS 7n
+.rt  
+第一个参数，也就是 \fB1\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$\fR\fR
+.ad
+.RS 7n
+.rt  
+最后一个参数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%\fR\fR
+.ad
+.RS 7n
+.rt  
+与 \fB?\fR\fIs\fR 搜索匹配的词。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIx\fR\fB-\fR\fIy\fR\fR
+.ad
+.RS 7n
+.rt  
+某一范围内的词；\fB-\fR\fIy\fR 是 \fB0-\fR\fIy\fR 的缩写。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB*\fR\fR
+.ad
+.RS 7n
+.rt  
+所有参数，或者一个空值（如果事件中只有一个词）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIx\fR\fB*\fR\fR
+.ad
+.RS 7n
+.rt  
+\fIx\fR\fB-$\fR\fI 的缩写。\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIx\fR\fB-\fR\fR
+.ad
+.RS 7n
+.rt  
+与 \fIx*\fR 一样，但忽略词 \fB$\fR。
+.RE
+
+.SS "修饰符"
+.sp
+.LP
+在可选的词定义符后，您可以添加下列修饰符之一，以 \fB:\fR 为前缀。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBh\fR\fR
+.ad
+.RS 10n
+.rt  
+删除结尾路径名组件，保留头部。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBr\fR\fR
+.ad
+.RS 10n
+.rt  
+删除 `\fB\&.\fR\fIxxx\fR' 形式的结尾后缀，保留基名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBe\fR\fR
+.ad
+.RS 10n
+.rt  
+删除除后缀以外的所有内容，从而保留扩展名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBs/\fR\fIl\fR\fB/\fR\fIr\fR\fB/\fR\fR
+.ad
+.RS 10n
+.rt  
+用 \fIr\fR 取代 \fIl\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBt\fR\fR
+.ad
+.RS 10n
+.rt  
+删除所有前导路径名组件，保留尾部。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB&\fR\fR
+.ad
+.RS 10n
+.rt  
+重复前一个替换。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBg\fR\fR
+.ad
+.RS 10n
+.rt  
+向每个词中的匹配项的第一个实例应用更改，向其附加上面的前缀（例如 \fBg&\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp\fR\fR
+.ad
+.RS 10n
+.rt  
+列显新命令但不执行它。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBq\fR\fR
+.ad
+.RS 10n
+.rt  
+将替代词用引号括起来，防止被进一步替换。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBx\fR\fR
+.ad
+.RS 10n
+.rt  
+与 \fBq\fR 一样，但在每个空格字符、制表符或换行符处拆分为词。
+.RE
+
+.sp
+.LP
+除非前面有一个 \fBg\fR，否则修改将仅应用于与 \fIl\fR 匹配的第一个字符串；如果没有匹配的字符串，则会产生错误。
+.sp
+.LP
+左侧的替换项不是正则表达式，而是字符串。任何字符都可以取代 \fB/\fR 用作分隔符。使用反斜杠将分隔符字符括起来。右侧的字符 \fB&\fR 将被来自左侧的文本替换。可以用反斜杠将 \fB&\fR 括起来。空 \fIl\fR 将使用之前的字符串，该字符串来自 \fIl\fR 或者来自 \fB!?\fR\fIs\fR 中的上下文扫描字符串 \fIs\fR。如果一个换行符直接跟在 \fIr\fR 之后，则可以省略最右侧的分隔符；类似地，还可以省略上下文扫描中最右侧的 \fB?\fR。
+.sp
+.LP
+如果没有事件指定，则历史记录引用将引用上一个命令，或者引用命令行上以前的某个历史记录引用（如果有）。
+.SS "快速替换"
+.sp
+.ne 2
+.mk
+.na
+\fB\fB^\fR\fIl\fR\fB^\fR\fIr\fR\fB^\fR\fR
+.ad
+.RS 9n
+.rt  
+这等效于以下历史记录替换： 
+.sp
+.in +2
+.nf
+!:s/\fIl\fR/\fIr\fR/.
+.fi
+.in -2
+.sp
+
+.RE
+
+.SS "别名"
+.sp
+.LP
+C shell 维护了一个别名列表，您可以使用 \fBalias\fR 和 \fBunalias\fR 命令来创建、显示和修改这些别名。Shell 将检查每个命令中的第一个词来查看它是否与某个现有别名的名称匹配。如果匹配，则会使用别名定义重新处理命令并替换其名称；可以使用历史记录替换机制，就像该命令是之前的输入行一样。当使用了别名时，这允许用实际命令行参数替换历史记录替换（在定义中通过反斜杠进行转义）。如果没有调用历史记录替换，则参数将保持不变。
+.sp
+.LP
+别名可以嵌套。也就是说，一个别名定义可以包含另一个别名的名称。在应用任何历史记录替换之前，嵌套的别名将会扩展。这在如下所述的管道中非常有用：
+.sp
+.in +2
+.nf
+\fBalias lm 'ls -l \e!* | more'\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+当调用时，它会通过 \fBmore\fR(1) 传输 \fBls\fR(1) 的输出。
+.sp
+.LP
+除了第一个词外，别名的名称不能出现在其定义中，也不能出现在其定义引用的任何别名中。可以检测出这样的循环，并且这会导致错误消息。
+.SS "I/O 重定向"
+.sp
+.LP
+下列元字符指示后续词是命令的标准输入、标准输出或标准错误要重定向到的文件的名称；该词是分别从命令的其余部分扩展的变量、命令和文件名。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB<\fR\fR
+.ad
+.RS 15n
+.rt  
+重定向标准输入。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB< <\fR\fI word\fR\fR
+.ad
+.RS 15n
+.rt  
+读取标准输入，一直读取到与 \fIword\fR 相同的行，并且将结果行放置在一个临时文件中。除非 \fIword\fR 进行了转义或者括在引号中，否则将在这些行上执行命令替换。然后，将调用管道并且以该临时文件作为其标准输入。\fIword\fR 不局限于变量、文件名或命令替换，在 shell 执行任何替换之前，会将每个行与其进行比较。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>\fR \fB>!\fR \fB>&\fR \fB>&!\fR\fR
+.ad
+.RS 15n
+.rt  
+将标准输出重定向到某个文件。如果该文件不存在，则会创建它。如果该文件存在，则会覆盖它；它以前的内容将会丢失。
+.sp
+设置了变量 \fBnoclobber\fR 时，该变量会阻止销毁现有的文件。它还会阻止重定向到终端和 \fB/dev/null\fR，除非使用了某种 \fB!\fR 形式。\fB&\fR 形式将标准输出和标准错误（诊断性输出）都重定向到文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB> >\fR \fB> >&\fR \fB> >!\fR \fB> >&!\fR\fR
+.ad
+.RS 23n
+.rt  
+附加标准输出。与 \fB>\fR 一样，但是会将输出放置在文件的末尾而不是覆盖文件。如果设置了 \fBnoclobber\fR，则文件不存在将是一个错误，除非使用了某种 \fB!\fR 形式。\fB&\fR 形式将标准错误和标准输出都附加到文件。
+.RE
+
+.SS "变量替换"
+.sp
+.LP
+C shell 维护着一组变量，其中每个都由\fI名称\fR和\fI值\fR组成。变量名称最多可以包含 128 个字母和数字，并且以字母开头。下划线 (\fB_\fR) 被视为字母。变量的值是由零个或多个词构成的由空格分隔的列表。如果 shell 支持包含多达 128 个字符的变量名称，则表明定义了变量 \fBSUNW_VARLEN\fR。如果不支持包含多达 128 个字符的变量名称，则说明正在使用的是旧版本的 shell，并且 shell 名称的最大长度为 20 个字符。 
+.sp
+.LP
+要引用变量的值，请在其名称前使用 `\fB$\fR' 前缀。可以使用特定引用（如下文所述）来从值中选择特定的词，或者显示关于变量的其他信息。可以使用花括号将引用与输入行词中的其他字符相隔离。
+.sp
+.LP
+在分析输入行、解析别名并应用 I/O 重定向后，才会发生变量替换。但是，I/O 重定向中的变量引用（将在执行重定向时被替代）和反引号中的字符串中包含的变量引用例外（请参见“命令替换”）。
+.sp
+.LP
+可以通过在 \fB$\fR 之前使用 \fB\\fR 前缀来禁止变量替换，但是双引号内的变量替换例外，该类替换总是会发生。单引号内的变量替换可以被禁止。如果 \fB$\fR 后跟有一个空格字符、tab 或换行符，则它会被转义。
+.sp
+.LP
+可以使用 \fBset\fR 和 \fBunset\fR 命令来创建、显示或销毁变量。某些变量由 shell 维护或使用。例如，\fBargv\fR 变量包含 shell 的参数列表的映像。在 shell 使用的变量中，有一些是切换开关；shell 不关心其值是什么，只关心是否设置了它们。
+.sp
+.LP
+数字值可以作为数字进行运算（例如使用 \fB@\fR 内置命令时）。在数字运算中，空值被视为零。多词值中的第二个词和随后的词将被忽略。例如，当 \fBverbose\fR 变量设置为任意值时（包括空值），将在终端回显命令输入。
+.sp
+.LP
+随后将向从变量替换得到的词应用命令和文件名替换，但是下列情况除外：当通过双引号进行了禁止时、当设置了 \fBnoglob\fR 时（禁止文件名替换）或者当引用由 \fB:q\fR 修饰符括起时。在双引号内，引用将扩展以成为引号内的字符串（的一部分）；多词值将扩展为带有嵌入空格字符的字符串。当向引用应用了 \fB:q\fR 修饰符时，它将扩展为由空格分隔的词列表，其中的每个词都括在引号中以阻止后续的命令或文件名替换。
+.sp
+.LP
+除了下面特别指出的情况外，引用未设置的变量将导致错误。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$\fR\fIvar\fR\fR
+.ad
+.br
+.na
+\fB\fB${\fR\fIvar\fR\fB}\fR\fR
+.ad
+.RS 17n
+.rt  
+这些将被来自 \fIvar\fR 值的词替换，每个都由空格字符予以分隔。如果 \fIvar\fR 是一个环境变量，则会返回其值（但是 `\fB:\fR' 修饰符和下面给出的其他形式不可用）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$\fR\fIvar\fR\fB[\fR\fIindex\fR\fB]\fR\fR
+.ad
+.br
+.na
+\fB\fB${\fR\fIvar\fR\fB[\fR\fIindex\fR\fB]}\fR\fR
+.ad
+.RS 17n
+.rt  
+这些将仅从 \fIvar\fR 的值中选择指定的词。将向 \fIindex\fR  应用变量替换，索引可包含（或者得到）单个数字、由 `\fB-\fR' 分隔的两个数字，或者一个星号。词的索引从 1 开始；`\fB*\fR' 将选择所有词。如果省略了范围中的第一个数字（例如使用 \fB$argv[-2]\fR 时），则缺省为 1。如果省略了范围中的最后一个数字（例如使用 \fB$argv[1-]\fR 时），则缺省为 \fB$#\fR\fIvar\fR（字计数）。如果第二个参数被省略（或在范围内），则范围为空不是错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$#\fR\fIname\fR\fR
+.ad
+.br
+.na
+\fB\fB${#\fR\fIname\fR\fB}\fR\fR
+.ad
+.RS 17n
+.rt  
+这些给出变量中的词数量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$0\fR\fR
+.ad
+.RS 17n
+.rt  
+这将替代为从中读取命令输入的文件的名称，但 setuid shell 脚本例外。如果该名称不是已知的，则会发生错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$\fR\fIn\fR\fR
+.ad
+.br
+.na
+\fB\fB${\fR\fIn\fR\fB}\fR\fR
+.ad
+.RS 17n
+.rt  
+等效于 \fB$argv[\fR\fIn\fR\fB]\fR\fI。\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$*\fR\fR
+.ad
+.RS 17n
+.rt  
+等效于 \fB$argv[*]\fR。
+.RE
+
+.sp
+.LP
+可以应用修饰符 \fB:e\fR、\fB:h\fR、\fB:q\fR、\fB:r\fR、\fB:t\fR 和 \fB:x\fR（请参见\fB历史记录\fR\fB替换\fR），还可以应用 \fB:gh\fR、\fB:gt\fR 和 \fB:gr\fR。如果使用了 \fB{ }\fR（花括号），则修饰符必须位于花括号内。当前实现在每个扩展中仅允许一个这样的修饰符。
+.sp
+.LP
+不能用修饰符 \fB:\fR 修饰以下引用。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$?\fR\fIvar\fR\fR
+.ad
+.br
+.na
+\fB\fB${?\fR\fIvar\fR\fB}\fR\fR
+.ad
+.RS 11n
+.rt  
+如果设置了 \fIvar\fR，则替代字符串 1，如果未设置，则替代 0。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$?0\fR\fR
+.ad
+.RS 11n
+.rt  
+如果当前输入文件名已知，则替代 1，如果未知，则替代 0。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$$\fR\fR
+.ad
+.RS 11n
+.rt  
+替代（父）shell 的进程编号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$<\fR\fR
+.ad
+.RS 11n
+.rt  
+替代来自标准输入的行，此后不再进一步解释。在 C shell 脚本中可以使用它从键盘进行读取。
+.RE
+
+.SS "命令和文件名替换"
+.sp
+.LP
+命令和文件名替换选择性地应用于内置命令的参数。不进行计算的表达式部分不会扩展。对于非内置命令，命令名称的文件名扩展是单独从参数列表的对应部分执行的；在执行 I/O 重定向后，扩展在一个子 shell 中进行。
+.SS "命令替换"
+.sp
+.LP
+括在反引号 ( \fB`\fR . . . \fB`\fR ) 中的命令是由子 shell 执行的。其标准输出在每个空格字符、制表符和换行符处将被拆分为单独的词；空字将被丢弃。此文本替换当前命令行上括在反引号内的字符串。在双引号内，只有换行符会强制生成新词；空格和制表符将保留。不过，最后的换行符会被忽略。因此，命令替换可能会产生不完整的词。
+.SS "文件名替换"
+.sp
+.LP
+未用引号括起且包含 \fB*\fR、\fB?\fR、\fB[\fR 或 \fB{\fR 字符中的任意一个或者以 ~ 开头的词，将按以下方式扩展（也称为\fI通配\fR）为按字母顺序排序的文件名列表：
+.sp
+.ne 2
+.mk
+.na
+\fB*\fR
+.ad
+.RS 22n
+.rt  
+匹配任意（零个或多个）字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB?\fR
+.ad
+.RS 22n
+.rt  
+匹配任意单个字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[\fR. . .\fB]\fR\fR
+.ad
+.RS 22n
+.rt  
+匹配所围起的列表或范围中的任意单个字符。列表是一串字符。范围是由一个短划线 (\fB-\fR) 分隔的两个字符，并且按 \fBASCII\fR 整理序列（请参见 \fBascii\fR(5)）包括位于其间的所有字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB{\fIstr\fR\fB,\fR \fIstr\fR\fB,\fR . . . \fB}\fR\fR
+.ad
+.RS 22n
+.rt  
+扩展到以逗号分隔的列表中的每个字符串（或文件匹配模式）。与上面的模式匹配表达式不同，此构造的扩展不进行排序。例如，\fB{b,a}\fR 将扩展为 `\fBb\fR' `\fBa\fR'（而不是 `\fBa\fR' `\fBb\fR'）。作为特殊案例，字符 \fB{\fR 和 \fB}\fR 以及字符串 \fB{ }\fR 将原样传递。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB~[\fIuser\fR]\fR
+.ad
+.RS 22n
+.rt  
+您的起始目录，由变量 \fBhome\fR 的值指示，或者由 \fIuser\fR 的口令条目指示的 \fIuser\fR 的值指示。
+.RE
+
+.sp
+.LP
+只有 \fB*\fR、\fB?\fR 和 \fB[\fR. . .\fB]\fR 模式表示模式匹配；如果没有文件名与包含它们的模式匹配，则会发生错误。当 `\fB\&.\fR'（点字符）是文件名或路径名组件中的第一个字符时，它必须明确匹配。\fB/\fR（斜杠）也必须明确匹配。
+.SS "表达式和运算符"
+.sp
+.LP
+许多 C shell 内置命令接受表达式，表达式中的运算符类似于 C 语言的运算符并且具有相同的优先级。这些表达式通常出现在 \fB@\fR、\fBexit\fR、\fBif\fR、\fBset\fR 和 \fBwhile\fR 命令中，并且通常用来调整用于执行命令的控制流。表达式的组件由空格分隔。
+.sp
+.LP
+空值或缺少的值将被视为 \fB0\fR。所有表达式的结果都是字符串，可以表示十进制数字。
+.sp
+.LP
+以下 C shell 运算符按优先级顺序进行分组：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB( \fR. . . \fB )\fR\fR
+.ad
+.RS 16n
+.rt  
+分组
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB>\fB~\fR\fR
+.ad
+.RS 16n
+.rt  
+求补
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!\fR\fR
+.ad
+.RS 16n
+.rt  
+逻辑否
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB* / %\fR\fR
+.ad
+.RS 16n
+.rt  
+乘、除、求余。这些是右向结合的，可能会产生意外结果。应当使用括号明确对组合进行分组。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB+ -\fR\fR
+.ad
+.RS 16n
+.rt  
+加、减（也是右向结合的）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB<< >>\fR\fR
+.ad
+.RS 16n
+.rt  
+左移位、右移位
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB< > <= >=\fR\fR
+.ad
+.RS 16n
+.rt  
+小于、大于、小于或等于、大于或等于
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB= = != =~ !~\fR\fR
+.ad
+.RS 16n
+.rt  
+等于、不等于、文件名替换模式匹配（在下文中描述）、文件名替换模式不匹配
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB&\fR\fR
+.ad
+.RS 16n
+.rt  
+按位与
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB^\fR\fR
+.ad
+.RS 16n
+.rt  
+按位 XOR（异或）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB|\fR\fR
+.ad
+.RS 16n
+.rt  
+按位同 OR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB&&\fR\fR
+.ad
+.RS 16n
+.rt  
+逻辑 AND
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB|  |\fR\fR
+.ad
+.RS 16n
+.rt  
+逻辑 OR
+.RE
+
+.sp
+.LP
+运算符：\fB==\fR、\fB!=\fR、\fB=~\fR 和 \fB!~\fR 对其字符串形式的参数进行比较；其他运算符使用数字。运算符 \fB=~\fR 和 \fB!~\fR 都会检查左侧的字符串是否与右侧的文件名替换模式匹配。当只需要字符串之间的模式匹配时，这减少了对 \fBswitch\fR 语句的需要。
+.sp
+.LP
+还提供了文件查询：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fIfilename\fR\fR
+.ad
+.RS 15n
+.rt  
+如果用户具有读取访问权限，则返回 true（或 1）。否则返回 false（或 0）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-w\fR\fIfilename\fR\fR
+.ad
+.RS 15n
+.rt  
+如果用户具有写入访问权限，则返回 true。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fIfilename\fR\fR
+.ad
+.RS 15n
+.rt  
+如果用户具有执行权限（或者对目录的搜索权限），则返回 true。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fIfilename\fR\fR
+.ad
+.RS 15n
+.rt  
+如果 \fIfilename\fR 存在，则返回 true。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR\fIfilename\fR\fR
+.ad
+.RS 15n
+.rt  
+如果用户拥有 \fIfilename\fR，则返回 true。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fIfilename\fR\fR
+.ad
+.RS 15n
+.rt  
+如果 \fIfilename\fR 的长度为零（空的），则返回 true。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fIfilename\fR\fR
+.ad
+.RS 15n
+.rt  
+如果 \fIfilename\fR 是一个纯文本文件，则返回 true。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fIfilename\fR\fR
+.ad
+.RS 15n
+.rt  
+如果 \fIfilename\fR 是一个目录，则返回 true。
+.RE
+
+.sp
+.LP
+如果 \fIfilename\fR 不存在或不可访问，则所有查询都将返回 false。
+.sp
+.LP
+还提供了与命令的成功相关的查询：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB{\fR \fIcommand\fR\fB}\fR\fR
+.ad
+.RS 14n
+.rt  
+如果 \fIcommand\fR 成功运行，则表达式的计算结果为 true (1)。否则，其计算结果为 0。\fB注：\fR如果 \fIcommand\fR 成功运行，命令本身通常会返回 0；遇到问题时，通常会返回其他值。如果您希望直接了解状态，请使用 \fBstatus\fR 变量的值而不是此表达式。
+.RE
+
+.SS "控制流"
+.sp
+.LP
+Shell 中包含一些命令用来监控控制权在脚本中的流动并使控制权在限制范围内流动（通过终端）。这些命令会强制 shell 重新读取输入（执行 \fIloop\fR），或者在特定条件下跳过输入（转到 \fIbranch\fR）。
+.sp
+.LP
+\fBforeach\fR、\fBswitch\fR、\fBwhile\fR、\fBif\fR. . .\fBthen\fR 和 \fBelse\fR 内置命令的每个实例都必须作为其自己的输入行上的第一个词。
+.sp
+.LP
+如果 shell 的输入查找不到并且当前在读取某个循环，将缓存该输入。Shell 将在内部缓冲区中执行查找以完成该循环所指示的重新读取。（在此缓存输入允许的范围内，可以对之前查找不到的输入继续执行后向 \fBgoto\fR 命令。）
+.SS "命令执行"
+.sp
+.LP
+如果 command 是一个 C shell 内置命令，则 shell 将直接执行它。否则，shell 将以执行访问权限搜索具有该名称的文件。如果命令名称包含一个 \fB/\fR，则 shell 会将其作为路径名并进行搜索。如果命令名称不包含 \fB/\fR，则 shell 会尝试将其解析为路径名，并在 \fBpath\fR 变量中的每个目录中搜索该命令。为加快搜索，shell 使用其散列表（请参见 \fBrehash\fR 内置命令）来排除没有合适文件的目录。可以使用 \fB-c\fR 或 \fB-t\fR 选项或者 \fBunhash\fR 内置命令来禁用此散列操作。
+.sp
+.LP
+作为特殊案例，如果脚本的名称中没有 \fB/\fR 并且单词 \fBshell\fR 有一个别名，则 \fBshell\fR 别名的扩展形式将（不加修改地）前置到命令行。系统将尝试执行此特殊（晚发生的）别名的第一个词，这应当是一个完整路径名。别名定义中的其余词以及输入行的文本将被视为参数。
+.sp
+.LP
+当发现某个路径名具有合适的执行权限时，shell 将派生出一个新进程并使用 \fBexecve\fR( ) 系统调用将该进程及其参数传递给内核（请参见 \fBexec\fR(2)）。然后，内核尝试以所需的程序来覆盖新进程。如果文件是一个可执行的二进制文件（处于 \fBa.out\fR(4) 格式），则内核将成功并开始执行新进程。如果文件是一个文本文件并且第一行以 \fB#!\fR 开头，则会取下一个词作为用于解释该脚本的 shell（或命令）的路径名。第一行上后面的词将被取作该 shell 的选项。内核将使用脚本的名称作为参数来调用（覆盖）指定的 shell。
+.sp
+.LP
+如果上述两个条件都不满足，则内核无法覆盖文件并且 \fBexecve\fR( ) 调用将失败（请参见 \fBexec\fR(2)）。然后，C shell 将尝试通过派生一个新 shell 来执行文件，如下所述：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果文件的第一个字符是 \fB#\fR，则调用 C shell。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+否则调用 Bourne shell。
+.RE
+.SS "信号处理"
+.sp
+.LP
+Shell 通常会忽略 \fBQUIT\fR 信号。后台作业不受从键盘产生的信号（包括 \fBHUP\fR）影响。其他信号具有 C shell 从其环境继承的值。Shell 对脚本内的中断和终止信号的处理可以由 \fBonintr\fR 内置命令进行控制。登录 shell 捕获 \fBTERM\fR 信号。否则，该信号将被传递给子进程。当登录 shell 正在读取 \fB\&.logout\fR 文件时绝不允许中断。
+.SS "作业控制"
+.sp
+.LP
+Shell 将带编号的\fI作业\fR与每个命令序列相关联以跟踪正在后台运行的或已通过 \fBTSTP\fR 信号（通常为 Ctrl-z）停止的那些命令。当使用 \fB&\fR 元字符在后台启动了某个命令或命令序列时，shell 将显示一个行，其中包含作业编号（位于方括号内）以及关联的进程编号的列表。 
+.sp
+.in +2
+.nf
+[1] 1234
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+要查看当前的作业列表，请使用 \fBjobs\fR 内置命令。最近停止的作业（如果没有作业已停止，则为放入后台的作业）称为\fI当前\fR作业并由一个 `\fB+\fR' 予以指示。前一个作业由一个 `\fB-\fR' 予以指示。在当前作业终止或者被移到前台时，前一个作业将取代它的位置（成为新的当前作业）。
+.sp
+.LP
+要对作业进行操作，请引用 \fBbg\fR、\fBfg\fR、\fBkill\fR、\fBstop\fR 和 \fB%\fR 内置命令。
+.sp
+.LP
+对作业的引用以 `\fB%\fR' 开头。单独使用百分号可引用当前作业。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%\fR \fB%+\fR \fB%%\fR\fR
+.ad
+.RS 12n
+.rt  
+当前作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%-\fR\fR
+.ad
+.RS 12n
+.rt  
+前一个作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%\fR\fIj\fR\fR
+.ad
+.RS 12n
+.rt  
+按如下方式引用作业 \fIj\fR：`\fBkill\fR \fB-9\fR \fB%\fR\fIj\fR'。\fIj\fR 可以是一个作业编号，或者是一个唯一地指定启动该作业时所用命令行的字符串；例如，`\fBfg %vi\fR' 可以将某个已停止的 \fBvi\fR 作业带到前台。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%?\fR\fIstring\fR\fR
+.ad
+.RS 12n
+.rt  
+指定命令行唯一地为其包含了 \fIstring\fR 的作业。
+.RE
+
+.sp
+.LP
+如果在后台运行的作业尝试从终端进行读取，则该作业将停止。后台作业可以正常产生输出，但可以使用 `\fBstty tostop\fR' 命令对此进行禁止。
+.SS "状态报告"
+.sp
+.LP
+当以交互方式运行时，shell 将跟踪每个作业的状态并且每当作业完成或者被阻塞时都会进行报告。为避免打乱输入的显示，shell 通常会针对此结果显示一条消息并发出提示。当设置了 \fBnotify\fR 变量时，此变量指示 shell 立即报告状态变化。缺省情况下，\fBnotify\fR 命令会标记当前进程；在启动某个后台作业后，请键入 \fBnotify\fR 以对其进行标记。
+.SS "命令"
+.sp
+.LP
+内置命令在 C shell 内执行。如果内置命令是流水线除最后一个组件之外的任意组件，则在子 shell 中执行该命令。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB:\fR\fR
+.ad
+.RS 26n
+.rt  
+空命令。此命令将被解释，但不执行任何操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBalias\fR [ \fIname\fR [ \fIdef\fR ] ]\fR
+.ad
+.RS 26n
+.rt  
+将 \fIdef\fR 赋值给别名 \fIname\fR。\fIdef\fR 是一个词列表，其中可以包含转义的历史记录替换元语法。\fIname\fR 不允许是 \fBalias\fR 或 \fBunalias\fR。如果省略了 \fIdef\fR，则会显示别名 \fIname\fR 的当前定义。如果同时省略了 \fIname\fR 和 \fIdef\fR，则会显示所有别名及其定义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbg\fR [ \fB%\fR\fIjob . . .\fR ]\fR
+.ad
+.RS 26n
+.rt  
+在后台运行当前的或指定的作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbreak\fR\fR
+.ad
+.RS 26n
+.rt  
+在最近的外层 \fBforeach\fR 或 \fBwhile\fR 循环\fB结束\fR后恢复执行。执行当前行中的其余命令。它允许将多级 break 写为 \fBbreak\fR 命令列表，全部放在一行之中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbreaksw\fR\fR
+.ad
+.RS 26n
+.rt  
+从某个 \fBswitch\fR 中断，在 \fBendsw\fR 后恢复。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcase\fR \fIlabel\fR\fB:\fR\fR
+.ad
+.RS 26n
+.rt  
+\fBswitch\fR 语句中的一个标签。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcd\fR [\fIdir\fR ]\fR
+.ad
+.br
+.na
+\fB\fBchdir\fR [\fIdir\fR ]\fR
+.ad
+.RS 26n
+.rt  
+将 shell 的工作目录更改为目录 \fIdir\fR。如果未指定参数，则更改为用户的起始目录。如果 \fIdir\fR 是当前目录中找不到的相对路径名，则在 \fBcdpath\fR 变量列出的那些目录中查找该路径名。如果 \fIdir\fR 是其值以 \fB/\fR 开头的 shell 变量的名称，则更改为该值指定的目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcontinue\fR\fR
+.ad
+.RS 26n
+.rt  
+继续执行最近的外层 \fBwhile\fR 或 \fBforeach\fR 循环的下一次迭代。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdefault:\fR\fR
+.ad
+.RS 26n
+.rt  
+标记 \fBswitch\fR 语句中的缺省 case。default 应当位于所有 \fBcase\fR 标签之后。将首先执行命令行上的任何其余命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdirs\fR [\fB-l\fR]\fR
+.ad
+.RS 26n
+.rt  
+列显目录堆栈，最新的在左侧。所显示的第一个目录是当前目录。使用 \fB-l\fR 参数，输出的内容不采用缩写；禁止使用 ~ 表示法。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBecho\fR [\fB-n\fR] \fIlist\fR\fR
+.ad
+.RS 26n
+.rt  
+\fIlist\fR 中的词将被写入到 shell 的标准输出中，以空格字符分隔。输出将以一个换行符终止，除非使用了 \fB-n\fR 选项。缺省情况下，如果在未使用某个 Unix 命令的完整路径名的情况下调用 \fBecho\fR，\fBcsh\fR 将调用其内置 \fBecho\fR 命令，无论您的 \fBPATH\fR 的配置如何（请参见 \fBecho\fR(1)）。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBeval\fR \fIargument\fR\fB . . .\fR\fR
+.ad
+.RS 26n
+.rt  
+读取 argument 作为 shell 的输入并执行结果命令。这通常用来执行作为命令或变量替换的结果生成的命令。有关如何使用 \fBeval\fR 的示例，请参见 \fBtset\fR(1B)。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexec\fR \fIcommand\fR\fR
+.ad
+.RS 26n
+.rt  
+在已终止的当前 shell 的位置执行 \fIcommand\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexit\fR [\fB(\fR\fIexpr\fR\fB)\fR]\fR
+.ad
+.RS 26n
+.rt  
+调用方 shell 或 shell 脚本将退出，且退出值为状态变量的值或由表达式 \fIexpr\fR 指定的值。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfg\fR [\fB%\fR\fIjob\fR ]\fR
+.ad
+.RS 26n
+.rt  
+将当前的或指定的 \fIjob\fR 带到前台。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBforeach\fR \fIvar\fR\fB(\fR\fIwordlist\fR\fB)\fR\fR
+.ad
+.br
+.na
+\fB\&. . .\fR
+.ad
+.br
+.na
+\fB\fBend\fR\fR
+.ad
+.RS 26n
+.rt  
+相继将变量 \fIvar\fR 设置为 \fIwordlist\fR 的每个成员。将针对 \fIvar\fR 的每个新值执行位于此命令与匹配的 \fBend\fR 之间的命令序列。\fBforeach\fR 和 \fBend\fR 必须单独出现在不同的行上。
+.sp
+可以使用内置命令 \fBcontinue\fR 来终止循环的当前迭代的执行，可以使用内置命令 \fBbreak\fR 来终止 \fBforeach\fR 命令的执行。当从终端读取此命令时，在执行循环中的任何语句之前，将读取一次该循环，且以 \fB?\fR 进行提示。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBglob\fR \fIwordlist\fR\fR
+.ad
+.sp .6
+.RS 4n
+在 \fIwordlist\fR 上执行文件名扩展。与 \fBecho\fR 一样，但无法识别 \fB\\fR 转义。在输出中，各个词将由 \fINULL\fR 字符分隔。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgoto\fR\fIlabel\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定的 \fIlabel\fR 是扩展以生成标签的一个文件名和一个命令。Shell 将尽可能多地反复检查其输入并搜索 \fIlabel\fR\fB:\fR 形式的行（前面可能有空格或制表符）。然后 shell 执行指定行之后的内容。跳转到位于 \fBwhile\fR 或 \fBfor\fR 内置命令与其对应的 \fBend\fR 之间的标签是错误做法。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhashstat\fR\fR
+.ad
+.sp .6
+.RS 4n
+列显一个统计信息行以指明 \fIpath\fR 变量的内部散列表在定位命令（和避免 \fBexec\fR）时的有效程度。对于散列函数指示可能存在命中项的每个 \fIpath\fR 组件以及未以 `\fB/\fR' 开头的每个组件，都将尝试 \fBexec\fR。这些统计信息仅反映 \fIpath\fR 变量的有效性，不反映 \fIcdpath\fR 变量的有效性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhistory\fR [\fB-hr\fR] [\fIn\fR]\fR
+.ad
+.sp .6
+.RS 4n
+显示历史记录列表；如果指定了 \fIn\fR，则仅显示最近的 \fIn\fR 个事件。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.RS 6n
+.rt  
+将输出顺序反转为最近的事件在前而不是最旧的事件在前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.RS 6n
+.rt  
+显示不带前导编号的历史记录列表。这用来生成适用于使用 \fB-h\fR 选项进行\fI寻源\fR的寻源操作的文件。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBif (\fR\fIexpr\fR \fB)\fR\fIcommand\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果指定的表达式的计算结果为 true，则会执行带参数的单个 \fIcommand\fR。\fIcommand\fR 上的变量替换会提前进行，并同时对 \fBif\fR 命令的其余部分执行此操作。\fIcommand\fR 必须是一个简单命令，不能是管道、命令列表或带括号的命令列表。\fB注：\fR当 \fIcommand\fR \fI未\fR执行时，即使 \fIexpr\fR 为 false，也会发生 I/O 重定向（这是一个错误）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBif (\fR\fBexpr\fR\fB) then\fR\fR
+.ad
+.br
+.na
+\fB   . . .\fR
+.ad
+.br
+.na
+\fB\fBelse if (\fR\fIexpr2\fR\fB) then\fR\fR
+.ad
+.br
+.na
+\fB   . . . \fR
+.ad
+.br
+.na
+\fB\fBelse\fR\fR
+.ad
+.br
+.na
+\fB   . . .\fR
+.ad
+.br
+.na
+\fB\fBendif\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果 \fIexpr\fR 为 true，则会执行直到第一个 \fBelse\fR 之前的命令。否则，如果 \fIexpr2\fR 为 true，则执行位于 \fBelse if\fR 与第二个 \fBelse\fR 之间的命令。否则，将执行位于 \fBelse\fR 与 \fBendif\fR 之间的命令。允许使用任意数目的 \fBelse if\fR 对，但只允许一个 \fBelse\fR。只需要一个 \fBendif\fR，但它是必需的。单词 \fBelse\fR 和 \fBendif\fR 必须是行中的第一个非空白字符。\fBif\fR 必须单独出现在其输入行上或者位于 \fBelse\fR 之后。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBjobs\fR [\fB-l\fR]\fR
+.ad
+.sp .6
+.RS 4n
+列出作业控制下的活动作业。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 6n
+.rt  
+除普通信息外，还列出进程 \fBID\fR。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkill\fR [\fIsig\fR ] [ \fIpid\fR ] [ \fB%\fR\fB\fIjob\fR ] . . .\fR\fR
+.ad
+.br
+.na
+\fB\fBkill\fR \fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fBTERM\fR（终止）信号（缺省情况下）或指定的信号发送到指定的进程 ID、指定的\fI作业\fR或当前\fI作业\fR。信号可以通过编号或名称指定。无缺省值。键入 \fBkill\fR 不会向当前作业发送信号。如果发送的信号是 \fBTERM\fR（终止）或 \fBHUP\fR（挂起），则还会向作业或进程发送一个 \fBCONT\fR（继续）信号。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 6n
+.rt  
+列出可以发送的信号名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlimit\fR [\fB-h\fR] [\fIresource\fR [\fImax-use\fR ] ]\fR
+.ad
+.sp .6
+.RS 4n
+限制当前进程或它派生的任何进程的资源使用量，每个进程的资源使用量不超过针对指定 \fIresource\fR 设置的 \fImax-use\fR。字符串 \fBunlimited\fR 请求删除当前限制（如果有）。如果省略了 \fImax-use\fR，则会输出当前限制。如果省略了 \fIresource\fR，则会显示所有限制。可以运行 \fBsysdef\fR(1M) 命令来获取适合您的系统的最大可能限制。\fBsysdef\fR 报告的值是十六进制的，但是可以使用 \fBbc\fR(1) 命令将其转换为十进制数字。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.RS 6n
+.rt  
+使用硬限制而非当前限制。硬限制对当前限制的值施加了一个上限。只有特权用户可以增大硬限制。
+.RE
+
+\fIresource\fR 为以下值之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcputime\fR\fR
+.ad
+.RS 27n
+.rt  
+每个进程的最大 \fBCPU\fR 秒数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfilesize\fR\fR
+.ad
+.RS 27n
+.rt  
+允许的最大单个文件。受文件系统的大小和容量限制。请参见 \fBdf\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdatasize\fR（堆大小）\fR
+.ad
+.RS 27n
+.rt  
+进程的最大数据大小（包括堆栈）。这是您的虚拟内存的大小。请参见 \fBswap\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstacksize\fR\fR
+.ad
+.RS 27n
+.rt  
+进程的最大堆栈大小。缺省堆栈大小为 2^64 个字节。您可以在 shell 内使用 \fBlimit\fR(1) 更改此缺省值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcoredumpsize\fR\fR
+.ad
+.RS 27n
+.rt  
+核心转储（文件）的最大大小。这受限于文件系统的大小。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdescriptors\fR\fR
+.ad
+.RS 27n
+.rt  
+文件描述符的最大数目。请运行 \fBsysdef\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmemorysize\fR\fR
+.ad
+.RS 27n
+.rt  
+虚拟内存的最大大小。
+.RE
+
+\fImax-use\fR 是一个数字，有一个可选的比例系数，如下所述：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIn\fR \fBh\fR\fR
+.ad
+.RS 9n
+.rt  
+小时（对于 \fBcputime\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIn\fR\fBk\fR\fR
+.ad
+.RS 9n
+.rt  
+\fIn\fR 千字节。这是针对除 \fBcputime\fR 之外的所有对象的缺省值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIn\fR\fBm\fR\fR
+.ad
+.RS 9n
+.rt  
+\fIn\fR 兆字节或分钟（对于 \fBcputime\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fImm\fR\fB:\fR\fIss\fR\fR
+.ad
+.RS 9n
+.rt  
+分钟和秒（对于 \fBcputime\fR）。
+.RE
+
+限制示例：要将核心文件转储的大小限制为 \fB0\fR 兆字节，请键入以下内容：
+.sp
+.in +2
+.nf
+\fBlimit coredumpsize 0M\fR
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlogin\fR [\fIusername\fR | \fB-p\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+终止登录 shell 并调用 \fBlogin\fR(1)。不会处理 \fB\&.logout\fR 文件。如果省略了 \fIusername\fR，则 \fBlogin\fR 会提示输入用户名。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 6n
+.rt  
+保留当前环境（变量）。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlogout\fR\fR
+.ad
+.sp .6
+.RS 4n
+终止登录 shell。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnice\fR [\fB+\fR\fIn\fR  |\fB-\fR\fIn\fR ] [\fIcommand\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+将 shell 或 \fIcommand\fR 的进程优先级值增大 \fIn\fR。优先级值越大，进程的优先级就越低，运行越慢。当指定了 \fIcommand\fR 时，它始终在一个子 shell 中运行，并且将遵守与施加于简单 \fBif\fR 命令的限制相同的限制。如果省略了 \fIcommand\fR，则 \fBnice\fR 将为当前 shell 增大值。如果未指定增量，则 \fBnice\fR 会将进程优先级值设置为 4。进程优先级值的范围是 -20 到 20。在此范围外的 \fIn\fR 值会分别将值设置为下限或上限。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB+\fR\fIn\fR\fR
+.ad
+.RS 6n
+.rt  
+将进程优先级值增大 \fIn\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-\fR\fIn\fR\fR
+.ad
+.RS 6n
+.rt  
+减小 \fIn\fR。只有特权用户才能使用此参数。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnohup\fR [\fIcommand\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+在忽略 \fBHUP\fR 的情况下运行 \fIcommand\fR。未指定参数时，在脚本的整个剩余部分中都将忽略 \fBHUP\fR。当指定了 \fIcommand\fR 时，它始终在一个子 shell 中运行，并且将遵守与施加于简单 \fBif\fR 语句中命令的限制相同的限制。通过 \fB&\fR 分离的所有进程将被有效地 \fBnohup\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnotify\fR [\fB%\fR\fIjob\fR] . . .\fR
+.ad
+.sp .6
+.RS 4n
+在当前作业或指定作业的状态改变时，以异步方式通知用户。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBonintr\fR [\fB-\fR| \fIlabel\fR]\fR
+.ad
+.sp .6
+.RS 4n
+控制在中断时 shell 的操作。未指定参数时，\fBonintr\fR 在中断时将恢复 shell 的缺省操作。（shell 会终止 shell 脚本并返回到终端命令输入级别）。指定了 \fB-\fR 参数时，shell 将忽略所有中断。指定了 \fIlabel\fR 参数时，当收到中断信号时或者当某个子进程因为被中断而终止时，shell 将执行 \fBgoto\fR \fIlabel\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpopd\fR [\fB+\fR\fIn\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+弹出目录堆栈并 \fBcd\fR 到新的顶层目录。目录栈的元素从 0 开始从上至下编号。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB+\fR\fIn\fR\fR
+.ad
+.RS 6n
+.rt  
+弃置栈中的第 \fIn\fR 项。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpushd\fR [\fB+\fR\fIn\fR |\fIdir\fR]\fR
+.ad
+.sp .6
+.RS 4n
+将某个目录推送到目录堆栈。没有参数时，交换顶部的两个元素。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB+\fR\fIn\fR\fR
+.ad
+.RS 7n
+.rt  
+将第 \fIn\fR 项置于栈的顶部并使用 \fBcd\fR 更改到该项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdir\fR\fR
+.ad
+.RS 7n
+.rt  
+将当前工作目录推送到栈中并更改为 \fIdir\fR。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrehash\fR\fR
+.ad
+.sp .6
+.RS 4n
+重新计算 \fIpath\fR 变量中列出的目录内容的内部散列表以计入所添加的新命令。重新计算 \fIcdpath\fR 变量中列出的目录内容的内部散列表以计入所添加的新目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrepeat\fR \fIcount command\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIcommand\fR 重复 count 次。\fIcommand\fR 遵守与施加于单行 \fBif\fR 语句的限制相同的限制。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset\fR [\fIvar\fR [\fB=\fR \fIvalue\fR ] ]\fR
+.ad
+.br
+.na
+\fB\fBset\fR \fIvar\fR\fB[\fR\fIn\fR\fB] =\fR \fIword\fR\fR
+.ad
+.sp .6
+.RS 4n
+未指定参数时，\fBset\fR 将显示所有 shell 变量的值。多词值将显示为带括号的列表。单独指定了 \fIvar\fR 参数时，\fBset\fR 会将一个空值赋给变量 \fIvar\fR。当指定了 \fIvar\fR \fB=\fR \fIvalue\fR 形式的参数时，\fBset\fR 会将 \fIvalue\fR 赋给 \fIvar\fR，其中 \fIvalue\fR 为下列值之一： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fIword\fR\fR
+.ad
+.RS 14n
+.rt  
+单个词（或括在引号中的字符串）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(\fR\fIwordlist\fR\fB)\fR\fR
+.ad
+.RS 14n
+.rt  
+括在括号中的以空格分隔的词列表。
+.RE
+
+Value 是在赋值前将扩展的命令和文件名。\fBset\fR\fIvar\fR\fB[\fR\fIn\fR\fB] =\fR \fIword\fR 形式将使用 \fIword\fR 替换多字值中的第 \fIn\fR 个词。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsetenv\fR [\fIVAR\fR [\fIword\fR ] ]\fR
+.ad
+.sp .6
+.RS 4n
+未指定参数时，\fBsetenv\fR 将显示所有环境变量。指定了 \fIVAR\fR 参数时，\fBsetenv\fR 会将环境变量 \fB\fR\fIVAR\fR\fB \fR 设置为具有一个空值。（根据约定，通常会向环境变量赋予大写名称。）同时指定了 \fIVAR\fR 和 \fIword\fR 参数时，\fBsetenv\fR 会将环境变量 \fBNAME\fR 设置为具有值 \fIword\fR，这必须是单个词或者是一个用引号括起的字符串。最常使用的环境变量 \fBUSER\fR、\fBTERM\fR 和 \fBPATH\fR 将自动导入，它们导出自 \fBcsh\fR 变量 \fBuser\fR、\fBterm\fR 和 \fBpath\fR。对于这些，不需要使用 \fBsetenv\fR。此外，每当 \fBcsh\fR 变量 \fBcwd\fR 改变时，shell 都会根据它设置 \fBPWD\fR 环境变量。
+.sp
+当在 C shell 中更改了环境变量 \fBLC_CTYPE\fR、\fBLC_MESSAGES\fR、\fBLC_TIME\fR、\fBLC_COLLATE\fR、\fBLC_NUMERIC\fR 和 \fBLC_MONETARY\fR 时，这些环境变量会立即生效。
+.sp
+如果未在环境中设置 \fBLC_*\fR 变量（\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR、\fBLC_TIME\fR、\fBLC_COLLATE\fR、\fBLC_NUMERIC\fR 和 \fBLC_MONETARY\fR）（请参见 \fBenviron\fR(5)）中的任一个，则 \fBcsh\fR 针对每个对应的语言环境类别的操作行为将由 \fBLANG\fR 环境变量的值确定。如果设置了 \fBLC_ALL\fR，则会使用其内容覆盖 \fBLANG\fR 和其他 \fBLC_*\fR 变量。如果未在环境中设置以上所有变量，则将由 “C”（U.S. 样式）语言环境确定 \fBcsh\fR 的行为方式。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_CTYPE\fR\fR
+.ad
+.RS 15n
+.rt  
+确定 \fBcsh\fR 如何处理字符。当 \fBLC_CTYPE\fR 设置为某个有效值时，\fBcsh\fR 可以显示和处理包含适合该语言环境的字符的文本和文件名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_MESSAGES\fR\fR
+.ad
+.RS 15n
+.rt  
+确定如何显示诊断和信息性消息。这包括消息的语言和样式，以及肯定性和否定性响应的正确形式。在 "C" 语言环境中，消息以程序自身中的缺省形式显示（大多数情况下，为美式英文）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_NUMERIC\fR\fR
+.ad
+.RS 15n
+.rt  
+确定基数字符的值、小数点（“C” 语言环境中的 (\fB\&.\fR）、千位分隔符以及空字符串（“C” 语言环境中的 (\fB""\fR)）。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshift\fR [\fIvariable\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+\fBargv\fR 或 \fIvariable\fR的各部分（如果提供）将被左移，并丢弃第一个部分。不设置 variable 或者将其设置为具有空值是错误的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsource\fR [\fB-h\fR] \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+从 \fIname\fR 读取命令。\fBsource\fR 命令可以嵌套，但是如果它们嵌套得太深，则 shell 可能会耗尽文件描述符。在作为来源的文件中在任何层次存在错误都会终止所有嵌套的 \fBsource\fR 命令。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.RS 6n
+.rt  
+将文件 \fIname\fR 中的命令放置在历史记录列表上但不执行它们。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstop\fR \fB%\fR\fIjobid . . .\fR\fR
+.ad
+.sp .6
+.RS 4n
+停止当前的或指定的后台作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstop\fR \fIpid . . .\fR\fR
+.ad
+.sp .6
+.RS 4n
+停止指定的进程 \fIpid\fR。（请参见 \fBps\fR(1)）。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsuspend\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 shell 停在其轨道中，很像是通过 \fB^Z\fR 向其发送了停止信号。这通常用来停止由 \fBsu\fR 启动的 shell。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBswitch (\fR\fIstring\fR\fB)\fR\fR
+.ad
+.br
+.na
+\fB\fBcase\fR \fIlabel\fR\fB:\fR\fR
+.ad
+.br
+.na
+\fB   . . .\fR
+.ad
+.br
+.na
+\fB\fBbreaksw\fR\fR
+.ad
+.br
+.na
+\fB   . . . \fR
+.ad
+.br
+.na
+\fB\fBdefault:\fR\fR
+.ad
+.br
+.na
+\fB   . . .\fR
+.ad
+.br
+.na
+\fB\fBbreaksw\fR\fR
+.ad
+.br
+.na
+\fB\fBendsw\fR\fR
+.ad
+.sp .6
+.RS 4n
+依次将每个 \fIlabel\fR 与指定的 \fIstring\fR（这是扩展的第一个命令和文件名）进行匹配。可以在 case label（它们是扩展的变量）中使用文件元字符 \fB*\fR、\fB?\fR 和 \fB[\fR. . .\fB ]\fR。如果在遇到 “default” 标签之前没有任何标签匹配，则会从 default 标签之后开始执行。每个 \fBcase\fR 语句和 \fBdefault\fR 语句必须位于行的开头。命令 \fBbreaksw\fR 使 shell 执行 \fBendsw\fR 之后的内容。否则，与使用 C 语言时一样，控制权将交给后续的 \fBcase\fR 和 \fBdefault\fR 语句。如果没有标签匹配并且不存在 default，则 shell 执行 \fBendsw\fR 之后的内容。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtime\fR [\fIcommand\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+未指定参数时，将输出此 C shell 及其子代使用的时间的汇总。当指定了可选的 \fIcommand\fR 时，将执行 \fIcommand\fR 并输出它使用的时间的汇总。截至本文撰写时，\fBtime\fR 内置命令不计算输出中的最后 6 个字段，致使输出会错误地针对这些字段报告值 \fB0\fR。 
+.sp
+.in +2
+.nf
+example %\fBtime ls\fR \fB-R\fR 
+        9.0u 11.0s 3:32 10% 0+0k 0+0io 0pf+0w
+.fi
+.in -2
+.sp
+
+（请参见\fB环境变量和预定义的 Shell 变量\fR中有关 \fBtime\fR 变量的部分。） 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBumask\fR [\fIvalue\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+显示文件创建掩码。使用 \fIvalue\fR 设置文件创建掩码。通过指定八进制的 \fIvalue\fR，用户可以禁用任何位，但不能启用任何位来允许新权限。常用值包括 077（限制其他任何人的所有权限）、002（向组授予完整的访问权限，向其他人授予读取（和目录搜索）访问权限）和 022（向组和其他人授予读取（和目录搜索）权限但不授予写入权限）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunalias\fR \fIpattern\fR\fR
+.ad
+.sp .6
+.RS 4n
+丢弃与（文件名替换）\fIpattern\fR 匹配的别名。`\fBunalias *\fR' 会删除所有别名。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunhash\fR\fR
+.ad
+.sp .6
+.RS 4n
+为 \fIpath\fR 和 \fIcdpath\fR 变量禁用内部散列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunlimit\fR [\fB-h\fR] [\fIresource\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+删除对 \fIresource\fR 的限制。如果未指定 \fIresource\fR，则会删除所有资源限制。有关资源名称的列表，请参见 \fBlimit\fR 命令的说明。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.RS 6n
+.rt  
+删除对应的硬限制。只有特权用户可以执行此操作。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunset\fR \fIpattern\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除其名称与（文件名替换）\fIpattern\fR 匹配的变量。`\fBunset *\fR' 将删除所有变量；这样做会有很明显的负面影响。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunsetenv\fR \fIvariable\fR\fR
+.ad
+.sp .6
+.RS 4n
+从环境中删除 \fIvariable\fR。与使用 \fBunset\fR 时一样，不会执行模式匹配。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBwait\fR\fR
+.ad
+.sp .6
+.RS 4n
+在进行提示之前等待后台作业完成或等待中断。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBwhile (\fR\fIexpr\fR\fB)\fR\fR
+.ad
+.br
+.na
+\fB   . . .\fR
+.ad
+.br
+.na
+\fB\fBend\fR\fR
+.ad
+.sp .6
+.RS 4n
+当 \fIexpr\fR 为 true（计算结果非零）时，将重复位于 \fBwhile\fR 与配对的 \fBend\fR 语句之间的命令。可以使用 \fBbreak\fR 和 \fBcontinue\fR 来提前终止或继续循环。\fBwhile\fR 和 \fBend\fR 必须单独出现在其输入行上。如果 shell 的输入是一个终端，则它会使用问号来提示输入命令（直到输入了 \fBend\fR 命令），然后执行循环中的命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%\fR [\fIjob\fR ] [\fB&\fR]\fR
+.ad
+.sp .6
+.RS 4n
+将当前的或指定的 \fIjob\fR 带到前台。当指定了和符号时，将继续在后台运行 \fIjob\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB@\fR [\fIvar\fR \fB=\fR\fIexpr\fR]\fR
+.ad
+.br
+.na
+\fB\fB@\fR [\fIvar\fR\fB[\fR\fIn\fR\fB]\fR\fB=\fR\fIexpr\fR] \fR
+.ad
+.sp .6
+.RS 4n
+未指定参数时，将显示所有 shell 变量的值。指定了参数时，会将变量 \fIvar\fR 或者 \fIvar\fR 的值中的第 \fIn\fR 个词设置为 \fIexpr\fR 的计算结果值。（如果提供了 \fB[\fR\fIn\fR\fB]\fR，则 \fIvar\fR 及其第 \fIn\fR 个组件必须都已经存在）。
+.sp
+如果表达式包含字符 \fB>\fR、\fB<\fR、\fB&\fR 或 \fB|\fR，则必须至少将 \fIexpr\fR 的此部件放置在括号内。
+.sp
+与在 C 语言中一样，运算符 \fB*=\fR 和 \fB+=\fR 等等都可用。用于分隔名称与赋值运算符的空格是可选的。不过，用于分隔 \fIexpr\fR 的组件的空格是必需的，否则，这些组件会成为单个词。
+.sp
+特殊的后缀运算符 \fB+ +\fR 和 \fB- -\fR 分别用来增大或减小 \fIname\fR。
+.RE
+
+.SS "环境变量和预定义的 Shell 变量"
+.sp
+.LP
+与 Bourne shell 不同，C shell 会维护环境变量（这些变量会自动导出到 shell 调用的进程）与 shell 变量（这些变量不会自动导出）之间的差异。在变量替换中，会以类似的方式处理这两种类型的变量。Shell 在初始化时设置变量 \fBargv\fR、\fBcwd\fR、\fBhome\fR、\fBpath\fR、\fBprompt\fR、\fBshell\fR 和 \fBstatus\fR。Shell 将环境变量 \fBUSER\fR 复制到 shell 变量 \fBuser\fR 中，将 \fBTERM\fR 复制到 \fBterm\fR 中，将 \fBHOME\fR 复制到 \fBhome\fR 中，并且每当重设了这些 shell 变量时，都会将其复制回各自的环境变量。将以类似的方式处理 \fBPATH\fR 和 \fBpath\fR。您只需要在 \fB\&.cshrc\fR 或 \fB\&.login\fR 文件中设置一次 \fBpath\fR。每当 \fBcwd\fR 发生改变时，都会根据它设置环境变量 \fBPWD\fR。以下 shell 变量具有预定义的含义：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBargv\fR\fR
+.ad
+.RS 13n
+.rt  
+参数列表。包含提供给 shell 的当前调用的命令行参数的列表。此变量确定位置参数 \fB$1\fR 和 \fB$2\fR 等等的值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcdpath\fR\fR
+.ad
+.RS 13n
+.rt  
+包含 \fBcd\fR、\fBchdir\fR 和 \fBpopd\fR 命令要搜索的目录列表（如果这些命令接受的目录参数不是当前目录的一个子目录）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcwd\fR\fR
+.ad
+.RS 13n
+.rt  
+当前目录的完整路径名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBecho\fR\fR
+.ad
+.RS 13n
+.rt  
+在即将执行之前（且在替换之后）回显命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfignore\fR\fR
+.ad
+.RS 13n
+.rt  
+尝试文件名完成时要忽略的文件名后缀列表。通常是单个词 `\fB\&.o\fR'。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfilec\fR\fR
+.ad
+.RS 13n
+.rt  
+启用文件名完成，在这种情况下，当键入在终端输入行末尾时，Ctrl-d 字符 \fBEOT\fR 和 \fBESC\fR 字符具有特殊含义： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEOT\fR\fR
+.ad
+.RS 7n
+.rt  
+列显以前面的字符串开头的所有文件名的列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBESC\fR\fR
+.ad
+.RS 7n
+.rt  
+使用最长的明确扩展名替换前面的字符串。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhardpaths\fR\fR
+.ad
+.RS 13n
+.rt  
+设置后，在解析目录堆栈中的路径名时将不包含符号链接组件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhistchars\fR\fR
+.ad
+.RS 13n
+.rt  
+一个两字符的字符串。第一个字符替换作为历史记录替换字符的 \fB!\fR。第二个字符替换用于快速替换的克拉符号 (\fB^\fR)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhistory\fR\fR
+.ad
+.RS 13n
+.rt  
+历史记录列表中保存的行数。非常大的数字会耗尽 C shell 的所有内存。如果未设置，则 C shell 将仅保存最近的一个命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhome\fR\fR
+.ad
+.RS 13n
+.rt  
+用户的起始目录。~ 的文件名扩展将引用此变量的值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBignoreeof\fR\fR
+.ad
+.RS 13n
+.rt  
+设置后，shell 将忽略来自终端的 \fBEOF\fR。这可以防止因为意外键入了 Ctrl-d 而终止了 C shell。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmail\fR\fR
+.ad
+.RS 13n
+.rt  
+C shell 将在其中检查邮件的文件列表。如果该值的第一个词是一个数字，则它以秒为单位指定邮件检查间隔（缺省为 5 分钟）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnobeep\fR\fR
+.ad
+.RS 13n
+.rt  
+当要求 C shell 展开不明确的文件名时，在命令完成期间禁止铃声。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoclobber\fR\fR
+.ad
+.RS 13n
+.rt  
+限制输出重定向，以便使现有文件不会被意外破坏。只能对新文件执行 \fB>\fR 重定向。只能对现有文件执行 \fB>>\fR 重定向。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoglob\fR\fR
+.ad
+.RS 13n
+.rt  
+禁用文件名替换。这最适合只获取一次文件名（如果有）并且不需要进一步扩展的 shell 脚本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnonomatch\fR\fR
+.ad
+.RS 13n
+.rt  
+当模式不匹配时，返回文件名替换模式而非错误。格式错误的模式仍然会导致错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnotify\fR\fR
+.ad
+.RS 13n
+.rt  
+设置后，当作业完成时，shell 会立即通知您，而不是等到即将发出提示之前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpath\fR\fR
+.ad
+.RS 13n
+.rt  
+要在其中搜索命令的目录列表。\fBpath\fR 将根据环境变量 \fBPATH\fR 进行初始化，每当 \fBpath\fR 发生改变时，C shell 都会更新该环境变量。空字 ('') 将指定当前目录。缺省值通常为 \fB(/usr/bin .)\fR。通过在 \fB\&.cshrc\fR 或 \fB\&.login\fR（仅限登录 shell）中设置此初始搜索路径，可以在 \fBcsh\fR 启动时覆盖该路径。如果 \fBpath\fR 被取消设置，则只有完整路径名会执行。每当重设了 \fBpath\fR 时，在读取 \fB\&.cshrc\fR 后，交互式 C shell 通常都会对所列出的目录内容执行散列操作。如果添加了新命令，请使用 \fBrehash\fR 命令来更新表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprompt\fR\fR
+.ad
+.RS 13n
+.rt  
+交互式 C shell 用于提示的字符串。非交互式 shell 会将 \fBprompt\fR 变量保留为未设置状态。\fB\&.cshrc\fR 文件中仅适合以交互方式使用的别名和其他命令可以放置在 `\fBif ($?prompt == 0) exit\fR' 测试之后，以减少非交互式 shell 的启动时间。\fBprompt\fR 字符串中的 \fB!\fR 将被当前事件编号替换。对于普通用户，缺省提示是 \fIhostname\fR\fB%\fR，对于特权用户，缺省提示是 \fIhostname\fR\fB #\fR。
+.sp
+\fB$prompt\fR 的设置具有三重含义：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$prompt\fR 未设置\fR
+.ad
+.RS 30n
+.rt  
+非交互式 shell，请测试 \fB$?prompt\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$prompt\fR 已设置但 \fB== ""\fR\fR
+.ad
+.RS 30n
+.rt  
+\fBwhich\fR(1) 命令调用的 \fB\&.cshrc\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$prompt\fR 已设置且 \fB!= ""\fR\fR
+.ad
+.RS 30n
+.rt  
+普通交互式 shell。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsavehist\fR\fR
+.ad
+.RS 13n
+.rt  
+当用户注销时，保存在 ~/.history 中的历史记录列表行数。较大的 \fBsavehist\fR 值会降低 C shell 在启动期间的速度。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshell\fR\fR
+.ad
+.RS 13n
+.rt  
+C shell 所在的文件。这在派生 shell 中用来解释已设置了执行位但系统无法执行的文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstatus\fR\fR
+.ad
+.RS 13n
+.rt  
+最近的命令返回的状态。如果该命令异常终止，则会向状态添加 0200。失败的内置命令将返回退出状态 1；所有其他内置命令会将状态设置为 0。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtime\fR\fR
+.ad
+.RS 13n
+.rt  
+控制命令的自动计时。可以为其提供一个或两个值。第一个是按 \fBCPU\fR 秒数的报告阈值。第二个是一串标记和文本，指示要针对哪些资源提供报告。标记是一个后跟单个大写字母的 (\fB%\fR)（不可识别的标记将输出为文本）： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%D\fR\fR
+.ad
+.RS 6n
+.rt  
+使用的非共享数据空间的平均数量（以千字节为单位）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%E\fR\fR
+.ad
+.RS 6n
+.rt  
+命令的已用（挂钟）时间。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%F\fR\fR
+.ad
+.RS 6n
+.rt  
+页面错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%I\fR\fR
+.ad
+.RS 6n
+.rt  
+块输入操作的数目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%K\fR\fR
+.ad
+.RS 6n
+.rt  
+使用的非共享堆栈空间的平均数量（以千字节为单位）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%M\fR\fR
+.ad
+.RS 6n
+.rt  
+在进程执行期间使用的最大实际内存。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%O\fR\fR
+.ad
+.RS 6n
+.rt  
+块输出操作的数目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%P\fR\fR
+.ad
+.RS 6n
+.rt  
+总 CPU 时间 — U（用户）加 S（系统） — 占 E（已用）时间的一个百分比。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%S\fR\fR
+.ad
+.RS 6n
+.rt  
+内核代表用户的进程占用的 CPU 时间（秒数）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%U\fR\fR
+.ad
+.RS 6n
+.rt  
+专用于用户的进程的 \fBCPU\fR 时间（秒数）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%W\fR\fR
+.ad
+.RS 6n
+.rt  
+交换数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%X\fR\fR
+.ad
+.RS 6n
+.rt  
+使用的共享内存的平均数量（千字节）。
+.RE
+
+缺省汇总按照该顺序显示来自 \fB%U\fR、\fB%S\fR、\fB%E\fR、\fB%P\fR、\fB%X\fR、\fB%D\fR、\fB%I\fR、\fB%O\fR、\fB%F\fR 和 \fB%W\fR 标记的输出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBverbose\fR\fR
+.ad
+.RS 13n
+.rt  
+在发生历史记录替换后显示每个命令。
+.RE
+
+.SS "大型文件行为"
+.sp
+.LP
+有关 \fBcsh\fR 遇到大于或等于 2 GB（2^31 字节）文件时行为的说明，请参见 \fBlargefile\fR(5)。
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB~/.cshrc\fR\fR
+.ad
+.RS 15n
+.rt  
+由每个 shell 在开始执行时读取。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB~/.login\fR\fR
+.ad
+.RS 15n
+.rt  
+由登录 shell 在登录时于 \fB\&.cshrc\fR 之后读取。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB~/.logout\fR\fR
+.ad
+.RS 15n
+.rt  
+由登录 shell 在注销时读取。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB~/.history\fR\fR
+.ad
+.RS 15n
+.rt  
+供下次登录时使用的已保存历史记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/bin/sh\fR\fR
+.ad
+.RS 15n
+.rt  
+Bourne shell，对于未以 `\fB#\fR' 开头的 shell 脚本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/tmp/sh*\fR\fR
+.ad
+.RS 15n
+.rt  
+`\fB<<\fR\&' 的临时文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/passwd\fR\fR
+.ad
+.RS 15n
+.rt  
+`~\fIname\fR' 的起始目录的来源。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+CSIEnabled（已启用）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBbc\fR(1)、\fBecho\fR(1)、\fBlimit\fR(1)、\fBlogin\fR(1)、\fBls\fR(1)、\fBmore\fR(1)、\fBpfcsh\fR(1)、\fBpfexec\fR(1)、\fBps\fR(1)、\fBsh\fR(1)、\fBshell_builtins\fR(1)、\fBtset\fR(1B)、\fBwhich\fR(1)、\fBdf\fR(1M)、\fBswap\fR(1M)、\fBsysdef\fR(1M)、\fBaccess\fR(2)、\fBexec\fR(2)、\fBfork\fR(2)、\fBpipe\fR(2)、\fBa.out\fR(4)、\fBascii\fR(5)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBlargefile\fR(5)、\fBtermio\fR(7I)
+.SH 诊断
+.sp
+.ne 2
+.mk
+.na
+\fB\fBYou have stopped jobs.\fR\fR
+.ad
+.RS 26n
+.rt  
+您尝试在已停止作业处于作业控制下的情况下退出 C shell。再次尝试退出会成功，已停止的作业将终止。
+.RE
+
+.SH 警告
+.sp
+.LP
+\fI强烈\fR建议不要使用 \fBsetuid\fR shell 脚本。
+.SH 附注
+.sp
+.LP
+词的长度不能超过 1024 个字节。系统将参数列表限制到 1,048,576 个字节。不过，应用了文件名扩展的命令的参数最大数目为 1706。命令替换扩展后不能超出参数列表中允许的字符数。为检测循环，shell 将单个行上的 \fBalias\fR 替换的数目限制为 20。
+.sp
+.LP
+当命令从停止状态重新启动时，shell 将输出它从中启动的目录（如果这不同于当前目录）；这可能会造成误导（即错误），因为作业可能已在内部更改了目录。
+.sp
+.LP
+Shell 内置函数不可停止/重新启动。当尝试停止时，\fIa\fR \fIb\fR \fIc\fR 形式的命令序列也无法正常处理。如果您暂停了 \fIb\fR，则 shell 永远不会执行 \fIc\fR。如果扩展由别名产生，这尤其值得注意。可以通过将序列放在括号中以强制它进入子 shell 来避免这种情况。
+.sp
+.LP
+循环内由 \fB?\fR 提示输入的命令不会被放置在\fI历史记录\fR列表中。
+.sp
+.LP
+应当对控制结构进行解析而不是将其识别为内置命令。这将允许将控制命令放置在任何位置，与 \fB|\fR 组合使用，以及与 \fB&\fR 和 \fB;\fR 元语法一起使用。
+.sp
+.LP
+应当可以对命令替换的输出使用 \fB:\fR 修饰符。对变量替换使用 \fB:\fR 修饰符存在两个问题：并非所有的修饰符都可用，并且每个替换只允许使用一个修饰符。
+.sp
+.LP
+历史记录替换中的 \fBg\fR (global) 标志仅应用于每个词中的第一个匹配项，而不是所有词中的所有匹配项。当在替换命令中指定了 \fBg\fR 标志时，常见的文本编辑器会一致地执行上述的后一种操作。
+.sp
+.LP
+引号约定容易令人困惑。覆盖转义字符以强制在双引号内执行变量替换违反直觉并且与 Bourne shell 不一致。
+.sp
+.LP
+符号链接可能会欺骗 shell。设置 \fBhardpaths\fR 变量可以减少这种情况。
+.sp
+.LP
+因为多次使用内置命令而产生的所有重复路径名（如下所示）需要由用户来手动删除：
+.sp
+.in +2
+.nf
+set path = \fIpathnames\fR
+setenv PATH = \fIpathnames\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+经常会出现这些重复路径名，因为 shell 脚本或 \fB\&.cshrc\fR 文件会执行
+.sp
+.in +2
+.nf
+`set path=(/usr/local /usr/hosts $path)'
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+之类的操作来确保指定的目录在路径名列表中。
+.sp
+.LP
+分别定向标准输出和标准错误的唯一方法是调用子 subshell，如下所示：
+.sp
+.in +2
+.nf
+\fIcommand\fR > \fIoutfile\fR ) >& \fIerrorfile\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+虽然对于一般用途足够强健，但冒险进入 C shell 的深奥区域可能会产生意外的事件。
+.sp
+.LP
+如果您将 \fBcsh\fR 启动为登录 shell 并且您的起始目录中没有 \fB\&.login\fR，则 \fBcsh\fR 将读入 \fB/etc/.login\fR。
+.sp
+.LP
+当 shell 执行的 shell 脚本试图执行不存在的命令解释器时，shell 将返回不正确的诊断消息，指出 shell 脚本文件不存在。
+.sp
+.LP
+在将来的发行版中可能会使用类似 shell （例如 tcsh(1)）取代传统 csh(1)。建议 csh 用户开始将其启动文件和脚本迁移到 tcsh，tcsh 通过以下软件包位于 Oracle Solaris 中：\fBpkg:/shell/tcsh\fR。
+.SH 已知问题
+.sp
+.LP
+截至本文撰写时，\fBtime\fR 内置命令\fB不\fR计算输出中的最后 6 个字段，致使输出会错误地针对这些字段报告值 \fB0\fR。
+.sp
+.in +2
+.nf
+example %\fBtime ls -R\fR
+        9.0u 11.0s 3:32 10% 0+0k 0+0io 0pf+0w
+.fi
+.in -2
+.sp
+

@@ -1,0 +1,574 @@
+'\" te
+.\" Copyright (c) 2009, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH solaris 5 "2015 年 7 月 14 日" "SunOS 5.11" "标准、环境和宏"
+.SH 名称
+solaris, ipkg \- Solaris 标记区域
+.SH 描述
+.sp
+.LP
+\fBsolaris\fR 标记使用标记区域框架（如 \fBbrands\fR(5) 中所述）运行与安装在全局区域中的同一软件一起安装的区域。使用 \fBsolaris\fR 标记时，系统软件必须始终与全局区域保持同步。区域中的系统软件包使用映像包管理系统进行管理。请参见 \fBpkg(5)\fR。
+.SS "配置与管理"
+.sp
+.LP
+\fBsolaris\fR 标记支持完全根非全局区域模型。所有必需的系统软件及任何其他软件包都安装在区域的专用文件系统中。区域只能位于其自己的 \fBzfs\fR(1M) 数据集中并且仅支持 ZFS。在安装或连接区域时，将自动创建 ZFS 数据集。如果无法创建 ZFS 数据集，区域也无法安装或连接。
+.sp
+.LP
+solaris 标记不支持以下 \fBzonecfg\fR(1M) 资源和属性：
+.sp
+.in +2
+.nf
+autoshutdown=suspend
+anet:id
+device:id
+net:id
+virtual-cpu
+anet:mac
+ib-vhca
+ib-vhca:port
+.fi
+.in -2
+
+.sp
+.LP
+\fBsolaris\fR 标记支持的属性具有如下所列的特定缺省值：
+.sp
+.in +2
+.nf
+Resource                Property                    Default Value
+global                  zonepath                    /system/zones/%{zonename}
+                        autoboot                    false
+                        global-time                 false
+                        ip-type                     exclusive
+                        auto-shutdown               shutdown
+net                     configure-allowed-address   true
+anet                    mac-address                 auto
+                        lower-link                  auto
+                        link-protection             mac-nospoof
+.fi
+.in -2
+
+.SH 子命令
+.sp
+.LP
+对于 \fBsolaris\fR 标记，实时区域重新配置支持以下 \fBzoneadm\fR(1M) 资源和属性：
+.sp
+.in +2
+.nf
+anet (with exceptions stated below)
+capped-memory
+dedicated-cpu
+device
+fs
+net (with exceptions stated below)
+pool
+scheduling-class
+zone.* rctls
+.fi
+.in -2
+
+.sp
+.LP
+对于 \fBsolaris\fR 标记，实时区域重新配置不支持以下 \fBzoneadm\fR(1M) 资源和属性：
+.sp
+.in +2
+.nf
+anet:allowed-address
+anet:configure-allowed-address
+anet:defrouter
+dataset
+file-mac-profile
+fs-allowed
+hostid
+limitpriv
+global-time
+net:allowed-address
+net:configure-allowed-address
+net:defrouter
+npiv
+tenant
+zpool
+.fi
+.in -2
+
+.sp
+.LP
+如果在持久配置中更改了列出的不支持的资源和属性并将更改应用于正在运行的区域，实时区域重新配置将忽略这些更改。
+.sp
+.LP
+如果尝试在实时配置中修改列出的不支持的资源和属性，这些修改都将被拒绝。
+.sp
+.LP
+以下特定于 \fBsolaris\fR 标记的子命令选项受 \fBzoneadm\fR(1M) 支持。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBattach\fR [\fB-z\fR \fI ZBE\fR] [\fB-u\fR | \fB-U\fR] [\fB-c\fR \fI config_profile\fR\fB\&.xml\fR | \fIdir\fR] [\fB-x\fR \fBdestroy-orphan-zbes\fR | \fBforce-zbe-clone\fR | \fBdeny-zbe-clone\fR | \fBattach-last-booted-zbe\fR]\fR
+.ad
+.sp .6
+.RS 4n
+将指定的 \fBsolaris\fR 标记区域映像连接到区域。\fBzoneadm\fR 会检查区域要关联到的计算机上的软件包级别。如果区域通过全局区域所依赖的包（具有不同的版本号）不同于源计算机上的相关包，\fBzoneadm\fR 将报告这些冲突并且不执行连接。 
+.sp
+如果目标系统只有比源系统更新的相关软件包（修订版本号较高），则可以使用 \fB-u\fR 或 \fB-U\fR 选项更新相关软件包以匹配位于新系统上的软件包修订版。
+.sp
+连接区域时，可能会存在多个区域引导环境 (zone boot environment, \fBZBE\fR)，\fBattach\fR 子命令必须确定要连接其中哪一个。选择条件如下所示，并使用第一个匹配项。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果使用 \fB-z\fR 选项来指定 \fBZBE\fR，则选择它。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果使用了 \fB-x attach-last-booted\fR 来指定 \fBZBE\fR，则会选择上次引导的 zbe。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果只有一个活动的 \fBZBE\fR 与该全局区域引导环境关联，则选择它。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果只有一个活动的 \fBZBE\fR，则选择它。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果只有一个 \fBZBE\fR，则选择它。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+选择上次引导的 ZBE。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果只有一个ZBE与该全局区域引导环境关联，则选择它。
+.RE
+如果选定的 \fBZBE\fR 与其他全局区域引导环境关联，则连接选定的 \fBZBE\fR。可以使用 \fB-x force-zbe-clone\fR 来更改此行为。
+.sp
+如果选定的 \fBZBE\fR 未与任何全局区域引导环境关联（属于孤立的引导环境），则选定的 \fBZBE\fR 将被克隆，并且连接选定 \fBZBE\fR 的克隆。孤立 \fBZBE\fR 继续存在。
+.sp
+要在连接期间销毁所有孤立 \fBZBE\fR，请使用以下选项：
+.sp
+.in +2
+.nf
+\fB-x destroy-orphan-zbes\fR
+.fi
+.in -2
+.sp
+
+为避免克隆孤立 \fBZBE\fR，请使用以下选项：
+.sp
+.in +2
+.nf
+\fB-x deny-zbe-clone\fR
+.fi
+.in -2
+.sp
+
+有关 \fB-x\fR 选项的更多详细信息，请参见以下内容：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+更新区域中的最少数量的软件包，以允许区域的软件包与在全局区域中安装的软件包兼容。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-U\fR\fR
+.ad
+.sp .6
+.RS 4n
+将区域中的所有软件包更新为与安装在全局区域中的软件包兼容的最新版本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fIZBE\fR\fR
+.ad
+.sp .6
+.RS 4n
+连接指定的现有区域引导环境。如果指定的区域引导环境与其他全局区域关联，则指定的 \fBZBE\fR 将被克隆，并连接 \fBZBE\fR 的克隆。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fBdestroy-orphan-zbes\fR\fR
+.ad
+.sp .6
+.RS 4n
+销毁所有不与任何全局区域关联的区域引导环境。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fBforce-zbe-clone\fR\fR
+.ad
+.sp .6
+.RS 4n
+强制对选定的区域引导环境进行克隆。然后，选择新克隆的引导环境以连接到该区域。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fBdeny-zbe-clone\fR\fR
+.ad
+.sp .6
+.RS 4n
+对选定区域引导环境的克隆进行覆盖。此选项要求应该将选定的 \fBzbe\fR 在不克隆的情况下（如果缺省行为是对其进行克隆）连接到该区域。否则没有任何效果。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fBattach-last-booted-zbe\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择上次引导的区域引导环境。如果选择的区域引导环境不与任何全局区域相关联，则会克隆该引导环境。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBclone\fR [\fB-c\fR \fI config_profile\fR\fB\&.xml\fR | \fIdir\fR] \fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIconfig_profile\fR\fB .xml\fR | \fIdir\fR\fR
+.ad
+.sp .6
+.RS 4n
+提供从系统信息库安装后将应用的配置文件或配置文件的目录。
+.sp
+所有配置文件必须具有 \fB\&.xml\fR 扩展名。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstall\fR [\fB-m\fR \fI manifest.xml\fR] [\fB-c\fR \fIconfig_profile \fR\fB\&.xml\fR | \fIdir\fR]\fR
+.ad
+.br
+.na
+\fB\fR
+.ad
+.br
+.na
+\fB\fBinstall\fR \fB- a\fR \fIunified_archive\fR [\fB-z\fR \fI archived_zone\fR] \fB[\fB-x\fR\fR <\fI cert|cacert|key\fR>=\fIpath\fR]\fR
+.ad
+.br
+.na
+\fB ... [\fB-U\fR] [\fB-p\fR|\fB-u\fR] [\fB- s\fR | \fB-v\fR] [\fB-c\fR \fIconfig_profile \fR\fB\&.xml\fR | \fIdir\fR]\fR
+.ad
+.br
+.na
+\fB\fR
+.ad
+.br
+.na
+\fB\fB install\fR <\fB-a\fR \fIarchive\fR | \fB- d\fR \fIpath\fR> <\fB-p\fR|\fB- u\fR> [-\fB-U\fR] [\fB-s\fR | \fB-v\fR] [\fB-c\fR \fIconfig_profile\fR\fB\&.xml \fR | \fIdir\fR]\fR
+.ad
+.sp .6
+.RS 4n
+\fBsolaris\fR 标记安装程序支持从软件系统信息库或从运行同一发行版的已安装系统映像安装区域。此映像可以是 \fBcpio\fR(1)、\fBpax\fR(1) \fBxustar\fR 或 ZFS 归档文件。\fBcpio\fR 或 ZFS 归档文件可以使用 \fBgzip\fR 或 \fBbzip2\fR 进行压缩。该映像也可以是到系统根目录树顶级的路径，或者是预存在的区域路径。 
+.sp
+如果未指定 \fB-a\fR 和 \fB-d\fR 选项，则从系统信息库安装区域。要在区域中安装其他软件包，可以复制并编辑缺省区域清单 \fB/usr/share/auto_install/manifest/zone_default.xml\fR 以包含所需的软件包。应使用 \fB-m\fR 选项指定安装该修改的清单。
+.sp
+要从系统或区域映像安装区域，需要使用 \fB-a\fR 或 \fB-d\fR 选项。如有必要，映像的活动 ZBE 中的软件将会进行最低限度的必要更新，以使其与全局区域的软件包兼容。如果指定了 \fB-U\fR 选项，则会将映像的活动 ZBE 中的所有软件更新至与活动 ZBE 兼容的最新版本。如果使用 \fB-a\fR 或 \fB-d\fR 选项，则还需要使用 \fB-u\fR 或 \fB-p\fR 选项。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fIarchive\fR\fR
+.ad
+.sp .6
+.RS 4n
+统一归档文件的路径或文件名、http 或 https URI。或者是到已安装的全局区域或非全局区域中的 \fBcpio\fR(1)、\fBpax\fR(1) \fBxustar\fR 或 ZFS 归档文件的路径。
+.sp
+如果指定了统一归档文件，则可以使用 \fB-z\fR 选项来选择要安装的归档区域。如果统一归档文件位于安全的 Web 服务器 (https URI) 上，则可以使用 \fB-x\fR 来指定到 PEM 编码的证书、CA 证书和/或密钥的路径。当从统一归档文件进行安装时，如果既未指定 \fB-u\fR 也未指定 \fB-p\fR，且归档文件是恢复归档文件，则默示使用缺省的 \fB-p\fR。否则，默示使用 \fB-u\fR。
+.sp
+如果 ZFS 归档文件包含多个引导环境，则安装了活动的引导环境。如果安装无法确定哪个引导环境是活动的引导环境，安装程序将提供提取的引导环境列表，并建议一个使用 \fB-z\fR 选项的连接命令来连接特定的引导环境。
+.sp
+\fBcpio\fR 和 ZFS 归档文件可以使用 \fBgzip\fR 或 \fBbzip2\fR 进行压缩。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIconfig_profile\fR\fB .xml\fR | \fIdir\fR\fR
+.ad
+.sp .6
+.RS 4n
+提供从系统信息库安装后将应用的配置文件或配置文件的目录。
+.sp
+所有配置文件必须具有 \fB\&.xml\fR 扩展名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+区域路径目录的路径，该目录属于 \fBsolaris\fR 标记区域的区域路径或 Solaris 11 全局区域根目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fImanifest.xml\fR\fR
+.ad
+.sp .6
+.RS 4n
+将指定给自动化安装程序的清单文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+从归档文件或路径安装区域后，保留系统配置。当从统一归档文件进行安装且归档文件是恢复归档文件时，将默示使用 \fB-p\fR，但是可以使用 \fB-u\fR 进行覆盖。
+.sp
+.in +2
+.nf
+-x cert=/path/cert.pem
+-x cacert=/path/cacert.pem
+-x key=/path/key.pem
+.fi
+.in -2
+
+使用指定的证书、CA 证书和/或密钥可以通过 https 访问统一归档文件。
+.sp
+如果归档文件不是恢复归档文件，\fB-p\fR 选项不会起作用，因为归档文件中不存在系统配置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.sp .6
+.RS 4n
+无提示安装。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+安装后取消配置系统。当从统一归档文件进行安装且归档文件不是恢复归档文件时，这是缺省值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-U\fR\fR
+.ad
+.sp .6
+.RS 4n
+将区域中的所有软件包更新为与安装在全局区域中的软件包兼容的最新版本。只有使用了 \fB-a\fR 或 \fB-d\fR 选项，才能使用 \fB-U\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+安装过程的详细输出。
+.RE
+
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR从全局区域转换为 \fBsolaris\fR 区域
+.sp
+.LP
+以下示例显示了如何创建全局区域的归档文件，然后使用该归档文件来配置和安装非全局区域。安装进程将转换全局区域的映像，以便其可作为非全局区域运行。此过程通常称为 \fBP2V\fR（physical to virtual，物理到虚拟）。
+
+.sp
+.LP
+为确保归档文件中的数据不会变得过时，建议在创建归档文件前停止源系统上的应用程序。如果没有这样做，则安装区域后可能有必要同步应用程序数据。
+
+.sp
+.LP
+首先，创建源系统的恢复归档文件。这假定源系统上未安装非全局区域。
+
+.sp
+.in +2
+.nf
+root@web-1# \fBarchiveadm create --recovery /net/images/web-1.uar\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+接下来，使用归档文件在目标系统上配置区域。可能有必要进一步定制配置。请参见 \fBzonecfg\fR(1M) 中的示例。最后，从归档文件安装区域。
+
+.sp
+.in +2
+.nf
+root@t4-1# \fBzonecfg -z web-1\fR
+Use 'create' to begin configuring a new zone.
+zonecfg:web-1> \fBcreate -a /net/images/web-1.uar\fR
+zonecfg:web-1> \fBset zonepath=/zones/web-1\fR
+zonecfg:web-1> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果选择不使用交互模式，可以使用以下命令：
+
+.sp
+.in +2
+.nf
+# \fBzonecfg -z web-1 "create -a /net/images/web-1.uar; set zonepath=/zones/web-1"\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果源系统和新安装的区域使用了相同的 IP 地址或者存在其他潜在的冲突，请确保同一时间只运行二者之一。
+
+.sp
+.LP
+最后，生成使用 \fBgzip\fR 压缩的 ZFS 复制流归档文件。在本示例中，它存储在远程 NFS 服务器上。
+
+.sp
+.in +2
+.nf
+# zfs send -R rpool@p2v | gzip > /net/somehost/p2v/p2v.zfs.gz
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR使用统一归档文件迁移区域
+.sp
+.LP
+为确保归档文件中的数据不会变得过时，建议在创建归档文件前停止源区域上的应用程序或关闭该区域。如果没有这样做，则安装区域后可能有必要同步应用程序数据。
+
+.sp
+.LP
+首先，创建区域的恢复归档文件。此操作最好从全局区域执行。如果在区域中执行，将无法通过归档文件配置该区域。
+
+.sp
+.in +2
+.nf
+root@t4-1# \fBarchiveadm create -r -z web-1 /net/images/v2v/web-1.uar\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+接下来，使用归档文件在目标系统上配置区域。
+
+.sp
+.in +2
+.nf
+root@t4-2# \fBzonecfg -z web-1 create -a /net/images/v2v/web-1.uar\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+最后，从归档文件安装区域。
+
+.sp
+.in +2
+.nf
+root@t4-2# \fBzoneadm -z web-1 install -a /net/images/v2v/web-1.uar\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+请确保先关闭源系统上的区域，再在目标系统上引导它。
+
+.SH 属性
+.sp
+.LP
+有关以下属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/zones
+_
+接口稳定性Uncommitted（未确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBcpio\fR(1)、\fBpax\fR(1)、\fBarchiveadm\fR(1M)、\fBbeadm\fR(1M)、\fBsysconfig\fR(1M)、\fBzfs\fR(1M)、\fBzlogin\fR(1)、\fBzonename\fR(1)、\fBzoneadm\fR(1M)、\fBzonecfg\fR(1M)、\fBattributes\fR(5)、\fBbrands\fR(5)、\fBprivileges\fR(5)、\fBzones\fR(5)
+.sp
+.LP
+\fBpkg(5)\fR，在 IPS 整合中提供

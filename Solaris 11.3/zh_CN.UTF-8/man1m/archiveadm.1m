@@ -1,0 +1,685 @@
+'\" te
+.\" Copyright (c) 2011, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH archiveadm 1M "2015 年 2 月 23 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+archiveadm \- Solaris 归档文件实用程序
+.SH 用法概要
+.LP
+.nf
+\fBarchiveadm\fR <\fBsubcommand\fR> [options] <arguments>
+            \fBcreate\fR  <\fIarchive name\fR>
+                [-z|--zone <zone(s)>]
+                [-D|--exclude-dataset <dataset(s)>]
+                [-Z|--exclude-zone <zone(s)>]
+                [-r|--recovery]
+                [-e|--exclude-media]
+                [-s|--skip-capacity-check]
+                 [   --root-only] 
+            \fBinfo\fR  <\fIarchive name\fR>
+                [-p|--parseable]
+                [-k|--key]
+                [-c|--cert]
+                [-C|--ca-cert]
+                [-v|--verbose]
+            \fBcreate-media\fR    <\fIarchive name\fR>
+                [-g|--global-zone <global-zone>]
+                [-s|--source <ISO image> | <repository URI>]
+                [-k|--key <ssl_key]
+                [-c|--cert <ssl_cert]
+                [-d|--dataset <name>]
+                [-f|--format <iso or usb>]
+                [-o|--output <path for final image>]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBarchiveadm\fR 实用程序向用户提供了为正在运行的 Solaris 系统创建归档映像以用于系统克隆和恢复的功能。此实用程序还可以用来在创建归档文件后检索关于归档文件的信息，以及基于归档文件创建可引导的介质。
+.sp
+.LP
+所创建的归档文件类型是 Solaris 统一归档文件。Solaris 统一归档文件是基于 Solaris 引导环境和 ZFS 数据流的多系统归档文件。统一归档文件包含在创建归档文件期间选择的一个或多个系统。可以在总的统一归档文件内将每个系统封装在自己的归档中，以便将来可以有选择地进行部署。另外，也可以创建单个的整体归档文件，这将生成包含多个嵌入系统的单一可部署归档文件。
+.sp
+.LP
+在创建 Solaris 统一归档文件后，可以使用 Solaris 自动化安装程序或 Solaris Zones 软件实用程序对其进行部署。
+.sp
+.LP
+在进行 Solaris 自动化安装程序部署期间，归档文件被设置为一个安装服务配置参数，类似于使用 IPS 发布者时的操作。当客户机引导服务时，安装软件为系统配置必需的 ZFS 池（包括原始系统本地设置的任何 ZFS 池属性），然后，归档的系统将被接收到新池中。
+.sp
+.LP
+在从主机系统进行 Solaris Zones 部署期间，将使用 zonecfg(1M) 和 zoneadm(1M) 实用程序。可以使用 zonecfg(1M) 配置新区域，从 Solaris 统一归档文件提取配置数据。可以使用 zoneadm(1M) 实用程序直接从归档文件安装区域。还可以在进行 Solaris 自动化安装程序新部署期间，随全局区域一起安装各个区域。
+.sp
+.LP
+缺省情况下，Solaris 统一归档文件以轻量形式创建，该归档文件基于系统的活动引导环境和相关数据集。在区域系统的上下文中，相关数据集指的是区域的委托数据集。对于主机全局区域的归档文件，相关数据集指的是系统上任何未划归区域的数据集。这些归档文件称为“克隆归档文件”，因为它们适合用于系统克隆。这些归档文件最适合在许多节点上快速部署相同的定制映像。
+.sp
+.LP
+可以创建包含所有引导环境而非仅包含活动引导环境的归档文件。这种类型的归档文件更适合用于系统恢复，因此称为“恢复归档文件”。此模式将创建包含所选区域的单系统归档文件。所选全局区域内的任何非全局区域都将被嵌入归档文件内，并且将包括所有系统的所有引导环境。
+.sp
+.LP
+在创建归档文件期间，可以在正在创建的归档中显式包括特定系统，这将隐式排除所有其他系统。可以逆向排除系统，这将隐式包括所有其他系统。
+.sp
+.LP
+在创建克隆归档文件期间，可以在归档文件中显式包括或排除特定系统。请注意，包括特定的系统列表将隐式排除所有其他系统。反之，将会包括未显式排除的任何系统。
+.sp
+.LP
+当创建恢复归档文件时，可以选择一个特定的系统。如果系统是具有已安装区域的主机，则可以在归档文件中嵌入那些区域。如果需要某个特定区域的恢复归档文件，则可以选择该区域。在创建恢复归档文件时不允许排除系统。
+.sp
+.LP
+还可以排除特定的数据集，这将进一步降低归档文件的大小。缺省情况下，所有归档文件都排除所有交换和转储设备。另外，克隆归档文件中将排除 \fBVARSHARE\fR 数据集；恢复归档文件中将包括该数据集。
+.sp
+.LP
+可以选择创建一个仅包含根池中的数据的归档文件。将 \fB--root-only\fR 选项与 \fBcreate\fR 子命令一起使用时，将从归档文件中排除所有非根池。
+.sp
+.LP
+在部署期间，可以选择性地从克隆统一归档文件中部署归档的系统。还可以将系统部署为区域，这用于实现全局到非全局 (Global-to-Non-global, G2N) 转换功能。请注意，单系统恢复归档文件不可选择；整个恢复归档文件将被部署为单一部署。
+.sp
+.LP
+可以基于 Solaris 统一归档文件创建可引导的安装介质。用户可以提供选项来定义安装介质的构建区域和内容。然后，可以使用生成的介质映像来创建恢复介质或定制安装介质。
+.sp
+.LP
+下文中的“子命令”部分逐一介绍了该实用程序的三个主函数。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR，\fB--help\fR\fR
+.ad
+.RS 15n
+.rt  
+输出说明实用程序用法的帮助消息。
+.RE
+
+.SH 子命令
+.sp
+.LP
+支持以下子命令：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBarchiveadm create\fR <\fIarchive name\fR>\fR
+.ad
+.br
+.na
+\fB[\fB-r\fR|\fB--recovery\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-z\fR|\fB--zone\fR <\fIzone(s)\fR>] \fR
+.ad
+.br
+.na
+\fB[\fB-Z\fR|\fB--exclude-zone\fR <\fI zone(s)\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-D\fR|\fB--exclude-dataset\fR <\fI dataset(s)\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-e\fR|\fB--exclude-media \fR]\fR
+.ad
+.br
+.na
+\fB[\fB-s\fR|\fB--skip-capacity-check\fR] \fR
+.ad
+.br
+.na
+\fB[\fB--root-only\fR]\fR
+.ad
+.sp .6
+.RS 4n
+\fBcreate\fR 命令将驱动创建新的 Solaris 统一归档文件。该命令需要新的归档文件的位置和名称。这作为可写入目录中新归档文件名称的路径来传递。
+.sp
+不带选项时，\fBcreate\fR 将构建调用该命令的系统的归档文件。如果系统是一个全局区域，则会包括主机上的所有虚拟系统。归档文件包括每个系统的活动引导环境以及所有相关的数据集。对于区域，相关数据集的列表等于委托数据集的列表。在全局区域中，将对未划归区域的所有数据集进行归档。
+.sp
+所有归档文件都排除所有交换和转储设备。缺省情况下所有克隆归档文件都排除 \fBVARSHARE\fR 数据集。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR|\fB--recovery\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项创建一个适用于系统恢复的归档文件。此归档文件类型包括一个包含选定区域的单一可部署系统。如果区域是全局区域，则归档文件将包含该区域以及它所承载的所有非全局区域。归档文件中将包括所有系统的所有引导环境（包括处于非活动状态的引导环境）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-z\fR|\fB--zone\fR <\fIzone(s) \fR>]\fR
+.ad
+.sp .6
+.RS 4n
+此选项用来提供要归档的区域名称或区域名称列表，暗示不对所有其他系统进行归档。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-Z\fR|\fB--exclude-zone\fR <\fI zone(s)\fR>]\fR
+.ad
+.sp .6
+.RS 4n
+此选项用来提供要从归档文件中排除的区域名称或区域名称列表，暗示包括所有其他系统。\fB--zone\fR 和 \fB--exclude-zone\fR 是互斥的。使用 \fB--recovery\fR 时此选项无效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-D\fR|\fB--exclude-dataset\fR <\fI dataset(s)\fR>]\fR
+.ad
+.sp .6
+.RS 4n
+此选项用来从归档文件中排除一个或多个数据集。将从归档文件中递归排除所传递的数据集名称，这意味着还将排除在层次结构中属于所排除数据集的“子代”的任何数据集。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB--root-only\fR]\fR
+.ad
+.sp .6
+.RS 4n
+此选项用来排除所有非根池数据。将以递归方式从生成的归档文件映像中排除每个非根池。当需要仅包含根的归档文件且非根池列表未知时，这很有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-e\fR|\fB--exclude-media\fR]\fR
+.ad
+.sp .6
+.RS 4n
+可以使用此选项跳过为统一归档文件中的每个全局区域生成可引导介质。为了增强归档文件的可移植性，会自动为每个全局区域创建此介质。如果不需要此操作，可以使用此选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-s\fR|\fB--skip-capacity-check\fR]\fR
+.ad
+.sp .6
+.RS 4n
+在创建归档流之前，会在暂存目录中执行容量检查。当用户希望跳过此容量检查时，可以使用此选项。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBarchiveadm info\fR <\fIarchive name\fR>\fR
+.ad
+.br
+.na
+\fB[\fB-v\fR|\fB--verbose\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-k\fR|\fB--key\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-c\fR|\fB- -cert\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-C\fR|\fB--ca-cert\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-p\fR|\fB--parseable\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-t\fR|\fB- -targets\fR]\fR
+.ad
+.sp .6
+.RS 4n
+\fBinfo\fR 命令将提供作为 URI 传递的 Solaris 归档文件的内容的相关信息。如果该路径是文件系统可访问文件的相对或绝对路径，则 'file' URI 类型是可选的。HTTP 和 HTTPS 是其他受支持的 URI 类型。
+.sp
+此命令的输出提供与归档文件相关的数据，例如，归档文件创建时间以及关于原始系统的信息（例如主机名、体系结构和 Solaris 版本）。它还按系统名称列出可部署的系统归档文件。
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-v\fR|\fB--verbose\fR]\fR
+.ad
+.br
+.na
+\fB\fR
+.ad
+.RS 20n
+.rt  
+此选项提供关于可部署的系统归档文件的更多详细信息，包括活动引导环境的名称、所安装的 Solaris 的版本，以及部署每个系统归档文件所需的大小。详细模式下还会显示统一归档文件以及每个系统归档文件的唯一 ID (UUID)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-k\fR|\fB--key\fR]\fR
+.ad
+.br
+.na
+\fB[\fB- c\fR|\fB--cert\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-C\fR|\fB--ca-cert \fR]\fR
+.ad
+.RS 20n
+.rt  
+当提供的路径是一个 HTTPS URI 时，这些选项用来传递 HTTPS 凭证。客户机证书、CA 证书和密钥通过这些选项设置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-p\fR|\fB--parseable\fR]\fR
+.ad
+.RS 20n
+.rt  
+此选项提供一组以冒号分隔的可解析值（与格式化输出相对），这些值与归档文件信息相关。对于脚本编写或数据输入应用程序，这可能比较有用。详细和非详细的可解析输出都包括对输出进行标记的标题。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR|\fB--targets\fR]\fR
+.ad
+.RS 20n
+.rt  
+此选项列出与原始系统上的存储配置相关的特定信息。配置元数据将随部署期间使用的数据一起归档，以便指导自动化安装程序如何配置客户机系统。此选项为用户提供了一种方法来观察 AI 在部署时将创建什么。 
+.sp
+可以使用此选项来检索原始系统的目标配置，这可以在为 AI 清单重新创建存储配置时使用。清单内容以 XML 格式显示，这样仅需少量修改便可使用。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBarchiveadm create-media\fR <\fIarchive name\fR>\fR
+.ad
+.br
+.na
+\fB[\fB-g\fR|\fB--global-zone\fR <\fIglobal-zone\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-s\fR|\fB--source\fR <\fI ISO image\fR> | <\fIrepository URI\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-k\fR|\fB--key\fR <\fIssl_key\fR>] \fR
+.ad
+.br
+.na
+\fB[\fB-c\fR|\fB--cert\fR <\fIssl_cert \fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-d\fR|\fB--dataset\fR <\fI name\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-f\fR|\fB--format\fR <\fI iso or usb\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-o\fR|\fB--output\fR <\fI path for final image\fR>]\fR
+.ad
+.sp .6
+.RS 4n
+\fBcreate-media\fR 命令用来基于统一归档文件创建可引导的介质。然后可以使用生成的介质映像来基于归档文件内容引导和安装系统。归档文件是作为路径传递的。该路径可以是相对路径也可以是绝对路径。
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-g\fR|\fB--global-zone\fR]\fR
+.ad
+.RS 22n
+.rt  
+从归档的全局区域创建介质。此开关允许用户选择从中创建介质的全局区域。生成的介质将部署指定的全局区域以及任何嵌套的区域的归档。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-s\fR|\fB--source\fR]\fR
+.ad
+.RS 22n
+.rt  
+可引导的介质基于 Solaris AI 映像。此开关项允许用户提供 AI 映像的来源。有效的来源是兼容的 Solaris 自动化安装 ISO 映像文件的路径或包含兼容的 \fBpkg://solaris/install-image/solaris-auto-install\fR 软件包的 Solaris IPS 系统信息库的 URI。兼容性基于 Solaris 的版本。
+.sp
+如果未传递来源，则将在执行 create-media 的系统上设置的所有 IPS 发布者中搜索 solaris-auto-install 软件包的兼容版本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-k\fR|\fB--key\fR]\fR
+.ad
+.br
+.na
+\fB[\fB- c\fR|\fB--cert\fR]\fR
+.ad
+.br
+.na
+\fB\fR
+.ad
+.RS 22n
+.rt  
+当提供的来源是一个 HTTPS URI 时，这些选项用来传递 HTTPS 凭证。客户机证书和密钥通过这些选项设置。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-d\fR|\fB--dataset\fR]\fR
+.ad
+.RS 22n
+.rt  
+此开关项允许用户提供一个 ZFS 数据集作为创建介质时使用的暂存区域。如果未传递此暂存区域，则将使用 rpool 上的缺省暂存区域。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-f\fR|\fB--format\fR]\fR
+.ad
+.RS 22n
+.rt  
+选择生成的可引导介质的格式，即 ISO 或 USB 映像文件。如果生成的介质映像将大于 4GB，则仅支持 USB 格式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-o\fR|\fB--output\fR]\fR
+.ad
+.RS 22n
+.rt  
+生成的介质映像文件的名称。如果不提供，则将使用缺省名称。
+.RE
+
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR创建缺省归档文件
+.sp
+.LP
+此示例在不使用选项的情况下创建归档文件，这将创建包含主机上的所有系统的统一归档文件。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR创建排除某些数据集的归档文件
+.sp
+.LP
+此示例创建排除了 data/scratch 和 tank/tmp 数据集的归档文件。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create -D data/scratch,tank/tmp ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR归档单个区域
+.sp
+.LP
+此示例创建一个单系统归档文件，其中包含一个区域的活动引导环境和相关 rpool 数据集以及所有委托数据集。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create -z zone1 ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR创建排除某些区域的归档文件
+.sp
+.LP
+此示例创建排除了 "zone3" 和 "zone4" 区域的归档文件。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create -Z zone3,zone4 ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR归档 \fBsolaris-kz\fR 区域
+.sp
+.LP
+此示例创建一个单系统归档文件，其中包含一个 \fBsolaris-kz\fR 标记区域。在单系统归档文件中，将归档内核区域中部署的任何区域。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create -z kz1 ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR检索基本的归档文件信息
+.sp
+.LP
+此示例检索与归档文件相关的基本信息。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm info ./archive.uar\fR
+        Archive Information
+                          Creation Time:  2012-09-29T01:29:29Z
+                            Source Host:  osai-brm-x-5
+                           Architecture:  i386
+                       Operating System:  Oracle Solaris 12.0 X86
+                     Deployable Systems:  global,zone1
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR检索详细的归档文件信息
+.sp
+.LP
+此示例检索与归档文件及其可部署的系统归档相关的详细信息。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm info --verbose archive.uar\fR
+        Archive Information
+          Creation Time:  2012-09-29T01:29:29Z
+                Source Host:  osai-brm-x-5
+           Architecture:  i386
+   Operating System:  Oracle Solaris 12.0 X86
+                  Unique ID:  d1689f79-0bca-6cea-e06c-f335e98006f0
+        Archive Version:  1
+         
+        Deployable Systems
+          'global'
+            OS Version:  5.12
+             OS Branch:  5.12.0.0.0.5.2
+             Active BE:  on12_05-ref
+                 Brand:  solaris
+           Size Needed:  21.44GB
+             Unique ID:  73ec33b8-55c2-6291-cabd-943f3b1c359e
+          'zone1'
+            OS Version:  5.12.0.0.0.5.2
+             Active BE:  solaris-6
+                 Brand:  solaris
+           Size Needed:  345.90MB
+             Unique ID:  2ef3e063-764b-c756-b58d-a778dd18a00c
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 8 \fR检索存储配置信息
+.sp
+.LP
+此示例从归档文件中检索通过 Solaris 自动化安装程序部署该归档文件时将需要的目标资源的相关信息。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm info --targets archive.uar\fR
+<target name="origin">
+      <disk in_zpool="rpool" in_vdev="rpool-none" whole_disk="true">
+        <disk_name name="SYS/HDD0" name_type="receptacle"/>
+        <disk_prop dev_type="scsi" dev_vendor="HITACHI" dev_chassis="SYS"
+dev_size="585937500secs"/>
+        <gpt_partition name="0" action="create" force="false" part_type="bbp">
+          <size val="524288secs" start_sector="256"/>
+        </gpt_partition>
+        <gpt_partition name="1" action="create" force="false" part_type="solaris">
+          <size val="585396539secs" start_sector="524544"/>
+        </gpt_partition>
+        <gpt_partition name="8" action="create" force="false" part_type="reserved">
+          <size val="16384secs" start_sector="585921083"/>
+        </gpt_partition>
+      </disk>
+      <disk in_zpool="data" in_vdev="data-none" whole_disk="true">
+        <disk_name name="SYS/HDD1" name_type="receptacle"/>
+        <disk_prop dev_type="scsi" dev_vendor="HITACHI" dev_chassis="SYS"
+dev_size="585937500secs"/>
+        <gpt_partition name="0" action="create" force="false" part_type="solaris">
+          <size val="585920827secs" start_sector="256"/>
+        </gpt_partition>
+        <gpt_partition name="8" action="create" force="false" part_type="reserved">
+          <size val="16384secs" start_sector="585921083"/>
+        </gpt_partition>
+      </disk>
+      <logical noswap="false" nodump="false">
+        <zpool name="data" action="create" is_root="false" mountpoint="/data">
+          <vdev name="data-none" redundancy="none"/>
+        </zpool>
+        <zpool name="rpool" action="create" is_root="true" mountpoint="/rpool">
+          <vdev name="rpool-none" redundancy="none"/>
+        </zpool>
+      </logical>
+    </target>
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 9 \fR创建介质
+.sp
+.LP
+此示例创建一个可引导的 USB 映像，在引导时将从 "archive.uar" 部署全局区域。可以使用 \fBusbcopy\fR(1M) 命令将其复制到 USB 设备。AI 映像组件将源自当前的 IPS 发布者列表。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create-media ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 10 \fR基于 IPS 发布者创建介质
+.sp
+.LP
+此示例创建可引导的介质，并且 AI 映像组件源自特定的 IPS 发布者。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create-media -s http://server.domain:port
+                ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 11 \fR在用户选择的构建区域中创建介质
+.sp
+.LP
+此示例显示了如何使用 AI ISO 映像作为引导归档文件的来源来创建介质。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create-media -d data/build
+                -s S11-2-x86-AI.iso ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 12 \fR从所选的全局区域创建介质
+.sp
+.LP
+此示例显示了如何从特定的已归档全局区域创建介质。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create-media -g kz-global ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性install/archive|
+_
+接口稳定性Uncommitted（未确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBai_manifest\fR(4)、\fBzoneadm\fR(1M)、\fBzonecfg\fR(1M)

@@ -1,0 +1,515 @@
+'\" te
+.\"  Copyright 1989 AT&T Copyright (c) 1996, Sun Microsystems, Inc. All Rights Reserved Portions Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\"  Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH pg 1 "1996 年 2 月 25 日" "SunOS 5.11" "用户命令"
+.SH 名称
+pg \- 针对 CRT 的文件细读过滤器
+.SH 用法概要
+.LP
+.nf
+\fBpg\fR [\fB-\fInumber\fR\fR] [\fB-p\fR \fIstring\fR] [\fB-cefnrs\fR] [+ \fIlinenumber\fR] 
+     [+/ \fIpattern\fR /] [\fIfilename\fR]...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBpg\fR 命令是一个过滤器，使用它可以在 CRT 上以一次一屏的方式细读 \fIfilenames\fR 的内容。如果用户键入 RETURN，则会显示另一个页面；其他可能出现的情况如下文所述。
+.sp
+.LP
+此命令不同于以往的分页程序，因为使用它可以后退并查看已经显示过的内容。下文解释了实现这一功能的方法。
+.sp
+.LP
+为了确定终端属性，\fBpg\fR 会扫描 \fBterminfo\fR(4) 数据库，查找环境变量 \fBTERM\fR 指定的终端类型。如果 \fBTERM\fR 未定义，则假定终端类型为 \fBdumb\fR。
+.SH 选项
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-\fR\fInumber\fR\fR
+.ad
+.RS 15n
+.rt  
+指定 \fBpg\fR 使用的窗口大小（行数）的整数，用来替代缺省窗口大小。（在含有 24 行的终端上，缺省窗口大小为 23）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fIstring\fR\fR
+.ad
+.RS 15n
+.rt  
+\fBpg\fR 会将 \fIstring\fR 用作提示。如果提示字符串包含 \fB%d\fR，则提示中的第一个 \fB%d\fR 会在发出提示时替换为当前页号。缺省提示字符串为 "\fB:\fR"。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 15n
+.rt  
+显示每个页面之前，将光标置于原位并清除屏幕内容。如果 \fBterminfo\fR(4) 数据库中未针对此终端类型定义 \fBclear_screen\fR，则会忽略此选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.RS 15n
+.rt  
+\fBpg\fR 在每个文件的结尾处\fI不会\fR暂停。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.RS 15n
+.rt  
+通常情况下，\fBpg\fR 会拆分长度超过屏幕宽度的行，但拆分正在显示的文本中的某些字符序列（例如，表示强调的转义序列）会产生意外结果。\fB-f\fR 选项会禁止 \fBpg\fR 拆分行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 15n
+.rt  
+通常情况下，命令必须以一个 <\fI换行\fR> 字符结尾。使用此选项时，只要输入一个命令字母，命令就会自动结束。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.RS 15n
+.rt  
+受限模式。禁止 shell 转义。\fBpg\fR 会输出错误消息，但不会退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 15n
+.rt  
+\fBpg\fR 在标准输出模式下列显所有消息和提示（通常为反转显示）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB+\fR\fIlinenumber\fR\fR
+.ad
+.RS 15n
+.rt  
+在\fI行号\fR处开始。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB+/\fR\fIpattern\fR\fB/\fR\fR
+.ad
+.RS 15n
+.rt  
+从含有正则表达式模式的第一行开始。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfilename\fR\fR
+.ad
+.RS 12n
+.rt  
+要显示的文本文件的路径名。如果未指定 \fIfilename\fR，或者如果指定了 -，则读取标准输入。
+.RE
+
+.SH 用法
+.SS "命令"
+.sp
+.LP
+在 \fBpg\fR 暂停时可以键入的响应可分为三类，分别是有助于进一步细读、用来执行搜索以及用来修改细读环境的响应。
+.sp
+.LP
+有助于进一步细读的命令通常会在前面加上一个 \fIaddress\fR，这是一个可选的有符号数字，指示应当从哪里开始显示要进一步细读的文本。此 \fIaddress\fR 可以解释为以页数或行数为单位，具体取决于命令。有符号 \fIaddress\fR 会指定一个相对于当前页或行的位置，而无符号 \fIaddress\fR 会指定一个相对于文件开头的地址。每个命令都有一个缺省地址，以便在未提供地址时使用。
+.sp
+.LP
+细读命令及其缺省地址如下所示：
+.sp
+.ne 2
+.mk
+.na
+\fB(+1)<\fI换行\fR> 或 <\fI空格\fR>\fR
+.ad
+.RS 29n
+.rt  
+此命令会显示一页内容。指定的地址为页数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(+1) \fBl\fR\fR
+.ad
+.RS 29n
+.rt  
+使用相对地址时，此命令会使得 \fBpg\fR 模拟屏幕滚动情况，向前或向后滚动指定行数。使用绝对地址时，此命令会输出从指定行开始的一屏内容。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(+1) \fBd\fR 或 \fB^D\fR\fR
+.ad
+.RS 29n
+.rt  
+模拟屏幕滚动情况，向前或向后滚动半屏内容。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIi\fR\fBf\fR\fR
+.ad
+.RS 29n
+.rt  
+跳过 \fIi\fR 屏文本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIi\fR\fBz\fR\fR
+.ad
+.RS 29n
+.rt  
+与 <\fI换行\fR> 相同，但使用 \fIi\fR 时除外，因为此时它会成为每屏行数的新缺省值。
+.RE
+
+.sp
+.LP
+以下细读命令未使用 \fIaddress\fR。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\&.\fR 或 \fB^L\fR\fR
+.ad
+.RS 14n
+.rt  
+键入一个句点会重新显示当前页文本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$\fR\fR
+.ad
+.RS 14n
+.rt  
+显示文件中的最后一个满屏窗口。当输入为管道时，需小心使用。
+.RE
+
+.sp
+.LP
+以下命令可用于在文本中搜索文本模式。正则表达式在 \fBregex\fR(5) 手册页上介绍。它们必须始终以一个 <\fI换行\fR> 结尾，即便指定了 \fB-n\fR 选项也是如此。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIi\fR\fB/\fR\fIpattern\fR\fB/\fR\fR
+.ad
+.RS 14n
+.rt  
+向前搜索第 \fIi\fR 个（缺省情况下 \fIi\fR=1）\fIpattern\fR。从紧接在当前页之后的内容开始搜索，一直持续到当前文件的结尾，而且不会回绕。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIi\fR\fB^\fR\fIpattern\fR\fB^\fR\fR
+.ad
+.RS 14n
+.rt  
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIi\fR\fB?\fR\fIpattern\fR\fB?\fR\fR
+.ad
+.RS 14n
+.rt  
+向后搜索第 \fIi\fR 个（缺省情况下 \fIi\fR=1）\fIpattern\fR。从紧接在当前页之前的内容开始搜索，一直持续到当前文件的开头，而且不会回绕。对于无法正确处理 ? 的 Adds 100 终端，符号 ^ 十分有用。
+.RE
+
+.sp
+.LP
+执行搜索后，\fBpg\fR 通常会在屏幕最上方显示找到的行。这种处理方式可以修改，具体方法是将 \fBm\fR 或 \fBb\fR 附加到搜索命令，以便今后将找到的行留在窗口中间或底部。后缀 \fBt\fR 可以用于恢复原状。
+.sp
+.LP
+\fBpg\fR 用户可以通过以下命令修改细读环境：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIi\fR\fBn\fR\fR
+.ad
+.RS 14n
+.rt  
+开始细读命令行中之后的第 \fIi\fR 个文件。\fIi\fR 为无符号数字，缺省值为 1。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIi\fR\fBp\fR\fR
+.ad
+.RS 14n
+.rt  
+开始细读命令行中之前的第 \fIi\fR 个文件。\fIi\fR 为无符号数字，缺省值为 1。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIi\fR\fBw\fR\fR
+.ad
+.RS 14n
+.rt  
+显示另一个文本窗口。如果存在 \fIi\fR，则将窗口大小设为 \fIi\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBs\fR \fIfilename\fR\fR
+.ad
+.RS 14n
+.rt  
+在指定文件中保存输入。仅保存正在细读的当前文件。\fBs\fR 和 \fIfilename\fR 之间的空格可选。此命令必须始终以一个 <\fI换行\fR> 结尾，即便指定了 \fB-n\fR 选项也是如此。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBh\fR\fR
+.ad
+.RS 14n
+.rt  
+通过显示可用命令的简短摘要来提供帮助。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBq\fR 或 \fBQ\fR\fR
+.ad
+.RS 14n
+.rt  
+退出 \fBpg\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!\fR\fBcommand\fR\fR
+.ad
+.RS 14n
+.rt  
+将 \fICommand\fR 传递给 shell，而命令名称取自 \fBSHELL\fR 环境变量。如果不可用，则使用缺省 shell。此命令必须始终以一个 <\fI换行\fR> 结尾，即便指定了 \fB-n\fR 选项也是如此。
+.RE
+
+.sp
+.LP
+无论何时将输出发送到终端，用户都能按退出键（通常为 CTRL-\）或中断键。这会使得 \fBpg\fR 停止发送输出并显示提示。接着，用户便能正常输入上述命令之一。遗憾的是，执行此操作时，某些输出会丢失，因为在终端输出队列中等待的字符都会在退出信号出现时被刷新。
+.sp
+.LP
+如果标准输出不是终端，\fBpg\fR 的作用类似于 \fBcat\fR(1)，只是会在每个文件（如果有多个文件）之前输出标题。
+.SS "大型文件行为"
+.sp
+.LP
+有关 \fBpg\fR 遇到大于或等于 2 GB（2^31 字节）文件时行为的说明，请参见 \fBlargefile\fR(5)。
+.SH 示例
+.LP
+\fB示例 1 \fR\fBpg\fR 命令示例。
+.sp
+.LP
+以下命令行使用 \fBpg\fR 读取系统消息：
+
+.sp
+.LP
+\fBexample% news | pg\fR \fB-p\fR \fB"(Page %d):"\fR
+
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBpg\fR 执行的以下环境变量的说明，请参见 \fBenviron\fR(5)：\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR 和 \fBNLSPATH\fR。
+.sp
+.LP
+以下环境变量会影响 \fBpg\fR 执行：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCOLUMNS\fR\fR
+.ad
+.RS 11n
+.rt  
+确定水平屏幕大小。如果未设置或设为 \fINULL\fR，则使用 \fBTERM\fR 值、窗口大小、波特率或它们的某种组合来指示计算屏幕大小时采用的终端类型。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLINES\fR\fR
+.ad
+.RS 11n
+.rt  
+确定在屏幕上显示的行数。如果未设置或设为 \fINULL\fR，则使用 \fBTERM\fR 值、窗口大小、波特率或它们的某种组合来指示计算屏幕大小时采用的终端类型。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSHELL\fR\fR
+.ad
+.RS 11n
+.rt  
+确定为 !command 执行的命令解释程序的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTERM\fR\fR
+.ad
+.RS 11n
+.rt  
+确定终端属性。也会尝试搜索系统相关数据库，具体取决于 \fBTERM\fR 环境变量的值。如果信息不可用，则假定终端不支持基于光标地址的移动。
+.RE
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/tmp/pg*\fR\fR
+.ad
+.sp .6
+.RS 4n
+输入来自管道时的临时文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/lib/terminfo/?/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+终端信息数据库
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) cw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+属性类型属性值
+可用性system/core-os
+CSIEnabled（已启用）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBcat\fR(1)、\fBgrep\fR(1)、\fBmore\fR(1)、\fBterminfo\fR(4)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBlargefile\fR(5)、\fBregex\fR(5)
+.SH 附注
+.sp
+.LP
+在等待终端输入的过程中，\fBpg\fR 通过终止执行来响应 BREAK、CTRL-C 和 CTRL-\。然而，在两次提示之间，这些信号会中断 \fBpg\fR 当前任务，将用户置于提示模式下。从管道读取输入时，应当谨慎使用这些命令，因为一次中断可能会终止管道中的其他命令。
+.sp
+.LP
+终端 \fB/\fR、\fB^\fR 或 \fB?\fR 有可能被搜索命令忽略。
+.sp
+.LP
+如果终端制表符不是按每八个位置设置的，有可能出现意外结果。
+.sp
+.LP
+将 \fBpg\fR 作为过滤器与另一个更改终端 I/O 选项的命令一同使用时，可能无法正确恢复终端设置。

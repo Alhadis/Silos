@@ -1,0 +1,239 @@
+'\" te
+.\"  Copyright (c) 1992, X/Open Company Limited All Rights Reserved Portions Copyright (c) 1995, Sun Microsystems, Inc. All Rights Reserved
+.\"  Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH fnmatch 5 "1995 年 3 月 28 日" "SunOS 5.11" "标准、环境和宏"
+.SH 名称
+fnmatch \- 文件名模式匹配 
+.SH 描述
+.sp
+.LP
+下面介绍的模式匹配表示法用于指定匹配 shell 中字符串的模式。以前，模式匹配表示法与正则表达式表示法相关，但与其稍有不同。出于此原因，对此模式匹配表示法规则的说明基于 \fBregex\fR(5) 手册页上所述的正则表达式表示法说明。
+.SS "匹配单个字符的模式"
+.sp
+.LP
+以下\fI匹配单个字符的模式\fR匹配单个字符：\fI普通字符\fR、\fI特殊模式字符\fR和\fI模式方括号表达式\fR。模式方括号表达式也匹配单个整理元素。
+.sp
+.LP
+普通字符是与其自身匹配的模式。普通字符可以是支持的字符集中的任何字符（\fINUL\fR 除外），需要引号的那些特殊 shell 字符，以及以下三种特殊模式字符。匹配基于字符编码所用的位模式，而非字符的图形表示形式。如果任何字符（普通字符、shell 特殊字符或模式特殊字符）带引号，则该模式将匹配字符自身。Shell 特殊字符始终需要带引号。
+.sp
+.LP
+当不带引号且位于方括号表达式之外时，以下三个字符在模式指定中具有特殊含义：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB ?\fR \fR
+.ad
+.RS 7n
+.rt  
+问号是与任意字符匹配的模式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB*\fR \fR
+.ad
+.RS 7n
+.rt  
+星号是与多个字符匹配的模式，如下面的\fB匹配多个字符的模式\fR中所述。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[\fR \fR
+.ad
+.RS 7n
+.rt  
+左方括号表示模式方括号表达式的开始。
+.RE
+
+.sp
+.LP
+\fBregex\fR(5) 手册页上的基本正则表达式的方括号表达式说明也适用于模式方括号表达式，但正则表达式表示法中用于表示\fI不匹配列表\fR的抑扬符 (\fB^\fR) 被感叹号字符\fB (\fR \fB!\fR\fB)\fR 取代。以不带引号的抑扬符开头的方括号表达式不会产生指定的结果。
+.sp
+.LP
+限制在方括号表达式中使用抑扬符是为了支持某些实现，这些实现支持使用感叹号和抑扬符作为否定字符的模式匹配。可移植应用程序必须使用类似 \fB[\^!\fR] 的形式来匹配这两种字符。
+.sp
+.LP
+如果在不执行 shell 引号删除的情况下使用模式匹配（例如使用 \fBexec\fR 函数之一调用 \fBfind\fR 时在 \fBfind\fR \fB–name \fR 主体的参数中使用模式匹配，或在\fBfnmatch\fR(3C) 函数的 \fIpattern \fR参数中使用模式匹配），可通过在特殊字符前面加上反斜杠字符来进行转义，从而使其不具有特殊含义。该转义反斜杠将被丢弃。序列 \fB\\\fR 表示一个文本反斜杠。引号对普通字符、shell 特殊字符和特殊模式字符的所有要求和效果也适用于此处的转义。
+.sp
+.LP
+这里同时介绍引号和转义是因为模式匹配必须能在三种不同情况下起作用： 
+.RS +4
+.TP
+.ie t \(bu
+.el o
+直接调用 shell，例如在路径名扩展或在 \fBcase\fR 语句中。以下所有项都将匹配字符串或文件 \fBabc\fR：  
+.sp
+
+.sp
+.TS
+tab();
+lw(1.01i) lw(1.18i) lw(1.1i) lw(1.1i) lw(1.11i) 
+lw(1.01i) lw(1.18i) lw(1.1i) lw(1.1i) lw(1.11i) 
+.
+\fBabc\fR\fB"abc"\fR\fBa"b"c\fR\fB a\bc\fR\fBa[b]c \fR
+\fBa["b"]c\fR\fBa[\b]c\fR\fBa["\b"]c\fR\fBa?c\fR\fBa*c\fR
+.TE
+
+以下项则不然：
+.sp
+
+.sp
+.TS
+tab();
+lw(1.83i) lw(1.83i) lw(1.83i) 
+.
+\fB"a?c"\fR\fBa\*c\fR\fBa\[b]c\fR
+.TE
+
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+不通过 shell 调用实用程序或函数，如 \fBfind\fR(1) 和函数 \fBfnmatch\fR(3C) 中所述 
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+通过 shell 命令行调用 \fBfind\fR、\fBcpio\fR、\fBtar\fR 或 \fBpax\fR 等实用程序在这种情况下，在实用程序看到参数之前会执行 shell 引号删除。例如，在以下命令中： 
+.sp
+find /bin -name e\c[\h]o -print 
+.sp
+删除引号后，反斜杠将呈现给 \fBfind\fR，后者会将其视为转义字符。两个反斜杠都在普通字符之前，因此 \fBc\fR 和 \fBh\fR 表示自身，可在许多以前的系统上找到 \fBecho\fR（包含在 \fB/bin\fR 中）。要查找包含 shell 特殊字符或模式字符（需要引号和转义二者）的文件名，例如：
+.sp
+\fBpax -r . . . "*a\ ( \?"\fR
+.sp
+将提取以 \fBa(?\fR 结尾的文件名。
+.RE
+.sp
+.LP
+必须在支持的应用程序中引用或转义 shell 特殊字符（有时称为元字符）。如果在不带这种保护的情况下使用，则会产生语法错误，或触发实现扩展。例如，KornShell 支持在模式中使用基于括号的一系列扩展，请参见 \fBksh\fR(1)
+.SS "匹配多个字符的模式"
+.sp
+.LP
+以下规则用于根据\fI匹配单个字符的模式\fR构造\fI匹配多个字符的模式\fR：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+星号 (*) 是一种匹配任意字符串（包括 null 字符串）的模式。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+串联\fI匹配单个字符的模式\fR是有效模式，该模式将匹配单个字符的串联或匹配每个串联模式所匹配的整理元素。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+将一个或多个\fI匹配单个字符的模式\fR与一个或多个星号串联也是有效模式。在此类模式中，每个星号将匹配由零个或更多个字符组成的字符串，在匹配尽可能多的字符的同时，仍允许模式的其余部分与字符串匹配。
+.RE
+.sp
+.LP
+因为每个星号都有零个或更多个匹配项，所以模式\fB a*b\fR 和 \fBa**b\fR 具有完全相同的作用。
+.sp
+.LP
+示例：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB a[bc]\fR \fR
+.ad
+.RS 11n
+.rt  
+匹配字符串 \fBab\fR 和 \fBac\fR。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBa*d\fR \fR
+.ad
+.RS 11n
+.rt  
+匹配字符串 \fBad\fR、\fBabd\fR 和 \fBabcd\fR，但不匹配字符串 \fBabc\fR。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBa*d*\fR \fR
+.ad
+.RS 11n
+.rt  
+匹配字符串 \fBad\fR、\fBabcd\fR、\fBabcdef\fR、\fBaaaad\fR 和 \fBadddd\fR。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB*a*d\fR \fR
+.ad
+.RS 11n
+.rt  
+匹配字符串 \fBad\fR、\fBabcd\fR、\fBefabcd\fR、\fBaaaad\fR 和 \fBadddd\fR。 
+.RE
+
+.SS "用于文件名扩展的模式"
+.sp
+.LP
+将模式匹配表示法用于文件名扩展时，\fB匹配多个字符的模式\fR\fB\fR\fB\fR\fB\fR和\fB匹配单个字符的模式\fR\fB\fR\fB\fR\fB\fR\fB\fR中的上述规则遵循以下规则。
+.RS +4
+.TP
+1.
+路径名中的斜杠字符必须用模式中的一个或多个斜杠来明确匹配；它不能用星号或问号特殊字符或方括号表达式来匹配。模式中的斜杠在方括号表达式之前识别；因此，不能在用于文件名扩展的模式方括号表达式中包含斜杠。例如，模式 \fBa[b/c]d\fR 不会匹配诸如 \fBabd\fR 或 \fBa/d\fR 之类的路径名。它只匹配 \fBa[b/c]d\fR 字面上指定的路径名。 
+.RE
+.RS +4
+.TP
+2.
+如果文件名以句点 (.) 开头，则必须将句点用作模式的第一个字符或紧接在斜杠字符后的字符来明确匹配该句点。前导句点不会用以下项匹配：
+.sp
+· 星号或问号特殊字符
+.sp
+· 包含不匹配列表的方括号表达式，例如：
+.sp
+\fB[!a]\fR
+.sp
+范围表达式，例如：
+.sp
+\fB[%-0] \fR
+.sp
+或字符类表达式，例如：
+.sp
+\fB [[:punct:]]\fR
+.sp
+未指定诸如以下方括号表达式匹配列表中的显式句点：
+.sp
+\fB[.abc]\fR
+.sp
+是否可以匹配文件名中的前导句点。
+.RE
+.RS +4
+.TP
+3.
+指定的模式将相应地与现有文件名和路径名匹配。包含模式字符的每个组成部分都要求对包含该组成部分的目录有读取权限。任何不包含模式字符的组成部分（最后一个组成部分除外）都要求有搜索权限。例如，以下给定模式：
+.sp
+\fB/foo/bar/x*/bam\fR
+.sp
+要求对目录 \fB/\fR 和 \fBfoo\fR 具有搜索权限，对目录 \fBbar\fR 具有搜索和读取权限，对每个 \fBx*\fR 目录具有搜索权限。 
+.sp
+如果模式匹配任何现有文件名或路径名，则模式将替换为这些文件名和路径名，根据当前语言环境中有效的整理序列进行排序。如果模式包含无效方括号表达式或不匹配任何现有文件名或路径名，则模式字符串将保留不变。
+.RE
+.SH 另请参见
+.sp
+.LP
+\fBfind\fR(1)、\fBksh\fR(1)、\fBfnmatch\fR(3C)、\fBregex\fR(5) 

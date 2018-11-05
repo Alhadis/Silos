@@ -1,0 +1,305 @@
+'\" te
+.\" Copyright (c) 1998, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH sharectl 1M "2015 年 5 月 19 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+sharectl \- 配置和管理文件共享服务
+.SH 用法概要
+.LP
+.nf
+\fBsharectl\fR [\fB-h\fR]
+.fi
+
+.LP
+.nf
+\fBsharectl\fR status [\fB-h\fR] [\fIprotocol\fR]
+.fi
+
+.LP
+.nf
+\fBsharectl\fR get [\fB-h\fR] [\fB-p\fR \fIproperty\fR]... \fIprotocol\fR
+.fi
+
+.LP
+.nf
+\fBsharectl\fR set [\fB-h\fR] [\fB-p\fR \fIproperty\fR=\fIvalue\fR]... \fIprotocol\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBsharectl\fR 命令对文件共享协议（例如 NFS 和 SMB）执行操作。此命令可设置客户机和服务器操作属性，获取和恢复配置快照，以及获取协议服务的状态。
+.sp
+.LP
+\fBget\fR 和 \fBset\fR 子命令（请参见下文）需要 root 权限。授权的用户可以使用 \fBsharectl\fR 设置 Solaris 服务器管理工具中的 NFS 和 SMB 属性的全局值。请参见 \fBnfs\fR(4) 和 \fBsmb\fR(4)。
+.SS "与位置配置文件交互"
+.sp
+.LP
+\fBnfsmapid_domain\fR 属性是在位置配置文件中管理的（有关位置配置文件的更多信息，请参阅 \fBnetcfg\fR(1M)）。这些配置文件要么是固定的，表示以传统方式管理网络配置；要么是反应性的，表示自动管理网络配置，并会根据配置文件中指定的策略规则对网络环境的变化作出反应。
+.sp
+.LP
+当某个固定位置（当前只能有一个，即 \fBDefaultFixed\fR 位置）处于活动状态时，对 SMF 系统信息库所做的更改（包括通过 \fBsharectl\fR 所做的那些更改）将在该位置被禁用时应用于该位置，因此，如果以后重新启用了该位置，更改将被恢复。
+.sp
+.LP
+当反应性位置处于活动状态时，不应将更改直接应用于 SMF 系统信息库；这些更改不会保留在位置配置文件中，因此如果禁用该位置，或者刷新或重新启动系统的网络配置（由 \fBsvc:/network/physical:default \fR 和 \fBsvc:/network/location:default\fR 管理），更改将会丢失。应使用 \fBnetcfg\fR(1M) 命令将更改应用于位置本身；这样会将更改保存到位置配置文件系统信息库中，还会将其应用于 SMF 系统信息库（如果更改是针对当前活动的位置进行的）。
+.sp
+.LP
+\fBnfsmapid_domain\fR 设置存储在位置配置文件的 \fBnfsv4-domain\fR 属性中。
+.SH 选项
+.sp
+.LP
+支持以下选项： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示用法消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIproperty\fR[=\fI value\fR]\fR
+.ad
+.sp .6
+.RS 4n
+指定一个属性。请参见下文的“子命令”部分。
+.RE
+
+.SS "子命令"
+.sp
+.LP
+\fBsharectl\fR 支持下述子命令。\fBsharectl\fR 命令的格式是：
+.sp
+.in +2
+.nf
+# \fBsharectl \fIsubcommand\fR [\fIoption\fR]\fR
+.fi
+.in -2
+.sp
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBget\fR [\fB-p\fR \fI property\fR] \fIprotocol\fR\fR
+.ad
+.sp .6
+.RS 4n
+获取指定协议的属性值。如果未提供 \fB-p\fR 选项，则将获取指定协议的所有属性。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset\fR [\fB-p\fR \fI property\fR=\fIvalue\fR]... \fIprotocol \fR\fR
+.ad
+.sp .6
+.RS 4n
+设置指定的文件共享协议的属性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstatus\fR [\fIprotocol\fR] \fR
+.ad
+.sp .6
+.RS 4n
+显示指定协议的状态，如果未指定协议，则显示所有文件共享协议的状态。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR获取属性
+.sp
+.LP
+以下命令获取 NFS 协议的属性。
+
+.sp
+.in +2
+.nf
+% \fBsharectl get nfs\fR
+servers=1024
+lockd_listen_backlog=32
+lockd_servers=1024
+lockd_retransmit_timeout=5
+grace_period=90
+server_versmin=2
+server_versmax=4
+client_versmin=2
+client_versmax=4
+server_delegation=on
+nfsmapid_domain=oracle.com
+server_numeric_stringid=true
+max_connections=-1
+protocol=ALL
+listen_backlog=32
+device=
+resvport=off
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下命令获取 NFS 协议的 grace_period 属性的值。
+
+.sp
+.in +2
+.nf
+% \fBsharectl get -p grace_period nfs\fR
+grace_period=90
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR设置属性
+.sp
+.LP
+请注意，在前面的示例中，服务器 NFS 协议的最低版本 (\fBserver_versmin\fR) 设置为 \fB2\fR。以下命令将最低版本号设置为版本 3。
+
+.sp
+.in +2
+.nf
+% \fBsharectl set -p server_versmin=3 nfs\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR获取状态
+.sp
+.LP
+以下命令获取系统上所有文件共享协议的状态。
+
+.sp
+.in +2
+.nf
+% \fBsharectl status\fR
+nfs      enabled
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR设置 SMB 服务器的属性
+.sp
+.LP
+以下命令为 SMB 协议设置 \fBserver_signing_required\fR 属性的值。
+
+.sp
+.in +2
+.nf
+% \fBsharectl set -p server_signing_required=true smb\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR设置 SMB 客户机的属性
+.sp
+.LP
+以下命令为 SMB 协议设置 \fBclient_signing_required\fR 属性的值。
+
+.sp
+.in +2
+.nf
+% \fBsharectl set -p client_signing_required=true smb\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR设置对 \fBautofs\fR 的 RPC（Remote Procedure Call，远程过程调用）调用的跟踪
+.sp
+.LP
+以下命令扩展了对 \fBautofs\fR 的每个 RPC 调用，并将其记录到在 \fBautomountd\fR(1M) 中为该服务指定的位置。
+
+.sp
+.in +2
+.nf
+# \fBsharectl set trace=1 autofs\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR要求客户机为 NFS 调用使用与 \fBAUTH_SYS\fR 共享的保留端口
+.sp
+.LP
+以下命令要求客户机为 NFS 调用使用与 \fBAUTH_SYS\fR 共享的保留端口。
+
+.sp
+.in +2
+.nf
+# \fBsharectl set -p resvport=on nfs\fR
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 13n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fI非零值\fR\fR
+.ad
+.RS 13n
+.rt  
+命令失败。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/include/libshare.h\fR\fR
+.ad
+.RS 27n
+.rt  
+用于退出状态的错误代码。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBautomount\fR(1M)、\fBautomountd\fR(1M)、\fBlockd\fR(1M)、\fBmountd\fR(1M)、\fBnetcfg\fR(1M)、\fBnfsd\fR(1M)、\fBnfsmapid\fR(1M)、\fBnfs\fR(4)、\fBsmb\fR(4)、\fBuser_attr\fR(4)、\fBattributes\fR(5)、\fBrbac\fR(5)、\fBsmf\fR(5)、\fBstandards\fR(5)

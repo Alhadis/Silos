@@ -1,0 +1,583 @@
+'\" te
+.\"  Copyright 1989 AT&T Copyright (c) 2003, Sun Microsystems, Inc. All Rights Reserved
+.TH dc 1 "2003 年 8 月 29 日" "SunOS 5.11" "用户命令"
+.SH 名称
+dc \- 桌面计算器
+.SH 用法概要
+.LP
+.nf
+\fB/usr/bin/dc\fR [\fIfilename\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/xpg6/bin/dc\fR [\fIfilename\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBdc\fR 是一个任意精度算术软件包。通常，该软件包以十进制整数运行，但可以指定输入基数、输出基数以及要保留的小数位数。\fBdc\fR 的整体结构是一个堆栈（逆波兰表示法）计算器。如果提供了参数，则将从该文件取输入值直到文件结尾，然后再从标准输入取值。
+.sp
+.LP
+\fBbc\fR 是 \fBdc\fR 的预处理器，提供中缀表示法和类似于 C 语言的语法，可以实现函数。\fBbc\fR 还提供了合理的程序控制结构。请参见 \fBbc\fR(1)。
+.SH 用法
+.SS "/usr/bin/dc, /usr/xpg6/bin/dc"
+.sp
+.LP
+在 \fB/usr/bin/dc\fR 和 \fB/usr/xpg6/bin/dc\fR 下可识别以下构造：
+.sp
+.ne 2
+.mk
+.na
+\fB\fInumber\fR\fR
+.ad
+.RS 15n
+.rt  
+该数字值被推送到堆栈上。一个数字是一个 0 至 9 组成的完整字符串。数字前面可以加一个下划线 (\fB_\fR) 以输入负数。数字可以包含小数点。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBs\fR\fIx\fR\fR
+.ad
+.RS 15n
+.rt  
+将堆栈顶部弹出并存储到寄存器 \fIx\fR 中，其中 \fIx\fR 可以是任何字符。如果 \fBs\fR 大写，则将 \fIx\fR 视为一个堆栈，并将值推送到该堆栈上。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBl\fR\fIx\fR\fR
+.ad
+.RS 15n
+.rt  
+寄存器 \fIx\fR 中的值被推送到该堆栈上。不会更改寄存器 \fIx\fR。所有寄存器开始时的值都为零。如果 \fBl\fR 大写，则将 \fIx\fR 视为一个堆栈，其顶部值会弹出到主堆栈上。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBd\fR\fR
+.ad
+.RS 15n
+.rt  
+复制堆栈上的顶部值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp\fR\fR
+.ad
+.RS 15n
+.rt  
+输出堆栈上的顶部值。顶部值保持不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBP\fR\fR
+.ad
+.RS 15n
+.rt  
+将堆栈顶部解释为一个 ASCII 字符串，将其删除并输出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBf\fR\fR
+.ad
+.RS 15n
+.rt  
+输出堆栈上的所有值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBq\fR\fR
+.ad
+.RS 15n
+.rt  
+退出程序。如果在执行字符串，则递归层按两层弹出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBQ\fR\fR
+.ad
+.RS 15n
+.rt  
+退出程序。堆栈上的顶部值弹出，并且字符串执行层按该值弹出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBx\fR\fR
+.ad
+.RS 15n
+.rt  
+将堆栈的顶部元素视为一个字符串，并将其作为 \fBdc\fR 命令的一个字符串执行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBX\fR\fR
+.ad
+.RS 15n
+.rt  
+将堆栈顶部的数字替换为其比例因子。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[ ... ]\fR\fR
+.ad
+.RS 15n
+.rt  
+将加方括号的 ASCII 字符串放到堆栈顶部。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB<\fR\fIx \fR \fB>\fR\fIx \fR \fB=\fR\fIx \fR\fR
+.ad
+.RS 15n
+.rt  
+顶部的两个堆栈元素会弹出并进行比较。如果寄存器 \fIx\fR 符合陈述的关系，则对其求值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBv\fR\fR
+.ad
+.RS 15n
+.rt  
+将堆栈的顶部元素替换为其平方根。将考虑任何现有的参数小数部分，但会忽略比例因子。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!\fR\fR
+.ad
+.RS 15n
+.rt  
+将行的其余部分解释为 shell 命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBc\fR\fR
+.ad
+.RS 15n
+.rt  
+弹出堆栈上的所有值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBi\fR\fR
+.ad
+.RS 15n
+.rt  
+弹出堆栈上的顶部值并将其用作进一步输入的数字基数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBI\fR\fR
+.ad
+.RS 15n
+.rt  
+将输入基数推送到堆栈顶部。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBo\fR\fR
+.ad
+.RS 15n
+.rt  
+弹出堆栈上的顶部值并将其用作进一步输出的数字基数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBO\fR\fR
+.ad
+.RS 15n
+.rt  
+将输出基数推送到堆栈顶部。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBk\fR\fR
+.ad
+.RS 15n
+.rt  
+弹出堆栈顶部，并将该值用作非负比例因子：在输出中输出相应的位数，并在乘、除和求幂运算中保留该位数。如果比例因子、输入基数和输出基数同时改变，则它们之间的交互是合理的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBK\fR\fR
+.ad
+.RS 15n
+.rt  
+将当前比例因子推送到堆栈顶部。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBz\fR\fR
+.ad
+.RS 15n
+.rt  
+将堆栈层推送到堆栈上。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBZ\fR\fR
+.ad
+.RS 15n
+.rt  
+将堆栈顶部的数字替换为其长度。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB?\fR\fR
+.ad
+.RS 15n
+.rt  
+从输入源（通常为终端）取得一行输入并执行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBY\fR\fR
+.ad
+.RS 15n
+.rt  
+显示 \fBdc\fR 调试信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB; :\fR\fR
+.ad
+.RS 15n
+.rt  
+由 \fBbc\fR(1) 用于数组运算。
+.RE
+
+.SS "/usr/bin/dc"
+.sp
+.LP
+在 \fB/usr/bin/dc\fR 下可识别以下构造，使用结果中的比例因子。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB+ - / * % ^\fR\fR
+.ad
+.RS 15n
+.rt  
+对堆栈顶部的两个值执行加 (\fB+\fR)、减 (\fB-\fR)、乘 (\fB*\fR)、除 (\fB/\fR)、求余 (\fB%\fR) 或求幂 (\fB^\fR) 运算。两个输入项从堆栈上弹出；将结果推送到堆栈上它们的位置。忽略任何指数的小数部分。
+.RE
+
+.SS "/usr/xpg6/bin/dc"
+.sp
+.LP
+在 \fB/usr/xpg6/bin/dc\fR 上可识别以下构造。除的结果强制使用比例 20。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB+ - / * % ^\fR\fR
+.ad
+.RS 15n
+.rt  
+对堆栈顶部的两个值执行加 (\fB+\fR)、减 (\fB-\fR)、乘 (\fB*\fR)、除 (\fB/\fR)、求余 (\fB%\fR) 或求幂 (\fB^\fR) 运算。两个输入项从堆栈上弹出。将结果推送到堆栈上它们的位置。忽略任何指数的小数部分。
+.sp
+确保除法运算前的比例是结果的比例。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR列显 n! 的前十个值
+.sp
+.LP
+以下示例输出 n! 的前十个值：
+
+.sp
+.in +2
+.nf
+[la1+dsa*pla10>y]sy
+0sa1
+lyx
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBbc\fR(1)、\fBattributes\fR(5)
+.SH 诊断
+.sp
+.ne 2
+.mk
+.na
+\fB\fIx\fR \fBis unimplemented\fR\fR
+.ad
+.RS 29n
+.rt  
+\fIx\fR 是一个八进制数字。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBout of space\fR\fR
+.ad
+.RS 29n
+.rt  
+可用列表已耗尽（数字太多）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBout of stack space\fR\fR
+.ad
+.RS 29n
+.rt  
+堆栈上的推送太多（堆栈溢出）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBempty stack\fR\fR
+.ad
+.RS 29n
+.rt  
+堆栈上的弹出太多（堆栈下溢）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnesting depth\fR\fR
+.ad
+.RS 29n
+.rt  
+嵌套执行层太多。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdivide by 0\fR\fR
+.ad
+.RS 29n
+.rt  
+除数为零。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsqrt of neg number\fR\fR
+.ad
+.RS 29n
+.rt  
+未定义负数的平方根（没有虚数）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexp not an integer\fR\fR
+.ad
+.RS 29n
+.rt  
+\fBdc\fR 仅处理整数求幂。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexp too big\fR\fR
+.ad
+.RS 29n
+.rt  
+允许的最大指数为 999。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinput base is too large\fR\fR
+.ad
+.RS 29n
+.rt  
+输入基数 x：2<= x <= 16。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinput base is too small\fR\fR
+.ad
+.RS 29n
+.rt  
+输入基数 x：2<= x <= 16。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBoutput base is too large\fR\fR
+.ad
+.RS 29n
+.rt  
+输出基数必须小于或等于 \fBBC_BASE_MAX\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinvalid scale factor\fR\fR
+.ad
+.RS 29n
+.rt  
+比例因子不能小于 1。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBscale factor is too large\fR\fR
+.ad
+.RS 29n
+.rt  
+比例因子不能大于 \fBBC_SCALE_MAX\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsymbol table overflow\fR\fR
+.ad
+.RS 29n
+.rt  
+指定的变量太多。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinvalid index\fR\fR
+.ad
+.RS 29n
+.rt  
+指数不能小于 1。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBindex is too large\fR\fR
+.ad
+.RS 29n
+.rt  
+指数不能大于 \fBBC_DIM_MAX\fR。
+.RE
+

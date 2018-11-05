@@ -1,0 +1,204 @@
+'\" te
+.\" Copyright (c) 2001, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1989 AT&T
+.TH shutdown 1M "2011 年 5 月 19 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+shutdown \- 关闭系统，更改系统状态
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/shutdown\fR [\fB-y\fR] [\fB-g\fR \fIgrace-period\fR] [\fB-r\fR | \fB-i\fR \fIinit-state\fR] 
+     [\fImessage\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBshutdown\fR 由超级用户执行以更改计算机的状态。在大多数情况下，用于将多用户状态（状态 2）更改为其他状态。
+.sp
+.LP
+缺省情况下，\fBshutdown\fR 使系统处于只有控制台可以访问操作系统的状态。此状态称为单用户状态。
+.sp
+.LP
+在开始关闭守护进程和终止进程之前，\fBshutdown\fR 会发送一条警告消息，并且缺省发送一条最终消息要求确认。\fImessage\fR 是在标准警告消息之后发出的一个字符串： 
+.sp
+.in +2
+.nf
+The system will be shut down in .\|.\|.
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果该字符串包含多个词，则应放在单引号 (\fB\&'\fR) 或双引号 (\fB"\fR) 中。
+.sp
+.LP
+警告消息和用户提供的 \fImessage\fR 在 \fBshutdown\fR 开始之前的 7200、3600、1800、1200、600、300、120、60 和 30 秒输出。请参见\fB\fR“示例”部分。
+.sp
+.LP
+系统状态的定义如下：
+.sp
+.ne 2
+.mk
+.na
+\fB状态 0\fR
+.ad
+.RS 16n
+.rt  
+停止操作系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB状态 1\fR
+.ad
+.RS 16n
+.rt  
+状态 1 是指管理员状态。处于状态 1 时，将挂载多用户操作所需的文件系统，并可使用需要访问多用户文件系统的登录名。当系统从固件模式进入状态 1 时，只有控制台是活动的，其他多用户（状态 2）服务不可用。请注意，在从多用户状态转换到状态 1 时，不会停止所有用户进程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB状态 s、S\fR
+.ad
+.RS 16n
+.rt  
+状态 s（或 S）是指单用户状态。在转换到此状态时，将停止所有用户进程。处于单用户状态时，将卸载多用户登录所需的文件系统，只能通过控制台访问系统。不能使用需要访问多用户文件系统的登录名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB状态 5\fR
+.ad
+.RS 16n
+.rt  
+关闭机器，从而安全拔下电源。如果可能，拔下机器上的电源。调用 \fBrc0\fR 过程以执行此任务。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB状态 6\fR
+.ad
+.RS 16n
+.rt  
+停止操作系统，重新引导至 \fB/etc/inittab\fR 中的 \fBinitdefault\fR 项定义的状态。调用 \fBrc6\fR 过程以执行此任务。
+.RE
+
+.SH 选项
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-y\fR\fR
+.ad
+.sp .6
+.RS 4n
+预先回答确认问题，从而可以在无用户干预的情况下运行命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR \fIgrace-period\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许超级用户更改缺省时间（60 秒）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fIinit-state\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果存在警告，\fIinit-state\fR 会指定 \fBinit\fR 将处于的状态。缺省情况下，将使用系统状态 \fBs\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+等效于指定 \fB-i6\fR。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR使用 \fBshutdown\fR
+.sp
+.LP
+在以下示例中，\fBshutdown\fR 在主机 \fBfoo\fR 上执行，并且执行时间安排在 120 秒后。在最终确认消息发出前的 2 分钟、1 分钟和 30 秒输出警告消息。
+
+.sp
+.in +2
+.nf
+example# shutdown -i S -g 120 "===== disk replacement ====="
+Shutdown started.   Tue Jun   7  14:51:40 PDT  1994
+
+Broadcast Message from root (pts/1) on foo Tue Jun  7 14:51:41.\|.\|.
+The system will be shut down in 2 minutes
+===== disk replacement =====
+Broadcast Message from root (pts/1) on foo Tue Jun  7 14:52:41.\|.\|.
+The system will be shut down in 1 minutes
+===== disk replacement =====
+Broadcast Message from root (pts/1) on foo Tue Jun  7 14:53:41.\|.\|.
+The system will be shut down in 30 seconds
+===== disk replacement =====
+Do you want to continue? (y or n):
+.fi
+.in -2
+.sp
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inittab\fR\fR
+.ad
+.RS 16n
+.rt  
+通过 \fBinit\fR 控制进程分发
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBboot\fR(1M)、\fBhalt\fR(1M)、\fBinit\fR(1M)、\fBkillall\fR(1M)、\fBreboot\fR(1M)、\fBufsdump\fR(1M)、\fBinit.d\fR(4)、\fBinittab\fR(4)、\fBnologin\fR(4)、\fBattributes\fR(5)
+.SH 附注
+.sp
+.LP
+系统向下转换为 \fBS\fR 或 \fBs\fR 状态时，会创建 \fB/etc/nologin\fR 文件（请参见 \fBnologin\fR(4)）。在后续转换到状态 2 （多用户状态）时，\fB/etc/rc2.d\fR 目录中的脚本将删除此文件。

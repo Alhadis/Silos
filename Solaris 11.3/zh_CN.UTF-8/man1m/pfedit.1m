@@ -1,0 +1,142 @@
+'\" te
+.\" Copyright (c) 2012, 2014, Oracle and/or its affiliates.All rights reserved
+.TH pfedit 1M "2014 年 1 月 23 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+pfedit \- 在文件经过授权的情况下编辑管理文件
+.SH 用法概要
+.LP
+.nf
+\fBpfedit\fR [\fB-r\fR] [\fB-s\fR] \fIfile\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBpfedit\fR 命令允许授权用户编辑系统配置文件。\fIfile\fR 参数表示要编辑的文件的路径名。如果该文件不采用绝对路径名，则在该文件前面会附加当前工作目录的路径名，所有后续处理会将该路径名当作参数继续进行。调用方用户必须具有授权 \fBsolaris.admin.edit/\fR\fIpath_to_file\fR 或整体授权 \fBsolaris.admin.edit\fR。\fBpfedit\fR 命令还会通过检查文件的 \fBrealpath\fR(3C) 的授权以支持使用符号链接。
+.sp
+.LP
+\fBpfedit\fR 命令将为调用方用户拥有的文件创建一个副本，然后使用调用方用户的 ID 和特权对该文件调用编辑器。缺省编辑器为 \fB/usr/bin/vi\fR，但可以通过使用 \fBEDITOR\fR 或 \fBVISUAL\fR 环境变量进行选择；如果同时设置了这两者，则优先使用 \fBVISUAL\fR。如果在用户退出编辑器时，复制的文件已更新，则更新的内容将以原子方式应用于该文件。文件的所有自主访问属性（所有者、组、权限和 ACL）以及原始文件上的任何系统或扩展属性都会保留。在任何情况下，\fBpfedit\fR 退出之前都会删除用户拥有的文件副本。 
+.sp
+.LP
+如果文件不存在，则会使用所有者 root、组 root 创建该文件。文件权限将为 644 (\fB-rw-r--r--\fR)，除非选择 \fB-s\fR 选项，这时文件权限为 600 (\fB-rw-------\fR)。创建文件后，前面所述的操作将应用于该文件。如果已使用 \fBpfedit\fR 创建和修改文件，则可以使用 \fB-r\fR 选项删除文件。
+.sp
+.LP
+\fBpfedit\fR 命令会对文件设置自主锁定，因此不能通过 \fBpfedit\fR 同时进行更新。
+.sp
+.LP
+\fBpfedit\fR 命令会尽量避免中断与其他文件的硬链接。由于原子更新需要将现有文件替换为具有更新内容的新文件，因此 \fBpfedit\fR 将拒绝对链接计数大于一的文件执行操作。
+.sp
+.LP
+\fBpfedit\fR 命令仅限于编辑文本文件，不支持包含非文本字符 (NUL) 的更新。
+.sp
+.LP
+如果在成功更新后尝试在未经授权的情况下使用该文件或者更新出现错误，但配置了审计记录，则系统将生成一个审计记录，用于捕获主题、文件名、所用授权、文件更改（如果有）和操作的成功或失败状态。审计事件类型和缺省类可为以下值之一：
+.sp
+.in +2
+.nf
+AUE_admin_edit:edit administrative file:as
+AUE_admin_file_create:create administrative file:as
+AUE_admin_file_remove:remove administrative file:as
+.fi
+.in -2
+.sp
+
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除指定文件（如果该文件是通过 \fBpfedit \fR创建的）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 6n
+.rt  
+将文件标记为“敏感”（只有在使用\fB pfedit\fR 创建文件时才有效）。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR创建配置文件
+.sp
+.LP
+要通过可以分配给用户的 \fBsolaris.admin.edit\fR 授权创建配置文件以修改 \fB/etc/syslog.conf\fR，请使用\fBprofiles\fR(1) 命令。
+
+.sp
+.in +2
+.nf
+% \fBprofiles -p "syslog Configure"\fR
+profiles: syslog Configure> \fBset auths=solaris.admin.edit/etc/syslog.conf\fR
+profiles: syslog Configure> \fBset desc="Edit syslog configuration"\fR
+profiles: syslog Configure> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR修改 /etc/syslog.conf
+.sp
+.LP
+如果用户具有上一示例中配置的 "syslog Configure" 配置文件，则调用：
+
+.sp
+.in +2
+.nf
+# \fBpfedit /etc/syslog.conf\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\&...可为该用户拥有的 \fB/etc/syslog.conf\fR 创建一个副本，并在缺省情况下以该用户身份对该副本调用 \fB/usr/bin/vi\fR。用户退出编辑器时，\fB/etc/syslog.conf \fR将以原子方式使用用户保存的内容进行更新。
+
+.SH 退出状态
+.sp
+.LP
+如果 \fBpfedit\fR 命令成功完成，则退出值为 0；如果该操作的任何部分失败，则退出值为非零值。
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Uncommitted（未确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBauths\fR(1)、\fBpasswd\fR(1)、\fBprofiles\fR(1)、\fBgroupadd\fR(1M)、\fBgroupdel\fR(1M)、\fBgroupmod\fR(1M)、\fBuseradd\fR(1M)、\fBuserdel\fR(1M)、\fBusermod\fR(1M)、\fBfgetattr\fR(3C)、\fBrealpath\fR(3C)、\fBattributes\fR(5)、\fBfsattr\fR(5)
+.SH 附注
+.sp
+.LP
+Oracle Solaris 包含管理配置文件，不建议对这些文件使用 \fBpfedit\fR 和 \fBsolaris.admin.edit/\fR\fI path_to_file\fR 授权。可以使用备用命令，这些命令特定于域，并且更安全。例如，对于 \fB/etc/passwd\fR、\fB/etc/shadow\fR 或 \fB/etc/user_attr\fR 文件，请改用 \fBpasswd\fR(1)、\fBuseradd\fR(1M)、\fBuserdel\fR(1M) 或 \fBusermod\fR(1M)。对于 \fB/etc/group\fR 文件，请改用 \fBgroupadd\fR(1M)、\fBgroupdel\fR(1M) 或 \fBgroupmod\fR(1M)。要更新 \fB/etc/security/auth_attr\fR、\fB/etc/security/exec_attr\fR 或 \fB/etc/security/prof_attr\fR，首选命令为 \fBprofiles\fR(1)。
+.sp
+.LP
+可以通过修改某些配置文件的内容来提升分配给用户的特权。分配编辑此类文件的授权或分配包含此类授权的配置文件，应视为等效于提供完全访问特权。
+.sp
+.LP
+系统属性为“敏感”的文件或使用 \fB-s\fR 选项创建的文件不会在审计记录中包括内容或内容更改。

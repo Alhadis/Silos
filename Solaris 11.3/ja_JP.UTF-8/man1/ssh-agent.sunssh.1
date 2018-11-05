@@ -1,0 +1,177 @@
+'\" te
+.\" To view license terms, attribution, and copyright for OpenSSH, the default path is /var/sadm/pkg/SUNWsshdr/install/copyright. If the Solaris operating environment has been installed anywhere other than the default, modify the given path to access the file at the installed location.
+.\" Portions Copyright (c) 2009, Sun Microsystems, Inc. All Rights Reserved.
+.TH ssh-agent 1 "2009 年 8 月 17 日" "SunOS 5.11" "ユーザーコマンド"
+.SH 名前
+ssh-agent \- 認証エージェント
+.SH 形式
+.LP
+.nf
+\fBssh-agent\fR [\fB-a\fR \fIbind_address\fR] [\fB-c\fR | \fB-s\fR ] [\fB-d\fR] 
+     [-t \fIlife\fR] [\fIcommand\fR [\fIargs\fR]...]
+.fi
+
+.LP
+.nf
+\fBssh-agent\fR [\fB-c\fR | \fB-s\fR] \fB-k\fR
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBssh-agent\fR は、公開鍵認証 (\fBRSA\fR、\fBDSA\fR) に使用される秘密鍵を保持するためのプログラムです。\fBssh-agent\fR は多くの場合、ログインセッションの開始時に起動されます。ほかのウィンドウまたはプログラムはすべて、\fBssh-agent\fR プログラムのクライアントとして起動されます。環境変数を使用すると、\fBssh\fR(1) を使用してほかのマシンにログインするときに、エージェントを検索して自動的に認証に使用できます。\fI『Securing Systems and Attached Devices in Oracle Solaris 11.3 』\fRを参照してください。
+.sp
+.LP
+コマンド行が指定されている場合、これはエージェントのサブプロセスとして実行されます。このコマンドが終了すると、エージェントも終了します。
+.sp
+.LP
+エージェントには最初、秘密鍵がありません。鍵は、エージェントにアイデンティティーを送信する \fBssh-add\fR(1) を使用して追加されます。エージェントには複数のアイデンティティーを格納できます。エージェントは、これらのアイデンティティーのいずれかを自動的に使用できます。エージェントが現在保持しているアイデンティティーを表示するには、\fBssh-add\fR(1) の \fB-l\fR オプションを使用します。
+.sp
+.LP
+エージェントは、ユーザーのローカルホストで実行されます。認証データをほかのどのマシンにも格納する必要がなく、認証のパスフレーズはネットワーク経由で移動されません。ただし、エージェントへの接続が \fBSSH\fR リモートログイン経由で転送される場合、ユーザーは、ネットワーク内の任意の場所にあるアイデンティティーで指定された特権をセキュリティー保護された方法で使用できます。
+.sp
+.LP
+エージェントを設定するための主な方法には 2 つあります。エージェントが、一部の環境変数がエクスポートされる新しいサブコマンドを起動できるようにするか、またはエージェントが、呼び出し元のシェルで評価できる必要なシェルコマンド (\fBsh\fR(1) または \fBcsh\fR(1) のどちらかの構文を生成できます) を表示できるようにします。あとで、\fBssh\fR(1) を使用してこれらの変数を調べ、それを使用してエージェントへの接続を確立します。
+.sp
+.LP
+UNIX ドメインソケットが作成され (\fB/tmp/ssh-XXXXXXXX/agent.\fIpid\fR\fR)、このソケットの名前が \fBSSH_AUTH_SOCK\fR 環境変数に格納されます。このソケットは、現在のユーザーからのみアクセス可能になります。この方法は root によって、または同じユーザーの別のインスタンスによって容易に悪用されます。
+.sp
+.LP
+\fBSSH_AGENT_PID\fR 環境変数は、エージェントの \fBPID\fR を保持します。
+.sp
+.LP
+コマンド行で指定されたコマンドが終了すると、エージェントは自動的に終了します。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fIbind_address\fR\fR
+.ad
+.RS 19n
+.rt  
+エージェントを UNIX ドメインソケットの bind_address にバインドします。デフォルトは \fB/tmp/ssh-XXXXXXXX/agent.\fIpid\fR\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 19n
+.rt  
+標準出力に C シェルコマンドを生成します。\fBSHELL\fR で csh スタイルのシェルであることが示されている場合は、これがデフォルトです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.RS 19n
+.rt  
+デバッグモード。このオプションが指定されている場合、\fBssh-agent\fR はフォークしません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR\fR
+.ad
+.RS 19n
+.rt  
+現在のエージェント (\fBSSH_AGENT_PID\fR 環境変数で指定されます) を強制終了します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 19n
+.rt  
+標準出力に Bourne シェルコマンドを生成します。\fBSHELL\fR で csh スタイルのシェルであることが示されていない場合は、これがデフォルトです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fIlife\fR\fR
+.ad
+.RS 19n
+.rt  
+エージェントに追加されるアイデンティティーの最大の有効期間のデフォルト値 (\fIlife\fR) を設定します。\fIlife\fR は秒単位で、または \fBsshd_config\fR(4) で指定された時間形式で指定できます。この値は、\fBssh-add\fR(1) を使用してアイデンティティーに対して指定された \fIlife\fR によってオーバーライドされます。このオプションを指定しない場合、デフォルトの最大値 \fIlife\fR は無期限です。
+.RE
+
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+正常終了。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+エラーが発生した。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/tmp/ssh-XXXXXXXX/agent.\fIpid\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+認証エージェントへの接続を含めるために使用される UNIX ドメインソケット。これらのソケットは、所有者のみが読み取れるようにするべきです。これらのソケットは、エージェントが終了すると削除されます。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件network/ssh
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBssh\fR(1), \fBssh-add\fR(1), \fBssh-keygen\fR(1), \fBsshd\fR(1M), \fBsshd_config\fR(4), \fBattributes\fR(5)
+.sp
+.LP
+\fI『Securing Systems and Attached Devices in Oracle Solaris 11.3』\fR

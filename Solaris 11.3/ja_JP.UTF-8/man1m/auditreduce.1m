@@ -1,0 +1,817 @@
+'\" te
+.\" Copyright (c) 2006, 2013, Oracle and/or its affiliates. All rights reserved.
+.TH auditreduce 1M "2012 年 4 月 9 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+auditreduce \- 監査トレールファイル内の監査レコードのマージと選択
+.SH 形式
+.LP
+.nf
+\fBauditreduce\fR [\fIoptions\fR] [\fIaudit-trail-file\fR]...
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBauditreduce\fR を使用して、監査トレールファイル内のレコードを選択したりマージしたりできます。監査ファイルは、1 つのマシンからでも複数のマシンからでもかまいません。
+.sp
+.LP
+マージ機能では、1 つ以上の入力監査トレールファイル内の監査レコードが一緒に単一の出力ファイルにマージされます。監査トレールファイル内のレコードは時系列順 (古いものが最初) にソートされているものと仮定され、出力ファイル内でこの順序が \fBauditreduce\fR によって維持されます。
+.sp
+.LP
+\fBauditreduce\fR は特に指示しないかぎり、ディレクトリ構造 \fIaudit_root_dir\fR\fB/*\fR (監査ルートの構造の詳細については \fBaudit.log\fR(4) を参照) 内のすべての監査トレールファイルから成る監査トレール全体をマージします。-\fBR\fR または -\fBS\fR オプションで指定しないかぎり、\fIaudit_root_dir\fR はデフォルトで \fB/var/audit\fR になります。ファイル選択オプションを使用することで、これらのファイルのサブセット、別のディレクトリ内のファイル、またはコマンド行で明示的に指定されたファイルを選択できます。
+.sp
+.LP
+選択機能によって、監査レコードの内容 (レコード内容の詳細については \fBaudit.log\fR(4) を参照) に関連するさまざまな条件に基づいてレコードを選択できます。レコードが選択されるには、\fIレコード選択オプション\fRの条件をすべて満たす必要があります。
+.SS "監査トレールファイル名の形式"
+.sp
+.LP
+コマンド行で指定されない監査トレールファイルは、監査トレールファイル名形式に準拠している必要があります。監査システムによって生成されたファイルはすでにこの形式になっています。\fBauditreduce\fR によって生成される出力ファイル名はこの形式です。それを次に示します。
+.sp
+.in +2
+.nf
+\fIstart-time\fR\fB\&.\fR\fIend-time\fR\fB\&.\fR\fIsuffix\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+ここで、\fIstart-time\fR はファイルが開かれた時間を表す 14 文字のタイムスタンプ、\fIend-time\fR はファイルが閉じられた時間を表す 14 文字のタイムスタンプ、\fIsuffix\fR はその監査トレールファイルを生成したマシンの名前、またはその他意味のある接尾辞 (たとえば、ファイルに多数のマシンからのレコードが結合されたグループが含まれる場合は \fBall\fR など) です。\fIend-time\fR は、ファイルがまだ監査システムによって書き込まれていることを示すリテラル文字列 \fBnot_terminated\fR の場合があります。タイムスタンプの形式は \fIyyyymmddhhmmss\fR (年、月、日、時、分、秒) です。タイムスタンプは UTC (Coordinated Universal Time) です。
+.SH オプション
+.SS "ファイル選択オプション"
+.sp
+.LP
+ファイル選択オプションは、どのファイルを処理するかや特別な処理の種類を示します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.sp .6
+.RS 4n
+入力ファイル内のすべてのレコードが、タイムスタンプにかかわらず選択されます。このオプションは実質的に、\fB-a\fR、\fB-b\fR、および \fB-d\fR オプションを無効にします。これは、\fB-D\fR オプションを使って入力ファイルを処理後に削除する場合に、レコードが失われるのを防ぐのに役立ちます。ただし、レコードが別のオプションのために選択され\fIなかった\fR場合、\fB-A\fR はそれをオーバーライドしません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR\fR
+.ad
+.sp .6
+.RS 4n
+完全なファイルのみを処理します。ファイル名 \fIend-time\fR タイムスタンプが \fBnot_terminated\fR であるファイルは処理されません (そのようなファイルは現在監査システムによって書き込まれている)。これは、\fB-D\fR を使って入力ファイルを処理後に削除する場合に、レコードが失われるのを防ぐのに役立ちます。コマンド行で指定されたファイルには適用されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR \fIsuffix\fR\fR
+.ad
+.sp .6
+.RS 4n
+入力ファイルを読み取ったあと、実行全体が成功した場合に削除します。ファイルの読み取り中に \fBauditreduce\fR によってエラーが検出された場合、そのファイルは削除されません。\fB-D\fR を指定すると、\fB-A\fR、\fB-C\fR、および \fB-O\fR も指定されたものとみなされます。\fIsuffix\fR は \fB-O\fR オプションに渡されます。このため、すべてのレコードが書き込まれること、完全なファイルのみが処理されること、およびレコードは削除される前にファイルに書き込まれることが保証され、監査レコードが失われるのを防ぐのに役立ちます。コマンド行に \fB-D\fR と \fB-O\fR の両方を指定する場合は、指定順序が重要になります。あとのほうで指定されたものに関連付けられた \fIsuffix\fR が有効になります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR \fImachine\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fImachine\fR をファイル名接尾辞として持つファイルからレコードを選択できます。\fB-M\fR を指定しない場合、すべてのファイルが接尾辞にかかわらず処理されます。\fB-M\fR を使用することで、多数のマシンからの結合されたレコードを含み、共通接尾辞 (\fBall\fR など) を持つファイルから、レコードを選択することもできます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB新しいモード\fRでオブジェクトを選択します。このフラグは、下位互換性を維持するため、デフォルトでオフになっています。既存の\fB古いモード\fRで \fB-e\fR、\fB-f\fR、\fB-g\fR、\fB-r\fR、または \fB-u\fR フラグを指定した場合、それらの \fBID\fR で実行されたアクションが選択されるだけでなく、それらの \fBID\fR が所有するオブジェクトも選択されます。\fB新しいモード\fRでの実行時はアクションのみが選択されます。オブジェクトを選択するには、\fB-o\fR オプションを使用する必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-O\fR \fIsuffix\fR\fR
+.ad
+.sp .6
+.RS 4n
+現在の \fBaudit_root_dir\fR 内で、指定された接尾辞を持つファイルに出力ストリームを転送します。\fIsuffix\fR には完全なパス名を含めることもできますが、その場合、末尾のコンポーネントが接尾辞と解釈され、その前にタイムスタンプが置かれ、その前にパス名の残りが置かれます。\fB-O\fR オプションを指定しなかった場合、出力は標準出力に送られます。\fBauditreduce\fR によってファイル名内にタイムスタンプが置かれる場合、マージ内の最初と最後のレコードの時間が \fIstart-time\fR、\fIend-time\fR として使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Q\fR\fR
+.ad
+.sp .6
+.RS 4n
+非出力。入力ファイルのエラーに関する通知を抑制します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIpathname\fR\fR
+.ad
+.sp .6
+.RS 4n
+代替監査ルートディレクトリ \fIaudit_root_dir\fR のパス名として \fIpathname\fR を指定します。したがって、デフォルトで \fB/var/audit\fR が使用される代わりに、\fIpathname\fR\fB/*\fR が検査されます。
+.LP
+注 - 
+.sp
+.RS 2
+いかなる非大域ゾーンのルートファイルシステムも \fB-R\fR で参照しないでください。この操作によって、大域ゾーンのファイルシステムを損傷したり、大域ゾーンのセキュリティを損ねたり、非大域ゾーンのファイルシステムを損傷する可能性があります。\fBzones\fR(5) を参照してください。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR \fIspecific_directory\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションを使用すると、\fBauditreduce\fR は監査トレールファイルを特定の場所 (\fIspecific_directory\fR) から読み取ります。\fIspecific_directory\fR は通常は監査ルートのサブディレクトリの名前として解釈されるので、\fBauditreduce\fR は \fIaudit_root_dir\fR/\fIspecific_directory\fR 内で監査トレールファイルを検索します。ただし、\fIspecific_directory\fR にバックスラッシュ文字 (\fB/\fR) が含まれている場合、監査ルートに必ずしも含まれていないディレクトリの名前になります。この場合、\fIspecific_directory\fR が調査されます。このオプションを使用することで、アーカイブファイルを \fB/var/audit\fR のようなディレクトリ構造内に物理的に置かなくても、それらのファイルを容易に操作できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR \fR
+.ad
+.sp .6
+.RS 4n
+冗長。各ファイルの名前を開くときに表示し、出力ストリームに書き込まれた合計レコード数を表示します。
+.RE
+
+.SS "レコード選択オプション"
+.sp
+.LP
+次に一覧表示したレコード選択オプションは、\fBauditreduce\fR によって生成される出力ファイルにどのレコードを書き込むかを示すために使用します。
+.sp
+.LP
+同じタイプの引数を複数指定することはできません。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fIdate-time\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIdate-time\fR 以降に発生したレコードを選択します。\fIdate-time\fR 引数については、後述の「\fBオプション引数\fR」を参照してください。\fIdate-time\fR はローカル時間です。\fB-a\fR オプションと \fB-b\fR オプションを一緒に使用すれば範囲を指定できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR \fIdate-time\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIdate-time\fR より前に発生したレコードを選択します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIaudit-classes\fR\fR
+.ad
+.sp .6
+.RS 4n
+監査クラスでレコードを選択します。\fIaudit-classes\fR に指定された監査クラスにマップされたイベントを含むレコードが、選択されます。監査クラス名は \fBaudit_class\fR(4) で定義されます。\fIaudit-classes\fR は、\fBaudit_flags\fR(5) で説明されている \fBaudit\fR \fIflags\fR を含むコンマ区切りリストでもかまいません。\fBaudit\fR \fIflags\fR を使用して、成功条件と失敗条件に基づいてレコードを選択できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdate-time\fR\fR
+.ad
+.sp .6
+.RS 4n
+特定の日 (指定された日の 00:00:00 から始まって 23:59:59 で終わる 24 時間の期間) に発生したレコードを選択します。指定する日はローカル時間です。引数の時間部分は、指定されていても無視されます。その日のタイムスタンプを持つレコードが選択されます。\fItime\fR に時、分、または秒が指定されていても、それらは無視されます。\fB-d\fR を \fB-a\fR や \fB\fR\fB-b\fR\fB\fR と一緒に使用することはできません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fIeffective-user\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fIeffective-user\fR を含むレコードを選択します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIeffective-group\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fIeffective-group\fR を含むレコードを選択します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR \fIreal-group\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fIreal-group\fR を含むレコードを選択します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-j\fR \fIsubject-ID\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fIsubject-ID\fR (\fIsubject-ID\fR はプロセス ID) を含むレコードを選択します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIlabel\fR \fR
+.ad
+.sp .6
+.RS 4n
+指定されたラベル (またはラベル範囲) (後述の「オプション引数」を参照) を含むレコードを選択します。このオプションを使用できるのは、システムが Trusted Extensions で構成されている場合だけです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fIevent\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fIevent\fR を含むレコードを選択します。\fIevent\fR は、リテラル文字列または \fIevent\fR 番号です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIobject_type=objectID_value\fR\fR
+.ad
+.sp .6
+.RS 4n
+オブジェクトタイプによってレコードを選択します。一致が起こるのは、指定された \fIobject_type\fR を記述する情報がレコードに含まれていて、オブジェクト ID が \fIobjectID_value\fR で指定された値に等しい場合です。使用可能なオブジェクトタイプと値は次のとおりです。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauth=\fR\fIauthorization\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用済みの承認に関する情報を含むレコードを選択します。承認名の末尾のピリオドは、承認がワイルドカードであることを意味し、より限定的に使用される承認オブジェクトを含むレコードが選択されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfile=\fR\fIpathname\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された pathname (pathname は正規表現のコンマ区切りリスト) のファイルシステムオブジェクトを含むレコードを選択します。正規表現の前にチルド (\fB~\fR) が付いている場合、正規表現に一致するファイルが出力から除外されます。たとえば、オプション \fBfile=~/usr/openwin,/usr,/etc\fR の場合、\fB/usr\fR または \fB/etc\fR に含まれるすべてのファイルから \fB/usr/openwin\fR 内のファイルを除いたものが選択されます。auditreduce は正規表現を左から右に処理し、ファイルが選択されているまたは除外されているとわかった時点で停止するため、正規表現の順番が重要です。したがって、オプション \fBfile=\fR\fB/usr\fR, \fB/etc\fR, \fB~/usr/openwin\fR の場合、\fB/usr\fR 内のすべてのファイルと \fB/etc\fR 内のすべてのファイルが選択されます。\fB/usr/openwin\fR 内のファイルは、正規表現 \fB/usr\fR が先に一致するため、除外されません。シェルがチルドを展開しないように、\fIpathname\fR を引用符で囲むことに注意を払うべきです。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfilegroup=\fR\fIgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+所有するグループが \fIgroup\fR であるファイルシステムオブジェクトを含むレコードを選択します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfileowner=\fR\fIuser\fR\fR
+.ad
+.sp .6
+.RS 4n
+所有するユーザーが \fIuser\fR であるファイルシステムオブジェクトを含むレコードを選択します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmri=\fR\fIservice_instance\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fIservice instance\fR の障害管理リソース識別子 (FMRI) オブジェクトを含むレコードを選択します。\fBsmf\fR(5) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgroup\fR=\fIgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたグループのグループオブジェクトを含むレコードを選択します。グループオブジェクトは一般に、グループに対する管理アクションで指定されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmsgqid=\fR\fIID\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fIID\fR (\fIID\fR はメッセージキュー \fBID\fR) を持つメッセージキューオブジェクトを含むレコードを選択します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmsgqgroup=\fR\fIgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+所有するまたは作成するグループが \fIgroup\fR であるメッセージキューオブジェクトを含むレコードを選択します。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmsgqowner=\fR\fIuser\fR\fR
+.ad
+.sp .6
+.RS 4n
+所有するまたは作成するユーザーが \fIuser\fR であるメッセージキューオブジェクトを含むレコードを選択します。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpid=\fR\fIID\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fIID\fR (\fIID\fR はプロセス \fBID\fR) を持つプロセスオブジェクトを含むレコードを選択します。プロセスは、シグナルのレシーバであるときはオブジェクトです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprocgroup=\fR\fIgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+実グループまたは実効グループが \fIgroup\fR であるプロセスオブジェクトを含むレコードを選択します。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprocowner=\fR\fIuser\fR\fR
+.ad
+.sp .6
+.RS 4n
+実ユーザーまたは実効ユーザーが \fIuser\fR であるプロセスオブジェクトを含むレコードを選択します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsemid=\fR\fIID\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fIID\fR (\fIID\fR はセマフォー \fBID\fR) を持つセマフォーオブジェクトを含むレコードを選択します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsemgroup=\fR\fIgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+所有するまたは作成するグループが \fIgroup\fR であるセマフォーオブジェクトを含むレコードを選択します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsemowner=\fR\fIuser\fR\fR
+.ad
+.sp .6
+.RS 4n
+所有するまたは作成するユーザーが \fIuser\fR であるセマフォーオブジェクトを含むレコードを選択します。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshmid=\fR\fIID\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fIID\fR (\fIID\fR は共有メモリー \fBID\fR) を持つ共有メモリーオブジェクトを含むレコードを選択します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshmgroup=\fR\fIgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+所有するまたは作成するグループが \fIgroup\fR である共有メモリーオブジェクトを含むレコードを選択します。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshmowner=\fR\fIuser\fR\fR
+.ad
+.sp .6
+.RS 4n
+所有するまたは作成するユーザーが \fIuser\fR である共有メモリーオブジェクトを含むレコードを選択します。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsock=\fR\fIport_number|machine\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fIport_number\fR または指定された \fImachine\fR (\fImachine\fR は \fBhosts\fR(4) で定義されたマシン名) のソケットオブジェクトを含むレコードを選択します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuser=\fR\fIuser\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたユーザーのユーザーオブジェクトを含むレコードを選択します。ユーザーオブジェクトは一般に、ユーザーに対する管理アクションで指定されます。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIreal-user\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fIreal-user\fR を含むレコードを選択します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIsession-id\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fIsession-id\fR を含む監査レコードを選択します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR \fIaudit-user\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fIaudit-user\fR を含むレコードを選択します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fIzone-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたゾーン名からのレコードを選択します。ゾーン名選択では大文字と小文字が区別されます。
+.RE
+
+.sp
+.LP
+コマンド行に 1 つ以上の \fIfilename\fR 引数がある場合、指定されたファイルだけが処理されます。この方法で指定するファイルは、監査トレールファイル名形式に準拠する必要はありません。ただし、指定されたファイルの処理時に \fB-M\fR、\fB-S\fR、および \fB-R\fR を使用してはいけません。\fIfilename\fR が「-」の場合は標準入力から入力が取得されます。
+.SS "オプション引数"
+.sp
+.ne 2
+.mk
+.na
+\fB\fIaudit-trail-file\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBaudit.log\fR(4) で定義された監査トレールファイル。コマンド行で指定されない監査トレールファイルは、監査トレールファイル名形式に準拠している必要があります。\fBauditreduce\fR の出力として生成される監査トレールファイルもこの形式です。形式は次のとおりです。
+.sp
+\fIstart-time . end-time . suffix\fR
+.sp
+\fIstart-time\fR はファイルが開かれた時間を示す 14 文字のタイムスタンプ、\fIend-time\fR はファイルが閉じられた時間を示す 14 文字のタイムスタンプです。\fIend-time\fR は、ファイルが監査デーモンによってまだ書き込まれているか、ファイルが適切に閉じられなかった (システムクラッシュまたは突然の停止が発生した) ことを示すリテラル文字列 \fBnot_terminated\fR でもかまいません。\fIsuffix\fR は、監査トレールファイルを生成したマシンの名前 (またはその他の意味のある接尾辞。たとえば、多数のマシンからのレコードが結合されたグループが監査トレールファイルに含まれている場合、\fBall\fR が適切な接尾辞) です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdate-time\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-a\fR、\fB-b\fR、および \fB-d\fR の \fIdate-time\fR 引数には 2 つの形式があります。絶対 \fIdate-time\fR の形式は次のとおりです。
+.sp
+\fI\fR yyyymmdd [ \fIhh\fR [ \fImm\fR [ \fIss\fR ]]]
+.sp
+ここで、\fIyyyy\fR は年 (もっとも古い値は 1970) を指定し、\fImm\fR は月 (01 - 12)、\fBdd\fR は日 (01 - 31)、\fIhh\fR は時 (00 - 23)、,\fImm\fR は分 (00 - 59)、\fIss\fR は秒 (00 - 59) です。\fIhh\fR、\fImm\fR、および \fIss\fR のデフォルトは 00 です。
+.sp
+オフセットは \fB+\fR\fIn\fR \fBd\fR|\fBh\fR|\fBm\fR|\fBs\fR として指定できます (\fIn\fR は単位の数、タグ \fBd\fR、\fBh\fR、\fBm\fR、\fBs\fR はそれぞれ日、時、分、秒を表します)。オフセットは開始時間からの相対値です。したがって、この形式は \fB-b\fR オプションでのみ使用できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIevent\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBaudit_event\fR(4) に含まれるリテラル文字列またはイベント番号。\fBaudit_event\fR ファイル内で見つからない \fIevent\fR は無効とみなされます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIgroup\fR \fR
+.ad
+.sp .6
+.RS 4n
+\fBgroup\fR(4) に含まれるリテラル文字列またはグループ ID 番号。\fBgroup\fR ファイル内で見つからない \fIgroup\fR は無効とみなされます。\fIgroup\fR は負でもかまいません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIlabel\fR\fR
+.ad
+.sp .6
+.RS 4n
+1 つの MAC ラベルまたは 2 つの有効な MAC ラベルの範囲のリテラル文字列表現。範囲を指定するには、\fBx;y\fR (\fBx\fR と \fBy\fR は有効な MAC ラベル) を使用します。\fBx\fR と \fBy\fR に完全に含まれるレコードのみが選択されます。\fBx\fR または \fBy\fR が省略された場合は、それぞれ \fBADMIN_LOW\fR または \fBADMIN_HIGH\fR がデフォルトで使用されます。範囲を指定する際には引用符を使用する必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIpathname\fR\fR
+.ad
+.sp .6
+.RS 4n
+パス名を記述する正規表現。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIuser\fR \fR
+.ad
+.sp .6
+.RS 4n
+\fBpasswd\fR(4) に含まれるリテラルユーザー名または順序数ユーザー ID。\fBpasswd\fR ファイル内で見つからないユーザー名は無効とみなされます。\fIuser\fR は負でもかまいません。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fR\fBauditreduce\fR を使用する
+.sp
+.LP
+\fBpraudit\fR(1M) は、監査レコードを人間が読める形式で表示するために利用できます。
+
+.sp
+.LP
+これは、監査トレール全体を人間が読める形式で表示します。
+
+.sp
+.in +2
+.nf
+% \fBauditreduce | praudit\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+すべての監査トレールファイルを 1 つの大きなファイルに結合する場合、レコードが 2 回現れないように元のファイルを削除するのが望ましい場合があります。
+
+.sp
+.in +2
+.nf
+% \fBauditreduce -V -D /var/audit/combined/all\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+これは、1988 年 4 月 13 日にユーザー \fBmilner\fR が行なったことを表示します。出力は、人間が読める形式で標準出力に表示されます。
+
+.sp
+.in +2
+.nf
+% \fBauditreduce -d 19880413 -u milner | praudit\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+前の例では、\fBmilner\fR が忙しかった場合には、大きなサイズのデータが生成される可能性があります。おそらく、ログインとログアウトの回数だけを調べたほうが見やすくなります。\fB-c\fR オプションは、指定されたクラスからレコードを選択します。
+
+.sp
+.in +2
+.nf
+% \fBauditreduce -d 19880413 -u milner -c lo | praudit\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+4 月 13 日、14 日、および 15 日の \fBmilner\fR のログイン/ログアウトアクティビティーを表示するには、次を使用します。結果は、現在の作業ディレクトリ内のファイルに保存されます。出力ファイルの名前の \fIsuffix\fR は \fBmilnerlo\fR、接頭辞は対応するタイムスタンプです。また、\fB-c\fR オプションで長形式の名前が使用されています。
+
+.sp
+.in +2
+.nf
+% \fBauditreduce -a 19880413 -b +3d -u milner -c login_logout -O milnerlo\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+4 月 13 日、14 日、および 15 日の \fBmilner\fR のファイルシステムに関する動きをたどる場合は、\fBchdir\fR レコードタイプを表示できます。前の例と同じ時間範囲を得るには、その範囲の\fBあと\fRの日を \fB-b\fR 時間として指定する必要があります。これは、\fB19880416\fR はデフォルトでその日の真夜中、それより前のレコードは範囲の最後の日 \fB0415\fR に当たるからです。
+
+.sp
+.in +2
+.nf
+% \fBauditreduce -a 19880413 -b 19880416 -u milner -m AUE_CHDIR | praudit\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次の例では、監査レコードがサマリー形式 (ログイン/ログアウトレコードのみ) で収集されます。レコードは、選択されたレコードが監査ルート内で 2 回存在しないようにするために、通常の監査ルートではなくディレクトリ内のサマリーファイルに書き込まれています。
+
+.sp
+.in +2
+.nf
+% \fBauditreduce -d 19880330 -c lo -O /var/audit/audit_summary/logins\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+ユーザー \fBID\fR 9944 のアクティビティーが確認されたけれども、そのユーザーがシステム管理者に知られていない場合、次の例のコマンドを使って監査トレールの全体を検索し、そのユーザーによって生成されたレコードを見つけます。\fBauditreduce\fR は、\fBID\fR 9944 の現在の有効性をシステムに問い合わせ、現在アクティブでない場合には警告メッセージを表示します。
+
+.sp
+.in +2
+.nf
+% \fBauditreduce -O /var/audit/audit_suspect/user9944 -u 9944\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+大域ゾーンのみの監査ログを取得するには:
+
+.sp
+.in +2
+.nf
+% \fBauditreduce -z global\fR
+.fi
+.in -2
+.sp
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/audit/\fR\fB*\fR\fR
+.ad
+.RS 16n
+.rt  
+監査トレールを格納する際のデフォルトの場所
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性下記を参照。
+.TE
+
+.sp
+.LP
+コマンド呼び出しは安定しています。バイナリファイル形式は安定しています。バイナリファイルの内容は不安定です。
+.SH 関連項目
+.sp
+.LP
+\fBpraudit\fR(1M), \fBaudit.log\fR(4), \fBaudit_class\fR(4), \fBgroup\fR(4), \fBhosts\fR(4), \fBpasswd\fR(4), \fBattributes\fR(5), \fBaudit_flags\fR(5), \fBsmf\fR(5)
+.sp
+.LP
+\fI『Securing Systems and Attached Devices in Oracle Solaris 11.3』\fRの監査に関するセクションを参照してください。
+.SH 診断
+.sp
+.LP
+\fBauditreduce\fR は、コマンド行エラーが発生した場合にエラーメッセージを表示してから終了します。\fBauditreduce\fR は、実行中に致命的エラーが発生した場合、それを説明するメッセージを表示してから終了します。この場合、出力ファイルが不整合な状態になっている (トレーラのない、または不完全に書き込まれたレコード) 可能性があるため、\fBauditreduce\fR は終了前に警告メッセージを表示します。呼び出しが成功すると \fB0\fR が返され、呼び出しが失敗すると \fB1\fR が返されます。
+.sp
+.LP
+\fBauditreduce\fR は多数の入力ファイルを処理する可能性があるため、開いたファイルに関するマシン全体の制限を超過する可能性があります。これが起こった場合、\fBauditreduce\fR はその効果へのメッセージを表示し、どのくらいのファイルがあるかに関する情報を提供したあと終了します。
+.sp
+.LP
+\fBauditreduce\fR の診断メッセージでレコードのタイムスタンプが表示される場合、その時間はローカル時間です。一方、ファイル名が表示される場合、そのタイムスタンプは \fBUTC\fR です。
+.SH 使用上の留意点
+.sp
+.LP
+レコード選択オプションの論理積、論理和、否定、およびグループ化を許可することをお勧めします。
+.SH 注意事項
+.sp
+.LP
+\fB-z\fR オプションは、監査ポリシー \fBzonename\fR が設定されている場合にのみ使用するようにしてください。zonename のトークンがない場合、レコードは選択されません。

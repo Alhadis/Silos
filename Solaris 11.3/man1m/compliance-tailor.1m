@@ -1,0 +1,511 @@
+'\" te
+.\" Copyright (c) 2015, Oracle and/or its affiliates. All rights             reserved.
+.TH compliance-tailor 1M "26 Jan 2015" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+compliance-tailor \- Administer compliance tailorings
+.SH SYNOPSIS
+.LP
+.nf
+compliance tailor [-t \fItailoring\fR]
+.fi
+
+.LP
+.nf
+compliance tailor [-t \fItailoring\fR] \fIsubcommand\fR
+.fi
+
+.LP
+.nf
+compliance tailor [-t \fItailoring\fR] -f \fIcommand_file\fR
+.fi
+
+.LP
+.nf
+compliance tailor help
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBcompliance tailor\fR utility creates, modifies, and lists tailorings. The creation and modification functions are only available to authorized users and require that the process is executed with elevated privilege. Otherwise it runs in read-only mode.
+.sp
+.LP
+A tailoring adjusts the set of rules from a benchmark applied when assessing against the tailoring.
+.sp
+.LP
+The following synopsis of the compliance tailor command is for interactive usage:
+.sp
+.in +2
+.nf
+\fBcompliance tailor\fR \fB-t\fR \fItailoring subcommand\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Parameters changed through \fBcompliance tailor\fR do not affect a running assessment.
+.SS "Tailorings"
+.sp
+.LP
+A benchmark is composed of profiles, groups, and rules. A rule defines specific checks to be made during an assessment. A group contains rules or other groups. A profile selects which of the rules or groups of rules are to be included or excluded in an assessment. A tailoring provides a means of expressing a new profile for a bechmark without altering the benchmark.
+.sp
+.LP
+The user must have all zone privileges and the \fBsolaris.compliance.assess\fR authorization to update the tailoring store. A user assigned the Compliance Assessor rights profile has the rights to create, modify, and delete tailorings.
+.SS "Properties"
+.sp
+.LP
+A tailoring has several properties. The supported poperties are; \fBtailoring\fR, \fBbenchmark\fR, \fBprofile\fR.
+.sp
+.LP
+As for the property values that are paired with these names, they are simple strings terminated by white-space.
+.sp
+.LP
+The \fBtailoring\fR property is the name of the tailoring. The \fBbenchmark\fR property identifies which benchmark the rules are from. The \fBprofile\fR property, if set, identifies which profile defined in the benchmark the tailoring profile is to be based on, expressing inclusion or exclusion of a few rules for which it differs from the base profile. Otherwise, the tailoring profile must have its own specification for inclusion or exclusion of all of the rules of the benchmark.
+.SH OPTIONS
+.sp
+.LP
+The following options are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIcommand_file\fR\fR
+.ad
+.RS 19n
+.rt  
+Specify the name of a tailoring command file. The \fIcommand_file\fR is a text file of tailoring subcommands, one per line. If the script does not cause the command invocation to terminate due to a \fBdelete\fR or \fBexit\fR subcommand, the command will default to interactive operation at the end of the script.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fItailoring\fR\fR
+.ad
+.RS 19n
+.rt  
+Specify the name of a tailoring. Tailoring names are case sensitive. Tailoring names can contain alphanumeric characters, the underscore (_), the hyphen (-), and the dot (.). Installed tailoring names also contain a single slash (/).
+.RE
+
+.SH SUB-COMMANDS
+.sp
+.LP
+\fBcompliance tailor\fR supports a semicolon-separated list of subcommands.
+.sp
+.LP
+Subcommands which can result in destructive actions or loss of work have an \fB-F\fR option to force the action. If the input is from a terminal device, the user is prompted when appropriate, if such a command is given without the \fB-F\fR option. If such a command is given without the \fB-F\fR option, the action is disallowed, with a diagnostic message written to standard error.
+.sp
+.LP
+The following subcommands are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBclear\fR [\fB-F\fR] \fIproperty-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+Clear the value for the property.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcommit\fR\fR
+.ad
+.sp .6
+.RS 4n
+Commit the current tailoring from memory to stable storage. The tailoring must be committed to be used by \fBcompliance\fR assess. The \fBcommit\fR operation is attempted automatically upon completion of a \fBcompliance tailor\fR session.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete\fR [\fB-F\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Delete the specified tailoring from memory and stable storage. This action is instantaneous, no commit is necessary.
+.sp
+Specify the \fB-F\fR option to force the action.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexclude\fR [\fB-a\fR] \fIitem\fR\fR
+.ad
+.sp .6
+.RS 4n
+Exclude the specified \fIitem\fR from being checked in assessments. Use the \fB-a\fR option to exclude all rules defined by the benchmark.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexit\fR [\fB-F\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Exit the \fBcompliance tailor\fR session. A commit is automatically attempted if needed. The \fB-F\fR option can be used to bypass any commit. You can also use an EOF character to exit \fBcompliance tailor\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexport\fR [\fB-x\fR] [\fB-o\fR \fIoutput-file\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Print the current tailoring to standard output. Use the \fB-o\fR option to direct the output to \fIoutput-file\fR. This subcommand by default produces output in a form suitable for use with the \fBcompliance tailor\fR \fB-f\fR option.
+.sp
+The \fB-x\fR option selects an xml format suitable for installation. This option provides only the content for an installed tailoring. For instance, a tailoring \fItname\fR on the benchmark \fIbname\fR should be installed in the file \fB/usr/lib/compliance/benchmarks/\fIbname\fR/tailorings/\fItname\fR.xccdf.xml\fR, but the creation of a suitable \fBpkg\fR(5) manifest and publication of the package are not directly supported by \fBcompliance tailor\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhelp\fR [\fIsubcommand\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Print general help or help about given topic.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinclude\fR \fIitem\fR\fR
+.ad
+.sp .6
+.RS 4n
+Include the specified \fIitem\fR among the rules to be checked in assessments.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinfo\fR\fR
+.ad
+.sp .6
+.RS 4n
+Display information about the tailoring.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlist\fR\fR
+.ad
+.sp .6
+.RS 4n
+List the names of committed and installed tailorings. These names are valid as the parameter value of the \fB-t\fR option for both \fBcompliance\fR assess and \fBcompliance tailor\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBload\fR [\fB-F\fR] \fItailoring\fR\fR
+.ad
+.sp .6
+.RS 4n
+Load the specified tailoring into memory from stable storage. If there is an uncommitted tailoring in memory, confirmation is sought before it is discarded.
+.sp
+Specify the \fB-F\fR option to force the action.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpick\fR [\fB-p\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Present a picking screen. By default, this is the group and rule pick screen. If the \fB-p\fR option is given or the benchmark property is not yet set, the property pick screen described below will be presented.
+.sp
+On the group and rule pick screen. each item (a group or a rule) is displayed as a line of text, including the item identifier and title. An exclusion is represented by the letter ’x’ appearing to the left of the item. A rule is checked in an assessment if it has no exclusion. A ’>’ chararcter in reverse at the far left highlights rules to be checked.
+.sp
+The cursor on the pick screen indicates which item is active. The pick screen is manipulated through the command keys.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBESC\fR or \fBq\fR\fR
+.ad
+.RS 19n
+.rt  
+Terminate the pick screen, return to interactive subcommands
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDOWN-ARROW\fR or \fBj\fR\fR
+.ad
+.RS 19n
+.rt  
+Move the cursor down to the next item
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBUP-ARROW\fR or \fBk\fR\fR
+.ad
+.RS 19n
+.rt  
+Move the cursor up to the previous item
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSPACE\fR or \fBx\fR\fR
+.ad
+.RS 19n
+.rt  
+Pick the active item or toggle between include and exclude
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBf\fR\fR
+.ad
+.RS 19n
+.rt  
+Page forward
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBb\fR\fR
+.ad
+.RS 19n
+.rt  
+Page backward
+.RE
+
+The property pick screen presents all valid combinations of benchmark and profile on which a tailoring can be made on the system. One of these combininations can be selected through this screen, using the same command keys from the table above.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset\fR [\fB-F\fR] \fIproperty-name\fR=\fIproperty-value\fR\fR
+.ad
+.sp .6
+.RS 4n
+Set a given property name to the given value.
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRCreating a New Tailoring
+.sp
+.LP
+In the following example, \fBcompliance tailor\fR creates a new tailoring. The new tailoring, twomore, is based on the solaris Baseline profile, and enables two of the Recommended profile tests.
+
+.sp
+.in +2
+.nf
+example# \fBcompliance tailor -t twomore\fR
+tailoring: No existing tailoring: ’twomore’, initializing
+tailoring:twomore> \fBset benchmark=solaris\fR
+tailoring:twomore> \fBset profile=Baseline\fR
+tailoring:twomore> \fBinclude rule=OSC-47501\fR
+tailoring:twomore> \fBinclude rule=OSC-49501\fR
+tailoring:twomore> \fBexport\fR
+set tailoring=twomore
+# version=2014-11-29T04:16:39.000+00:00
+set benchmark=solaris
+set profile=Baseline
+# Passwords require at least one digit
+include OSC-47501
+# Passwords require at least one uppercase character
+include OSC-49501
+tailoring:mytailor> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRDeriving a New Tailoring from an Existing Tailoring
+.sp
+.LP
+In the following example, \fBcompliance tailor\fR creates a new tailoring. The new tailoring, twominusone, is derived from the existing tailoring twomore.
+
+.sp
+.in +2
+.nf
+example# \fBcompliance tailor -t twomore\fR
+tailoring:twomore> \fBset tailoring=twominusone\fR
+tailoring:twominusone> \fBexclude OSC-45000\fR
+tailoring:twominusone> \fBexport\fR
+set tailoring=twominusone
+# version=2014-11-29T04:48:32.000+00:00
+set benchmark=solaris
+set profile=Baseline
+# Passwords allow repeat characters
+exclude OSC-45000
+# Passwords require at least one digit
+include OSC-47501
+# Passwords require at least one uppercase character
+include OSC-49501
+tailoring:mytailor> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRChanging the Name of a Tailoring
+.sp
+.LP
+The following example shows how to change the name of an existing tailoring.
+
+.sp
+.in +2
+.nf
+example# \fBcompliance tailor -t mytailoring\fR
+tailoring:mytailoring> \fBset tailoring=mytailoring2\fR
+tailoring:mytailoring2> \fBcommit\fR
+tailoring:mytailoring2> \fBset tailoring=mytailoring\fR
+tailoring:mytailoring> \fBdelete\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 4 \fRCreating a Tailoring to Run a Single Rule
+.sp
+.LP
+The following example shows how to create a tailoring to evaluate a single rule.
+
+.sp
+.in +2
+.nf
+example# \fBcompliance tailor -t root-role\fR
+tailoring:root-role> \fBset benchmark=solaris\fR
+tailoring:root-role> \fBexclude -a\fR
+tailoring:root-role> \fBinclude OSC-59000\fR
+set benchmark=solaris
+exclude -a
+# root is a role
+include OSC-59000
+tailoring:root-role> \fBexit\fR
+example# \fBcompliance assess -t root-role\fR
+Assessment will be named ’root-role.2014-11-28,22:40’
+Title root is a role
+Rule OSC-59000
+Result pass
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 5 \fRListing Committed and Installed Tailorings
+.sp
+.LP
+The following example shows how to list the committed and installed tailorings on the system.
+
+.sp
+.in +2
+.nf
+example# \fBcompliance tailor list\fR
+mytailoring2
+root-role
+twominusone
+twomore
+pci-dss/webserver
+solaris/nfs-client
+solaris/nfs-server
+.fi
+.in -2
+.sp
+
+.SH EXIT STATUS
+.sp
+.LP
+The following exit values are returned:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+Successful completion.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+An error occurred.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+Invalid usage.
+.RE
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysecurity/compliance
+_
+Interface StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBcompliance\fR(1M), \fBpkg\fR(5)
+.SH NOTES
+.sp
+.LP
+All character data used by \fBcompliance tailor\fR must be in US-ASCII encoding.
+.sp
+.LP
+For tailorings based on existing profiles, the export form represents the differences between the base profile and the tailored profile. If there is no base profile (no profile property is set), the export form commences with an "\fBexclude -a\fR" subcommand so that the remainder of the export file is an affirmative list of the rules to be checked in an assessment; if the objective of the tailoring is to run only a few tests, this can simplify verification of the tailoring.

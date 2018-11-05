@@ -1,0 +1,574 @@
+'\" te
+.\" Copyright (c) 2009, 2015, Oracle and/or its affiliates. All rights reserved.
+.TH solaris 5 "14 Jul 2015" "SunOS 5.11" "Standards, Environments, and Macros"
+.SH NAME
+solaris, ipkg \- solaris branded zone
+.SH DESCRIPTION
+.sp
+.LP
+The \fBsolaris\fR brand uses the branded zones framework described in \fBbrands\fR(5) to run zones installed with the same software as is installed in the global zone. The system software must always be in sync with the global zone when using a \fBsolaris\fR brand. The system software packages within the zone are managed using the image packaging system. See \fBpkg(5)\fR.
+.SS "Configuration and Administration"
+.sp
+.LP
+The \fBsolaris\fR brand supports the whole root non-global zone model. All of the required system software and any additional packages are installed into the private file systems of the zone. The zone must reside on its own \fBzfs\fR(1M) dataset and only ZFS is supported. The ZFS dataset is created automatically when the zone is installed or attached. If a ZFS dataset cannot be created, the zone is not installed or attached.
+.sp
+.LP
+The following \fBzonecfg\fR(1M) resources and properties are not supported by the solaris brand:
+.sp
+.in +2
+.nf
+autoshutdown=suspend
+anet:id
+device:id
+net:id
+virtual-cpu
+anet:mac
+ib-vhca
+ib-vhca:port
+.fi
+.in -2
+
+.sp
+.LP
+There are specific defaults for properties supported for \fBsolaris\fR brand as listed below:
+.sp
+.in +2
+.nf
+Resource                Property                    Default Value
+global                  zonepath                    /system/zones/%{zonename}
+                        autoboot                    false
+                        global-time                 false
+                        ip-type                     exclusive
+                        auto-shutdown               shutdown
+net                     configure-allowed-address   true
+anet                    mac-address                 auto
+                        lower-link                  auto
+                        link-protection             mac-nospoof
+.fi
+.in -2
+
+.SH SUB-COMMANDS
+.sp
+.LP
+The following \fBzoneadm\fR(1M) resources and properties are supported by the live zone reconfiguration for \fBsolaris\fR brand:
+.sp
+.in +2
+.nf
+anet (with exceptions stated below)
+capped-memory
+dedicated-cpu
+device
+fs
+net (with exceptions stated below)
+pool
+scheduling-class
+zone.* rctls
+.fi
+.in -2
+
+.sp
+.LP
+The following \fBzoneadm\fR(1M) resources and properties are not supported by the live zone reconfiguration for \fBsolaris\fR brand:
+.sp
+.in +2
+.nf
+anet:allowed-address
+anet:configure-allowed-address
+anet:defrouter
+dataset
+file-mac-profile
+fs-allowed
+hostid
+limitpriv
+global-time
+net:allowed-address
+net:configure-allowed-address
+net:defrouter
+npiv
+tenant
+zpool
+.fi
+.in -2
+
+.sp
+.LP
+Any changes made to the listed unsupported resources and properties in the persistent configuration will be ignored by the live zone reconfiguration if they are applied to the running zone.
+.sp
+.LP
+Any attempts to modify the listed unsupported resources and properties in the live configuration will be refused.
+.sp
+.LP
+The following \fBsolaris\fR brand-specific subcommand options are supported by \fBzoneadm\fR(1M).
+.sp
+.ne 2
+.mk
+.na
+\fB\fBattach\fR [\fB-z\fR \fIZBE\fR] [\fB-u\fR | \fB-U\fR] [\fB-c\fR \fIconfig_profile\fR\fB\&.xml\fR | \fIdir\fR] [\fB-x\fR \fBdestroy-orphan-zbes\fR | \fBforce-zbe-clone\fR | \fBdeny-zbe-clone\fR | \fBattach-last-booted-zbe\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Attach the specified \fBsolaris\fR branded zone image into the zone. \fBzoneadm\fR checks package levels on the machine to which the zone is to be attached. If the packages that the zone depends on from the global zone are different (have different revision numbers) from the dependent packages on the source machine, \fBzoneadm\fR reports these conflicts and does not perform the attach. 
+.sp
+If the destination system has only newer dependent packages (higher revision numbers) than those on the source system, you can use the \fB-u\fR or \fB-U\fR option to update the dependent packages to match the revision of the packages that exist on the new system.
+.sp
+When attaching a zone, multiple zone boot environments (\fBZBE\fRs) can exist and the \fBattach\fR subcommand must determine which one to attach. The selection criteria is as follows, with the first match being used.
+.RS +4
+.TP
+.ie t \(bu
+.el o
+If the \fB-z\fR option is used to specify a \fBZBE\fR, it is selected.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+If the \fB-x attach-last-booted\fR is used to specify a \fBZBE\fR, last booted zbe is selected.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+If there is only one active \fBZBE\fR associated with this global zone boot environment, it is selected.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+If there is only one active \fBZBE\fR, it is selected.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+If there is only one \fBZBE\fR, it is selected.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Last booted ZBE is selected.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+If there is only one ZBE associated with this global zone boot environment, it is selected.
+.RE
+If the selected \fBZBE\fR is associated with another global zone boot environment the selected \fBZBE\fR is attached. This behavior can be changed by using \fB-x force-zbe-clone\fR.
+.sp
+If the selected \fBZBE\fR is not associated with any global zone boot environment (orphaned boot environment), the selected \fBZBE\fR is cloned and the clone of selected \fBZBE\fR is attached. The orphan \fBZBE\fR continues to exists.
+.sp
+To destroy all orphan \fBZBE\fR during attach, use:
+.sp
+.in +2
+.nf
+\fB-x destroy-orphan-zbes\fR
+.fi
+.in -2
+.sp
+
+To avoid cloning the orphan \fBZBE\fR, use:
+.sp
+.in +2
+.nf
+\fB-x deny-zbe-clone\fR
+.fi
+.in -2
+.sp
+
+For more details on \fB-x\fR options, see below:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+Update the minimal number of packages within the zone to allow the zone's packages to be compatible with the packages installed in the global zone. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-U\fR\fR
+.ad
+.sp .6
+.RS 4n
+Update all packages within the zone to their latest versions which are compatible with the packages installed in the global zone.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fIZBE\fR\fR
+.ad
+.sp .6
+.RS 4n
+Attach the specified existing zone boot environment. If the specified zone boot environment is associated with a different global zone, the specified \fBZBE\fR is cloned and a clone of the \fBZBE\fR is attached. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fBdestroy-orphan-zbes\fR\fR
+.ad
+.sp .6
+.RS 4n
+Destroys all zone boot environments that are not associated with any global zone.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fBforce-zbe-clone\fR\fR
+.ad
+.sp .6
+.RS 4n
+Forces the selected zone boot environment to be cloned. The new cloned boot environment is then selected to be attached to the zone.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fBdeny-zbe-clone\fR\fR
+.ad
+.sp .6
+.RS 4n
+Overrides the cloning of selected zone boot environment. This option enforces that the selected \fBzbe\fR should be attached to the zone, without cloning (if default behavior is to clone it). Otherwise it has no effect.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fBattach-last-booted-zbe\fR\fR
+.ad
+.sp .6
+.RS 4n
+Selects the last booted zone boot environment. If the selected zone boot environment is not associated with any global zone, it is cloned.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBclone\fR [\fB-c\fR \fIconfig_profile\fR\fB\&.xml\fR | \fIdir\fR]\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIconfig_profile\fR\fB\&.xml\fR | \fIdir\fR\fR
+.ad
+.sp .6
+.RS 4n
+Provides a profile or a directory of profiles to apply after installation from the repository.
+.sp
+All profiles must have an \fB\&.xml\fR extension.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstall\fR [\fB-m\fR \fImanifest.xml\fR] [\fB-c\fR \fIconfig_profile\fR\fB\&.xml\fR | \fIdir\fR]\fR
+.ad
+.br
+.na
+\fB\fR
+.ad
+.br
+.na
+\fB\fBinstall\fR \fB-a\fR \fIunified_archive\fR [\fB-z\fR \fIarchived_zone\fR] \fB[\fB-x\fR\fR <\fIcert|cacert|key\fR>=\fIpath\fR]\fR
+.ad
+.br
+.na
+\fB\&... [\fB-U\fR] [\fB-p\fR|\fB-u\fR] [\fB-s\fR | \fB-v\fR] [\fB-c\fR \fIconfig_profile\fR\fB\&.xml\fR | \fIdir\fR]\fR
+.ad
+.br
+.na
+\fB\fR
+.ad
+.br
+.na
+\fB\fBinstall\fR <\fB-a\fR \fIarchive\fR | \fB-d\fR \fIpath\fR> <\fB-p\fR|\fB-u\fR> [-\fB-U\fR] [\fB-s\fR | \fB-v\fR] [\fB-c\fR \fIconfig_profile\fR\fB\&.xml\fR | \fIdir\fR]\fR
+.ad
+.sp .6
+.RS 4n
+The \fBsolaris\fR brand installer supports installing the zone from either the software repository or from an image of an installed system running the same release. This can be a \fBcpio\fR(1), \fBpax\fR(1) \fBxustar\fR, or ZFS archive. The \fBcpio\fR or ZFS archive can be compressed with \fBgzip\fR or \fBbzip2\fR. The image can also be a path to the top-level of a system's root tree, or a pre-existing zone path. 
+.sp
+If neither the \fB-a\fR nor \fB-d\fR options are specified, the zone is installed from the repository. To install additional packages in a zone the default zone manifest, \fB/usr/share/auto_install/manifest/zone_default.xml\fR, can be copied and edited to include the needed packages. This modified manifest should be specified to install with the \fB-m\fR option.
+.sp
+To install the zone from a system or zone image, either the \fB-a\fR or \fB-d\fR options is required. If required, the software in the image's active ZBE will be updated with the minimal changes required to make it compatible with the global zone's packages. If the \fB-U\fR option is specified, all software in the image's active ZBE will be updated to the latest version compatible with the active ZBE.  If either the \fB-a\fR or \fB-d\fR options is used, either the \fB-u\fR or \fB-p\fR option is also required.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fIarchive\fR\fR
+.ad
+.sp .6
+.RS 4n
+The path or file, http, or https URI of a Unified Archive. Alternatively, the path of a \fBcpio\fR(1), \fBpax\fR(1) \fBxustar\fR, or ZFS archive of an installed global zone or non-global zone.
+.sp
+If a Unified Archive is specified, the \fB-z\fR option may be used to select which archived zone is to be installed.  If the Unified Archive is on a secure web server (https URI), \fB-x\fR may be used to specify the path to a PEM-encoded certificate, CA certificate, and/or a key. When installing from a Unified Archive, if neither \fB-u\fR nor \fB-p\fR are specified, the default \fB-p\fR is implied if the archive is a recovery archive. Otherwise, \fB-u\fR is implied.
+.sp
+If a ZFS archive contains multiple boot environments, the active boot environment are installed. If install is unable to determine which boot environment is the active boot environment, install provides a list of boot environments extracted and suggest an attach command that uses the \fB-z\fR option to attach a specific boot environment.
+.sp
+\fBcpio\fR and ZFS archives can be compressed using \fBgzip\fR or \fBbzip2\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIconfig_profile\fR\fB\&.xml\fR | \fIdir\fR\fR
+.ad
+.sp .6
+.RS 4n
+Provides a profile or a directory of profiles to apply after installation from the repository.
+.sp
+All profiles must have an \fB\&.xml\fR extension.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+The path to the zonepath directory of a \fBsolaris\fR branded zone's zonepath or Solaris 11 global zone root directory.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fImanifest.xml\fR\fR
+.ad
+.sp .6
+.RS 4n
+Manifest file to be specified to the automated installer.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+Preserve the system configuration after installing the zone from an archive or a path. If installing from a Unified Archive and the archive is a recovery archive, \fB-p\fR is implied but can be overridden with \fB-u\fR.
+.sp
+.in +2
+.nf
+-x cert=/path/cert.pem
+-x cacert=/path/cacert.pem
+-x key=/path/key.pem
+.fi
+.in -2
+
+Use the specified certificate, CA certificate, and/or key for https access to the Unified Archive.
+.sp
+If the archive is not a recovery archive, \fB-p\fR will have no effect because the system configuration is not present in the archive.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.sp .6
+.RS 4n
+Install silently.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+Unconfigure the system after installing it. If installing from a Unified Archive and the archive is not a recovery archive, this is the default.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-U\fR\fR
+.ad
+.sp .6
+.RS 4n
+Update all packages within the zone to their latest versions which are compatible with the packages installed in the global zone. The \fB-U\fR option may only be used if either of the \fB-a\fR or \fB-d\fR options is used.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+Verbose output from the install process.
+.RE
+
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRConversion of a Global Zone to a \fBsolaris\fR Zone
+.sp
+.LP
+The following example shows how to create an archive of a global zone, then use that archive to configure and install a non-global zone. The installation process transforms the image of a global zone such that it can work as a non-global zone. This process is commonly referred to as \fBP2V\fR (physical to virtual).
+
+.sp
+.LP
+To ensure that the data in the archive does not become stale, it is suggested that applications on the source system be stopped before creating the archive. If this is not done, it may be necessary to synchronize application data after the zone is installed.
+
+.sp
+.LP
+First, create a recovery archive of the source system. This assumes the source system has no non-global zones installed.
+
+.sp
+.in +2
+.nf
+root@web-1# \fBarchiveadm create --recovery /net/images/web-1.uar\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Next, configure the zone on the target system using the archive. It may be necessary to further customize the configuration. See examples in \fBzonecfg\fR(1M). Finally, install the zone from the archive.
+
+.sp
+.in +2
+.nf
+root@t4-1# \fBzonecfg -z web-1\fR
+Use 'create' to begin configuring a new zone.
+zonecfg:web-1> \fBcreate -a /net/images/web-1.uar\fR
+zonecfg:web-1> \fBset zonepath=/zones/web-1\fR
+zonecfg:web-1> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+If there is a preference for not using the interactive mode, you can use the following command:
+
+.sp
+.in +2
+.nf
+# \fBzonecfg -z web-1 "create -a /net/images/web-1.uar; set zonepath=/zones/web-1"\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+If both the source system and newly installed zone have the same IP address or have other potential conflicts, be sure that only one of them is running at a time.
+
+.sp
+.LP
+Finally, generate a ZFS replication stream archive that is compressed with \fBgzip\fR. In this example, it is stored on a remote NFS server.
+
+.sp
+.in +2
+.nf
+# zfs send -R rpool@p2v | gzip > /net/somehost/p2v/p2v.zfs.gz
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRZone Migration Using a Unified Archive
+.sp
+.LP
+To ensure that the data in the archive does not become stale, it is suggested that applications on the source zone be stopped or the zone is shutdown before creating the archive. If this is not done, it may be necessary to synchronize application data after the zone is installed.
+
+.sp
+.LP
+First, create a recovery archive of the zone. This is best performed from the global zone. If it is performed within the zone, the zone will not be able to be configured from the archive.
+
+.sp
+.in +2
+.nf
+root@t4-1# \fBarchiveadm create -r -z web-1 /net/images/v2v/web-1.uar\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Next, configure the zone on the target system using the archive.
+
+.sp
+.in +2
+.nf
+root@t4-2# \fBzonecfg -z web-1 create -a /net/images/v2v/web-1.uar\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Finally, install the zone from the archive.
+
+.sp
+.in +2
+.nf
+root@t4-2# \fBzoneadm -z web-1 install -a /net/images/v2v/web-1.uar\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Be sure to shutdown the zone on the source system before booting it on the target system.
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for a description of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/zones
+_
+Interface StabilityUncommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBcpio\fR(1), \fBpax\fR(1), \fBarchiveadm\fR(1M), \fBbeadm\fR(1M), \fBsysconfig\fR(1M), \fBzfs\fR(1M), \fBzlogin\fR(1), \fBzonename\fR(1), \fBzoneadm\fR(1M), \fBzonecfg\fR(1M), \fBattributes\fR(5), \fBbrands\fR(5), \fBprivileges\fR(5), \fBzones\fR(5)
+.sp
+.LP
+\fBpkg(5)\fR, available in the IPS consolidation

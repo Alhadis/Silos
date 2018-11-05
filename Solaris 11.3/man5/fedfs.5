@@ -1,0 +1,170 @@
+'\" te
+.\" Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved
+.TH fedfs 5 "30 May 2012" "SunOS 5.11" "Standards, Environments, and Macros"
+.SH NAME
+fedfs \- overview of Federated Filesystem (FedFS)
+.SH DESCRIPTION
+.sp
+.LP
+The NFSv4 Working Group of the Internet Engineering Task Force (IETF) has been working to standarize a set of protocols which together permit construction and maintenance of a federated filesystem, where many different file servers together share a single namespace. These protocols make it possible to create a multi-vendor global namespace.
+.sp
+.LP
+Solaris currently has support for two of the three FedFS protocols:
+.sp
+.ne 2
+.mk
+.na
+\fBDNS SRV records\fR
+.ad
+.sp .6
+.RS 4n
+The Solaris automounter (\fBautomount\fR(1M)) supports the \fB-fedfs\fR map, which by default will mount \fB/nfs4/\fR\fIdns_domain\fR by looking up a DNS SRV record for the domain. This map is enabled by default in \fB/etc/auto_master\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBLDAP-based referrals\fR
+.ad
+.sp .6
+.RS 4n
+The Solaris NFS server will follow FedFS referrals by looking up location data in LDAP, guided by the schema specified by the FedFS specs.
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRUsing the \fB-fedfs\fR Automounter Map
+.sp
+.LP
+To mount a path like \fB/nfs4/cthon.org\fR, your NFS client should be set up to use DNS such that the domain's DNS server should answer a query for the \fB_nfs-domainroot._tcp\fR SRV record like this:
+
+.sp
+.in +2
+.nf
+$ \fBnslookup '-q=srv' _nfs-domainroot._tcp.cthon.org\fR
+Server:         1.2.3.4
+Address:        1.2.3.4#53
+
+_nfs-domainroot._tcp.cthon.org  service = 0 0 2049 root-a.cthon.org.
+_nfs-domainroot._tcp.cthon.org  service = 1 1 2049 root-n.cthon.org.
+
+$ \fBcd /nfs4/cthon.org\fR
+
+$ \fBdf .\fR
+/nfs4/cthon.org    (root-a.cthon.org,root-b.cthon.org:/.domainroot/\e
+cthon.org):120379963 blocks 120379963 files
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRUsing \fBnsdbparams\fR to Set Up Communications with an NSDB
+.sp
+.LP
+The following example sets up communications with an NSDB called \fBnsdb.cthon.org\fR and makes it the default NSDB:
+
+.sp
+.in +2
+.nf
+# \fBnsdbparams update -D cn=Manager,dc=cthon,dc=org -w cthon.org \e
+nsdb.cthon.org\fR
+# \fBnsdbparams show nikon.us.example.com\fR
+nikon.us.example.com:389
+     default bind DN: cn=Manager,dc=cthon,dc=org
+     default bind PW: cthon.org
+     default NCE: dc=cthon,dc=org
+     sectype: FEDFS_SEC_NONE
+# \fBnsdbparams set nsdb.cthon.org\fR
+# \fBnsdbparams get\fR
+default nsdb: nsdb.cthon.org
+default port: 389
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRUsing the NSDB Tools
+.sp
+.LP
+The following commands illustrate the use of the NSDB tools available in Oracle Solaris.
+
+.sp
+.in +2
+.nf
+# \fBnsdb-nces\fR
+Host: nsdb.cthon.org:389
+  namingContext 'dc=cthon,dc=org' is a FedFS NCE, DIT starts at ''
+
+# \fBnsdb-list\fR
+SDB: nsdb.cthon.org:389, dc=cthon,dc=org
+  FSN UUID: 7cc0bf04-5459-11e1-8083-80093d11d889
+     FSL UUID: 7cc33c02-5459-11e1-8084-00093d11d889 = filer-a:/tmp
+  FSN UUID: db48f160-5858-11e1-b459-80093d11d889
+     FSL UUID: db4998c2-5858-11e1-b45a-00093d11d889 = filer-j:/tmp
+
+# \fBnsdb-resolve-fsn 7cc0bf04-5459-11e1-8083-80093d11d889\fR
+For FSN UUID 7cc0bf04-5459-11e1-8083-80093d11d889
+  FSL UUID: 7cc33c02-5459-11e1-8084-00093d11d889
+    Location: filer-a:/tmp
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 4 \fRUsing \fBnfsref\fR to Create a Referral
+.sp
+.LP
+The following sequence of commands illustrates the use of \fBnfsref\fR to create a referral.
+
+.sp
+.in +2
+.nf
+# \fBnsdb-list\fR
+NSDB: nsdb.cthon.org:389, dc=cthon,dc=org
+  FSN UUID: 7cc0bf04-5459-11e1-8083-80093d11d889
+    FSL UUID: 7cc33c02-5459-11e1-8084-00093d11d889 = filer-a:/tmp
+  FSN UUID: db48f160-5858-11e1-b459-80093d11d889
+    FSL UUID: db4998c2-5858-11e1-b45a-00093d11d889 = filer-j:/tmp
+
+# \fBnfsref -t nfs-fedfs add /root/tools filer-k:/tools filer-x:/tools\fR
+Enter password for cn=Manager,dc=cthon,dc=org:
+Created reparse point /root/tools
+
+# \fBnsdb-list\fR
+NSDB: nsdb.cthon.org:389, dc=cthon,dc=org
+  FSN UUID: 7cc0bf04-5459-11e1-8083-80093d11d889
+    FSL UUID: 7cc33c02-5459-11e1-8084-00093d11d889 = filer-a:/tmp
+  FSN UUID: db48f160-5858-11e1-b459-80093d11d889
+    FSL UUID: db4998c2-5858-11e1-b45a-00093d11d889 = filer-j:/tmp
+  FSN UUID: 004b2382-9663-11e1-8c79-80093d11d888
+    FSL UUID: 004da2b0-9663-11e1-8c7a-00093d11d888 = filer-k:/tools
+    FSL UUID: 004e9bac-9663-11e1-8c7b-00093d11d888 = filer-x:/tools
+.fi
+.in -2
+.sp
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilityservice/file-system/nfs
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBautomount\fR(1M), \fBnfsref\fR(1M), \fBnsdb-list\fR(1M), \fBnsdbparams\fR(1M), \fBattributes\fR(5)
+.sp
+.LP
+RFC 5716: \fIRequirements for Federated File Systems\fR

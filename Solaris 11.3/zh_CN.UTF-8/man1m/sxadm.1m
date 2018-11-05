@@ -1,0 +1,542 @@
+'\" te
+.\" Copyright (c) 2015, Oracle and/or its affiliates.All rights reserved.
+.TH sxadm 1M "2015 年 6 月 15 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+sxadm \- 管理 Solaris 安全扩展配置
+.SH 用法概要
+.LP
+.nf
+sxadm enable [-c property=value[,property=value,...]]
+      extension[,extension,...]
+
+sxadm delcust [extension,...]
+
+sxadm disable extension[,extension,...]
+
+sxadm get [-p] [-o "all" | field[,...]] <"all" | property[,...]>
+     [extension]
+
+sxadm help [subcommand]
+
+sxadm set property=value[,property=value,...] extension
+
+sxadm status [-p] [extension]
+.fi
+
+.LP
+.nf
+sxadm exec [-s extension=value],... command
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBsxadm\fR 命令配置并提供有关 Solaris 安全扩展的信息。可在系统级别应用这些扩展，也可在进程级别应用这些扩展。
+.sp
+.LP
+进程的安全扩展由 \fBexec\fR(2) 确定，并从此对进程有效。扩展将在进程整个生命周期内有效，直到进程退出或再次调用 \fBexec\fR(2)。系统级别扩展可影响所有进程。进程级别扩展影响单个进程，并由所有子进程继承（假设子进程没有特权）。请参见“安全扩展”部分\fB\fR。
+.sp
+.LP
+使用 \fBld\fR(1) 构建单个可执行程序时，这些可执行程序可标记有安全扩展要求。此标记设置可确保满足关联的进程要求，而无需考虑任何系统级别扩展。可使用进程级别扩展覆盖标记有安全扩展的可执行程序。请参见“标记了扩展的可执行程序”部分\fB\fR。
+.SS "安全扩展"
+.sp
+.LP
+可以使用以下安全扩展。这些扩展减少了攻击者找到已知入口点或将漏洞利用代码植入以后可以执行的位置的机会。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBASLR\fR－地址空间布局随机化\fR
+.ad
+.sp .6
+.RS 4n
+\fBASLR\fR 将对进程的关键区域（例如，堆栈、基于 brk 的堆、内存段映射等）激活随机化。作为与位置无关的可执行程序而构建的应用程序的内存映射也根据 \fBASLR\fR 随机化。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNXHEAP\fR－非可执行堆\fR
+.ad
+.sp .6
+.RS 4n
+\fBNXHEAP\fR 可防止为进程堆分配的页可执行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNXSTACK\fR－非可执行栈\fR
+.ad
+.sp .6
+.RS 4n
+\fBNXSTACK\fR 防止为进程栈分配的页可执行。维护与传统 \fB/etc/system noexec_user_stack\fR 和 \fBnoexec_user_stack_log\fR 设置的向后兼容性，尽管此类控制已经过时，并应改用 \fBsxadm\fR。
+.RE
+
+.sp
+.LP
+缺省情况下，\fBASLR\fR 和 \fBNXHEAP\fR 扩展仅针对标记的二进制文件启用，而 \fBNXSTACK\fR 扩展针对所有进程启用。
+.SS "安全扩展属性"
+.sp
+.LP
+安全扩展可具有一个或多个属性。所有扩展都有 model 属性。此属性定义扩展的适用对象。以下为存在的 model 属性。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmodel=all\fR\fR
+.ad
+.RS 22n
+.rt  
+针对所有进程启用安全扩展。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmodel=tagged-files\fR\fR
+.ad
+.RS 22n
+.rt  
+针对标记的二进制文件启用安全扩展。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmodel=default\fR\fR
+.ad
+.RS 22n
+.rt  
+遵循安全扩展系统缺省设置。请参见“安全扩展”部分\fB\fR。
+.RE
+
+.sp
+.LP
+安全扩展可能有其他属性。
+.sp
+.LP
+\fBNXHEAP\fR 和 \fBNXSTACK\fR 提供日志记录属性，如果启用该属性，将报告从非可执行内存范围执行的尝试（对于 \fBNXSTACK\fR 为栈，对于 \fBNXHEAP\fR 为堆和数据）。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlog=enable\fR\fR
+.ad
+.RS 15n
+.rt  
+启用日志记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlog=disable\fR\fR
+.ad
+.RS 15n
+.rt  
+禁用日志记录。（缺省配置）
+.RE
+
+.SS "管理安全扩展"
+.sp
+.LP
+使用 \fBsxadm\fR 子命令 \fBenable\fR、\fBdisable\fR、\fBset\fR 和 \fBdelcust\fR 可在系统范围内修改安全扩展。例如，以下 \fBsxadm\fR 命令在系统范围内启用扩展：
+.sp
+.in +2
+.nf
+% \fBsxadm enable nxstack\fR
+% \fBsxadm enable aslr,nxheap\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下 \fBsxadm\fR 命令也在系统范围内启用扩展，但通过明确标识各个属性来启用：
+.sp
+.in +2
+.nf
+% \fBsxadm enable -c model=all aslr\fR
+% \fBsxadm enable -c model=all -c log=enable nxstack\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+还可以使用 \fBsxadm\fR 子命令 \fBexec\fR 为进程启用或禁用安全扩展。此子命令仅影响安全扩展的状态。扩展的任何其他属性继承自系统属性。以下 \fBsxadm\fR 命令可确保 \fBfoobar\fR 进程在禁用扩展的情况下执行：
+.sp
+.in +2
+.nf
+% \fBsxadm exec -s aslr=disable -s nxheap=disable foobar\fR
+.fi
+.in -2
+.sp
+
+.SS "标记了扩展的可执行程序"
+.sp
+.LP
+使用以下 \fBld\fR(1) 选项构建单个可执行程序时，这些可执行程序可能标记有安全扩展要求：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBalsr\fR[=\fImode\fR]\fR
+.ad
+.RS 21n
+.rt  
+控制 \fBASLR\fR 标记设置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnxheap\fR[=\fImode\fR]\fR
+.ad
+.RS 21n
+.rt  
+控制非可执行堆标记设置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnxstack\fR[=\fImode\fR]\fR
+.ad
+.RS 21n
+.rt  
+控制非可执行栈标记设置。
+.RE
+
+.sp
+.LP
+模式可以是启用或禁用。如果不提供模式，则 \fBenabled\fR 是缺省设置。
+.sp
+.LP
+标记可执行文件中定义的安全扩展可用以下方式与任何系统范围的安全设置交互。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+无需查阅系统安全设置即可支持具有启用或禁用安全设置的可执行文件。进程级别安全设置覆盖标记可执行文件设置。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+系统安全设置为标记文件时，仅支持具有标记安全设置的可执行文件。
+.RE
+.SH 子命令
+.sp
+.LP
+\fBsxadm\fR 命令包含以下子命令：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm enable\fR [\fB-c\fR \fIproperty\fR=\fIvalue\fR[\fI,property\fR=\fIvalue\fR,...]] \fIextension\fR[\fI,extension\fR,...]\fR
+.ad
+.sp .6
+.RS 4n
+为当前区域启用指定扩展。\fB-c\fR 选项允许 \fBsxadm\fR 传递特定扩展的属性值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm delcust\fR [\fIextension\fR,...]\fR
+.ad
+.sp .6
+.RS 4n
+将扩展恢复为缺省配置。此选项可有效地删除任何定制。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm disable\fR \fIextension\fR[\fI,extension\fR,...]\fR
+.ad
+.sp .6
+.RS 4n
+为当前区域禁用指定扩展。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm help\fR [\fIsubcommand\fR]\fR
+.ad
+.sp .6
+.RS 4n
+显示有关sxadm的使用信息或有关每个子命令的更多详细信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm status\fR [\fB-p\fR] [\fIextension\fR]\fR
+.ad
+.sp .6
+.RS 4n
+报告有关当前区域中所有安全扩展的状态的信息。如果指定 \fB-p\fR，则以易于解析的格式显示输出。在命令行上指定extension可过滤出特定扩展。计算机可解析的输出是以冒号分隔的字段列表：
+.sp
+.in +2
+.nf
+extension:status (model):configuration (model)
+.fi
+.in -2
+.sp
+
+其中：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBextension\fR\fR
+.ad
+.RS 17n
+.rt  
+扩展的名称
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstatus\fR\fR
+.ad
+.RS 17n
+.rt  
+扩展的当前状态（启用或禁用）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmodel\fR\fR
+.ad
+.RS 17n
+.rt  
+为安全扩展（所有、缺省和标记的二进制文件）启用的当前模型
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfiguration\fR\fR
+.ad
+.RS 17n
+.rt  
+为扩展存储的配置（启用、禁用或系统缺省设置）
+.sp
+extension_name、status、extra 和 configuration 这些组件均不允许使用冒号 (\fB:\fR)、空号 (\fB\0\fR) 和换行符 (\fB\n\fR)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm get\fR [\fB-p\fR] [\fB-o\fR "all" | field[,...]] <"all" | property[,...]> [extension]\fR
+.ad
+.sp .6
+.RS 4n
+显示安全扩展属性的值。如果指定了扩展，则仅显示指定扩展的属性的值。指定 "all" 可显示与所有部分关联的属性。对于每个属性，将显示以下列：
+.sp
+.in +2
+.nf
+extension: the extension the property refers to
+name: the name of the property
+value: the value of the property
+.fi
+.in -2
+.sp
+
+缺省情况下，将显示所有列；使用 \fB-o\fR 选项指定特定列或所有列。如果指定 \fB-p\fR，则以易于解析的格式显示输出。此类格式是以冒号分隔的字段列表：
+.sp
+.in +2
+.nf
+extension:property:value
+.fi
+.in -2
+.sp
+
+任何组件均不允许使用冒号 (\fB:\fR)、空号 (\fB\0\fR) 和换行符 (\fB\n\fR)。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm set\fR \fIproperty\fR=\fIvalue\fR[\fI,property\fR=\fIvalue\fR,...] \fIextension\fR\fR
+.ad
+.sp .6
+.RS 4n
+为指定扩展的属性分配值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm exec\fR \fB-s\fR [\fIextension\fR=\fIvalue\fR]... command\fR
+.ad
+.sp .6
+.RS 4n
+使用安全扩展的特定配置执行指定的命令。未在命令行上显式配置的每个安全扩展将使用系统配置。最终由命令派生的子进程将继承在命令行上指定的相同安全扩展配置。setuid 和特权二进制文件不会继承任何配置。可以从一个命令行中使用多个 \fB-s\fR 选项表示多个配置。如果多次配置相同的扩展，则优先使用最后配置的扩展。在以下示例中，在启用了 \fBASLR\fR 的情况下执行 \fBfoobar\fR：
+.sp
+.in +2
+.nf
+% \fBsxadm exec -s aslr=disable -s aslr=enable foobar\fR
+.fi
+.in -2
+.sp
+
+\fBsxadm exec\fR 子命令仅用于处理一种常见情形，即，将一个调试器应用于该调试器直接启动的一个进程。对于更为复杂的情形，该子命令不足以处理。在这种情况下，为了便于调试，可能需要使用 \fBsxadm\fR 来更改系统或区域级别安全扩展缺省设置，或者使用 \fBld\fR(1) 实用程序按对象应用标记。
+.sp
+鉴于更改内存地址会使某些调试方案复杂化，因此当基于随机化机密的扩展处于活动状态时（例如 \fBASLR\fR），此功能最引人关注。此功能对于显式测试采用不同安全扩展配置的应用程序也非常有用。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR显示当前的安全扩展配置
+.sp
+.in +2
+.nf
+$ \fBsxadm status -p\fR
+       aslr:enabled (tagged-files):system default (default)
+       nxstack:enabled (all):system default (default)
+       nxheap:enabled (tagged-files):system default (default)
+       $
+
+       $ \fBsxadm status\fR
+       EXTENSION        STATUS                   CONFIGURATION            
+       aslr             enabled (tagged-files)   system default (default)
+       nxstack          enabled (all)            system default (default)
+       nxheap           enabled (tagged-files)   system default (default)
+       $
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR使用 set/get 来设置/检索安全扩展属性
+.sp
+.in +2
+.nf
+$ \fBsxadm get model aslr\fR
+       EXTENSION       PROPERTY          VALUE
+       aslr            model            tagged-files
+       $
+
+       $ \fBsxadm set log=enable nxheap\fR
+       $ \fBsxadm get log nxheap\fR
+       EXTENSION       PROPERTY         VALUE
+       nxheap          log              enable
+       $
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR运行调试会话
+.sp
+.LP
+以下命令序列说明了在禁用 \fBASLR\fR 的情况下执行的调试会话。
+
+.sp
+.in +2
+.nf
+$ \fBsxadm exec -s aslr=disable /bin/bash\fR
+       $
+       # Because all processes (except privileged ones) inherit the(disabled)
+       # ASLR configuration mdb, truss & co will have repeatable results.
+
+       $ truss -t mmap /bin/true
+       mmap(0x00000000, 32, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE5B0000
+       mmap(0x00000000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE5A0000
+       mmap(0x00000000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE590000
+       [...]
+       $ truss -t mmap /bin/true
+       mmap(0x00000000, 32, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE5B0000
+       mmap(0x00000000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE5A0000
+       mmap(0x00000000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE590000
+       [...]
+       $ truss -t mmap /bin/true
+       mmap(0x00000000, 32, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE5B0000
+       mmap(0x00000000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE5A0000
+       mmap(0x00000000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE590000
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+命令执行成功。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+命令因运行出错而退出。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBld\fR(1)、\fBexec\fR(2)、\fBattributes\fR(5)

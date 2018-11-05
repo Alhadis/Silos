@@ -1,0 +1,131 @@
+'\" te
+.\" Copyright (c) 2008, 2012, Oracle and/or its affiliates. All rights reserved
+.TH size 9P "23 Apr 2012" "SunOS 5.11" "Kernel Properties for Drivers"
+.SH NAME
+size, Nblock, blksize, pblksize, device-nblocks, device-blksize, device-pblksize \- device size properties
+.SH DESCRIPTION
+.sp
+.LP
+A driver can communicate size information to the system by the values associated with following properties. Size information falls into two categories: device size associated with a \fBdev_info_t\fR node, and minor node size associated with a \fBddi_create_minor_node\fR(9F) \fBdev_t\fR (partition).
+.sp
+.LP
+device size property names:
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdevice-nblocks\fR\fR
+.ad
+.RS 19n
+.rt  
+An \fBint64_t\fR property representing device size in \fIdevice-blksize\fR blocks.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdevice-blksize\fR\fR
+.ad
+.RS 19n
+.rt  
+An integer property representing the size in bytes of a logical block of device. If defined, the value must be a power of two. If not defined, \fBDEV_BSIZE\fR is implied.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdevice-pblksize\fR\fR
+.ad
+.RS 19n
+.rt  
+An integer property representing the size in bytes of the physical sector of the device. If defined, the value must be a power of two. If not defined, \fIdevice-blksize\fR is implied. If neither is defined, \fBDEV_BSIZE\fR is implied.
+.RE
+
+.sp
+.LP
+minor size property names:
+.sp
+.ne 2
+.mk
+.na
+\fB\fISize\fR\fR
+.ad
+.RS 12n
+.rt  
+An \fBint64_t\fR property representing the size in bytes of a character minor device (\fBS_IFCHR\fR \fIspec_type\fR in \fBddi_create_minor_node()\fR).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fINblocks\fR\fR
+.ad
+.RS 12n
+.rt  
+An \fBint64_t\fR property representing the number blocks, in \fBdevice-blksize\fR units, of a block minor device (\fBS_IFBLK\fR \fIspec_type\fR in \fBddi_create_minor_node()\fR).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIblksize\fR\fR
+.ad
+.RS 12n
+.rt  
+An integer property representing the size in bytes of a logical block of a block minor device (\fBS_IFBLK\fR \fIspec_type\fR in \fBddi_create_minor_node()\fR). If defined, the value must be a power of two. If not defined, \fBDEV_BSIZE\fR is implied.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIpblksize\fR\fR
+.ad
+.RS 12n
+.rt  
+An integer property representing the size in bytes of a physical block of a block minor device (\fBS_IFBLK\fR \fIspec_type\fR in \fBddi_create_minor_node()\fR). If defined, the value must be a power of two. If not defined, \fIblksize\fR is implied. If neither is defined, \fBDEV_BSIZE\fR is implied.
+.RE
+
+.sp
+.LP
+A driver that implements both block and character minor device nodes should support both \fISize\fR and \fINblocks\fR. Typically, the following is true: \fISize\fR = \fINblocks\fR * \fIblksize\fR.
+.sp
+.LP
+A driver where all \fBddi_create_minor_node\fR(9F) calls for a given instance are associated with the same physical block device should implement \fIdevice-nblocks\fR. If the device has a fixed block size with a value other than \fBDEV_BSIZE\fR then \fIdevice-blksize\fR and \fIdevice-pblksize\fR should be implemented.
+.sp
+.LP
+The driver is responsible for ensuring that property values are updated when device, media, or partition sizes change. For each represented item, if its size is know to be zero, the property value should be zero. If its size is unknown, the property should not be defined.
+.sp
+.LP
+A driver may choose to implement size properties within its \fBprop_op\fR(9E) implementation. This reduces system memory since no space is used to store the properties.
+.sp
+.LP
+The DDI property interfaces deal in signed numbers. For all interfaces described on this manual page, values should be considered unsigned. It is the responsibility of the code dealing with the property value to ensure that an unsigned interpretation occurs.
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Interface StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBattach\fR(9E), \fBdetach\fR(9E), \fBprop_op\fR(9E), \fBddi_create_minor_node\fR(9F), \fBinquiry-vendor-id\fR(9P)
+.sp
+.LP
+\fIWriting Device Drivers for Oracle Solaris 11.2\fR

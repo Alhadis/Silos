@@ -1,0 +1,370 @@
+'\" te
+.\" Copyright (c) 2014, Oracle and/or its affiliates. All rights reserved.
+.TH svcio 1 "08 April 2014" "SunOS 5.11" "User Commands"
+.SH NAME
+svcio \- create text files based on service configuration properties
+.SH SYNOPSIS
+.LP
+.nf
+\fB/lib/svc/bin/svcio\fR [-alux] [-f \fIFMRI-instance\fR] [-g \fIgroup\fR]
+          [-i \fIfile\fR] [-m \fImode\fR] [-o \fIfile\fR] [-O \fIowner\fR]
+          [-R \fIdir\fR [-L \fIopts\fR [-p]]] [-S \fIdir\fR]
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBsvcio\fR utility reads a template known as a stencil and emits text based on that file in conjunction with the properties from a service instance. In the typical case, \fBsvcio\fR is used to generate application-specific configuration files for services that are managed by, but are not able to read their configurations from, SMF.
+.sp
+.LP
+If the stencil itself contains any errors, \fBsvcio\fR will provide a snippet of text along with a line number and the cause of the error. Unless the error would prevent further progress, each error is printed in the order it occurs in the file.
+.sp
+.LP
+Error messages are printed to the standard error stream.
+.SH OPTIONS
+.sp
+.LP
+The following options are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 20n
+.rt  
+Process all files configured for an instance.
+.sp
+Specifically, \fBsvcio\fR will look at all property groups with the type "\fBconfigfile\fR" and determine which stencil to use and where to write the resulting file by examing the values of the properties "\fBpath\fR" and "\fBstencil\fR" within that property group. For example, if property group "\fBconf1\fR" is of the appropriate type, then \fBsvcio\fR will use the value of "\fBconf1/stencil\fR" as the path of the stencil file and "\fBconf1/path\fR" as the path of the file to which to write the output. Additionally, the optional properties "\fBowner\fR" and "\fBgroup\fR" can be used to set the owner and group of the output file respectively. If the property group name or property name contains a reserved character (see \fBsmf\fR(5)) then it must be encoded.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIFMRI-instance\fR\fR
+.ad
+.RS 20n
+.rt  
+The FMRI of a service instance to run the stencil against.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR \fIgroup\fR\fR
+.ad
+.RS 20n
+.rt  
+The group to associate the output files with.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fIfile\fR\fR
+.ad
+.RS 20n
+.rt  
+The path to the stencil file (default is stdin). This option cannot be used with \fB-a\fR option.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 20n
+.rt  
+Lists all properties that would be referenced were a file is to be output.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR \fIopts\fR\fR
+.ad
+.RS 20n
+.rt  
+Specifies options to be passed to \fBmount\fR(2) when loopback mounting output files. If this option is not specified, output files will not be loopback mounted. The \fB-R\fR switch is required with this option. A regular file will be written to the specified output path, rooted at prefix. This file will be loopback mounted to the specified output path, rooted at \fB/\fR or the value of the \fB-R\fR option.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fImode\fR\fR
+.ad
+.RS 20n
+.rt  
+Sets the mode for any output file (default is 644).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIfile\fR\fR
+.ad
+.RS 20n
+.rt  
+The path to the output file (default is stdout). This option cannot be used with \fB-a\fR option.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-O\fR \fIowner\fR\fR
+.ad
+.RS 20n
+.rt  
+Sets the owner of the output files.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIprefix\fR\fR
+.ad
+.RS 20n
+.rt  
+Sets the root prefix for all output files.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 20n
+.rt  
+Creates non-existant intermediate directories in the output file path rooted at the value of the \fB-R\fR option. Note that this option will not create directories that are missing in the path to the mount point.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR \fIdir\fR\fR
+.ad
+.RS 20n
+.rt  
+Looks for stencils in this directory rather than the default.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.RS 20n
+.rt  
+Unlinks output files and undo loopback mounting. No output files will be created.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.RS 20n
+.rt  
+Terminates \fBsvcio\fR on the first error rather than continuing to the next stencil.
+.RE
+
+.SH OPERANDS
+.sp
+.LP
+The following operands are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fIFMRI\fR\fR
+.ad
+.RS 17n
+.rt  
+A fault management resource identifier (FMRI) that specifies one or more instances (see \fBsmf\fR(5)). FMRIs can be abbreviated by specifying the instance name, or the trailing portion of the service name. For example, given the FMRI:
+.sp
+.in +2
+.nf
+svc:/network/smtp:sendmail
+.fi
+.in -2
+.sp
+
+The following are valid abbreviations:
+.sp
+.in +2
+.nf
+sendmail
+:sendmail
+smtp
+smtp:sendmail
+network/smtp
+.fi
+.in -2
+.sp
+
+The following are invalid abbreviations:
+.sp
+.in +2
+.nf
+mail
+network
+network/smt
+.fi
+.in -2
+.sp
+
+If the FMRI specifies a service, then the command applies to all instances of that service, except when used with the \fB-D\fR option.
+.sp
+Abbreviated forms of FMRIs are unstable, and should not be used in scripts or other permanent tools.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIFMRI-instance\fR\fR
+.ad
+.RS 17n
+.rt  
+An FMRI that specifies an instance.
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRProcessing All Configuration Files for an Instance
+.sp
+.LP
+This example processes all configured configuration files for an instance:
+
+.sp
+.in +2
+.nf
+example% \fBsvcio -a -f svc:/service:instance\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRRemoving All Configuration Files for an Instance
+.sp
+.LP
+This example unlinks and unmounts all configured configuration files for an instance:
+
+.sp
+.in +2
+.nf
+example% \fBsvcio -au -f svc:/service:instance\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRUsing an Unconfigured Stencil for an Instance
+.sp
+.LP
+This example produces an output file based on a stencil that has not been configured:
+
+.sp
+.in +2
+.nf
+example% \fBsvcio -o /etc/svc.conf -i ~/svc.stencil \
+       -f svc:/service1:instance\fR
+.fi
+.in -2
+.sp
+
+.SH EXIT STATUS
+.sp
+.LP
+The following exit values are returned:
+.sp
+.ne 2
+.mk
+.na
+\fB0\fR
+.ad
+.RS 5n
+.rt  
+Successful command invocation.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+A fatal error occurred as a result of a failed system call.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+Invalid command line options were specified.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.RS 5n
+.rt  
+A fatal error occurred as a result of an unexpected SMF error.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR\fR
+.ad
+.RS 5n
+.rt  
+An error occurred parsing a stencil.
+.RE
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/core-os 
+_
+Interface StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBsmf_stencil\fR(4), \fBsvcs\fR(1), \fBsvcprop\fR(1), \fBsvcadm\fR(1M), \fBsvccfg\fR(1M), \fBsvc.startd\fR(1M), \fBstat\fR(2), \fBlibscf\fR(3LIB), \fBsmf\fR(5)

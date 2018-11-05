@@ -1,0 +1,2109 @@
+'\" te
+.\" Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\" Portions Copyright (c) 2003, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH locale 5 "2011 年 5 月 20 日" "SunOS 5.11" "标准、环境和宏"
+.SH 名称
+locale \- 用户环境的子集，该子集取决于语言和文化习惯
+.SH 描述
+.sp
+.LP
+\fBlocale\fR 定义了用户环境的子集，该子集取决于语言和文化习惯。它由一个或多个类别组成。每个类别都由其名称标识，用于控制系统组件行为的特定方面。类别名称对应于以下环境变量名称：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_CTYPE\fR\fR
+.ad
+.RS 15n
+.rt  
+字符分类和大小写转换。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_COLLATE\fR\fR
+.ad
+.RS 15n
+.rt  
+整理顺序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_TIME\fR\fR
+.ad
+.RS 15n
+.rt  
+日期和时间格式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_NUMERIC\fR\fR
+.ad
+.RS 15n
+.rt  
+数字格式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_MONETARY\fR\fR
+.ad
+.RS 15n
+.rt  
+货币格式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_MESSAGES\fR\fR
+.ad
+.RS 15n
+.rt  
+信息性和诊断性信息与交互式响应的格式。 
+.RE
+
+.sp
+.LP
+标准实用程序的行为基于当前语言环境，如每个实用程序的 "ENVIRONMENT VARIABLES"（环境变量）部分中所定义。一些 C 语言函数的行为也会基于当前语言环境而改变，如最后对 \fBsetlocale\fR(3C) 的调用所定义的那样。     
+.sp
+.LP
+由实现提供的语言环境之外的语言环境可以由应用程序通过 \fBlocaledef\fR(1) 实用程序创建。使用环境变量时用于指定语言环境的值将是创建语言环境时指定为 \fBlocaledef\fR 的 \fIname\fR 操作数的字符串。字符串 “C” 和 “POSIX” 保留为 POSIX 语言环境的标识符。
+.sp
+.LP
+应用程序可以通过调用具有相应值的 \fBsetlocale()\fR 函数来选择所需的语言环境。如果调用带空字符串的函数，例如：
+.sp
+.in +2
+.nf
+setlocale(LC_ALL, "");
+.fi
+.in -2
+
+.sp
+.LP
+将使用对应环境变量的值。如果取消设置环境变量或者将环境变量设置为空字符串，则 \fBsetlocale()\fR 函数将设置相应的环境。
+.SS "语言环境定义"
+.sp
+.LP
+语言环境可以使用 \fBlocaledef\fR 实用程序接受的文件格式进行说明。
+.sp
+.LP
+语言环境定义文件必须包含一个或多个语言环境类别源定义，且不得包含同一语言环境类别的多个定义。
+.sp
+.LP
+类别源定义由类别头、类别正文和类别尾部组成。类别头包含类别的字符串命名，以字符 \fBLC_\fR 开头。类别尾部包含字符串 \fBEND\fR，后跟一个或多个空白字符和对应类别头中使用的字符串。
+.sp
+.LP
+类别正文包含一行或多行文本。每行包含一个标识符，后面跟可选的一个或多个操作数。标识符是标识特定语言环境元素或整理元素的关键字。语言环境内的每个关键字必须具有一个唯一名称（即两个类别不能有名称相同的关键字）。关键字不能以字符 \fBLC_\fR 开头。必须用一个或多个空白字符将标识符与操作数隔开。
+.sp
+.LP
+操作数必须是字符、整理元素或字符串。字符串必须使用双引号 (\fB“\fR) 括起来。字符串中的文本双引号前面必须带有 <\fI转义字符\fR>，如下所述。当关键字后跟多个操作数时，必须使用分号 (\fB;\fR) 分隔这些操作数。分号前后都允许使用空白字符。
+.sp
+.LP
+文件中的第一个类别头前面可以有用于修改注释字符的行。它具有以下格式，从第 1 列开始：
+.sp
+.in +2
+.nf
+"comment_char %c\en",<\fIcomment character\fR>
+.fi
+.in -2
+
+.sp
+.LP
+注释字符缺省为井号 (\fB#\fR)。第一个位置中的空白行和包含 <\fI注释字符\fR> 的行将被忽略。
+.sp
+.LP
+文件中的第一个类别头前面可以有用于修改要在文件中使用的转义符的行。它具有以下格式，从第 1 列开始：
+.sp
+.in +2
+.nf
+"escape_char %c\en",<\fIescape character\fR>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+转义符缺省为反斜杠。
+.sp
+.LP
+将转义符作为行的最后一个字符可以续行；输入中的这种续行符将被丢弃。虽然实现不需要接受连续行中长度超过 \fB{LINE_MAX}\fR 个字节的部分，但它不会对连续行的累计长度施加限制。注释行无法使用转义的换行符进行续行。
+.sp
+.LP
+单个字符、字符串中的字符和整理字符必须使用符号名称表示，如下面所定义。此外，字符可以使用该字符自身表示，或者表示为八进制、十六进制或十进制常量。使用非符号表示法时，所得到的语言环境定义在很多情况下无法在各系统之间移植。左尖括号 (\fB<\fR) 是保留符号，表示符号名称的开始，用于表示自身时，前面必须加转义字符。以下规则适用于字符表示形式：
+.RS +4
+.TP
+1.
+字符可以通过括在尖括号（\fB<\fR 和 \fB>\fR）内的符号名称表示。该符号名称（包括尖括号）必须与通过 \fBlocaledef\fR \fB- f\fR 选项指定的字符映射文件中定义的符号名称完全一致，并将替换为由与字符映射文件中的符号名称关联的值确定的字符值。使用字符映射文件中没有的符号名称将会导致错误，除非类别是 \fBLC_CTYPE\fR 或 \fBLC_COLLATE\fR，在这种情况下将会导致警告（有关由于错误和警告导致的操作的说明，请参见 \fBlocaledef\fR(1)）。如果 \fBcollating-element\fR 或 \fBcollating-symbol\fR 部分中指定的符号名称与字符映射文件（如果存在）中的符号名称重复，则是错误做法。在符号名称中使用转义符或右尖括号无效，除非该字符的前面带有转义符。  
+.sp
+示例：
+.sp
+.in +2
+.nf
+<C>;<c-cedilla> "<M><a><y>"
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+2.
+一个字符可以用该字符自身表示，在这种情况下，该字符的值与实现相关。在字符串中，双引号字符、转义符和右尖括号字符必须进行转义（前面带有转义符），才能解释为该字符自身。在字符串外部，以下字符
+.sp
+.in +2
+.nf
+\fB,     ;     <     >\fR \fIescape_char\fR
+.fi
+.in -2
+.sp
+
+必须进行转义才能解释为该字符自身。
+.sp
+示例：
+.sp
+.in +2
+.nf
+c       "May"
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+3.
+字符可以表示为八进制常量。八进制常量指定为转义符后跟两个或更多个八进制数字。每个常量表示一个字节值。多字节值可以用按字节顺序指定的串联常量表示，最后一个常量指定字符的最低有效字节。
+.sp
+示例：
+.sp
+.in +2
+.nf
+\e143;\e347;\e143\e150    "\e115\e141\e171"
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+4.
+字符可以表示为十六进制常量。十六进制常量指定为转义符后跟 \fBx\fR，再跟两个或更多个十六进制数字。每个常量表示一个字节值。多字节值可以用按字节顺序指定的串联常量表示，最后一个常量指定字符的最低有效字节。
+.sp
+示例：
+.sp
+.in +2
+.nf
+\ex63;\exe7;\ex63\ex68    "\ex4d\ex61\ex79"
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+5.
+字符可以表示为十进制常量。十进制常量指定为转义字符后跟 \fBd\fR，再跟两个或更多个十进制数字。每个常量表示一个字节值。多字节值可以用按字节顺序指定的串联常量表示，最后一个常量指定字符的最低有效字节。 
+.sp
+示例：
+.sp
+.in +2
+.nf
+\ed99;\ed231;\ed99\ed104   "\ed77\ed97\ed121"
+.fi
+.in -2
+.sp
+
+无论是使用符号名称、字符自身，还是八进制、十进制或十六进制常量，只能指定为其创建语言环境定义的字符集中存在的字符。如果存在字符映射文件，则只能使用八进制、十进制或十六进制常量指定字符映射文件中定义的字符。可以指定字符映射文件中不存在的符号名称，但这些名称将被忽略，如上面的第 1 项下所述。
+.RE
+.SS "LC_CTYPE"
+.sp
+.LP
+\fBLC_CTYPE\fR 类别定义字符分类、大小写转换和其他字符属性。此外，可以通过表示省略号的三个相邻句点 (\fB\&...\fR) 表示一系列字符。指定的省略号将解释为以下含义：省略号前面和后跟的值之间的所有值表示有效字符。指定的省略号仅在单编码字符集（即一组相同大小的字符）中有效。省略号将解释为在列表中包括以下所有字符，即编码值大于省略号前面字符的编码值、小于省略号后跟字符的编码值的所有字符。
+.sp
+.LP
+示例：
+.sp
+.in +2
+.nf
+\ex30;...;\ex39;
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+在字符类中包括编码值介于端点之间的所有字符。
+.sp
+.LP
+可以识别以下关键字。在说明中，术语“自动包括”意味着包括或省略所引用的任何字符都不属于错误。
+.sp
+.LP
+字符类 \fBdigit\fR、\fBxdigit\fR、\fBlower\fR、\fBupper\fR 和 \fBspace\fR 具有一组自动包括的字符。仅当字符值（即编码）不同于实现缺省值时，才需要指定这些字符。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBupper\fR\fR
+.ad
+.RS 18n
+.rt  
+定义要归类为大写字母的字符。
+.sp
+在 POSIX 语言环境中，包括 26 个大写字母：
+.sp
+.in +2
+.nf
+A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+.fi
+.in -2
+.sp
+
+在语言环境定义文件中，不能指定为关键字 \fBcntrl\fR、\fBdigit\fR、\fBpunct\fR 或 \fBspace\fR 指定的字符。大写字母 \fBA\fR 到 \fBZ\fR 自动包括在此类中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlower\fR\fR
+.ad
+.RS 18n
+.rt  
+定义要归类为小写字母的字符。在 POSIX 语言环境中，包括 26 个小写字母：
+.sp
+.in +2
+.nf
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+.fi
+.in -2
+.sp
+
+在语言环境定义文件中，不能指定为关键字 \fBcntrl\fR、\fBdigit\fR、\fBpunct\fR 或 \fBspace\fR 指定的字符。可移植字符集中的小写字母 \fBa\fR 到 \fBz\fR 自动包括在此类中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBalpha\fR\fR
+.ad
+.RS 18n
+.rt  
+定义要归类为字母的字符。 
+.sp
+在 POSIX 语言环境中，包括 \fBupper\fR 和 \fBlower\fR 类中的所有字符。
+.sp
+在语言环境定义文件中，不能指定为关键字 \fBcntrl\fR、\fBdigit\fR、\fBpunct\fR 或 \fBspace\fR 指定的字符。归类为 \fBupper\fR 或 \fBlower\fR 的字符自动包括在此类中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdigit\fR\fR
+.ad
+.RS 18n
+.rt  
+定义要归类为数字的字符。
+.sp
+在 POSIX 语言环境中，仅包括
+.sp
+.in +2
+.nf
+0 1 2 3 4 5 6 7 8 9
+.fi
+.in -2
+.sp
+
+字符。
+.sp
+在语言环境定义文件中，只能指定数字 \fB0\fR、\fB1\fR、\fB2\fR、\fB3\fR、\fB4\fR、\fB5\fR、\fB6\fR、\fB7\fR、\fB8\fR 和 \fB9\fR（以数值的连续升序顺序指定）。可移植字符集中的数字 \fB0\fR 到 \fB9\fR 自动包括在此类中。
+.sp
+定义字符类 \fBdigit\fR 仅需要十个字符；可以指定定义数字的字符；不能在此处指定替代数字（例如印地语或日文汉字）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBalnum\fR\fR
+.ad
+.RS 18n
+.rt  
+定义要归类为字母和数字的字符。只能指定为 \fBalpha\fR 和 \fBdigit\fR 关键字指定的字符。为关键字 \fBalpha\fR 和 \fBdigit\fR 指定的字符自动包括在此类中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBspace\fR\fR
+.ad
+.RS 18n
+.rt  
+定义要归类为空格字符的字符。
+.sp
+在 POSIX 语言环境中，至少包括\fB空格\fR、\fB换页\fR、\fB换行\fR、\fB回车\fR、\fB制表符\fR和\fB垂直制表符\fR这些字符。
+.sp
+在语言环境定义文件中，不能指定为关键字 \fBupper\fR、\fBlower\fR、\fBalpha\fR、\fBdigit\fR、\fBgraph\fR 或 \fBxdigit\fR 指定的字符。可移植字符集中的\fB空格\fR、\fB换页\fR、\fB换行\fR、\fB回车\fR、\fB制表符\fR和\fB垂直制表符\fR这些字符以及\fB空格\fR类中包括的任何字符都自动包括在此类中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcntrl\fR\fR
+.ad
+.RS 18n
+.rt  
+定义要归类为控制字符的字符。 
+.sp
+在 POSIX 语言环境中，不包括 \fBalpha\fR 或 \fBprint\fR 类中的字符。
+.sp
+在语言环境定义文件中，不能指定为关键字 \fBupper\fR、\fBlower\fR、\fBalpha\fR、\fBdigit\fR、\fBpunct\fR、\fBgraph\fR、\fBprint\fR 或 \fBxdigit\fR 指定的字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpunct\fR\fR
+.ad
+.RS 18n
+.rt  
+定义要归类为标点字符的字符。 
+.sp
+在 POSIX 语言环境中，不包括空格字符，也不包括 \fBalpha\fR、\fBdigit\fR 或 \fBcntrl\fR 类中的任何字符。
+.sp
+在语言环境定义文件中，不能指定为关键字 \fBupper\fR、\fBlower\fR、\fBalpha\fR、\fBdigit\fR、\fBcntrl\fR 或 \fBxdigit\fR 指定的字符或指定为空格字符的字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgraph\fR\fR
+.ad
+.RS 18n
+.rt  
+定义要归类为可列显字符的字符，不包括空格字符。 
+.sp
+在 POSIX 语言环境中，包括 \fBalpha\fR、\fBdigit\fR 和 \fBpunct\fR 类中的所有字符；不包括 \fBcntrl\fR 类中的字符。
+.sp
+在语言环境定义文件中，为关键字 \fBupper\fR、\fBlower\fR、\fBalpha\fR、\fBdigit\fR、\fBxdigit\fR 和 \fBpunct\fR 指定的字符自动包括在此类中。不能指定为关键字 \fBcntrl\fR 指定的字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprint\fR\fR
+.ad
+.RS 18n
+.rt  
+定义要归类为可列显字符的字符，包括空格字符。 
+.sp
+在 POSIX 语言环境中，包括 \fBgraph\fR 类中的所有字符；不包括 \fBcntrl\fR 类中的字符。
+.sp
+在语言环境定义文件中，为关键字 \fBupper\fR、\fBlower\fR、\fBalpha\fR、\fBdigit\fR、\fBxdigit\fR、\fBpunct\fR 指定的字符和空格字符自动包括在此类中。不能指定为关键字 \fBcntrl\fR 指定的字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBxdigit\fR\fR
+.ad
+.RS 18n
+.rt  
+定义要归类为十六进制数字的字符。
+.sp
+在 POSIX 语言环境中，仅包括：
+.sp
+.in +2
+.nf
+0 1 2 3 4 5 6 7 8 9 A B C D E F a b c d e f
+.fi
+.in -2
+.sp
+
+字符。
+.sp
+在语言环境定义文件中，只能指定为类 \fBdigit\fR 定义的字符（以数值的连续升序顺序指定），后跟表示十六进制数字 10 到 15（包括这两个数字）的由六个字符组成的一个或多个字符集，每个字符集都按升序排列（例如 \fBA\fR, \fBB\fR, \fBC\fR, \fBD\fR, \fBE\fR, \fBF\fR, \fBa\fR, \fBb\fR, \fBc\fR, \fBd\fR, \fBe\fR, \fBf\fR）。可移植字符集中的数字 \fB0\fR 到 \fB9\fR、大写字母 \fBA\fR 到 \fBF\fR 和小写字母 \fBa\fR 到 \fBf\fR 自动包括在此类中。
+.sp
+定义字符类 \fBxdigit\fR 要求此处同时包括字符类 \fBdigit\fR 中包括的字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBblank\fR\fR
+.ad
+.RS 18n
+.rt  
+定义要归类为空白字符的字符。 
+.sp
+在 POSIX 语言环境中，仅包括空格字符和制表符。
+.sp
+在语言环境定义文件中，空格字符和制表符自动包括在此类中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcharclass\fR\fR
+.ad
+.RS 18n
+.rt  
+以分号分隔的字符串形式定义一个或多个语言环境特定的字符类名称。随后可以在 \fBLC_CTYPE\fR 定义中定义每个指定的字符类。字符类名称由可移植文件名字符集中的字母数字字符组成，至少一个字节，至多 \fB{CHARCLASS_NAME_MAX}\fR 个字节。字符类名称的第一个字符不能是数字。该名称不能与本文档中定义的任何 \fBLC_CTYPE\fR 关键字相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcharclass-name\fR\fR
+.ad
+.RS 18n
+.rt  
+定义要归类为属于指定语言环境特定的字符类的字符。在 POSIX 语言环境中，指定的语言环境特定的字符类不需要存在。如果用 \fBcharclass\fR 关键字定义了类名称，但随后未将任何字符分配给该名称，这不算是错误；它表示该类不包含任何属于它的字符。\fBcharclass-name\fR 可以用作 \fBwctype\fR(3C) 函数的 \fIproperty\fR 参数，在正则表达式和 shell 模式匹配括号表达式中使用，以及供 \fBtr\fR(1) 命令使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtoupper\fR\fR
+.ad
+.RS 18n
+.rt  
+定义小写字母与大写字母之间的映射。
+.sp
+在 POSIX 语言环境中，至少以下 26 个小写字符：
+.sp
+.in +2
+.nf
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+.fi
+.in -2
+.sp
+
+将映射到对应的 26 个大写字符：
+.sp
+.in +2
+.nf
+A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+.fi
+.in -2
+.sp
+
+在语言环境定义文件中，操作数由分号分隔的字符对组成。每个字符对中的字符由逗号分隔，并且该对用括号括起。每对中的第一个字符是小写字母，第二个字符是对应的大写字母。只能指定为关键字 \fBlower\fR 和 \fBupper\fR 指定的字符。可移植字符集中的小写字母 \fBa\fR 到 \fBz\fR 及其对应的大写字母 \fBA\fR 到 \fBZ\fR 自动包括在此映射中，但仅当语言环境定义中省略了 \fBtoupper\fR 关键字时才会包括。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtolower\fR\fR
+.ad
+.RS 18n
+.rt  
+定义大写字母与小写字母之间的映射。
+.sp
+在 POSIX 语言环境中，至少以下 26 个大写字符：
+.sp
+.in +2
+.nf
+A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+.fi
+.in -2
+.sp
+
+将映射到对应的 26 个小写字符：
+.sp
+.in +2
+.nf
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+.fi
+.in -2
+.sp
+
+在语言环境定义文件中，操作数由分号分隔的字符对组成。每个字符对中的字符由逗号分隔，并且该对用括号括起。每对中的第一个字符是大写字母，第二个字符是对应的小写字母。只能指定为关键字 \fBlower\fR 和 \fBupper\fR 指定的字符。如果语言环境定义中省略了 \fBtolower\fR 关键字，则该映射将是为 \fBtoupper\fR 指定的映射的反向映射。
+.RE
+
+.SS "LC_COLLATE"
+.sp
+.LP
+\fBLC_COLLATE\fR 类别为大量实用程序（例如 \fBsort\fR(1)、\fBuniq\fR(1) 等）、正则表达式匹配（请参见 \fBregex\fR(5)）以及 \fBstrcoll\fR(3C)、\fBstrxfrm\fR(3C)、\fBwcscoll\fR(3C) 和 \fBwcsxfrm\fR(3C) 函数提供整理序列定义。
+.sp
+.LP
+整理序列定义用于定义语言环境中的整理元素（字符和多字符整理元素）之间的相对顺序。此顺序以整理值表示，即通过为每个元素分配一个或多个整理值（也称为整理权重）。提供了以下功能：
+.RS +4
+.TP
+1.
+\fB多字符整理元素\fR。指定多字符整理元素（即要整理为一个实体的两个或更多个字符的序列）。
+.RE
+.RS +4
+.TP
+2.
+\fB用户定义的整理元素顺序\fR。每个整理元素将分配一个用于定义其在字符（或基本）整理序列中的顺序的整理值。此顺序用于正则表达式和模式匹配，还用作排序的整理权重（除非另外显式指定了整理权重）。
+.RE
+.RS +4
+.TP
+3.
+\fB多个权重和等效类\fR。可以为整理元素分配一个或多个要在排序中使用的整理权重（上限为 \fB{COLL_WEIGHTS_MAX}\fR\fB\fR）。以下将第一个权重称为主权重。
+.RE
+.RS +4
+.TP
+4.
+\fB一对多映射\fR.将单个字符映射到一个整理元素字符串。
+.RE
+.RS +4
+.TP
+5.
+\fB等效类定义\fR。两个或更多个整理元素具有相同的整理值（主权重）。
+.RE
+.RS +4
+.TP
+6.
+\fB按权重排序\fR。比较两个字符串以确定其相对顺序时，这两个字符串将先拆分为一系列整理元素。然后，将根据元素的相对主权重比较每个后续元素对中的元素。如果该权重相等且分配有多个权重，则将根据后续相对权重重新比较整理元素对，直至一对整理元素的比较结果不相同或权重用尽。
+.RE
+.sp
+.LP
+在整理序列定义中可识别以下关键字。以下各部分中详细介绍了这些关键字。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcopy\fR\fR
+.ad
+.RS 21n
+.rt  
+指定用作此类别定义的现有语言环境的名称。如果指定了此关键字，则不能指定其他关键字。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcollating-element\fR\fR
+.ad
+.RS 21n
+.rt  
+定义用于表示多字符整理元素的整理元素符号。此关键字是可选的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcollating-symbol\fR\fR
+.ad
+.RS 21n
+.rt  
+定义要在整理顺序声明中使用的整理符号。此关键字是可选的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBorder_start\fR\fR
+.ad
+.RS 21n
+.rt  
+定义整理规则。此声明后跟一个或多个整理顺序声明，用于为整理元素分配字符整理值和整理权重。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBorder_end\fR\fR
+.ad
+.RS 21n
+.rt  
+指定整理顺序声明到此结束。
+.RE
+
+.SS "collating-element \fI关键字\fR"
+.sp
+.LP
+除了字符集中的整理元素，\fBcollating-element\fR 关键字也用于定义多字符整理元素。语法为：
+.sp
+.in +2
+.nf
+\fB"collating-element %s from \e"%s\e"\en",\fR<\fIcollating-symbol\fR>,<\fIstring\fR>
+.fi
+.in -2
+
+.sp
+.LP
+<\fIcollating-symbol\fR> 操作数是符号名称，括在尖括号（\fB<\fR 和 \fB>\fR） 内，并且不得与当前字符映射文件（如果有）中的任何符号名称或此整理定义中定义的任何其他符号名称重复。该字符串操作数是由两个或更多个将整理为一个实体的字符组成的字符串。通过此关键字定义的 <\fIcollating-element\fR> 将仅识别为 \fBLC_COLLATE\fR 类别。
+.sp
+.LP
+示例：
+.br
+.in +2
+\fBcollating-element\fR <\fBch\fR> from “<\fBc\fR><\fBh\fR>”
+.in -2
+.br
+.in +2
+\fBcollating-element\fR <\fBe-acute\fR> from “<\fBacute\fR><\fBe\fR>”
+.in -2
+.br
+.in +2
+\fBcollating-element\fR <\fBll\fR> from “\fBll\fR”
+.in -2
+.SS "collating-symbol \fI关键字\fR"
+.sp
+.LP
+此关键字用于定义要在整理序列声明中使用的符号；即，用在 \fBorder_start\fR 和 \fBorder_end\fR 关键字之间。语法为：
+.sp
+.in +2
+.nf
+\fB"collating-symbol %s\en",\fR<\fIcollating-symbol\fR>
+.fi
+.in -2
+
+.sp
+.LP
+\fB<\fR\fIcollating-symbol\fR\fB>\fR 是符号名称，括在尖括号（\fB<\fR 和 \fB>\fR）内，并且不得与当前字符映射文件（如果有）中的任何符号名称或此整理定义中定义的任何其他符号名称重复。
+.sp
+.LP
+通过此关键字定义的 \fBcollating-symbol\fR 将仅识别为 \fBLC_COLLATE\fR 类别。
+.sp
+.LP
+示例：
+.br
+.in +2
+\fBcollating-symbol\fR <\fBUPPER_CASE\fR>
+.in -2
+.br
+.in +2
+\fBcollating-symbol\fR <\fBHIGH\fR>
+.in -2
+.sp
+.LP
+\fBcollating-symbol\fR 关键字定义可以与字符顺序序列中的相对位置关联的符号名称。虽然此类符号名称不表示任何整理元素，但它可用作权重。
+.SS "order_start \fI关键字\fR"
+.sp
+.LP
+\fBorder_start\fR 关键字必须位于整理顺序条目之前，同时定义此整理序列定义和其他整理规则的权重数目。
+.sp
+.LP
+\fBorder_start\fR 关键字的语法为：
+.sp
+.in +2
+.nf
+\fB"order_start %s;%s;...;%s\en",\fR<\fIsort-rules\fR>,<\fIsort-rules\fR>
+.fi
+.in -2
+
+.sp
+.LP
+\fBorder_start\fR 关键字的操作数是可选的。如果存在，则操作数定义要在比较字符串时应用的规则。操作数的数目定义为每个元素分配多少个权重。如果不存在任何操作数，则将假定使用一个 \fBforward\fR 操作数。如果存在，则第一个操作数定义在使用第一个（主）权重比较字符串时要应用的规则；第二个操作数定义在使用第二个权重比较字符串时要应用的规则，依此类推。各个操作数使用分号分隔 (\fB;\fR)。每个操作数由逗号 (\fB,\fR) 分隔的一个或多个整理指令组成。如果操作数的数目超过 \fB{COLL_WEIGHTS_MAX}\fR 限制，则实用程序将发出一条警告消息。支持以下指令：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBforward\fR\fR
+.ad
+.RS 12n
+.rt  
+指定权重级别的比较操作从字符串开头向字符串结尾执行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbackward\fR\fR
+.ad
+.RS 12n
+.rt  
+指定权重级别的比较操作从字符串末尾向字符串开头执行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBposition\fR\fR
+.ad
+.RS 12n
+.rt  
+指定权重级别的比较操作将考虑字符串中不受 \fBIGNORE\fR 影响的元素的相对位置。从比较的开始位置起，在受 \fBIGNORE\fR 影响的整理元素之后最先出现不受 \fBIGNORE\fR 影响的元素的那个字符串首先整理。如果两个字符串在同一相对位置包含不受 \fBIGNORE\fR 影响的字符，则由分配给元素的整理值确定排序顺序。在相等的情况下，将按照相同方式检查不受 \fBIGNORE\fR 影响的后续字符。
+.RE
+
+.sp
+.LP
+指令 \fBforward\fR 和 \fBbackward\fR 互斥。
+.sp
+.LP
+示例：
+.sp
+.in +2
+.nf
+order_start	forward;backward
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果未指定任何操作数，则假定使用单个 \fBforward\fR 操作数。
+.SS "整理顺序"
+.sp
+.LP
+\fBorder_start\fR 关键字后跟整理标识符条目。整理元素条目的语法为：
+.sp
+.in +2
+.nf
+\fB"%s %s;%s;...;%s\en"\fR<\fIcollating-identifier\fR>,<\fIweight\fR>,<\fIweight\fR>\fB,...\fR
+.fi
+.in -2
+
+.sp
+.LP
+每个 \fIcollating-identifier\fR 都包含上面的“语言环境定义”\fB\fR中所述的一个字符、一个 <\fIcollating-element\fR>、一个 <\fIcollating-symbol\fR>、一个省略号或特殊符号 \fBUNDEFINED\fR。所指定的整理元素顺序将确定字符顺序序列，这样每个整理元素比较的元素都少于其后跟元素的数目。\fBNUL\fR 字符的比较优先级低于任何其他字符。
+.sp
+.LP
+<\fIcollating-element\fR> 用于指定多字符整理元素，并指示通过 <\fIcollating-element\fR> 指定的字符序列将作为一个单元整理且该序列的相对顺序由元素位置指定。
+.sp
+.LP
+<\fIcollating-symbol\fR> 用于定义要在权重使用的元素在相对顺序中的位置。不使用 <\fIcollating-symbol\fR> 指定权重。 
+.sp
+.LP
+省略号指定要将根据其编码字符值进行整理的字符序列。省略号解释为，当前编码字符集中编码字符集值大于上一行中字符的值、小于下一行中字符的编码字符集值的所有元素，将放置在字符整理顺序中的上一个字符和下一个字符之间，并根据其编码字符集值按升序排列。以省略号开头解释为上一行指定了空字符，以省略号结尾解释为下一行指定了当前编码字符集中最高的编码字符集值。如果上一行或下一行未指定当前编码字符集中的字符，则省略号将视为无效。使用省略号会将定义与特定的编码字符集相关联，并可能会阻止该定义在不同实现之间移植。
+.sp
+.LP
+符号 \fBUNDEFINED\fR 解释为包括未显式指定或通过省略号指定的所有编码字符集值。此类字符将按照该符号指示的位置插入字符整理顺序中，并根据其编码字符集值按升序排列。如果未指定 \fBUNDEFINED\fR 符号，并且当前编码字符集包含此部分中未指定的字符，则实用程序将发出一条警告消息，并将此类字符放置在字符整理顺序结尾。
+.sp
+.LP
+每个 collation-element 的可选操作数用于定义整理元素的主权重、次权重或后续权重。第一个操作数指定相对主权重，第二个操作数指定相对次权重，依此类推。可以为两个或更多个 collation-element 分配相同的权重；如果这些元素具有相同的主权重，则它们属于同一\fI等效类\fR。整理的行为方式如下，对于每个权重级别，受 \fBIGNORE\fR 影响的元素将被删除，除非使用 \fBorder_start\fR 关键字为相应的级别指定了  \fBposition\fR 整理指令。然后，根据元素的相对权重比较每个后续元素对。如果两个字符串的比较结果为相等，则将对下一个权重级别重复该过程，直到达到上限 {\fBCOLL_WEIGHTS_MAX\fR}。
+.sp
+.LP
+权重使用上述“语言环境定义”\fB\fR中说明的字符、<\fIcollating-symbol\fR>、<\fIcollating-element\fR>、省略号或特殊符号 \fBIGNORE\fR 表示。单个字符、<\fIcollating–symbol\fR> 或 <\fIcollating–element\fR> 表示在字符或符号的字符整理序列中的相对位置，而不是字符自身。因此，不为权重分配绝对值，而是基于整理元素在字符整理序列中的顺序，使用分配给该整理元素的相对顺序值表示特定权重。
+.sp
+.LP
+一对多映射通过指定两个或更多个串联的字符或符号名称来指示。如果为字符 <\fBeszet\fR> 指定了字符串 “<\fBs\fR><\fBs\fR>” 作为权重，则执行比较时就像出现的所有 <\fBeszet\fR> 字符都替换为 <\fBs\fR><\fBs\fR>（假定 <\fBs\fR> 具有整理权重 <\fBs\fR>）。如果必须将 <\fBeszet\fR> 和 <\fB s\fR><\fBs\fR> 定义为等效类，则必须为字符串 \fBss\fR 定义整理元素。
+.sp
+.LP
+通过省略号指定的所有字符缺省情况下将会分配唯一的权重，该权重等于字符的相对顺序。通过显式或隐式 \fBUNDEFINED\fR 特殊符号指定的字符缺省情况下将会分配相同的主权重（即，属于同一等效类）。作为权重的省略号会解释为，该序列中的每个字符都有唯一权重，该权重等于字符整理序列中该字符的相对顺序。如果整理元素既不是省略号也不是特殊符号 \fBUNDEFINED\fR，则使用省略号作为权重将会视为错误。
+.sp
+.LP
+将特殊关键字 \fBIGNORE\fR 作为权重表示，当在指定 \fBIGNORE\fR 的级别使用权重比较字符串时，将忽略整理元素，就像该字符串不包含整理元素一样。在正则表达式和模式匹配中，受其主权重的 \fBIGNORE\fR 影响的所有字符将构成一个等效类。
+.sp
+.LP
+所有空操作数将解释为整理元素自身。
+.sp
+.LP
+例如，顺序声明：
+.sp
+.in +2
+.nf
+<a>	 <a>;<a>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+等效于：
+.sp
+.in +2
+.nf
+<a>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果整理元素为省略号，则可以使用省略号作为操作数，并且该省略号将解释为通过省略号定义的每个字符的值。
+.sp
+.LP
+此部分中定义的整理顺序定义正则表达式中方括号表达式的解释方式。
+.sp
+.LP
+示例：
+.sp
+
+.sp
+.TS
+tab();
+lw(2.75i) lw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+\fBorder_start\fR\fBforward;backward\fR
+\fBUNDEFINED\fR\fBIGNORE;IGNORE\fR
+\fB<LOW>\fR
+\fB<space>\fR\fB<LOW>;<space>\fR
+\fB\&. . .\fR\fB<LOW>;. . .\fR
+\fB<a>\fR\fB<a>;<a>\fR
+\fB<a-acute>\fR\fB<a>;<a-acute>\fR
+\fB<a-grave>\fR\fB<a>;<a-grave>\fR
+\fB<A>\fR\fB<a>;<A>\fR
+\fB<A-acute>\fR\fB<a>;<A-acute>\fR
+\fB<A-grave>\fR\fB<a>;<A-grave>\fR
+\fB<ch>\fR\fB<ch>;<ch>\fR
+\fB<Ch>\fR\fB<ch>;<Ch>\fR
+\fB<s>\fR\fB<s>;<s>\fR
+\fB<eszet>\fR\fB"<s><s>";"<eszet><eszet>"\fR
+\fBorder_end\fR
+.TE
+
+.sp
+.LP
+此示例的解释如下：
+.RS +4
+.TP
+1.
+\fBUNDEFINED\fR 意味着，整理时将忽略此定义中未指定的所有字符（未显式指定或通过省略号指定）；对于正则表达式，将首先对这些字符进行排序。
+.RE
+.RS +4
+.TP
+2.
+<\fBspace\fR> 和 <\fBa\fR> 之间的所有字符具有相同的主等效类，各个字符的次权重基于其序数编码值。
+.RE
+.RS +4
+.TP
+3.
+基于大写字符或小写字符 \fBa\fR 的所有字符属于相同的主等效类。
+.RE
+.RS +4
+.TP
+4.
+多字符整理元素 <\fBch\fR> 由整理符号 <\fBch\fR> 表示，属于与多字符整理元素 <\fBCh\fR> 相同的主等效类。
+.RE
+.SS "order_end \fI关键字\fR"
+.sp
+.LP
+整理顺序条目必须使用 \fBorder_end\fR 关键字结尾。
+.SS "LC_MONETARY"
+.sp
+.LP
+\fBLC_MONETARY\fR 类别定义用于设置货币数值信息格式的规则和符号。通过 \fBlocaleconv\fR(3C) 函数可获取这些信息
+.sp
+.LP
+在语言环境的此类别中定义了以下项。定义语言环境时，这些项的名称是 \fBlocaledef\fR(1) 实用程序可识别的关键字。这些名称也类似于 <\fBlocale.h\fR> 中定义的 \fBlconv\fR 结构的成员名称。对于未指定的整数项，\fBlocaleconv\fR 函数返回 \fB{CHAR_MAX}\fR；对于未指定或大小为零的字符串项，则返回空字符串 (\fB""\fR)。
+.sp
+.LP
+在语言环境定义文件中，这些操作数是字符串。对于某些关键字，字符串只能包含整数。未提供的关键字、设置为空字符串的字符串值 (\fB""\fR) 或者设置为 \fB–1\fR 的整数关键字用于指示该值在语言环境中不可用。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint_curr_symbol\fR\fR
+.ad
+.RS 22n
+.rt  
+国际货币符号。操作数是一个由四个字符组成的字符串，前三个字符包含根据 ISO 4217 标准指定的字母式国际货币符号。第四个字符是用于将国际货币符号与货币数量隔开的字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcurrency_symbol\fR\fR
+.ad
+.RS 22n
+.rt  
+用作本地货币符号的字符串。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmon_decimal_point\fR\fR
+.ad
+.RS 22n
+.rt  
+操作数是包含某个符号的字符串，该符号在货币格式的数量中用作十进制分隔符（基数字符）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmon_thousands_sep\fR\fR
+.ad
+.RS 22n
+.rt  
+操作数是包含某个符号的字符串，该符号在货币格式的数量中用作划分十进制分隔符左侧数字的分隔符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmon_grouping\fR\fR
+.ad
+.RS 22n
+.rt  
+定义货币格式的数量中每组数字的大小。操作数是以分号分隔的整数序列。每个整数指定每一组中数字的个数，第一个整数定义紧接在十进制分隔符前面的组的大小，后续整数定义后续组。如果最后一个整数不是 \fB–1\fR，则上一个组（如果有）的大小将重复用于其余数字。如果最后一个整数是 \fB–1\fR，则不执行进一步的分组。
+.sp
+下面是 \fBmon_grouping\fR 关键字的一个解释示例。假定要设置格式的值为 \fB123456789\fR，\fBmon_thousands_sep\fR 为 \fB\&'\fR，下表显示了相应结果。第三列显示了 ISO C 标准的等效字符串，\fBlocaleconv\fR 函数将使用该字符串来适应此分组。
+.sp
+.in +2
+.nf
+mon_grouping   Formatted Value  ISO C String
+
+3;-1           123456'789       "\e3\e177"
+3              123'456'789      "\e3"
+3;2;-1         1234'56'789      "\e3\e2\e177"
+3;2            12'34'56'789     "\e3\e2"
+-1             1234567898       "\e177"
+.fi
+.in -2
+.sp
+
+在这些示例中，\fB{CHAR_MAX}\fR 的八进制值为 177。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpositive_sign\fR\fR
+.ad
+.RS 22n
+.rt  
+用于指示非负值格式的货币数量的字符串。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnegative_sign\fR\fR
+.ad
+.RS 22n
+.rt  
+用于指示负值格式的货币数量的字符串。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint_frac_digits\fR\fR
+.ad
+.RS 22n
+.rt  
+表示使用 \fBint_curr_symbol\fR 时写入货币格式的数量中的小数数字（即十进制分隔符右侧的数字）个数的整数。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfrac_digits\fR\fR
+.ad
+.RS 22n
+.rt  
+表示使用 \fBcurrency_symbol\fR 时写入货币格式的数量中的小数数字（即十进制分隔符右侧的数字）个数的整数。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp_cs_precedes\fR\fR
+.ad
+.RS 22n
+.rt  
+在遵循 SUSv3 标准的应用程序中，如果 \fBcurrency_symbol\fR 位于具有非负值的货币数量值之前，则是设置为 \fB1\fR 的整数，如果该符号位于值之后，则是设置为 \fB0\fR 的整数。
+.sp
+\fB\fR在不遵循 SUSv3 标准的应用程序中，如果 \fBcurrency_symbol\fR 或 \fBint_currency_symbol\fR 位于具有非负值的货币数量值之前，则是设置为 \fB1\fR 的整数，如果该符号位于值之后，则是设置为 \fB0\fR 的整数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp_sep_by_space\fR\fR
+.ad
+.RS 22n
+.rt  
+在遵循 SUSv3 标准的应用程序中，如果未使用空格将 \fBcurrency_symbol\fR 与具有非负值的货币数量值隔开，则是设置为 \fB0\fR 的整数，如果使用了空格将该符号与值隔开，则是设置为 \fB1\fR 的整数，如果使用了空格将该符号与符号字符串（如果相邻）隔开，则是设置为 \fB2\fR 的整数。
+.sp
+\fB\fR在不遵循 SUSv3 标准的应用程序中，如果未使用空格将 \fBcurrency_symbol\fR 或 \fBint_curr_symbol\fR 与具有非负值的货币数量值隔开，则是设置为 \fB0\fR 的整数，如果使用了空格将该符号与值隔开，则是设置为 \fB1\fR 的整数，如果使用了空格将该符号与符号字符串（如果相邻）隔开，则是设置为 \fB2\fR 的整数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBn_cs_precedes\fR\fR
+.ad
+.RS 22n
+.rt  
+在遵循 SUSv3 标准的应用程序中，如果 \fBcurrency_symbol\fR 位于具有负值的货币数量值之前，则是设置为 \fB1\fR 的整数，如果该符号位于值之后，则是设置为 \fB0\fR 的整数。
+.sp
+\fB\fR在不遵循 SUSv3 标准的应用程序中，如果 \fBcurrency_symbol\fR 或 \fBint_currency_symbol\fR 位于具有负值的货币数量值之前，则是设置为 \fB1\fR 的整数，如果该符号位于值之后，则是设置为 \fB0\fR 的整数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBn_sep_by_space\fR\fR
+.ad
+.RS 22n
+.rt  
+在遵循 SUSv3 标准的应用程序中，如果未使用空格将 \fBcurrency_symbol\fR 与具有负值的货币数量值隔开，则是设置为 \fB0\fR 的整数，如果使用了空格将该符号与值隔开，则是设置为 \fB1\fR 的整数，如果使用了空格将该符号与符号字符串（如果相邻）隔开，则是设置为 \fB2\fR 的整数。
+.sp
+\fB\fR在不遵循 SUSv3 标准的应用程序中，如果未使用空格将 \fBcurrency_symbol\fR 或 \fBint_curr_symbol\fR 与具有负值的货币数量值隔开，则是设置为 \fB0\fR 的整数，如果使用了空格将该符号与值隔开，则是设置为 \fB1\fR 的整数，如果使用了空格将该符号与符号字符串（如果相邻）隔开，则是设置为 \fB2\fR 的整数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp_sign_posn\fR\fR
+.ad
+.RS 22n
+.rt  
+设置为某个值的整数，指示如何定位具有非负值的货币数量的 \fBpositive_sign\fR。可识别下列 \fBp_sign_posn\fR 和 \fBn_sign_posn\fR 整数值：
+.sp
+在遵循 SUSv3 标准的应用程序中：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+使用括号将数量和 \fBcurrency_symbol\fR 括起来。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+符号字符串位于数量和 \fBcurrency_symbol\fR 之前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+符号字符串位于数量和 \fBcurrency_symbol\fR 之后。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.RS 5n
+.rt  
+符号字符串位于 \fBcurrency_symbol\fR 之前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR\fR
+.ad
+.RS 5n
+.rt  
+符号字符串位于 \fBcurrency_symbol\fR 之后。
+.RE
+
+在\fB\fR不遵循 SUSv3 标准的应用程序中：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+使用括号将数量和 \fBcurrency_symbol\fR 或 \fBint_curr_symbol\fR 括起来。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+符号字符串位于数量和 \fBcurrency_symbol\fR 或 \fBint_curr_symbol\fR 之前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+符号字符串位于数量和 \fBcurrency_symbol\fR 或 \fBint_curr_symbol\fR 之后。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.RS 5n
+.rt  
+符号字符串位于 \fBcurrency_symbol\fR 或 \fBint_curr_symbol\fR 之前。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR\fR
+.ad
+.RS 5n
+.rt  
+符号字符串位于 \fBcurrency_symbol\fR 或 \fBint_curr_symbol\fR 之后。 
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBn_sign_posn\fR\fR
+.ad
+.RS 22n
+.rt  
+设置为某个值的整数，指示如何定位负值格式的货币数量的 \fBnegative_sign\fR。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint_p_cs_precedes\fR\fR
+.ad
+.RS 22n
+.rt  
+如果 \fBint_curr_symbol\fR 位于具有非负值的货币数量值之前，则是设置为 \fB1\fR 的整数，如果该符号位于值之后，则是设置为 \fB0\fR 的整数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint_n_cs_precedes\fR\fR
+.ad
+.RS 22n
+.rt  
+如果 \fBint_curr_symbol\fR 位于具有负值的货币数量值之前，则是设置为 \fB1\fR 的整数，如果该符号位于值之后，则是设置为 \fB0\fR 的整数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint_p_sep_by_space\fR\fR
+.ad
+.RS 22n
+.rt  
+如果未使用空格将 \fBint_curr_symbol\fR 与具有非负值的货币数量值隔开，则是设置为 \fB0\fR 的整数，如果使用了空格将该符号与值隔开，则是设置为 \fB1\fR 的整数，如果使用了空格将该符号与符号字符串（如果相邻）隔开，则是设置为 \fB2\fR 的整数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint_n_sep_by_space\fR\fR
+.ad
+.RS 22n
+.rt  
+如果未使用空格将 \fBint_curr_symbol\fR 与具有负值的货币数量值隔开，则是设置为 \fB0\fR 的整数，如果使用了空格将该符号与值隔开，则是设置为 \fB1\fR 的整数，如果使用了空格将该符号与符号字符串（如果相邻）隔开，则是设置为 \fB2\fR 的整数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint_p_sign_posn\fR\fR
+.ad
+.RS 22n
+.rt  
+设置为某个值的整数，指示如何定位国际货币格式的正货币数量的 \fBpositive_sign\fR。可识别下列 \fBint_p_sign_posn\fR 和 \fBint_n_sign_posn\fR 整数值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+使用括号将数量和 \fB\fR\fBint_curr_symbol\fR 括起来。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+符号字符串位于数量和 \fBint_curr_symbol\fR 之前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+符号字符串位于数量和 \fBint_curr_symbol\fR 之前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.RS 5n
+.rt  
+符号字符串位于 \fBint_curr_symbol\fR 之前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR\fR
+.ad
+.RS 5n
+.rt  
+符号字符串位于 \fBint_curr_symbol\fR 之后。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint_n_sign_posn\fR\fR
+.ad
+.RS 22n
+.rt  
+设置为某个值的整数，指示如何定位国际货币格式的负货币数量的 \fBnegative_sign\fR。
+.RE
+
+.sp
+.LP
+下面显示了各种组合的结果：
+.sp
+
+.sp
+.TS
+tab();
+lw(1.48i) lw(1.48i) lw(.8i) lw(.8i) lw(.8i) lw(.13i) 
+lw(1.48i) lw(1.48i) lw(.8i) lw(.8i) lw(.8i) lw(.13i) 
+.
+\fBp_sep_by_space\fR
+210
+\fBp_cs_precedes\fR= 1\fBp_sign_posn\fR= 0\fB($1.25)\fR\fB($1.25)\fR\fB($1.25)\fR
+\fBp_sign_posn\fR= 1\fB+$1.25\fR\fB+$1.25\fR\fB+$1.25\fR
+\fBp_sign_posn\fR= 2\fB$1.25+\fR\fB$1.25+\fR\fB$1.25+\fR
+\fBp_sign_posn\fR= 3\fB+$1.25\fR\fB+$1.25\fR\fB+$1.25\fR
+\fBp_sign_posn\fR= 4\fB$+1.25\fR\fB$+1.25\fR\fB$+1.25\fR
+\fBp_cs_precedes\fR= 0\fBp_sign_posn\fR= 0\fB(1.25 $)\fR\fB(1.25 $)\fR\fB(1.25$)\fR
+\fBp_sign_posn\fR= 1\fB+1.25 $\fR\fB+1.25 $\fR\fB+1.25$\fR
+\fBp_sign_posn\fR= 2\fB1.25$ +\fR\fB1.25 $+\fR\fB1.25$+\fR
+\fBp_sign_posn\fR= 3\fB1.25+ $\fR\fB1.25 +$\fR\fB1.25+$\fR
+\fBp_sign_posn\fR= 4\fB1.25$ +\fR\fB1.25 $+\fR\fB1.25$+\fR
+.TE
+
+.sp
+.LP
+下面列出了 POSIX 语言环境的货币格式定义。代码列表描述了 \fBlocaledef\fR(1) 输入，表给出了相同信息，但添加了 \fBlocaleconv\fR(3C) 和 \fBnl_langinfo\fR(3C) 格式。POSIX 语言环境中未指定所有值。
+.sp
+.in +2
+.nf
+LC_MONETARY
+# This is the POSIX locale definition for
+# the LC_MONETARY category.
+#
+int_curr_symbol       ""
+currency_symbol       ""
+mon_decimal_point     ""
+mon_thousands_sep     ""
+mon_grouping          -1
+positive_sign         ""
+negative_sign         ""
+int_frac_digits       -1
+frac_digits           -1
+p_cs_precedes         -1
+p_sep_by_space        -1
+n_cs_precedes         -1
+n_sep_by_space        -1
+p_sign_posn           -1
+n_sign_posn           -1
+int_p_cs_precedes     -1
+int_p_sep_by_space    -1
+int_n_cs_precedes     -1
+int_n_sep_by_space    -1
+int_p_sign_posn       -1
+int_n_sign_posn       -1
+#
+END LC_MONETARY
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+条目 \fBn/a\fR 指示 POSIX 语言环境中未提供该值。
+.SS "LC_NUMERIC"
+.sp
+.LP
+\fBLC_NUMERIC\fR 类别定义将用于设置非货币数值信息格式的规则和符号。通过 \fBlocaleconv\fR(3C)函数可获取这些信息。
+.sp
+.LP
+在语言环境的此类别中定义了以下项。定义语言环境时，这些项的名称是 \fBlocaledef\fR 实用程序可识别的关键字。这些名称也类似于 <\fBlocale.h\fR> 中定义的 \fIlconv\fR 结构的成员名称。对于未指定的整数项，\fBlocaleconv()\fR 函数返回 \fB{CHAR_MAX}\fR；对于未指定或大小为零的字符串项，则返回空字符串 (\fB“”\fR)。
+.sp
+.LP
+在语言环境定义文件中，这些操作数是字符串。对于某些关键字，字符串只能包含整数。未提供的关键字、设置为空字符串的字符串值 (\fB“”\fR) 或者设置为 \fB–1\fR 的整数关键字用于指示该值在语言环境中不可用。可以识别以下关键字：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdecimal_point\fR\fR
+.ad
+.RS 17n
+.rt  
+操作数是包含某个符号的字符串，该符号在非货币格式的数值数量中用作十进制分隔符（基数字符）。此关键字不能省略并且不能设置为空字符串。在相应标准将 \fBdecimal_point\fR 限制为单字节的环境中，指定多字节操作数的结果为未指定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBthousands_sep\fR\fR
+.ad
+.RS 17n
+.rt  
+操作数是包含某个符号的字符串，该符号在非货币格式的数值数量中用作划分十进制分隔符左侧数字的分隔符。在相应标准将 \fBthousands_sep\fR 限制为单字节的环境中，指定多字节操作数的结果为未指定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgrouping\fR\fR
+.ad
+.RS 17n
+.rt  
+定义非货币格式的数量中每组数字的大小。操作数是以分号分隔的整数序列。每个整数指定每一组中数字的个数，第一个整数定义紧接在十进制分隔符前面的组的大小，后续整数定义后续组。如果最后一个整数不是 \fB-1\fR，则上一个组（如果有）的大小将重复用于其余数字。如果最后一个整数是 \fB–1\fR，则不执行进一步的分组。下面列出了 POSIX 语言环境的非货币数值格式定义。代码列表描述了 \fBlocaledef\fR 输入，表给出了相同信息，但添加了 \fBlocaleconv\fR 值和 \fBnl_langinfo\fR 常量。
+.sp
+.in +2
+.nf
+LC_NUMERIC
+# This is the POSIX locale definition for
+# the LC_NUMERIC category.
+#
+decimal_point	"<period>"
+thousands_sep	""
+grouping	-1
+#
+END LC_NUMERIC
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+
+.sp
+.TS
+tab();
+lw(1.1i) lw(1.1i) lw(1.1i) lw(1.1i) lw(1.11i) 
+lw(1.1i) lw(1.1i) lw(1.1i) lw(1.1i) lw(1.11i) 
+.
+\fBPOSIX 语言环境\fR\fBlanginfo\fR\fBlocaleconv()\fR\fBlocaledef\fR
+\fB项\fR\fB值\fR\fB常量\fR\fB值\fR\fB值\fR
+_
+\fBdecimal_point\fR\fB"."\fR\fBRADIXCHAR\fR\fB"."\fR\fB\&.\fR
+\fBthousands_sep\fR\fBn/a\fR\fBTHOUSEP\fR\fB""\fR\fB""\fR
+\fBgrouping\fR\fBn/a\fR\fB-\fR\fB""\fR\fB-1\fR
+.TE
+
+.sp
+.LP
+条目 \fBn/a\fR 指示 POSIX 语言环境中未提供该值。
+.SS "LC_TIME"
+.sp
+.LP
+\fBLC_TIME\fR 类别定义 \fBdate\fR(1) 支持的字段描述符的解释方式，并影响 \fBstrftime\fR(3C)、\fBwcsftime\fR(3C)、\fBstrptime\fR(3C) 和 \fBnl_langinfo\fR(3C) 函数的行为。由于 C 语言访问和语言环境定义的接口大不相同，因此对其分别进行了说明。对于语言环境定义，可识别下列必需关键字：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBabday\fR\fR
+.ad
+.RS 15n
+.rt  
+定义缩写工作日名称，与 \fB%a\fR 字段描述符（\fBstrftime()\fR、\fBwcsftime()\fR 和 \fBstrptime()\fR 函数中的转换规范）对应。操作数由七个分号分隔的字符串组成，每一个都括在双引号中。第一个字符串是与星期日对应的那一天的缩写名称，第二个字符串是与星期一对应的那一天的缩写名称，依此类推。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBday\fR\fR
+.ad
+.RS 15n
+.rt  
+定义完整工作日名称，与 \fB%A\fR 字段描述符对应。操作数由七个分号分隔的字符串组成，每一个都括在双引号中。第一个字符串是与星期日对应的那一天的完整名称，第二个字符串是与星期一对应的那一天的完整名称，依此类推。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBabmon\fR\fR
+.ad
+.RS 15n
+.rt  
+定义缩写月份名称，与 \fB%b\fR 字段描述符对应。操作数由十二个分号分隔的字符串组成，每一个都括在双引号中。第一个字符串是一年中第一个月（一月）的缩写名称，第二个字符串是第二个月的缩写名称，依此类推。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmon\fR\fR
+.ad
+.RS 15n
+.rt  
+定义完整月份名称，与 \fB%B\fR 字段描述符对应。操作数由十二个分号分隔的字符串组成，每一个都括在双引号中。第一个字符串是一年中第一个月（一月）的完整名称，第二个字符串是第二个月的完整名称，依此类推。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBd_t_fmt\fR\fR
+.ad
+.RS 15n
+.rt  
+定义相应日期和时间表示形式，与 \fB%c\fR 字段描述符对应。操作数由一个字符串组成，可以包含字符和字段描述符的任意组合。此外，该字符串还可以包含转义序列 \\、\fB\a\fR、\fB\b\fR、\fB\f\fR、\fB\n\fR、\fB\r\fR、\fB\t\fR、\fB\v\fR。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdate_fmt\fR\fR
+.ad
+.RS 15n
+.rt  
+定义相应日期和时间表示形式，与 \fB%C\fR 字段描述符对应。操作数由一个字符串组成，可以包含字符和字段描述符的任意组合。此外，该字符串还可以包含转义序列 \fB\\\fR、\fB\a\fR、\fB\b\fR、\fB\f\fR、\fB\n\fR、\fB\r\fR、\fB\t\fR、\fB\v\fR。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBd_fmt\fR\fR
+.ad
+.RS 15n
+.rt  
+定义相应日期表示形式，与 \fB%x\fR 字段描述符对应。操作数由一个字符串组成，可以包含字符和字段描述符的任意组合。此外，该字符串还可以包含转义序列 \fB\\\fR、\fB\a\fR、\fB\b\fR、\fB\f\fR、\fB\n\fR、\fB\r\fR、\fB\t\fR、\fB\v\fR。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBt_fmt\fR\fR
+.ad
+.RS 15n
+.rt  
+定义相应时间表示形式，与 \fB%X\fR 字段描述符对应。操作数由一个字符串组成，可以包含字符和字段描述符的任意组合。此外，该字符串还可以包含转义序列 \fB\\\fR、\fB\a\fR、\fB\b\fR、\fB\f\fR、\fB\n\fR、\fB\r\fR、\fB\t\fR、\fB\v\fR。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBam_pm\fR\fR
+.ad
+.RS 15n
+.rt  
+定义\fI上午\fR和\fI下午\fR字符串的相应表示形式，与 \fB%p\fR 字段描述符对应。操作数由两个分号分隔的字符串组成，每一个都括在双引号中。第一个字符串表示\fI上午\fR指定方式，最后一个字符串表示\fI下午\fR指定方式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBt_fmt_ampm\fR\fR
+.ad
+.RS 15n
+.rt  
+以 \fBam_pm\fR 的 12 小时时钟格式定义相应时间表示形式，与 \fB%r\fR 字段描述符对应。操作数由一个字符串组成，可以包含字符和字段描述符的任意组合。如果该字符串为空，则语言环境中不支持 12 小时格式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBera\fR\fR
+.ad
+.RS 15n
+.rt  
+定义语言环境中的每个时代如何计数和显示年份。操作数由分号分隔的字符串组成。每个字符串都是具有下列格式的时代说明段：
+.sp
+\fIdirection\fR:\fIoffset\fR:\fIstart_date\fR:\fIend_date\fR:\fIera_name\fR:\fIera_format\fR
+.sp
+其中的各部分遵循下面的定义。可以有多个时代说明段，具体数量取决于用户需要说明多少个不同的时代。
+.sp
+时代的开始时间可能不是最早的时间点，例如公元前基督教时代的开始时间为公元 1 年的 1 月 1 日的前一天，由此延续到更早的时间。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdirection\fR\fR
+.ad
+.RS 14n
+.rt  
+\fB+\fR 或 \fB–\fR 字符。\fB+\fR 字符指示接近 \fIstart_date\fR 的年份的数字小于接近 \fIend_date\fR 的年份的数字。\fB–\fR 字符指示接近 \fIstart_date\fR 的年份的数字大于接近 \fIend_date\fR 的年份的数字。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIoffset\fR\fR
+.ad
+.RS 14n
+.rt  
+时代中最接近 \fIstart_date\fR 的年份的数字，与 \fB%Eg\fR 和 \fB%Ey\fR 字段描述符对应。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIstart_date\fR\fR
+.ad
+.RS 14n
+.rt  
+\fIyyyy\fR/\fImm\fR/\fBdd\fR 格式的日期，其中 \fIyyyy\fR、\fImm\fR 和 \fBdd\fR 分别是时代开始的年份、月份和日期数字。公元 1 年之前的年份以负数表示。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIend_date\fR\fR
+.ad
+.RS 14n
+.rt  
+与 \fIstart_date\fR 格式相同的时代结束日期，或者为两个特殊值 –* 或 +* 之一。值 –* 指示结束日期为时间的起点。值 +* 指示结束日期为时间的终点。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIera_name\fR\fR
+.ad
+.RS 14n
+.rt  
+表示时代名称的字符串，与 \fB%EC\fR 字段描述符对应。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIera_format\fR\fR
+.ad
+.RS 14n
+.rt  
+用于设置时代中年份的格式的字符串，与 \fB%EG\fR 和 \fB%EY\fR 字段描述符对应。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBera_d_fmt\fR\fR
+.ad
+.RS 15n
+.rt  
+定义采用替代时代表示法的日期格式，与 \fB%Ex\fR 字段描述符对应。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBera_t_fmt\fR\fR
+.ad
+.RS 15n
+.rt  
+定义语言环境的相应替代时间格式，与 \fB%EX\fR 字段描述符对应。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBera_d_t_fmt\fR\fR
+.ad
+.RS 15n
+.rt  
+定义语言环境的相应替代日期和时间格式，与 \fB%Ec\fR 字段描述符对应。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBalt_digits\fR\fR
+.ad
+.RS 15n
+.rt  
+定义数字的替代符号，与 \fB%O\fR 字段描述符修饰符对应。操作数由分号分隔的字符串组成，每一个都括在双引号中。第一个字符串是与零对应的替代符号，第二个字符串是与一对应的符号，依此类推。最多可以指定 100 个替代符号字符串。\fB%O\fR 修饰符指示将使用与通过字段描述符指定的值对应的字符串代替该值。
+.RE
+
+.SS "LC_TIME \fIC 语言\fR访问"
+.sp
+.LP
+可以访问以下信息。这些信息对应于 <\fBlanginfo.h\fR> 中定义的常量并用作 \fBnl_langinfo\fR(3C) 函数的参数。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBABDAY_\fIx\fR\fR\fR
+.ad
+.RS 15n
+.rt  
+缩写的工作日名称（例如 Sun），其中 \fIx\fR 是 1 到 7 之间的一个数字。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDAY_\fIx\fR\fR\fR
+.ad
+.RS 15n
+.rt  
+完整的工作日名称（例如 Sunday），其中 \fIx\fR 是 1 到 7 之间的一个数字。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBABMON_\fIx\fR\fR\fR
+.ad
+.RS 15n
+.rt  
+缩写的月份名称（例如 Jan），其中 \fIx\fR 是 1 到 12 之间的一个数字。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBMON_\fIx\fR\fR\fR
+.ad
+.RS 15n
+.rt  
+完整的月份名称（例如 January），其中 \fIx\fR 是 1 到 12 之间的一个数字。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBD_T_FMT\fR\fR
+.ad
+.RS 15n
+.rt  
+相应的日期和时间表示形式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBD_FMT\fR\fR
+.ad
+.RS 15n
+.rt  
+相应的日期表示形式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBT_FMT\fR\fR
+.ad
+.RS 15n
+.rt  
+相应的时间表示形式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBAM_STR\fR\fR
+.ad
+.RS 15n
+.rt  
+相应的上午后缀。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPM_STR\fR\fR
+.ad
+.RS 15n
+.rt  
+相应的下午后缀。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBT_FMT_AMPM\fR\fR
+.ad
+.RS 15n
+.rt  
+\fBAM_STR\fR 和 \fBPM_STR.\fR 的 12 小时时钟格式的相应时间表示形式。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBERA\fR\fR
+.ad
+.RS 15n
+.rt  
+时代说明段，用于说明语言环境中的每个时代如何计数和显示年份。每个时代说明段都具有下列格式：
+.sp
+.in +2
+.nf
+\fIdirection\fR:\fIoffset\fR:\fIstart_date\fR:\fIend_date\fR:\fIera_name\fR:\fIera_format\fR
+.fi
+.in -2
+.sp
+
+其中的各部分遵循下面的定义。可以有多个时代说明段，具体数量取决于用户需要说明多少个不同的时代。时代说明段使用分号分隔。
+.sp
+时代的开始时间可能不是最早的时间点，例如公元前基督教时代的开始时间为公元 1 年的 1 月 1 日的前一天，由此延续到更早的时间。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdirection\fR\fR
+.ad
+.RS 14n
+.rt  
++ 或 – 字符。+ 字符指示接近 \fIstart_date\fR 的年份的数字小于接近 \fIend_date\fR 的年份的数字。– 字符指示接近 \fIstart_date\fR 的年份的数字大于接近 \fIend_date\fR 的年份的数字。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIoffset\fR\fR
+.ad
+.RS 14n
+.rt  
+时代中最接近 start_date 的年份的数字。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIstart_date\fR\fR
+.ad
+.RS 14n
+.rt  
+\fIyyyy\fR/\fImm\fR/\fIdd\fR 格式的日期，其中 \fIyyyy\fR、\fImm\fR 和 \fBdd\fR 分别是时代开始的年份、月份和日期数字。公元 1 年之前的年份以负数表示。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIend_date\fR\fR
+.ad
+.RS 14n
+.rt  
+与 \fIstart_date\fR 格式相同的时代结束日期，或者为两个特殊值 \fB–*\fR 或 \fB+*\fR 之一。值 \fB–*\fR 指示结束日期为时间的起点。值 \fB+*\fR 指示结束日期为时间的终点。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIera_name\fR\fR
+.ad
+.RS 14n
+.rt  
+时代名称，与 \fB%EC\fR 转换规范对应。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIera_format\fR\fR
+.ad
+.RS 14n
+.rt  
+时代中年份的格式，与 \fB%EY\fR 和 \fB%EY\fR 转换规范对应。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBERA_D_FMT\fR\fR
+.ad
+.RS 15n
+.rt  
+年代日期格式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBERA_T_FMT\fR\fR
+.ad
+.RS 15n
+.rt  
+语言环境的相应替代时间格式，与 \fB%EX\fR 字段描述符对应。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBERA_D_T_FMT\fR\fR
+.ad
+.RS 15n
+.rt  
+语言环境的相应替代日期和时间格式，与 \fB%Ec\fR 字段描述符对应。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBALT_DIGITS\fR\fR
+.ad
+.RS 15n
+.rt  
+数字的替代符号，与 \fB%O\fR 转换规范修饰符对应。该值由分号分隔的符号组成。第一个符号是对应于零的替代符号，第二个符号是对应于一的符号，依此类推。最多可以指定 100 个替代符号。下表显示了上述项与以下函数使用的转换说明符之间的对应关系：\fBdate\fR(1)、\fBstrftime\fR(3C)、\fBwcsftime\fR(3C) 和 \fBstrptime\fR(3C)。
+.RE
+
+.sp
+
+.sp
+.TS
+tab() box;
+cw(1.83i) |cw(1.83i) |cw(1.83i) 
+cw(1.83i) |cw(1.83i) |cw(1.83i) 
+.
+\fBlocaledef\fR\fBlanginfo\fR\fB转换\fR
+\fB关键字\fR\fB常量\fR\fB说明符\fR
+_
+\fBabday\fR\fBABDAY_\fR\fIx\fR\fB%a\fR
+\fBday\fR\fBDAY_\fR\fIx\fR\fB%A\fR
+\fBabmon\fR\fBABMON_\fR\fIx\fR\fB%b\fR
+\fBmon\fR\fBMON\fR\fB%B\fR
+\fBd_t_fmt\fR\fBD_T_FMT\fR\fB%c\fR
+\fBdate_fmt\fR\fBDATE_FMT\fR\fB%C\fR
+\fBd_fmt\fR\fBD_FMT\fR\fB%x\fR
+\fBt_fmt\fR\fBT_FMT\fR\fB%X\fR
+\fBam_pm\fR\fBAM_STR\fR\fB%p\fR
+\fBam_pm\fR\fBPM_STR\fR\fB%p\fR
+\fBt_fmt_ampm\fR\fBT_FMT_AMPM\fR\fB%r\fR
+\fBera\fR\fBERA\fR\fB%EC, %Eg,\fR
+\fB%EG, %Ey, %EY\fR
+\fBera_d_fmt\fR\fBERA_D_FMT\fR\fB%Ex\fR
+\fBera_t_fmt\fR\fBERA_T_FMT\fR\fB%EX\fR
+\fBera_d_t_fmt\fR\fBERA_D_T_FMT\fR\fB%Ec\fR
+\fBalt_digits\fR\fBALT_DIGITS\fR\fB%O\fR
+.TE
+
+.SS "LC_TIME \fI常规\fR信息"
+.sp
+.LP
+尽管 POSIX 语言环境中的某些字段描述符（例如月份的名称）的第一个字母显示为大写，但在其他语言环境中不需要为大写。如果这些输出要在句子的开头使用，则使用这些字段的程序可能需要调整大写。
+.sp
+.LP
+ \fBLC_TIME\fR 中对 \fBabday\fR、\fBday\fR、\fBmon\fR 和 \fBabmon\fR 的说明隐含了采用公历风格的日历（一周包含 7 天、一年包含 12 个月、闰年等等）。本文档集不介绍其他日历类型的时间字符串的格式设置。
+.sp
+.LP
+如“语言环境定义”\fB\fR中的 \fBdate\fR 和 \fBstrftime\fR(3C) 所指定的那样，与可选关键字对应的字段描述符由一个修饰符和后跟的传统字段描述符（例如 \fB%Ex\fR）组成。如果实现不支持可选关键字，或者没有为当前语言环境指定可选关键字，则这些字段描述符将视为传统字段描述符。例如，假定以下关键字：
+.sp
+.in +2
+.nf
+alt_digits	"0th" ; "1st" ; "2nd" ; "3rd" ; "4th" ; "5th" ; \e
+"6th" ; "7th" ; "8th" ; "9th" ; "10th">
+d_fmt	"The %Od day of %B in %Y"
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+在 7/4/1776，\fB%x\fR 字段描述符将生成 “The 4th day of July in 1776”，而 7/14/1789 的结果为 “The 14 day of July in 1789”。上述示例仅用于描述目的。\fB%O\fR 修饰符主要用于提供 \fBdate\fR 格式的日文汉字数字或印地语数字。
+.SS "LC_MESSAGES"
+.sp
+.LP
+\fBLC_MESSAGES\fR 类别定义肯定性和否定性响应的格式和值。
+.sp
+.LP
+以下关键字会识别为语言环境定义文件的一部分。\fBnl_langinfo\fR(3C) 函数接受前四个关键字的大写版本。
+.sp
+.ne 2
+.mk
+.na
+\fB\fByesexpr\fR\fR
+.ad
+.RS 11n
+.rt  
+操作数由一个扩展的正则表达式组成（请参见 \fBregex\fR(5)），该表达式描述了需要肯定性或否定性响应的问题的可接受肯定性响应。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoexpr\fR\fR
+.ad
+.RS 11n
+.rt  
+操作数由一个扩展的正则表达式组成，该表达式描述对需要肯定性或否定性响应的问题的可接受否定性响应。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fByesstr\fR\fR
+.ad
+.RS 11n
+.rt  
+操作数由一个固定字符串（不是正则表达式）组成，应用程序可以使用该字符串编写一条列出可接受的肯定性响应的消息，例如在提示符中显示的消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnostr\fR\fR
+.ad
+.RS 11n
+.rt  
+操作数由一个固定字符串组成，应用程序可以使用该字符串编写一条列出可接受的否定性响应的消息。POSIX 语言环境的肯定性和否定性响应的格式和值如下所示；该代码列表描述了 \fBlocaledef \fR 输入，表给出了相同信息，但添加了 \fBnl_langinfo()\fR 常量。 
+.sp
+.in +2
+.nf
+LC_MESSAGES
+# This is the POSIX locale definition for
+# the LC_MESSAGES category.
+#
+yesexpr "<circumflex><left-square-bracket><y><Y>\e
+        <right-square-bracket>"
+#
+noexpr  "<circumflex><left-square-bracket><n><N>\e
+        <right-square-bracket>"
+#
+yesstr	"yes"
+nostr	"no"
+END LC_MESSAGES
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+
+.sp
+.TS
+tab() box;
+lw(1.83i) |lw(1.83i) |lw(1.83i) 
+lw(1.83i) |lw(1.83i) |lw(1.83i) 
+.
+\fBlocaledef 关键字\fR\fBlanginfo 常量\fR\fBPOSIX 语言环境值\fR
+\fByesexpr\fR\fBYESEXPR\fR\fB"^[yY]"\fR
+\fBnoexpr\fR\fBNOEXPR\fR\fB"^[nN]"\fR
+\fByesstr\fR\fBYESSTR\fR\fB"yes"\fR
+\fBnostr\fR\fBNOSTR\fR\fB"no"\fR
+.TE
+
+.sp
+.LP
+在遵循 SUSv3 标准的应用程序中，未提供有关 \fByesstr\fR 和 \fBnostr\fR 的信息。
+.SH 另请参见
+.sp
+.LP
+\fBdate\fR(1)、\fBlocale\fR(1)、\fBlocaledef\fR(1)、\fBsort\fR(1)、\fBtr\fR(1)、\fBuniq\fR(1)、\fBlocaleconv\fR(3C)、\fBnl_langinfo\fR(3C)、\fBsetlocale\fR(3C)、\fBstrcoll\fR(3C)、\fBstrftime\fR(3C)、\fBstrptime\fR(3C)、\fBstrxfrm\fR(3C)、\fBwcscoll\fR(3C)、\fBwcsftime\fR(3C)、\fBwcsxfrm\fR(3C)、\fBwctype\fR(3C)、\fBattributes\fR(5)、\fBcharmap\fR(5)、\fBextensions\fR(5)、\fBregex\fR(5) 

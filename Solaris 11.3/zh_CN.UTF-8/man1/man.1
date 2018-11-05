@@ -1,0 +1,822 @@
+'\" te
+.\" Portions Copyright (c) 2008, 2015, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright (c) 1980 Regents of the University of California.The Berkeley software License Agreement specifies the terms and conditions for redistribution.
+.TH man 1 "2015 年 5 月 20 日" "SunOS 5.11" "用户命令"
+.SH 名称
+man \- 查找并显示参考手册页
+.SH 用法概要
+.LP
+.nf
+\fBman\fR [\fB-\fR] [\fB-adFlrt\fR] [\fB-M\fR \fIpath\fR] [\fB-T\fR \fImacro-package\fR] [\fB-s\fR \fIsection\fR] \fIname\fR...
+.fi
+
+.LP
+.nf
+\fBman\fR [\fB-M\fR \fIpath\fR] [\fB-s\fR \fIsection\fR] \fB-k\fR \fIquery\fR...
+.fi
+
+.LP
+.nf
+\fBman\fR [\fB-M\fR \fIpath\fR] \fB-f\fR \fIfile\fR...
+.fi
+
+.LP
+.nf
+\fBman\fR [\fB-M\fR \fIpath\fR] [\fB-s\fR \fIsection\fR] \fB-K\fR \fIquery\fR...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBman\fR 命令用于显示参考手册中的信息。它会显示根据 \fIname\fR 选择的完整手册页，或者显示根据 \fIquery\fR（\fB-k\fR 或 \fB-K\fR）或关联文件 (\fB-f\fR) 的名称所选择的摘要。如果未找到任何手册页，\fBman\fR 将输出一条错误消息。
+.SS "源格式"
+.sp
+.LP
+参考手册页使用 \fBnroff\fR（请参见\fBgroff\fR(1)）或 \fBSGML\fR（Standard Generalized Markup Language，标准通用标记语言）标记（请参见 \fBsgml\fR(5)）进行标记。\fBman\fR 命令会识别标记的类型并相应地处理文件。根据标记的类型，各种源文件均保存在不同的目录中。
+.SS "手册页的位置"
+.sp
+.LP
+联机参考手册页目录通常位于 \fB/usr/share/man\fR 中。\fBnroff\fR 源位于 \fB/usr/share/man/man\fR* 目录中。\fBSGML\fR 源位于 \fB/usr/share/man/sman\fR* 目录中。每个目录对应于手册页的一节。由于可以选择性地安装这些目录，因此目录可能并不驻留于主机中。您可能需要从这些目录所驻留的主机中挂载 \fB/usr/share/man\fR。
+.sp
+.LP
+如果在对应的 \fBcat\fR* 或 \fBfmt\fR* 目录中存在已预先格式化的最新版本，则 \fBman\fR 只显示或输出这些版本。如果所需的预先格式化的版本已过期或缺失，则 \fBman\fR 会在显示之前先对其重新格式化，并在 \fBcat\fR* 或 \fBfmt\fR* 可写入的情况下存储预先格式化的版本。不更新索引文件。请参见 \fBcatman\fR(1M)。如果未提供预先格式化的版本的目录，则每当请求某页时，\fBman\fR 均会重新格式化该页。在显示过程中，\fBman\fR 会使用临时文件存储预先格式化的文本。
+.sp
+.LP
+如果标准输出不是终端，或者如果给定了 `\fB-\fR' 标志，则 \fBman\fR 将通过 \fBcat\fR(1) 传输其输出。否则，\fBman\fR 将通过 \fBless\fR(1) 传输其输出，以便在屏幕中处理分页和下划线。
+.SS "查询字符串"
+.sp
+.LP
+使用 \fB-k\fR 或 \fB-K\fR 选项时，可以使用 \fIquery\fR（通过一个或多个词条或短语）搜索手册页。它支持基于文件的索引、全文搜索、查询扩展、词干分析以及部分匹配。有关如何生成索引文件的信息，请参阅 \fBcatman\fR(1M)。
+.sp
+.LP
+术语是来自有效字符集的字符序列，该字符集包含所有字母字符、数字和下划线，即 {a-z、A-Z、_}。它是全文处理的有用语义单元。但是，在所有有效术语中，将不对停用词（或术语）建立索引和进行搜索。
+.sp
+.LP
+停用词是一些最常见的、短的功能词。例如 the、is、at which 等。在一些情况下，停用词会导致问题，特别是搜索的查询包含这些词时。例如 "The zfs system"、"take that"，所以，在索引构建或查询搜索时，将移除停用词以提高 man(1) 性能。
+.sp
+.LP
+短语包含多个术语，这些术语由未建立索引的字符连接，通常是空格字符。在终端中，用户搜索短语时，通常用双引号将短语括起来。
+.sp
+.LP
+查询扩展在全文域中是非常有用的技术。它用于重构原始用户输入的查询字符串并对添加的查询词重新加权，避免出空搜索结果的情况，以提高 man(1) 全文搜索性能。
+.sp
+.LP
+术语查询扩展目的在于帮助用户自动补足不完整的输入术语并提供正确形式。
+.sp
+.LP
+首字母缩略词查询扩展用于在用户查询包含某些首字母缩略词时帮助用户完成首字母缩略词扩展。它会自动将相应的全名字符串附加到用户查询。
+.sp
+.LP
+英文的词干分析，例如，基于词根 \fBcat\fR 识别字符串 \fBcats\fR、\fBcatlike\fR、\fBcatty\fR 等等。它可以基于 \fBstem\fR 来识别 \fBstemmer\fR、\fBstemming\fR 和 \fBstemmed\fR。词干分析算法会将词 \fBfishing\fR、\fBfished\fR、\fBfish\fR 和 \fBfisher\fR 简化为词根 \fBfish\fR。 
+.sp
+.LP
+部分匹配允许用户在查询字符串中指定部分名称以限制每个手册页中的搜索范围。部分名称是指每个手册页中的部分标题，帮助定义手册页布局或结构。例如“名称”、“用法概要”、“说明”等等。
+.sp
+.LP
+匹配以不区分大小写的方式执行。词干分析仅针对英文手册页执行。
+.sp
+.LP
+基于查询匹配项的评分按升序排列并显示匹配的手册页。
+.sp
+.LP
+Oracle Solaris 手册页分为多个部分，如“名称”\fB\fR、“用法概要”\fB\fR、“说明”\fB\fR等等。根据 \fB-K\fR 选项中所述的详细信息，用户可以指定搜索范围仅限于某一节。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示与 \fBMANPATH\fR 搜索路径内的 \fIname\fR 匹配的所有手册页。按照查找的顺序显示手册页。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+调试信息。显示要计算的节说明符、使用的搜索方法以及 \fBman\fR 所搜索的路径。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfile ...\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBman\fR 会尝试查找与任何给定的文件相关的手册页。它输出包含生成的基名或名称的摘要。这实际上与 \fBwhatis\fR(1) 相同。
+.sp
+此选项使用索引文件。有关索引文件生成方式的详细信息，请参阅 \fBcatman\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fR
+.ad
+.sp .6
+.RS 4n
+强制 \fBman\fR 搜索由 \fBMANPATH\fR 或 \fBman.cf\fR 文件指定的所有目录，而不是使用索引查找文件。如果索引文件不是最新的，且其已设置了 \fBman\fR 命令的缺省行为，则此选项非常有用。因此，并不一定需要调用该选项，在此处介绍仅供参考。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR \fIquery ...\fR\fR
+.ad
+.sp .6
+.RS 4n
+从索引文件中搜索指定的查询并输出摘要。只会搜索 NAME 部分。这实际上与 \fBapropos\fR(1) 相同。
+.sp
+有关如何生成索引文件的信息，请参见 \fB-K\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-K\fR \fIquery ...\fR\fR
+.ad
+.sp .6
+.RS 4n
+从索引文件中搜索指定的查询并输出摘要。缺省情况下会搜索所有节。
+.sp
+如果在查询选项参数中提供一个以冒号 (\fB:\fR) 结束的节名称作为从左起的第一个文本（正如 \fIsection name: query\fR 一样），则仅在指定的节中搜索查询字符串。如果指定的节名称不存在，将为用户列出所有支持的节名称。
+.sp
+在 \fB/usr/share/man\fR 和 \fB/usr/gnu/share/man\fR 目录中供 \fB-f\fR、\fB-k\fR 和 \fB-K\fR 使用的索引文件可以自动生成，其前提是，手册页已在这些目录中安装或更新，且提供手册页的软件包已通过\fBpkg\fR(5) 中指定的 \fBrestart_fmri=svc:/application/man-index:default\fR 对这些文件进行标记。索引文件还可以通过手动运行 \fBsvcadm restart application/man-index\fR 或将 \fBcatman\fR(1M) 与 \fB-w\fR 一起运行来生成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+列出已找到的与搜索路径中 \fIname\fR 匹配的所有手册页。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定手册页的备用搜索路径。\fIpath\fR 是以冒号分隔的目录列表，包含手册页目录子树。例如，如果 \fIpath\fR 为 \fB/usr/share/man:/usr/local/man\fR，则 \fBman\fR 会先在标准位置中搜索 \fIname\fR，然后在 \fB/usr/local/man\fR 中进行搜索。当与 \fB-f\fR、\fB-k\fR 或 \fB-K\fR 选项结合使用时，\fB-M\fR 选项必须首先出现。假定 \fIpath\fR 中的每个目录均包含格式为 \fBman\fR* 或 \fBsman\fR* 的子目录，一个子目录对应一节。此选项会覆盖 \fBMANPATH\fR 环境变量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+重新格式化手册页，但不显示该页。此选项会替换 \fBman\fR \fB-\fR \fB-t\fR \fIname\fR 组合。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIsection ...\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 \fBman\fR 要搜索的手册的各个节。搜索 \fIname\fR 的目录仅限于由 \fIsection\fR 指定的目录。\fIsection\fR 可以是数字，可能后面会跟有一个或多个字母以匹配手册中所需要的某一节，例如，“\fB3lib\fR”。此外，\fIsection\fR 可以是一个单词，例如 \fBlocal\fR、\fBnew\fR、\fBold\fR、\fBpublic\fR。\fIsection\fR 还可以是一个字母。要指定多个节，请用逗号分隔每个节。此选项会覆盖 \fBMANPATH\fR 环境变量和 \fBman.cf\fR 文件。有关 \fBman\fR 执行搜索的说明，请参见下面的“搜索路径”部分\fB\fR\fB\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBman\fR man 将 postscript 输出到 stdout。如果同时给定 \fB-\fR 和 \fB-t\fR 标志，则 \fBman\fR 会更新每个名为 \fIname\fR 的 \fBtroff\fR 版本（如果需要），但不会显示这些版本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fImacro-package\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fImacro-package\fR 而非标准 \fB-mandoc\fR 宏来格式化手册页。如果它以 '\fB-m\fR' 开头，则处理方式为在 groff 中指定一个宏软件包作为选项。您可以继续添加 '\fB-r\fR' 选项来指定宏的选项。有关这些选项，请参见 groff(1) 和 groff_man(5)。如果它以 '\fB/\fR' 开头，则处理方式为直接指定一个宏软件包。可按这种方式指定 \fB/usr/share/lib/tmac\fR 下的宏。请参见示例 5。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+标准实用程序或关键字的名称。
+.RE
+
+.SH 用法
+.sp
+.LP
+\fBman\fR 的用法如下所述：
+.SS "手册页的各节"
+.sp
+.LP
+参考手册中的条目分为若干个 \fIsection\fR。节名称包括一个主节名称，通常为一个数字，后面还可能带有一个小节名称，通常为一个或多个字母。一个未加修饰的主节名称（例如 "\fB9\fR"）不会充当该名称的各小节的缩写，例如 "\fB9e\fR"、"\fB9f\fR" 或 "\fB9s\fR"。也就是说，必须通过 \fBman\fR \fB-s\fR 分别搜索各个小节。每一节均包含针对某个参考类别的相应说明，通过各小节可以细化这些区分。有关在此发行版中使用的分类的说明，请参见 \fBintro\fR 手册页。
+.sp
+.LP
+以下内容包含对手册页各节及其所引用信息的简要说明：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+第 1 部分按照字母顺序介绍了操作系统中提供的各种命令。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+第 1M 部分按照字母顺序介绍了主要用于系统维护和管理的各种命令。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+第 2 部分介绍了所有的系统调用。其中的大多数调用可能返回一个或多个错误。如果返回一个异常值，则表明有错误情况。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+第 3 部分介绍了各种库中包含的函数，这些函数不属于第 2 部分介绍的那些直接调用 UNIX 系统原语 (primitive) 的函数。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+第 4 部分简要介绍了各种文件的格式，并在适当之处给出了文件格式的 C 结构声明。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+第 5 部分包含其他文档，如字符集表。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+第 7 部分介绍了涉及特定硬件外围设备和设备驱动程序的各种特殊文件。还介绍了 STREAMS 软件驱动程序、模块和 STREAMS 通用的一组系统调用。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+第 9E 部分介绍了 DDI（Device Driver Interface，设备驱动程序接口）/DKI（Driver/Kernel Interface，驱动程序/内核接口）、仅 DDI 和仅 DKI 入口点例程，开发者可以将这些例程包含在设备驱动程序中。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+第 9F 部分介绍了可供设备驱动程序使用的内核函数。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+第 9S 部分介绍了驱动程序用来在驱动程序和内核之间共享信息的数据结构。
+.RE
+.SS "搜索路径"
+.sp
+.LP
+在搜索给定的 \fIname\fR 之前，\fBman\fR 会构建一个候选目录和各节的列表。\fBman\fR 将搜索由 \fBMANPATH\fR 环境变量指定的目录中的 \fIname\fR。
+.sp
+.LP
+如果缺少 \fBMANPATH\fR，\fBman\fR 将基于 \fBPATH\fR 环境变量构建其搜索路径，主要方法是用 \fBman\fR 替换 \fBPATH\fR 元素的最后一部分。为了说明诸如 \fB/sbin\fR、\fB/usr/xpg4/bin\fR 目录及其他目录的独有特征，还会添加特殊规定。如果文件参数包含 \fB/\fR 字符，则使用参数的 \fIdirname\fR 部分替代 \fBPATH\fR 元素以构建搜索路径。
+.sp
+.LP
+在手册页目录中，\fBman\fR 可按以下顺序将搜索范围缩小到指定的节：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+通过 \fB-s\fR 选项在命令行上指定的 \fIsection\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在 \fBMANPATH\fR 环境变量中嵌入的 \fIsection\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在 \fBMANPATH\fR 环境变量中为各个目录指定的 \fBman.cf\fR 文件中指定的 \fIsection\fR
+.RE
+.sp
+.LP
+如果以上内容均不存在，则 \fBman\fR 将在手册页路径中搜索每一个目录，并显示所找到的第一个匹配手册页。
+.sp
+.LP
+\fBman.cf\fR 文件具有以下格式：
+.sp
+.in +2
+.nf
+MANSECTS=\fIsection\fR[,\fIsection\fR]... 
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以 `\fB#\fR' 开头的行和空行均视为注释并忽略。在 \fBMANPATH\fR 中指定的各个目录可以包含手册页配置文件，其中指定该目录的缺省搜索顺序。
+.SH 格式化手册页
+.sp
+.LP
+手册页在 \fBgroff\fR(1) 或 \fBsgml\fR(5) 中进行标记。\fBnroff\fR 手册页通过具有 \fB-mandoc\fR 宏软件包的 \fBgroff\fR(1) 或 \fBgtroff\fR(1) 来处理。有关宏用法的信息，请参阅 \fBgroff\fR(1)。带有 \fBSGML\fR— 标记的手册页通过 \fBSGML\fR 解析器处理，然后传递给格式化程序。
+.SS "预处理 \fBnroff\fR 手册页"
+.sp
+.LP
+格式化 \fBnroff\fR 手册页时，\fBman\fR 会检查第一行以确定其是否需要特殊处理。如果第一行是以下格式的字符串：
+.sp
+.in +2
+.nf
+\&'\e" \fIX\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+其中，\fIX\fR 通过一个 SPACE 与 `\fB"\fR' 隔开，并由以下列表中字符的任意组合构成，\fBman\fR 会通过对应的预处理程序将其输入传输到 \fBgtroff\fR(1) 或 \fBgroff\fR(1)。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBe\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBgeqn\fR(1)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBr\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBgrefer\fR(1)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBt\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBgtbl\fR(1) 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBv\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBvgrind\fR(1)
+.RE
+
+.SS "请参见其他 \fBnroff\fR 手册页"
+.sp
+.LP
+如果 \fBnroff\fR 手册页的第一行是对其他手册页条目的引用并符合以下模式：
+.sp
+.in +2
+.nf
+\&.so man*/\fIsourcefile\fR
+\&.so \fIsourcefile\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBman\fR 将处理指定的文件，而不是当前的文件。当影子文件位于与其引用不同的子目录中时（如第一种模式），引用必须表示为相对于手册页目录子树根的路径名称。如果它们位于相同的部分 \fBsubdirectory(man*)\fR 中，可以将引用表示为文件名（如第二种模式）。
+.sp
+.LP
+当第二行或任何后续行以 \fB\&.so\fR 开头时，\fBman\fR 会忽略该行；相关的 roff 将以正常方式处理请求。
+.SS "处理 SGML 手册页"
+.sp
+.LP
+如果存在字符串 \fB<!DOCTYPE\fR，则将手册页标识为使用 SGML 进行标记。如果文件还包含字符串 \fBSHADOW_PAGE\fR，则表明该文件引用了其他手册页的相应内容。这是一种文件实体引用，引用的是包含相应文本的手册页。这与在 \fBnroff\fR 格式的手册页中使用的 \fB\&.so\fR 机制类似。
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBman\fR 执行的以下环境变量的说明，请参见 \fBenviron\fR(5)：\fBLANG\fR、\fBLC_ALL\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR 和 \fBNLSPATH\fR。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBMANPATH\fR\fR
+.ad
+.sp .6
+.RS 4n
+以冒号分隔的目录列表；每个目录后面都可以带有以逗号分隔的节列表。如果设置，则其值将覆盖作为缺省目录搜索路径的 \fB/usr/share/man\fR，以及作为缺省节搜索路径的 \fBman.cf\fR 文件。而 \fB-M\fR 和 \fB-s\fR 标志又会覆盖这些值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPAGER\fR\fR
+.ad
+.sp .6
+.RS 4n
+此程序以交互方式将 \fBman\fR 的输出传送到屏幕。如果未设置，则使用 `less -ins'。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTCAT\fR\fR
+.ad
+.sp .6
+.RS 4n
+用于显示 \fBtroff\fR 格式手册页的程序名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTROFF\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 \fB-t\fR 标志时要使用的格式化程序的名称。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR创建手册页的文本版本
+.sp
+.LP
+以下示例采用 ASCII 文本创建 \fBpipe\fR(2) 手册页：
+
+.sp
+.in +2
+.nf
+% \fBman pipe.2 | col -x -b > pipe.text\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+这种方法可以代替使用 \fBman\fR \fB-t\fR，它可向缺省打印机发送手册页（假如用户需要手册页的文本文件版本的话）。
+
+.LP
+\fB示例 2 \fR获取与一个或多个词条匹配的手册页列表
+.sp
+.LP
+通过以下示例可获取与词条 \fBzfs\fR 或 \fBcreate\fR 相匹配的手册页列表：
+
+.sp
+.in +2
+.nf
+% \fBman -K zfs create\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR获取匹配一个或多个短语的手册页列表
+.sp
+.LP
+通过以下示例可获取与带双引号的短语 “\fBzfs create\fR” 或 “\fBstorage pool\fR” 相匹配的手册页列表。
+
+.sp
+.in +2
+.nf
+% \fBman -K 'zfs create' "storage pool"\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR获取与某节中的词条或短语匹配的手册页列表
+.sp
+.LP
+通过以下示例可获取在“另请参见”\fB\fR节中具有词条 \fBzfs\fR 的手册页列表： 
+
+.sp
+.in +2
+.nf
+% \fBman -K see also: zfs\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+通过以下示例可获取“示例”节中具有短语 “\fBzfs create\fR” 的手册页列表：
+
+.sp
+.in +2
+.nf
+% \fBman -K examples: "zfs create"\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR更改缺省宏软件包
+.sp
+.LP
+以下示例将行宽设置为 67 列并且输出到多个页面中而不是输出到单个长页面中。这将使外观看起来更像 man(5) 宏生成的输出。
+
+.sp
+.in +2
+.nf
+% \fBman -T '-mandoc -rLL=67n -rcR=0' zfs\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下示例使用实际的 man(5) 宏而非缺省的 \fBmandoc\fR 宏。
+
+.sp
+.in +2
+.nf
+% \fBman -T /usr/share/lib/tmac/an zfs\fR
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.sp .6
+.RS 4n
+出现错误。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/man\fR\fR
+.ad
+.sp .6
+.RS 4n
+标准手册页目录子树的根
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/man/man?/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+未格式化的 \fBnroff\fR 手册条目
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/man/man_index/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+目录和关键字数据库。
+.sp
+生成的文件包括： 
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/usr/share/man/man-index/term.idx\fR 
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/usr/share/man/man-index/term.dic\fR 
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/usr/share/man/man-index/term.req\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/usr/share/man/man-index/term.pos\fR 
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/usr/share/man/man-index/term.doc\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/usr/share/man/man-index/term.exp\fR 
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/man/sman?/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+未格式化的 \fBSGML\fR 手册条目
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/man/cat?/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBnroff\fR 格式的手册条目
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/man/fmt?/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBtroff\fR 格式的手册条目
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/groff/<\fIversion\fR>/tmac/mandoc.tmac\fR\fR
+.ad
+.sp .6
+.RS 4n
+缺省情况下使用的标准 -\fBmandoc\fR 宏
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/lib/sgml/locale/C/dtd/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBSGML\fR 文档类型定义文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/lib/sgml/locale/C/solbook/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBSGML\fR 样式表和实体定义目录
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/lib/pub/eqnchar\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBeqn\fR 和 \fBneqn\fR 的标准定义 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBman.cf\fR\fR
+.ad
+.sp .6
+.RS 4n
+节的缺省搜索顺序
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性text/doctools
+_
+CSIT{
+Enabled（已启用），请参见\fB\fR“附注”部分。
+T}
+_
+接口稳定性Committed（已确定）
+_
+标准请参见 \fBstandards\fR(5)。 
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBapropos\fR(1)、\fBcat\fR(1)、\fBcol\fR(1)、\fBgeqn\fR(1)、\fBless\fR(1)、\fBgroff\fR(1)、\fBgrefer\fR(1)、\fBgtbl\fR(1)、\fBgtroff\fR(1)、\fBvgrind\fR(1)、\fBwhatis\fR(1)、\fBcatman\fR(1M)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBman\fR(5)、\fBsgml\fR(5)、\fBstandards\fR(5)
+.SH 附注
+.sp
+.LP
+\fB-f\fR、\fB-k\fR 和 \fB-K\fR 选项会使用索引文件，索引文件可通过 \fBman\fR(5) 中指定的 SMF 服务进行创建，或手动结合使用 \fBcatman\fR(1M) 与 \fB-w\fR 选项进行创建。 
+.sp
+.LP
+不再使用 \fBwindex\fR 数据库文件。新的索引文件已替换 \fBwindex\fR 数据库文件。 
+.sp
+.LP
+\fBman\fR 命令支持 CSI。不过，经验证，\fBman\fR 命令调用的某些实用程序不支持 CSI。因此，与 \fB-t\fR 选项一起使用的 \fBman\fR 命令不能处理非 ASCII 数据。另外，使用 \fBman\fR 命令显示需要通过 \fBgeqn\fR、\fBgrefer\fR、\fBgtbl\fR 或 \fBvgrind\fR 进行特殊处理的手册页时，无法支持 CSI。缺省 PAGER 程序 less 无法处理非 UTF-8 多字节字符。如果您的环境是非 UTF-8 语言环境，则应当将 PAGER 设置为 '\fB/usr/xpg4/bin/more\fR'。
+.sp
+.LP
+将来的 Oracle Solaris 发行版中将不支持 SGML 格式的手册页。
+.SH 已知问题
+.sp
+.LP
+手册内容应该能够在排照机或 \fBASCII\fR 终端上完全重现出来。但是，在终端上某些信息（例如，体现为字体变化）会丢失。

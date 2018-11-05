@@ -1,0 +1,121 @@
+'\" te
+.\" Copyright (c) 1996, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1989 AT&T
+.TH acctprc 1M "2011 年 8 月 16 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+acctprc, acctprc1, acctprc2 \- 处理记帐
+.SH 用法概要
+.LP
+.nf
+\fB/usr/lib/acct/acctprc\fR 
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/acctprc1\fR [\fIctmp\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/acctprc2\fR 
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBacctprc\fR 读取标准输入并将其转换为总记帐记录（请参见 \fBacct.h\fR(3HEAD) 中的 \fBtacct\fR 记录）。\fBacctprc\fR 将 CPU 时间分为 prime 时间和 non-prime 时间，并确定平均内存大小（采用内存段单位）。然后，\fBacctprc\fR 根据用户 ID 汇总 \fBtacct\fR 记录，并添加与用户 ID 对应的登录名。然后，将汇总的记录写入到标准输出。\fBacctprc1\fR 以 \fBacct.h\fR(3HEAD) 所述的格式读取输入，添加与用户 \fBIDs\fR 对应的登录名，然后为每个进程写入 \fBASCII\fR 行，其中给出用户 \fBID\fR、登录名、prime \fBCPU\fR 时间 (tics)、non-prime \fBCPU\fR 时间 (tics) 以及平均内存大小（采用内存段单位）。如果指定 \fIctmp\fR，它应包含按用户 \fBID\fR 和登录名排序的登录会话列表。如果未提供该文件，它会从口令文件中获取登录名，就像 \fBacctprc\fR 那样。\fIctmp\fR 中的信息可帮助它区分共享相同用户 \fBID\fR 的不同登录名。
+.sp
+.LP
+从标准输入中，\fBacctprc2\fR 按 \fBacctprc1\fR 写入的格式读取记录，根据用户 \fBID\fR 和名称汇总这些记录，然后将排序后的摘要写入到标准输出，作为总记帐记录。
+.SH 示例
+.LP
+\fB示例 1 \fR\fBacctprc\fR 的示例。
+.sp
+.LP
+通常按下面所示的方式使用 \fBacctprc\fR 命令：
+
+.sp
+.in +2
+.nf
+example% acctprc \|< /var/adm/pacct \|> ptacct
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+通常按如下所示方式使用 \fBacctprc1\fR 和 \fBacctprc2s\fR 命令：
+
+.sp
+.in +2
+.nf
+example% acctprc1 \|ctmp \|</var/adm/pacct
+example% acctprc2 > ptacct 
+.fi
+.in -2
+.sp
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/passwd\fR\fR
+.ad
+.RS 15n
+.rt  
+系统口令文件
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/accounting/legacy-accounting
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBacctcom\fR(1)、\fBacct\fR(1M)、\fBacctcms\fR(1M)、\fBacctcon\fR(1M)、\fBacctmerg\fR(1M)、\fBacctsh\fR(1M)、\fBcron\fR(1M)、\fBfwtmp\fR(1M)、\fBrunacct\fR(1M)、\fBacct\fR(2)、\fBacct.h\fR(3HEAD)、\fButmpx\fR(4)、\fBattributes\fR(5)
+.SH 附注
+.sp
+.LP
+虽然 \fBacctprc1\fR 可以针对从命令行运行的命令来区分共享用户 \fBIDs\fR 的登录名，但 \fBacctprc1\fR 难以对以其他方式调用的命令进行此区分。通过 \fBcron\fR(1M) 运行命令就是 \fBacctprc1\fR 可能具有这方面困难的一个示例。使用 \fBacct\fR(1M) 中的 \fBacctwtmp\fR 程序可以进行更精确的转换。\fBacctprc\fR 不区分用户 ID 相同的用户。
+.sp
+.LP
+平均内存大小的内存段是特定处理器上逻辑内存段中字节数的度量单位。
+.sp
+.LP
+在任何给定命令的单个调用过程中，\fBacctprc\fR、\fBacctprc1\fR 和 \fBacctprc2\fR 命令最多可以处理
+.RS +4
+.TP
+.ie t \(bu
+.el o
+6000 个不同会话
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+1000 个不同终端行
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+2000 个不同登录名
+.RE
+.sp
+.LP
+如果在某个时刻这些项中的任一项的实际数目超过了最大值，该命令将不会成功。

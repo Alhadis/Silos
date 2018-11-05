@@ -1,0 +1,582 @@
+'\" te
+.\" Copyright (c) 2006, 2012, Oracle and/or its affiliates. All rights reserved.
+.TH lgrpinfo 1 "2012 年 3 月 5 日" "SunOS 5.11" "ユーザーコマンド"
+.SH 名前
+lgrpinfo \- 近傍性グループに関する情報の表示
+.SH 形式
+.LP
+.nf
+\fBlgrpinfo\fR [\fB-aceGlLmrt\fR] [\fB-u\fR \fIunit\fR] [\fB-C\fR | \fB-P\fR] \fIlgrp\fR ...
+.fi
+
+.LP
+.nf
+\fBlgrpinfo\fR \fB-h\fR
+.fi
+
+.LP
+.nf
+\fBlgrpinfo\fR \fB-I\fR [\fB-c\fR] [\fB-G\fR] [\fB-C\fR | \fB-P\fR] \fIlgrp\fR ...
+.fi
+
+.LP
+.nf
+\fBlgrpinfo\fR [\fB-T\fR] [\fB-aceGlLmr\fR] [\fB-u\fR \fIunit\fR]
+.fi
+
+.LP
+.nf
+\fBlgrpinfo\fR \fB-d\fR \fIdevice_path\fR
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBlgrpinfo\fR は、近傍性グループ (\fBlgroup\fR) の階層とその内容に関する情報を出力します。
+.sp
+.LP
+\fBlgroup\fR は、一連の CPU およびメモリーに類似するハードウェアデバイスを表します。これらの間には少し距離 (遅延) がある場合があります。システム内のすべての \fBlgroup\fR が、\fBlgroup ID\fR と呼ばれる一意の整数によって識別されます。
+.sp
+.LP
+\fBlgroup\fR は、もっとも近いリソースを見つけやすくするために階層にまとめられます。リーフ \fBlgroup\fR にはそれぞれ、互いにもっとも近い (ローカルの) リソースのセットが含まれます。階層内の各親 \fBlgroup\fR には、その子 \fBlgroup\fR のリソースに加えて、その次にもっとも近いリソースが含まれます。最後に、\fBroot\fR \fBlgroup\fR には、最大待ち時間以内にあるドメイン内のすべてのリソースが含まれます。
+.sp
+.LP
+ユニフォームメモリーアクセス (UMA) マシンは単純に、ルート \fBlgroup\fR によって表されます。非ユニフォームメモリーアクセス (NUMA) マシンは、対応する近傍性レベルを示す \fBlgroup\fR の階層によって表されます。たとえば、2 つの待ち時間 (ローカルとリモート) を持つ NUMA マシンには、リーフとルートの 2 つのレベルから成る \fBlgroup\fR 階層があります。
+.sp
+.LP
+すべてのアプリケーションスレッドは、「ホーム」lgroup を割り当てられます。\fB\fRシステムは、スレッドに CPU またはメモリーリソースを割り当てる必要がある場合、そのスレッドのホーム \fBlgroup\fR から \fBlgroup\fR 階層を検索して、そのスレッドのホームにもっとも近い使用可能なリソースを探します。詳細は、\fBplgrp\fR(1)を参照してください。
+.sp
+.LP
+引数がない場合、\fBlgrpinfo\fR は、システム内のすべての \fBlgroup\fR に関する一般情報を表示します。コマンド行でいずれかの \fBlgroup\fR ID が指定されている場合、このコマンドは、指定された \fBlgroup\fR に関する情報のみを表示します。表示される \fBlgroup\fR の種類や、各 \fBlgroup\fR に対して表示される正確な情報は、さまざまなオプションによって制御されます。
+.sp
+.LP
+\fBlgroup\fR は、コマンド行で \fBlgroup\fR ID として、または特定のキーワードを使用して指定できます。「オペランド」の項を参照してください。\fB\fR
+.SH オプション
+.sp
+.LP
+オプションは組み合わせることができ、オプションを指定する順序は重要ではありません。小文字オプションによって、\fBlgroup\fR に関するどのような情報が表示されるかが選択されます。 
+.sp
+.LP
+引数なしで \fBlgrpinfo\fR を呼び出すことは、次の記述と同等です。
+.sp
+.in +2
+.nf
+lgrpinfo -c -e -l -m -r -t all
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 18n
+.rt  
+トポロジ、メモリー、読み込み、および応答時間情報を出力します。 
+.sp
+このオプションは次の短縮形です。 
+.sp
+.in +2
+.nf
+lgrpinfo -t -c -e -m -r -l -L
+.fi
+.in -2
+.sp
+
+(ただし、\fB-T\fR も指定した場合を除く。)\fB-T\fR が指定されている場合、\fB-t\fR オプションは含まれません。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 18n
+.rt  
+CPU 情報を出力します。 
+.sp
+これはデフォルトです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR\fR
+.ad
+.RS 18n
+.rt  
+リスト内の各 \fBlgroup\fR をその子に置き換えます。
+.sp
+このオプションは、\fB-P\fR および \fB-T\fR オプションとともに使用することはできません。引数が指定されていない場合、このオプションはデフォルトで、表示される \fBlgroup\fR に適用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdevice_path\fR\fR
+.ad
+.RS 18n
+.rt  
+指定された入出力デバイスにもっとも近い \fBlgroup\fR の ID を表示します。\fIdevice_path\fR は、デバイスパスを表す文字列です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBlgroup\fR の平均負荷率を表示します。\fBlgroup\fR の平均負荷率は、リーフ \fBlgroup\fR の場合にのみ表示されます。
+.sp
+これはデフォルトです。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-G\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBlgroup\fR 階層の OS ビューを出力します。 
+.sp
+デフォルトでは、\fBlgroup\fR 階層の呼び出し側のビューのうち、呼び出し側が使用できる内容のみ (たとえば、呼び出し側のプロセッサセット内の CPU のみ) が含まれているものが表示されます。オペレーティングシステムと呼び出し側のビューについては、\fBlgrp_init\fR(3LGRP) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.RS 18n
+.rt  
+短いヘルプメッセージを出力して終了します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR\fR
+.ad
+.RS 18n
+.rt  
+一致する ID のみを出力します。 
+.sp
+このオプションはスクリプト用で、\fB-c\fR、\fB-G\fR および \fB-C\fR、または \fB-P\fR とともに使用できます。\fB-c\fR が指定されている場合は、一致するすべての \fBlgroup\fR に含まれている CPU のリストを表示します。それ以外の場合は、一致する \fBlgroup\fR の ID が表示されます。「\fB使用例\fR」を参照してください。
+.sp
+引数が指定されていない場合、このオプションは表示される \fBlgroup\fR (デフォルトでは、すべての \fBlgroup\fR) に適用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBlgroup\fR の待ち時間に関する情報を表示します。 
+.sp
+各 \fBlgroup\fR について指定された待ち時間の値はオペレーティングシステムによって定義されており、プラットフォームに固有です。この値は、実行中のシステム上の \fBlgroup\fR の相対的な比較にのみ使用できます。この値は、ハードウェアデバイス間の実際の応答時間を表しているとは限らず、異なるプラットフォーム間では当てはまらない場合もあります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBlgroup\fR の待ち時間テーブルを表示します。\fBlgroup\fR の待ち時間テーブルには、各 \fBlgroup\fR からほかの各 \fBlgroup\fR (それ自体を含む) への相対的な待ち時間が表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.RS 18n
+.rt  
+メモリー情報を出力します。 
+.sp
+\fB-u\fR オプションも指定されている場合を除き、メモリーサイズは測定単位が調整され、\fB0\fR から \fB1023\fR までの整数で生成されます。この数値の小数部分は \fB10\fR 未満の値に対してのみ表示されます。この動作は、\fBls\fR(1) または \fBdf\fR(1M) の \fB-h\fR オプションを使用して読みやすい形式で表示する場合と同様です。
+.sp
+これはデフォルトです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR\fR
+.ad
+.RS 18n
+.rt  
+リスト内の各 \fBlgroup\fR をその親に置き換えます。 
+.sp
+このオプションは、\fB-C\fR および \fB-T\fR オプションとともに使用することはできません。引数が指定されていない場合、このオプションは表示される \fBlgroup\fR (デフォルトでは、すべての \fBlgroup\fR) に適用されます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBlgroup\fR のリソースに関する情報を表示します。 
+.sp
+リソースは、各メンバー \fBlgroup\fR に CPU およびメモリーリソースが直接含まれている、\fBlgroup\fR のセットによって表されます。\fB-T\fR も指定されている場合は、中間 \fBlgroup\fR のリソースに関する情報のみが表示されます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBlgroup\fR のトポロジに関する情報を表示します。
+.sp
+これはデフォルトです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fR
+.ad
+.RS 18n
+.rt  
+システムの \fBlgroup\fR トポロジをツリーとしてグラフィカルに表示します。このオプションは\fB-a\fR、\fB-c\fR、\fB-e\fR、\fB-G\fR、\fB-l\fR,\fB-L\fR、\fB-m\fR、\fB-r\fR、および \fB-u\fR オプションとともにのみ使用できます。\fB-r\fR とともに使用された場合は、中間 \fBlgroup\fR の \fBlgroup\fR リソースのみを表示します。\fB-T\fR が \fB-a\fR とともに使用されると、\fB-t\fR オプションは省略されます。それが唯一の \fBlgroup\fR でないかぎり、\fBroot\fR \fBlgroup\fR の情報は表示されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fIunits\fR\fR
+.ad
+.RS 18n
+.rt  
+メモリー単位を指定します。単位は、b、k、m、g、t、p、または e (それぞれ、バイト、キロバイト、メガバイト、ギガバイト、テラバイト、ペタバイト、またはエクサバイトを表す) にしてください。この数値の小数部分は 10 未満の値に対してのみ表示されます。この動作は、\fBls\fR(1) または \fBdf\fR(1M) の \fB-h\fR オプションを使用して読みやすい形式で表示する場合と同様です。
+.RE
+
+.SH オペランド
+.sp
+.LP
+次のオペランドがサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIlgrp\fR\fR
+.ad
+.RS 8n
+.rt  
+\fBlgroup\fR は、次のいずれかのキーワードを使用して、コマンド行で \fBlgroup\fR ID として指定できます。
+.sp
+.ne 2
+.mk
+.na
+\fBall\fR
+.ad
+.RS 16n
+.rt  
+すべての \fBlgroup\fR。
+.sp
+これはデフォルトです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBintermediate\fR
+.ad
+.RS 16n
+.rt  
+すべての中間 \fBlgroup\fR。中間 lgroup とは、親と子を持つ \fBlgroup\fR のことです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBleaves\fR
+.ad
+.RS 16n
+.rt  
+すべてのリーフ \fBlgroup\fR。リーフ \fBlgroup\fR とは、\fBlgroup\fR 階層内に子を持たない \fBlgroup\fR のことです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBroot\fR
+.ad
+.RS 16n
+.rt  
+ルート \fBlgroup\fR。ルート \fBlgroup\fR には、最大待ち時間以内にあるドメイン内のすべてのリソースが含まれており、親 \fBlgroup\fR は存在しません。
+.RE
+
+.RE
+
+.sp
+.LP
+無効な \fBlgroup\fR が指定されている場合、lgrpinfo コマンドは無効な ID を示す標準エラーに関するメッセージを表示し、コマンド行で指定されたほかの \fBlgroup\fR の処理を続行します。指定されたどの \fBlgroup\fR も有効でない場合、\fBlgrpinfo\fR は \fB2\fR の終了ステータスで終了します。
+.SH 使用例
+.LP
+\fB例 1 \fRlgroup に関する情報の出力
+.sp
+.LP
+次の例では、システム内の \fBlgroup\fR に関する一般情報を表示します。 
+
+.sp
+.LP
+この例では、システムは AMD Opteron CPU を 2 つ搭載したマシンで、1 つの CPU と 2G バイトのメモリーを持つノードが 2 つあります。これらの各ノードは、リーフ \fBlgroup\fR によって表されます。ルート \fBlgroup\fR には、マシン内のすべてのリソースが含まれます。
+
+.sp
+.in +2
+.nf
+$ lgrpinfo
+  lgroup 0 (root):
+          Children: 1 2
+          CPUs: 0 1
+          Memory: installed 4.0G, allocated 2.2G, free 1.8G
+          Lgroup resources: 1 2 (CPU); 1 2 (memory)
+          Latency: 83
+  lgroup 1 (leaf):
+          Children: none, Parent: 0
+          CPU: 0
+          Memory: installed 2.0G, allocated 1.2G, free 788M
+          Lgroup resources: 1 (CPU); 1 (memory)
+          Load: 0.793
+          Latency: 56
+  lgroup 2 (leaf):
+          Children: none, Parent: 0
+          CPU: 1
+          Memory: installed 2.0G, allocated 1017M, free 1.0G
+          Lgroup resources: 2 (CPU); 2 (memory)
+          Load: 0.817
+          Latency: 56
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRlgroup のトポロジの出力
+.sp
+.LP
+次の例では、AMD Opteron CPU を 4 つ備えたマシンの lgroup トポロジツリーを出力します。
+
+.sp
+.in +2
+.nf
+$ lgrpinfo -T
+  0
+  |-- 5
+  |   `-- 1
+  |-- 6
+  |   `-- 2
+  |-- 7
+  |   `-- 3
+  `-- 8
+      `-- 4
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fRlgroup のトポロジの出力
+.sp
+.LP
+次の例では、AMD Opteron CPU を 2 つ備えたマシンの lgroup トポロジツリー、リソース、メモリー、および CPU 情報を出力します。
+
+.sp
+.in +2
+.nf
+$ lgrpinfo -Ta
+  0
+  |-- 1
+  |   CPU: 0
+  |   Memory: installed 2.0G, allocated 1.2G, free 790M
+  |   Load: 0.274
+  |   Latency: 56
+  `-- 2
+      CPU: 1
+      Memory: installed 2.0G, allocated 1019M, free 1.0G
+      Load: 0.937
+      Latency: 56
+
+Lgroup latencies:
+
+------------
+    |  0  1  2
+  ------------
+  0 | 83 83 83
+  1 | 83 56 83
+  2 | 83 83 56
+  ------------
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fRlgroup ID の出力
+.sp
+.LP
+次の例では、ルート lgroup の子の lgroup ID を出力します。 
+
+.sp
+.in +2
+.nf
+$ lgrpinfo -I -C root
+  1 2
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 5 \fRCPU ID の出力
+.sp
+.LP
+次の例では、lgroup 1 内のすべての CPU の CPU ID を出力します。
+
+.sp
+.in +2
+.nf
+$ lgrpinfo -c -I 1
+  0
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 6 \fRlgroup の応答時間に関する情報の出力
+.sp
+.LP
+次の例では、lgroup の応答時間に関する情報を出力します。 
+
+.sp
+.in +2
+.nf
+ $ lgrpinfo -l
+  lgroup 0 (root):
+          Latency: 83
+  lgroup 1 (leaf):
+          Latency: 56
+  lgroup 2 (leaf):
+          Latency: 5
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 7 \fR指定されたデバイスにもっとも近い lgroup の ID の表示
+.sp
+.LP
+次の例では、lgroup 2 および 6 が指定されたデバイスにもっとも近いことを示しています。
+
+.sp
+.in +2
+.nf
+$ lgrpinfo -d /dev/dsk/c9t0d0s0
+  lgroup IDs : 2 6
+.fi
+.in -2
+.sp
+
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+正常終了。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+システムから \fBlgroup\fR の情報を取得できません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+指定された \fBlgroup\fR または \fIdevice_path\fR がすべて無効です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.RS 5n
+.rt  
+構文が正しくありません。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性下記を参照。
+.TE
+
+.sp
+.LP
+人間が読める形式の出力は「不確実」です。
+.SH 関連項目
+.sp
+.LP
+\fBls\fR(1), \fBplgrp\fR(1), \fBpmap\fR(1), \fBproc\fR(1), \fBps\fR(1), \fBdf\fR(1M), \fBprstat\fR(1M), \fBlgrp_init\fR(3LGRP), \fBliblgrp\fR(3LIB), \fBlgrp_cpus\fR(3LGRP), \fBlgrp_resources\fR(3LGRP), \fBproc\fR(4), \fBattributes\fR(5)

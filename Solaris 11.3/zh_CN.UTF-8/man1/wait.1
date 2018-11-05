@@ -1,0 +1,311 @@
+'\" te
+.\" Copyright (c) 2010, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1992 X/Open Company Limited
+.\" Copyright 1989 AT&T
+.\" Portions Copyright (c) 1982-2007 AT&T Knowledge Ventures
+.\" Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH wait 1 "2011 年 7 月 12 日" "SunOS 5.11" "用户命令"
+.SH 名称
+wait \- 等待进程完成
+.SH 用法概要
+.LP
+.nf
+ 
+.fi
+
+.SS "/bin/sh"
+.LP
+.nf
+\fBwait\fR [\fIpid\fR]...
+.fi
+
+.SS "/bin/jsh /bin/ksh88 /usr/xpg4/bin/sh"
+.LP
+.nf
+\fBwait\fR [\fIpid\fR]...
+.fi
+
+.LP
+.nf
+\fBwait\fR [% \fIjobid\fR...]
+.fi
+
+.SS "/bin/csh"
+.LP
+.nf
+\fBwait\fR
+.fi
+
+.SS "ksh"
+.LP
+.nf
+\fBwait\fR [\fIjob...\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+shell 在不创建新进程的情况下自行执行 \fBwait\fR。如果收到错误消息 \fBcannot fork,too many processes\fR，则尝试使用 \fBwait\fR 命令清理后台进程。如果上述做法无效，则可能表示系统进程表已满，或者活动的前台进程过多。对与登录名关联的进程 \fBID\fR 数目以及系统可跟踪的进程数目有所限制。
+.sp
+.LP
+并非分为三个或更多阶段的流水线中的所有进程都是 shell 的子进程，因此无法等待其完成。
+.SS "/bin/sh、/bin/jsh"
+.sp
+.LP
+等待进程 \fBID\fR 为 \fIpid\fR 的后台进程完成，并报告其终止状态。如果省略了 \fIpid\fR，则会等待 shell 的所有当前活动后台进程完成，返回代码为 \fB0\fR。启用了作业控制 (jsh) 且参数 \fIjobid\fR 前面有百分号 (\fB%\fR) 时，\fBwait\fR 实用程序将接受作业标识符。
+.sp
+.LP
+如果 \fIpid\fR 不是活动进程 \fBID\fR，\fBwait\fR 实用程序将立即返回，返回代码为 \fB0\fR。
+.SS "csh"
+.sp
+.LP
+等待后台进程。
+.SS "ksh88"
+.sp
+.LP
+如果 shell 启动了异步列表，每个异步列表元素中最后一个命令的进程 \fBID\fR 将成为当前 shell 执行环境中的已知 ID。
+.sp
+.LP
+如果调用了 \fBwait\fR 实用程序而未指定任何操作数，它将等到正在调用的 shell 已知的所有进程 \fBID\fR 全部终止，以退出状态 \fB0\fR 退出。
+.sp
+.LP
+如果指定了一个或多个 \fIpid\fR 或 \fIjobid\fR 操作数且其表示已知进程 \fBID\fR（或作业 ID），\fBwait\fR 实用程序将等到它们全部终止。如果指定了一个或多个 \fIpid\fR 或 \fIjobid\fR 操作数且其表示未知进程 \fBID\fR（或作业 ID），\fBwait\fR 会将其当作以如下退出状态退出的已知进程 \fBID\fR（或作业 ID）一样处理：\fB127\fR.\fBwait\fR 实用程序返回的退出状态是最后一个 \fIpid\fR 或 \fIjobid\fR 操作数请求的进程的退出状态。
+.sp
+.LP
+已知进程 \fBID\fR 仅适用于在当前 shell 执行环境中调用 \fBwait\fR。
+.SS "ksh"
+.sp
+.LP
+如果未指定任何操作数，wait 将等到正在调用的 shell 已知的所有作业全部终止。如果指定了一个或多个作业操作数，wait 将等到它们全部完成。可将每个作业指定为以下各项之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fInumber\fR\fR
+.ad
+.RS 12n
+.rt  
+\fInumber\fR 指的是进程 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-\fR\fInumber\fR\fR
+.ad
+.RS 12n
+.rt  
+\fInumber\fR 指的是进程组 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%\fR\fInumber\fR\fR
+.ad
+.RS 12n
+.rt  
+\fInumber\fR 指的是作业编号
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%\fR\fIstring\fR\fR
+.ad
+.RS 12n
+.rt  
+指的是其名称以 \fIstring\fR 开头的作业
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%?\fR\fIstring\fR\fR
+.ad
+.RS 12n
+.rt  
+指的是其名称包含 \fIstring\fR 的作业
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%+\fR\fR
+.ad
+.br
+.na
+\fB\fB%%\fR\fR
+.ad
+.RS 12n
+.rt  
+指的是当前作业
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%-\fR\fR
+.ad
+.RS 12n
+.rt  
+指的是前一个作业
+.RE
+
+.sp
+.LP
+如果一个或多个作业操作数是当前 shell 环境未知的进程 ID 或进程组 ID，\fBwait\fR 会将其当作以状态 127 退出的进程一样处理。 
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIpid\fR\fR
+.ad
+.RS 9n
+.rt  
+命令的无符号十进制整数进程 \fBID\fR，实用程序要等待其对应的进程终止。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIjobid\fR\fR
+.ad
+.RS 9n
+.rt  
+作业控制作业 \fBID\fR，标识要等待的后台进程组。作业控制作业 \fBID\fR 表示法仅适用于在当前 shell 执行环境中调用 \fBwait\fR，而且只能在支持作业控制选项的系统上调用。
+.RE
+
+.SH 用法
+.sp
+.LP
+在大多数实现程序中，\fBwait\fR 是一个 shell 内置命令。如果它的调用发生在子 shell 或单独的实用程序执行环境中，例如以下环境之一：
+.sp
+.in +2
+.nf
+(wait)
+nohup wait ...
+find . -exec wait ... \e;
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+它将立即返回，因为这些环境中没有要等待终止的已知进程 \fBID\fR。
+.SH 示例
+.LP
+\fB示例 1 \fR使用脚本确定终止信号
+.sp
+.LP
+尽管信号终止进程时使用的确切值不确定，但是如果知道某个信号终止了进程，脚本仍然能够可靠地找出正在使用 \fBkill\fR 的信号，如下列（\fB/bin/ksh88\fR 和 \fB/usr/xpg4/bin/sh\fR）所示：
+
+.sp
+.in +2
+.nf
+sleep 1000&
+pid=$!
+kill -kill $pid
+wait $pid
+echo $pid was terminated by a SIG$(kill -l $(($?\(mi128))) signal.
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR返回进程的退出状态
+.sp
+.LP
+如果以下命令序列运行的时间小于 31 秒（\fB/bin/ksh88\fR 和 \fB/usr/xpg4/bin/sh\fR）：
+
+.sp
+.in +2
+.nf
+sleep 257 | sleep 31 &
+
+jobs -l %%
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+则以下任一命令均可返回流水线中第二个 \fBsleep\fR 的退出状态：
+
+.sp
+.in +2
+.nf
+wait <\fIpid of sleep 31\fR>
+wait %% 
+.fi
+.in -2
+.sp
+
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBwait\fR 执行的环境变量 \fBLANG\fR、\fBLC_ALL\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR 和 \fBNLSPATH\fR 的说明，请参见 \fBenviron\fR(5)。
+.SH 退出状态
+.SS "ksh"
+.sp
+.LP
+\fBksh\fR 中的 \fBwait\fR 内置命令将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 7n
+.rt  
+调用 \fBwait\fR 时未指定任何操作数。正在调用的进程已知的所有进程全部终止。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB127\fR\fR
+.ad
+.RS 7n
+.rt  
+\fIjob\fR 是当前 shell 环境未知的进程 ID 或进程组 ID。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+_
+标准请参见 \fBstandards\fR(5)。
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBcsh\fR(1)、\fBjobs\fR(1)、\fBksh\fR(1)、\fBksh88\fR(1)、\fBpwait\fR(1)、\fBsh\fR(1)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBstandards\fR(5)

@@ -1,0 +1,503 @@
+'\" te
+.\"  Copyright 1989 AT&T Copyright (c) 1992, X/Open Company Limited All Rights Reserved Portions Copyright (c) 1995, Sun Microsystems, Inc. All Rights Reserved
+.\"  Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH tput 1 "1995 年 2 月 1 日" "SunOS 5.11" "用户命令"
+.SH 名称
+tput \- 初始化终端或查询 terminfo 数据库
+.SH 用法概要
+.LP
+.nf
+\fBtput\fR [\fB-T\fR \fItype\fR] \fIcapname\fR [\fIparm\fR]...
+.fi
+
+.LP
+.nf
+\fBtput\fR \fB-S\fR <<
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBtput\fR 实用程序可使用 \fBterminfo\fR 数据库为 shell 提供依赖于终端的功能和信息的值（请参见 \fBsh\fR(1)）；清除、初始化或重置终端；返回所请求终端类型的长名称。如果功能属性 (\fIcapname\fR) 的类型是字符串，\fBtput\fR 将输出字符串；如果属性类型是整数，将输出整数。如果属性类型是布尔值，则 \fBtput\fR 只是设置退出状态（如果终端有此功能，将退出状态设置为 \fB0\fR，表示 \fBTRUE\fR；如果无此功能，将设置为 \fB1\fR，表示 \fBFALSE\fR），而不会生成输出。使用标准输出中返回的值之前，用户应该测试退出状态（\fB$?\fR，请参见 \fBsh\fR(1)），以确保退出状态为 \fB0\fR。请参见“退出状态”部分。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR\fItype\fR \fR
+.ad
+.RS 11n
+.rt  
+表示终端的\fI类型\fR。通常，无需设置该选项，因为将从环境变量 \fBTERM\fR 中获取缺省值。如果指定了 \fB-T\fR，则不会引用 shell 变量 \fBLINES\fR 和 \fBCOLUMNS\fR 以及层大小。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR \fR
+.ad
+.RS 11n
+.rt  
+允许每次调用 \fBtput\fR 处理多项功能。必须从标准输入而非命令行将功能传递到 \fBtput\fR（请参见“示例”部分的示例）。只允许每行包含一个 \fIcapname\fR。\fB-S\fR 可以更改 \fB0\fR 和 \fB1\fR 布尔值与字符串退出状态的含义（请参见“示例”部分）。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcapname\fR \fR
+.ad
+.RS 12n
+.rt  
+表示 \fBterminfo\fR 数据库中的功能属性。有关功能以及与每项功能关联的 \fIcapname\fR 的完整列表，请参见 \fBterminfo\fR(4)。
+.sp
+"C" 语言环境中的实现程序支持将以下字符串作为操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBclear\fR \fR
+.ad
+.RS 13n
+.rt  
+显示清除屏幕序列。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinit\fR \fR
+.ad
+.RS 13n
+.rt  
+如果存在 \fBterminfo\fR 数据库而且存在用户终端的条目（请参见上文的 \fB-T\fR\fItype\fR），将发生以下情况： 
+.RS +4
+.TP
+1.
+终端的初始化字符串（如果存在）将为输出（\fBis1\fR、\fBis2\fR、\fBis3\fR、\fBif\fR、\fBiprog\fR），
+.RE
+.RS +4
+.TP
+2.
+在 tty 驱动程序中设置条目中指定的任何延迟（例如换行符），
+.RE
+.RS +4
+.TP
+3.
+根据条目中的规范启用或禁用制表符扩展，
+.RE
+.RS +4
+.TP
+4.
+如果制表符未扩展，将设置标准制表符（每 8 个空格）。如果条目中不包含以上四项活动中任一项所需的信息，则无提示地跳过该活动。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreset\fR \fR
+.ad
+.RS 13n
+.rt  
+终端的重置字符串（如果存在，\fBrs1\fR、\fBrs2\fR、\fBrs3\fR、\fBrf\fR）将为输出，而不是输出初始化字符串。如果不存在重置字符串但存在初始化字符串，初始化字符串将为输出。否则，\fBreset\fR 的运行方式与 \fBinit\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlongname\fR \fR
+.ad
+.RS 13n
+.rt  
+如果存在 \fBterminfo\fR 数据库而且存在用户终端的条目（请参见上文的 \fB-T\fR\fItype\fR），则终端的长名称将为输出。长名称是 \fBterminfo\fR 数据库中终端说明第一行中的最后一个名称（请参见 \fBterm\fR(5)）。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIparm\fR \fR
+.ad
+.RS 12n
+.rt  
+如果属性是带有参数的某个字符串，则参数 \fIparm\fR 将实例化到该字符串中。纯数字参数将作为一个数字传递到属性。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR根据 TERM 初始化终端
+.sp
+.LP
+以下示例将根据环境变量 \fBTERM\fR 中终端的类型初始化终端。如 \fBprofile\fR(4) 手册页中所述，导出环境变量 \fBTERM\fR 后应将该命令添加到所有用户的 .profile 中。
+
+.sp
+.in +2
+.nf
+example% \fBtput init\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR重置终端
+.sp
+.LP
+以下示例将重置 AT&T 5620 终端，覆盖环境变量 \fBTERM\fR 中终端的类型：
+
+.sp
+.in +2
+.nf
+example% \fBtput -T5620 reset\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR移动光标
+.sp
+.LP
+以下示例会发送将光标移至第 \fB0\fR 行、第 \fB0\fR 列（屏幕左上角，通常称为“起始”光标位置）的序列。
+
+.sp
+.in +2
+.nf
+example% \fBtput cup 0 0\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+接下来这个示例会发送将光标移至第 \fB23\fR 行、第 \fB4\fR 列的序列。
+
+.sp
+.in +2
+.nf
+example% \fBtput cup 23 4\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR回显清除屏幕序列
+.sp
+.LP
+以下示例将为当前终端回显清除屏幕序列。
+
+.sp
+.in +2
+.nf
+example% \fBtput clear\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR列显列数
+.sp
+.LP
+以下命令将列显当前终端的列数。
+
+.sp
+.in +2
+.nf
+example% \fBtput cols\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下命令将列显 450 终端的列数。
+
+.sp
+.in +2
+.nf
+example% \fBtput -T450 cols\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR设置 shell 变量
+.sp
+.LP
+以下示例将 shell 变量 \fBbold\fR 设置为当前终端的开始高亮模式序列，将 \fBoffbold\fR 设置为结束高亮模式序列。该操作可能后跟一个提示符：
+
+.sp
+.in +2
+.nf
+\fBecho "${bold}Please type in your name: ${offbold}\ec"\fR 
+example% \fBbold='tput smso'\fR
+example% \fBoffbold='tput rmso'\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR设置退出状态
+.sp
+.LP
+以下示例将设置退出状态来指明当前终端是否为硬拷贝终端。
+
+.sp
+.in +2
+.nf
+example% \fBtput hc\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 8 \fR列显 terminfo 中的长名称
+.sp
+.LP
+以下命令将输出 \fBterminfo\fR 数据库中环境变量 \fBTERM\fR 所指定终端类型的长名称。
+
+.sp
+.in +2
+.nf
+example% \fBtput longname\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 9 \fR一次调用处理多项功能
+.sp
+.LP
+以下示例显示了一次调用 \fBtput\fR 处理多项功能。这几项功能依次为清除屏幕、将光标移至位置 \fB10\fR、\fB10\fR 和启用 \fBbold\fR（高亮）模式。列表以行中单独出现的感叹号 (\fB!\fR) 结尾。
+
+.sp
+.in +2
+.nf
+example% \fBtput -S <<! 
+> clear 
+> cup 10 10
+> bold 
+> !\fR
+.fi
+.in -2
+.sp
+
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBtput\fR 执行的以下环境变量的说明，请参见 \fBenviron\fR(5)：\fBLANG\fR、\fBLC_ALL\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR 和 \fBNLSPATH\fR。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTERM\fR \fR
+.ad
+.RS 9n
+.rt  
+确定终端类型。如果未设置该变量或该变量为空而且未指定 \fB-T\fR 选项，则会使用未指定的缺省终端类型。
+.RE
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 7n
+.rt  
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果 \fIcapname\fR 的类型是布尔值而且未指定 \fB-S\fR，则表示 \fBTRUE\fR。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果 \fIcapname\fR 的类型是字符串且未指定 \fB-S\fR，则表示为该终端类型定义了 \fIcapname\fR。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果 \fIcapname\fR 的类型是布尔值或字符串且指定了 \fB-S\fR，则表示所有行都已成功处理。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fIcapname\fR 的类型是整数。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+请求的字符串已成功写入。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 7n
+.rt  
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果 \fIcapname\fR 的类型是布尔值且未指定 \fB-S\fR，则表示 \fBFALSE\fR。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果 \fIcapname\fR 的类型是字符串且未指定 \fB-S\fR，则表示没有为该终端类型定义 \fIcapname\fR。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR \fR
+.ad
+.RS 7n
+.rt  
+用法错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR \fR
+.ad
+.RS 7n
+.rt  
+没有关于指定的终端类型的信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR \fR
+.ad
+.RS 7n
+.rt  
+指定的操作数无效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>4\fR \fR
+.ad
+.RS 7n
+.rt  
+出现错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-1\fR \fR
+.ad
+.RS 7n
+.rt  
+\fIcapname\fR 是一个未在 \fBterminfo\fR 数据库中指定的数字变量。例如，\fBtput\fR \fB-T450\fR 行和 \fBtput\fR \fB-T2621\fR xmc。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/include/curses.h\fR \fR
+.ad
+.sp .6
+.RS 4n
+\fBcurses\fR(3CURSES) 标头
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/include/term.h\fR \fR
+.ad
+.sp .6
+.RS 4n
+\fBterminfo\fR 标头
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/tabset/*\fR \fR
+.ad
+.sp .6
+.RS 4n
+某些终端的制表符设置，其格式适合输出到终端（用于设置边距和制表符的转义序列）。有关更多信息，请参见 \fBterminfo\fR(4) 的“制表符和初始化”部分
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/lib/terminfo/?/*\fR \fR
+.ad
+.sp .6
+.RS 4n
+编译的终端说明数据库
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+_
+标准请参见 \fBstandards\fR(5)。
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBclear\fR(1)、\fBsh\fR(1)、\fBstty\fR(1)、\fBtabs\fR(1)、\fBcurses\fR(3CURSES)、\fBprofile\fR(4)、\fBterminfo\fR(4)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBstandards\fR(5)、\fBterm\fR(5)

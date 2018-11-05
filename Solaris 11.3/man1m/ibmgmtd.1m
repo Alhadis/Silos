@@ -1,0 +1,110 @@
+'\" te
+.\" Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+.TH ibmgmtd 1M "13 Mar 2015" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+ibmgmtd \- InfiniBand Host Channel Adapter management daemon
+.SH SYNOPSIS
+.LP
+.nf
+/sbin/ibmgmtd
+.fi
+
+.LP
+.nf
+svc:/network/ib/ib-management:default
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+\fBipmgmtd\fR is a system daemon that handles administrative events for InfiniBand Host Channel Adapters. It is controlled through the service management facility (SMF) service instance:
+.sp
+.in +2
+.nf
+svc:/network/ib/ib-management:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The \fBipmgmtd\fR daemon is started automatically by the SMF service and should not be invoked directly. It does not constitute an administrative or a programming interface. Use the following command to start \fBibmgmtd\fR:
+.sp
+.in +2
+.nf
+svcadm enable svc:/network/ib/ib-management:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Use the following command to stop \fBibmgmtd\fR:
+.sp
+.in +2
+.nf
+svcadm disable svc:/network/ib/ib-management:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The administrative interface for managing InfiniBand HCA interfaces is through \fBibadm\fR(1M).
+.SS "System Configuration (SC) Profile"
+.sp
+.LP
+The InfiniBand Host Channel Adapter configuration may be specified in a System Configuration Profile for use in an automated installation. In the example excerpt below, the hermon0 property group is used to switch on I/O Virtualization (iov) with a limit of 5 VHCAs. The hermon0-vhca0 property group adds a VHCA with default properties. Note that the \fB"."\fR in "hermon0.vhca0" name has been replaced with a \fB"-"\fR. The hermon0-vhca0-port1 group specifies which pkeys to allow on port 1 of the VHCA. Port 2 which is not specified will use the default \fBpkeys\fR for the VHCA.
+.sp
+.in +2
+.nf
+    <service name='network/ib/ib-management' type='service' version='0'>
+       <instance name='default' enabled='true'>
+
+	<property_group name='config' type='application'>
+	  <propval name='version' value='1'/>
+	</property_group>
+
+	 <property_group name='hermon0' type='ibadm-type-hca'>
+	   <propval name='iov' value='on'/>
+	   <propval name='max-vhcas' value='5'/>
+	 </property_group>
+
+	 <property_group name='hermon0-vhca0' type='ibadm-type-hca'/>
+
+	  <property_group name='hermon0-vhca0-port1' type='ibadm-type-port'>
+	    <property name='pkeys' type='astring'>
+	      <astring_list>
+		<value_node value='ffff'/>
+		<value_node value='8010'/>
+	      </astring_list>
+	    </property>
+	  </property_group>
+	</instance>
+    </service>
+.fi
+.in -2
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/io/infiniband
+_
+Interface StabilityUncommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBibadm\fR(1M), \fBattributes\fR(5)

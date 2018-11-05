@@ -1,0 +1,745 @@
+'\" te
+.\" Copyright (c) 2009, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH route 1M "2015 年 4 月 6 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+route \- 手动处理路由表
+.SH 用法概要
+.LP
+.nf
+\fBroute\fR [\fB-fnvq\fR] \fIsub-command\fR [ [\fImodifiers\fR] \fIargs\fR]
+.fi
+
+.LP
+.nf
+\fBroute\fR [\fB-fnvq\fR] [\fB-p\fR [\fB-R\fR \fIroot-dir\fR]] add | delete [\fImodifiers\fR] \fIdestination\fR \fIgateway\fR 
+     [\fIargs\fR]
+.fi
+
+.LP
+.nf
+\fBroute\fR [\fB-fnvq\fR] change | get [\fImodifiers\fR] \fIdestination\fR 
+     [\fIgateway\fR [\fIargs\fR]]
+.fi
+
+.LP
+.nf
+\fBroute\fR [\fB-fn\fR] monitor [\fImodifiers\fR]
+.fi
+
+.LP
+.nf
+\fBroute\fR [\fB-fnvq\fR] flush [\fImodifiers\fR]
+.fi
+
+.LP
+.nf
+\fBroute\fR \fB-p\fR [\fB-R\fR \fIroot-dir\fR] show
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBroute\fR 手动处理网络路由表。正常情况下，这些表由系统路由守护进程（如 \fBin.routed\fR(1M) 和 \fBin.ripngd\fR(1M)）维护。
+.sp
+.LP
+\fBroute\fR 支持的常规选项数量有限，但支持丰富的命令语言。用户可以指定任意请求，可以通过 \fBroute\fR(7P) 中所讨论的编程接口传递该请求。
+.sp
+.LP
+\fBroute\fR 使用了一个路由套接字和新的消息类型 \fBRTM_ADD\fR、\fBRTM_DELETE\fR、\fBRTM_GET\fR 和 \fBRTM_CHANGE\fR。虽然只有超级用户可以修改路由表，但允许非特权用户执行 \fBRTM_GET\fR 操作。
+.SH 选项
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.RS 15n
+.rt  
+刷新所有网关条目的路由表。如果将 \fB-f\fR 选项与任何 \fBroute\fR 子命令配合使用，\fBroute\fR 将先刷新网关，然后再执行子命令。通过以下方式指定要刷新的表：将 \fBinet\fR 或 \fBinet6\fR 修饰符紧跟在 \fB-f\fR 选项之后。如果未指定，则缺省刷新 IPv4 (\fBinet\fR) 路由。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 15n
+.rt  
+防止在报告操作时尝试以符号方式输出主机和网络名称。此选项在名称服务器不可用时很有用。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 15n
+.rt  
+更改网络路由表，并且在系统重启后更改仍然有效。该操作先应用于网络路由表，如果应用成功，再应用于与当前活动的网络配置文件（有关网络配置文件的详细信息，请参见 \fBnetcfg\fR(1M)）关联的已保存路由列表。在确定操作是否成功时，将忽略因为添加已存在路由或者删除不在路由表中的路由而失败的操作。在持久路由中使用主机或网络名称时应特别小心，因为在启动过程中添加路由时，基于网络的名称解析服务不可用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR\fR
+.ad
+.RS 15n
+.rt  
+抑制所有输出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIroot-dir\fR\fR
+.ad
+.RS 15n
+.rt  
+指定 \fBroute\fR 要在其中应用更改的备用根目录。该选项仅与 \fB-p\fR 选项一起使用，否则将被忽略。如果指定了 \fB-R\fR，路由更改将仅应用于在启动时使用的已保存路由列表，而\fB不\fR应用于网络路由表。此外，还将跳过某些检查，例如是否存在与 \fB-ifp\fR 一起使用的网络接口。在要修改的系统根目录所在的位置不是 \fB/\fR 的情况下，可从 JumpStart 脚本内部使用此选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 15n
+.rt  
+以详细模式列显其他详细信息。
+.RE
+
+.SS "子命令"
+.sp
+.LP
+支持以下子命令：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBadd\fR\fR
+.ad
+.RS 11n
+.rt  
+添加路由。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchange\fR\fR
+.ad
+.RS 11n
+.rt  
+更改路由的各个方面（如路由的网关）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete\fR\fR
+.ad
+.RS 11n
+.rt  
+删除特定路由。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBflush\fR\fR
+.ad
+.RS 11n
+.rt  
+删除路由表中的所有网关条目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBget\fR\fR
+.ad
+.RS 11n
+.rt  
+查找并显示到某个目标的路由。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmonitor\fR\fR
+.ad
+.RS 11n
+.rt  
+连续报告对路由信息库、路由查找未命中次数或可疑网络分区的任何更改。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshow\fR\fR
+.ad
+.RS 11n
+.rt  
+显示要在系统启动时应用的路由列表。只能与 \fB-p\fR 选项配合使用。
+.RE
+
+.sp
+.LP
+\fBadd\fR 和 \fBdelete\fR 子命令使用以下语法：
+.sp
+.in +2
+.nf
+route [ -fnvq ] cmd \fIdestination\fR \fIgateway\fR [metric/netmask]
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+其中 \fIcmd\fR 是 \fBadd\fR 或 \fBdelete\fR，\fIdestination\fR 是目标主机或网络，\fIgateway\fR 是应通过其路由包的下一中继站。\fB\fR“操作数”部分中所述的修饰符可以放在命令行上的任何位置。 
+.sp
+.LP
+\fBget\fR 和 \fBchange\fR 子命令使用以下语法： 
+.sp
+.in +2
+.nf
+route [ -fnvq ] \fIcmd\fR \fIdestination\fR [\fIgateway\fR [metric/netmask]]
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+其中 \fIcmd\fR 是 \fBget\fR 或 \fBchange\fR，\fIdestination\fR 是目标主机或网络，\fIgateway\fR 是应通过其路由包的下一中继站。\fB\fR“操作数”部分中所述的修饰符可以放在命令行上的任何位置。 
+.sp
+.LP
+\fBmonitor\fR 子命令使用以下语法：
+.sp
+.in +2
+.nf
+route monitor [ -inet | -inet6 ]
+.fi
+.in -2
+.sp
+
+.SH 操作数
+.sp
+.LP
+\fBroute\fR 针对通过网关到达目标的路由执行其子命令。
+.SS "目标和网关"
+.sp
+.LP
+缺省情况下，目标和网关地址将被解释为 IPv4 地址。首先会使用 \fBgetipnodebyname\fR(3SOCKET) 尝试将所有符号名称作为主机名称。对于 AF_INET，如果此查找失败，\fBgetnetbyname\fR(3SOCKET) 会将名称解释为网络名称。 
+.sp
+.LP
+可以在地址因 \fBroute\fR 子命令而改变其解释方式之前，在命令行上加入一个可选修饰符。
+.sp
+.LP
+支持以下修饰符：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-inet\fR\fR
+.ad
+.RS 10n
+.rt  
+强制将地址解释为 IPv4 地址，即属于 \fBAF_INET\fR 地址族。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-inet6\fR\fR
+.ad
+.RS 10n
+.rt  
+强制将地址解释为 IPv6 地址，即属于 \fBAF_INET6\fR 地址族。
+.RE
+
+.sp
+.LP
+对于 IPv4 地址，缺省情况下，到特定主机的路由与到网络的路由的不同之处在于，前者将指定的 Internet 地址解释为目标。如果目标的\fB本地地址部分\fR（即，非网络掩码部分）为 \fB0\fR；或者，如果目标被解析为网络的符号名称，则假定路由为网络；否则，假定其为到主机的路由。
+.sp
+.LP
+可以通过使用以下修饰符之一来强制进行此选择： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-host\fR\fR
+.ad
+.RS 9n
+.rt  
+强制将目标解释为主机。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-net\fR\fR
+.ad
+.RS 9n
+.rt  
+强制将目标解释为网络。
+.RE
+
+.sp
+.LP
+例如：
+.sp
+
+.sp
+.TS
+tab();
+cw(2.75i) cw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+目标目标等效于
+_
+\fB128.32\fR\fB-host\fR \fB128.0.0.32\fR
+\fB128.32.130\fR\fB-host\fR \fB128.32.0.130\fR
+\fB-net\fR \fB128.32\fR\fB128.32.0.0\fR
+\fB-net\fR \fB128.32.130\fR\fB\fR\fB128.32.130.0\fR
+.TE
+
+.sp
+.LP
+这两个修饰符可避免地址和关键字（例如用作符号主机名称的 \fBhost\fR）之间的混淆。可以在 \fIdestination\fR 前加上 \fB-dst\fR 修饰符来进行区分。可以使用 \fB-gateway\fR 修饰符来区分网关地址。如果目标可以通过接口直接到达而不需要中间 IP 路由器作为网关，可使用 \fB-interface\fR 或 \fB-iface\fR 修饰符指示这一点。 
+.sp
+.LP
+在以下示例中，路由不涉及外部网关（路由器），而是通过计算机的一个接口。IP 目标地址与此类路由上的目标和掩码匹配的包会在网关地址所标识的接口上发出。对于使用 ARP 协议的接口，这种类型的路由用于指定所有匹配目标都是物理链路的本地地址。即，可以使用此命令添加缺省路由，从而将主机配置为所有地址的 ARP，而不必考虑所配置的接口网络掩码。例如： 
+.sp
+.in +2
+.nf
+example# route add default \fIhostname\fR -interface
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+其中网关地址 \fIhostname\fR 是与发送所有匹配包的网络接口关联的名称或 IP 地址。在只有一个网络接口的主机上，\fIhostname\fR 通常与 \fBuname -n\fR 命令所返回的 \fInodename\fR 相同。请参见 \fBuname\fR(1)。
+.sp
+.LP
+为了实现与早期系统的向后兼容，也可以通过在网关地址后放一个 \fB0\fR 来指定可直接到达的路由：
+.sp
+.in +2
+.nf
+example# route add default \fIhostname\fR 0 
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+此值曾经是一个路由度量，但现在已经不再使用该度量。如果将该值指定为 \fB0\fR，则目标可直接到达（等效于指定 \fB-\fR\fBinterface\fR）。如果是非零但不能解释为子网掩码的值，则使用网关（缺省设置）。 
+.sp
+.LP
+使用 \fBAF_INET\fR 地址族或 IPv4 地址时，可以指定单独的子网掩码。可以通过以下方式之一指定此值：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+IP 地址后跟网关地址。这通常用 \fIdecimal dot\fR 表示法指定（就像对 \fBinet_addr\fR(3SOCKET) 一样），而不是采用符号形式。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+IP 地址后跟 \fB-netmask\fR 限定符。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在目标地址后附加斜杠字符和一个十进制长度。
+.RE
+.sp
+.LP
+如果未指定子网掩码，则使用的掩码是按网关地址选择的输出接口的子网掩码，前提是目标类网与接口的类网相同。否则，将使用目标地址的类网掩码。 
+.sp
+.LP
+以下每个示例创建一个到目标 \fB192.0.2.32\fR 子网的 IPv4 路由，子网掩码为 \fB255.255.255.224\fR： 
+.sp
+.in +2
+.nf
+example# route add 192.0.2.32/27 somegateway
+example# route add 192.0.2.32 -netmask 255.255.255.224 somegateway
+example# route add 192.0.2.32 somegateway 255.255.255.224
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+对于 IPv6，仅接受斜杠格式。以下示例创建了一个到目标 \fB33fe::\fR 的 IPv6 路由，网络掩码为 \fB16\fR 个一位后跟 112 个零位。
+.sp
+.in +2
+.nf
+example# route add -inet6 3ffe::/16 somegateway
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+在网络未唯一标识输出接口（例如，多个接口使用相同的地址）的情况下，可以使用 \fB-ifp\fR \fIifname\fR 修饰符来按名称指定接口。例如，\fB\fR\fB-ifp\fR \fBlo0\fR 将路由与 \fBlo0\fR 接口关联起来。如果指定的接口是 IPMP（IP multipathing，IP 多路径）组中的底层接口，则请求添加路由时将自动转换成对应的 IPMP IP 接口，请求在底层接口上删除或更改路由将失败。
+.sp
+.LP
+当路由表包含多个相等的路由（即到相同目标和掩码的路由）时，IP 将尝试将流量分配到这些路由上。如下：单个传输连接使用相同的路由来避免包重新排序，如 TCP 中所表现的那样。分配算法的详细信息没有记录，并且可能会随时间而演变。
+.SS "路由标志"
+.sp
+.LP
+路由有关联的标志，这些标志会影响协议在发送到路由所匹配的目标时的操作。通过在命令行上包括以下修饰符可以设置这些标志（在有些情况下可以清除标志，由 \fB~\fR 指示）： 
+.sp
+
+.sp
+.TS
+tab();
+cw(1.32i) cw(1.24i) cw(2.94i) 
+lw(1.32i) lw(1.24i) lw(2.94i) 
+.
+修饰符标志说明
+_
+\fB-interface\fR\fB~RTF_GATEWAY\fR目标可以直接到达 
+\fB-iface\fR\fB~RTF_GATEWAY\fR接口修饰符的别名
+\fB-static\fR\fBRTF_STATIC\fR手动添加的路由
+\fB-nostatic\fR\fB~RTF_STATIC\fRT{
+假装路由是由内核或路由守护进程添加的
+T}
+\fB-reject\fR\fBRTF_REJECT\fR匹配时发出 ICMP 不可访问消息
+\fB-blackhole\fR\fBRTF_BLACKHOLE\fR无提示地丢弃包
+\fB-proto1\fR\fBRTF_PROTO1\fR设置特定于协议的路由标志 #1
+\fB-proto2\fR\fBRTF_PROTO2\fR设置特定于协议的路由标志 #2
+\fB-private\fR\fBRTF_PRIVATE\fR不通告此路由
+\fB-multirt\fR\fBRTF_MULTIRT\fR创建指定的冗余路由
+\fB-setsrc\fR\fBRTF_SETSRC\fR分配缺省源地址
+\fB-indirect\fR\fBRTF_INDIRECT\fRT{
+允许在网关不在链路上的情况下添加路由
+T}
+.TE
+
+.sp
+.LP
+请注意，通过 \fB-setsrc\fR 选项的源地址选择优先于基于 \fBipadm\fR(1M) usesrc 的源地址选择。换句话说，将先为路由选择源地址，然后再为接口选择源地址，因为前者的粒度更细。
+.sp
+.LP
+可选的 \fB-indirect\fR 修饰符允许在网关无法直接到达的情况下添加路由。当间接路由是要发送或转发的包的最佳匹配时，IP 将继续查找该网关以寻找可直接到达的路由。即使网关可直接到达，也可使用 \fB-indirect\fR 修饰符。
+.sp
+.LP
+可选的修饰符 \fB-rtt\fR、\fB-rttvar\fR、\fB-sendpipe\fR、\fB-recvpipe\fR、\fB-mtu\fR、\fB-hopcount\fR、\fB-expire\fR 和 \fB-ssthresh\fR 按传输级别协议（如 \fBTCP\fR）提供路由条目中维护的数量的初始值。通过将 \fB-lock\fR 元修饰符放在每个要锁定的修饰符前面，或者指定所有后续度量都可通过 \fB-lockrest\fR 元修饰符锁定，可以分别锁定这些修饰符。
+.sp
+.LP
+有些传输层协议可能仅支持其中的部分度量。支持以下可选修饰符：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-expire\fR\fR
+.ad
+.RS 13n
+.rt  
+条目的生命周期。当前不支持此可选修饰符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-hopcount\fR\fR
+.ad
+.RS 13n
+.rt  
+最大跃点计数。当前不支持此可选修饰符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-mtu\fR\fR
+.ad
+.RS 13n
+.rt  
+以字节为单位的最大 MTU。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-recvpipe\fR\fR
+.ad
+.RS 13n
+.rt  
+以字节为单位的接收管道大小。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-rtt\fR\fR
+.ad
+.RS 13n
+.rt  
+以微秒为单位的往返时间。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-rttvar\fR\fR
+.ad
+.RS 13n
+.rt  
+以微秒为单位的往返时间差。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-sendpipe\fR\fR
+.ad
+.RS 13n
+.rt  
+以字节为单位的发送管道大小。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-ssthresh\fR\fR
+.ad
+.RS 13n
+.rt  
+以字节为单位的发送管道大小阈值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-secattr\fR\fR
+.ad
+.RS 13n
+.rt  
+路由的安全属性。仅当系统配置有 Solaris Trusted Extensions 功能时，此修饰符才可用。
+.sp
+\fB-secattr\fR 修饰符具有以下格式：
+.sp
+.in +2
+.nf
+min_sl=\fIval\fR,max_sl=\fIval\fR,doi=\fIval\fR,cipso
+.fi
+.in -2
+
+或者：
+.sp
+.in +2
+.nf
+sl=VAL,doi=VAL,cipso
+.fi
+.in -2
+
+在上面的第一种形式中，\fBmin_sl\fR 和 \fBmax_sl\fR 的 \fIval\fR 是一个十六进制或字符串形式的敏感标签。\fBdoi\fR 的 \fIval\fR 是一个非负整数。该路由将仅适用于具有由 \fBdoi\fR 值定义的相同系统解释域并且在 \fBmin_sl\fR 和 \fBmax_sl\fR 值定义的认可范围内的包。\fBcipso\fR 关键字为可选项，缺省为已设置。有效的 \fBmin_sl\fR、\fBmax_sl\fR 和 \fBdoi\fR 关键字/值对是必需的。请注意，如果 \fIval\fR 包含空格，则必须将其放在双引号中。
+.sp
+上面的第二种形式等效于对 \fBmin_sl\fR 和 \fBmax_sl\fR 用相同的 \fBVAL\fR 所指定的第一种形式。第二种形式应该用于 \fBget\fR 命令，因为 \fBget\fR 仅使用一个敏感标签。
+.RE
+
+.SS "兼容性"
+.sp
+.LP
+修饰符 \fBhost\fR 和 \fBnet\fR 被视为等效于 \fB-\fR\fBhost\fR 和 \fB-net\fR\fB\fR。要指定匹配其中一个名称的符号地址，可使用 \fBdst\fR 或 \fBgateway\fR 关键字来进行区分。例如：\fB\fR\fB-dst\fR \fBhost\fR
+.sp
+.LP
+为了与早期的系统兼容，也接受以下两个标志，但它们没有效果。 
+.sp
+
+.sp
+.TS
+tab();
+cw(2.84i) cw(2.66i) 
+lw(2.84i) lw(2.66i) 
+.
+修饰符标志
+_
+\fB-cloning\fRRTF_CLONING
+\fB-xresolve\fRRTF_XRESOLVE
+.TE
+
+.sp
+.LP
+也接受 \fB\fR\fB-ifa\fR \fBhostname\fR 修饰符，但它没有效果。
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/defaultrouter\fR\fR
+.ad
+.RS 22n
+.rt  
+缺省路由器列表
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/hosts\fR\fR
+.ad
+.RS 22n
+.rt  
+主机名称和网络地址列表
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/networks\fR\fR
+.ad
+.RS 22n
+.rt  
+网络名称和地址列表
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBuname\fR(1)、\fBin.ripngd\fR(1M)、\fBin.routed\fR(1M)、\fBnetcfg\fR(1M)、\fBnetstat\fR(1M)、\fBrouted\fR(1M)、\fBioctl\fR(2)、\fBgetipnodebyname\fR(3SOCKET)、\fBgetnetbyname\fR(3SOCKET)、\fBinet_addr\fR(3SOCKET)、\fBdefaultrouter\fR(4)、\fBhosts\fR(4)、\fBnetworks\fR(4)、\fBattributes\fR(5)、\fBarp\fR(7P)、\fBip\fR(7P)、\fBroute\fR(7P)、\fBrouting\fR(7P)
+.SH 诊断
+.sp
+.ne 2
+.mk
+.na
+\fB\fBadd\fR [ \fBhost\fR | \fBnetwork ]\fR \fIdestination\fR:\fIgateway\fR \fIflags\fR\fR
+.ad
+.sp .6
+.RS 4n
+将指定路由添加到表中。输出的值来自于 \fBioctl\fR(2) 调用中提供的路由表条目。如果使用的网关地址不是网关的主地址（\fBgetipnodebyname\fR(3SOCKET) 返回的第一个地址），则将同时以数字形式和符号形式输出网关地址。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete\fR [ \fBhost\fR | \fBnetwork\fR ] \fIdestination\fR:\fIgateway\fR \fIflags\fR\fR
+.ad
+.br
+.na
+\fB\fBchange\fR [ \fBhost\fR | \fB network\fR ] \fIdestination\fR:\fIgateway\fR \fIflags\fR\fR
+.ad
+.sp .6
+.RS 4n
+与 \fBadd\fR 相同，但在删除或更改条目时使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdestination\fR \fBdone\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果指定了 \fB-f\fR 标志或者使用了 \fBflush\fR 子命令，则每删除一个路由表条目都将使用此格式的消息指示。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNetwork is unreachable\fR\fR
+.ad
+.sp .6
+.RS 4n
+尝试添加路由失败，因为列出的网关不在直接连接的网络上。改为提供下一中继站。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnot in table\fR\fR
+.ad
+.sp .6
+.RS 4n
+尝试对不在表中的条目进行 \fBdelete\fR 操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBentry exists\fR\fR
+.ad
+.sp .6
+.RS 4n
+尝试对已在内核中的路由进行 \fBadd\fR 操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrouting table overflow\fR\fR
+.ad
+.sp .6
+.RS 4n
+尝试执行一项操作，但系统无法分配创建新条目所需的内存。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinsufficient privileges\fR\fR
+.ad
+.sp .6
+.RS 4n
+尝试添加、删除、更改或刷新路由失败，因为发出调用的进程没有相应的特权。
+.RE
+
+.SH 附注
+.sp
+.LP
+指定目标是本地目标（使用 \fB-interface\fR 修饰符）时，将假设路由器将实现\fB代理地址转换协议\fR，即它们响应对所有可到达的目标的 ARP 查询。正常情况下，使用路由器发现或 RIP 比使用代理地址转换协议更加可靠，扩展性更好。有关 RIP 的相关信息，请参见 \fBin.routed\fR(1M)。
+.sp
+.LP
+将所有目标都是本地的路由与子网或网络路由组合使用可能导致不可预测的后果。与所有目标都是本地的路由相关的搜索顺序未定义，各个版本之间可能有所不同。

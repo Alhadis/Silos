@@ -1,0 +1,552 @@
+'\" te
+.\" Copyright (c) 2008, 2012, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1989 AT&T
+.TH ufsdump 1M "2012 年 5 月 22 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+ufsdump \- 文件系统增量转储
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/ufsdump\fR [\fIoptions\fR] [\fIarguments\fR] \fIfiles_to_dump\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBufsdump\fR 用于将 \fIfiles_to_dump\fR 指定的所有文件（通常为整个文件系统或文件系统中在某个特定日期之后更改过的文件）备份到磁带或磁盘文件。
+.sp
+.LP
+\fBufsdump\fR 命令只能在已卸载的文件系统或以只读方式挂载的文件系统上使用。尝试转储已挂载的读写文件系统可能会导致系统中断或者无法从转储恢复文件。如果您需要已挂载的文件系统的时间点映像，请考虑使用 \fBfssnap\fR(1M) 命令创建文件系统快照。
+.sp
+.LP
+\fIoptions\fR 是由单字母 \fBufsdump\fR 选项组成的单个字符串。
+.sp
+.LP
+\fIarguments\fR 可以是多个字符串，这些字符串与选项的关联是由顺序决定的。即，第一个参数与带参数的第一个选项相对应；第二个参数与带参数的第二个选项相对应，依此类推。
+.sp
+.LP
+\fIfiles_to_dump\fR 是必需的，而且必须是命令行中的最后一个参数。有关更多信息，请参见\fB\fR“操作数”部分。
+.sp
+.LP
+对于大多数设备，\fBufsdump\fR 可以自动检测介质结尾。因此，对于多卷转储，\fBd\fR、\fBs\fR 和 \fBt\fR 选项不是必需的，除非 \fBufsdump\fR 不了解设备检测介质结尾的方式，或者要使用较旧版本的 \fBrestore\fR 命令在系统上恢复文件。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0-9\fR\fR
+.ad
+.sp .6
+.RS 4n
+“转储级别”。在 \fIfiles_to_dump\fR 指定的所有文件中，那些在上次 \fBufsdump\fR 执行低一级转储后修改过的文件将被复制到 \fIdump_file\fR 目标（通常为磁带设备）。例如，如果在星期一执行了 \fB2\fR 级转储，接着在星期二执行了 \fB4\fR 级转储，则随后在星期三执行 \fB3\fR 级转储时将包含自 \fB2\fR 级（星期一）备份之后修改或添加的所有文件。\fB0\fR 级转储会将整个文件系统复制到 \fIdump_file\fR 中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBa\fR \fIarchive_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+归档文件。将转储目录归档在指定的 \fIarchive_file\fR 中，以便 \fBufsrestore\fR(1M) 使用该归档文件确定某个文件是否在要恢复的转储文件中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBb\fR \fIfactor\fR\fR
+.ad
+.sp .6
+.RS 4n
+分块因子。指定用于磁带写入的分块因子。对于密度低于 6250BPI（每英寸字节数）的磁带，缺省值为每次写入 20 块。对于密度为 6250BPI 及以上的磁带，缺省分块因子为 64。盒式磁带（\fBc\fR 选项）的缺省分块因子为 126。适用于大多数磁带机的最高分块因子为 126。注意：分块因子是以 512 字节块为单位指定的，以便与 \fBtar\fR(1) 兼容。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBc\fR\fR
+.ad
+.sp .6
+.RS 4n
+盒式磁带。设置盒式磁带而不是标准半英寸卷盘的缺省值。此选项会将密度设置为 1000BPI，将分块因子设置为 126。由于 \fBufsdump\fR 可以自动检测介质结尾，因此通常只有分块参数起作用。当使用盒式磁带但未\fI\fR指定此选项时，\fBufsdump\fR 计算的磁带大小将略有偏差。如果与此选项一起指定了 \fBb\fR、\fBd\fR、\fBs\fR 或 \fBt\fR 选项，这些选项的值将覆盖此选项设置的缺省值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBd\fR \fIbpi\fR\fR
+.ad
+.sp .6
+.RS 4n
+磁带密度。通常不是必需的，因为 \fBufsdump\fR 可以检测介质结尾。此参数可用于滚动记录每个卷盘的已用磁带量。缺省密度为 6250BPI，但使用 \fBc\fR 选项指定盒式磁带时例外，在这种情况下，假定缺省密度为每个磁轨 1000BPI。适用于磁带设备的典型值包括：
+.sp
+.ne 2
+.mk
+.na
+\fB1/2 英寸磁带\fR
+.ad
+.sp .6
+.RS 4n
+6250 BPI
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB1/4 英寸盒式磁带\fR
+.ad
+.sp .6
+.RS 4n
+1000 BPI，\fBst\fR(7D) 手册页中介绍了磁带密度和其他选项。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBD\fR\fR
+.ad
+.sp .6
+.RS 4n
+磁盘。过时选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBf\fR \fIdump_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储文件。使用 \fIdump_file\fR 作为要转储到的文件，而不要使用 \fB/dev/rmt/0\fR。如果将 \fIdump_file\fR 指定为 \fB-\fR，则会转储到标准输出。
+.sp
+如果文件名采用 \fImachine\fR\fB:\fR\fIdevice\fR 格式，将使用 \fBrmt\fR(1M) 通过网络从指定的计算机执行转储。由于 \fBufsdump\fR 通常由 root 用户运行，因此本地计算机的名称必须出现在远程计算机的 \fB/.rhosts\fR 文件中。如果将该文件指定为 \fIuser\fR\fB@\fR\fImachine\fR\fB:\fR\fIdevice\fR，\fBufsdump\fR 将尝试以指定用户的身份在远程计算机上执行转储。指定用户必须在远程计算机上有一个 \fB\&.rhosts\fR 文件以允许该用户从本地计算机调用命令来访问远程计算机。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBl\fR\fR
+.ad
+.sp .6
+.RS 4n
+自动装入。在完成转储之前到达了磁带结尾时，使磁带机脱机，然后等待两分钟，以便磁带机再次就绪。这样可以使自动装入（成堆加载器，stackloader）磁带机有机会装入新磁带。如果磁带机在两分钟内准备就绪，则继续执行操作。如果没有，则提示装入其他磁带并等待。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBL\fR \fIstring\fR\fR
+.ad
+.sp .6
+.RS 4n
+将磁带标签设置为 \fIstring\fR，而不是缺省的 \fBnone\fR。\fIstring\fR 的长度不能超过十六个字符。如果超过十六个字符，会将其截断并输出一条警告；但转储仍会完成。磁带标签特定于 \fBufsdump\fR 磁带格式，与 \fBIBM\fR 或 \fBANSI\fR 标准的磁带标签无相似之处。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBn\fR\fR
+.ad
+.sp .6
+.RS 4n
+通知 \fBsys\fR 组中的所有操作者注意 \fBufsdump\fR 将要执行，通知以消息形式发送到操作者的终端，其方式与 \fBwall\fR(1M) 命令使用的方式类似。否则，只会将此类消息发送到运行 \fBufsdump\fR 的用户所登录的终端（例如控制台）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBN\fR \fIdevice_name\fR\fR
+.ad
+.sp .6
+.RS 4n
+将信息记录在 \fB/etc/dumpdates\fR 中时（请参见 \fBu\fR 选项）以及与 \fB/etc/dumpdates\fR 中的信息进行比较以执行增量转储时，可使用 \fIdevice_name\fR。提供的 \fIdevice_name\fR 不能包含空格（如 \fBscanf\fR(3C) 中所定义）且区分大小写。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBo\fR\fR
+.ad
+.sp .6
+.RS 4n
+脱机。在转储完成时或到达介质结尾时，使磁带机脱机并倒带。对于某些 8mm 自动装入磁带机，将自动从磁带机中移除磁带。这可防止急于使用磁带机的其他进程无意之中覆盖介质。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBs\fR \fIsize\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定要转储到的卷的 \fIsize\fR（大小）。通常不是必需的，因为 \fBufsdump\fR 可以检测介质结尾。当达到指定大小时，\fBufsdump\fR 将等待您更换卷。对于磁带和盒式磁带，\fBufsdump\fR 将指定大小解释为以英尺为单位的长度。该值应比介质的实际物理大小小一点，例如，对于 450 英尺的盒式磁带，可以指定 425。适用于磁带设备的典型值取决于 \fBc\fR 选项（盒式磁带设备）：
+.sp
+.ne 2
+.mk
+.na
+\fB1/2 英寸磁带\fR
+.ad
+.sp .6
+.RS 4n
+2300 英尺
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB60 M 1/4 英寸盒式磁带\fR
+.ad
+.sp .6
+.RS 4n
+425 英尺
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB150 M 1/4 英寸盒式磁带\fR
+.ad
+.sp .6
+.RS 4n
+700 英尺
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBS\fR\fR
+.ad
+.sp .6
+.RS 4n
+估计大小。确定执行转储所需的空间量但不实际执行转储，并显示转储将占用的估计字节数。这对于增量转储非常有用，可用来确定将需要多少个介质卷。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBt\fR \fItracks\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定盒式磁带的磁轨数。通常不是必需的，因为 \fBufsdump\fR 可以检测介质结尾。缺省值为 9 个磁轨。\fBt\fR 选项与 \fBD\fR 选项不兼容。适用于 Oracle 支持的磁带设备的值包括：
+.sp
+.ne 2
+.mk
+.na
+\fB60 M 1/4 英寸盒式磁带\fR
+.ad
+.sp .6
+.RS 4n
+9 个磁轨
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB150 M 1/4 英寸盒式磁带\fR
+.ad
+.sp .6
+.RS 4n
+18 个磁轨
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBT\fR \fItime_wait\fR\fB[hms]\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置等待 \fBautoload\fR 命令完成的时间量。除非同时指定了 \fBl\fR 选项，否则将忽略此选项。缺省等待时间为两分钟。使用结尾 \fBh\fR（表示小时）、\fBm\fR（表示分钟）或 \fBs\fR（表示秒）指定时间单位。缺省单位为分钟。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBu\fR\fR
+.ad
+.sp .6
+.RS 4n
+更新转储记录。对于每个成功转储的文件系统，向 \fB/etc/dumpdates\fR 文件中添加一个条目，该条目包含文件系统名称（或使用 \fBN\fR 选项指定的 \fIdevice_name\fR）、日期以及转储级别。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBv\fR\fR
+.ad
+.sp .6
+.RS 4n
+验证。写入每个磁带之后，对照源文件系统验证介质内容。如果存在任何差异，则提示更换新介质，然后重复转储/验证过程。文件系统\fI必须\fR处于卸载状态。此选项不能用来验证到标准输出的转储。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBw\fR\fR
+.ad
+.sp .6
+.RS 4n
+警告。列出一天内的尚未备份的文件系统。此信息是从 \fB/etc/dumpdates\fR 和 \fB/etc/vfstab\fR 文件中收集的。使用了 \fBw\fR 选项时，将忽略其他所有选项。报告之后，\fBufsdump\fR 将立即退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBW\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含突出显示内容的警告。与 \fBw\fR 选项类似，但不同之处在于，\fBW\fR 选项包括 \fB/etc/dumpdates\fR 中出现的所有文件系统以及有关其最新转储日期和级别的信息。一天内尚未备份的文件系统将突出显示。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfiles_to_dump\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定要转储的文件。通常，使用文件系统的原始设备名称标识整个文件系统（例如 \fB/dev/rdsk/c0t3d0s6\fR）。针对在某个特定日期之后更改过的文件的增量转储（级别 \fB1\fR 到 \fB9\fR）仅应用于整个文件系统。此外，\fIfiles_to_dump\fR 还可以标识单独的文件或目录。运行 \fBufsdump\fR 的用户可能会检查的所有指定目录以及任何显式指定的文件都将转储。此转储等效于对文件系统的指定部分进行 \fB0\fR 级转储，但是不会更新 \fB/etc/dumpdates\fR，即使指定了 \fB-u\fR 选项也是如此。在所有情况下，文件都必须包含在同一文件系统中，且该文件系统必须是运行 \fBufsdump\fR 的系统的本地文件系统。
+.sp
+\fIfiles_to_dump\fR 是必需的，而且必须是命令行中的最后一个参数。
+.RE
+
+.sp
+.LP
+如果没有给定任何选项，缺省值将是 \fB9uf\fR \fB/dev/rmt/0\fR \fIfiles_to_dump\fR。\fI\fR
+.SH 用法
+.sp
+.LP
+有关 \fBufsdump\fR 遇到大于或等于 2 GB（2^31 字节）文件时行为的说明，请参见 \fBlargefile\fR(5)。
+.SH 示例
+.LP
+\fB示例 1 \fR使用 \fBufsdump\fR
+.sp
+.LP
+以下命令对 \fBc0t3d0\fR 上的根文件系统执行完全转储，转储文件放在 150 MB 盒式磁带单元 \fB0\fR 上： 
+
+.sp
+.in +2
+.nf
+example# ufsdump 0cfu /dev/rmt/0 /dev/rdsk/c0t3d0s0
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下命令对 \fBc0t3d0\fR 上的 \fBusr\fR 分区执行 \fB5\fR 级增量转储并进行验证，转储文件放在 1/2 英寸卷盘磁带单元 \fB1\fR 上：
+
+.sp
+.in +2
+.nf
+example# ufsdump 5fuv /dev/rmt/1 /dev/rdsk/c0t3d0s6
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.LP
+\fBufsdump\fR 在运行时会输出许多详细消息。\fBufsdump\fR 将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+正常退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+遇到启动错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.sp .6
+.RS 4n
+中止 - 未尝试检查点。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/dev/rmt/0\fR\fR
+.ad
+.sp .6
+.RS 4n
+要转储到的缺省单元
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/dumpdates\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储日期记录
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/group\fR\fR
+.ad
+.sp .6
+.RS 4n
+用于查找组 \fBsys\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/hosts\fR\fR
+.ad
+.sp .6
+.RS 4n
+用于获取对包含磁带机的远程系统的访问权限
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/vfstab\fR\fR
+.ad
+.sp .6
+.RS 4n
+文件系统列表
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBcpio\fR(1)、\fBtar\fR(1)、\fBdd\fR(1M)、\fBdevnm\fR(1M)、\fBfssnap\fR(1M)、\fBprtvtoc\fR(1M)、\fBrmt\fR(1M)、\fBshutdown\fR(1M)、\fBufsrestore\fR(1M)、\fBvolcopy\fR(1M)、\fBwall\fR(1M)、\fBscanf\fR(3C)、\fBufsdump\fR(4)、\fBattributes\fR(5)、\fBlargefile\fR(5)、\fBst\fR(7D)
+.SH 附注
+.SS "读取错误"
+.sp
+.LP
+文件系统上的读取错误少于 32 个时，将被忽略。
+.SS "每个卷盘的进程"
+.sp
+.LP
+由于每个卷盘需要一个新进程，因此已开始写入的卷盘的父进程会一直挂起，直到整个磁带写入完毕为止。
+.SS "操作者干预"
+.sp
+.LP
+\fBufsdump\fR 在以下情况下需要操作者干预：卷结尾、转储结尾、卷写入错误、卷打开错误或磁盘读取错误（如果读取错误超过阈值 32）。除了会警告 \fBn\fR 选项缺省的所有操作者外，\fBufsdump\fR 还会在 \fBufsdump\fR 无法再继续执行或出现严重错误时，与 \fBufsdump\fR 控制终端的操作者进行交互。\fI必须\fR键入 \fBY\fR 或 \fBN\fR（具体答案视情况而定）回答 \fBufsdump\fR 提出的所有问题。
+.sp
+.LP
+由于备份磁盘会涉及大量的时间和工作，因此 \fBufsdump\fR 将在每个卷的开头进行检查点操作。如果写入卷时由于某个原因而失败，\fBufsdump\fR 将在故障卷被替换后以操作者权限从检查点重新启动。
+.SS "建议的转储时间表"
+.sp
+.LP
+定期执行 \fB0\fR 级完全转储至关重要。执行完全转储时，使用 \fBshutdown\fR(1M) 使计算机进入单用户模式。在为完全转储做准备时，最好清理磁带机和磁头。增量转储应在以单用户模式运行的系统上执行。
+.sp
+.LP
+通过增量转储，可以方便地对活动文件进行更为频繁的备份和恢复，同时最大限度减少使用的介质和时间。不过，需要权衡多个方面。首先，两次备份之间的时间间隔应达到最低限度（至少一天一次）。为了防止由于介质故障而丢失数据（很少见但可能会发生），请将活动文件保存在至少两组转储卷上。另一个注意事项是，尽量减少不必要的文件复制，以节省操作者时间和介质存储。第三个注意事项是，确保能方便地查找和恢复文件的特定备份版本。以下为期四周的时间表合理权衡了上述目标。
+.sp
+.in +2
+.nf
+              Sun    Mon    Tue    Wed    Thu    Fri
+    Week 1:   Full    5      5      5      5      3
+    Week 2:           5      5      5      5      3
+    Week 3:           5      5      5      5      3
+    Week 4:           5      5      5      5      3
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+星期二到星期五的增量转储包含星期一的文件副本，尽管这看起来是多余的，但是此方案能够确保可以从前一天的增量转储恢复这一周内修改过的任何文件。
+.SS "ufsdump 的进程优先级"
+.sp
+.LP
+\fBufsdump\fR 使用多个进程，以便能够同时从磁盘读取并向介质进行写入。由于 ufsdump 同步这些进程的方式，使用 \fBnice\fR 以进程优先级 "-5" 或更高优先级运行转储可能会使 \fBufsdump\fR 运行得更\fI慢\fR，而不是更快。
+.SS "重叠的分区"
+.sp
+.LP
+大多数磁盘都包含一个或多个重叠的分片，因为分片 2 覆盖了整个磁盘。其他分片大小各不相同，通常不会重叠。例如，常见的配置是将 \fBroot\fR 放置在分片 0 上，将 \fBswap\fR 放置在分片 1 上，将 \fB/opt\fR 放置在分片 5 上，将 \fB/usr\fR 放置在分片 6 上。
+.sp
+.LP
+应特别注意的是，\fBufsdump\fR 一次只转储一个 \fBufs\fR 文件系统。假定在以上方案中分片 0 和分片 2 具有相同的起始偏移，如果试图通过对分片 2 执行 \fBufsdump\fR 来转储整个磁盘，实际上只会转储分片 0 上的 \fBroot\fR 文件系统。要转储整个磁盘，用户必须逐个转储每个分片上的文件系统。
+.SH 已知问题
+.sp
+.LP
+\fB/etc/vfstab\fR 文件不允许指定所需的文件系统备份频率（但 \fB/etc/fstab\fR 允许）。因此，\fBw\fR 和 \fBW\fR 选项假定应每天备份文件系统，这限制了这些选项的实用性。

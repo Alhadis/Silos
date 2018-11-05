@@ -1,0 +1,1260 @@
+'\" te
+.\" To view license terms, attribution, and copyright for OpenSSH, the default path is /var/sadm/pkg/SUNWsshdr/install/copyright.If the Solaris operating environment has been installed anywhere other than the default, modify the given path to access the file at the installed location.
+.\" Copyright (c) 1998, 2013, Oracle and/or its affiliates. All rights reserved.
+.TH sshd 1M "2013 年 11 月 22 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+sshd \- Secure Shell デーモン
+.SH 形式
+.LP
+.nf
+\fBsshd\fR [\fB-deiqtD46\fR] [\fB-b\fR \fIbits\fR] [\fB-f\fR \fIconfig_file\fR] 
+     [\fB-g\fR \fIlogin_grace_time\fR] [\fB-h\fR \fIhost_key_file\fR]
+     [\fB-h\fR \fIPKCS#11\fR \fIURI\fR]
+     [\fB-p\fR \fIport\fR] [\fB-V\fR \fIclient_protocol_id\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBsshd\fR (Secure Shell デーモン) は、\fBssh\fR(1) 用のデーモンプログラムです。これらのプログラムは連携して \fBrlogin\fR や \fBrsh\fR を置き換え、セキュアでないネットワーク上にある 2 台の信頼できないホスト間に、暗号化されたセキュアな通信を提供します。これらのプログラムは、できるだけ簡単にインストールして使用できるよう意図されています。
+.sp
+.LP
+\fBsshd\fR は、クライアントからの接続を待機するデーモンです。それは接続を受信するたびに新しいデーモンをフォークします。フォークされたデーモンは、鍵の交換、暗号化、認証、コマンドの実行、およびデータ交換を行います。
+.sp
+.LP
+この \fBsshd\fR の実装では、SSH プロトコルバージョン 2 のみをサポートしています。
+.SS "SSH プロトコルバージョン 1"
+.sp
+.LP
+このプロトコルバージョンは、そのデーモンプログラムではサポートされなくなりました。それはクライアントでのみサポートされます。詳細は、\fBssh\fR(1) のマニュアルページを参照してください。
+.SS "SSH プロトコルバージョン 2"
+.sp
+.LP
+各ホストには、そのホストの識別に使用されるホスト固有の DSA/RSA 鍵があります。フォワードセキュリティーは、Diffie-Hellman 鍵合意を通じて提供されます。この鍵合意によって共有セッション鍵が生成されます。セッションの残りは、対称暗号化 (現在は 128/192/256 ビットの AES CBC または CTR、128/256 ビットの ARCFOUR、Blowfish、または 3DES) を使用して暗号化されます。クライアントでは、サーバーが提供するそれらの中から使用する暗号化アルゴリズムを選択します。また、暗号メッセージ認証コード (\fBhmac-sha1\fR、\fBhmac-sha2-256\fR、\fBhmac-sha2-256-96\fR、\fBhmac-sha2-512\fR、\fBhmac-sha2-512-96\fR、または \fBhmac-md5\fR) を通じてセッションの整合性が確保されます。
+.sp
+.LP
+プロトコルバージョン 2 には、公開鍵ベースのユーザー認証方式 (PubKeyAuthentication)、GSS–API ベースのユーザー認証、従来のパスワード認証、およびパスワードベース認証用の汎用プロンプト/応答プロトコルが用意されています。
+.SS "コマンドの実行とデータ転送"
+.sp
+.LP
+クライアントが自分自身の認証に成功した場合、セッションを準備するためのダイアログに入ります。この時点で、クライアントは擬似 tty の割り当て、X11 接続の転送、TCP/IP 接続の転送、セキュリティー保護されたチャネル経由での認証エージェント接続の転送のようなことを要求できます。
+.sp
+.LP
+最後に、クライアントはシェル、またはコマンドの実行を要求します。その際、どちらの側もセッションモードに入ります。このモードでは、どちらの側もデータを常時送信でき、そのようなデータはサーバー側のシェルまたはコマンドに (またはそこから) 転送されたり、クライアント側のユーザー端末に (またはそこから) 転送されたりします。
+.sp
+.LP
+ユーザーのプログラムが終了し、転送した X11 などの接続がすべて閉じられると、サーバーはコマンド終了ステータスをクライアントに送信し、どちらの側も終了します。
+.sp
+.LP
+\fBsshd\fR は、コマンド行オプションまたは構成ファイル \fB/etc/ssh/ssh_config\fR を使用すると構成できます。これについては、\fBssh_config\fR(4) で説明されています。構成ファイル内に指定されている値は、コマンド行オプションによってオーバーライドされます。
+.sp
+.LP
+\fBsshd\fR は、ハングアップシグナル \fBSIGHUP\fR を受け取ると、それが開始されたときの名前、つまり \fB/usr/lib/ssh/sshd\fR を使って自分自身を実行することにより、その構成ファイルを再度読み取ります。
+.SS "ホストアクセス制御"
+.sp
+.LP
+\fBsshd\fR デーモンは、TCP ラッパーを使用してホストへのアクセスを制限します。\fBhosts_access()\fR には \fBsshd\fR のサービス名が使用されます。TCP ラッパーの詳細は、\fBSUNWsfman\fR パッケージの一部である (SunOS のマニュアルページではない) \fBtcpd(1M)\fR および \fBhosts_access(3)\fR のマニュアルページを参照してください。TCP ラッパーのバイナリ (\fBlibwrap\fR を含む) は、\fBsshd\fR を含むパッケージ \fBservice/network/ssh\fR の必須パッケージ \fBsecurity/tcp-wrapper\fR 内にあります。
+.SH オプション
+.sp
+.LP
+\fBsshd\fR のオプションは次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR \fIbits\fR\fR
+.ad
+.sp .6
+.RS 4n
+サーバー鍵のビット数を指定します (デフォルトは 768)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+デバッグモード。サーバーは冗長なデバッグ出力をシステムログに送信し、バックグラウンドには移行しません。またサーバーはフォークせず、1 つの接続しか処理しません。このオプションは、サーバーのデバッグのためにのみ用意されています。複数の \fB-d\fR オプションを指定すると、デバッグレベルが上がります。最高は 3 です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションを指定した場合、\fBsshd\fR は出力をシステムログではなく標準エラーに送ります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIconfiguration_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+構成ファイルの名前を指定します。デフォルトは \fB/etc/ssh/sshd_config\fR です。構成ファイルがないと、\fBsshd\fR は開始しません。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR \fIlogin_grace_time\fR\fR
+.ad
+.sp .6
+.RS 4n
+クライアントが自分自身を認証するまでの猶予時間を指定します (デフォルトは 300 秒)。クライアントがこの秒数内にユーザーを認証できなかった場合、サーバーは接続を解除して終了します。値ゼロは、制限がないことを示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR \fIhost_key_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホスト鍵を読み取るファイルを指定します。\fBsshd\fR を root として実行しない場合は、このオプションを指定する必要があります (標準のホスト鍵ファイルは通常、root 以外のユーザーでは読み取り不可であるため)。デフォルトは、プロトコルバージョン 1 の場合は \fB/etc/ssh/ssh_host_key\fR、プロトコルバージョン 2 の場合は \fB/etc/ssh/ssh_host_rsa_key\fR および \fB/etc/ssh/ssh_host_dsa_key\fR です。異なるプロトコルバージョンやホスト鍵アルゴリズムに合わせて複数のホスト鍵ファイルを指定できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR \fIPKCS#11\fR \fIURI\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホスト鍵ファイルを使用するのではなく、PKCS#11 トークンに格納されている証明書と秘密鍵を使って処理します。後述の「\fBX.509 証明書の使用\fR」セクションも参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsshd\fR が \fBinetd\fR から実行されることを指定します。\fBsshd\fR は、クライアントに応答する前にサーバー鍵を生成する必要があり、これに数十秒かかる場合があるため、通常 \fBinetd\fR からは実行されません。その鍵が毎回再生成されると、クライアントの待機時間が長くなりすぎてしまいます。ただし、鍵のサイズが小さければ (たとえば、512)、\fBinetd\fR から \fBsshd\fR を使用することは理にかなっている場合があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIoption\fR \fR
+.ad
+.sp .6
+.RS 4n
+構成ファイルで使用されている形式でオプションを指定する場合に使用できます。これは、個別のコマンド行フラグのないオプションを指定する場合に役立ちます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIport\fR\fR
+.ad
+.sp .6
+.RS 4n
+サーバーが接続を待機するポートを指定します (デフォルトは 22)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR\fR
+.ad
+.sp .6
+.RS 4n
+静寂モード。システムログには何も送られません。通常は、各接続の開始、認証、および終了がログに記録されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+テストモード。構成ファイルの有効性や鍵の妥当性のみをチェックします。これは、構成オプションが変更される可能性があるときに sshd を安全に更新するために役立ちます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションを指定すると、\fBsshd\fR は切り離しを行わず、デーモンになりません。これにより、\fBsshd\fR の監視が容易に行えるようになります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-4\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsshd\fR が IPv4 アドレスのみを使用するように強制します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-6\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsshd\fR が IPv6 アドレスのみを使用するように強制します。
+.RE
+
+.SH 拡張機能説明
+.SS "\fBauthorized_keys\fR ファイルの形式"
+.sp
+.LP
+\fB$HOME/.ssh/authorized_keys\fR ファイルには、プロトコルバージョン 2 の公開鍵認証 (\fBPubkeyAuthentication\fR) を許可された公開鍵の一覧が記述されています。\fBAuthorizedKeysFile\fR 構成オプションを使用すると、代替ファイルを指定できます。
+.sp
+.LP
+このファイルの各行には鍵が 1 つ入ります (空の行およびハッシュ記号 [\fB#\fR] で始まる行はコメントとして無視されます)。
+.sp
+.LP
+プロトコルバージョン 1 の RSA 鍵の場合、ファイルは次のスペースで区切られたフィールドで構成されます。
+.sp
+.in +2
+.nf
+\fIoptions\fR  \fIbits\fR  \fIexponent\fR  \fImodulus\fR  \fIcomment\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+プロトコルバージョン 2 の公開鍵の場合、ファイルは次のスペースで区切られたフィールドから構成されます。
+.sp
+.in +2
+.nf
+\fIoptions\fR \fIkey-type\fR \fIbase64-encoding-key\fR \fIcomment\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+プロトコルバージョン 2 では、\fIkey-type\fR は \fBssh-rsa\fR または \fBssh-dsa\fR のどちらかです。
+.sp
+.LP
+\fIoptions\fR はオプションのフィールドであり、存在するかどうかは、その行が数字で始まるかどうかによって判断します。(\fIoptions\fR フィールドが数字で始まることはありません。)bits、exponent、および modulus フィールドには RSA 鍵を指定し、comment フィールドはその鍵を識別するのに便利な場所です。
+.sp
+.LP
+このファイル内の行は通常、数百バイトの長さになります (鍵のモジュラスのサイズのため)。それらを入力するのは非常に不便であると思われます。代わりに公開鍵ファイルをコピーし、それを編集してください。
+.sp
+.LP
+このファイルのアクセス権は、だれでも書き込み可能でもグループ書き込み可能でもないように設定する必要があります。\fBsshd_config\fR(4) の \fBStrictModes\fR オプションを参照してください。
+.sp
+.LP
+options (存在する場合) はコンマで区切られたオプション指定で構成されます。スペースは許可されませんが、二重引用符の中には入れることができます。次のオプション指定がサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfrom="\fIpattern-list\fR"\fR\fR
+.ad
+.sp .6
+.RS 4n
+公開鍵認証に加えて、リモートホストの正規名もコンマで区切られたパターンのリスト内に含まれている必要があることを指定します (「\fB*\fR」と「\fB?\fR」はワイルドカードとして機能する)。このリストには、パターンに接頭辞「\fB!\fR」を付けることで、否定パターンを含めることもできます。正規のホスト名が否定されたパターンと一致した場合、その鍵は受け入れられません。
+.sp
+このオプションの目的は、セキュリティーの向上を選択できるようにすることです。公開鍵認証だけでは、ネットワークやネームサーバーなど、鍵以外のものはどれも信頼できません。しかし、何者かが何らかの方法で鍵を盗んだ場合、その鍵を持っていることで侵入者は世界中のどこからでもログインできることになります。このオプションは盗まれた鍵の使用をより困難にします (鍵だけでなくネームサーバーやルーターのセキュリティーも脅かす必要があるため)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcommand="\fIcommand\fR"\fR\fR
+.ad
+.sp .6
+.RS 4n
+この鍵が認証に使用される場合に必ず \fIcommand\fR が実行されることを指定します。ユーザー (存在する場合) が指定したコマンドは無視されます。クライアントが \fBpty\fR を要求した場合、このコマンドは \fBpty\fR 上で実行されます。それ以外の場合は、\fBtty\fR なしで実行されます。8 ビットのクリーンなチャネルが必要な場合は、\fBpty\fR を要求してはいけません。つまり、\fBno-pty\fR を指定するようにしてください。コマンド内に引用符を含める場合は、それをバックスラッシュでエスケープします。このオプションは、特定の公開鍵が特定の処理を実行しないように制限するのに役立つ場合があります。たとえば、リモートバックアップ以外は何も行えないような鍵です。クライアントでは、明示的に禁止されていないかぎり、TCP/IP 転送または X11 転送 (あるいはその両方) を指定できることに注意してください。また、このオプションがシェル、コマンド、またはサブシステムの実行に適用されることにも注意してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBenvironment="\fINAME\fR=\fI value\fR"\fR\fR
+.ad
+.sp .6
+.RS 4n
+この鍵を使ってログインしたときに文字列 \fINAME\fR=\fIvalue\fR が環境に追加されることを指定します。この方法で設定された環境変数によって、ほかのデフォルトの環境値がオーバーライドされます。このタイプのオプションは複数指定できます。環境処理はデフォルトで無効になっており、\fBPermitUserEnvironment\fR オプションによって制御されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBno-port-forwarding\fR\fR
+.ad
+.sp .6
+.RS 4n
+この鍵が認証に使用される場合に TCP/IP 転送を禁止します。クライアントがポート転送を要求してもすべてエラーが返されます。これは、たとえば \fBcommand\fR オプションに関連して使用されることがあります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBno-X11-forwarding\fR\fR
+.ad
+.sp .6
+.RS 4n
+この鍵が認証に使用される場合に X11 転送を禁止します。クライアントが X11 転送を要求してもすべてエラーが返されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBno-agent-forwarding\fR\fR
+.ad
+.sp .6
+.RS 4n
+この鍵が認証に使用される場合に認証エージェント転送を禁止します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBno-pty\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBtty\fR の割り当てができないようにします (\fBpty\fR の割り当て要求が失敗します)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpermitopen="\fIhost\fR:\fI port\fR"\fR\fR
+.ad
+.sp .6
+.RS 4n
+ローカルの \fBssh\fR \fB-L\fR ポート転送を、指定されたホストおよびポートにしか接続できないように制限します。IPv6 アドレスは、代替構文 \fIhost\fR/\fIport\fR を使って指定できます。各インスタンスをコンマで区切って、複数の \fBpermitopen\fR オプションを呼び出すことができます。指定されたホスト名に対してパターンマッチングは行われません。それらはリテラルのドメインまたはアドレスである必要があります。
+.RE
+
+.SS "\fBssh_known_hosts\fR ファイルの形式"
+.sp
+.LP
+\fB/etc/ssh/ssh_known_hosts\fR および \fB$HOME/.ssh/known_hosts\fR ファイルには、すべての既知のホストのホスト公開鍵が含まれています。グローバルファイルは管理者によって用意され (オプション)、ユーザーごとのファイルは自動的に維持されます。ユーザーが不明なホストから接続すると、必ずその鍵がユーザーごとのファイルに追加されます。
+.sp
+.LP
+プロトコルバージョン 1 の RSA 鍵の場合、これらのファイルは次のスペースで区切られたフィールドから構成されます。
+.sp
+.in +2
+.nf
+\fIhostnames\fR  \fIbits\fR  \fIexponent\fR  \fImodulus\fR  \fIcomment\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+プロトコルバージョン 2 の公開鍵の場合、これらのファイルは次のスペースで区切られたフィールドから構成されます。
+.sp
+.in +2
+.nf
+\fIhostnames\fR \fIkey-type\fR \fIbase64-encoding-key\fR \fIcomment\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+プロトコルバージョン 2 では、\fIkey-type\fR は \fBssh-rsa\fR または \fBssh-dsa\fR のどちらかです。
+.sp
+.LP
+hostnames は、パターンのコンマ区切りリストです (\fB*\fR と \fB?\fR はワイルドカードとして機能します)。各パターンは順に、正規のホスト名 (クライアントの認証時) またはユーザーが指定した名前 (サーバーの認証時) と照合されます。また、パターンの前に \fB!\fR を付けると、否定を表すことができます。ホスト名が否定されたパターンと一致した場合、それがその行の別のパターンと一致した場合でも (その行によって) 受け入れられません。
+.sp
+.LP
+あるいは、ホスト名をハッシュされた形式で格納することもできます。これにより、万一ファイルの内容が開示された場合にホスト名とアドレスが非表示になります。ハッシュされたホスト名は垂直バー (\fB|\fR) 文字で始まります。ハッシュされたホスト名は 1 行に 1 つだけ表示でき、上記の否定またはワイルドカード演算子を適用することはできません。
+.sp
+.LP
+bits、exponent、および modulus は RSA ホスト鍵から直接取り込まれます。たとえば、それらは \fB/etc/ssh/ssh_host_rsa_key.pub\fR から取得できます。省略可能な comment フィールドは行末まで続き、使用されません。
+.sp
+.LP
+ハッシュ記号 (\fB#\fR) で始まる行と空白の行はコメントとして無視されます。
+.sp
+.LP
+ホスト認証を行う際、一致するいずれかの行に適切な鍵が含まれていれば、認証が受け入れられます。したがって、同じ名前に対して複数の行や異なるホスト鍵が含まれていても許容されます (ただし、推奨されません)。さまざまなドメインからのホスト名の短縮形がそのファイルに格納された場合に、これが必然的に起こります。それらのファイルには競合する情報が含まれている可能性があります。どちらかのファイルから有効な情報が見つかれば、認証は受け入れられます。
+.sp
+.LP
+これらのファイル内の行は通常、何百文字もの長さです。ホスト鍵を決して手動で入力すべきではありません。そうではなく、スクリプトによって、または \fB/etc/ssh/ssh_host_rsa_key.pub\fR を取得し、その先頭にホスト名を追加することによってそれらを生成してください。 
+.SH 環境
+.sp
+.LP
+\fBsshd\fR は、\fBssh\fR ユーザーによって実行されたコマンドに対して、次の環境変数を設定します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDISPLAY\fR\fR
+.ad
+.sp .6
+.RS 4n
+X11 サーバーの場所を示します。これは、\fIhostname\fR:\fIn\fR という形式の値を指し示すために、\fBsshd\fR によって自動的に設定されます。ここで、\fIhostname\fR はシェルが実行されているホストを示し、\fIn\fR は 1 以上の整数です。\fBssh\fR は、この特殊な値を使用して X11 接続をセキュアなチャネル経由で転送します。重要な理由が特にないかぎり、\fBDISPLAY\fR を明示的に設定しないようにしてください。それによって X11 接続が不安定な状態となり、必要な承認 cookie を手動でコピーする必要が生じます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHOME\fR\fR
+.ad
+.sp .6
+.RS 4n
+ユーザーのホームディレクトリのパスに設定されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLANG\fR、\fBLC_ALL\fR、\fBLC_COLLATE\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR、\fBLC_MONETARY\fR、\fBLC_NUMERIC\fR、\fBLC_TIME\fR\fR
+.ad
+.sp .6
+.RS 4n
+ロケール設定。ロケールはデフォルトで \fBsshd\fR のそれ (通常はシステム全体のデフォルトロケール) になるか、または初期鍵交換中にクライアントとサーバー間でネゴシエーションが行われます (RFC 4253 に準拠)。
+.sp
+初期鍵交換のあとで、それらの各変数を次の手順でオーバーライドできます。
+.RS +4
+.TP
+1.
+ロケール設定がクライアントの環境で行われ、そのクライアントが「Environment Variable Passing」 (RFC 4254 を参照) をサポートしている場合、その設定はサーバー側に引き渡されます。
+.RE
+.RS +4
+.TP
+2.
+公開鍵認証方法を使用してサーバーを認証したあと、サーバー側で \fBsshd_config\fR(4) の \fBPermitUserEnvironment\fR 変数が \fByes\fR に設定されている場合は、クライアントの \fBAuthorizedKeysFile \fR ファイル内の \fBenvironment\fR オプションを使用するとその設定を変更できます。
+.RE
+.RS +4
+.TP
+3.
+この設定は、サーバー上のクライアントの \fB~/.ssh/environment\fR ファイルで変更できます。
+.RE
+ユーザー環境を設定する場合に \fBAuthorizedKeysFile\fR および \fB~/.ssh/environment\fR ファイルがいつ処理され、使用されるかについては、\fBsshd_config\fR(4) の \fBPermitUserEnvironment\fR を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLOGNAME\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBUSER\fR の同義語。この変数を使用するシステムとの互換性のために設定されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBMAIL\fR\fR
+.ad
+.sp .6
+.RS 4n
+ユーザーのメールボックスを指し示すように設定されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSSH_AUTH_SOCK\fR\fR
+.ad
+.sp .6
+.RS 4n
+そのエージェントとの通信に使用される \fBunix-domain\fR ソケットのパスを示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSSH_CONNECTION\fR\fR
+.ad
+.sp .6
+.RS 4n
+接続のクライアント側とサーバー側を識別します。この変数には、スペースで区切られた値が 4 つ含まれています。クライアント IP アドレス、クライアントポート番号、サーバー IP アドレス、およびサーバーポート番号です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSSH_CLIENT\fR\fR
+.ad
+.sp .6
+.RS 4n
+接続のクライアント側を識別します。この変数には、スペースで区切られた値が 3 つ含まれています。クライアント IP アドレス、クライアントポート番号、およびサーバーポート番号です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSSH_TTY\fR\fR
+.ad
+.sp .6
+.RS 4n
+現在のシェルまたはコマンドに関連付けられた \fBtty\fR (デバイスへのパス) の名前に設定されます。現在のセッションに \fBtty\fR がない場合、この変数は設定されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTZ\fR\fR
+.ad
+.sp .6
+.RS 4n
+現在のタイムゾーンを示します (\fBTIMEZONE\fR が \fB/etc/default/login\fR 内に設定されている場合、またはデーモンが開始されたときに \fBTZ\fR が設定された場合)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHZ\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB/etc/default/login\fR 内に設定されている場合、デーモンはそれを同じ値に設定します。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSHELL\fR\fR
+.ad
+.sp .6
+.RS 4n
+ユーザーのシェル (\fB/etc/default/login\fR 内で \fBALTSHELL=YES\fR の場合)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPATH\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB/etc/default/login\fR 内の \fBPATH\fR または \fBSUPATH\fR の値に設定されます (\fBlogin\fR(1) を参照)。設定されていない場合は、\fB/usr/bin:/bin\fR に設定されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBUSER\fR\fR
+.ad
+.sp .6
+.RS 4n
+ログインしているユーザーの名前に設定されます。
+.RE
+
+.sp
+.LP
+さらに、\fBsshd\fR は \fB$HOME/.ssh/environment\fR を読み取り、\fBVARNAME=\fIvalue\fR\fR という形式の行を環境に追加します。
+.SH 使用例
+.sp
+.LP
+次の例では、使用しているディスプレイの行の長さ制限のためにいくつかの行が折り返されることがあります。それでも、折り返された行を 1 行とみなすようにしてください。
+.LP
+\fB例 1 \fR\fBauthorized_key\fR ファイルのエントリ
+.sp
+.LP
+次は、プロトコル 1 の \fBauthorized_key\fR ファイルエントリの例です。
+
+.sp
+.in +2
+.nf
+1024 33 12121...312314325 ylo@foo.bar
+
+from="*.niksula.hut.fi,!pc.niksula.hut.fi" 1024 35 23...2334 ylo@niksula
+
+command="dump /home",no-pty,no-port-forwarding 1024 33 23...2323 backup.hut.fi
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRプロトコル 2 の \fBauthorized_key\fR ファイルのエントリ
+.sp
+.LP
+次は、プロトコル 2 の \fBauthorized_key\fR ファイルエントリの例です。
+
+.sp
+.in +2
+.nf
+ssh-rsa AAAAB3NzaC1y.....EU88ovYKg4GfclWGCFYTuw8= ylo@foo.bar
+from="*.niksula.hut.fi" ssh-rsa AAAAB3NzaC...uw8= ylo@niksula
+command="dump /home",no-pty,no-port-forwarding ssh-rsa AA..8= backup.hut.fi
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fRプロトコル 1 の \fBssh_known_hosts\fR ファイルのエントリ
+.sp
+.LP
+次は、プロトコル 1 の \fBssh_known_hosts\fR ファイルエントリの例です。
+
+.sp
+.in +2
+.nf
+closenet,closenet.hut.fi,...,130.233.208.41 1024 37 159...93 closenet.hut.fi
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fRプロトコル 2 の \fBssh_known_hosts\fR ファイルのエントリ
+.sp
+.LP
+次は、プロトコル 2 の \fBssh_known_hosts\fR ファイルエントリの例です。
+
+.sp
+.in +2
+.nf
+closenet,closenet.hut.fi,...,130.233.208.41 ssh-rsa AA..8= closenet.hut.fi
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 5 \fRX.509 公開鍵認証の使用
+.sp
+.LP
+次のユーザー認証の例は、X.509 公開鍵認証が機能する方法を理解するのに役立つはずです。ホスト認証に X.509 証明書/鍵を使用する手順は非常に似ています。通常の場合とは異なり、TA 証明書とユーザー証明書の両方に同じトークン (\fBsofttoken\fR) が使用されることに注意してください
+
+.sp
+.LP
+自己署名付きのトラストアンカー証明書と、トラストアンカー秘密鍵によって署名されたユーザー証明書を作成します。証明書の検証用の SSH デーモンを構成し、前の手順で生成されたユーザー証明書をユーザー識別情報として使って SSH クライアントを実行します。
+
+.sp
+.LP
+サーバー側で、ユーザー名「\fIPUT-YOUR-USERNAME-HERE\fR」を既存 (自身) のユーザー名に置き換えます。
+
+.sp
+.in +2
+.nf
+# Generate a trusted anchor certificate/key pair in the
+# default token (softtoken).
+pktool gencert keystore=pkcs11 label=authority \e
+    subject="CN=authority" serial=0x01
+
+# Export the trusted anchor certificate (and, after that,
+# put it to /etc/ssh/cert directory).
+pktool export keystore=pkcs11 outfile=ta.cert objtype=cert
+    label=authority outformat=pem
+
+# Generate a user certificate signed by the trusted anchor
+# private key and then import the certificate into the
+# token.
+pktool gencsr keystore=pkcs11 label=user \e
+    outcsr=user.csr subject="CN=<PUT-YOUR-USERNAME-HERE>"
+pktool signcsr keystore=pkcs11 signkey=authority \e
+    csr=user.csr serial=0x02 issuer="CN=authority" \e
+     outcert=user.cert
+pktool import keystore=pkcs11 infile=user.cert label=user
+
+# Create a new policy file.
+kmfcfg create dbfile=/etc/ssh/policy.xml policy=ssh \e
+    ta-name=search mapper-name=cn
+
+# Start the SSH daemon in a debug mode to test the
+# configuration. Use a different port so that you do not
+# clash with the already running daemon.
+/usr/lib/ssh/sshd -p 2222 -ddd \
+    -o TrustedAnchorKeystore=/etc/ssh/cert \
+    -o KMFPolicyDatabase=/etc/ssh/policy.xml \
+    -o KMFPolicyName=ssh
+
+# Run the client in a debug mode to test the configuration
+# (will ask for a PIN for the token, use the 'pinfile'
+# attribute if you do not want to set PIN for each
+# invocation).
+# Note that the space and the hash-sign in the PKCS#11 URI are
+# percent-encoded. Percent-encoding is in particular important when
+# used from config file. Otherwise the '#' would be mistaken for a
+# comment and token name matching would fail!
+ssh -p 2222 -vvv -o \e
+    IdentityFile=\e
+    "pkcs11:object=user;token=Sun%20Software%20PKCS%2311%20softtoken" \e
+    <PUT-YOUR-USERNAME-HERE>@localhost
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+softtoken を使用する前に、\fBsetpin\fR サブコマンドを使用してその PIN を設定してください。詳細は、\fBpktool\fR(1) を参照してください。
+
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 13n
+.rt  
+正常終了。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB>\fB0\fR\fR
+.ad
+.RS 13n
+.rt  
+エラーが発生した。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/default/login\fR\fR
+.ad
+.sp .6
+.RS 4n
+いくつかの \fBsshd_config\fR パラメータ、環境変数、およびその他の環境要素のデフォルトが含まれています。
+.sp
+次のパラメータは環境変数に影響を及ぼします (\fBlogin\fR(1) および前述のこれらの変数に関する説明を参照)。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBTIMEZONE\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBHZ\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBALTSHELL\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBPATH\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBSUPATH\fR
+.RE
+次の \fB/etc/default/login\fR パラメータは、対応する \fBsshd_config\fR(4) パラメータのデフォルト値を提供します。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBCONSOLE\fR (\fBsshd_config\fR(4) の \fBPermitRootLogin\fR を参照)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBPASSREQ\fR (\fBsshd_config\fR(4) の \fBPermitEmptyPasswords\fR を参照) 
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBTIMEOUT\fR (\fBsshd_config\fR(4) の \fBLoginGraceTime\fR を参照)
+.RE
+次の \fB/etc/default/login\fR パラメータ:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBUMASK\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBULIMIT\fR
+.RE
+はそれぞれ、\fBsshd\fR によって生成されたシェルおよびコマンドの \fBumask\fR(2) とファイルサイズの制限を設定します。
+.sp
+最後に、次の 2 つの \fB/etc/default/login\fR パラメータは、対話型ユーザー認証方法 (たとえば、\fBpublickey\fR ではなく \fBkeyboard-interactive\fR) を使用した接続ごとの許容される最大ログイン試行回数に影響を及ぼします (\fBlogin\fR(1) に準拠)。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBRETRIES\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBSYSLOG_FAILED_LOGINS\fR
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ssh/sshd_config\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsshd\fR の構成データが入っています。このファイルは root によってのみ書き込み可能にするべきですが、だれでも読み取り可能にすることをお勧めします (必須ではありません)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ssh/ssh_host_key\fR\fR
+.ad
+.br
+.na
+\fB\fB /etc/ssh/ssh_host_dsa_key\fR\fR
+.ad
+.br
+.na
+\fB\fB/etc/ssh/ssh_host_rsa_key \fR\fR
+.ad
+.sp .6
+.RS 4n
+ホスト鍵の非公開部分が入っています。このファイルは root によってのみ所有され、root によってのみ読み取り可能で、ほかのユーザーはアクセス不可にするべきです。このファイルがグループアクセス可能またはだれでもアクセス可能な場合、\fBsshd\fR は開始されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ssh/ssh_host_key.pub\fR\fR
+.ad
+.br
+.na
+\fB\fB /etc/ssh/ssh_host_dsa_key.pub\fR\fR
+.ad
+.br
+.na
+\fB\fB/etc/ssh/ssh_host_rsa_key.pub \fR\fR
+.ad
+.sp .6
+.RS 4n
+ホスト鍵の公開部分が入っています。このファイルは、だれでも読み取り可能ですが、root によってのみ書き込み可能にするべきです。その内容は非公開部分と一致するようにします。このファイルは、暗号化には使用されず、ユーザーがその内容を既知ホストのファイルにコピーできるように利便性のためにのみ用意されています。これらのファイルは、\fBssh-keygen\fR(1) を使用して作成されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/run/sshd.pid\fR\fR
+.ad
+.sp .6
+.RS 4n
+接続を待機している \fBsshd\fR のプロセス ID が入っています。異なるポートでいくつかのデーモンが同時に実行されている場合、これには最後に開始されたデーモンの pid が入ります。このファイルの内容には機密性がありません。だれでも読み取り可能にできます。\fBsshd_config\fR の \fBPidFile\fR キーワードを使用すると、\fB/var/run/sshd.pid\fR 以外のファイルを指定できます。\fBsshd_config\fR(4) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ssh/ssh_known_hosts\fR および \fB$HOME/.ssh/known_hosts \fR\fR
+.ad
+.sp .6
+.RS 4n
+これらのファイルは、\fBrhosts\fR を公開鍵ホスト認証で使用してホストの公開鍵をチェックする場合に参照されます。この鍵が受け入れられるためには、これらのファイルの 1 つにそれが記述されている必要があります。クライアントでは、同じファイルを使用して、リモートホストが接続予定のものであるかを検証します。これらのファイルは root または所有者によってのみ書き込み可能にするべきです。\fB/etc/ssh/ssh_known_hosts\fR はだれでも読み取り可能にするべきで、\fB$HOME/.ssh/known_hosts\fR はだれでも読み取り可能にできますが、そうする必要はありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/nologin\fR\fR
+.ad
+.sp .6
+.RS 4n
+このファイルが存在する場合、\fBsshd\fR は、root、「root」の役割が割り当てられているユーザー、および solaris.system.maintenance 承認が割り当てられているユーザーを除くすべてのユーザーのログインを拒否します。このファイルの内容は、ログインしようとしているすべてのユーザーに表示されます。このファイルはだれでも読み取り可能にするべきです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.ssh/authorized_keys\fR\fR
+.ad
+.sp .6
+.RS 4n
+ユーザーのアカウントへのログインに使用できる公開鍵 (RSA または DSA) の一覧が入っています。このファイルは root によって読み取り可能にします。一部のマシンでは、ユーザーのホームディレクトリが NFS ボリューム上にある場合にそれがだれでも読み取り可能であることを意味していることがあります。ほかのユーザーがそれにアクセスできないようにすることをお勧めします。このファイルの形式については前述しました。\fBssh-keygen\fR(1) で説明されているように、ユーザーは、自分の \fBidentity.pub\fR、\fBid_dsa.pub\fR または \fBid_rsa.pub\fR ファイル、あるいはそれらすべての内容をこのファイルに格納します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.rhosts\fR\fR
+.ad
+.sp .6
+.RS 4n
+このファイルには、スペースで区切られたホストとユーザー名のペアが 1 行につき 1 つずつ入っています。対応するホスト上の指定のユーザーは、パスワードなしでログインすることを許可されます。同じファイルが \fBrlogind\fR および \fBrshd\fR によって使用されます。このファイルはそのユーザーによってのみ書き込み可能にします。ほかのユーザーがそれにアクセスできないようにすることをお勧めします。また、このファイル内の \fBnetgroups\fR を使用することもできます。グループ内のすべてのホストまたはすべてのユーザーを指定するために、ホスト名またはユーザー名のどちらかを \fB+@\fIgroupname\fR\fR という形式にすることができます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.shosts\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBssh\fR の場合、このファイルは \fB\&.rhosts\fR の場合とまったく同じです。ただし、このファイルは \fBrlogin\fR や \fBrshd\fR では使われないため、これを使用すると、SSH を使ったアクセスしか許可されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/hosts.equiv\fR\fR
+.ad
+.sp .6
+.RS 4n
+このファイルは \fB\&.rhosts\fR 認証中に使用されます。そのもっとも簡単な書式では、このファイルにはホスト名が 1 行につき 1 つずつ入っています。これらのホスト上のユーザーは、両方のマシンに同じユーザー名を持っていれば、パスワードなしでログインすることを許可されます。ホスト名のあとにユーザー名を指定することもできます。そのようなユーザーはこのマシン上のユーザー (root 以外) としてログインすることが許可されます。また、構文 \fB+@\fIgroup\fR\fR を使用してネットグループを指定することもできます。否定されたエントリはハイフン (\fB-\fR) で始まります。
+.sp
+このファイル内でクライアントのホスト/ユーザーが正常に一致した場合、クライアントとサーバーのユーザー名が同じであれば、ログインが自動的に許可されます。また、RSA ホスト認証に成功することが通常は必須です。このファイルは root によってのみ書き込み可能にしてください。だれでも読み取り可能にすることをお勧めします。
+.sp
+警告: \fBhosts.equiv\fR でユーザー名を使用することはあまり得策であるとは言えません。それは実際には指定したユーザーが任意のユーザーとしてログインできることを意味し、その中には重要なバイナリやディレクトリを所有する \fBbin\fR、\fBdaemon\fR、\fBadm\fR などのアカウントが含まれていることに注意してください。事実上、ユーザー名を使用することはそのユーザーに root アクセス権を付与することです。おそらくユーザー名の有効な使い方は否定エントリ内のみです。この警告は \fBrsh\fR/\fBrlogin\fR にも当てはまります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ssh/moduli\fR\fR
+.ad
+.sp .6
+.RS 4n
+プライベートファイル。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ssh/shosts.equiv\fR\fR
+.ad
+.sp .6
+.RS 4n
+このファイルは \fB/etc/hosts.equiv\fR とまったく同じように処理されます。ただし、このファイルは \fBrsh\fR/\fBrlogin\fR と \fBssh\fR の両方を実行する環境で役立つ場合があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.ssh/environment\fR\fR
+.ad
+.sp .6
+.RS 4n
+このファイルはログイン時に環境に読み込まれます (それが存在する場合)。ここには、空の行、コメント行 (\fB#\fR で始まる)、および \fB\fIname\fR=\fIvalue\fR\fR という形式の割り当て行のみを含めることができます。このファイルはそのユーザーによってのみ書き込み可能にするべきです。ほかのだれでも読み取り可能にする必要はありません。環境処理はデフォルトで無効になっており、\fBPermitUserEnvironment\fR オプションによって制御されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.ssh/rc\fR\fR
+.ad
+.sp .6
+.RS 4n
+このファイルが存在する場合は、環境ファイルの読み取り後、ユーザーのシェルまたはコマンドを開始する前に \fB/bin/sh\fR とともに実行されます。X11 スプーフィングが使用中の場合、これは \fBproto cookie\fR ペアを標準入力 (および環境内の \fBDISPLAY\fR) で受け取ります。その場合は、これが \fBxauth\fR を呼び出す必要があります。
+.sp
+\fB$HOME/.ssh/rc\fR のプライマリな目的は、ユーザーのホームディレクトリがアクセス可能になる前に必要となる可能性のある初期化ルーチンをすべて実行することです。AFS はそのような環境の特定の例です。このファイルが存在する場合は、環境ファイルの読み取り後、ユーザーのシェルまたはコマンドを開始する前に \fB/bin/sh\fR とともに実行されます。それによって標準出力に出力が生成されてはいけません。代わりに標準エラー出力を使用する必要があります。X11 転送が使用中の場合、それは \fBproto cookie\fR ペアをその標準入力、およびその環境内の \fBDISPLAY\fR で受け取ります。\fBsshd\fR は \fBxauth\fR を自動的に実行して X11 cookie を追加しないため、このスクリプトによって \fBxauth\fR が呼び出される必要があります。
+.sp
+このファイルにはおそらく、何らかの初期化コードに続いて次のようなものが入っています。
+.sp
+.in +2
+.nf
+if read proto cookie && [ -n "$DISPLAY" ]
+then
+  if [ `echo $DISPLAY | cut -c1-10`  =  'localhost:' ]
+  then
+    # X11UseLocalhost=yes
+    echo add unix:`echo $DISPLAY |
+    cut -c11-` $proto $cookie
+  else
+    # X11UseLocalhost=no
+    echo add $DISPLAY $proto $cookie
+  fi | xauth -q -
+fi
+.fi
+.in -2
+.sp
+
+このファイルが存在しない場合は、\fB/etc/ssh/sshrc\fR が実行され、それも存在しない場合は、cookie を格納するために \fBxauth\fR が使用されます。\fB$HOME/.ssh/rc\fR はそのユーザーによってのみ書き込み可能にするべきで、ほかのだれでも読み取り可能にする必要はありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ssh/sshrc\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB$HOME/.ssh/rc\fR と同様です。これを使用すると、マシン固有のログイン時の初期化をグローバルに指定できます。このファイルは root によってのみ書き込み可能にし、だれでも読み取り可能にするべきです。
+.RE
+
+.SH セキュリティ
+.sp
+.LP
+\fBsshd\fR は、いくつかのユーザー認証メカニズムの使用をサポートしています。これには、鍵が (ユーザーの \fBauthorized_keys\fR ファイルを通して) ユーザーに関連付けられている公開鍵システム、鍵がホストに関連付けられている公開鍵システム (\fBHostbasedAuthentication\fR 構成パラメータを参照)、GSS-API ベースの方法 (\fBGssAuthentication\fR および \fBGssKeyEx\fR 構成パラメータを参照)、および 3 つの初期認証方法 (\fBnone\fR、\fBpassword\fR、汎用プロンプト/応答プロトコルの \fBkeyboard-interactive\fR) などがあります。
+.sp
+.LP
+「ホスト」サービス用の GSS-API アクセプタの資格がある場合にのみ、\fBsshd\fR は GSS-API の使用についてクライアントとネゴシエーションを行います。これは、GSS-API ベースの認証では、サーバーに Kerberos V \fBkeytab\fR エントリ (下記参照)、またはインストールされる可能性のあるほかの GSS-API メカニズム用の同等のものが必要であることを意味します。
+.sp
+.LP
+Kerberos 認証を機能させるためには、\fBin.sshd\fR サーバーに関連付けられた完全修飾ドメイン名 (Fully Qualified Domain Name) ごとに、\fBhost/\fR\fI<FQDN>\fR Kerberos 主体が 1 つ存在する必要があります。これらの \fBhost/\fR\fI<FQDN>\fR 主体にはそれぞれ、\fBin.sshd\fR サーバーの \fB/etc/krb5/krb5.keytab\fR ファイル内に \fBkeytab\fR エントリを持つ必要があります。主体の例は次のようになります。
+.sp
+.LP
+\fBhost/bigmachine.eng.example.com\fR
+.sp
+.LP
+主体を \fBkrb5.keytab\fR ファイルに追加する手順については、\fBkadmin\fR(1M) または \fBgkadmin\fR(1M) を参照してください。Kerberos 認証については、\fI『Securing Systems and Attached Devices in Oracle Solaris 11.3 』\fRを参照してください。
+.sp
+.LP
+GSS-API 承認は、\fBgss_auth_rules\fR(5) で説明されています。
+.sp
+.LP
+\fBsshd\fR では、すべての認証方法のアカウント管理、セッション管理、およびパスワード管理に加えて、3 つの初期認証方法にも \fBpam\fR(3PAM) を使用します。
+.sp
+.LP
+特に、\fBsshd\fR は「none」、「password」、および「keyboard-interactive」の SSHv2 \fBuserauth\fR タイプに対して \fBpam_authenticate()\fR を呼び出します。その他の SSHv2 認証方法では、\fBpam_authenticate()\fR は呼び出されません。\fBpam_acct_mgmt()\fR は、成功した各認証方法に対して呼び出されます。
+.sp
+.LP
+認証に成功すると、\fBpam_setcred()\fR および \fBpam_open_session()\fR が呼び出され、接続が閉じられると、\fBpam_close_session()\fR が呼び出されます。
+.sp
+.LP
+\fBpam_open_session()\fR と \fBpam_close_session()\fR は、\fBpty\fR を使用する SSHv2 チャネルが開かれたときと閉じられたときにも呼び出されます。
+.sp
+.LP
+各 SSHv2 \fBuserauth\fR タイプには、独自の PAM サービス名があります。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+SSHv2 userauthPAM サービス名
+_
+nonesshd-none
+_
+passwordsshd-password
+_
+keyboard-interactivesshd-kbdint
+_
+pubkeysshd-pubkey
+_
+hostbasedsshd-hostbased
+_
+gssapi-with-micsshd-gssapi
+_
+gssapi-keyexsshd-gssapi
+.TE
+
+.sp
+.LP
+\fBpam_acct_mgmt()\fR が (ユーザーの認証トークンの期限が切れたことを示す) \fBPAM_NEW_AUTHTOK_REQD \fR を返した場合は、プロトコルのバージョン 2 が使用されていれば、\fBsshd\fR によって強制的に「keyboard-interactive」\fBuserauth\fR が使用されます。\fBpam_acct_mgmt()\fR が再度 \fBPAM_NEW_AUTHTOK_REQD\fR を返した場合、「keyboard-interactive」\fBuserauth\fR は \fBpam_chauthtok()\fR を呼び出します。このようにして、管理者はユーザーごとに SSHv2 で許可される認証方法を制御できます。
+.SS "ホストベース認証の設定"
+.sp
+.LP
+ホストベースの認証を確立するには、次の手順を実行する必要があります。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+クライアントを構成します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+サーバーを構成します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+既知のホストを公開します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/ssh/shosts.equiv\fR および \fB~/.shosts\fR 内に適切なエントリを作成します。
+.RE
+.sp
+.LP
+これらの手順については、次の段落で詳しく説明します。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+クライアントマシンで、システム全体のクライアント構成ファイル \fB/etc/ssh/ssh_config\fR に次のエントリが含まれている必要があります。
+.sp
+.in +2
+.nf
+HostbasedAuthentication yes
+.fi
+.in -2
+
+\fBssh_config\fR(4) および \fBssh-keysign\fR(1M) を参照してください。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+サーバー上のシステム全体のサーバー構成ファイル \fB/etc/ssh/sshd_config\fR に、次のエントリが含まれている必要があります。
+.sp
+.in +2
+.nf
+HostbasedAuthentication yes
+.fi
+.in -2
+
+ユーザーごとの \fB\&.shost\fR ファイルが許可される場合 (最後の手順を参照)、同じファイル内に次が必要です。
+.sp
+.in +2
+.nf
+IgnoreRhosts no
+.fi
+.in -2
+
+これらのキーワードについては、\fBsshd_config\fR(4) を参照してください。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+既知のホストを公開するには、ユーザーにホストベースの認証を許可するクライアントのエントリが必要です。これらのエントリを、システム全体のファイル (\fB/etc/ssh/ssh_known_hosts\fR) またはユーザーごとのファイル (\fB~/.ssh/known_hosts\fR) のどちらかまたは両方に作成します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsshd\fR が \fB\&.rhosts\fR ではなく \fB\&.shosts\fR を使用することに注意してください。\fB\&.rhosts\fR によって提供される機能が必要であるが、セキュリティー上の欠陥のために \fBrlogin\fR や \fBrsh\fR を使用したくない場合は、\fB\&.shosts\fR を \fBsshd\fR と組み合わせて使用できます。この機能を使用するには、\fB/etc/ssh/shosts.equiv\fR および \fB~/.shosts\fR 内に適切なエントリを、\fBrhosts\fR(4) で指定されている形式で作成します。
+.sp
+大部分のネットワーク環境では、\fB\&.shosts\fR は \fB\&.rhosts\fR よりも優先されます。
+.RE
+.SS "ホスト鍵およびユーザー識別情報としての X.509 証明書の使用"
+.sp
+.LP
+SSH コマンドは、X.509v3 証明書がホスト鍵またはユーザー識別情報 (あるいはその両方) として使用される場合にそれを扱うことができます。この方法で使用すると、鍵と証明書の検出にプレーンなファイル名ではなく PKCS#11 URI を使うことができます。X.509 公開鍵認証に使用されるホスト鍵、ユーザー識別情報、およびそれらに対応する証明書は、PKCS#11 トークンにのみ格納できます。SSH で使用される PKCS#11 URI 属性は、\fBobject\fR、\fBtoken\fR、および \fBpinfile\fR のみです。使用可能なハードウェアキーストアがない場合は、PKCS#11 \fBsofttoken\fR キーストアを使用できます。
+.sp
+.LP
+証明書の検証 (ユーザーを認証するサーバー、サーバーを認証するクライアント) のために、KMF ポリシーには証明書マッパーが必要です。マッパーはデフォルトのポリシーファイル内には設定されていません。詳細は、\fBsshd_config\fR(4) の \fBTrustedAnchorKeystore\fR、\fBKMFPolicyDatabase\fR、および \fBKMFPolicyName\fR オプションのほか、\fBlibkmf\fR(3LIB) を参照してください。
+.sp
+.LP
+自己署名付き証明書は、ホスト鍵としてのみ使用でき、ユーザー識別情報としては使用できません。自己署名付き証明書が使用されている場合、または関連するトラストアンカー証明書が見つからないためにクライアント側でホスト証明書を検証できない場合、SSH クライアントは、現在プレーンな公開鍵で行われているように、鍵を \fBknown_host\fR データベース内に格納します。公開鍵のみが証明書から抽出されてデータベースに格納され、そのようにして現在の形式が維持されます。クライアント側でこのような証明書を受け入れる理由は、初期ホスト鍵交換が再起動可能でないからです。このため、サーバーがその唯一のホスト鍵として証明書を使用した場合、その証明書を検証できないクライアントはそうしなければログインが認められません。
+.sp
+.LP
+X.509 認証の使用方法については、「\fB使用例\fR」のセクションを参照してください。
+.SS "FIPS-140 モードで OpenSSL を実行するよう \fBsshd\fR を構成する"
+.sp
+.LP
+FIPS-140 モードで OpenSSL を実行するよう \fBsshd\fR を構成するには、変数 \fBUseFIPS140\fR を \fByes\fR に設定します。
+.sp
+.LP
+SunSSH は、ユーザー/ホスト認証のための暗号化操作を Solaris の他の部分 (FIPS-140 認定の場合とそうではない場合があります) に引き続き委任できます。\fBUseOpenSSLEngine\fR オプションのデフォルト値は \fBno\fR です。\fBUseOpenSSLEngine\fR を \fByes\fR に設定しても、FIPS モードでは影響を受けません。
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件service/network/ssh
+_
+インタフェースの安定性確実
+.TE
+
+.sp
+.LP
+\fB/etc/ssh/moduli\fR のインタフェースの安定性は「非公開」です。
+.SH 関連項目
+.sp
+.LP
+\fBkmfcfg\fR(1)、\fBlogin\fR(1)、\fBpktool\fR(1)、\fBscp\fR(1)、\fBssh\fR(1)、\fBssh-add\fR(1)、\fBssh-agent\fR(1)、\fBssh-keygen\fR(1)、\fBsvcs\fR(1)、\fBgkadmin\fR(1M)、\fBkadmin\fR(1M)、\fBsftp-server\fR(1M)、\fBssh-keysign\fR(1M)、\fBsvcadm\fR(1M)、\fBlibkmf\fR(3LIB)、\fBpam\fR(3PAM)、\fBrhosts\fR(4)、\fBssh_config\fR(4)、\fBsshd_config\fR(4)、\fBattributes\fR(5)、\fBgss_auth_rules\fR(5)、\fBkerberos\fR(5)、\fBpam_roles\fR(5)、\fBpkcs11_softtoken\fR(5)、\fBsmf\fR(5)
+.sp
+.LP
+\fBkrb5_auth_rules\fR(5) で、\fB\&.k5login\fR ファイルの説明を参照してください。
+.sp
+.LP
+\fI『Securing Systems and Attached Devices in Oracle Solaris 11.3』\fR
+.SH 注意事項
+.sp
+.LP
+\fBsshd\fR サービスは、サービス管理機能 \fBsmf\fR(5) によって、次のサービス識別子の下で管理されます。
+.sp
+.in +2
+.nf
+svc:/network/ssh:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有効化、無効化、または再起動要求など、このサービスに関する管理操作は、\fBsvcadm\fR(1M) を使用して実行できます。サービスステータスを照会するには、\fBsvcs\fR(1) コマンドを使用します。
+.sp
+.LP
+\fBsshd\fR は常に \fBPAM_RHOST\fR を設定し、ホストベースの \fBuserauth\fR の場合は \fBPAM_AUSER\fR を設定します。この動作により、ホストベースの認証を使用した役割へのリモートログインが可能になります。\fBpam_roles\fR(5) を参照してください。

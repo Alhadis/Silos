@@ -1,0 +1,355 @@
+'\" te
+.TH dbus-launch 1 "25 Feb 2009" "SunOS 5.11" "User Commands"
+.SH "NAME"
+dbus-launch \- Utility to start a message bus from a shell script
+.SH "SYNOPSIS"
+.PP
+\fBdbus-launch\fR [-\fB-auto-syntax\fR] [-\fB-config-file=\fIfilename\fR\fR] [-\fB-close-stderr\fR] [-\fB-csh-syntax\fR] [-\fB-exit-with-session\fR] [-\fB-help\fR] [-\fB-sh-syntax\fR] [-\fB-version\fR]
+.SH "DESCRIPTION"
+.PP
+The \fBdbus-launch\fR command is used to start a session bus instance of
+\fBdbus-daemon\fR from a shell script\&.  It would normally be
+called from a user\&'s login scripts\&.  Unlike the daemon itself,
+\fBdbus-launch\fR exits, so backticks or the $() construct can be used
+to read information from \fBdbus-launch\fR\&.
+.PP
+With no arguments, \fBdbus-launch\fR will launch a session bus instance
+and print the address and pid of that instance to standard output\&.
+.PP
+You may specify a program to be run; in this case, \fBdbus-launch\fR
+will launch a session bus instance, set the appropriate environment variables
+so the specified program can find the bus, and then execute the specified
+program, with the specified arguments\&.  See below for examples\&.
+.PP
+If you launch a program, \fBdbus-launch\fR will not print the
+information about the new bus to standard output\&.
+.PP
+When \fBdbus-launch\fR prints bus information to standard output, by
+default it is in a simple key-value pairs format\&.  However, you may request
+several alternate syntaxes using the -\fB-sh-syntax\fR,
+-\fB-csh-syntax\fR, -\fB-binary-syntax\fR, or
+-\fB-auto-syntax\fR options\&.  Several of these cause
+\fBdbus-launch\fR to emit shell code to set up the environment\&.
+.PP
+With the -\fB-auto-syntax\fR option, \fBdbus-launch\fR looks
+at the value of the SHELL environment variable to determine which shell syntax
+should be used\&.  If SHELL ends in "csh", then csh-compatible code is
+emitted; otherwise Bourne shell code is emitted\&.  Instead of passing
+-\fB-auto-syntax\fR, you may explicity specify a particular one by
+using -\fB-sh-syntax\fR for Bourne syntax, or
+-\fB-csh-syntax\fR for csh syntax\&.  In scripts, it is more robust to
+avoid -\fB-auto-syntax\fR and you hopefully know which shell your
+script is written in\&.
+.SH "EXTENDED DESCRIPTION"
+.SS "AUTOMATIC LAUNCHING"
+.PP
+If DBUS_SESSION_BUS_ADDRESS is not set for a process that tries to use D\-Bus,
+by default the process will attempt to invoke \fBdbus-launch\fR with the
+-\fB-autolaunch\fR option to start up a new session bus or find the
+existing bus address on the X display or in a file in
+\fB~/\&.dbus/session-bus/\fR\&.
+.PP
+Whenever an autolaunch occurs, the application that had to start a new bus will
+be in its own little world; it can effectively end up starting a whole new
+session if it tries to use a lot of bus services\&. This can be suboptimal or
+even totally broken, depending on the application and what it tries to do\&.
+.PP
+There are two common reasons for autolaunch\&. One is
+\fBssh\fR(1)
+to a remote machine\&.  The ideal fix for that would be forwarding of
+DBUS_SESSION_BUS_ADDRESS in the same way that DISPLAY is forwarded\&.  In the
+meantime, you can edit the \fBsession\&.conf\fR config file to
+have your session bus listen on TCP, and manually set
+DBUS_SESSION_BUS_ADDRESS, if you like\&.
+.PP
+The second common reason for autolaunch is an
+\fBsu\fR(1m)\&.
+to another user, and display of X applications running as the second user on
+the display belonging to the first user\&. Perhaps the ideal fix in this case
+would be to allow the second user to connect to the session bus of the first
+user, just as they can connect to the first user\&'s display\&.  However, a
+mechanism for that has not been coded\&.
+.PP
+You can always avoid autolaunch by manually setting DBUS_SESSION_BUS_ADDRESS\&.
+Autolaunch happens because the default address (if none is set) is
+"autolaunch:", so if any other address is set there will be no
+autolaunch\&.  You can however include autolaunch in an explicit session bus
+address as a fallback, for example
+DBUS_SESSION_BUS_ADDRESS="something:,autolaunch:" - in that case if
+the first address doesn\&'t work, processes will auto- launch\&. (The bus address
+variable contains a comma-separated list of addresses to try\&.)
+.PP
+The -\fB-autolaunch\fR option is considered an internal
+implementation detail of libdbus, and in fact there are plans to change it\&.
+There is no real reason to use it outside of the libdbus implementation anyhow\&.
+.SH "OPTIONS"
+.PP
+The following options are supported:
+.sp
+.ne 2
+.mk
+\fB-\fB-autolaunch=\fImachineid\fR\fR\fR
+.sp .6
+.in +4
+This option implies that \fBdbus-launch\fR should scan for a
+previously-started session and reuse the values found there\&.  If no session is
+found, it will start a new session\&.  The -\fB-exit-with-session\fR
+option is implied if -\fB-autolaunch\fR is given\&.  This option is for
+the exclusive use of libdbus, you do not want to use it manually\&.  It may
+change in the future\&.
+.sp
+.sp 1
+.in -4
+.sp
+.ne 2
+.mk
+\fB-\fB-auto-syntax\fR\fR
+.sp .6
+.in +4
+Choose -\fB-csh-syntax\fR or -\fB-sh-syntax\fR based on
+the SHELL environment variable\&.
+.sp
+.sp 1
+.in -4
+.sp
+.ne 2
+.mk
+\fB-\fB-binary-syntax\fR\fR
+.sp .6
+.in +4
+Write to \fBstdout\fR a null-terminated bus address, then the bus
+PID as a binary integer of size sizeof(pid_t), then the bus X window ID as a
+binary integer of size sizeof(long)\&.  Integers are in the machine\&'s byte order,
+not network byte order or any other canonical byte order\&.
+.sp
+.sp 1
+.in -4
+.sp
+.ne 2
+.mk
+\fB-\fB-close-stderr\fR\fR
+.sp .6
+.in +4
+Close the standard error output stream before starting the D\-Bus daemon\&.  This
+is useful if you want to capture \fBdbus-launch\fR error messages but
+you do not want \fBdbus\-daemon\fR to keep the stream open to your
+application\&.
+.sp
+.sp 1
+.in -4
+.sp
+.ne 2
+.mk
+\fB-\fB-config-file=\fIfilename\fR\fR\fR
+.sp .6
+.in +4
+Pass -\fB-config-file=\fIfilename\fR\fR to the
+bus daemon, instead of passing it the -\fB-session\fR argument\&.  See
+the man page for \fBdbus\-daemon\fR\&.
+.sp
+.sp 1
+.in -4
+.sp
+.ne 2
+.mk
+\fB-\fB-csh-syntax\fR\fR
+.sp .6
+.in +4
+Emit csh compatible code to set up environment variables\&.
+.sp
+.sp 1
+.in -4
+.sp
+.ne 2
+.mk
+\fB-\fB-exit-with-session\fR\fR
+.sp .6
+.in +4
+If this option is provided, a persistent "babysitter" process will be
+created that watches \fBstdin\fR for HUP and tries to connect to
+the X server\&.  If this process gets a HUP on \fBstdin\fR or loses
+its X connection, it kills the message bus daemon\&.
+.sp
+.sp 1
+.in -4
+.sp
+.ne 2
+.mk
+\fB-\fB?\fR, -\fB-help\fR\fR
+.sp .6
+.in +4
+Show help information on standard output and exit\&.
+.sp
+.sp 1
+.in -4
+.sp
+.ne 2
+.mk
+\fB-\fB-sh-syntax\fR\fR
+.sp .6
+.in +4
+Emit Bourne-shell compatible code to set up environment variables\&.
+.sp
+.sp 1
+.in -4
+.sp
+.ne 2
+.mk
+\fB-\fB-version\fR\fR
+.sp .6
+.in +4
+Print the version of \fBdbus-launch\fR\&.
+.sp
+.sp 1
+.in -4
+.SH "EXAMPLES"
+.PP
+\fBExample 1: How to use \fBdbus-launch\fR with a sh-compatible shell to start
+the per-session bus daemon\fR
+.PP
+.PP
+.nf
+       ## test for an existing bus daemon, just to be safe
+       if test -z "$DBUS_SESSION_BUS_ADDRESS" ; then
+           ## if not found, launch a new one
+           eval `dbus-launch --sh-syntax --exit-with-session`
+           echo "D\-Bus per-session daemon address is: $DBUS_SESSION_BUS_ADDRESS"
+       fi
+.fi
+.PP
+\fBExample 2: Use \fBdbus-launch\fR to run your main session program\fR
+.PP
+.PP
+.nf
+       example% \fBdbus-launch --exit-with-session gnome-session\fR
+.fi
+.PP
+The above would likely be appropriate for \fB~/\&.xsession\fR or
+\fB~/\&.Xclients\fR\&.
+.SH "ENVIRONMENT VARIABLES"
+.PP
+See
+\fBenviron\fR(5)
+for descriptions of the following environment variables:
+.sp
+.ne 2
+.mk
+\fBDBUS_SESSION_BUS_ADDRESS\fR
+.sp .6
+.in +4
+The address of the login session message bus\&.  If this variable is not set,
+applications may also try to read the address from the X Window System root
+window property _DBUS_SESSION_BUS_ADDRESS\&.  The root window property
+must have type STRING\&.  The environment variable should have precedence over the root window property\&.
+.sp
+.sp 1
+.in -4
+.sp
+.ne 2
+.mk
+\fBDBUS_VERBOSE\fR
+.sp .6
+.in +4
+Set DBUS_VERSION=1 to enable debugging, if D\-Bus was compiled with verbose
+debug mode enabled\&.
+.sp
+.sp 1
+.in -4
+.sp
+.ne 2
+.mk
+\fBSHELL\fR
+.sp .6
+.in +4
+When the -\fB-auto-syntax\fR is used, then \fBdbus-launch\fR
+checks the SHELL environment variable\&.  If it ends in "csh", then the
+-\fB-csh-syntax\fR option will be used, otherwise the
+-\fB-sh-syntax\fR will be used\&.
+.sp
+.sp 1
+.in -4
+.SH "EXIT STATUS"
+.PP
+The following exit values are returned:
+.sp
+.ne 2
+.mk
+\fB\fB0\fR\fR
+.in +9n
+.rt
+Application exited successfully
+.sp
+.sp 1
+.in -9n
+.sp
+.ne 2
+.mk
+\fB\fB>0\fR\fR
+.in +9n
+.rt
+Application exited with failure
+.sp
+.sp 1
+.in -9n
+.SH "FILES"
+.PP
+The following files are used by this application:
+.sp
+.ne 2
+.mk
+\fB\fB/usr/bin/dbus-launch\fR\fR
+.in +32n
+.rt
+Executable for \fBdbus-launch\fR
+.sp
+.sp 1
+.in -32n
+.sp
+.ne 2
+.mk
+\fB\fB/etc/dbus-1/session\&.conf\fR\fR
+.in +32n
+.rt
+Configuration file for D\-Bus session services\&.
+.sp
+.sp 1
+.in -32n
+.SH "ATTRIBUTES"
+.PP
+See
+\fBattributes\fR(5)
+for descriptions of the following attributes:
+.sp
+.TS
+tab() allbox;
+cw(2.750000i)| cw(2.750000i)
+lw(2.750000i)| lw(2.750000i).
+ATTRIBUTE TYPEATTRIBUTE VALUE
+Availabilitysystem/library/dbus
+Interface stabilityVolatile
+.TE
+.sp
+.SH "SEE ALSO"
+.PP
+More information can be found at:
+.PP
+\fBhttp://www\&.freedesktop\&.org/software/dbus/\fR
+.PP
+\fBdbus-cleanup-sockets\fR(1),
+\fBdbus-daemon\fR(1),
+\fBdbus-monitor\fR(1),
+\fBdbus-send\fR(1),
+\fBdbus-uuidgen\fR(1),
+\fBlibdbus-glib-1\fR(3),
+\fBattributes\fR(5),
+\fBenviron\fR(5)
+.SH "NOTES"
+.PP
+For authorship information refer to
+\fBhttp://www\&.freedesktop\&.org/software/dbus/doc/AUTHORS\fR\&.
+Updated by Brian Cameron, Sun Microsystems Inc\&., 2007\&.
+.PP
+Please send bug reports to the D\-Bus mailing list or bug tracker, see
+\fBhttp://www\&.freedesktop\&.org/software/dbus/\fR
+...\" created by instant / solbook-to-man, Thu 20 Mar 2014, 02:30
+...\" LSARC 2006/368 D-BUS Message Bus System 

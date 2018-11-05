@@ -1,0 +1,493 @@
+'\" te
+.\" Copyright (c) 2008, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH dumpadm 1M "2015 年 2 月 23 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+dumpadm \- 配置操作系统的故障转储
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/dumpadm\fR [\fB-enpuy\fR] [\fB-c\fR \fIcontent-type\fR] [\fB-d\fR \fIdump-device\fR] 
+     [\fB-m\fR \fImin\fRk | \fImin\fRm | \fImin\fR%] [\fB-s\fR \fIsavecore-dir\fR] 
+     [\fB-r\fR \fIroot-dir\fR] [\fB-z\fR on | off]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBdumpadm\fR 程序是管理操作系统故障转储工具配置的管理命令。故障转储是指发生严重系统错误时为计算机物理内存创建的副本。当发生严重操作系统错误时，会在控制台上输出描述错误的消息。然后，操作系统将通过在 RAM 中保留物理内存的内容来生成故障转储。如果这不可行，则会将物理内存的内容写入到预先确定的转储设备（通常为本地磁盘分区）。当指定了 \fBall\fR 或 \fBallproc\fR 选项时，需要提供本地磁盘分区。
+.sp
+.LP
+严重的操作系统错误可能因操作系统、其关联的设备驱动程序和可装入的模块中的错误，或有故障的硬件而造成。不管原因是什么，故障转储本身都可为您的支持工程师提供宝贵的信息以帮助其诊断问题。因此，请务必检索故障转储并将其提供给您的支持提供商。操作系统发生故障之后，引导期间会自动执行 \fBsavecore\fR(1M) 实用程序来检索故障转储，并将其以压缩格式写入到您的文件系统，文件名为 \fBvmdump.\fR\fIX\fR 和 \fBvmdump-<secname>.\fR\fIX\fR，其中 \fIX\fR 是一个用来标识转储的整数。之后，可以在同一系统或其他系统上调用 \fBsavecore\fR(1M) 来将压缩的故障转储扩展为名为 \fBvmcore.\fR\fIX\fR 和 \fBvmcore-<secname>.\fR\fIX\fR 的文件。可以使用 \fBdumpadm\fR 命令配置重新引导时保存故障转储的目录。
+.sp
+.LP
+缺省情况下，会将专用的 ZFS 卷用于交换区域和转储区域。有关设置采用 ZFS 的转储区域的详细信息，请参见《\fIOracle Solaris ZFS 管理指南\fR》。 
+.sp
+.LP
+要查看当前的转储配置，请使用不带参数的 \fBdumpadm\fR 命令：
+.sp
+.in +2
+.nf
+example# \fBdumpadm\fR
+
+      Dump content: kernel pages with ZFS metadata
+       Dump device: /dev/zvol/dsk/rpool/dump (dedicated)
+Savecore directory: /var/crash
+  Savecore enabled: yes
+   Save compressed: yes
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+当未指定选项时，\fBdumpadm\fR 显示当前的故障转储配置。上面的示例显示了缺省值集：转储内容设置为仅限内核内存页面和 ZFS 元数据。故障转储将保留在内存中，但如果需要，将使用转储设备。缺省情况下，转储设备是根池中的一个 \fBzvol\fR。\fBsavecore\fR 文件的目录设置为 \fB/var/crash/。\fR\fBsavecore\fR 设置为在重新引导时自动运行并且以压缩格式保存故障转储。
+.sp
+.LP
+当指定一个或多个选项时，\fBdumpadm\fR 将验证您的更改是否有效，如果有效，将重新配置故障转储参数并显示生成的配置。您必须是 \fBroot\fR 用户才能查看或更改转储参数。
+.sp
+.LP
+系统安装时，\fBdumpadm\fR 会根据内核内存和其他内部信息建立足够大的转储设备，以容纳转储文件。如果您随后尝试创建的转储设备太小而无法存储转储文件，那么 \fBdumpadm\fR 将发出错误消息并且操作失败。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIcontent-spec\fR\fR
+.ad
+.sp .6
+.RS 4n
+修改转储配置以便故障转储包含指定的转储内容。\fIcontent-spec\fR 包含可选的内容类型和内容修饰符：
+.sp
+.ne 2
+.mk
+.na
+\fB[ \fIcontent-type\fR ] [ \fIcontent-modifier\fR | -\fIcontent-modifier\fR.. ]\fR
+.ad
+.sp .6
+.RS 4n
+\fIcontent-type\fR 提供基础，内容修饰符进一步更改要转储的内容。如果包含 \fB+\fR，内容修饰符将添加要转储的额外数据，如果包含 \fB-\fR，将忽略相应数据。
+.sp
+内容类型可以是以下类型之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkernel\fR\fR
+.ad
+.RS 11n
+.rt  
+仅内核内存页面。请注意，这仅包含基本的内核页面集，即，不包含可以使用内容修饰符指定的页面。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBall\fR\fR
+.ad
+.RS 11n
+.rt  
+所有内存页面。如果指定了 all，则会将系统映像写入到转储设备中。请注意，生成的转储将包含用于文件系统缓冲区的页面。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcurproc\fR\fR
+.ad
+.RS 11n
+.rt  
+内核内存页面（如通过 'kernel' 指定）以及其线程当前在启动故障转储的 CPU 上执行的进程的内存页面。如果在该 CPU 上执行的线程是内核线程，不与任何用户进程关联，则仅转储内核页面。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBallproc\fR\fR
+.ad
+.RS 11n
+.rt  
+内核内存页面（如通过 'kernel' 指定）以及所有进程页面。如果指定了 allproc，则会将系统映像写入到转储设备中。
+.RE
+
+\fIcontent-modifier\fR 可以为以下值之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs\fR\fR
+.ad
+.RS 7n
+.rt  
+存储 ZFS 元数据的内核页面。
+.RE
+
+\fIcontent-modifier\fR 影响内核内存的哪些部分将被转储以及哪些不会被转储。当设置 'all' 内容类型时，内容修饰符不会产生任何效果。
+.sp
+如果未指定 \fIcontent-type\fR，则会修改当前配置的内容类型。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdump-device\fR\fR
+.ad
+.sp .6
+.RS 4n
+修改转储配置以使用指定的转储设备。转储设备可以是下列之一： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdump-device\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定为绝对路径名的特定转储设备（例如 \fB/dev/dsk/\fR\fIcNtNdNsN\fR）或者 ZFS 卷（例如 \fB/dev/zvol/dsk/rpool/dump\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBswap\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果将特殊标记 \fBswap\fR 指定为转储设备，\fBdumpadm\fR 会检查活动交换条目，然后选择最合适的条目将其配置为转储设备。请参见 \fBswap\fR(1M)。有关用于选择合适交换条目的算法的详细信息，请参见下文的\fB\fR“附注”部分。
+.sp
+一个给定的 ZFS 卷不能同时配置为交换区域和转储设备。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.sp .6
+.RS 4n
+列显存储压缩的故障转储所需的磁盘空间估计值。该值是使用当前配置和当前运行的系统计算的。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fImin\fR\fBk\fR | \fI min\fR\fBm\fR | \fImin\fR\fB%\fR\fR
+.ad
+.sp .6
+.RS 4n
+在当前的 savecore 目录中创建 \fBminfree\fR 文件，指示 \fBsavecore\fR 在 savecore 目录所在的文件系统中至少应保留指定大小的可用空间。\fBmin\fR 参数可以为下列值之一： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBk\fR\fR
+.ad
+.sp .6
+.RS 4n
+后缀为单位 \fBk\fR 的正整数，用于指定千字节值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBm\fR\fR
+.ad
+.sp .6
+.RS 4n
+后缀为单位 \fBm\fR 的正整数，用于指定兆字节值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%\fR\fR
+.ad
+.sp .6
+.RS 4n
+% 符号，指示应按照 savecore 目录所在文件系统的当前总大小乘以指定百分比来计算 \fBminfree\fR 值。
+.RE
+
+\fBsavecore\fR 命令将在写入转储文件之前查询 \fBminfree\fR 文件（如果有）。如果这些文件的大小会使可用磁盘空间大小减少到 \fBminfree\fR 阈值之下，那么将不写入转储文件，并且会记录错误消息。管理员应立即清理 savecore 目录以提供足够的可用空间，然后手动重新执行 \fBsavecore\fR 命令。管理员也可以在 \fBsavecore\fR 命令行上指定备用目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+修改转储配置以在重新引导时不自动运行 \fBsavecore\fR。这不是建议使用的系统配置。系统将尝试将故障转储映像保留在内存中。如果设置了 \fBdumpadm\fR \fB-n\fR，则故障转储映像将在系统重新引导后写入到转储设备。然后，可以在系统引导后运行 \fBsavecore\fR(1M) 来将故障转储提取到 \fBsavecore\fR 目录。
+.sp
+如果转储设备是一个交换分区，则转储数据在系统开始交换时将被覆盖。如果引导后没有立即执行 \fBsavecore\fR，那么可能无法检索故障转储。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+生成计算机可解析的输出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIroot-dir\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 \fBdumpadm\fR 应相对于哪个备用根目录创建文件。如果未指定 \fB-r\fR 参数，则使用缺省的根目录 \fB/\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIsavecore-dir\fR\fR
+.ad
+.sp .6
+.RS 4n
+修改转储配置以使用指定的目录保存 \fBsavecore\fR 写入的文件。目录应采用绝对路径形式，且该目录应存在于系统上。如果重新引导时该目录不存在，那么将在执行 \fBsavecore\fR 之前创建该目录。有关访问 savecore 目录的安全问题的讨论，请参见下文的\fB\fR“附注”部分。缺省 savecore 目录为 \fB/var/crash/\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+根据 \fB/etc/dumpadm.conf\fR 的内容强制更新内核转储配置。通常此选项仅在必须恢复之前引导中的 \fBdumpadm\fR 设置的情况下使用，此选项在重新引导时启动 \fBsvc:/system/dumpadm:default\fR 时使用。您的转储配置保存在配置文件中以实现此目的。如果缺少配置文件或配置文件中有任何无效的转储属性值，则替换成缺省值。更新后，将重新同步配置文件与内核转储配置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-y\fR\fR
+.ad
+.sp .6
+.RS 4n
+修改转储配置以在重新引导时自动运行 \fBsavecore\fR。这是此转储设置的缺省值。请参见“附注”部分\fB\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBon\fR | \fBoff\fR\fR
+.ad
+.sp .6
+.RS 4n
+修改转储配置以控制重新引导时 \fBsavecore\fR 的运行方式。选项为 \fBon\fR 时允许以压缩格式保存核心文件，为 \fBoff\fR 时自动解压缩故障转储文件。缺省值为 \fBon\fR，因为故障转储文件可能会非常大，如果以压缩格式保存，所需的文件系统空间较少。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR将转储设备重新配置为存储当前进程页面但不存储 ZFS 元数据页面
+.sp
+.in +2
+.nf
+\fBexample# dumpadm -c curproc-zfs\fR
+                   Dump content: kernel and current process pages without ZFS metadata
+                    Dump device: /dev/zvol/dsk/rpool/dump (dedicated)
+             Savecore directory: /var/crash
+               Savecore enabled: yes
+                Save compressed: on
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR指定 \fBallproc\fR 或 \fBall\fR 内容
+.sp
+.LP
+如果指定了 \fBallproc\fR 或 \fBall\fR 内容，则不会尝试将故障转储保留在内存中
+
+.sp
+.in +2
+.nf
+example# \fBdumpadm -c all\fR
+                   Dump content: all
+                    Dump device: /dev/zvol/dsk/rpool/dump (dedicated)
+             Savecore directory: /var/crash
+               Savecore enabled: yes
+                Save compressed: on
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR如果禁用了 \fBsavecore\fR，则保留故障转储
+.sp
+.LP
+如果禁用了 savecore，则会将故障转储保留在内存中并将其复制到转储设备。以后可以通过手动运行 \fBsavecore\fR(1M) 来提取它
+
+.sp
+.in +2
+.nf
+example# \fBdumpadm -n -c kernel+zfs\fR
+                   Dump content: kernel with ZFS metadata
+                    Dump device: /dev/zvol/dsk/rpool/dump (dedicated)
+             Savecore directory: /var/crash
+               Savecore enabled: yes
+                Save compressed: on
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储配置有效，并且已成功进行指定的修改（如果有）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+获取或修改转储配置时发生致命错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定的命令行选项无效。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/dev/dump\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储设备。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/dumpadm.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含 \fBdumpadm\fR 的配置参数。只能通过此命令进行修改。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIsavecore-directory\fR\fB/minfree \fR\fR
+.ad
+.sp .6
+.RS 4n
+包含 \fIsavecore-directory\fR 的最小可用空间大小。请参见 \fBsavecore\fR(1M)。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBsvcs\fR(1)、\fBuname\fR(1)、\fBsavecore\fR(1M)、\fBsvcadm\fR(1M)、\fBswap\fR(1M)、\fBattributes\fR(5)、\fBsmf\fR(5)
+.SH 附注
+.sp
+.LP
+系统故障转储服务由服务管理工具 \fBsmf\fR(5) 管理，其服务标识符为：
+.sp
+.in +2
+.nf
+svc:/system/dumpadm:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以使用 \fBsvcadm\fR(1M) 来对此服务执行管理操作（如启用、禁用或请求重新启动）。可以使用 \fBsvcs\fR(1) 命令来查询服务的状态。
+.SS "转储设备选择"
+.sp
+.LP
+将特殊标记 \fBswap\fR 指定为 \fBdumpadm\fR \fB-d\fR 的参数时，实用程序会尝试将最适合的交换设备配置为转储设备。\fBdumpadm\fR 将最大的交换块设备配置为转储设备；如果没有可用于交换的块设备，那么将最大的交换条目配置为转储设备。如果不存在交换条目，或者交换条目都不能配置为转储设备，那么将显示警告消息。虽然本地和远程交换文件可以配置为转储设备，但是不建议这样做。
+.SS "转储设备/交换设备交互"
+.sp
+.LP
+在转储设备同时为交换设备的情况下，如果管理员使用 \fBswap\fR \fB-d\fR 命令删除交换设备，那么 \fBswap\fR 命令将自动调用 \fBdumpadm\fR \fB-d\fR \fBswap\fR 以尝试将其他合适的交换设备配置为转储设备。如果没有其他交换设备或者其他交换设备都不能配置为转储设备，那么将禁用故障转储并显示警告消息。类似地，如果故障转储处于禁用状态，并且管理员使用 \fBswap\fR \fB-a\fR 命令添加新的交换设备，那么将调用 \fBdumpadm\fR \fB-d\fR \fBswap\fR 以使用新的交换设备重新启用故障转储。
+.sp
+.LP
+发出 \fBdumpadm\fR \fB-d\fR \fBswap\fR 命令后，会将新的转储设备存储在配置文件中以用于之后的重新引导。如果管理员添加了更大的或更适合的交换设备，转储设备不会发生更改；管理员必须重新执行 \fBdumpadm\fR \fB-d\fR \fBswap\fR 以从新的交换设备列表中重新选择最适合的设备。
+.SS "最小可用空间"
+.sp
+.LP
+使用 \fBdumpadm\fR \fB-m\fR 选项基于 \fBsavecore\fR 目录所在文件系统总大小的百分比创建 \fBminfree\fR 文件时，如果在之后更改了文件系统大小，并不会自动重新计算该值。在这种情况下，管理员必须重新执行 \fBdumpadm\fR \fB-m\fR 以重新计算 \fBminfree\fR 值。如果 \fBsavecore\fR 目录中不存在此类文件，那么 \fBsavecore\fR 将可用空间阈值的缺省值设置为 1 兆字节。如果不需要可用空间阈值，那么可以创建大小设置为 0 的 minfree 文件。
+.sp
+.LP
+如果转储目录中没有足够的空间，则系统会将故障转储映像保留在内存中，然后会使用 \fBsavecore\fR(1M) 将映像写入到转储设备中供以后提取。
+.SS "安全问题"
+.sp
+.LP
+如果重新引导时指定的 \fBsavecore\fR 目录不存在，那么将在执行 \fBsavecore\fR 之前使用 0700 权限（仅允许所有者读取、写入和执行）和 \fBroot\fR 所有者权限创建该目录。建议也使用类似的权限创建备用 savecore 目录，因为操作系统故障转储文件本身可能包含安全信息。
+.SS "\fBsavecore\fR 的缺省值"
+.sp
+.LP
+系统安装软件可能会保留专用的转储设备（例如，某个磁盘分片或 ZFS 卷）。在这种情况下，\fBdumpadm\fR 缺省值可以设置为 \fB-n\fR，表示 \fBsavecore\fR 在系统重新引导时不自动运行。故障映像将保留在转储设备中，即使它最初设置为保留在内存中也是如此。以 root 用户身份手动运行 \fB/usr/bin/savecore\fR 可检索故障映像并将其复制到 \fB/var/crash\fR 下的一组文件中。故障映像将保留在转储设备上，直到被后一个映像所覆盖。

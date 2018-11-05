@@ -1,0 +1,554 @@
+'\" te
+.\" Copyright (c) 2009, 2012, Oracle and/or its affiliates.All rights reserved.
+.\"  Copyright (c) 1992-1996 Competitive Automation, Inc.
+.TH dhcpagent 1M "2012 年 5 月 22 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+dhcpagent \- 动态主机配置协议 (Dynamic Host Configuration Protocol, DHCP) 客户机守护进程
+.SH 用法概要
+.LP
+.nf
+\fBdhcpagent\fR [\fB-a\fR] [ \fB-d\fR \fIn\fR] [\fB-f\fR] [\fB-v\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBdhcpagent\fR 为运行 Solaris 软件的计算机实现客户机部分的动态主机配置协议 (Dynamic Host Configuration Protocol, \fB(DHCP)\fR)。
+.sp
+.LP
+\fBdhcpagent\fR 守护进程从 \fBDHCP\fR 服务器获取客户机（本地）计算机的网络接口的配置参数。这些参数可包括对某个 \fBIP\fR 地址的租用，客户机通过该租用在租期内使用该地址，租期可以是无限期。如果客户机希望在比租期更长的时间内使用该 \fBIP\fR 地址，则客户机必须使用 \fBDHCP\fR 协商租期延长。因此，\fBdhcpagent\fR 必须以守护进程的形式运行，只有客户机关机时才可以终止。
+.sp
+.LP
+对于 IPv4，\fBdhcpagent\fR 守护进程通过 \fBifconfig\fR(1M) 来控制。
+.sp
+.LP
+\fBdhcpagent\fR 可以作为用户进程调用（尽管需要 root 权限），但这是不必要的，因为 \fBifconfig\fR(1M) 会自动将其启动。
+.sp
+.LP
+对于 IPv6，\fBdhcpagent\fR 守护进程由 \fBin.ndpd\fR(1M) 自动调用。如有必要，也可以通过 \fBifconfig\fR(1M) 对其进行控制。
+.sp
+.LP
+被调用时，\fBdhcpagent\fR 将进入被动状态，等待来自 \fBifconfig\fR(1M) 或 \fBin.ndpd\fR(1M) 的指令。当它收到配置接口的命令时，它将初启该接口（如有必要）并启动 DHCP。完成 DHCP 后，可以查询 \fBdhcpagent\fR 以获取各种网络参数的值。此外，如果使用 DHCP 来获取接口的地址租用，它将配置该地址以供使用。获取租用后，会根据需要自动对其进行续延。如果无法续延租用，\fBdhcpagent\fR 将取消配置该地址，但接口将保留启动状态，并且 \fBdhcpagent\fR 将尝试获取新的地址租用。\fBdhcpagent\fR 监视系统的暂停/恢复事件并在恢复时通过 DHCP 服务器验证所有非永久性租用。同样，\fBdhcpagent\fR 监视链路的连接/断开事件，并在断开的链路恢复连接时通过 DHCP 服务器验证所有非永久性租用。如果服务器指出现有租用不再有效，租用验证机制将重新启动 DHCP。如果联系不到服务器，则现有租用将继续。可通过 \fB/etc/default/dhcpagent\fR 文件中的 \fBVERIFIED_LEASE_ONLY\fR 参数监视此行为。请参见下文对此参数的说明。
+.sp
+.LP
+对于 IPv4，如果发现配置的接口被取消激活或其 IP 地址、子网掩码或广播地址与从 DHCP 获取的不同，DHCP 控制将放弃该接口。
+.sp
+.LP
+对于 IPv6，\fBdhcpagent\fR 将针对服务器提供的 IPv6 地址视需要自动激活和取消激活逻辑接口。IPv6 前缀长度（网络掩码）不由 DHCPv6 协议设置，而是由 \fBin.ndpd\fR(1M) 使用路由器通告获取的前缀信息进行设置。如果 \fBdhcpagent\fR 创建的任何逻辑接口被取消激活，或配置了不同的 IP 地址，DHCP 控制将放弃该接口。如果链路本地接口被取消激活，DHCP 在该物理接口上配置的所有地址都将被删除。
+.sp
+.LP
+除 \fBDHCP\fR 外，\fBdhcpagent\fR 还支持 \fBBOOTP\fR（仅限 IPv4）。请参见《\fIRFC 951, Bootstrap Protocol\fR》。从 \fBBOOTP\fR 服务器获取的配置参数与从 \fBDHCP\fR 服务器收到的参数享有同等对待，不同之处在于从 \fBBOOTP\fR 服务器收到的 \fBIP\fR 地址始终具有无限期租用。
+.sp
+.LP
+\fBDHCP\fR 还可以充当一种机制来配置客户机所需的其他信息，例如路由器的域名和地址信息。除了 IP 地址、网络掩码、广播地址和缺省路由器（后三项仅针对 IPv4），代理不直接配置工作站，而是充当可由其他程序（特别是由 \fBdhcpinfo\fR(1)）查询的数据库。 
+.sp
+.LP
+在具有一个接口的客户机上，这非常简单。具有多个接口的客户机可能出现困难，因为可能需要合并不同接口上抵达的一些信息，或者这些信息可能存在不一致。此外，由于接口的配置是异步的，因此请求可能在某些或全部接口都仍处于未配置状态时抵达。为处理这些情形，可以将一个接口指定为主要接口，从而该接口在未请求特定接口时将成为 \fBDHCP\fR 参数值的权威来源。有关详细信息，请参见 \fBdhcpinfo\fR(1) 和 \fBifconfig\fR(1M)。
+.sp
+.LP
+\fBdhcpagent\fR 发送的所有 DHCP 数据包均包括一个供应商类标识符（RFC 2132，选项代码 60；RFC 3315，选项代码 16）。此标识符与 \fBuname\fR \fB-i\fR 命令返回的平台名称相同，除了：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+平台名称中的所有逗号已变为句点。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果该名称的开头不是一个股票代码和一个逗号，将自动为其添加 \fBSUNW\fR 前缀。
+.RE
+.SS "消息"
+.sp
+.LP
+\fBdhcpagent\fR 守护进程写入以下五个类别的信息和错误消息：
+.sp
+.ne 2
+.mk
+.na
+\fBcritical\fR
+.ad
+.sp .6
+.RS 4n
+关键消息指示妨碍正常操作的服务器状况。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBerrors\fR
+.ad
+.sp .6
+.RS 4n
+错误消息是由于资源耗尽和其他意外的系统调用失败而导致的重要事件，其中一些事件不可恢复；忽略错误可能导致功能降级。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBwarnings\fR
+.ad
+.sp .6
+.RS 4n
+警告指示严重性稍低的一些问题，大多情况下描述从服务器收到了不寻常或不正确的数据报，或无法提供所请求的服务。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBinformational\fR
+.ad
+.sp .6
+.RS 4n
+信息性消息提供对于在站点中调试 \fBDHCP\fR 配置有用的关键信息。信息性消息一般由 \fB-v\fR 选项控制。不过，某些关键信息（如 IP 地址）始终都会提供。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdebug\fR
+.ad
+.sp .6
+.RS 4n
+可以生成两个不同详细级别的调试消息，这些消息主要有利于有权访问源代码的用户，但在调试较难的 DHCP 配置问题时也可能有用。只有使用 \fB-d\fR 选项时才会生成调试消息。
+.RE
+
+.sp
+.LP
+不使用 \fB-f\fR 选项运行 \fBdhcpagent\fR 时，所有消息都以适当的匹配优先级发送到系统日志程序 \fBsyslog\fR(3C)，并带有设备标识符 \fBLOG_DAEMON\fR。使用 \fB-f\fR 选项运行 \fBdhcpagent\fR 时，所有消息都定向到标准错误。
+.SS "DHCP 事件和用户定义的操作"
+.sp
+.LP
+如果将可执行文件（二进制或脚本）放置在 \fB/etc/dhcp/eventhook\fR 处，\fBdhcpagent\fR 守护进程将在发生以下任何事件时自动运行该程序：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBBOUND\fR 和 \fBBOUND6\fR\fR
+.ad
+.sp .6
+.RS 4n
+这些事件发生在接口配置期间。当 \fBdhcpagent\fR 从 DHCP 服务器收到针对地址租用请求的 DHCPv4 ACK 或 DHCPv6 DHCPv6 Reply 消息时，将调用该事件程序，指示已成功对接口进行初始配置。（另请参见 \fBINFORM\fR 和 \fBINFORM6\fR 事件，在获取配置参数而不包括地址租用时发生这两个事件。）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEXTEND\fR 和 \fBEXTEND6\fR\fR
+.ad
+.sp .6
+.RS 4n
+在租用延长期间发生这些事件。\fBdhcpagent\fR 从 DHCP 服务器收到针对 DHCPv4 REQUEST（续延）消息或 HCPv6 Renew 或 Rebind 消息的 DHCPv4 ACK 或 DHCPv6 Reply 后即调用该事件程序。
+.sp
+请注意，对于 DHCPv6，服务器可能选择在给定 Reply 消息中删除一些地址、添加新的地址租用以及忽略（允许到期）其余地址。当收到的 Reply 中保留一个或多个地址仍然有效时，将发生 \fBEXTEND6\fR 事件，即使 Reply 消息未扩展任何地址租用也是如此。在删除任何地址之前但添加任何新地址之后即调用该事件程序。要删除的地址将标记 \fBIFF_DEPRECATED\fR 标志。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEXPIRE\fR 和 \fBEXPIRE6\fR\fR
+.ad
+.sp .6
+.RS 4n
+在租用失效期间发生这些事件。对于 DHCPv4，从接口中删除租用的地址前调用该事件程序。对于 DHCPv6，从接口中删除剩余的最后一个租用地址前调用该事件程序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDROP\fR 和 \fBDROP6\fR\fR
+.ad
+.sp .6
+.RS 4n
+这些事件发生在接口被删除期间。从 DHCP 控制中删除接口前调用该事件程序。如果接口因用户取消激活接口而被放弃，则此事件将在已执行用户的操作后发生。接口可能不存在。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBINFORM\fR 和 \fBINFORM6\fR\fR
+.ad
+.sp .6
+.RS 4n
+当接口通过 DHCPv4 \fBINFORM\fR 或 DHCPv6 Information-Request 消息从 DHCP 服务器获取新的或更新的配置信息时，将发生这些事件。当设置了 DHCPv6 路由器通告 \fBO\fR（字母 0）位而位设置 \fBM\fR 位时，使用 \fBifconfig\fR(1M) \fBdhcp inform\fR 命令发送这些消息。因此，当 DHCP 客户机仅从服务器获取配置参数而未获取 IP 地址租用时，将发生这些事件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLOSS6\fR\fR
+.ad
+.sp .6
+.RS 4n
+租用期满而一个或多个有效的租用仍然存在时，发生该事件。删除过期地址前调用该事件程序。删除的地址将标记 \fBIFF_DEPRECATED\fR 标志。
+.sp
+请注意，该事件与收到 Reply 消息没有关联，后者仅在一个或多个有效租用仍然存在时发生，且仅针对 DHCPv6 发生。如果所有租用均已期满，则转而发生 EXPIRE6 事件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBRELEASE\fR 和 \fBRELEASE6\fR\fR
+.ad
+.sp .6
+.RS 4n
+在释放租用地址期间发生该事件。在 \fBdhcpagent\fR 放弃接口的地址并向 DHCP 服务器发送 DHCPv4 \fBRELEASE\fR 或 DHCPv6 Release 数据包前调用该事件程序。
+.RE
+
+.sp
+.LP
+系统不提供缺省事件程序。文件 \fB/etc/dhcp/eventhook\fR 应由 root 所有并采用模式 755。
+.sp
+.LP
+将向该事件程序传递两个参数：接口名称和事件名称。对于 DHCPv6，接口名称是物理接口的名称。
+.sp
+.LP
+该事件程序可使用 \fBdhcpinfo\fR(1) 实用程序获取接口的其他信息。当发生上述每个事件而调用该事件程序时，该程序可忽略它不关注的那些事件。该事件程序使用与 \fBdhcpagent\fR 本身相同的权限和环境运行，只是 \fBstdin\fR、\fBstdout\fR 和 \fBstderr\fR 被重定向到 \fB/dev/null\fR。请注意，这意味着该事件程序使用 root 权限运行。
+.sp
+.LP
+如果事件程序调用在 55 秒后未退出，将向其发送 \fBSIGTERM\fR 信号。如果在之后三秒内仍未退出，\fBSIGKILL\fR 信号会将其终止。
+.sp
+.LP
+有关事件程序示例，请参见“示例”部分。
+.SH 选项
+.sp
+.LP
+支持以下选项： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+采用配置的 IPv4 接口。此选项用于无磁盘 \fBDHCP\fR 客户机。对于无磁盘 \fBDHCP\fR，在运行 \fBdhcpagent\fR 前已在提供操作系统映像的网络接口上执行了 \fBDHCP\fR。此选项指示代理接管对接口的控制。它主要在引导脚本中使用。
+.sp
+此选项的效果取决于是否采用接口。
+.sp
+如果接口被采用，会发生以下情况：
+.sp
+\fBdhcpagent\fR 使用 \fB/chosen\fR:\fI<client_id>\fR 中指定的客户机 ID，即 PROM 发布或在 \fBboot\fR(1M) 命令行中指定的 ID。如果该值不存在，则未定义客户机 ID。然后，DHCP 服务器确定用作客户机 ID 的项目。如果接口为 Infiniband 接口且不存在 PROM 值，则出现错误。
+.sp
+如果接口未被采用：
+.sp
+\fBdhcpagent\fR 使用 \fB/etc/default/dhcpagent\fR 中存储的值。如果该值不存在，则未定义客户机 ID。如果接口为 Infiniband 且 \fB/etc/default/dhcpagent\fR 中没有值，将如“Infiniband 上的 DHCP”文档草案所述生成一个客户机 ID，该文档位于：
+.sp
+.in +2
+.nf
+http://www.ietf.org
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIn\fR\fR
+.ad
+.sp .6
+.RS 4n
+将调试级别设置为 \fIn\fR。当前有 1 和 2 两种调试级别，后者更为详细。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+在前台运行而不是作为守护进程运行。使用该选项时，消息将被发送到标准错误，而不是发送到 \fBsyslog\fR(3C)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+提供对调试站点配置问题有用的详细输出。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR事件程序示例
+.sp
+.LP
+以下脚本存储在文件 \fB/etc/dhcp/eventhook\fR 中，由 root 所有并采用模式 755。在发生文件中所列出的事件时对其进行调用。
+
+.sp
+.in +2
+.nf
+#!/bin/sh
+
+(
+echo "Interface name: " $1
+echo "Event: " $2
+
+case $2 in
+"BOUND")
+     echo "Address acquired from server "\e
+         `/usr/sbin/dhcpinfo -i $1 ServerID`
+     ;;
+"BOUND6")
+     echo "Addresses acquired from server " \e
+         `/usr/sbin/dhcpinfo -v6 -i $1 ServerID`
+     ;;
+"EXTEND")
+    echo "Lease extended for " \e
+         `/usr/sbin/dhcpinfo -i $1 LeaseTime`" seconds"
+     ;;
+"EXTEND6")
+    echo "New lease information obtained on $i"
+     ;;
+"EXPIRE" | "DROP" | "RELEASE")
+     ;;
+
+esac
+) >/var/run/dhcp_eventhook_output 2>&1
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+指明将 stdout 和 stderr 重定向到文件。
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/dhcp/\fIif\fR.dhc\fR\fR
+.ad
+.br
+.na
+\fB\fB/etc/dhcp/\fIif\fR.dh6\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含接口配置。只是存在该文件并不表明配置是正确的，因为租用可能已过期。在启动时，\fBdhcpagent\fR 使用 REQUEST (DHCPv4) 或 Confirm (DHCPv6) 来确认地址是否有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/dhcp/duid\fR\fR
+.ad
+.br
+.na
+\fB\fB/etc/dhcp/iaid\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含 DUID（DHCP Unique Identifier，DHCP 唯一标识符）和 IAID（Identity Association Identifier，身份关联标识符）值的持久性存储。这些文件的格式未记录，应用程序不应读写这些文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/default/dhcpagent\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含可调参数缺省值。通过在接口参数名称前添加接口名称和一个句点 (".")，所有值都可以通过它们适用的接口加以限定。
+.sp
+要配置 IPv6 参数，请在接口名称（如果有）和参数名称间放置字符串 \fB\&.v6\fR。例如，要设置全局 IPv6 参数请求列表，请使用 \fB\&.v6.PARAM_REQUEST_LIST\fR。要在 \fBhme0\fR 上设置 \fBCLIENT_ID\fR (\fBDUID\fR)，请使用 \fBhme0.v6.CLIENT_ID\fR。
+.sp
+参数包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBVERIFIED_LEASE_ONLY\fR\fR
+.ad
+.sp .6
+.RS 4n
+指示在代理终止时应在受管接口上执行 \fBRELEASE\fR 而不是 \fBDROP\fR。执行 Release 时，客户机将放弃租用，服务器将使该地址再次可用。执行 Drop 时，客户机将在 \fB/etc/dhcp/\fIinterface\fR.dhc\fR 或 \fB/etc/dhcp/\fIinterface\fR.dh6\fR 中记录租用，以供将来使用。此外，在链路状态变为 \fBup\fR 或系统在暂停后恢复时，客户机将向服务器验证租用。如果服务器不可访问而无法完成验证，将丢弃旧租用（即使该租用仍有剩余时间）并获取新租用。
+.sp
+移动系统（如手提电脑）上往往需要启用此选项，以便在移动后快速恢复系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBOFFER_WAIT\fR\fR
+.ad
+.sp .6
+.RS 4n
+指示在发送 \fBDISCOVER\fR 后检查有效的 \fBOFFER\fR 的等待间隔。对于 DHCPv6，设置在发送 Solicit 后检查有效的通告的等待间隔。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCLIENT_ID\fR\fR
+.ad
+.sp .6
+.RS 4n
+指示用于在服务器中唯一标识客户机的值。该值可采取以下三种基本形式之一：
+.sp
+.in +2
+.nf
+\fIdecimal\fR,\fIdata\fR...
+0xHHHHH...
+"\fIstring\fR...."
+.fi
+.in -2
+.sp
+
+第一种形式是 RFC 3315 DUID。这对于 IPv4 DHCP 和 DHCPv6 均合法。对于 IPv4，RFC 4361 客户机 ID 根据该值而构造。在该第一种形式中，\fIdata\fR... 的格式取决于十进制值。为该第一种形式定义了以下格式：
+.sp
+.ne 2
+.mk
+.na
+\fB1,\fIhwtype\fR,\fItime\fR,\fIlla\fR\fR
+.ad
+.sp .6
+.RS 4n
+类型 1，DUID-LLT。\fIhwtype\fR 值是 0-65535 范围内的整数，指示硬件类型。\fItime\fR 值是从 2000 年 1 月 1 日午夜 UTC 开始计起的秒数，可以省略该值以使用当前系统时间。\fIlla\fR 值是冒号分隔的 MAC 地址或物理接口的名称。如果使用接口名称，可以忽略 \fIhwtype\fR 值。例如：\fB1,,,hme0\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB2,\fIenterprise\fR,\fIhex\fR...\fR
+.ad
+.sp .6
+.RS 4n
+类型 2，DUID-EN。\fIenterprise\fR 值是 0-4294967295 范围内的整数，表示组织的 SMI Enterprise 编号。\fIhex\fR 字符串是一个等长的十六进制数字序列。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB3,\fIhwtype\fR,\fIlla\fR\fR
+.ad
+.sp .6
+.RS 4n
+类型 3，DUID-LL。与 DUID-LLT（类型 1）相同，只是不使用时间戳。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB*,\fIhex\fR\fR
+.ad
+.sp .6
+.RS 4n
+任何其他类型的值（0 或 4-65535）都可以与等长的十六进制字符串一起使用。
+.RE
+
+第二种和的三种形式的 \fBCLIENT_ID\fR 仅对 IPv4 合法。它们都表示原始客户机 ID（无 RFC 4361），采用十六进制格式或 NVT ASCII 字符串格式。因此，“\fBSun\fR” 和 \fB0x53756E\fR 等效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPARAM_REQUEST_LIST\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定客户机将需要值的选项的逗号分隔整数值列表，或 \fBSite\fR 或 \fBOption\fR 符号选项名称。IPv4 的符号选项名称通过 \fB/etc/dhcp/inittab\fR 解析。IPv6 的选项名称通过 \fB/etc/dhcp/inittab6\fR 解析。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPARAM_IGNORE_LIST\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 DHCP 客户机将忽略的选项的列表（与 \fBPARAM_REQUEST_LIST\fR 采用同一方式构造）。处理忽略的选项时，就好像服务器未返回这些指定的选项。使用 \fBdhcpinfo\fR(1) 看不到忽略的选项，客户机也不会执行这些选项。例如，该参数可以用来禁用不必要的客户机名称或缺省路由器。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/dhcp/eventhook\fR\fR
+.ad
+.sp .6
+.RS 4n
+DHCP 事件程序的位置。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBdhcpinfo\fR(1)、\fBifconfig\fR(1M)、\fBinit\fR(1M)、\fBin.mpathd\fR(1M)、\fBin.ndpd\fR(1M)、\fBsyslog\fR(3C)、\fBattributes\fR(5)、\fBdhcp\fR(5)
+.sp
+.LP
+\fI《Working With DHCP in Oracle Solaris 11.3》\fR
+.sp
+.LP
+由 Croft, B. 和 Gilmore, J. 合著的《\fIBootstrap Protocol (BOOTP)\fR》RFC 951，Network Working Group 出版，1985 年 9 月。
+.sp
+.LP
+由 Droms, R. 编著的《\fIDynamic Host Configuration Protocol\fR》，RFC 2131，Network Working Group 出版，1997 年 3 月出版。
+.sp
+.LP
+由 Lemon, T. 和 B. Sommerfeld. 合著的《\fINode-specific Client Identifiers for Dynamic Host Configuration Protocol Version Four (DHCPv4)\fR》，RFC 4361。Nominum 和 Sun Microsystems 出版。2006 年 2 月。
+.sp
+.LP
+由 Droms, R. 编著的《\fIDynamic Host Configuration Protocol for IPv6 (DHCPv6)\fR》，RFC 3315。Cisco Systems 出版。2003 年 7 月。
+.SH 附注
+.sp
+.LP
+\fBdhcpagent\fR 守护进程可以用于 IPv4 逻辑接口，使用方式与同物理接口一起使用时一样。用于逻辑接口时，该守护进程会基于 DUID 和 IAID 值自动构造客户机 ID（根据 RFC 4361）。\fB/etc/default/dhcpagent \fR \fBCLIENT_ID\fR 值（如果有）覆盖此自动标识符。
+.sp
+.LP
+与物理 IPv4 接口不同的是，\fBdhcpagent\fR 不会添加或删除与逻辑接口关联的缺省路由。
+.sp
+.LP
+可以在 IPMP IP 接口上执行 DHCP 以获取和维护 IPMP 数据地址。因为 IPMP IP 接口没有硬件地址，所以该守护进程将使用上述用于 IPv4 逻辑接口的同一方法自动构造客户机 ID。此外，缺少硬件地址意味着该守护进程必须在 IPMP IP 接口上的所有 \fBDISCOVER\fR 和 \fBREQUEST\fR 消息中设置“广播”标志。一些 DHCP 服务器可能会拒绝此类请求。
+.sp
+.LP
+可以对属于某个 IPMP 组的 IP 接口执行 DHCP（以获取和维护测试地址）。该守护进程将自动在每个测试地址上设置 \fBNOFAILOVER\fR 和 \fBDEPRECATED\fR 标志。此外，在这种情况下，该守护进程将不会添加或删除缺省路由。请注意，实际的 DHCP 数据包交换可以通过 IPMP 组中的任何活动 IP 接口执行。强烈建议将测试地址的租用设为无限期。否则，只有探测器才可以检测到的长期网络中断可能导致测试地址的租用期满，从而导致 \fBin.mpathd\fR(1M) 返回到基于链路的故障检测并触发错误的修复。

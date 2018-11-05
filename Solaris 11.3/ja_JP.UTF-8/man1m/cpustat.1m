@@ -1,0 +1,469 @@
+'\" te
+.\" Copyright (c) 2005, 2012, Oracle and/or its affiliates. All rights reserved.
+.TH cpustat 1M "2012 年 2 月 27 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+cpustat \- CPU パフォーマンスカウンタを使用したシステム動作の監視
+.SH 形式
+.LP
+.nf
+\fBcpustat\fR \fB-c\fR \fIeventspec\fR [\fB-c\fR \fIeventspec\fR]... [\fB-p\fR \fIperiod\fR] [\fB-T\fR u | d ]
+     [\fB-Dmnst\fR] [\fB-A\fR cor|soc|bins] [\fB-k\fR \fIkeys\fR] [\fB-o\fR \fIlimit\fR]
+     [\fB-I\fR \fIstatfile\fR] [\fB-O\fR \fIstatfile\fR] [\fIinterval\fR [\fIcount\fR]]
+.fi
+
+.LP
+.nf
+\fBcpustat\fR \fB-h\fR
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBcpustat\fR ユーティリティーでは、\fBCPU\fR パフォーマンスカウンタを使ってシステム内の \fBCPU\fR の動作全体を監視できます。
+.sp
+.LP
+\fIinterval\fR が指定された場合、\fBcpustat\fR はアクティビティーを \fIinterval\fR 秒ごとにサンプリングします (これを無限に繰り返す)。\fIcount\fR が指定された場合、統計が \fIcount\fR 回繰り返されます。どちらも指定されなかった場合は、5 秒の間隔が使用され、採取されるサンプルの数に制限はありません。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fBcor\fR\fR
+.ad
+.sp .6
+.RS 4n
+出力をコア ID で集計します。同じコア ID のデータ行は、1 行に集計されます。デフォルトでは、列は小計で置き換えられます。\fB-m\fR オプションでは、代わりに列の平均を出力します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fBsoc\fR\fR
+.ad
+.sp .6
+.RS 4n
+出力をソケット ID で集計します。同じソケット ID のデータ行は、1 行に集計されます。デフォルトでは、列は小計で置き換えられます。\fB-m\fR オプションでは、代わりに列の平均を出力します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fBbins\fR\fR
+.ad
+.sp .6
+.RS 4n
+行を集約して各サンプリング期間内のビンの数を減らし、それらを出現する順番にグループ化して、各ビンの行に対する縦欄式の小計を出力します。小計ではなく算術平均を計算するには、\fB-m\fR オプションを使用できます。ソートオプション \fB-k\fR を使用して、ビン化の段階の前に行の順序を変更できます。\fBsze\fR 列には、各ビン内の CPU の数が出力されます。\fBBIN\fR 列は \fBCPU\fR 列を置き換えて、各 \fBbin\fR の序数を出力します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIeventspec\fR\fR
+.ad
+.sp .6
+.RS 4n
+監視する \fBCPU\fR パフォーマンスカウンタ用のイベントセットを指定します。これらのイベント指示子の構文を次に示します。
+.sp
+.in +2
+.nf
+[picn=]\fIeventn\fR[,attr[\fIn\fR][=\fIval\fR]][,[picn=]\fIeventn\fR
+     [,attr[n][=\fIval\fR]],...,]
+.fi
+.in -2
+.sp
+
+\fB-h\fR オプションを使用すると、使用可能なイベントと属性の一覧を取得できます。これにより、使用法に関するメッセージが表示されます。明示的なカウンタの割り当ては省略できます。その場合、\fBcpustat\fR は有効なカウンタの選択を自動的に試みます。 
+.sp
+属性値は、\fBstrtoll\fR(3C) に適した形式 (16 進数、8 進数、または 10 進数) で表現できます。イベント指示子の属性に明示的な値が指定されていない場合、デフォルト値の \fB1\fR が使用されます。対応するカウンタ番号のない属性は、指示子内のすべてのカウンタに適用されます。
+.sp
+これらのイベント指示子のセマンティクスを確認するには、\fBCPU\fR の製造元のドキュメントでイベントに関する記述を参照してください。
+.sp
+複数の \fB-c\fR オプションを指定できます (その場合、コマンドはサンプルごとに異なるイベント設定に切り替えます)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR\fR
+.ad
+.sp .6
+.RS 4n
+デバッグモードを有効にします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.sp .6
+.RS 4n
+ユーティリティーの使用方法やプロセッサ依存カウンタのプログラム方法に関する広範なヘルプメッセージを出力します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR \fIstatfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+以前に \fIstatfile\fR 内に保存したデータを再実行します。\fB-O\fR を指定して、再実行用のデータファイルを作成します。このオプションが特に役立つのは、多数の CPU を搭載したマシンの統計情報を分析する場合です。ファイルは、異なるソートおよび集計オプションを使用して何度も再処理されることがあります。
+.sp
+\fB-I\fR オプションは、間隔およびカウントの仕様と互換性がありません。
+.sp
+ファイル名が \fB—\fR (ハイフン) の場合は、標準入力から読み取ります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR \fIkey1\fR,...\fR
+.ad
+.sp .6
+.RS 4n
+各サンプリング期間内の行を、\fIkey1\fR、次に \fIkey2\fR、という具合に最上位から最下位へとソートします。各鍵は、コンマ区切りのイベントのリストです。複数の \fB-k\fR オプションを指定できます。
+.sp
+\fBcpustat\fR に複数の \fB-c\fR \fIevent-spec\fR オプションを指定して実行すると、代替 \fIevent-spec\fR のレポートが生成されます。各 \fIevent-spec\fR を異なる仕方でソートするには、複数の \fB-k\fR オプションを指定します。各 \fIevent-spec\fR で、適切なイベントサブセットを含む鍵を \fIevent-spec\fR 内に持つ最初の \fB-k\fR オプションが使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.sp .6
+.RS 4n
+複数 CPU 上のデータの集計に \fB-b\fR または \fB-i\fR が使用される場合、合計ではなく算術平均値を出力します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+すべてのヘッダー出力を省略します (\fBcpustat\fR がパイプラインの先頭の場合に役立ちます)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+ソートおよび集計のオプションの適用後に、各サンプリング期間内の最初の \fInum\fR 行だけを出力します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-O\fR \fIstatfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+すべてのデータを \fIstatfile\fR に保存します。このデータは、\fB-I\fR を使用してあとで再実行できます。
+.sp
+ファイル名が \fB—\fR (ハイフン) の場合、標準出力に書き込みます。
+.sp
+\fB-O\fR の目的は、利用可能な全データを取得することです。これは、データ整理オプション \fB-A\fR、\fB-k\fR、\fB-m\fR、および \fB-o\fR と互換性がありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIperiod\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBcpustat\fR が \fIperiod\fR 秒ごとに \fIeventspec\fR のリスト内を切り替えます。このツールは、各サイクルのあと、最初の \fIeventspec\fR が測定されてから \fIperiod\fR 秒が経過するまでスリープします。 
+.sp
+このオプションが存在する場合、オプションの \fIcount\fR パラメータは、(採取するサンプルの合計数ではなく) 実行するサイクルの合計数を指定します。\fIperiod\fR が \fIeventspec\fR 数と \fIinterval\fR の積より小さい場合、ツールは期間が \fB0\fR であるかのように動作します。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.sp .6
+.RS 4n
+システム専用 \fIeventspec\fR がバインドされている間スピンするアイドル soaker スレッドを作成します。現在のプロセッサセット内の各 CPU に 1 つのアイドル soaker スレッドがバインドされます。システム専用 \fIeventspec\fR は、\fBnouser\fR トークンと \fBsys\fR トークンの両方を含み、CPU が特権モードで動作している間に発生するイベントを測定します。このオプションは、カーネルのアイドルループが実行されてシステムモードイベントをトリガーすることを防ぎます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fBu\fR | \fBd\fR\fR
+.ad
+.sp .6
+.RS 4n
+タイムスタンプを表示します。
+.sp
+時間の内部表現の出力表現に \fBu\fR  を指定します。\fBtime\fR(2) を参照してください。 標準の日付フォーマットに \fBd\fR を指定します。\fBdate\fR(1) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+出力にプロセッサのサイクル数の列を追加します (現在のアーキテクチャーで可能な場合)。
+.RE
+
+.SH 使用法
+.sp
+.LP
+密接に関係するユーティリティー \fBcputrack\fR(1) を使用することで、システム上のほかのアクティビティーからほとんどまたはまったく干渉されずに個々のアプリケーションの動作を監視できます。
+.sp
+.LP
+\fBcpustat\fR が \fBCPU\fR パフォーマンスカウンタをシステム全体で使用することと、\fBcputrack\fR などが個々のプロセスを監視するために \fBCPU\fR パフォーマンスカウンタを使用することの間に本質的な競合があるため、\fBcpustat\fR ユーティリティーはスーパーユーザーによって実行される必要があります。
+.sp
+.LP
+このユーティリティーのインスタンスが起動したあとは、ユーティリティーの最後のインスタンスが終了するまで、プロセス単位または \fBLWP\fR 単位のカウンタを使用することは許可されません。
+.sp
+.LP
+コマンドから出力される時間は、プログラムがカーネルに要求したサンプリング時間ではなく、ハードウェアカウンタが実際にサンプリングされた時計に対応しています。この時間は、\fBgethrtime\fR(3C) と同じタイムベースに基づいています。 
+.sp
+.LP
+\fB-t\fR オプションで有効されたプロセッサのサイクル数は、パフォーマンスカウンタのレジスタに適用された設定に関係なく、常にユーザーモードとシステムモードの両方に適用されます。
+.sp
+.LP
+「sys」トークンを使ってシステムモードで実行されるハードウェアプラットフォームの一部では、32 ビットレジスタを使ってカウンタが実装されています。カーネルは 64 ビットカウンタを合成するためにすべてのオーバーフローを捕捉しようとしますが、ハードウェア実装制限により、サンプリング間隔を十分に短く保たないかぎりオーバーフローが失われる可能性があります。ラップする可能性が高いイベントは、プロセッサクロックサイクルをカウントするイベントです。そのようなイベントが対象の場合は、40 億以上のクロックサイクルがサンプル間で起きるように、サンプリングをより頻繁に発生させるようにしてください。
+.sp
+.LP
+cpustat の出力は \fBnawk\fR(1) や \fBperl\fR(1) で解析できるように設計されているため、\fBcpustat\fR をスクリプトに埋め込むことによってパフォーマンスツールを作成できます。または、\fBlibcpc\fR(3LIB) の機能を使用して、\fBcpustat\fR を構築したときと同じ \fBAPI\fR を直接使ってツールを構築することもできます。\fBcpc\fR(3CPC) を参照してください。 
+.sp
+.LP
+\fBcpustat\fR ユーティリティーは、現在のプロセッサセット内でアクセスできる \fBCPU\fR だけを監視します。したがって、ユーティリティーのいくつかのインスタンスが、異なるプロセッサセット内の \fBCPU\fR 上で実行されている場合があります。プロセッサセットの詳細については、\fBpsrset\fR(1M) を参照してください。
+.sp
+.LP
+\fBcpustat\fR は \fBCPU\fR にバインドされた \fBLWP\fR を使用するため、関連するプロセッサの構成を変更するにはユーティリティーを終了する必要がある場合があります。
+.SH 使用例
+.SS "SPARC"
+.LP
+\fB例 1 \fR外部キャッシュ参照と失敗を測定する
+.sp
+.LP
+次の例では、外部キャッシュでの失敗と参照を測定しています。これらは、UltraSPARC マシン上のプロセッサがユーザーモードで動作している間に発生します。
+
+.sp
+.in +2
+.nf
+example% cpustat -c EC_ref,EC_misses 1 3
+
+    time cpu event      pic0      pic1
+   1.008   0  tick     69284      1647
+   1.008   1  tick     43284      1175
+   2.008   0  tick    179576      1834
+   2.008   1  tick    202022     12046
+   3.008   0  tick     93262       384
+   3.008   1  tick     63649      1118
+   3.008   2 total    651077     18204
+.fi
+.in -2
+.sp
+
+.SS "x86"
+.LP
+\fB例 2 \fRPentium 4 上で分岐予測の成功を測定する
+.sp
+.LP
+次の例では、Pentium 4 マシン上でユーザーモードとシステムモードで分岐予測ミスと分岐命令合計を測定しています。
+
+.sp
+.in +2
+.nf
+ example% cpustat -c \e
+    pic12=branch_retired,emask12=0x4,pic14=branch_retired,\e
+    emask14=0xf,sys 1 3
+  
+    time cpu event      pic12     pic14
+   1.010   1  tick       458       684 
+   1.010   0  tick       305       511 
+   2.010   0  tick       181       269 
+   2.010   1  tick       469       684 
+   3.010   0  tick       182       269 
+   3.010   1  tick       468       684 
+   3.010   2 total      2063      3101 
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fROpteron 上でメモリーアクセスをカウントする
+.sp
+.LP
+次の例では、Opteron 上の各メモリーコントローラ経由で行われたメモリーアクセスの数 (内部メモリー待ち時間別) を確認しています。
+
+.sp
+.in +2
+.nf
+cpustat -c \e
+   pic0=NB_mem_ctrlr_page_access,umask0=0x01, \e
+   pic1=NB_mem_ctrlr_page_access,umask1=0x02, \e
+   pic2=NB_mem_ctrlr_page_access,umask2=0x04,sys \e
+   1
+
+    time cpu event      pic0      pic1      pic2
+   1.003   0  tick     41976     53519      7720
+   1.003   1  tick      5589     19402       731
+   2.003   1  tick      6011     17005       658
+   2.003   0  tick     43944     45473      7338
+   3.003   1  tick      7105     20177       762
+   3.003   0  tick     47045     48025      7119
+   4.003   0  tick     43224     46296      6694
+   4.003   1  tick      5366     19114       652
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fRフィルタを使用した複数 CPU の表示
+.sp
+.LP
+次のコマンドは、\fBDTLB_miss\fR 率がもっとも高い 3 つの CPU を表示します。
+
+.sp
+.in +2
+.nf
+example% \fBcpustat -c DTLB_miss -k DTLB_miss -n 3 1 1\fR
+
+ time cpu event DTLB_miss
+1.040 115  tick       107
+1.006  18  tick        98
+1.045 126  tick        31
+1.046  96 total       236
+
+event DTLB_miss
+total       236
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 5 \fRフィルタによる複数 CPU の四分位数への集計
+.sp
+.LP
+次のコマンドは、DTLB ミス率を使用して 256 個の CPU を四分位数に集計します。
+
+.sp
+.in +2
+.nf
+example% \fBcpustat -c DTLB_miss -b 4 -k DTLB_miss -m 1 1\fR
+
+ time bin event DTLB_miss sze
+1.032   0  tick        46  24
+1.021   1  tick         3  24
+1.007   2  tick         2  24
+1.022   3  tick         0  24
+1.045   4 total        51  24
+
+event DTLB_miss
+total        51
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 6 \fR複数イベントのソート
+.sp
+.LP
+次のコマンドシーケンスは、複数のイベントをソートします。
+
+.sp
+.in +2
+.nf
+example% \fBcpustat -O /tmp/OUT -c ITLB_miss,DTLB_miss -c PAPI_tot_ins 1 2\fR
+example% \fBcpustat  -I /tmp/OUT -b 4 -k ITLB_miss -k PAPI_tot_ins\fR
+
+ time bin event ITLB_miss DTLB_miss sze
+1.020   0  tick       129       673  24
+1.009   1  tick         0        61  24
+1.005   2  tick         0        79  24
+1.039   3  tick         0        64  24
+1.082   4 total       129       877  24
+
+ time bin event PAPI_tot_ins sze
+2.073   0  tick        51947  24
+2.020   1  tick        14976  24
+2.076   2  tick        14976  24
+2.004   3  tick        14976  24
+2.082   4 total        96875  24
+
+event ITLB_miss DTLB_miss PAPI_tot_ins
+total       129       877        96875
+.fi
+.in -2
+.sp
+
+.SH 警告
+.sp
+.LP
+\fBcpustat\fR コマンドを実行することで、スーパーユーザーは既存のすべてのパフォーマンスカウンタコンテキストを強制的に無効にします。これにより、\fBcputrack\fR コマンドのすべての呼び出しやパフォーマンスカウンタコンテキストのほかのユーザーが、途中で予期しないエラーで終了する場合があります。
+.sp
+.LP
+\fBcpustat\fR が、Solaris でサポートされていない \fBCPU\fR パフォーマンスカウンタの存在するシステムで呼び出されると、次のメッセージが表示されます。
+.sp
+.in +2
+.nf
+cpustat: cannot access performance counters - Operation not applicable
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+このエラーメッセージは、\fBcpc_open()\fR が失敗したことを意味し、\fBcpc_open\fR(3CPC) に記述されています。この問題および実行可能な解決方法については、このドキュメントを参照してください。
+.sp
+.LP
+短い間隔が要求された場合、\fBcpustat\fR は目的のサンプリングレートを満たせないことがあります。この場合は、サンプリングの一部が行われないことがあります。
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件diagnostic/cpu-counters
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBcputrack\fR(1), \fBnawk\fR(1), \fBperl\fR(1), \fBiostat\fR(1M), \fBprstat\fR(1M), \fBpsrset\fR(1M), \fBvmstat\fR(1M), \fBcpc\fR(3CPC), \fBcpc_open\fR(3CPC), \fBcpc_bind_cpu\fR(3CPC), \fBgethrtime\fR(3C), \fBstrtoll\fR(3C), \fBlibcpc\fR(3LIB), \fBattributes\fR(5)
+.SH 注意事項
+.sp
+.LP
+ハイパースレッドが有効になっている Pentium 4 上で \fBcpustat\fR が実行されると、各物理 CPU の 1 つの論理 CPU のみに CPC セットがバインドされます。\fBcpc_bind_cpu\fR(3CPC) を参照してください。

@@ -1,0 +1,425 @@
+'\" te
+.\" Copyright (c) 2006, 2011, Oracle and/or its affiliates. All rights reserved.
+.TH routeadm 1M "2011 年 5 月 3 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+routeadm \- IP 転送およびルーティングの構成
+.SH 形式
+.LP
+.nf
+\fBrouteadm\fR [\fB-p\fR [\fIoption\fR]]
+.fi
+
+.LP
+.nf
+\fBrouteadm\fR [\fB-R\fR \fIroot-dir\fR] [\fB-e\fR \fIoption\fR ...] [\fB-d\fR \fIoption\fR...]
+ [\fB-r\fR \fIoption\fR...] [\fB-s\fR \fIvar\fR=\fIvalue\fR]
+.fi
+
+.LP
+.nf
+\fBrouteadm\fR [\fB-l\fR \fIfmri\fR]
+.fi
+
+.LP
+.nf
+\fBrouteadm\fR [\fB-m\fR \fIfmri\fR \fIkey\fR=\fIvalue\fR [\fIkey\fR=\fIvalue\fR]...]
+.fi
+
+.LP
+.nf
+\fBrouteadm\fR [\fB-u\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBrouteadm\fR コマンドは、IP 転送およびルーティングに関するシステム全体の構成を管理するために使用します。IP 転送とは、あるネットワークから別のネットワークに IP パケットを渡すことです。IP ルーティングとは、経路指定プロトコルを使用して経路を決定することです。
+.sp
+.LP
+IP ルーティング機能は、サービス管理機構 (SMF) 内のサービスとしても表現され、次の障害管理リソース識別子 (FMRI) を使用して \fBsvcadm\fR(1M) によって管理することもできます。
+.sp
+.in +2
+.nf
+svc:/network/routing/route:default
+svc:/network/routing/ripng:default
+.fi
+.in -2
+
+.sp
+.LP
+関連する例については、「使用例」を参照してください。
+.sp
+.LP
+ルーティングと転送の有効化および無効化に加え、\fBrouteadm\fR は SMF ベースのルーティングデーモンサービスとの対話に使用されます。ルーティングデーモンサービスは \fBrouteadm\fR アプリケーションプロパティーグループが存在することによって識別され、\fBrouteadm\fR はこれを使用して特定のサービスを管理します。ルーティングデーモンサービスは、その動作に関連するプロパティーを \fBrouting\fR アプリケーションプロパティーグループ内に指定することもできます。これらは \fBrouteadm\fR \fB-m\fR によって変更できます。そのようなプロパティーグループを持たないサービスの FMRI が指定された場合、エラーが発行され、操作は実行されません。ルーティングデーモンが SMF に変換されていない場合は、\fBipv4\fI[または 6]\fR-routing-daemon\fR、\fBipv4\fI[または 6]\fR-routing-daemon-args\fR、および \fBipv4\fI[または 6]\fR-routing-stop-cmd\fR 変数を使用して、IPv4 または IPv6 ルーティング用の適切なデーモンを指定できます。\fBrouteadm\fR は、指定に応じた適切な \fBsvc:/network/routing/legacy-routing:ipv4\fR\fI[または 6]\fR サービスを使用して、そのデーモンを実行します。この変換処理は、有効化 (\fB-e\fR)、無効化 (\fB-d\fR)、または更新 (\fB-u\fR) コマンドを発行したときに行われます。
+.sp
+.LP
+上記の「形式」に示されている最初の使用法は、現在の構成を報告します。
+.SH オプション
+.sp
+.LP
+次のコマンド行オプションがサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR [\fIoption\fR]\fR
+.ad
+.sp .6
+.RS 4n
+解析可能な形式で構成を出力します。\fIoption\fR を指定すると、指定したオプションまたは変数の構成だけが表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIroot-dir\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBrouteadm\fR が変更を適用する代替ルートディレクトリを指定します。これは、変更されるシステムのルートディレクトリが別の場所にマウントされている JumpStart スクリプト内から使用する場合に便利です。
+.LP
+注 - 
+.sp
+.RS 2
+いかなる非大域ゾーンのルートファイルシステムも \fB-R\fR で参照しないでください。この操作によって、大域ゾーンのファイルシステムを損傷したり、大域ゾーンのセキュリティを損ねたり、非大域ゾーンのファイルシステムを損傷する可能性があります。\fBzones\fR(5) を参照してください。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fIoption\fR...\fR
+.ad
+.sp .6
+.RS 4n
+指定されたオプションを有効にします。これにより、関連付けられたサービスを有効にできるように準備します。\fBrouting-svcs\fR 変数を使用して、次のブート時または \fBrouteadm\fR \fB-u\fR の実行時に有効にするルーティングデーモンを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIoption\fR...\fR
+.ad
+.sp .6
+.RS 4n
+指定されたオプションを無効にします。これにより、関連付けられたサービスを無効にできるように準備します。\fBrouting-svcs\fR 変数を使用して、次のブート時または \fBrouteadm\fR \fB-u\fR の実行時に無効にするルーティングデーモンを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIfmri\fR\fR
+.ad
+.sp .6
+.RS 4n
+SMF ルーティングデーモンサービスの routing アプリケーションプロパティーグループに含まれているすべてのプロパティーを一覧表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fIfmri\fR \fIkey\fR=\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+SMF ルーティングデーモンサービスの routing アプリケーションプロパティーグループに含まれているプロパティー \fIkey\fR のプロパティー値を \fIvalue\fR に変更します。複数値プロパティーの場合、変更操作ではプロパティー名を複数回使用することができ、関連付けられた値がそれぞれ追加されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIoption...\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたオプションをシステムのデフォルトに戻します。システムのデフォルトは、各 \fIoption\fR の説明で明記されています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+現在構成されているオプションを、実行中のシステムに適用します。このようなオプションには、IP 転送の有効化と無効化、ルーティングデーモンの起動と強制終了などが含まれます (指定されている場合)。デフォルトに設定されているものについては、システムの状態は変更されません。このオプションは、リブートせずに変更を適用するために管理者が使用します。また、このオプションによって SMF 以外の構成がアップグレードされ、一連の引数を含むこともあるデーモンの停止コマンドを呼び出す代わりに、該当するサービスを単純に有効にできるようになります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIkey\fR=\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+特定の変数の文字列値を、間にスペースを含まないコンマ区切りのリストで指定します。無効なオプションが指定された場合、警告メッセージが表示され、プログラムは終了します。次の変数を指定できます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrouting-svcs=\fR\fIfmrilist\fR\fR
+.ad
+.sp .6
+.RS 4n
+有効にするルーティングデーモンサービスを指定します。ルーティングデーモンサービスが IPv4 か IPv6 か (したがって \fBrouteadm\fR \fB-e\fR/\fB-d\fR \fBipv4\fR\fI(6)\fR\fB-routing\fR の実行時に有効にされるか無効にされるか) は、\fBrouteadm\fR アプリケーションプロパティーグループ内のプロパティー値に基づいて判定されます。デフォルト: \fBroute:default ripng:default\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv4-routing-daemon=\fI<full_path_to_routing_daemon>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBipv4-routing\fR が有効な場合に起動するルーティングデーモンを指定します。指定するルーティングデーモンは、実行可能バイナリまたはシェルスクリプトである必要があります。指定されたプログラムが SMF サービスにマップされる場合は、そのサービスが使用され、有効化時にプログラムのデーモン引数がサービスのプロパティーに転送されます。デフォルト: \fB""\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv4-routing-daemon-args=\fI<args>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBipv4-routing\fR が有効な場合に \fBipv4-routing-daemon\fR に渡す起動時引数を指定します。デフォルト: 引数なし
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv4-routing-stop-cmd=\fI<command>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBipv4-routing\fR が無効な場合にルーティングデーモンを停止するために実行するコマンドを指定します。\fI<command>\fR には、実行可能バイナリかシェルスクリプト、または \fBsystem\fR(3C) で解析可能な文字列を指定できます。デフォルト: \fB""\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv6-routing-daemon=\fI<full_path_to_routing_daemon>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBipv6-routing\fR が有効な場合に起動するルーティングデーモンを指定します。指定するルーティングデーモンは、実行可能バイナリまたはシェルスクリプトである必要があります。指定されたプログラムが SMF サービスにマップされる場合は、そのサービスが使用され、有効化時にプログラムのデーモン引数がサービスのプロパティーに転送されます。デフォルト: \fB""\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv6-routing-daemon-args=\fI<args>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBipv6-routing\fR が有効な場合に \fBipv6-routing-daemon\fR に渡す起動時引数を指定します。デフォルト: \fB""\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv6-routing-stop-cmd=\fI<command>\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBipv6-routing\fR が無効な場合にルーティングデーモンを停止するために実行するコマンドを指定します。\fI<command>\fR には、実行可能バイナリかシェルスクリプト、または \fBsystem\fR(3C) で解析可能な文字列を指定できます。デフォルト: \fB""\fR
+.RE
+
+.RE
+
+.sp
+.LP
+複数の \fB-e\fR、\fB-d\fR 、および \fB-r\fR オプションをコマンド行で指定できます。\fB-e\fR、\fB-d\fR、および \fB-r\fR によって加えられる変更は永続的ですが、そのあとで \fB-u\fR オプションを指定して \fBrouteadm\fR を呼び出さないかぎり、実行中のシステムには適用されません。
+.sp
+.LP
+\fB-e\fR、\fB-d\fR、および \fB-r\fR オプションの引数 (上記では \fIoption...\fR と示されている) としては、次のオプションを使用します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv4-forwarding\fR\fR
+.ad
+.sp .6
+.RS 4n
+すべての IPv4 インタフェースのグローバルな転送構成を制御します。システムのデフォルトは \fBdisabled\fR です。有効な場合、IP は必要に応じてインタフェースへの、およびインタフェースからの、IPv4 パケットの転送を行います。無効な場合、IP は必要に応じてインタフェースへの、およびインタフェースからの、IPv4 パケットの転送を行いません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv4-routing\fR\fR
+.ad
+.sp .6
+.RS 4n
+IPv4 ルーティングデーモンを実行するかどうかを決定します。\fB/etc/defaultrouter\fR ファイルが存在しない場合はシステムのデフォルトは \fBenabled\fR (\fBdefaultrouter\fR(4) を参照)、存在する場合はデフォルトは \fBdisabled\fR です。このオプションの値にはすべての IPv4 ルーティングサービスの状態が反映されるため、いずれかの IPv4 ルーティングサービスが有効であれば \fBipv4-routing\fR は有効になります。これにより、ユーザーは \fBsvcadm\fR(1M) および \fBrouteadm\fR を使用してルーティングサービスと対話できます。\fBrouting-svcs\fR 変数で指定された IPv4 ルーティングサービスは、ユーザーが明示的に \fBipv4-routing\fR を有効にする次回のブート時に有効になるように準備されます。デフォルトでは、\fBin.routed\fR の SMF ルーティングデーモンサービス (\fBsvc:/network/routing/route:default\fR) が指定されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv6-forwarding\fR\fR
+.ad
+.sp .6
+.RS 4n
+すべての IPv6 インタフェースのグローバルな転送構成を制御します。システムのデフォルトは \fBdisabled\fR です。有効な場合、IP は必要に応じてインタフェースへの、およびインタフェースからの、IPv6 パケットの転送を行います。無効な場合、IP は必要に応じてインタフェースへの、およびインタフェースからの、IPv6 パケットの転送を行いません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv6-routing\fR\fR
+.ad
+.sp .6
+.RS 4n
+IPv6 ルーティングデーモンを実行するかどうかを決定します。システムのデフォルトは \fBdisabled\fR です。このオプションの値にはすべての IPv6 ルーティングサービスの状態が反映されるため、いずれかの IPv6 ルーティングサービスが有効であれば \fBipv6-routing\fR は有効になります。これにより、ユーザーは \fBsvcadm\fR(1M) および \fBrouteadm\fR を使用してルーティングサービスと対話できます。\fBrouting-svcs\fR 変数で指定された IPv6 ルーティングサービスは、ユーザーが明示的に \fBipv6-routing\fR を有効にする次回のブート時に有効になるように準備されます。デフォルトでは、\fBin.ripngd\fR の SMF ルーティングデーモンサービス (\fBsvc:/network/routing/ripng:default\fR) が指定されます。
+.RE
+
+.sp
+.LP
+転送の設定とルーティングの設定は関連していますが、互いに依存しているわけではありません。たとえば、ルーターは通常 IP パケットを転送しルーティングプロトコルを使用しますが、パケットを転送し経路指定プロトコルを使用しないようにルーターを構成することも管理者の自由です。その場合、管理者は転送を有効にし、ルーティングを無効にし、ルーターのルーティングテーブルに静的な経路を入力することになります。
+.sp
+.LP
+転送設定はグローバル設定です。各インタフェースには、特定のインタフェースとのパケット転送が可能かどうかを決定する \fBIFF_ROUTER\fR 転送フラグもあります。そのフラグは、\fBifconfig\fR(1M) のルーターオプションによって独立して制御できます。グローバルな転送設定が変更された (つまり、\fB-u\fR が発行されて値が \fBenabled\fR から \fBdisabled\fR、またはその逆に変更された) 場合、システム内のすべてのインタフェースフラグが同時に変更され、新しいグローバルポリシーが反映されます。DHCP によって自動的に構成されるインタフェースでは、そのインタフェース固有の \fBIFF_ROUTER\fR フラグがクリアされます。
+.sp
+.LP
+新しいインタフェースが \fBifconfig\fR によって plumb された場合、インタフェース固有の転送フラグの値は、現在のグローバルな転送値に従って設定されます。したがって、転送値はすべての新しいインタフェースの「デフォルト」になります。
+.SH 使用例
+.LP
+\fB例 1 \fRIPv4 転送を有効にする
+.sp
+.LP
+IPv4 転送はデフォルトで無効になっています。次のコマンドは、IPv4 転送を有効にします。
+
+.sp
+.in +2
+.nf
+example# \fBrouteadm -e ipv4-forwarding\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fR構成されている設定を実行中のシステムに適用する
+.sp
+.LP
+前の例では、システムの設定は変更されましたが、次のようなコマンドを使用しないかぎり、次回のリブートまで有効になりません。
+
+.sp
+.in +2
+.nf
+example# \fBrouteadm -u\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fR設定をそのデフォルトに戻す
+.sp
+.LP
+最初の例で変更した設定をそのデフォルトに戻すには、次のように入力します。
+
+.sp
+.in +2
+.nf
+example# \fBrouteadm -r ipv4-forwarding\fR
+example# \fBrouteadm -u\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fR\fBin.routed\fR を \fB-q\fR フラグ付きで起動する
+.sp
+.LP
+\fB-q\fR フラグを設定することは、SMF サービスでは \fBquiet_mode\fR プロパティーを true に設定することで表されます。次の一連のコマンドは、\fBin.routed\fR を \fB-q\fR フラグ付きで起動します。
+
+.sp
+.in +2
+.nf
+example# \fBrouteadm -m route:default quiet_mode=true\fR
+example# \fBrouteadm -e ipv4-routing -u\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+プロパティーの名前およびそれらがデーモンの動作にどのように関連するかの詳細については、\fBin.routed\fR(1M) を参照してください。
+
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 7n
+.rt  
+正常終了。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!=0\fR\fR
+.ad
+.RS 7n
+.rt  
+システム構成の取得または変更中にエラーが発生しました。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/routing.conf\fR\fR
+.ad
+.RS 26n
+.rt  
+IP 転送およびルーティングのパラメータ。(編集するものではありません。)
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBifconfig\fR(1M), \fBin.routed\fR(1M), \fBipadm\fR(1M), \fBsvcadm\fR(1M), \fBgateways\fR(4), \fBattributes\fR(5), \fBsmf\fR(5)

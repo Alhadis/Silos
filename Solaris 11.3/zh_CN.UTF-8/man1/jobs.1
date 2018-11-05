@@ -1,0 +1,915 @@
+'\" te
+.\" Copyright (c) 2007, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\" Portions Copyright (c) 1982-2007 AT&T Knowledge Ventures
+.\"  Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH jobs 1 "2011 年 7 月 12 日" "SunOS 5.11" "用户命令"
+.SH 名称
+jobs, fg, bg, stop, notify \- 控制进程执行
+.SH 用法概要
+.SS "sh"
+.LP
+.nf
+\fBjobs\fR [\fB-p\fR | \fB-l\fR] [% \fIjob_id\fR...]
+.fi
+
+.LP
+.nf
+\fBjobs\fR \fB-x\fR \fIcommand\fR [\fIarguments\fR]
+.fi
+
+.LP
+.nf
+\fBfg\fR [% \fIjob_id\fR...]
+.fi
+
+.LP
+.nf
+\fBbg\fR [% \fIjob_id\fR...]
+.fi
+
+.LP
+.nf
+\fBstop\fR % \fIjob_id\fR...
+.fi
+
+.LP
+.nf
+\fBstop\fR \fIpid\fR...
+.fi
+
+.SS "csh"
+.LP
+.nf
+\fBjobs\fR [\fB-l\fR]
+.fi
+
+.LP
+.nf
+\fBfg\fR [% \fIjob_id\fR]
+.fi
+
+.LP
+.nf
+\fBbg\fR [% \fIjob_id\fR]...
+.fi
+
+.LP
+.nf
+\fBnotify\fR [% \fIjob_id\fR]...
+.fi
+
+.LP
+.nf
+\fBstop\fR % \fIjob_id\fR...
+.fi
+
+.LP
+.nf
+\fBstop\fR \fIpid\fR...
+.fi
+
+.SS "ksh88"
+.LP
+.nf
+\fBjobs\fR [\fB-lnp\fR] [% \fIjob_id\fR...]
+.fi
+
+.LP
+.nf
+\fBfg\fR [% \fIjob_id\fR...]
+.fi
+
+.LP
+.nf
+\fBbg\fR [% \fIjob_id\fR...]
+.fi
+
+.LP
+.nf
+\fBstop\fR % \fIjob_id\fR...
+.fi
+
+.LP
+.nf
+\fBstop\fR \fIpid\fR...
+.fi
+
+.SS "ksh"
+.LP
+.nf
+\fBjobs\fR [\fB-lnp\fR] [\fIjob_id\fR...]
+.fi
+
+.LP
+.nf
+\fBfg\fR [\fIjob_id\fR...]
+.fi
+
+.LP
+.nf
+\fBbg\fR [\fIjob_id\fR...]
+.fi
+
+.SH 描述
+.SS "sh"
+.sp
+.LP
+当启用了作业控制时，Bourne shell 内置的 \fBjobs\fR 会报告所有已停止或正在后台执行的作业。如果省略了 \fB%\fR\fIjob_id\fR，则会报告所有已停止或正在后台运行的作业。以下选项可修改或增强 \fBjobs\fR 的输出内容：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 6n
+.rt  
+报告作业的进程组 \fBID\fR 和工作目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 6n
+.rt  
+只报告作业的进程组 \fBID\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.RS 6n
+.rt  
+使用相应的进程组 \fBID\fR 替换在 \fIcommand\fR 或 \fIarguments\fR 中找到的任何 \fIjob_id\fR，然后将 \fIarguments\fR 传递给 \fIcommand\fR 并执行该命令。
+.RE
+
+.sp
+.LP
+作为 \fBjsh\fR 调用 shell 时，除了之前所述的适用于 \fBsh\fR 的所有功能外，还会启用作业控制。通常情况下，作业控制仅针对交互式 shell 启用。非交互式 shell 通常无法受益于作业控制提供的附加功能。
+.sp
+.LP
+当启用了作业控制时，用户在终端输入的每个命令或管道都称为一个 \fIjob_id\fR。所有作业都以下列状态之一存在：前台、后台或已停止。这些术语的定义如下所述：
+.RS +4
+.TP
+1.
+位于\fB前台\fR的作业对控制终端具有读写访问权限。
+.RE
+.RS +4
+.TP
+2.
+位于\fB后台\fR的作业对控制终端的读取访问会被拒绝，但它对控制终端具备有条件的写入访问权限（请参见 \fBstty\fR(1)）。
+.RE
+.RS +4
+.TP
+3.
+\fB已停止\fR的作业是指通常受 \fBSIGTSTP\fR 信号影响，已经置于挂起状态的作业（请参见 \fBsignal.h\fR(3HEAD)）。
+.RE
+.sp
+.LP
+shell 启动的每个作业都分配有一个正整数（称为 \fIjob_id 编号\fR），供 shell 用来跟踪作业，以及用作标识符来指示特定作业。此外，shell 还会跟踪\fB当前\fR作业和\fB前一个\fR作业。\fB当前作业\fR是指要启动或重新启动的最新作业。\fB前一个作业\fR是指第一个非当前作业。
+.sp
+.LP
+可接受的作业标识符的语法为以下形式：
+.sp
+.LP
+\fB%\fR\fIjob_id\fR
+.sp
+.LP
+其中，\fIjob_id\fR 可以指定为以下格式之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%\fR 或 \fB+\fR\fR
+.ad
+.RS 13n
+.rt  
+表示当前作业
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-\fR\fR
+.ad
+.RS 13n
+.rt  
+表示前一个作业
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB?\fR\fI<string>\fR\fR
+.ad
+.RS 13n
+.rt  
+指定其命令行唯一包含 \fIstring\fR 的作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIn\fR\fR
+.ad
+.RS 13n
+.rt  
+表示作业编号 \fIn\fR，其中 \fIn\fR 是一个作业编号
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIpref\fR\fR
+.ad
+.RS 13n
+.rt  
+其中，\fIpref\fR 是命令名称的唯一前缀（例如，命令 \fBls -l name\fR 正在后台运行时，它可以被引用为 \fB%ls\fR）；\fIpref\fR 不得包含空格，除非用引号将空格引起。
+.RE
+
+.sp
+.LP
+当启用了作业控制时，\fBfg\fR 会在前台恢复执行已停止的作业，此外还会将正在执行的后台作业移至前台。如果省略了 \fB%\fR\fIjob_id\fR，则将使用当前作业。
+.sp
+.LP
+当启用了作业控制时，\fBbg\fR 会在后台恢复执行已停止的作业。如果省略了 \fB%\fR\fIjob_id\fR，则将使用当前作业。
+.sp
+.LP
+\fBstop\fR 使用后台作业的 \fIjob_id\fR 停止执行这类作业，或者使用其 \fIpid\fR 停止执行任何进程；请参见 \fBps\fR(1)。
+.SS "csh"
+.sp
+.LP
+未指定参数时，C shell 内置的 \fBjobs\fR 会列出处于作业控制之下的活动作业。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 6n
+.rt  
+除普通信息外，还列出进程 \fBID\fR。
+.RE
+
+.sp
+.LP
+shell 会将一个 \fIjob_id\fR 编号与每个命令序列相关联，以便跟踪正在后台运行的或者已被 \fBTSTP\fR 信号（通常是 Ctrl-Z）停止的那些命令。当使用 \fB&\fR 元字符在后台启动了一个命令或命令序列（以分号分隔的列表）时，shell 将显示一行内容，其中包含作业编号（位于方括号内）以及关联的进程编号的列表：
+.sp
+.LP
+\fB[1] 1234\fR
+.sp
+.LP
+要查看当前的作业列表，请使用 \fBjobs\fR 内置命令。最近停止的作业（如果没有作业已停止，则为放入后台的作业）将被引用为\fB当前作业\fR并由一个 "\fB+\fR" 予以指示。前一个作业由一个 "\fB-\fR" 予以指示；在当前作业终止或者被移到前台时，该作业将取代它的位置（成为新的当前作业）。
+.sp
+.LP
+要对作业进行操作，请引用 \fBbg\fR、\fBfg\fR、\fBkill\fR、\fBstop\fR 和 \fB%\fR 内置命令。
+.sp
+.LP
+对作业的引用以 `\fB%\fR' 开头。单独使用百分号可引用当前作业。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%\fR \fB%+\fR \fB%%\fR\fR
+.ad
+.RS 12n
+.rt  
+当前作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%-\fR\fR
+.ad
+.RS 12n
+.rt  
+前一个作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%\fR\fIj\fR\fR
+.ad
+.RS 12n
+.rt  
+按如下方式引用作业 \fIj\fR：`\fBkill\fR \fB-9\fR \fB%\fR\fIj\fR'。\fIj\fR 可以是一个作业编号，或者是一个唯一地指定启动该作业时所用命令行的字符串；例如，`\fBfg %vi\fR' 可以将某个已停止的 \fBvi\fR 作业带到前台。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%?\fR\fIstring\fR\fR
+.ad
+.RS 12n
+.rt  
+指定命令行唯一地为其包含了 \fIstring\fR 的作业。
+.RE
+
+.sp
+.LP
+如果在后台运行的作业尝试从终端进行读取，则该作业将停止。后台作业可以正常产生输出，但可以使用 `\fBstty tostop\fR' 命令对此进行禁止。
+.sp
+.LP
+\fBfg\fR 将当前的或指定的 \fIjob_id\fR 带到前台。
+.sp
+.LP
+\fBbg\fR 在后台运行当前的或指定的作业。
+.sp
+.LP
+\fBstop\fR 使用后台作业的 \fIjob_id\fR 停止执行这类作业，或者使用其 \fIpid\fR 停止执行任何进程；请参见 \fBps\fR(1)。
+.sp
+.LP
+\fBnotify\fR 在当前作业或指定作业的状态改变时，以异步方式通知用户。
+.SS "ksh88"
+.sp
+.LP
+\fBjobs\fR 显示当前 shell 环境中已启动的作业的状态。当 \fBjobs\fR 报告了某个作业的终止状态时，shell 会从当前 shell 执行环境中的已知作业列表删除其进程 \fBID\fR。
+.sp
+.LP
+\fIjob_id\fR 指定要显示其状态的作业。如果未指定 \fIjob_id\fR，则会显示所有作业的状态信息。
+.sp
+.LP
+以下选项可修改或增强 \fBjobs\fR 的输出内容：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 6n
+.rt  
+（字母 ell。）提供列出的每个作业的更多信息。此信息包括作业编号、当前作业、进程组 \fBID\fR、状态以及构成作业的命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 6n
+.rt  
+只显示自上一次通知以来停止或退出的作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 6n
+.rt  
+只显示所选作业的进程组领头者的进程 \fBID\fR。
+.RE
+
+.sp
+.LP
+缺省情况下，\fBjobs\fR 会显示所有已停止的作业、正在运行的后台作业以及其状态已改变但 shell 尚未报告的所有作业的状态。
+.sp
+.LP
+如果启用了 \fBset\fR 命令的 \fBmonitor\fR 选项，则交互式 shell 会将 \fBjob\fR 与每个管道相关联。shell 保存当前作业的表，并使用 \fBjobs\fR 命令输出此表，然后为这些作业分配较小的整数。使用 \fB&\fR 异步启动作业时，shell 输出如下行：
+.sp
+.LP
+\fB[1]\fR \fB1234\fR
+.sp
+.LP
+这表示异步启动的作业的作业编号为 \fB1\fR，并且该作业具有一个（顶级）进程，其进程 ID 为 \fB1234\fR。
+.sp
+.LP
+如果您正在运行一个作业，并希望执行其他工作，可以按下键 ^Z (Ctrl-Z)，此时会向当前作业发送 \fBSTOP\fR 信号。正常情况下，shell 随后会指明该作业 “\fB已停止\fR”（请参见下文中的\fB输出\fR），并输出另一个提示符。然后，您可以处理此作业的状态，使用 \fBbg\fR 命令将其放置到后台，或者运行某些其他命令，最后使用前台命令 \fBfg\fR 将其放回到前台。^Z 会立即生效，并在键入时放弃暂挂输出和未读输入，因此它与中断相似。
+.sp
+.LP
+在 shell 中引用作业有多种方法。可通过作业的任意进程的进程 ID 或通过下列项之一来引用作业：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%\fR\fInumber\fR\fR
+.ad
+.RS 12n
+.rt  
+带有指定编号的作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%\fR\fIstring\fR\fR
+.ad
+.RS 12n
+.rt  
+其命令行以 \fIstring\fR 开头的任何作业；仅当历史记录文件处于活动状态时，在交互式模式下有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%?\fR\fIstring\fR\fR
+.ad
+.RS 12n
+.rt  
+其命令行包含 \fIstring\fR 的任何作业；仅当历史记录文件处于活动状态时，在交互式模式下有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%%\fR\fR
+.ad
+.RS 12n
+.rt  
+当前作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%+\fR\fR
+.ad
+.RS 12n
+.rt  
+等效于 \fB%%\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%-\fR\fR
+.ad
+.RS 12n
+.rt  
+以前的作业。
+.RE
+
+.sp
+.LP
+当进程更改状态时，shell 可立即获悉。当作业已被阻塞以致无法执行其他进程时，shell 通常会向您发送通知，但仅在输出提示前发送此通知。其目的是为了避免打扰您的工作。当启用了监视模式时，完成的每个后台作业都会触发为 \fBCHLD\fR 设置的所有陷阱。试图在作业正在运行或已停止期间离开 shell 时，系统会发出 "You have stopped (running) jobs" 这一警告。此时可以使用 \fBjobs\fR 命令查看是哪些作业。如果您执行此操作或立即尝试再次退出，shell 不会向您发出第二次警告，并会终止已停止的作业。
+.sp
+.LP
+\fBfg\fR 会将当前环境中的后台作业移至前台。使用 \fBfg\fR 将作业置于前台时，系统会从当前 shell 执行环境中的已知作业列表中删除该作业的进程 \fBID\fR。\fBfg\fR 命令仅在支持作业控制的系统上可用。如果未指定 \fIjob_id\fR，则会将当前作业带到前台。
+.sp
+.LP
+\fBbg\fR 会恢复当前环境中的挂起作业，将它们作为后台作业运行。如果 \fIjob_id\fR 指定的作业已经是正在运行的后台作业，则 \fBbg\fR 不会起作用，而且会成功退出。使用 \fBbg\fR 将作业置于后台会导致该作业的进程 \fBID\fR 成为当前 shell 执行环境中的已知 ID，就像它作为异步列表启动一样。\fBbg\fR 命令仅在支持作业控制的系统上可用。如果未指定 \fIjob_id\fR，则会将当前作业置于后台。
+.sp
+.LP
+\fBstop\fR 使用后台作业的 \fIjob_id\fR 停止执行这类作业，或使用其 \fIpid\fR 停止执行任何进程。请参见 \fBps\fR(1)。
+.SS "ksh"
+.sp
+.LP
+\fBjobs\fR 在标准输出上显示由当前 shell 环境启动的指定作业的信息。该信息包括作业编号（括在 \fB[...]\fR 中）、状态，以及启动该作业的命令行。
+.sp
+.LP
+如果省略了 \fIjob_id\fR，则 \fBjobs\fR 将显示所有已停止的作业、后台作业以及自 shell 上次报告以来状态已发生变化的所有作业的状态。
+.sp
+.LP
+当 \fBjobs\fR 报告了某个作业的终止状态时，shell 会从当前 shell 环境中的已知作业列表中删除该作业。
+.sp
+.LP
+以下选项可修改或增强 \fBjobs\fR 的输出内容：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 6n
+.rt  
+除了通常的信息外，还在作业编号后面显示进程 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 6n
+.rt  
+只显示自上次显示提示以来状态已发生变化的作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 6n
+.rt  
+显示指定作业的进程组领头者 ID。
+.RE
+
+.sp
+.LP
+\fIjob_id\fR 可按照以下方式之一指定给 \fBjobs\fR、\fBfg\fR 和 \fBbg\fR：
+.sp
+.ne 2
+.mk
+.na
+\fB\fInumber\fR\fR
+.ad
+.RS 12n
+.rt  
+\fBjob\fR 的进程 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-\fR\fInumber\fR\fR
+.ad
+.RS 12n
+.rt  
+\fBjob\fR 的进程组 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%\fR\fInumber\fR\fR
+.ad
+.RS 12n
+.rt  
+作业编号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%\fR\fIstring\fR\fR
+.ad
+.RS 12n
+.rt  
+名称以 \fIstring\fR 开头的作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%?\fR\fIstring\fR\fR
+.ad
+.RS 12n
+.rt  
+名称包含 \fIstring\fR 的作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%+\fR\fR
+.ad
+.br
+.na
+\fB\fB%%\fR\fR
+.ad
+.RS 12n
+.rt  
+当前作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%-\fR\fR
+.ad
+.RS 12n
+.rt  
+前一个作业。
+.RE
+
+.sp
+.LP
+\fBfg\fR 依次将指定作业置于前台，并发送 \fBCONT\fR 信号启动每个作业，使其开始运行。如果省略了 \fIjob_id\fR，则会将最近启动或停止的后台作业移到前台。
+.sp
+.LP
+\fBbg\fR 将指定作业置于后台，并发送 \fBCONT\fR 信号启动它们，使其开始运行。如果省略了 \fIjob_id\fR，则会在后台恢复或继续运行最近启动或停止的后台作业。
+.SH 输出
+.sp
+.LP
+如果指定了 \fB-p\fR 选项，则输出针对每个进程 \fBID\fR 包含一行：
+.sp
+.LP
+\fB"%d\n",\fR \fI"process ID"\fR
+.sp
+.LP
+否则，如果未指定 \fB-l\fR 选项，输出内容为以下形式的一系列行：
+.sp
+.LP
+\fB"[%d] %c %s %s\n"\fR, \fIjob-number\fR, \fIcurrent\fR, \fIstate\fR, \fIcommand\fR
+.sp
+.LP
+其中的各个字段如下所述：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcurrent\fR\fR
+.ad
+.RS 14n
+.rt  
+字符 \fB+\fR 标识将用作 \fBfg\fR 或 \fBbg\fR 命令的缺省作业的作业。此作业也可以使用 \fIjob_id\fR \fB%+\fR 或 \fB%%\fR\fB \fR指定。字符 \fB-\fR 标识将在当前缺省作业退出时变为缺省作业的作业；此作业也可以使用 \fIjob_id\fR \fB%-\fR \fB\fR指定。对于其他作业，此字段为空格字符。最多只能有一个作业可以标识有 \fB+\fR，同样，最多也只能有一个作业可以标识有 \fB-\fR。如果存在任何挂起的作业，则当前作业是某个挂起的作业。如果存在至少两个挂起的作业，则前一个作业也是挂起的作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIjob-number\fR\fR
+.ad
+.RS 14n
+.rt  
+一个可用来为 \fBwait\fR、\fBfg\fR、\fBbg\fR 和 \fBkill\fR 实用程序标识进程组的编号。使用这些实用程序时，可通过在作业编号前加上 \fB%\fR 前缀来标识作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIstate\fR\fR
+.ad
+.RS 14n
+.rt  
+POSIX 语言环境中的以下字符串之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBRunning\fR\fR
+.ad
+.RS 20n
+.rt  
+表示作业尚未被信号挂起且尚未退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDone\fR\fR
+.ad
+.RS 20n
+.rt  
+表明作业已完成且返回了零退出状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDone\fR(\fIcode\fR)\fR
+.ad
+.RS 20n
+.rt  
+表明作业已正常完成，并且退出时返回了指定的\fB非零\fR退出状态，即以十进制数字表示的 \fIcode\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBStopped\fR\fR
+.ad
+.RS 20n
+.rt  
+表明作业已停止。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBStopped(SIGTSTP)\fR\fR
+.ad
+.RS 20n
+.rt  
+表明作业已被 \fBSIGTSTP\fR 信号挂起。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBStopped(SIGSTOP)\fR\fR
+.ad
+.RS 20n
+.rt  
+表明作业已被 \fBSIGSTOP\fR 信号挂起。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBStopped(SIGTTIN)\fR\fR
+.ad
+.RS 20n
+.rt  
+表明作业已被 \fBSIGTTIN\fR 信号挂起。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBStopped(SIGTTOU)\fR\fR
+.ad
+.RS 20n
+.rt  
+表明作业已被 \fBSIGTTOU\fR 信号挂起。
+.RE
+
+实现可能会使用字符串 \fBSuspended\fR 替换 \fBStopped\fR。如果作业被某个信号终止，则 \fBstate\fR 的格式不确定，但它与此处所示的所有其他 \fBstate\fR 明显不同，而且会提供导致作业终止的信号的名称或说明。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcommand\fR\fR
+.ad
+.RS 14n
+.rt  
+指定给 shell 的关联命令。
+.RE
+
+.sp
+.LP
+如果指定了 \fB-l\fR 选项，则会在 \fBstate\fR 字段之前插入一个包含进程组 \fBID\fR 的字段。此外，可以只使用进程 \fBID\fR 和 \fBcommand\fR 字段将进程组中的其他进程输出到不同的行。
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBjobs\fR、\fBfg\fR 和 \fBbg\fR 执行的以下环境变量的说明，请参见\fBenviron\fR(5)：\fBLANG\fR、\fBLC_ALL\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR 和 \fBNLSPATH\fR。
+.SH 退出状态
+.SS "sh、csh、ksh88"
+.sp
+.LP
+\fBjobs\fR、\fBfg\fR 和 \fBbg\fR 可以返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。
+.RE
+
+.SS "ksh"
+.sp
+.LP
+\fBjobs\fR 可以返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+每个作业的信息都写入到了标准输出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+一个或多个作业不存在。
+.RE
+
+.sp
+.LP
+\fBfg\fR 可返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB上一个作业的退出状态\fR\fR
+.ad
+.sp .6
+.RS 4n
+一个或多个作业已被带到前台。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB非零值\fR\fR
+.ad
+.sp .6
+.RS 4n
+一个或多个作业不存在或已完成。
+.RE
+
+.sp
+.LP
+\fBbg\fR 可返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+所有后台作业都已启动。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+一个或多个作业不存在或不存在后台作业。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.SS "csh、sh、ksh88"
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+_
+标准请参见 \fBstandards\fR(5)。
+.TE
+
+.SS "ksh"
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Uncommitted（未确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBcsh\fR(1)、\fBkill\fR(1)、\fBksh\fR(1)、\fBksh88\fR(1)、\fBps\fR(1)、\fBsh\fR(1)、\fBstop\fR(1)、\fBshell_builtins\fR(1)、\fBstty\fR(1)、\fBwait\fR(1)、\fBsignal.h\fR(3HEAD)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBstandards\fR(5)

@@ -1,0 +1,432 @@
+'\" te
+.\" Copyright (c) 2010, Sun Microsystems, Inc. All Rights Reserved
+.TH ctrun 1 "2010 年 3 月 22 日" "SunOS 5.11" "用户命令"
+.SH 名称
+ctrun \- 在进程合同中执行命令
+.SH 用法概要
+.LP
+.nf
+\fB/usr/bin/ctrun\fR [\fIoptions\fR] \fIcommand\fR [ \fIargument\fR]...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBctrun\fR 实用程序在新创建的进程合同中启动命令。\fBctrun\fR 保留合同，且可以指示为输出或响应在合同中发生的事件。
+.sp
+.LP
+有关进程合同的更多信息，请参见 \fBcontract\fR(4) 和 \fBprocess\fR(4)。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fIaux\fR\fR
+.ad
+.RS 26n
+.rt  
+设置进程合同创建者的辅助字段。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fIevent\fR,[\fIevent\fR ...]\fR
+.ad
+.br
+.na
+\fB\fB-f\fR \fIevent\fR,[\fIevent\fR ...]\fR
+.ad
+.RS 26n
+.rt  
+分别设置信息性事件和致命事件。 
+.sp
+以下是有效的 \fIevent\fR：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcore\fR\fR
+.ad
+.RS 10n
+.rt  
+成员进程转储核心。
+.sp
+缺省情况下，\fBcore\fR 事件为信息性事件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBempty\fR\fR
+.ad
+.RS 10n
+.rt  
+进程合同中的最后一个成员已退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexit\fR\fR
+.ad
+.RS 10n
+.rt  
+成员进程已退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfork\fR\fR
+.ad
+.RS 10n
+.rt  
+向进程合同添加了一个进程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhwerr\fR\fR
+.ad
+.RS 10n
+.rt  
+成员进程遇到硬件错误。
+.sp
+缺省情况下，\fBhwerr\fR 事件是致命事件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsignal\fR\fR
+.ad
+.RS 10n
+.rt  
+成员进程从其他进程合同的进程中收到致命信号。
+.RE
+
+只能将 \fBcore\fR、\fBhwerr\fR 和 \fBsignal\fR 事件设为致命。
+.sp
+如果 \fBctrun\fR 因自身目的需要更多事件，则可以提供比要求更多的事件。例如，如果指定了 \fBcontract\fR 的生命周期，则可以始终请求 \fBempty\fR 消息。请参见 \fB-l\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR \fIfmri\fR\fR
+.ad
+.RS 26n
+.rt  
+设置进程合同服务 \fBFMRI\fR 字段。要设置此字段，调用者需要在其有效集中包含 \fB{PRIV_CONTRACT_IDENTITY}\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIlifetime\fR\fR
+.ad
+.RS 26n
+.rt  
+支持以下有效 \fIlifetime\fR 值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchild\fR\fR
+.ad
+.RS 12n
+.rt  
+如果命令退出，则 \fBctrun\fR 也退出，不管合同是否为空。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcontract\fR\fR
+.ad
+.RS 12n
+.rt  
+仅当合同退出时，\fBctrun\fR 才会退出。这是缺省值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnone\fR\fR
+.ad
+.RS 12n
+.rt  
+\fBctrun\fR 立即退出，孤立合同。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIoption\fR,[\fIoption\fR ...]\fR
+.ad
+.RS 26n
+.rt  
+支持以下 \fIoption\fR：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoorphan\fR\fR
+.ad
+.RS 12n
+.rt  
+如果占位符 (\fBctrun\fR) 退出，则中止合同中的所有进程。 
+.sp
+仅当指定了 \fBnone\fR 的生命周期时，此选项才有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpgrponly\fR\fR
+.ad
+.RS 12n
+.rt  
+如果发生致命错误，则最多可中止拥有错误进程成员的进程组。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBregent\fR\fR
+.ad
+.RS 12n
+.rt  
+如果成员进程放弃合同，则合同会继承可继承的合同。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIcount\fR\fR
+.ad
+.RS 26n
+.rt  
+如果合同遇到错误，则该选项会尝试重新启动命令 \fIcount\fR 次。如果 \fIcount\fR 为 \fB0\fR，则重新启动的尝试会在长时期内继续。缺省情况下，\fBctrun\fR 不会尝试重新启动命令。 
+.sp
+如果指定了除 \fBcontract\fR 之外的生命周期，或者使用了 \fBpgrponly\fR 选项，则该选项无效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.RS 26n
+.rt  
+如果 \fBctrun\fR 创建的合同从其成员进程处继承了子合同，则会在重新启动时尝试将它们传输到新合同。 
+.sp
+除非同时指定了 \fB-r\fR，否则此选项无效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 26n
+.rt  
+在发生时显示合同事件和 \fBctrun\fR 操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR\fR
+.ad
+.RS 26n
+.rt  
+显示 \fBctwatch\fR 的 \fB-v\fR 选项所显示的详细合同事件。表示 \fB-v\fR。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIargument\fR\fR
+.ad
+.RS 12n
+.rt  
+当作 \fIcommand\fR 的参数的字符串之一。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcommand\fR\fR
+.ad
+.RS 12n
+.rt  
+命令将传递到 \fBexecvp\fR(2)。请参见 \fBexec\fR(2)。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR在新进程合同中运行 Shell
+.sp
+.LP
+以下是在新进程合同中运行 shell 的示例：
+
+.sp
+.in +2
+.nf
+example% ctrun -l child -o pgrponly ksh
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+指定 \fB-l\fR \fBchild\fR 选项参数，以使 \fBctrun\fR 不用等到 shell 的所有子项退出。指定了 \fB-o\fR \fBpgrponly\fR，因为交互式 \fBksh\fR 会将每个作业置于新进程组，且一个作业的错误不太可能影响到其他作业。
+
+.LP
+\fB示例 2 \fR运行简单服务器
+.sp
+.LP
+以下是运行简单服务器的示例：
+
+.sp
+.in +2
+.nf
+example% \fBctrun -r 0 -t -f hwerr,core,signal server\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+指定 \fB-r\fR \fB0\fR 和 \fB-t\fR 选项来表示服务器是否遇到致命错误，\fBctrun\fR 是否应该尝试重新启动服务器。\fB-f\fR 选项可生成 "\fBhwerr\fR"、"\fBcore\fR" 和 "\fBsignal\fR" 致命事件。
+
+.SH 退出状态
+.sp
+.LP
+如果指定并成功调用了 \fIcommand\fR（请参见 \fBexec\fR(2)），则 \fBctrun\fR 的退出状态是 \fIcommand\fR 的退出状态。否则，\fBctrun\fR 退出时返回下列值之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB123\fR\fR
+.ad
+.RS 7n
+.rt  
+子进程异常退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB124\fR\fR
+.ad
+.RS 7n
+.rt  
+\fBctrun\fR 遇到内部错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB125\fR\fR
+.ad
+.RS 7n
+.rt  
+为 \fBctrun\fR 提供了无效参数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB126\fR\fR
+.ad
+.RS 7n
+.rt  
+找到了 \fIcommand\fR，但无法调用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB127\fR\fR
+.ad
+.RS 7n
+.rt  
+找不到 \fIcommand\fR。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/system/contract/process/*\fR\fR
+.ad
+.RS 30n
+.rt  
+ 
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性请参见下文。
+.TE
+
+.sp
+.LP
+用户可读的输出是 Uncommitted（未确定）。调用为 Committed（已确定）。
+.SH 另请参见
+.sp
+.LP
+\fBctstat\fR(1)、\fBctwatch\fR(1)、\fBexec\fR(2)、\fBcontract\fR(4)、\fBprocess\fR(4)、\fBattributes\fR(5)

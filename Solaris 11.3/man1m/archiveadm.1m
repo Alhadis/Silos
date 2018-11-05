@@ -1,0 +1,685 @@
+'\" te
+.\" Copyright (c) 2011, 2015, Oracle and/or its affiliates. All rights       reserved.
+.TH archiveadm 1M "23 Feb 2015" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+archiveadm \- Solaris archive utility
+.SH SYNOPSIS
+.LP
+.nf
+\fBarchiveadm\fR <\fBsubcommand\fR> [options] <arguments>
+            \fBcreate\fR  <\fIarchive name\fR>
+                [-z|--zone <zone(s)>]
+                [-D|--exclude-dataset <dataset(s)>]
+                [-Z|--exclude-zone <zone(s)>]
+                [-r|--recovery]
+                [-e|--exclude-media]
+                [-s|--skip-capacity-check]
+                 [   --root-only] 
+            \fBinfo\fR  <\fIarchive name\fR>
+                [-p|--parseable]
+                [-k|--key]
+                [-c|--cert]
+                [-C|--ca-cert]
+                [-v|--verbose]
+            \fBcreate-media\fR    <\fIarchive name\fR>
+                [-g|--global-zone <global-zone>]
+                [-s|--source <ISO image> | <repository URI>]
+                [-k|--key <ssl_key]
+                [-c|--cert <ssl_cert]
+                [-d|--dataset <name>]
+                [-f|--format <iso or usb>]
+                [-o|--output <path for final image>]
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBarchiveadm\fR utility provides users with functionality to create system archive images of a running Solaris system for the purposes of system cloning and recovery. The utility may also be used to retrieve information about archives, once created, and also to create bootable media from an archive.
+.sp
+.LP
+The archive type which is created is a Solaris Unified Archive. A  Solaris Unified Archive is a multi-system archive based upon Solaris Boot Environments and ZFS data streams. A Unified Archive contains one or more systems which are selected during archive creation. Each system may be encapsulated in its own archive within the overall Unified Archive, so that systems may later be selectively deployed. Alternatively, a single monolithic archive may be created which results in a singly-deployable archive with multiple embedded systems.
+.sp
+.LP
+Once created, Solaris Unified Archives may be deployed by the Solaris Automated Installer or by the Solaris Zones software utilities.
+.sp
+.LP
+During Solaris Automated Installer deployments, the archive file is set as an install service configuration parameter, similar to what is done with IPS publishers. When a client boots the service, the install software configures the system with the required ZFS pools, including any locally set ZFS pool properties from the origin system, and then the archived systems are received into the new pools.
+.sp
+.LP
+During Solaris Zones deployments from a host system, the zonecfg(1M) and zoneadm(1M) utilities are used. New zones may be configured by using zonecfg(1M) to extract configuration data from a Solaris Unified Archive. The zoneadm(1M) utility may be used to install a zone directly from the archive. Zones may also be installed as part of a new Solaris Automated Installer deployment along with the global zone.
+.sp
+.LP
+By default, Solaris Unified Archives are created in a lightweight form which is based upon the system's active boot environment and related datasets. Related datasets in the context of a zone system archive are the zone's delegated datasets. For an archive of a host global zone, the related datasets are any non-zoned datasets on the system. These archives are known as 'clone archives', as they are suitable for system cloning purposes. These archives are ideal for rapid deployment of the same customized image across a number of nodes.
+.sp
+.LP
+Archives may be created which optionally contain all boot environments rather than just the active one. This type of archive is more suitable for system recovery purposes, and therefore are known as 'recovery archives'. This mode creates an archive as a single system which contains the selected zone. Any non-global zones within a selected global zone are embedded within the archive, and all boot environments from all systems are included.
+.sp
+.LP
+During archive creation, specific systems may be explicitly included in an archive which is being created, which implicitly excludes all others. Inversely systems may be excluded, implicitly including all others.
+.sp
+.LP
+During clone archive creation, specific systems may be explicitly included or excluded from the archive. Note that inclusion of a specific list of systems will implicitly exclude all other systems. Inversely, any system not explicitly excluded is included.
+.sp
+.LP
+When creating a recovery archive, one specific system may be selected. If the system is a host with installed zones, those zones are embedded in the archive. If a recovery archive of a specific zone is desired, it may be selected. System exclusion is not permitted with recovery archives.
+.sp
+.LP
+Specific datasets may also be excluded, which can further reduce the size of an archive. All swap and dump devices are excluded from all archives by default. Additionally, the \fBVARSHARE\fR dataset is excluded from clone archives; it is included in recovery archives.
+.sp
+.LP
+An archive may be optionally created which contains only data from the root pool. When the \fB--root-only\fR option is used with the \fBcreate\fR subcommand all non-root pools are excluded from the archive.
+.sp
+.LP
+During deployment, archived systems may be selectively deployed from a clone Unified Archive. Systems may also be deployed as zones, which provides for a Global-to-Non-global (G2N) transform functionality. Note that single-system recovery archives are not selectable; an entire recovery archive is deployed as a single deployment.
+.sp
+.LP
+Bootable installation media may be created from a Solaris Unified Archive. Users may provide options which define the build area and the content of the installation media. The resulting media image may then be used to create recovery media or otherwise custom installation media.
+.sp
+.LP
+Each of the utility's three main functions are described below in the SUB-COMMANDS section.
+.SH OPTIONS
+.sp
+.LP
+The following option is supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR, \fB--help\fR\fR
+.ad
+.RS 14n
+.rt  
+Output a help message indicating the usage of the utility.
+.RE
+
+.SH SUB-COMMANDS
+.sp
+.LP
+The following subcommands are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBarchiveadm create\fR <\fIarchive name\fR>\fR
+.ad
+.br
+.na
+\fB[\fB-r\fR|\fB--recovery\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-z\fR|\fB--zone\fR <\fIzone(s)\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-Z\fR|\fB--exclude-zone\fR <\fIzone(s)\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-D\fR|\fB--exclude-dataset\fR <\fIdataset(s)\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-e\fR|\fB--exclude-media\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-s\fR|\fB--skip-capacity-check\fR]\fR
+.ad
+.br
+.na
+\fB[\fB--root-only\fR]\fR
+.ad
+.sp .6
+.RS 4n
+The \fBcreate\fR command will drive the creation of a new Solaris Unified Archive. The command requires the location and name of the new archive. This is passed as a path to a new archive file name in a writable directory.
+.sp
+Without options, \fBcreate\fR will build an archive of the system where the command is invoked. If the system is a global zone, all virtual systems on the host are included. The archive consists of the active boot environment of each system and all related datasets. For a zone, the list of related datasets is equal to the list of delegated datasets. In the global zone, all datasets not affiliated with zones are archived.
+.sp
+All swap and dump devices are excluded from all archives. The \fBVARSHARE\fR dataset is excluded by default from all clone archives.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR|\fB--recovery\fR\fR
+.ad
+.sp .6
+.RS 4n
+This option creates an archive suitable for system recovery. This archive type is comprised of a single deployable system containing the selected zone. If the zone is a global zone, the archive contains it and all non-global zones that it hosts. All boot environments (included inactive boot environments) from all systems are included in the archive.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-z\fR|\fB--zone\fR <\fIzone(s)\fR>]\fR
+.ad
+.sp .6
+.RS 4n
+This option is used to provide a zonename or list of zonenames to be archived, implicitly excluding all other systems from being archived.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-Z\fR|\fB--exclude-zone\fR <\fIzone(s)\fR>]\fR
+.ad
+.sp .6
+.RS 4n
+This option is used to provide a zonename or list of zonenames to be excluded from the archive, implicitly including all other systems. \fB--zone\fR and \fB--exclude-zone\fR are mutually exclusive. This option is not valid when \fB--recovery\fR is used.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-D\fR|\fB--exclude-dataset\fR <\fIdataset(s)\fR>]\fR
+.ad
+.sp .6
+.RS 4n
+This option is used to exclude one or more datasets from the archive. The dataset names passed are recursively excluded from the archive, meaning any datasets which are hierarchically 'children' of an excluded dataset are also excluded.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB--root-only\fR]\fR
+.ad
+.sp .6
+.RS 4n
+This option is used to exclude all non-root pool data. Each non-root pool is excluded recursively from the resulting archive image. This is useful when a root-only archive is desired and the list of non-root pools is not known.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-e\fR|\fB--exclude-media\fR]\fR
+.ad
+.sp .6
+.RS 4n
+This option may be used to skip the generation of bootable media for each global zone in the Unified Archive. This media is created per global zone automatically in order to enhance archive portability. If this is not desired, this option may be used.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-s\fR|\fB--skip-capacity-check\fR]\fR
+.ad
+.sp .6
+.RS 4n
+A capacity check is performed in the staging directory prior to archive stream creation. This option may be used when the user wishes to skip this capacity check.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBarchiveadm info\fR <\fIarchive name\fR>\fR
+.ad
+.br
+.na
+\fB[\fB-v\fR|\fB--verbose\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-k\fR|\fB--key\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-c\fR|\fB--cert\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-C\fR|\fB--ca-cert\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-p\fR|\fB--parseable\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-t\fR|\fB--targets\fR]\fR
+.ad
+.sp .6
+.RS 4n
+The \fBinfo\fR command will provide information about the content of a Solaris archive file, passed as a URI. If the path is a relative or absolute path to a file system-accessible file, the 'file' URI type is optional. HTTP and HTTPS are other supported URI types.
+.sp
+The output of this command provides archive-related data, such as archive creation time and information regarding the origin systems such as hostname, architecture and Solaris version. It also provides a list of deployable system archives, by system name.
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-v\fR|\fB--verbose\fR]\fR
+.ad
+.br
+.na
+\fB\fR
+.ad
+.RS 20n
+.rt  
+This option provides more detail regarding the deployable system archives, including the name of the active boot environment, the version of Solaris installed, and the size needed to deploy each system archive. Also shown in verbose mode is the unique ID (UUID) of the Unified Archive file, and of each system archive.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-k\fR|\fB--key\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-c\fR|\fB--cert\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-C\fR|\fB--ca-cert\fR]\fR
+.ad
+.RS 20n
+.rt  
+These options are used to pass HTTPS credentials when the path provided is an HTTPS URI. Client certificate, CA certificate and key are set with these options.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-p\fR|\fB--parseable\fR]\fR
+.ad
+.RS 20n
+.rt  
+This option provides a parseable colon-delimited set of values which correlate to the archive information as opposed to the formatted output. This can be useful for scripting or data entry applications. Both verbose and non-verbose parseable outputs include headers which label the outputs.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR|\fB--targets\fR]\fR
+.ad
+.RS 20n
+.rt  
+This option lists information specifically related to the storage configuration on the origin system. Configuration metadata is archived along with the data which is used during deployment to give the Automated Installer a guideline for how to configure the client system. This option gives users a way to examine what AI will attempt to create upon deployment. 
+.sp
+This option can be used to retrieve the origin system's target configuration, which may be in recreating the storage configuration for an AI manifest. The manifest content is shown in XML so that it may be used with little modification.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBarchiveadm create-media\fR <\fIarchive name\fR>\fR
+.ad
+.br
+.na
+\fB[\fB-g\fR|\fB--global-zone\fR <\fIglobal-zone\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-s\fR|\fB--source\fR <\fIISO image\fR> | <\fIrepository URI\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-k\fR|\fB--key\fR <\fIssl_key\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-c\fR|\fB--cert\fR <\fIssl_cert\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-d\fR|\fB--dataset\fR <\fIname\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-f\fR|\fB--format\fR <\fIiso or usb\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-o\fR|\fB--output\fR <\fIpath for final image\fR>]\fR
+.ad
+.sp .6
+.RS 4n
+The \fBcreate-media\fR command is used to create bootable media from a Unified Archive. The resulting media image may then be used to boot and install a system from the archive content. The archive file is passed as a path. The path may be a relative or absolute path.
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-g\fR|\fB--global-zone\fR]\fR
+.ad
+.RS 22n
+.rt  
+Media is created from an archived global zone. This switch allows users to select the global zone media is created from. The resulting media will deploy an archive of the specified global zone, with any embedded zones.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-s\fR|\fB--source\fR]\fR
+.ad
+.RS 22n
+.rt  
+Bootable media is based upon a Solaris AI image. This switch allows users to provide a source for the AI image. Valid sources are either a path to a compatible Solaris Automated Install ISO image file or the URI of a Solaris IPS repository which contains a compatible \fBpkg://solaris/install-image/solaris-auto-install\fR package. Compatibility is based upon the version of Solaris.
+.sp
+If source is not passed, all IPS publishers which are set on the system executing create-media will be searched for a compatible version of the solaris-auto-install package.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-k\fR|\fB--key\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-c\fR|\fB--cert\fR]\fR
+.ad
+.br
+.na
+\fB\fR
+.ad
+.RS 22n
+.rt  
+These options are used to pass HTTPS credentials when the source provided is an HTTPS URI. Client certificate and key are set with these options. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-d\fR|\fB--dataset\fR]\fR
+.ad
+.RS 22n
+.rt  
+This switch allows the user to provide a ZFS dataset to be used as a staging area for media creation. If this is not passed a default staging area on rpool is used. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-f\fR|\fB--format\fR]\fR
+.ad
+.RS 22n
+.rt  
+Selects the format of the resulting bootable media, either ISO or USB image file. If the resulting media image will be larger than 4GB, only the USB format is supported.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-o\fR|\fB--output\fR]\fR
+.ad
+.RS 22n
+.rt  
+The name of the resulting media image file. If not provided, a default name is used.
+.RE
+
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRCreating a Default Archive
+.sp
+.LP
+This example creates an archive with no options, which results in the creation of a Unified Archive containing all systems on the host.
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRCreating an Archive With Excluded Datasets
+.sp
+.LP
+This example creates an archive excluding the data/scratch and tank/tmp datasets.
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create -D data/scratch,tank/tmp ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRArchiving a Single Zone
+.sp
+.LP
+This example creates a single-system archive comprised of a zone's active boot environment and related rpool dataset and all delegated datasets.
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create -z zone1 ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 4 \fRCreating an Archive With Excluded Zones
+.sp
+.LP
+This example creates an archive excluding the 'zone3' and 'zone4' zones.
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create -Z zone3,zone4 ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 5 \fRArchiving a \fBsolaris-kz\fR Zone
+.sp
+.LP
+This example creates a single-system archive comprised of a \fBsolaris-kz\fR brand zone. Any zones which are deployed within the kernel zone are archived within the single-system archive.
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create -z kz1 ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 6 \fRRetrieving Basic Archive Information
+.sp
+.LP
+This example retrieves basic information related to the archive.
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm info ./archive.uar\fR
+        Archive Information
+                          Creation Time:  2012-09-29T01:29:29Z
+                            Source Host:  osai-brm-x-5
+                           Architecture:  i386
+                       Operating System:  Oracle Solaris 12.0 X86
+                     Deployable Systems:  global,zone1
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 7 \fRRetrieving Verbose Archive Information
+.sp
+.LP
+This example retrieves verbose information related to the archive and its deployable system archives.
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm info --verbose archive.uar\fR
+        Archive Information
+          Creation Time:  2012-09-29T01:29:29Z
+                Source Host:  osai-brm-x-5
+           Architecture:  i386
+   Operating System:  Oracle Solaris 12.0 X86
+                  Unique ID:  d1689f79-0bca-6cea-e06c-f335e98006f0
+        Archive Version:  1
+         
+        Deployable Systems
+          'global'
+            OS Version:  5.12
+             OS Branch:  5.12.0.0.0.5.2
+             Active BE:  on12_05-ref
+                 Brand:  solaris
+           Size Needed:  21.44GB
+             Unique ID:  73ec33b8-55c2-6291-cabd-943f3b1c359e
+          'zone1'
+            OS Version:  5.12.0.0.0.5.2
+             Active BE:  solaris-6
+                 Brand:  solaris
+           Size Needed:  345.90MB
+             Unique ID:  2ef3e063-764b-c756-b58d-a778dd18a00c
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 8 \fRRetrieving Storage Configuration Information
+.sp
+.LP
+This example retrieves information from the archive related to what targets resources will be necessary if an archive were to be deployed through Solaris Automated Installer.
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm info --targets archive.uar\fR
+<target name="origin">
+      <disk in_zpool="rpool" in_vdev="rpool-none" whole_disk="true">
+        <disk_name name="SYS/HDD0" name_type="receptacle"/>
+        <disk_prop dev_type="scsi" dev_vendor="HITACHI" dev_chassis="SYS"
+dev_size="585937500secs"/>
+        <gpt_partition name="0" action="create" force="false" part_type="bbp">
+          <size val="524288secs" start_sector="256"/>
+        </gpt_partition>
+        <gpt_partition name="1" action="create" force="false" part_type="solaris">
+          <size val="585396539secs" start_sector="524544"/>
+        </gpt_partition>
+        <gpt_partition name="8" action="create" force="false" part_type="reserved">
+          <size val="16384secs" start_sector="585921083"/>
+        </gpt_partition>
+      </disk>
+      <disk in_zpool="data" in_vdev="data-none" whole_disk="true">
+        <disk_name name="SYS/HDD1" name_type="receptacle"/>
+        <disk_prop dev_type="scsi" dev_vendor="HITACHI" dev_chassis="SYS"
+dev_size="585937500secs"/>
+        <gpt_partition name="0" action="create" force="false" part_type="solaris">
+          <size val="585920827secs" start_sector="256"/>
+        </gpt_partition>
+        <gpt_partition name="8" action="create" force="false" part_type="reserved">
+          <size val="16384secs" start_sector="585921083"/>
+        </gpt_partition>
+      </disk>
+      <logical noswap="false" nodump="false">
+        <zpool name="data" action="create" is_root="false" mountpoint="/data">
+          <vdev name="data-none" redundancy="none"/>
+        </zpool>
+        <zpool name="rpool" action="create" is_root="true" mountpoint="/rpool">
+          <vdev name="rpool-none" redundancy="none"/>
+        </zpool>
+      </logical>
+    </target>
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 9 \fRCreating Media
+.sp
+.LP
+This example creates a bootable USB image which will deploy the global zone from 'archive.uar' when booted. It can be copied to a USB device by using the \fBusbcopy\fR(1M) command. The AI image components will be sourced from the current list of IPS publishers.
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create-media ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 10 \fRCreating Media From an IPS Publisher
+.sp
+.LP
+This example creates bootable media, sourcing the AI image components from a specific IPS publisher.
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create-media -s http://server.domain:port
+                ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 11 \fRCreating Media in a User-selected Build Area
+.sp
+.LP
+This example shows how to create a media by using an AI ISO image as the source for the boot archive.
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create-media -d data/build
+                -s S11-2-x86-AI.iso ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 12 \fRCreating Media from a Selected Global Zone
+.sp
+.LP
+This example shows how to create media from a specific archived global zone.
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create-media -g kz-global ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilityinstall/archive|
+_
+Interface StabilityUncommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBai_manifest\fR(4), \fBzoneadm\fR(1M), \fBzonecfg\fR(1M)

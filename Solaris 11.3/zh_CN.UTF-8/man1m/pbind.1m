@@ -1,0 +1,667 @@
+'\" te
+.\" Copyright (c) 2008, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH pbind 1M "2015 年 5 月 20 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+pbind \- 控制和查询进程或 LWP 的绑定
+.SH 用法概要
+.LP
+.nf
+\fBpbind\fR \fB-b\fR [\fB-c\fR | \fBg\fR | \fBl\fR] [\fItarget_list\fR] [\fB-n\fR] [\fB-s\fR | \fBw\fR] [\fB-xft\fR] [\fB-i\fR \fIidtype\fR] [\fIidlist\fR]
+.fi
+
+.LP
+.nf
+\fBpbind\fR \fB-b\fR [\fB-c\fR | \fBg\fR | \fBl\fR] [\fItarget_list\fR] [\fB-n\fR] [\fB-s\fR | \fBw\fR] [\fB-xft\fR] [\fB-e\fR \fIcommand\fR [\fIargument(s)\fR]]
+.fi
+
+.LP
+.nf
+\fBpbind\fR [\fB-q\fR] [\fB-c\fR | \fBg\fR | \fBl\fR] [\fB-i\fR \fIidtype\fR] [\fIidlist\fR]
+.fi
+
+.LP
+.nf
+\fBpbind\fR \fB-u\fR [\fB-i\fR \fIidtype\fR] \fIidlist\fR
+.fi
+
+.LP
+.nf
+\fBpbind\fR \fB-Q\fR [\fB-c\fR | \fBg\fR | \fBl\fR] [\fItarget_list\fR]
+.fi
+
+.LP
+.nf
+\fBpbind\fR \fB-U\fR [\fB-c\fR | \fBg\fR | \fBl\fR] [\fItarget_list\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBpbind\fR 控制和查询进程和 LWP（lightweight process，轻量级进程）到 CPU 的绑定和关联。使用此实用程序，用户可以确定应在哪个处理器上计划运行一个或多个 LWP、应该强还是弱强制执行此类绑定以及子 LWP 应如何继承该绑定。\fBpbind\fR 还可用于执行带有指定绑定的命令。
+.sp
+.LP
+使用强关联，目标 LWP 将仅在指定的处理器上运行，而使用弱关联则会尽力尝试在此类 CPU 上执行 LWP。\fBpbind\fR 确定的绑定不是专用的，即处理器还可以执行其他 LWP。反过来，这意味着如果其他更高级别 LWP 正在占用同一处理器则会禁止运行绑定的线程。
+.sp
+.LP
+目标 CPU 可以通过其处理器 ID 来直接指定，也可以通过其处理器组 (Processor Group, PG) 或地址组 (lgroup) ID 来间接指定。用户还可以指定负向关联，指示应避免使用指定的 CPU。
+.sp
+.LP
+查询特定 LWP 的绑定时，用户可以要求生成的 CPU 集应该通过其 ID、包含 CPU 的处理器组或地址组来进行标识。同样，查询或删除特定处理器的所有绑定时，用户可以通过这些处理器各自的 PG 或 lgroup ID 来进行标识。
+.sp
+.LP
+缺省情况下，绑定将在 exec(2)、fork(2) 和 thr_create(3C) 中继承，但是用户可以要求应在一个或多个此类操作中打破继承。
+.sp
+.LP
+非常重要的是，请注意 \fBpbind\fR 确定的运行时行为取决于指定 CPU 的连续联机状态及其与目标 LWP 的相同处理器集的关联。如果这些底层条件更改，LWP 将失去其对给定 CPU 的关联并且在条件恢复时将需要进行重置。
+.sp
+.LP
+超级用户可以绑定或取消绑定任何进程或 LWP，而其他用户可以绑定或取消绑定他们有权对其发送信号的任何进程或 LWP，即与该用户具有相同有效用户 ID 的任何进程。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项以及一个或多个标识符一起指示哪些 CPU、处理器组或地址组是所请求的绑定的目标。
+.sp
+有效目标类型及其相应解释如下：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 6n
+.rt  
+CPU 或处理器 ID（缺省值）。所有给定 CPU 必须存在并且处于联机状态。使用 \fBpsrinfo\fR 命令确定 \fItarget_list\fR 是否存在并且处于联机状态。有关更多信息，请参见 \fBpsrinfo\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR\fR
+.ad
+.RS 6n
+.rt  
+处理器组 ID。有关更多信息，请参见 \fBpginfo\fR(1M)。处理器组 0 表示系统上的所有 CPU 均对区域可见，它不是有效的绑定目标。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 6n
+.rt  
+地址组 ID。指定的 lgroup 必须包含至少一个联机 CPU 才能继续操作。有关详细信息，请参见 lgrpinfo(1M)。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+指示应避免使用给定的目标处理器。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.sp .6
+.RS 4n
+指示强强制执行绑定（缺省）并且仅应在给定处理器上执行指定 LWP。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-w\fR\fR
+.ad
+.sp .6
+.RS 4n
+指示弱强制执行绑定并且最好应在给定处理器上执行指定 LWP，但是如果需要可以在其他位置运行该 LWP。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBidtype\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项与 \fBidlist\fR 参数共同指定要应用绑定的一个或多个进程或 LWP。\fBidlist\fR 的解释取决于 \fBidtype\fR 的值，如果省略则缺省为 pid。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBpid\fR[/\fBlwps\fR] \fR
+.ad
+.RS 18n
+.rt  
+\fBidlist\fR 是进程 ID 的列表（每个 ID 可能后跟正斜杠 (/)）以及以逗号分隔的 LWP ID 的列表。通过 - 分隔范围开始和结束来指示 LWP ID 的范围。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBppid\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBidlist\fR 是父进程 ID 的列表。绑定命令应用于父进程 ID 位于列表中的所有进程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBpgid\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBidlist\fR 是进程组 ID 的列表。绑定命令应用于指定进程组中的所有进程。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBuid\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBidlist\fR 是用户 ID 的列表。绑定命令应用于有效用户 ID 等于列表中 ID 的所有进程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBgid\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBidlist\fR 是组 ID 的列表。绑定命令应用于有效组 ID 等于列表中 ID 的所有进程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBtaskid\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBidlist\fR 是任务 ID 列表。绑定命令应用于指定任务中的所有进程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBprojid\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBidlist\fR 是项目 ID 的列表。绑定命令应用于有效项目 ID 等于列表中 ID 的所有进程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBzoneid\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBidlist\fR 是区域 ID 的列表。绑定命令应用于有效区域 ID 等于列表中 ID 的所有进程。
+.RE
+
+请注意，\fBP_MYID\fR 标识符可以与上面的任何 ID 类型一起使用来指示所需 ID 是给定类型的调用 LWP 的 ID（例如，\fBP_PID\fR 和 \fBP_MYID\fR 将产生调用者 LWP 的进程标识符）。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.sp .6
+.RS 4n
+不要在 exec(2) 中继承关联。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+不要在 fork(2) 中继承关联。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+不要在 thr_create(3C) 中继承关联。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.sp .6
+.RS 4n
+执行带有指定绑定的命令。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示指定进程或所有进程的 CPU 绑定。如果一个进程由具有不同绑定的多个 LWP 组成，且未显式指定 LWP，则只显示其中一个绑定 LWP 的绑定。部分 LWP 的绑定可以通过将 "/lwpids" 附加到进程 ID 来显示。可以使用 "-" 和 "," 分隔符选择多个 LWP。
+.sp
+此外，可以包括 [\fB-gl\fR] 选项来要求报告应包括哪些处理器组或地址组（包含指定 LWP 绑定到的 CPU）。缺省情况下，始终显示处理器 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Q\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示绑定到指定 CPU 列表、处理器组或地址组的 LWP，或者具有处理器绑定的所有 LWP。对于由多个 LWP 组成的进程，将显示单个 LWP 的绑定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除指定进程的所有或部分 LWP 的绑定，允许在任何联机处理器上执行它们。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-U\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除绑定到指定处理器列表的所有 LWP 的绑定，或者在未指定任何参数时绑定到任意处理器的所有 LWP 的绑定。
+.RE
+
+.SH 返回值
+.sp
+.LP
+成功完成时，\fBpbind\fR 返回 \fB0\fR。如果发生错误，将返回正整数，指示生成的错误号。
+.SH 错误
+.sp
+.LP
+\fBpbind\fR 命令在以下情况下将失败：
+.sp
+.ne 2
+.mk
+.na
+\fBESRCH\fR
+.ad
+.RS 10n
+.rt  
+不存在指定的进程或 LWP。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBEINVAL\fR
+.ad
+.RS 10n
+.rt  
+指定的 idtype 或 ID 不存在，所有目标处理器都处于脱机、故障状态，部分不同处理器集或给定选项组合无效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBEPERM\fR
+.ad
+.RS 10n
+.rt  
+{\fBPRIV_PROC_OWNER\fR} 特权未在有效调用进程集中声明并且其实际或有效用户 ID 与绑定的 LWP 之一的实际或有效用户 ID 不匹配。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR将进程 101048 绑定到 CPU 1 的等效方式
+.sp
+.in +2
+.nf
+# \fBpbind -b 1 101048\fR
+pbind(1M): pid 101048 strongly bound to processor(s) 1.
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBpbind -b -c 1 101048\fR
+pbind(1M): pid 101048 strongly bound to processor(s) 1.
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBpbind -b -c 1 -i pid 101048\fR
+pbind(1M): pid 101048 strongly bound to processor(s) 1.
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBpbind -b -c 1 -s -i pid 101048\fR
+pbind(1M): pid 101048 strongly bound to processor(s) 1.
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR将进程 101048 重新绑定到 CPU 0-3
+.sp
+.in +2
+.nf
+# \fBpbind -b -c 0-3 101048\fR
+pbind(1M): pid 101048 strongly bound to processor(s) 1.
+pbind(1M): pid 101048 strongly bound to processor(s) 0 1 2 3.
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR将进程 101048 重新绑定到处理器组 1 中的 CPU
+.sp
+.in +2
+.nf
+# \fBpbind -b -g 1 101048\fR
+pbind(1M): pid 101048 strongly bound to Processor Group(s) 1 2.
+pbind(1M): pid 101048 strongly bound to Processor Group(s) 1.
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR将进程 101048 重新绑定到地址组 2 中的 CPU
+.sp
+.in +2
+.nf
+# \fBpbind -b -l 2 101048\fR
+pbind(1M): pid 101048 strongly bound to Locality Group(s) 0 1.
+pbind(1M): pid 101048 strongly bound to Locality Group(s) 0 2.
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR将进程 101048 弱绑定到 CPU 2
+.sp
+.in +2
+.nf
+# \fBpbind -b 2 -w 101048\fR
+pbind(1M): pid 101048 weakly bound to processor(s) 2.
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR将进程 101048 绑定到除 CPU 1 之外的所有 CPU
+.sp
+.in +2
+.nf
+# \fBpbind -b 1 -n 101048\fR
+pbind(1M): pid 101048 strongly bound to processor(s) 0 2 3.
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR将进程 101048 弱绑定到所有 CPU（处理器组 1 中的 CPU 除外）
+.sp
+.in +2
+.nf
+# \fBpbind -b -g 1 -n -w 101048\fR
+pbind(1M): pid 101048 strongly bound to Processor Group(s) 1 2.
+pbind(1M): pid 101048 weakly bound to Processor Group(s) 2
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 8 \fR根据 CPU、处理器组和地址组查询进程 101048 的绑定
+.sp
+.in +2
+.nf
+# \fBpbind -q 101048\fR
+pbind(1M): pid 101048 weakly bound to processor(s) 2 3.
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBpbind -q -g 101048\fR
+pbind(1M): pid 101048 weakly bound to Processor Group(s) 2.
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBpbind -q -l 101048\fR
+pbind(1M): pid 101048 weakly bound to Locality Group(s) 0 2.
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 9 \fR查询进程 101048 的绑定
+.sp
+.in +2
+.nf
+# \fBpbind -q -i pid 101048\fR
+pbind(1M): pid 101048 weakly bound to processor(s) 2 3.
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 10 \fR根据处理器组查询进程 101048 的绑定
+.sp
+.in +2
+.nf
+# \fBpbind -q -g -i pid 101048\fR
+pbind(1M): pid 101048 weakly bound to Processor Group(s) 2.
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 11 \fR查询 CPU 2 的所有绑定
+.sp
+.in +2
+.nf
+# \fBpbind -Q 2\fR
+pbind(1M): LWP 101048/1 weakly bound to processor(s) 2 3.
+pbind(1M): LWP 102122/1 weakly bound to processor(s) 2 3.
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 12 \fR取消绑定进程 101048
+.sp
+.in +2
+.nf
+# \fBpbind -u 101048\fR
+pbind(1M): pid 101048 successfully unbound.
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 13 \fR从 CPU 1 取消绑定所有进程
+.sp
+.in +2
+.nf
+# \fBpbind -U 1\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 14 \fR从地址组 2 取消绑定所有进程
+.sp
+.in +2
+.nf
+# \fBpbind -U -l 2\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 15 \fR执行带有指定绑定的 ls(1)
+.sp
+.in +2
+.nf
+# \fBpbind -b -c 3 -e ls\fR
+file1  file2  file3  file4
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.sp .6
+.RS 4n
+出现错误。
+.RE
+
+.SH 另请参见
+.sp
+.LP
+\fBpsrinfo\fR(1M)、\fBpsradm\fR(1M)、\fBpsrset\fR(1M)、\fBpginfo\fR(1M)、\fBlgrpinfo\fR(1)、\fBprocessor_info\fR(2)、\fBprocessor_bind\fR(2)、\fBpset_create\fR(2)、\fBpset_assign\fR(2)、\fBpset_bind\fR(2)、\fBpset_destroy\fR(2)、\fBexec\fR(2)、\fBfork\fR(2)、\fBthr_create\fR(3C)、\fBprocset.h\fR(3HEAD)、\fBattributes\fR(5)、\fBprivileges\fR(5)
+.SH 诊断
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpbind: cannot query pid 31: No such process\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定的进程不存在或已退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpbind: cannot bind pid 31: Not owner\fR\fR
+.ad
+.sp .6
+.RS 4n
+用户无权绑定进程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpbind: cannot bind pid 31: Invalid argument\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定处理器不处于联机状态。
+.RE
+

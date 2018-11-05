@@ -1,0 +1,371 @@
+'\" te
+.\" Copyright (c) 1999, 2012, Oracle and/or its affiliates.All rights reserved.
+.TH auditd 1M "2012 年 4 月 13 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+auditd \- 审计服务守护进程
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/auditd\fR 
+.fi
+
+.SH 描述
+.sp
+.LP
+审计服务守护进程 \fBauditd\fR 管理本地（请参见 \fBaudit_binfile\fR(5)、\fBaudit_syslog\fR(5) 和 \fBaudit_remote\fR(5)）或远程（请参见下文的“审计远程服务器”）生成的审计数据。启用审计时，\fBauditd\fR 将读取其配置来执行以下操作：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+配置审计策略。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+配置审计队列控制参数。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+配置事件到类映射。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+设置缺省审计掩码。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果启用了本地审计（请参见下文的“本地审计”部分），则会装入一个或多个插件。
+.sp
+Solaris 提供了三个插件。\fBaudit_binfile\fR(5)，用于将二进制审计数据写入到文件中；\fBaudit_remote\fR(5)，用于将二进制审计数据发送到具有保密性和完整性保护的验证服务器；\fBaudit_syslog\fR(5)，用于将审计记录的文本摘要发送到 \fBsyslog\fR 守护进程。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+从内核中读取审计数据并将这些数据传递到每个活动插件。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+执行 \fBaudit_warn\fR(1M) 脚本以针对各种情况发出警告。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果启用了远程审计 (\fBars\fR(5))，则会处理请求并存储远程生成的审计数据。
+.RE
+.sp
+.LP
+\fBaudit\fR(1M) 用于控制审计服务。它可能会导致 \fBauditd\fR 执行以下操作：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+关闭与远程审计服务器的连接，从而导致该服务器关闭其相应审计文件。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+基于当前属性启动和刷新服务。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+关闭审计迹并禁用本地审计和远程审计服务。
+.RE
+.sp
+.LP
+\fBauditconfig\fR(1M) 用于配置审计服务。它可以配置活动和永久性的以下项：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+审记策略
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+审计队列控制参数
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+缺省审计掩码
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+要装入的插件
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+插件属性
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+审计远程服务器状态、属性和连接组
+.RE
+.SS "本地审计"
+.sp
+.LP
+在本地系统上生成的审计记录的收集。这些记录可以是在全局区域或非全局区域（或者两者）中生成的。
+.SS "远程审计"
+.sp
+.LP
+审计远程服务器 (Audit Remote Server, ARS) 接收并存储来自正被审计且配置有活动的 \fBaudit_remote\fR 插件的系统的审计记录。为了区分被审计系统与 ARS，可以将被审计系统称为本地被审计系统。
+.SS "审计状况"
+.sp
+.LP
+如果至少一个审计守护进程插件被配置为活动的，则审计服务守护进程会启用本地审计。
+.sp
+.LP
+如果没有将审计远程服务器配置为非活动的（请参见 \fBauditconfig\fR(1M) 中的 \fB-setremote\fR 服务器选项）且至少一个连接组处于活动状态，则会启用审计远程服务器功能。有关更多信息，请参见“审计远程服务器”部分。
+.sp
+.LP
+可以独立地配置本地审计和审计远程服务器。
+.SS "审计远程服务器"
+.sp
+.LP
+审计远程服务器 (Audit Remote Server, ARS) 是 \fBauditd\fR 的组成部分。它成为了 \fBaudit_remote\fR(5) 插件的一个搭档。服务器可以根据其配置捕获、处理和存储该插件发送的数据。
+.sp
+.LP
+ARS 是作为一个被禁用的 Solaris 审计组件提供的。需要对 ARS 进行配置，然后才能将其用于处理远程审计迹。ARS 配置包括两方面：首先，必须配置用于安全传输审计数据的底层安全机制（请参见 \fBaudit_remote\fR(5)）；其次，必须正确配置审计子系统。
+.sp
+.LP
+要观察和配置 ARS，请使用 \fBauditconfig\fR(1M) \fB-setremote\fR 和 \fB- getremote\fR 选项。该配置分为 \fBserver\fR 配置和 \fBgroup\fR 配置。\fBserver\fR 配置允许更改通用 ARS 参数，而 \fBgroup\fR 关键字允许配置连接组和使用相同的本地存储参数的主机集。
+.SS "服务器配置属性"
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlisten_address\fR\fR
+.ad
+.sp .6
+.RS 4n
+服务器侦听的地址。将 \fBlisten_address\fR 属性留空将缺省侦听所有本地地址。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlisten_port\fR\fR
+.ad
+.sp .6
+.RS 4n
+本地侦听端口；0 缺省为 16162。与 \fBsolaris-audit\fR Internet 服务名称相关联的端口。请参见 \fBservices\fR(4)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlogin_grace_time\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果尚未成功创建连接，服务器会在登录宽延期（以秒为单位）之后断开连接。\fB0\fR 缺省为没有任何限制。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmax_startups\fR\fR
+.ad
+.sp .6
+.RS 4n
+并发的、未通过验证的与该服务器连接的次数，达到该次数后，服务器将开始拒绝新的连接。请注意，可以按 \fIbegin\fR:\fIrate\fR:\fIfull\fR 格式指定该值，以允许随机提前删除模式，例如 \fB10:30:60\fR。如果当前存在 10 个（来自 \fBstart\fR 字段）未通过验证的连接，那就意味着 ARS 拒绝连接尝试的几率是 \fIrate\fR/100（在我们的示例中为 30%）。如果未通过验证的连接数量达到 \fBfull\fR（在我们的示例中为 60），几率会呈线性增长，并且会拒绝所有连接尝试。
+.RE
+
+.SS "组配置属性"
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbinfile_dir\fR、\fBbinfile_fsize \fR、\fBbinfile_minfree\fR\fR
+.ad
+.sp .6
+.RS 4n
+属性遵循在 \fBaudit_binfile\fR(5) 中定义的相应 \fBp_*\fR 属性，简要概括如下：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbinfile_dir\fR\fR
+.ad
+.sp .6
+.RS 4n
+用于存储每个主机的审计数据的目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbinfile_fsize\fR\fR
+.ad
+.sp .6
+.RS 4n
+存储的每个审计迹文件的最大大小；\fB0\fR 缺省为没有任何限制。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbinfile_minfree\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含 binfile_dir 的文件系统上允许剩余的最小空闲空间，当小于该值时，\fBaudit_binfile\fR(5) 将通过 \fBaudit_warn\fR(1M) 通知管理员；\fB0\fR 缺省为没有限制。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhosts\fR\fR
+.ad
+.sp .6
+.RS 4n
+定义给定的连接组中允许向服务器发送审计数据的主机。请注意，如果有多个主机条目，请使用逗号作为分隔符。如果 \fBhosts\fR 为空，则这样的连接组称为通配符连接组。如果无法将新连接归类到任何其他（非通配符）连接组，但是配置了一个活动的通配符连接组，则新连接将归类到该连接组。只能配置一个活动的通配符连接组。
+.sp
+有关配置示例，请参见“示例”。
+.RE
+
+.sp
+.LP
+有关全面的配置说明和示例，请参见\fI《Securing Systems and Attached Devices in Oracle Solaris 11.3》\fR中的相应章节。 
+.SS "审计记录队列"
+.sp
+.LP
+对于要发送到插件的审计数据，排队等候的记录的最大数目由为插件指定的 \fBqsize\fR 参数指定。如果省略，将使用当前的 \fBhiwater\fR 标记。请参见 \fBauditconfig\fR(1M) 中的 \fB-getqctrl\fR 选项。达到此最大值时，\fBauditd\fR 将阻塞进程或放弃数据，具体取决于 \fBcnt\fR 审计策略（请参见 \fBauditconfig\fR(1M) 中所述）。
+.SS "审计系统警告"
+.sp
+.LP
+在某些情况下，审计服务守护进程和审计插件将调用 \fBaudit_warn\fR(1M) 脚本。有关更多信息，请参见 \fBaudit_warn\fR(1M)。
+.SH 示例
+.LP
+\fB示例 1 \fR审计远程服务器配置
+.sp
+.LP
+以下示例描述了对审计远程服务器进行配置以在特定地址上侦听的步骤。将创建一个通配符连接组和一个非通配符连接组。非通配符连接组配置将处理来自 \fBtic.cz.example.com\fR 和 \fBtac.us.example.com\fR 的远程审计数据。审计迹将存储在 \fB/var/audit/remote\fR 中。
+
+.sp
+.in +2
+.nf
+# Print the current audit remote server configuration.
+# Both server and connection groups (if any) is displayed.
+
+# \fBauditconfig -getremote\fR
+
+# Set address the audit remote server will listen on.
+
+# \fBauditconfig -setremote server "listen_address=192.168.0.1"\fR
+
+# Create two connection groups. Note that by default the
+# connection group is created with no hosts specified
+# (wild card connection group).
+
+# \fBauditconfig -setremote group create clockhouse\fR
+# \fBauditconfig -setremote group create sink\fR
+
+# Add hosts to the connection group (convert the wild card
+# connection group no non-wild card one). Set the storage
+# directory and activate the connection group.
+
+# \fBauditconfig -setremote group active clockhouse \e\fR
+# \fB"hosts=tic.cz.example.com,tac.us.example.com,\e\fR
+# \fBbinfile_dir=/var/audit/remote"\fR
+
+# Activate the wild card connection group.
+
+# \fBauditconfig -setremote group active sink\fR
+
+# Verify the audit remote server configuration.
+
+# \fBauditconfig -getremote\fR
+
+# Start or refresh the audit service.
+
+# \fBaudit -s\fR
+.fi
+.in -2
+.sp
+
+.SH 文件
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBetc/security/audit/audit_class\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBetc/security/audit/audit_event\fR
+.RE
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBaudit\fR(1M)、\fBaudit_warn\fR(1M)、\fBauditconfig\fR(1M)、\fBpraudit\fR(1M)、\fBaudit_class\fR(4)、\fBaudit_class\fR(4)、\fBaudit_event\fR(4)、\fBservices\fR(4)、\fBars\fR(5)、\fBattributes\fR(5)、\fBaudit_binfile\fR(5)、\fBaudit_flags\fR(5)、\fBaudit_remote\fR(5)、\fBaudit_syslog\fR(5)、\fBsmf\fR(5)
+.sp
+.LP
+请参见\fI《Securing Systems and Attached Devices in Oracle Solaris 11.3》\fR中有关审计的部分。 
+.SH 附注
+.sp
+.LP
+\fBauditd\fR 是在引导时装入全局区域的（如果启用了审计）。
+.sp
+.LP
+如果设置了 \fBperzone\fR 审计策略，\fBauditd\fR 将在本地区域引导时自动启动并在每个区域内运行。如果设置 \fBperzone\fR 策略时区域已在运行，必须在本地区域内手动启动审计。不必重新引导系统或本地区域就可以在本地区域中启动审计。\fBauditd\fR 可以使用 \fBaudit\fR \fB-s\fR 来启动，并且会在以后引导区域时自动启动。
+.sp
+.LP
+\fBauditd\fR 在本地区域中运行时，将从本地区域的 \fBsmf\fR(5) 系统信息库和 \fB /etc/security\fR 目录的文件（\fBaudit_class\fR、\fB user_attr\fR 和 \fBaudit_event\fR）中获取配置。
+.sp
+.LP
+配置更改不影响当前正在运行的审计会话，因为这些更改并不修改进程的预选掩码。要更改正在运行的进程的预选掩码，请使用 \fBauditconfig\fR 命令的 \fB–setpmask\fR 选项（请参见 \fBauditconfig\fR(1M)）。如果用户注销后重新登录，新配置更改将反映在下一个审计会话中。
+.sp
+.LP
+审计服务 FMRI 为 \fBsvc:/system/auditd:default\fR。

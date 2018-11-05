@@ -1,0 +1,284 @@
+'\" te
+.\"  Copyright 1989 AT&T Copyright (c) 1997, Sun Microsystems, Inc. All Rights Reserved
+.TH newform 1 "1997 年 7 月 21 日" "SunOS 5.11" "用户命令"
+.SH 名称
+newform \- 更改文本文件的格式
+.SH 用法概要
+.LP
+.nf
+\fBnewform\fR [\fB-s\fR] [\fB-i\fR\fItabspec\fR] [\fB-o\fR\fItabspec\fR] [\fB-b\fR\fIn\fR] [\fB-e\fR\fIn\fR] [\fB-p\fR\fIn\fR] 
+     [\fB-a\fR\fIn\fR] [\fB-f\fR] [\fB-c\fR\fIchar\fR] [\fB-l\fR\fIn\fR] [\fIfilename\fR]...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBnewform\fR 读取指定的 \fIfilename\fR 或标准输入（如果未指定输入文件）中的行，并在标准输出中复制这些行。将根据有效的命令行选项重新设置行的格式。
+.sp
+.LP
+除 \fB-s\fR 之外的其他命令行选项可以按任何顺序出现，可以重复，并且可以与可选的 \fIfilename\fR 组合使用。命令行选项按指定的顺序进行处理。也就是说，\fB-e\fR15 \fB-l\fR60 这样的选项序列会产生不同于 \fB-l\fR60 \fB-e\fR15 的结果。选项将应用于命令行上的所有 \fIfilename\fR。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fR
+.ad
+.RS 14n
+.rt  
+剪切每个行中第一个制表符之前的前导字符，然后将最多 8 个剪切的字符放在行的末尾。如果剪切的字符超过 8 个（不计第一个制表符），则将第八个字符替换为 \fB*\fR，丢弃其右侧的所有字符。始终丢弃第一个制表符。
+.sp
+如果对所有行中都没有制表符的文件使用此选项，将出现错误消息并退出程序。剪切的字符将在内部保存，直到指定的其他所有选项都应用到该行为止。然后，将字符添加到处理后的该行末尾。
+.sp
+例如，要将一个所有行都包含前导数字、一个或多个制表符以及文本的文件转换为以文本开头的文件，第一个制表符后的所有制表符都扩展为空格，用空格填充到第 72 列（或者截断到第 72 列），并且开头的前导数字放在第 73 列，则应该使用以下命令：
+.sp
+\fBnewform  \fR\fB-s\fR\fB  \fR\fB-i\fR\fB  \fR\fB-l\fR\fB  \fR\fB-a\fR\fB  \fR\fB-e\fR\fB  \fI filename\fR\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fItabspec\fR \fR
+.ad
+.RS 14n
+.rt  
+输入制表符规范：根据指定的制表符规范，将制表符扩展为空格。\fITabspec\fR 可识别 \fBtabs\fR(1) 中描述的所有制表符规范格式。此外，\fItabspec\fR 可以是 \fB–\fR，在这种情况下 \fBnewform\fR 假定制表符规范位于从标准输入读取的第一行中（请参见 \fBfspec\fR(4)）。如果未指定 \fItabspec\fR，则 \fItabspec\fR 缺省为 \fB-8\fR。\fItabspec\fR 为 \fB-0\fR 时不应有制表符；如果存在制表符，则将其处理为 \fB-1\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR\fItabspec\fR \fR
+.ad
+.RS 14n
+.rt  
+输出制表符规范：根据指定的制表符规范，将空格替换为制表符。制表符规范与 \fB-i\fR\fItabspec\fR 的相同。如果未指定 \fItabspec\fR，则 \fItabspec\fR 缺省为 \fB-8\fR。\fItabspec\fR 为 \fB-0\fR 意味着不在输出中将空格转换为制表符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fIn\fR \fR
+.ad
+.RS 14n
+.rt  
+在行长度大于有效行长度（请参见 \fB-l\fIn\fR\fR）时，从行开头开始截断 \fIn\fR 个字符。缺省设置为截断获得有效行长度所需的字符数。如果使用 \fB-b\fR 时不带 \fIn\fR，则使用缺省值。此选项可用于从 \fBCOBOL\fR 程序中删除序列号，如下所示：
+.sp
+\fBnewform  \fR\fB-l\fR\fB1  \fR\fB-b\fR\fB7  \fIfilename\fR\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fIn\fR\fR
+.ad
+.RS 14n
+.rt  
+与 \fB-b\fR\fIn\fR 相同，但从行末开始截断字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fIn\fR\fR
+.ad
+.RS 14n
+.rt  
+在行长度小于有效行长度时，在行开头加上 \fIn\fR 个字符（请参见 \fB-c\fR\fIchar\fR）。缺省设置为在前面附加获得有效的行长度所需的字符数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fIn\fR\fR
+.ad
+.RS 14n
+.rt  
+与 \fB-p\fR\fIn\fR 相同，但将字符附加到行末。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.RS 14n
+.rt  
+在输出其他任何行之前，在标准输出中写入制表符规范格式行。输出的制表符规范格式行将对应于在 \fBlast\fR \fB-o\fR 选项中所指定的格式。如果未指定 \fB-o\fR 选项，则输出的行将包含缺省规范 \fB-8\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fIchar\fR\fR
+.ad
+.RS 14n
+.rt  
+将前缀/附加字符更改为 \fIchar\fR。\fIchar\fR 的缺省字符为空格。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fIn\fR\fR
+.ad
+.RS 14n
+.rt  
+将有效行长度设置为 \fIn\fR 个字符。如果未输入 \fIn\fR，\fB-l\fR 缺省使用 72。如果没有 \fB-l\fR 选项，缺省行长度为 80 个字符。注意：制表符和退格被视为一个字符（使用 \fB-i\fR 可将制表符扩展为空格）。
+.sp
+必须使用 \fB-l1\fR 来设置短于文件中任何现有行的有效行长度，才能激活 \fB-b\fR 选项。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfilename\fR\fR
+.ad
+.RS 12n
+.rt  
+输入文件
+.RE
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR \fR
+.ad
+.RS 6n
+.rt  
+操作成功。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR \fR
+.ad
+.RS 6n
+.rt  
+操作失败。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+lw(2.75i) lw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+属性类型\fB\fR属性值\fB\fR
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBcsplit\fR(1)、\fBtabs\fR(1)、\fBfspec\fR(4)、\fBattributes\fR(5)
+.SH 诊断
+.sp
+.LP
+所有诊断消息都是致命的。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBusage:\fR \fB  . . .\fR \fR
+.ad
+.sp .6
+.RS 4n
+调用 \fBnewform\fR 时使用了错误的选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB"not \fR\fB-s\fR\fB format"\fR\fR
+.ad
+.sp .6
+.RS 4n
+某个行中没有制表符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB"can't open file"\fR\fR
+.ad
+.sp .6
+.RS 4n
+不需要加以说明。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB"internal line too long"\fR\fR
+.ad
+.sp .6
+.RS 4n
+在内部工作缓冲区中扩展后，某个行的长度超过了 512 个字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB"tabspec in error" \fR\fR
+.ad
+.sp .6
+.RS 4n
+某个制表符规范的格式设置不正确，或者指定的制表停止位置不是升序的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB"tabspec indirection illegal" \fR\fR
+.ad
+.sp .6
+.RS 4n
+从文件（或标准输入）读取的 \fItabspec\fR 可能未包括引用其他文件（或标准输入）的 \fItabspec\fR。
+.RE
+
+.SH 附注
+.sp
+.LP
+正常情况下，\fBnewform\fR 仅记录实有字符；但是，对于 \fB-i\fR 和 \fB-o\fR 选项，\fBnewform\fR 将记录退格以便在相应的逻辑列中排列制表符。
+.sp
+.LP
+\fBnewform\fR 不会提示用户是否要从标准输入读取 \fItabspec\fR（通过使用 \fB\fR\fB-i\fR\fB–\fR 或 \fB\fR\fB- o\fR\fB–\fR）。
+.sp
+.LP
+如果使用了 \fB-f\fR 选项，并且指定的最后一个 \fB-o\fR 选项是 \fB\fR\fB-o\fR\fB–\fR，并且前面有 \fB\fR\fB-o\fR\fB– \fR 或 \fB\fR\fB-i\fR\fB–\fR，则制表符规范格式行将不正确。

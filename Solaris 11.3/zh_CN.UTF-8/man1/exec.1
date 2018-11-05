@@ -1,0 +1,292 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 2007, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Portions Copyright (c) 1982-2007 AT&T Knowledge Ventures
+.TH exec 1 "2011 年 7 月 12 日" "SunOS 5.11" "用户命令"
+.SH 名称
+exec, eval, source \- 用于执行其他命令的 shell 内置函数
+.SH 用法概要
+.SS "sh"
+.LP
+.nf
+\fBexec\fR [\fIargument\fR]...
+.fi
+
+.LP
+.nf
+\fBeval\fR [\fIargument\fR]...
+.fi
+
+.SS "csh"
+.LP
+.nf
+\fBexec\fR \fIcommand\fR
+.fi
+
+.LP
+.nf
+\fBeval\fR \fIargument\fR...
+.fi
+
+.LP
+.nf
+\fBsource\fR [\fB-h\fR] \fIname\fR
+.fi
+
+.SS "ksh88"
+.LP
+.nf
+\fB*exec\fR [\fIargument\fR]...
+.fi
+
+.LP
+.nf
+\fB*eval\fR [\fIargument\fR]...
+.fi
+
+.SS "ksh"
+.LP
+.nf
+\fB+exec\fR [\fB-c\fR] [\fB-a\fR \fIname\fR] [\fIcommand\fR [\fIargument\fR ... ]]
+.fi
+
+.LP
+.nf
+\fB+eval\fR [\fIargument\fR]...
+.fi
+
+.SH 描述
+.SS "sh"
+.sp
+.LP
+将执行这些参数指定的 \fBexec\fR 命令而不是此 shell，同时不创建新进程。输入/输出参数可能会显示，而且如果未指定任何其他参数，会导致修改 shell 输入/输出。
+.sp
+.LP
+\fBeval\fR 内置命令的 \fIargument\fR 将被读取为 shell 的输入并将执行所生成的命令。
+.SS "csh"
+.sp
+.LP
+\fBexec\fR 将执行 \fBcommand\fR 而不是当前 shell，当前 shell 将终止。
+.sp
+.LP
+\fBeval\fR 将其 \fIargument\fR 读取为 shell 的输入，并执行生成的命令。这通常用来执行作为命令或变量替换的结果生成的命令。
+.sp
+.LP
+\fBsource\fR 从 \fIname\fR 读取命令。\fBsource\fR 命令可以嵌套，但如果嵌套太深，shell 的文件描述符可能会不足。在作为来源的文件中在任何层次存在错误都会终止所有嵌套的 \fBsource\fR 命令。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.RS 6n
+.rt  
+将文件 \fIname\fR 中的命令放置在历史记录列表上但不执行它们。
+.RE
+
+.SS "ksh88"
+.sp
+.LP
+如果指定了 \fIarg\fR，则 \fBexec\fR 内置命令将执行这些参数所指定的命令而不是此 shell，同时不创建新进程。输入参数/输出参数可以显示并会影响当前进程。如果未指定任何参数，则该命令的作用是修改输入/输出重定向列表所指定的文件描述符。在这种情况下，任何通过该机制打开的 2 以上的文件描述符编号将在调用其他程序时关闭。
+.sp
+.LP
+\fBeval\fR 的参数将被读取为 shell 的输入并执行所生成的命令。
+.sp
+.LP
+本手册页中，前面带有一个或两个 *（星号）的 \fBksh88\fR(1) 命令会通过以下方式进行特殊处理：
+.RS +4
+.TP
+1.
+命令完成时，该命令前面的变量赋值列表仍然有效。
+.RE
+.RS +4
+.TP
+2.
+在变量赋值后进行 \fBI/O\fR 重定向。
+.RE
+.RS +4
+.TP
+3.
+脚本中包含的错误会导致其中止。
+.RE
+.RS +4
+.TP
+4.
+如果字的后面是前面加有**的命令且字为变量赋值的格式，则使用与变量赋值相同的规则扩展这些字。这表示在 \fB=\fR 符号之后执行波浪号替换，并且不执行字拆分和文件名生成。
+.RE
+.SS "ksh"
+.sp
+.LP
+\fBexec\fR 是一个特殊内置命令，可用于处理文件描述符或用于将当前的 shell 替换为新的命令。 
+.sp
+.LP
+如果指定了 \fIcommand\fR，则当前的 shell 进程会被 \fIcommand\fR 替代，而不是运行 \fIcommand\fR 并等待其完成。无需使用 \fBexec\fR 来增强性能，因为 shell 会尽可能在内部隐式地使用 \fBexec\fR 机制。 
+.sp
+.LP
+如果未指定任何操作数，则 \fBexec\fR 可用于打开或关闭文件，或使用所有命令都可用的标准重定向机制处理当前 shell 环境中 \fB0\fR 到 \fB9\fR 之间的文件描述符。对于按此方法打开的 \fB2\fR 以上的文件描述符编号，会设置 close-on-exec 标志，这样在调用其他程序时就可关闭该文件描述符。 
+.sp
+.LP
+由于 \fBexec\fR 是一个特殊命令，任何失败都会导致调用该命令的脚本退出。通过从 \fBcommand\fR 实用程序调用 \fBexec\fR 可防止此类情况发生。 
+.sp
+.LP
+无法从受限 shell 调用 \fBexec\fR 来创建文件或打开文件进行写入或附加。
+.sp
+.LP
+\fBeval\fR 是一个 shell 特殊内置命令，可通过将 \fIargument\fR 串联在一起（每个参数以空格分隔）来构造命令。生成的字符串将作为 shell 的输入，并在当前环境中进行计算。命令字将扩展两次，一次在构造 \fIargument\fR 时，还有一次在 shell 执行所构造的命令时。未指定 \fIargument\fR 不会出错。 
+.sp
+.LP
+本手册页中，前面带有一个或两个 \fB+\fR 符号的 \fBksh\fR 命令是特殊的内置命令，将通过以下方式进行特殊处理：
+.RS +4
+.TP
+1.
+命令完成时，该命令前面的变量赋值列表仍然有效。
+.RE
+.RS +4
+.TP
+2.
+在变量赋值之后处理 I/O 重定向。
+.RE
+.RS +4
+.TP
+3.
+脚本中包含的错误会导致其中止。
+.RE
+.RS +4
+.TP
+4.
+它们不是有效的函数名称。
+.RE
+.RS +4
+.TP
+5.
+对于跟在前面添加了 \fB++\fR 的命令之后且格式为变量赋值格式的单词，将通过与变量赋值相同的规则进行扩展。这意味着将在 \fB=\fR 符号之后执行波浪号替换，并且不执行字段分割和文件名生成。 
+.RE
+.SH 选项
+.SS "ksh"
+.sp
+.LP
+\fBksh exec\fR 支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fIname\fR\fR
+.ad
+.RS 11n
+.rt  
+\fBargv[0]\fR 设置为命令的 \fIname\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 11n
+.rt  
+在执行之前清除所有的环境变量，但当前 \fBexec\fR 命令中的变量赋值除外。
+.RE
+
+.SH 退出状态
+.SS "ksh88"
+.sp
+.LP
+\fBexec\fR 返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 9n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1-125\fR\fR
+.ad
+.RS 9n
+.rt  
+发生了重定向错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB127\fR\fR
+.ad
+.RS 9n
+.rt  
+未找到 \fIcommand\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB126\fR\fR
+.ad
+.RS 9n
+.rt  
+找到了 \fIcommand\fR，但不是可执行的实用程序。
+.RE
+
+.SS "ksh"
+.sp
+.LP
+\fBexec\fR 返回以下退出值。如果指定了 \fIcommand\fR，则 \fBexec\fR 不会返回以下退出值。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功完成。已成功完成所有的 I/O 重定向。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。 
+.RE
+
+.sp
+.LP
+\fBeval\fR 返回以下退出值：
+.sp
+.LP
+如果未指定 \fIargument\fR，则退出状态为 \fB0\fR.否则，该退出状态为 \fIargument\fR 操作数所定义命令的退出状态。
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBcsh\fR(1)、\fBksh\fR(1)、\fBksh88\fR(1)、\fBsh\fR(1)、\fBattributes\fR(5)

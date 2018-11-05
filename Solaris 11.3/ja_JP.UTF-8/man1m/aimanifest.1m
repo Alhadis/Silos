@@ -1,0 +1,1072 @@
+'\" te
+.\" Copyright (c) 2011, 2012, Oracle and/or its affiliates.All rights reserved.
+.TH aimanifest 1M "2012 年 6 月 19 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+aimanifest \- AI (Automated Installer) で使用される XML ファイルの変更
+.SH 形式
+.LP
+.nf
+/usr/bin/aimanifest [-h]
+.fi
+
+.LP
+.nf
+aimanifest add [-r] \fIpath\fR \fIvalue\fR
+.fi
+
+.LP
+.nf
+aimanifest delete \fIpath\fR
+.fi
+
+.LP
+.nf
+aimanifest get [-r] \fIpath\fR
+.fi
+
+.LP
+.nf
+aimanifest set [-r] \fIpath\fR \fIvalue\fR
+.fi
+
+.LP
+.nf
+aimanifest load [-i] \fIfilename\fR
+.fi
+
+.LP
+.nf
+aimanifest validate
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBaimanifest\fR コマンドは、新しい XML マニフェストを作成したり、既存のものを変更したりします。\fBaimanifest\fR は、DTD 定義への有効な \fB!DOCTYPE\fR 参照を含む XML ファイルで使用でき、AI (Automated Installer) で使用される派生マニフェストを作成するためのものです。AI 派生マニフェストの情報については、『\fIOracle Solaris 11 システムのインストール\fR』を参照してください。
+.sp
+.LP
+\fBaimanifest\fR コマンドは、マニフェストを作成するときに複数回呼び出すことができます。\fBAIM_MANIFEST\fR 環境変数は、\fBaimanifest\fR が変更するマニフェストの場所を指定します。\fBAIM_MANIFEST\fR は設定する必要があります。\fBload\fR、\fBadd\fR、または \fBset\fR サブコマンドを指定して \fBaimanifest\fR コマンドを呼び出すたびに、\fBAIM_MANIFEST\fR ファイルが開き、変更され、保存されます。
+.sp
+.LP
+\fBaimanifest\fR コマンドで変更できる \fBAIM_MANIFEST\fR ファイルには、少なくとも次の部分が両方とも含まれている必要があります。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+作成中の XML マニフェストで有効な DTD への \fB!DOCTYPE\fR 参照。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+このマニフェストのルート要素。
+.RE
+.sp
+.LP
+AI が派生マニフェストスクリプトを実行する場合のように、空の \fBAIM_MANIFEST\fR ファイルから処理を始める場合は、少なくとも最小限必要な \fBAIM_MANIFEST\fR ファイルを読み込む \fBload\fR サブコマンドを、最初の \fBaimanifest\fR コマンドで指定する必要があります。マニフェストを変更する後続の \fBaimanifest\fR コマンドは、作成中のマニフェスト内のどこに要素を追加すべきかを DTD に基づいて判断します。
+.sp
+.LP
+エラーメッセージや情報メッセージを、\fBstdout\fR や \fBstderr\fR に表示するだけでなくファイルにも保存するには、\fBAIM_LOGFILE\fR 環境変数をログファイルの場所に設定します。ログファイルの末尾に情報が追加されます。このログファイルはクリアーされません。
+.SH オプション
+.sp
+.LP
+\fBaimanifest\fR コマンドのオプションは次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR、\fB--help\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用法のヘルプメッセージを表示します。
+.RE
+
+.sp
+.LP
+\fBaimanifest\fR コマンドの \fBadd\fR、\fBget\fR、および \fBset\fR サブコマンドのオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR、\fB--return-path\fR\fR
+.ad
+.sp .6
+.RS 4n
+この \fBaimanifest\fR コマンドが作成または処理する各 XML 要素のパスを返します。返される各パスは、ノード ID のチェーンです。これらの返されたパスを保存しておけば、後続の \fBaimanifest\fR 呼び出しで使用できます。AI マニフェストの構築中に値が変更される可能性があるため、\fB-r\fR オプションで返されるパスを使用するほうが XML 要素や属性値を使ってパスを指定するよりも信頼性が高くなります。\fB-r\fR オプションで返されるパスの詳細については、「パスを返す」セクションを参照してください。
+.RE
+
+.sp
+.LP
+\fBaimanifest\fR コマンドの \fBload\fR サブコマンドのオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR、\fB--incremental\fR\fR
+.ad
+.sp .6
+.RS 4n
+新しいデータを追加する前に既存の \fBAIM_MANIFEST\fR データをクリアしません。
+.RE
+
+.SH サブコマンド
+.sp
+.LP
+サポートされているサブコマンドは次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaimanifest add [-r | --return-path] \fIpath \fR \fIvalue\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+XML マニフェストに新しい要素を追加します。値 \fIvalue\fR を持つ新しい要素を \fIpath\fR の位置に追加します。\fIpath\fR の詳細については、「オペランド」セクションを参照してください。\fIpath\fR が属性 (\fB@\fIattr\fR\fR) で終わっている場合、新しい要素は \fIattr\fR 属性を持ち、\fIvalue\fR はその属性の値になります。
+.sp
+\fIpath\fR 内の親/子関係の検査以外の検証は実行されません。
+.sp
+\fB-r\fR オプションでは、新しく追加されたノードへのパスが返されます。詳細については、「パスを返す」セクションを参照してください。
+.sp
+親パスが \fBAIM_MANIFEST\fR ファイル内の要素に一致する場合、1 要素だけに一致する必要があります。一致する親要素の子として新しい要素が作成されます。このセクションの「例 2: 値を含むパス」で示すように、パスには一意の親要素に一致する要素や属性値を指定できます。
+.sp
+.LP
+親パスが \fBAIM_MANIFEST\fR ファイル内の要素に一致しない場合、必要に応じて新しい要素が作成され、その新しい親に新しい子要素が追加されます。追加される要素へのパスは、次の規則に従って既存の要素から分割されます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+分割は、値を指定する、パスのすべての部分のあとで発生します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+分割は、値を指定するパスのすべての部分のあと、関連する同じタグの要素が DTD で複数許可されている最初の位置で発生します。
+.RE
+.sp
+.LP
+この XML マニフェストスキーマを使って後述の各例を分析します。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+マニフェストは単一の A ノードで始まります。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+A ノードは B ノードの子を 1 つだけ持つことができます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+B ノードは C ノードの子を複数持つことができます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+C ノードは D ノードの子を複数持つことができます。
+.RE
+\fB例 1: 単純なパス\fR:AI マニフェストには \fB/A/B/C\fR のように、A ノードが 1 つ、B ノードが 1 つ、C ノードが 1 つ含まれています。\fBadd\fR サブコマンドは、\fIpath\fR が \fB/A/B/C/D\fR として発行されます。この場合、C ノードが同じタグの兄弟を持てるパス内で最初のノードであるため、新しい C ノードが作成されます。新しい D ノードは新しい C ノードの子として追加されます。結果のマニフェストの構造は、\fB/A/B/{C,C/D}\fR となります。同じコマンドを D の値を変えて発行すると、\fB/A/B/{C,C/D,C/D}\fR のように C ノードが 3 個になります。
+.sp
+\fB例 2: 値を含むパス\fR:AI マニフェストに A ノードが 1 つ、B ノードが 1 つ、C ノードが 2 つ含まれています。値 1 を持つ C ノードは 1 つだけであるため、マニフェストの構造は \fB/A/B/{C,C=1}\fR となります。\fBadd\fR サブコマンドが、\fIpath\fR が \fB/A/B/C=1/D\fR、\fIvalue\fR が 10 で発行されます。この場合、C に値 1 を指定することで一意のノードが識別され、値が指定されたブランチの位置やそれより前の位置でパスを分割することはできないため、新しい C ノードは追加されません。このパスを分割できる最初の位置は、D です。値 10 の新しい D ノードが、値 1 の C ノードの子として追加されます。結果のマニフェストの構造は、\fB/A/B/{C,C=1/D=10}\fR となります。D の値を 20 として同じコマンドを発行すると、\fB/A/B/{C,C=1/{D=10,D=20}}\fR となります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBaimanifest delete \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+パスに一致するノードまたは属性をすべて削除します。パスがノードを指定している場合は、パスに一致する各ノードをルートとするサブツリーを削除します。パスが属性に一致する場合は、パスに一致するすべての属性を削除し、ノードは削除しません。パスの詳細については、「path オペランド」のセクションを参照してください。
+.sp
+正常終了時に一致数が標準出力に出力されます。\fB\fR
+.sp
+.in +2
+.nf
+5 element(s)/subtree(s) deleted
+5 attribute(s) deleted
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaimanifest get [-r | --return-path] \fIpath \fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+パスに一致する各要素または属性の値を取得します。要素または属性の値が空の場合は、空の文字列 (\fB""\fR) が表示されます。パスの詳細については、「path オペランド」のセクションを参照してください。
+.sp
+\fB-r\fR オプションを指定すると、アクセスした各ノードへのパスが、2 つ目の返される文字列としてノードごとに返されます。詳細については、「パスを返す」セクションを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaimanifest set [-r | --return-path] \fIpath \fR \fIvalue\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+パスに一致する各要素または属性の値を変更するか、パスに一致する既存の要素の新しい属性を作成します。検証は実行されません。パスの詳細については、「path オペランド」のセクションを参照してください。
+.sp
+属性の値を設定する場合は、その属性が存在している必要はありませんが、属性が属す要素は存在している必要があります。
+.sp
+\fB-r\fR オプションを指定しない場合、正常終了時に一致数が標準出力に出力されます。\fB\fR
+.sp
+.in +2
+.nf
+5 element(s) set
+5 attribute(s) set
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaimanifest load [-i | --incremental] \fIfilename \fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+ファイル \fIfilename\fR から XML マニフェストまたは部分的な XML マニフェストを読み込みます。要素の親/子関係の検査以外の検証は実行されません。
+.sp
+\fB-i\fR オプションが指定されなかった場合、既存の XML データをすべて上書きします。\fBAIM_MANIFEST\fR ファイル内のデータはすべて、\fIfilename\fR ファイルの内容で置換されます。\fIfilename\fR ファイルには、後続の \fBaimanifest\fR コマンドがファイルを変更できるように、DTD への \fB!DOCTYPE\fR 参照が含まれている必要があります。
+.sp
+\fB-i\fR オプションが指定された場合、新しいデータを追加する前に \fBAIM_MANIFEST\fR のデータをクリアーしません。代わりに、新しいデータの挿入または新しいデータと既存の XML データとのマージを増分的に行います。\fBAIM_MANIFEST\fR の \fB!DOCTYPE\fR 参照によって指定される DTD に基づいて、\fIfilename\fR のデータをマージする場所と方法が決定されます。\fB!DOCTYPE\fR 参照が見つからない場合は、\fB/usr/share/install/ai.dtd\fR にある AI マニフェスト DTD が使用されます。\fIfilename\fR のデータが DTD と矛盾する場合は、ゼロ以外のエラーステータスが返されます。
+.sp
+.LP
+次の各考慮点は、\fBAIM_MANIFEST\fR マニフェスト内のどこに新しいデータが挿入されるかに影響を与えます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBAIM_MANIFEST\fR のデータパスと \fIfilename\fR のデータパスの先頭付近の要素のタグが、どの程度まで一致するか
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+それらの \fBAIM_MANIFEST\fR データ要素の配下ではどの子要素が許可されるか
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+同じタグの兄弟要素が許可される場所
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+子を持たない \fBAIM_MANIFEST\fR データノードの配置場所
+.RE
+.sp
+.LP
+\fIfilename\fR データの各要素が処理される際には、次の条件がすべて真であれば一般に、\fBAIM_MANIFEST\fR データ内でこの要素に対応する新しいノードは作成されません。代わりに、既存のノードが新しいデータで置き換えられます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+両方のデータセットに、同じタグのノードが同じ位置に含まれている。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBAIM_MANIFEST\fR の \fB!DOCTYPE\fR 参照で指定される DTD が、これらのノードの両方が同じタグの兄弟要素として一緒に存在することを許可しない。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fIfilename\fR データ要素が子を持っている。
+.RE
+\fIfilename\fR からの要素を挿入する場合、新しいノードの作成が開始される分割は、\fBAIM_MANIFEST\fR データのルートにできるだけ近い位置で行われます。分割の最初の新しいノードは、同じタグの兄弟要素が許可される位置の中でもっとも早い位置で作成されますが、\fBAIM_MANIFEST\fR 内に同じタグの要素が存在していない場合はもっとも早い適切な位置で作成されます。
+.sp
+.LP
+この XML マニフェストスキーマを使って後述の各例を分析します。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+マニフェストは単一の A ノードで始まります。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+A ノードは B ノードの子を 1 つだけ持つことができます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+B ノードは C ノードの子を複数持つことができます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+B ノードは E ノードの子を 1 つだけ持つことができます。
+.RE
+.sp
+.LP
+\fB例 1: 同じタグの要素の挿入\fR:\fBAIM_MANIFEST\fR の内容が \fB/A/B/C1/D1\fR、\fIfilename\fR の内容が \fB/A/B/C2/D2\fR である場合に \fBload -i\fR コマンドを実行すると、\fBAIM_MANIFEST\fR ファイルの内容は \fB/A/B/{C1/D1,C2/D2}\fR になります。C ノードが、新しいノードを追加できる最初の位置です。\fIfilename\fR データからの C ノードは、\fBAIM_MANIFEST\fR データ内の既存の C ノードのあとに追加されます。2 つの A 要素の値が異なる場合や、2 つの B 要素の値が異なる場合、\fIfilename\fR 要素の値で \fBAIM_MANIFEST\fR 要素の値が置き換えられます。2 つの A 要素の属性が異なる場合や 2 つの B 要素の属性が異なる場合は、属性値がマージされます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBAIM_MANIFEST\fR ファイルと \fIfilename\fR ファイルの両方に存在している A と B の属性は、マージ後のファイルでは \fIfilename\fR ファイルからの値を持ちます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBAIM_MANIFEST\fR ファイル、\fIfilename\fR ファイルのいずれかに存在するが両方のファイルには存在していない A と B の属性は、マージ後のファイルではすべて保持されます。
+.RE
+\fB例 2: 異なるタグの要素の挿入\fR。\fBAIM_MANIFEST\fR の内容が \fB/A/B/C/D\fR、\fIfilename\fR の内容が \fB/A/B/E/F\fR である場合に \fBload -i\fR コマンドを実行すると、\fBAIM_MANIFEST \fR ファイルの内容は \fB/A/B/{E/F,C/D}\fR になります。E ノードは、このノードが DTD によって許可される最初の位置に追加されます。要素 A と B の値は \fIfilename\fR からの値となり、A と B の属性は、前述の例 1 で説明したように \fIfilename\fR から \fBAIM_MANIFEST\fR にマージされます。
+.sp
+正しいマージ位置を決定できない場合があります。これが起こる可能性があるのは、マージされるノードのあとに続く必要のある兄弟がまだ追加されていない場合です。この問題を避けるには、複数のノードまたはサブツリーを共通の親ノードに DTD で規定された順番で追加します。ノードは、その一連の新しい兄弟の中での適切な位置を決定できない場合には、それらの兄弟の末尾に配置されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaimanifest validate\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB!DOCTYPE\fR 文で参照された DTD に基づいて \fBAIM_MANIFEST\fR マニフェストを検証します。エラーは \fBstderr\fR に表示されます。検証が失敗した場合はゼロ以外のステータスが返されます。
+.RE
+
+.SH オペランド
+.sp
+.LP
+次のオペランドは必須です。
+.SS "filename オペランド"
+.sp
+.LP
+\fBload\fR サブコマンドには、\fIfilename\fR オペランド (\fBAIM_MANIFEST\fR マニフェストに読み込む完全または部分的なマニフェストの名前) が必要です。
+.SS "value オペランド"
+.sp
+.LP
+\fBadd\fR および \fBset\fR サブコマンドでは \fIvalue\fR オペランドが必要です。\fIvalue\fR オペランドは、\fIpath\fR オペランドで指定された要素または属性の有効な値です。
+.SS "path オペランド"
+.sp
+.LP
+\fBaimanifest\fR コマンドの \fBadd\fR、\fBdelete\fR、\fBget\fR、および \fBset\fR サブコマンドには、\fIpath\fR オペランドが必要です。パスは、要素と属性から成る XML 階層内のノードを定義します。
+.sp
+.LP
+XML 要素の階層構造は XML ツリーとも呼ばれます。次の部分的な AI マニフェストの場合、\fBauto_install\fR 要素がツリーのルート、\fBai_instance\fR 要素と \fBsoftware\fR 要素がサブツリーのブランチまたはルートです。
+.sp
+.in +2
+.nf
+<auto_install>
+  <ai_instance>
+    <software type="IPS"/>
+  </ai_instance>
+</auto_install>
+.fi
+.in -2
+
+.sp
+.LP
+\fBaimanifest\fR パス構文では、スラッシュ文字 (/) を使ってツリー構造内の各ブランチを示します。現在の例では、\fBsoftware\fR 要素へのパスは \fB/auto_install/ai_instance/software\fR です。
+.sp
+.LP
+属性は要素にバインドされます。\fBaimanifest\fR パス構文では、アットマーク記号 (@) を使って属性名を識別します。\fBsoftware\fR 要素の \fBtype\fR 属性へのパスは、\fB/auto_install/ai_instance/software@type\fR です。
+.sp
+.LP
+\fBaimanifest\fR の path オペランドは、複数の要素に相当する場合があります。特定の 1 要素をターゲットにするには、要素や属性の値を必要に応じて含めることで、パスを一意にします。たとえば、次の部分的な AI マニフェストで定義されている 2 番目のスライスのサイズを指定するために、パス \fB/auto_install/ai_instance/target/disk/slice[@name="4"]/size@val\fR を使ってサイズを指定するスライスを識別できます。
+.sp
+.in +2
+.nf
+<auto_install>
+  <ai_instance>
+    <target>
+        <disk>
+          <slice name="0"/>
+          <slice name="4"/>
+        </disk>
+    </target>
+  </ai_instance>
+</auto_install>
+.fi
+.in -2
+
+.sp
+.LP
+\fBget\fR、\fBset\fR、および \fBdelete\fR サブコマンドは、複数の要素に相当する可能性のあるパスを受け入れることができます。\fBadd\fR サブコマンドには、単一の (親) 要素に一致するパスが必要です。
+.sp
+.LP
+相対パスは許可されます。前の段落で示した \fBslice\fR のパスは、\fBname\fR 属性値が 4 の \fBslice\fR は 1 つだけであるため、\fBai_instance\fR、\fBtarget\fR、\fBdisk\fR、または \fBslice\fR から指定を始めることもできます。たとえば、パス \fBslice[@name="4"]/size@val\fR を使用できます。
+.sp
+.LP
+\fIpath\fR 内のある \fIvalue\fR にスラッシュ文字が含まれている場合、\fB/name="pkg:/entire"\fR のようにその値を単一引用符か二重引用符で囲む必要があります。
+.sp
+.LP
+\fBaimanifest\fR がシェルスクリプト内で呼び出される場合には、引用符を含む値にさらに特別な処置が必要になる場合があります。シェルスクリプト内では、\fBaimanifest\fR パス値に含まれる引用符の前にバックスラッシュ文字 (\) を付けて、シェルが引用符を削除したり解釈したりしないようにエスケープが必要になる場合があります。使用するシェルの規則を確認してください。次の例は、\fBksh93\fR スクリプトのスラッシュ文字付きの値を示しています。
+.sp
+.in +2
+.nf
+/usr/bin/aimanifest get software_data[name=\e"pkg:/entire\e"]@action
+.fi
+.in -2
+
+.sp
+.LP
+このマニュアルページのほとんどの例では、このマニュアルページがスクリプト内や特定のシェル内で \fBaimanifest\fR が呼び出されることを想定していないため、バックスラッシュエスケープ文字が省略されています。AI 派生マニフェストのスクリプトについては、『\fIOracle Solaris 11 システムのインストール\fR』を参照してください。
+.sp
+.LP
+次の各形式の分岐は、要素や要素属性へのパスの構築方法を示しています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/A\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBA\fR は要素のタグ名です (例、\fB/auto_install\fR)。この分岐指定は単純な分岐とも呼ばれます。単純な分岐のみだけのパスは、単純なパスと呼ばれます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/A=\fIvalue\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBA\fR は要素のタグ名、\fIvalue\fR はその要素の値です (例: \fB/name="pkg:/entire"\fR)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/A[B/C=\fIvalue\fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBA\fR は要素、\fBB\fR は \fBA\fR の子である要素、\fBC\fR は \fBB\fR の子である要素、\fIvalue\fR は \fBC\fR 要素の値です。このパス形式は、値が \fIvalue\fR の孫要素 \fBC\fR を持つ \fBA\fR 要素を指定します。たとえば、AI マニフェストに software セクションが複数含まれている場合には、この形式を使用して、次のパスのようにパッケージ \fBpkg:/entire\fR をインストールする software セクションを処理対象にできます。
+.sp
+.in +2
+.nf
+software[software_data/name="pkg:/entire"]
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/A[@Aattr=\fIvalue\fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBA\fR は要素、\fBAattr\fR は \fBA\fR の属性、\fIvalue\fR は \fBAattr\fR 属性の値です。このパス形式は、値 \fIvalue\fR の属性 \fBAattr\fR を持つ \fBA\fR 要素を指定します。たとえば、AI マニフェストにスライスが複数定義されている場合には、この形式を使用して、\fBslice[@name="4"]\fR のように \fBname\fR の値が 4 のスライスを処理対象にできます
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/A[B/C@Cattr=\fIvalue\fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBA\fR は要素、\fBB\fR は \fBA\fR 要素の子、\fBC\fR は \fBB\fR 要素の子、\fBCattr\fR は \fBC\fR の属性、\fIvalue\fR は \fBCattr\fR 属性の値です。このパス形式は、値 \fIvalue\fR の属性 \fBCattr\fR を持つ孫要素 \fBC\fR を持つ \fBA\fR 要素を指定します。たとえば、AI マニフェストに複数のソフトウェアセクションがある場合、この形式を使用すると、パス \fBsoftware[source/publisher@name="solaris"]\fR のように、名前の値が \fBsolaris\fR のパブリッシャーセクションを持つソフトウェアセクションに対する操作が可能になります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/A[1]\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB/A[1]\fR は、マニフェスト内での \fBA\fR 要素の最初のインスタンスを指定します。たとえば、AI マニフェストに software セクションが複数含まれている場合には、この形式を使用して、\fB/auto_install[1]/ai_instance[1]/software[2]\fR のように 2 番目の software セクションを処理対象にできます。
+.sp
+これが、\fB-r\fR オプションで返されるパスの形式です。「パスを返す」セクションを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/A@Aattr\fR\fR
+.ad
+.sp .6
+.RS 4n
+このパスは、\fBA\fR 要素の \fBAattr\fR 属性を指定します。このパスが指定するのは、\fBA\fR 要素ではなく \fBAattr\fR 属性です。この形式は、\fBAattr\fR 属性を設定または取得する場合に使用します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/A[B/C=\fIvalue\fR]@Aattr\fR\fR
+.ad
+.sp .6
+.RS 4n
+このパスは、値 \fIvalue\fR の孫要素 \fBC\fR を持つ \fBA\fR 要素の \fBAattr\fR 属性を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/A[B/C@Cattr=\fIvalue\fR]@Aattr \fR\fR
+.ad
+.sp .6
+.RS 4n
+このパスは、値 \fIvalue\fR の属性 \fBCattr\fR を持つ孫要素 \fBC\fR を持つ \fBA\fR 要素の \fBAattr\fR 属性を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/A/B=\fIvalue\fR@Battr\fR\fR
+.ad
+.sp .6
+.RS 4n
+このパスは、値 \fIvalue\fR の \fBB\fR 要素の \fBBattr\fR 属性を指定します。\fBB\fR 要素は \fBA\fR 要素の子です。
+.RE
+
+.SH パスを返す
+.sp
+.LP
+\fBadd\fR、\fBget\fR、および \fBset\fR サブコマンドで \fB-r\fR オプションを使用すると、サブコマンドによって作成またはアクセスされた各要素のアドレスが返されます。これらの返されるアドレスの形式は、ノード ID のチェーンです。これらの返されたアドレスを使用すると、返された要素の値が変更されている場合でも、それらの要素にふたたびアクセスできます。
+.sp
+.LP
+後述の例から、\fB-r\fR オプションで返されるアドレスのほうが、要素や属性値を指定するパスよりもずっと使いやすいことがわかります。次のノードツリーから始めます。
+.sp
+.in +2
+.nf
+        auto_install
+             |
+        ai_instance
+             |
+           target
+             |
+           disk
+         attribute: whole_disk=true
+             |
+         disk_name
+         attribute: name=data1
+         attribute: name_type=volid
+.fi
+.in -2
+
+.sp
+.LP
+\fBname\fR 属性値が \fBdata2\fR、\fBname_type\fR 属性値が \fBvolid\fR の新しい \fBdisk\fR ノードを追加します:
+.sp
+.in +2
+.nf
+        auto_install
+             |
+        ai_instance
+             |
+           target
+             |
+  |----------|----------|
+disk                  disk
+whole_disk=true       whole_disk=true
+    |                     |
+disk_name             disk_name
+name=data1            name=data2
+name_type=volid       name_type=volid
+.fi
+.in -2
+
+.sp
+.LP
+属性が 1 つ新しい \fBdisk_name\fR 要素は、単一のコマンドを使って容易に追加できます。2 番目や 3 番目の属性を追加するには、変更する \fBdisk_name\fR 要素を指定する必要があります。同じノードに複数回アクセスするための次の 2 つの方法を比較してください。
+.SS "値を使用したパスの指定"
+.sp
+.LP
+この例のコマンドでは、値を使ってパスを指定しています。最初のコマンドで一意の値を代入することにより、後続のコマンドでその値を使って一意のパスを指定できるようにする必要があります。この方法では、値が変更されると間違った結果が生成される可能性があります。
+.sp
+.in +2
+.nf
+$ \fBaimanifest add target/disk/disk_name@name data2\fR
+$ \fBaimanifest set \e\fR
+> \fBtarget/disk/disk_name[@name=data2]@name_type volid\fR
+$ \fBaimanifest set \e\fR
+> \fBtarget/disk[disk_name@name=data2]@whole_disk true\fR
+.fi
+.in -2
+.sp
+
+.SS "返されたパスを使用したパスの指定"
+.sp
+.LP
+同じノードに複数回アクセスするためのもっとも信頼性の高い方法は、新しい \fBdisk_name\fR 要素へのパスを保存したあと、その保存したパスを後続のアクセスで使用することです。
+.sp
+.in +2
+.nf
+$ \fBNewDisk=$(aimanifest add -r target/disk@whole_disk true)\fR
+$ \fBaimanifest add ${NewDisk}/disk_name@name data2\fR
+$ \fBaimanifest add ${NewDisk}/disk_name@name_type volid\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fB-r\fR オプション経由で \fB$NewDisk\fR に返されるパスは、ID を使ってノードを表現しており、値は使用していません。
+.sp
+.in +2
+.nf
+$ \fBaimanifest add -r target/disk/@whole_disk true\fR
+/auto_install[1]/ai_instance[1]/target[1]/disk[2]
+.fi
+.in -2
+.sp
+
+.SH 使用例
+.sp
+.LP
+次の例を試すには、\fBAIM_MANIFEST\fR を設定する必要があります。
+.sp
+.in +2
+.nf
+$ \fBexport AIM_MANIFEST=/tmp/aimtest.xml\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBaimanifest\fR コマンドで変更できる \fBAIM_MANIFEST\fR ファイルには、少なくとも次の部分が両方とも含まれている必要があります。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+作成中の XML マニフェストで有効な DTD への \fB!DOCTYPE\fR 参照。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+このマニフェストのルート要素。
+.RE
+.sp
+.LP
+次の例は、AI マニフェストの最小 \fBAIM_MANIFEST\fR マニフェストファイルを示しています。
+.sp
+.in +2
+.nf
+<!DOCTYPE auto_install SYSTEM "file:///usr/share/install/ai.dtd">
+<auto_install/>
+.fi
+.in -2
+
+.sp
+.LP
+通常、既存の有効な AI マニフェストを処理対象とする派生マニフェストスクリプト内で \fBaimanifest\fR コマンドを使用します。これらの例を試すには、\fB/usr/share/auto_install/manifest/default.xml\fR をコピーしたあと、このコピーを参照する \fBAIM_MANIFEST\fR を定義します。このコピーが書き込み可能になっていることを確認してください。
+.LP
+\fB例 1 \fR\fBauto_reboot\fR 属性の設定
+.sp
+.in +2
+.nf
+$ \fBaimanifest set /auto_install/ai_instance@auto_reboot false\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fR\fBauto_reboot\fR 値の取得
+.sp
+.in +2
+.nf
+$ \fBaimanifest get /auto_install/ai_instance@auto_reboot\fR
+false
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fR値パスを使用したパブリッシャーの追加
+.sp
+.LP
+この例のパッケージリポジトリは、\fBfile:///net/host2/export/extras_repo\fR にあるファイルリポジトリです。パブリッシャーは \fBextras\fR です。\fBsoftware \fR 要素は \fBsource\fR 要素を 1 つだけ持つことができるため、この例では新しい \fBpublisher\fR 要素を発行元の \fBsolaris\fR を含む \fBsource\fR 要素に追加します。
+
+.sp
+.in +2
+.nf
+$ \fBaimanifest add \e\fR
+> \fBsoftware[@type=IPS]/source[publisher@name=solaris]/publisher@name \e\fR
+\fBextras\fR
+$ \fBaimanifest add \e\fR
+> \fBpublisher[@name=extras]/origin@name \e\fR
+> \fBfile:///net/host2/export/extras_repo\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBdefault.xml\fR AI マニフェストから開始した場合、これらの \fBaimanifest\fR コマンドから次の AI マニフェストエントリが得られます。簡潔にするために、\fBdestination\fR および \fBsoftware_data\fR 要素は省略されています。
+
+.sp
+.in +2
+.nf
+<software type="IPS">
+  <source>
+    <publisher name="solaris">
+      <origin name="http://pkg.oracle.com/solaris/release"/>
+    </publisher>
+    <publisher name="extras">
+      <origin name="file:///net/host2/export/extras_repo"/>
+    </publisher>
+  </source>
+</software>
+.fi
+.in -2
+
+.LP
+\fB例 4 \fR返されたパスを使用したパブリッシャーの追加
+.sp
+.LP
+この例は前の例と同じですが、異なる方法を使って同じ結果を実現しています。
+
+.sp
+.in +2
+.nf
+$ \fBNEW_PUB=$(aimanifest add -r \e\fR
+> \fBsoftware[@type=IPS]/source[publisher@name=solaris]/publisher@name \e\fR
+\fBextras)\fR
+$ \fBecho $NEW_PUB\fR
+/auto_install[1]/ai_instance[1]/software[1]/source[1]/publisher[2]
+$ \fBaimanifest add ${NEW_PUB}/origin@name \e\fR
+\fBfile:///net/host2/export/extras_repo\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 5 \fRマニフェストフラグメントを追加することによるパブリッシャーの追加
+.sp
+.LP
+この例では、部分的な AI マニフェストを含むファイルをロードすることで、発行元 \fBextras\fR を追加します。この場合、結果は、発行元 \fBextras\fR が定義された IPS タイプの別個の追加 \fBsoftware\fR 要素になります。この新しい \fBsoftware\fR 要素は、発行元 \fBsolaris\fR を定義する元の IPS \fBsoftware\fR 要素のあとに挿入されます。この新しい \fBsoftware\fR 要素内部の \fBsoftware_data \fR 要素で命名されたパッケージは、発行元の \fBextras\fR またはこの新しい \fBsoftware\fR 要素で定義されたほかの発行元からのみ検索されます。インストールするソフトウェアのない \fBsoftware\fR 要素は役に立たないため、このマニフェストフラグメントはインストールするパッケージも定義します。
+
+.sp
+.LP
+次の内容を持つ \fBextras.xml\fR という名前のファイルを作成します。
+
+.sp
+.in +2
+.nf
+<auto_install>
+  <ai_instance>
+    <software type="IPS">
+      <source>
+        <publisher name="extras">
+          <origin name="file:///net/host2/export/extras_repo"/>
+        </publisher>
+      </source>
+      <software_data action="install">
+        <name>pkg:/package/from/extras_repo</name>
+      </software_data> 
+    </software>
+  </ai_instance>
+</auto_install>
+.fi
+.in -2
+
+.sp
+.LP
+\fBsoftware\fR セクションだけが必要な場合でも、\fBauto_install\fR 要素と \fBai_instance\fR 要素も含める必要があります。読み込むファイル内で \fBauto_install\fR または \fBai_instance\fR 要素の属性が指定されていた場合、それらの属性値が既存の値を置き換えるか追加されます。
+
+.sp
+.LP
+この \fBsoftware\fR セクションを \fBAIM_MANIFEST\fR マニフェストに追加するには、次のコマンドを使用します。
+
+.sp
+.in +2
+.nf
+$ \fBaimanifest load -i extras.xml\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 6 \fR値パスを使用したパッケージの追加
+.sp
+.LP
+この例では、発行元の名前をパス内の値として指定することにより、名前が \fBsolaris\fR の \fBpublisher\fR 要素を持つ \fBsoftware\fR 要素にパッケージを追加します。
+
+.sp
+.in +2
+.nf
+$ \fBaimanifest add \e\fR
+> \fBsoftware[source/publisher@name=solaris]/software_data/name \e\fR
+> \fBpkg:/system/utils\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBdefault.xml\fR AI マニフェストから開始した場合、この \fBaimanifest\fR コマンドは次に示す 2 番目の \fBsoftware_data \fR 要素を追加します。
+
+.sp
+.in +2
+.nf
+<software_data action="install">
+  <name>pkg:/entire@latest</name>
+  <name>pkg:/group/system/solaris-large-server</name>
+</software_data>
+<software_data>
+  <name>pkg:/system/utils</name>
+</software_data>
+.fi
+.in -2
+
+.LP
+\fB例 7 \fR返されたパスを使用したパッケージの追加
+.sp
+.LP
+この例は前の例と同じですが、異なる方法を使って同じ結果を実現しています。この例では、\fBget\fR サブコマンドを返されたパスオプションとともに使用して、発行元の \fBsolaris\fR が定義されている \fBsoftware\fR 要素にパッケージを追加します。
+
+.sp
+.in +2
+.nf
+$ \fBNEW_PKG=$(aimanifest get -r \e\fR
+\fBsoftware[source/publisher@name=solaris] | awk '{print $2 }')\fR
+$ \fBecho $NEW_PKG\fR
+/auto_install[1]/ai_instance[1]/software[1]
+$ \fBaimanifest add ${NEW_PKG}/software_data/name \e\fR
+\fBpkg:/system/utils\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 8 \fRPython を使用したマニフェストからの「entire」パッケージの削除
+.sp
+.LP
+この例では、名前に「entire」が含まれているインストール対象パッケージを検索し、それをサブプロセスのインポート Popen、PIPE から削除します。
+
+.sp
+.in +2
+.nf
+AIMANIFEST = "/usr/bin/aimanifest"
+NODEPATH = "software/software_data[@action=install]/name"
+cmd = [ AIMANIFEST, "get", NODEPATH ]
+popen_ret = Popen(cmd, stdout=PIPE)
+popen_ret.wait()
+entire = None
+if popen_ret.returncode == 0:
+   entire = [ pk.strip() for pk in popen_ret.stdout if "entire" in pk ]
+if len(entire) == 1:
+   cmd = [ AIMANIFEST, "delete", NODEPATH + "='" + entire[0] + "'" ]
+   popen_ret = Popen(cmd, stdout=PIPE)
+   popen_ret.wait()
+if len(entire) != 1 or popen_ret.returncode != 0:
+   print "delete of 'entire' package failed"
+.fi
+.in -2
+
+.LP
+\fB例 9 \fR単一の「set」コマンドによるすべてのディスクに共通する属性の更新
+.sp
+.LP
+この例では、単一のコントローラ上に 4 つのディスクを設定し、それらすべてを「datapool」という zpool に追加します。3 つの「set」サブコマンドを使用して、4 つのディスクすべてで 3 つの属性を更新します。
+
+.sp
+.in +2
+.nf
+NUM_C0_DISKS=4
+          for ((num = 0; num <= NUM_C0_DISKS; num++)) ; do
+                aimanifest add disk/disk_name@name \
+                    /pci@0,0/pci108e,534a@7/disk@${num},0
+          done
+          aimanifest set disk/disk_name@name_type devpath
+          aimanifest set disk@in_zpool datapool
+          aimanifest set disk@whole_disk true
+.fi
+.in -2
+
+.sp
+.LP
+その結果、<target> サブツリー内の XML は次のようになります。
+
+.sp
+.in +2
+.nf
+<target>
+             <disk in_zpool="datapool" whole_disk="true">
+               <disk_name name="/pci@0,0/pci@108e,534a@7/disk@0,0" name_type="devpath"/>
+             </disk>
+             <disk in_zpool="datapool" whole_disk="true">
+               <disk_name name="/pci@0,0/pci@108e,534a@7/disk@1,0" name_type="devpath"/>
+             </disk>
+
+             <disk in_zpool="datapool" whole_disk="true">
+               <disk_name name="/pci@0,0/pci@108e,534a@7/disk@2,0" name_type="devpath"/>
+             </disk>
+             <disk in_zpool="datapool" whole_disk="true">
+               <disk_name name="/pci@0,0/pci@108e,534a@7/disk@3,0" name_type="devpath"/>
+             </disk>
+             ...
+             ...
+             </target>
+.fi
+.in -2
+
+.LP
+\fB例 10 \fRマニフェストフラグメントの追加によるパッケージの追加
+.sp
+.LP
+この例では、部分的な AI マニフェストを含むファイルをロードすることで、パッケージを追加します。この場合、結果は IPS タイプの別個の追加 \fBsoftware \fR 要素になり、元の IPS \fBsoftware\fR 要素のあとに挿入されます。この新しい \fBsoftware\fR 要素には、\fBsoftware_data \fR 要素のみが含まれ、\fBsource\fR 要素は指定されません。この新しい \fBsoftware\fR 要素内部の \fBsoftware_data\fR 要素で命名されたパッケージは、直前の \fBsoftware\fR 要素内で定義された発行元から検索されます。
+
+.sp
+.LP
+次の内容を持つ \fBnewpkg.xml\fR という名前のファイルを作成します:
+
+.sp
+.in +2
+.nf
+<auto_install>
+  <ai_instance>
+    <software type="IPS">
+      <software_data>
+        <name>pkg:/system/utils</name>
+      </software_data>
+    </software>
+  </ai_instance>
+</auto_install>
+.fi
+.in -2
+
+.sp
+.LP
+\fBsoftware\fR セクションだけが必要な場合でも、\fBauto_install\fR 要素と \fBai_instance\fR 要素も含める必要があります。読み込むファイル内で \fBauto_install\fR または \fBai_instance\fR 要素の属性が指定されていた場合、それらの属性値が既存の値を置き換えるか追加されます。
+
+.sp
+.LP
+この \fBsoftware\fR セクションを \fBAIM_MANIFEST\fR マニフェストに追加するには、次のコマンドを使用します。
+
+.sp
+.in +2
+.nf
+$ \fBaimanifest load -i newpkg.xml\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 11 \fRマニフェストの検証
+.sp
+.LP
+\fBAIM_MANIFEST\fR マニフェストを検証します。
+
+.sp
+.in +2
+.nf
+$ \fBaimanifest validate\fR
+.fi
+.in -2
+.sp
+
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 13n
+.rt  
+コマンドが正常に処理されました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB>\fB0\fR\fR
+.ad
+.RS 13n
+.rt  
+エラーが発生した。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fBAIM_MANIFEST\fR\fR
+.ad
+.sp .6
+.RS 4n
+この環境変数の値は、構築される AI マニフェストの場所です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBAIM_LOGFILE\fR\fR
+.ad
+.sp .6
+.RS 4n
+この環境変数の値は、\fBaimanifest\fR 処理のログファイルの場所です。
+.RE
+
+.SH 属性
+.sp
+.LP
+次の属性については、\fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(1.65i) |cw(3.85i) 
+lw(1.65i) |lw(3.85i) 
+.
+属性タイプ属性値
+_
+使用条件T{
+\fBsystem/install/auto-install/auto-install-common\fR
+T}
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBinstalladm\fR(1M)
+.sp
+.LP
+Part\ III, \fI「Installing Using an Install Server,」\fR in \fI『Installing Oracle Solaris 11.3 Systems』\fR

@@ -1,0 +1,640 @@
+'\" te
+.\" Copyright (c) 2006, 2011, Oracle and/or its affiliates.All rights reserved.
+.TH bart 1M "2011 年 11 月 15 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+bart \- 文件完整性扫描程序和报告程序
+.SH 用法概要
+.LP
+.nf
+\fB/usr/bin/bart\fR create [ \fB-n\fR] [\fB-R\fR \fIroot_directory\fR] 
+     [\fB-r\fR \fIrules_file\fR | -] [\fB-a\fR md5|sha1|sha256|sha384|sha512]
+.fi
+
+.LP
+.nf
+\fB/usr/bin/bart\fR create [\fB-n\fR] [\fB-R\fR \fIroot_directory\fR] \fB-I\fR 
+     [\fB-a\fR md5|sha1|sha256|sha384|sha512] [\fIfile_name\fR]...
+.fi
+
+.LP
+.nf
+\fB/usr/bin/bart\fR compare [\fB-i\fR \fIattribute\fR ] [\fB-p\fR] 
+     [\fB-r\fR \fIrules_file\fR | -] \fIcontrol-manifest\fR \fItest-manifest\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBbart\fR(1M) 是一个基于规则的文件完整性扫描和报告工具，它使用加密强度校验和以及文件系统元数据来报告更改。
+.sp
+.LP
+\fBbart\fR 实用程序执行两个基本函数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbart create\fR\fR
+.ad
+.RS 16n
+.rt  
+该清单生成器工具创建系统的文件级\fB快照\fR。输出是一个文件属性目录，称为\fB清单\fR。请参见 \fBbart_manifest\fR(4)。
+.sp
+您可以通过三种方式指定在目录中列出的文件列表。使用不带任何选项的 \fBbart create\fR、在命令行中通过名称指定文件，或者通过使用指令指定要监视的文件来创建规则文件。请参见 \fBbart_rules\fR(4)。
+.sp
+缺省情况下，清单生成器在目录中列出根 (\fB/\fR) 文件系统中所有文件的所有属性。仅当挂载到根文件系统的文件系统具有与根文件系统相同的类型时，才会在目录中列出。
+.sp
+例如，\fB/\fR、\fB/usr\fR 和 \fB/opt\fR 是单独的 UFS 文件系统。\fB/usr\fR 和 \fB/opt\fR 挂载到 \fB/\fR。因此，这三个文件系统全部会在目录中列出。\fB/tmp\fR 也挂载到 \fB/\fR，但却不会在目录中列出，因为它是 TMPFS 文件系统。挂载的 CD-ROM 不会在目录中列出，因为它们是 HSFS 文件系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbart compare\fR\fR
+.ad
+.RS 16n
+.rt  
+该报告工具比较两个清单。输出是按文件组织的属性差异列表。这些差异是控制清单和测试清单这两个清单之间的差异。 
+.sp
+差异是指两个清单中列出的某个给定文件的任何属性发生的变化。清单中的新文件或删除文件报告为差异。
+.sp
+此报告机制提供了两种类型的输出：详细输出和程序输出。详细输出进行了本地化，显示在多行中，而程序输出更便于其他程序解析。请参见\fB\fR“输出”部分。
+.sp
+缺省情况下，报告工具生成详细输出来报告除修改目录的时间戳（\fBdirmtime\fR 属性）以外的所有差异。
+.sp
+为了确保一致且准确的比较结果，\fIcontrol-manifest\fR 和 \fItest-manifest\fR 必须使用相同的规则文件构建。
+.RE
+
+.sp
+.LP
+生成清单或比较两个清单时，可使用规则文件忽略指定的文件或子树。通过使用不同的规则文件重新运行 \fBbart compare\fR 命令，用户可以从不同的角度比较清单。请参见 \fBbart_rules\fR(4) 和 \fBbart_manifest\fR(4)。
+.sp
+.LP
+您还可以通过规则文件 \fBbart_rules\fR 指定要跟踪的文件以及要标记的差异类型。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fIattribute\fR ...\fR
+.ad
+.RS 21n
+.rt  
+指定要全局忽略的文件属性。以逗号分隔列表形式指定属性。 
+.sp
+此选项与将文件属性提供给规则文件中的全局 \fBIGNORE\fR 关键字具有相同的行为。请参见 \fBbart_rules\fR(4)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR [\fIfile_name\fR...]\fR
+.ad
+.RS 21n
+.rt  
+指定文件的输入列表。可以在命令行中指定或从标准输入读取文件列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 21n
+.rt  
+禁止计算文件列表中所有常规文件的内容签名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 21n
+.rt  
+在“程序模式”下显示清单比较输出，该模式适合进行程序解析。输出不本地化。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIrules_file\fR\fR
+.ad
+.RS 21n
+.rt  
+使用 \fIrules_file\fR 可指定要在目录中列出哪些文件和目录，并定义要标记哪些文件属性差异。如果 \fIrules_file\fR 为 \fB-\fR，则从标准输入读取规则。有关语法的定义，请参见 \fBbart_rules\fR(4)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIroot_directory\fR\fR
+.ad
+.RS 21n
+.rt  
+指定清单的根目录。规则指定的所有路径以及清单中报告的所有路径都是相对于 \fIroot_directory\fR 的。
+.LP
+注 - 
+.sp
+.RS 2
+不得使用 \fB-R\fR 选项引用任何非全局区域的根文件系统。否则，可能会损坏全局区域的文件系统，危及全局区域的安全性，或者损坏非全局区域的文件系统。请参见 \fBzones\fR(5)。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR [ \fIhash\fR ]\fR
+.ad
+.RS 21n
+.rt  
+指定要用于对文件内容进行散列运算的加密摘要算法：\fBmd5\fR、\fBsha1\fR、\fBsha256\fR、\fBsha512\fR 是当前支持的值。如果未指定 \fB-a\fR，则使用 \fBsha256\fR 并创建版本 1.1 清单，该清单中会指明使用了哪种散列算法。如果指定了 \fBmd5\fR，则创建版本 1.0 清单。
+.RE
+
+.SH 操作数
+.sp
+.LP
+bart 允许将操作数用引号引起来。如果空格出现在子树和子树修饰符规范中，这特别重要。
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcontrol-manifest\fR\fR
+.ad
+.RS 20n
+.rt  
+指定由 \fBbart create\fR 在控制系统上创建的清单。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fItest-manifest\fR\fR
+.ad
+.RS 20n
+.rt  
+指定由 \fBbart create\fR 在测试系统上创建的清单。
+.RE
+
+.SH 输出
+.sp
+.LP
+\fBbart create\fR 和 \fBbart compare\fR 命令将输出写入标准输出，并将错误消息写入标准错误。
+.sp
+.LP
+\fBbart create\fR 命令生成系统清单。请参见 \fBbart_manifest\fR(4)。
+.sp
+.LP
+如果使用 \fBbart compare\fR 命令对两个系统清单进行比较，则会生成一个文件差异列表。缺省情况下，比较输出会本地化。然而，如果指定了 \fB-p\fR 选项，则输出以适合进行程序处理的格式生成。
+.SS "缺省格式"
+.sp
+.in +2
+.nf
+\fIfilename\fR
+\fIattribute\fR control:\fIxxxx\fR test:\fIyyyy\fR
+.fi
+.in -2
+.sp
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfilename\fR\fR
+.ad
+.RS 13n
+.rt  
+在 \fIcontrol-manifest\fR 和 \fItest-manifest\fR 之间存在差异的文件的名称。对于包含嵌入式空格或换行符的文件名，请参见 \fBbart_manifest\fR(4)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIattribute\fR\fR
+.ad
+.RS 13n
+.rt  
+在进行比较的清单之间存在差异的文件属性的名称。\fIxxxx\fR 是 \fIcontrol-manifest\fR 中的属性值，\fIyyyy\fR 是 \fItest-manifest\fR 中的属性值。如果同一个文件的多个属性存在差异，则每个差异都将记录在单独的一行中。
+.sp
+支持以下属性： 
+.sp
+.ne 2
+.mk
+.na
+\fBacl\fR
+.ad
+.RS 12n
+.rt  
+文件的 ACL 属性。对于具有 ACL 属性的文件，此字段包含 \fBacltotext()\fR 的输出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBall\fR
+.ad
+.RS 12n
+.rt  
+所有属性。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBcontents\fR
+.ad
+.RS 12n
+.rt  
+文件的校验和值。此属性仅为常规文件指定。如果关闭上下文检查，或者无法计算校验和，则此字段的值为 \fB-\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdest\fR
+.ad
+.RS 12n
+.rt  
+符号链接的目标。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdevnode\fR
+.ad
+.RS 12n
+.rt  
+设备节点的值。此属性仅用于字符设备文件和块设备文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdirmtime\fR
+.ad
+.RS 12n
+.rt  
+目录的修改时间，以秒为单位，从 1970 年 1 月 1 日 00:00:00 UTC 开始计算。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBgid\fR
+.ad
+.RS 12n
+.rt  
+此项的所有者的数字组 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBlnmtime\fR
+.ad
+.RS 12n
+.rt  
+链接的创建时间。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBmode\fR
+.ad
+.RS 12n
+.rt  
+表示文件权限的八进制数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBmtime\fR
+.ad
+.RS 12n
+.rt  
+文件的修改时间，以秒为单位，从 1970 年 1 月 1 日 00:00:00 UTC 开始计算。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBsize\fR
+.ad
+.RS 12n
+.rt  
+以字节为单位的文件大小。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBtype\fR
+.ad
+.RS 12n
+.rt  
+文件的类型。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBuid\fR
+.ad
+.RS 12n
+.rt  
+此项的所有者的数字用户 ID。
+.RE
+
+.RE
+
+.sp
+.LP
+以下缺省输出显示 \fB/etc/passwd\fR 文件的属性差异。输出表明 \fBsize\fR、\fBmtime\fR 和 \fBcontents\fR 属性已发生变化。
+.sp
+.in +2
+.nf
+/etc/passwd:
+  size  control:74  test:81
+  mtime  control:3c165879  test:3c165979
+  contents  control:daca28ae0de97afd7a6b91fde8d57afa
+test:84b2b32c4165887355317207b48a6ec7
+.fi
+.in -2
+.sp
+
+.SS "程序格式"
+.sp
+.in +2
+.nf
+\fIfilename\fR \fIattribute\fR \fIcontrol-val\fR \fItest-val\fR [\fIattribute\fR \fIcontrol-val\fR \fItest-val\fR]*
+.fi
+.in -2
+.sp
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfilename\fR\fR
+.ad
+.sp .6
+.RS 4n
+与缺省格式中的 \fIfilename\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIattribute\fR \fIcontrol-val\fR \fItest-val\fR\fR
+.ad
+.sp .6
+.RS 4n
+每个文件在控制清单与测试清单之间存在差异的文件属性的说明。每个条目都包含每个清单中的属性值。有关属性的定义，请参见 \fBbart_manifest\fR(4)。
+.RE
+
+.sp
+.LP
+每行程序输出都描述单个文件的所有属性差异。
+.sp
+.LP
+以下程序输出显示 \fB/etc/passwd\fR 文件的属性差异。输出表明 \fBsize\fR、\fBmtime\fR 和 \fBcontents\fR 属性已发生变化。
+.sp
+.in +2
+.nf
+/etc/passwd size 74 81 mtime 3c165879 3c165979
+contents daca28ae0de97afd7a6b91fde8d57afa 84b2b32c4165887355317207b48a6ec7
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.SS "清单生成器"
+.sp
+.LP
+清单生成器返回以下退出值： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 6n
+.rt  
+处理文件时发生非致命错误；例如，权限问题
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>1\fR\fR
+.ad
+.RS 6n
+.rt  
+致命错误；例如，命令行选项无效
+.RE
+
+.SS "报告工具"
+.sp
+.LP
+报告工具返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+未报告任何差异
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 6n
+.rt  
+找到了差异
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>1\fR\fR
+.ad
+.RS 6n
+.rt  
+执行比较时发生致命错误
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR创建缺省清单但不计算校验和
+.sp
+.LP
+以下命令行创建缺省清单，它包含 \fB/\fR 文件系统中的所有文件。\fB-n\fR 选项禁止计算校验和，这样会更快地生成清单。
+
+.sp
+.in +2
+.nf
+bart create -n
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR为指定子树创建清单
+.sp
+.LP
+以下命令行创建包含 \fB/home/nickiso\fR 子树中所有文件的清单。
+
+.sp
+.in +2
+.nf
+bart create -R /home/nickiso
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR使用标准输入创建清单
+.sp
+.LP
+以下命令行使用 \fBfind\fR(1) 命令的输出生成要在目录中列出的文件列表。\fBfind\fR 输出用作指定了 \fB-I\fR 选项的 \fBbart create\fR 命令的输入。
+
+.sp
+.in +2
+.nf
+find /home/nickiso -print | bart create -I
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR使用规则文件创建清单
+.sp
+.LP
+以下命令行使用规则文件 \fBrules\fR 指定要在目录中列出的文件。
+
+.sp
+.in +2
+.nf
+bart create -r rules
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR比较两个清单并生成程序输出
+.sp
+.LP
+以下命令行比较两个清单并生成适合进行程序解析的输出。
+
+.sp
+.in +2
+.nf
+bart compare -p manifest1 manifest2
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR比较两个清单并指定要忽略的属性
+.sp
+.LP
+以下命令行比较两个清单。不比较 \fBdirmtime\fR、\fBlnmtime\fR 和 \fBmtime\fR 属性。
+
+.sp
+.in +2
+.nf
+bart compare -i dirmtime,lnmtime,mtime manifest1 manifest2
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR使用规则文件比较两个清单
+.sp
+.LP
+以下命令行使用规则文件 \fBrules\fR 比较两个清单。
+
+.sp
+.in +2
+.nf
+bart compare -r rules manifest1 manifest2
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性security/bart
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBcksum\fR(1)、\fBdigest\fR(1)、\fBfind\fR(1)、\fBbart_manifest\fR(4)、\fBbart_rules\fR(4)、\fBattributes\fR(5)
+.SH 附注
+.sp
+.LP
+系统引导时可能会临时修改某些系统库的文件属性。为了避免触发误报，仅应在以下情况下比较清单：创建两个清单时系统处于相同的状态；即两个清单都是在单用户或多用户模式下创建的。

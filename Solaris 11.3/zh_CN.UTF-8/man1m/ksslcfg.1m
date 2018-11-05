@@ -1,0 +1,470 @@
+'\" te
+.\" Copyright (c) 2005, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH ksslcfg 1M "2015 年 2 月 24 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+ksslcfg \- 启用并配置内核 SSL 的 SMF 实例
+.SH 用法概要
+.LP
+.nf
+ksslcfg create -f pkcs11 -T <\fItoken_label\fR> [-d \fIsofttoken_directory\fR] -C 
+  <\fIcertificate_label\fR> [-h <\fIca_certchain_file\fR>] 
+             -p <\fIpassword_file\fR> [options] -x <\fIproxy_port\fR> [<\fIserver_address\fR>] 
+  [<\fIserver_port\fR>] 
+.fi
+
+.LP
+.nf
+ksslcfg create -f pkcs12 -i <\fIcert_and_key_pk12file\fR> 
+             -p <\fIpassword_file\fR> [options] -x <\fIproxy_port\fR> [<\fIserver_address\fR>] 
+  [<\fIserver_port\fR>] 
+.fi
+
+.LP
+.nf
+ksslcfg create -f pem -i <\fIcert_and_key_pemfile\fR> 
+             -p <\fIpassword_file\fR> [options] -x <\fIproxy_port\fR> [<\fIserver_address\fR>] 
+  [<\fIserver_port\fR>] 
+.fi
+
+.LP
+.nf
+\fBksslcfg\fR delete [\fB-v\fR] [\fIhost\fR] \fIssl_port\fR
+.fi
+
+.LP
+.nf
+\fBksslcfg\fR \fB-V\fR
+.fi
+
+.LP
+.nf
+\fBksslcfg\fR \fB-?\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBksslcfg\fR 用于管理内核 SSL 代理模块的 \fBsmf\fR(5) 实例。启用了 SSL 的 Web 服务器可以使用其内核 SSL 代理的服务来提高 HTTPS 包处理性能，方法是创建内核 SSL 服务实例，指定 SSL 代理端口和参数，然后侦听代理端口。
+.sp
+.LP
+\fBcreate\fR 子命令用于创建实例并为给定地址和 SSL 端口启用服务。
+.sp
+.LP
+\fBdelete\fR 子命令用于禁用给定地址和端口的服务（如果已启用），并从 SMF 系统信息库中删除实例。
+.sp
+.LP
+\fBksslcfg\fR 可以采用 root 身份或由分配给网络安全配置文件的其他用户运行。请参见 \fBrbac\fR(5) 和 \fBuser_attr\fR(4)。
+.sp
+.LP
+当 \fBksslcfg\fR 成功配置内核中的服务后，必须启动或重新启动（如果已在运行）代理应用程序。
+.sp
+.LP
+启动应用程序之前，您必须先运行 \fBksslcfg\fR 配置内核 SSL 代理。
+.sp
+.LP
+\fBksslcfg\fR 允许您指定 \fIssl_port\fR 操作数（如“操作数”部分所述），以及使用 \fB-x\fR 选项指定 \fIproxy_port\fR 值。如果指定用于内核 SSL 代理，则无法针对 Solaris 网络高速缓存和加速 (Network Cache and Acceleration, NCA) 功能配置这些值。
+.sp
+.LP
+内核 SSL 代理实例的故障管理资源标识符 (Fault Managed Resource Identifier, FMRI) 是 \fBsvc://network/ssl/proxy\fR。\fBksslcfg\fR 可为该服务创建对主机和 SSL 端口组合唯一的实例。特定代理条目的实例 FMRI 可以使用 \fBsvcs\fR(1) 找到，并用于其他服务的依赖项。服务实例的状态仅跟踪内核中配置。它不会反映侦听代理端口的应用程序的存在状况或状态。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIciphersuites\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许客户机以排序顺序协商的密码集。下面列出了支持的 SSLv3 和 TLSv1.0 密码。请注意，名称以逗号分隔并且不区分大小写。
+.sp
+.in +2
+.nf
+rsa_rc4_128_sha
+rsa_rc4_128_md5
+rsa_aes_256_cbc_sha
+rsa_aes_128_cbc_sha
+rsa_3des_ede_cbc_sha
+rsa_des_cbc_sha
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIversions\fR\fR
+.ad
+.sp .6
+.RS 4n
+以管理方式为内核 SSL 代理模块启用的 SSL/TLS 协议版本集。可识别的值为 SSLv3 和 TLSv1.0。缺省情况下只会启用 TLSv1.0。请注意，版本以逗号分隔并且不区分大小写。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIkey_format\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fIkey_format\fR 中指定的证书/密钥格式。支持的选项为 \fBpkcs11\fR、\fBpkcs12\fR 和 \fBpem\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fIkey_and_certificate_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+同时指定 \fBpkcs12\fR 或 \fBpem\fR 与 \fB-f\fR 选项时，可从 \fIkey_and_certificate_file\fR 中读取 Web 服务器的密钥和证书。此文件还可能包含构成服务器证书的根 CA 证书链的任何中间 CA 证书。这些证书在文件中必须跟在服务器证书后面，并且顺序必须是颠倒的：级别最低的 CA 证书后跟下一个级别更高的 CA 证书，依此类推。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR \fIcertificate_label\fR\fR
+.ad
+.sp .6
+.RS 4n
+PKCS#11 可以在单个令牌中存储多个证书。此选项用于指定 \fIcertificate_label\fR 标识的单个证书。该标签必须与 \fB-T\fR 指定的令牌中证书对象的 \fBCKA_LABEL\fR 相符。此选项将只能与 \fB-f\fR \fBpkcs11\fR 一起使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIsofttoken_directory\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果令牌标签为 Sun Software PKCS#11 softtoken，则此选项仅适用于 \fBpkcs11\fR 密钥格式。使用此选项可覆盖 PKCS#11 软令牌目录的缺省位置 (\fB$HOME/.sunw\fR)。请参见 \fBpkcs11_softtoken\fR(5)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR \fIca_certchain_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+同时指定 \fBpkcs11\fR 与 \fB-f\fR 选项时，可从 \fIca_certchain_file\fR 中读取一组中间 CA 证书，这些中间 CA 证书构成服务器证书（使用 \fB-C\fR 选项指定）的根 CA 证书链。该文件必须为 PEM 格式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIpassword_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+从 \fIpassword_file\fR 中获取用于加密私钥的口令。使用 \fBpkcs11\fR 选项（请参见上面的 \fB-f\fR）时，该口令可用于向 PKCS #11 令牌验证用户身份。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR \fIssl_handshake_timeout\fR\fR
+.ad
+.sp .6
+.RS 4n
+要完成的 SSL 握手的超时值（以秒为单位）。如果达到指定的超时时间时握手未完成，将会断开连接。缺省值为 30 秒。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR \fIssl_handshake_limit\fR\fR
+.ad
+.sp .6
+.RS 4n
+并发 SSL 握手的最大数目。一旦握手数达到此数值，将拒绝所有新的握手。缺省值为 65536。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fIssl_session_cache_timeout\fR\fR
+.ad
+.sp .6
+.RS 4n
+SSL 会话的超时值（以秒为单位）。该值与 Sun ONE Web 服务器的 \fBSSL3SessionTimeout\fR 或 \fBmod_ssl\fR 的 \fBSSLSessionCacheTimeout\fR 对应。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fItoken_label\fR\fR
+.ad
+.sp .6
+.RS 4n
+同时指定 \fBpkcs11\fR 和 \fB-f\fR 时，可使用 \fItoken_label\fR 中指定的 PKCS#11 令牌。使用 \fBcryptoadm list\fR \fB-v\fR 可显示所有可用的 PKCS#11 令牌。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR \fIusername\fR\fR
+.ad
+.sp .6
+.RS 4n
+拥有口令文件的用户的名称。如果忽略，系统将尝试以 root 用户身份读取口令文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+详细模式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示版本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fIproxy_port\fR\fR
+.ad
+.sp .6
+.RS 4n
+SSL 代理端口。端口号是专为 Web 服务器与内核 SSL 代理模块之间的明文 HTTP 通信指定的。不会将任何外部 HTTP 包传送到该端口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fIssl_session_cache_size\fR\fR
+.ad
+.sp .6
+.RS 4n
+可高速缓存的最大 SSL 会话数。它与 Sun ONE Web 服务器配置的 \fBSSLCacheEntries\fR 对应。如果不指定此选项，则缺省值为 5000 个条目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-?\fR \fI\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示命令的用法。
+.RE
+
+.SH 操作数
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[\fIhost\fR] [\fIssl_port \fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+为其创建内核 SSL 条目的 Web 服务器的地址和端口。如果忽略 \fIhost\fR，该条目将用于到达 \fIssl_port\fR 的所有请求，而与目标地址无关。对于 \fIhost\fR，主机名和 IP 地址都是可接受的形式。\fIssl_port\fR 是必需的。通常，其值为 443。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR创建并启用内核 SSL 实例
+.sp
+.LP
+以下命令使用 PKCS#11 格式的证书和密钥来创建并启用内核 SSL 实例。
+
+.sp
+.in +2
+.nf
+# ksslcfg create -f pkcs11 -T "Sun Software PKCS#11 softtoken"  \e
+-C "Server-Cert" -p /some/directory/password -u webservd \e
+-x 8080 www.mysite.com 443
+
+% svcs svc:/network/ssl/proxy
+STATE          STIME    FMRI
+online         Sep_27   svc:/network/ssl/proxy:kssl-www-mysite-com-443
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR为所有地址创建并启用缺省实例
+.sp
+.LP
+以下命令通过 \fBpkcs#12\fR 文件中的证书和密钥为所有地址创建并启用缺省实例。
+
+.sp
+.in +2
+.nf
+# ksslcfg create -x 8888 -f pkcs12 -i /some/directory/keypair.p12 \e
+    -p /some/directory/password -u webservd 443
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR使用特定的密钥套件创建并启用实例
+.sp
+.LP
+以下命令使用特定的密钥套件创建并启用实例。
+
+.sp
+.in +2
+.nf
+# ksslcfg create -x 8080 -f pem \e
+-i /some/directory/keypair.pem -p /some/directory/password \e
+-c "rsa_rc4_128_md5,rsa_rc4_128_sha" \e
+209.249.116.195 443
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR禁用并删除实例
+.sp
+.LP
+以下命令禁用并删除实例。
+
+.sp
+.in +2
+.nf
+# ksslcfg delete www.mysite.com 443
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR建立代理应用程序相关性
+.sp
+.LP
+以下所示的命令序列可对 KSSL 实例建立代理应用程序相关性。请注意，只有启动 SSL 内核代理实例后，才应启动代理应用程序。
+
+.sp
+.LP
+以下命令建立 Apache 2.2 Web 服务器相关性。KSSL 已配置为侦听 SSL 端口 443 和通配符地址。
+
+.sp
+.in +2
+.nf
+# \fBsvccfg -s svc:/network/http:apache22\fR
+svc:/network/http:apache22> \fBaddpg kssl dependency\fR
+svc:/network/http:apache22> \fBsetprop kssl/entities = fmri:svc:/network/\e\fR
+\fBssl/proxy:kssl-INADDR_ANY-443\fR
+svc:/network/http:apache22> \fBsetprop kssl/grouping = astring: require_all\fR
+svc:/network/http:apache22> \fBsetprop kssl/restart_on = astring: refresh\fR
+svc:/network/http:apache22> \fBsetprop kssl/type = astring: service\fR
+svc:/network/http:apache22> \fBend\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+执行上述命令后，启用该 Web 服务器：
+
+.sp
+.in +2
+.nf
+# \fBsvcadm enable svc:/network/http:apache22\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果该 Web 服务器已在运行，请将其重新启动：
+
+.sp
+.in +2
+.nf
+# \fBsvcadm refresh svc:/network/http:apache22\fR
+# \fBsvcadm restart svc:/network/http:apache22\fR
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.sp .6
+.RS 4n
+出现错误。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性请参见下文。
+.TE
+
+.sp
+.LP
+命令行选项和实用程序名称为 "Committed"（已确定）。命令输出、FMRI 服务名称 (\fBsvc://network/ssl/proxy\fR) 和 FMRI 实例的名称格式为 "Uncommitted"（未确定）
+.SH 另请参见
+.sp
+.LP
+\fBsvcprop\fR(1)、\fBsvcs\fR(1)、\fBcryptoadm\fR(1M)、\fBsvcadm\fR(1M)、\fBsvccfg\fR(1M)、\fBuser_attr\fR(4)、\fBattributes\fR(5)、\fBkssl\fR(5)、\fBpkcs11_softtoken\fR(5)、\fBrbac\fR(5)、\fBsmf\fR(5)、\fBnca\fR(7d)
+.sp
+.LP
+由 Chown, P. 编著的《\fIAdvanced Encryption Standard (AES) Ciphersuites for Transport Layer Security (TLS)\fR》，RFC 3268，2002 年 6 月。
+.SH 附注
+.sp
+.LP
+\fBksslcfg\fR \fBcreate\fR 在没有主机参数的情况下会创建 \fBINADDR_ANY\fR \fBsmf\fR 实例。\fBksslcfg\fR \fBdelete\fR 在没有主机参数的情况下将仅删除 \fBINADDR_ANY\fR 实例。\fBksslcfg\fR \fBdelete\fR 需要主机参数才能删除任何非 \fBINADDR_ANY\fR 实例。
+.sp
+.LP
+在安装了 \fBzones\fR(5) 的系统上，\fBksslcfg\fR 命令此时只能在全局区域中使用。

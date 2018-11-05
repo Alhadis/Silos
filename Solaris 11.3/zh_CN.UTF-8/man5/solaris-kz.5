@@ -1,0 +1,676 @@
+'\" te
+.\" Copyright (c) 2009, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH solaris-kz 5 "2015 年 7 月 14 日" "SunOS 5.11" "标准、环境和宏"
+.SH 名称
+solaris-kz \- solaris 内核区域
+.SH 描述
+.sp
+.LP
+\fBsolaris-kz\fR 标记使用 \fBbrands\fR(5) 中所述的标记区域框架运行区域，此类区域的内核和 OS 安装独立于全局区域使用的内核和 OS 安装。
+.SS "安装和更新"
+.sp
+.LP
+\fBsolaris-kz\fR 安装独立于全局区域的安装；该安装不是 \fBpkg\fR(5) 链接映像，可以独立于全局区域内容进行修改。\fBsolaris-kz\fR 区域可以像其他标记区域那样直接从全局区域安装，也可以按下文中所述通过引导介质安装。
+.sp
+.LP
+指定用于安装的清单时，使用的清单应是一个适合全局区域安装的清单。由于内核区域始终安装到根池的已知位置，不应指定安装目标磁盘。
+.sp
+.LP
+引导环境 (Boot Environment, BE) 管理独立于全局区域。在全局区域中创建引导环境不会在该区域中创建新引导环境。请参见 \fBbeadm\fR(1M)。
+.SS "进程管理和可见性"
+.sp
+.LP
+\fBsolaris-kz\fR 区域与其他标记区域不同，该区域运行单独的内核，从全局区域分析该区域时会有一些明显的不同。
+.sp
+.LP
+在 \fBsolaris-kz\fR 区域中运行的进程不能直接从全局区域访问。例如，要查看名为 \fBkz-zone\fR 的内核区域中的一系列进程，不能使用带 \fB-z\fR \fB kz-zone\fR 选项的 \fBps\fR 命令，而需要使用以下命令：
+.sp
+.in +2
+.nf
+# \fBzlogin kz-zone ps -e\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+全局区域和每个内核区域管理自己的进程 ID 空间。因此 \fBprocess 1234\fR 可能同时存在于全局区域以及一个或多个内核区域。这些进程是不同的进程。如果全局区域管理员要中止 \fBkz-zone\fR 中的 \fBprocess 1234\fR，应使用以下命令或等效命令执行此操作：
+.sp
+.in +2
+.nf
+# \fBzlogin kz-zone kill 1234\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+从全局区域运行 \fBps\fR(1) 和类似工具将看到与管理 \fBsolaris-kz\fR 区域实例关联的进程，如 \fBkzhost\fR 和 \fBzlogin-kz\fR。这对于调试很有用，但在其他情况下，这些是专用实现详细信息。
+.sp
+.LP
+类似地，资源管理功能也是不同的。例如，在配置 \fBsolaris-kz\fR 区域时 \fBmax-processes\fR 这类资源控制不可用，因为其只在共享单个内核实例时才有意义。即在 \fBsolaris-kz\fR 区域内运行的进程不会占用全局区域中的进程表槽，因为内核是独立的。
+.sp
+.LP
+\fBzonestat\fR 实用程序显示区域的资源使用情况。其输出通常是正确的，但可能会反映主机值。例如，\fBlwps\fR 这类资源控制值显示主机上使用的 \fBlwps\fR，而不是在区域内使用的 lwps。
+.sp
+.LP
+\fBsolaris-kz\fR 标记使用特定的硬件功能；这些功能在较旧的系统和虚拟环境中可能不可用。要检查系统是否支持 \fBsolaris-kz brand\fR，请安装 \fBbrand-solaris-kz\fR 软件包，然后运行 \fBvirtinfo\fR 命令。
+.sp
+.in +2
+.nf
+# virtinfo -c supported list kernel-zone
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果在支持列表中没有显示 \fBkernel-zone\fR，可查看 \fBsyslog\fR 获取更多信息。与内核区域有关的消息将包含字符串 \fBkernel-zone\fR。
+.sp
+.LP
+\fBmpstat\fR(1M)、\fBiostat\fR(1M)、\fBvmstat\fR(1M) 以及其他实用程序报告的窃取时间直接反映主机可能将 CPU 资源用于其他用途时内核区域无法运行的时间。
+.SS "存储访问"
+.sp
+.LP
+\fBsolaris-kz\fR 标记区域必须位于一个或多个设备上。如果在安装前未定制配置，则将在全局区域的根 \fBzpool\fR 中创建缺省的 \fBzfs\fR(1M) 卷。使用设备资源指定安装区域的设备时，这些设备资源的 \fBbootpri\fR 属性可设置为任何正整数值。如果不会将某个设备用作引导设备，则该设备不能设置 \fBbootpri\fR 属性。 要取消设置 \fBbootpri\fR，可在设备资源范围内清除 \fBbootpri\fR。如果在安装过程中存在多个可引导的设备，则这些设备将用于区域中的镜像 ZFS 根池。缺省引导顺序由以下设备排序方式确定：先按 \fBbootpri\fR 排序，如果多个设备具有相同的 \fBbootpri\fR，再按 \fBid\fR 排序。
+.sp
+.LP
+不能为内核区域设置 \fBzonepath\fR。作为一项实现具体设置，会使用 \fBtmpfs\fR(7FS) 将其设置为一个固定位置。它不包含任何持久数据或用户可调的数据。由于区域根包含在根 ZFS 卷内，因此它不会挂载到全局区域的区域路径下，这点与传统区域不同。访问区域根只能通过区域本身来实现，例如 \fBzlogin\fR。
+.sp
+.LP
+\fBsolaris-kz\fR 区域不能直接利用共享内核功能（如 ZFS 数据集和文件系统挂载），而是通过块设备（如原始磁盘、ZFS 卷和 \fBlofi\fR 设备）来为区域提供存储。
+.sp
+.LP
+\fBsolaris-kz\fR 区域的根始终可以访问。可以通过在 \fBzonecfg\fR 中使用 \fBadd device\fR 来添加存储。指定的设备路径必须是原始设备，要么是 ZFS 卷、原始磁盘，要么是 \fBlofi\fR 设备。指定的设备必须是整个磁盘或 LUN。应使用不带任何分区/分片后缀的设备路径，例如：
+.sp
+.in +2
+.nf
+# \fBzonecfg -z myzone\fR
+zonecfg:myzone> \fBadd device\fR
+zonecfg:myzone:device> \fBset match=/dev/rdsk/c4t9d0\fR
+zonecfg:myzone:device> \fBset id=4\fR
+zonecfg:myzone:device> \fBset bootpri=1\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以指定 \fBid\fR 来固定区域内的磁盘地址。如果不指定，则自动分配。
+.sp
+.LP
+如 \fBzonecfg\fR(1M) 中所述，设备资源还可以配置存储 URI 使区域的配置可移植到其他主机系统。请参见 \fBsuri\fR(5)。
+.sp
+.LP
+例如：
+.sp
+.in +2
+.nf
+# \fBzonecfg -z \fImyzone\fR\fR
+zonecfg:myzone> \fBadd device\fR
+zonecfg:myzone:device> \fBset storage=\fInfs://user1:staff@host1/export/file1\fR\fR
+zonecfg:myzone:device> \fBset create-size=\fI4g\fR\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+要查看关于设备资源的当前配置的信息，请使用 \fBinfo\fR 子命令。例如：
+.sp
+.in +2
+.nf
+# \fBzonecfg -z \fImyzone\fR info device\fR
+device:
+    match not specified
+    storage: dev:/dev/zvol/dsk/rpool/VARSHARE/zones/myzone/disk0
+    id: 0
+    bootpri: 0
+device:
+    match not specified
+    storage: nfs://user1:staff@host1/export/file1
+    create-size: 4g
+    id: 1
+    bootpri not specified
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+您还可以通过指定 \fBid\fR 来缩短输出：
+.sp
+.in +2
+.nf
+# \fBzonecfg -z \fImyzone\fR info device id=\fI1\fR\fR
+device:
+    match not specified
+    storage: nfs://user1:staff@host1/export/file1
+    create-size: 4g
+    id: 1
+    bootpri not specified
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+要将区域安装到非缺省位置（例如某个 iSCSI 逻辑单元），必须修改根磁盘的设备资源。例如：
+.sp
+.in +2
+.nf
+# \fBzonecfg -z myzone\fR
+zonecfg:myzone> \fBselect device id=0\fR
+zonecfg:myzone:device> \fBset storage=iscsi://host/luname.naa.0000abcd\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+必须至少将一个设备的 \fBbootpri\fR 设置为正整数以指示该设备是可引导的。在内核区域内部，所有用作 ZFS 根池的镜像或者备件的设备必须是可引导的。
+.sp
+.LP
+对于 \fBsolaris-kz\fR 标记区域，\fBadd device\fR 只支持存储设备。
+.SS "网络访问"
+.sp
+.LP
+内核区域必须是\fB独占栈\fR。通过对以太网数据链路添加 \fBnet\fR 或 \fBanet\fR 资源、对 IPoIB 数据链路添加 \fBanet\fR 资源来提供网络访问。由这些资源指定的数据链路将用作区域中可见的数据链路的后端。可同时指定 IPoIB 和以太网网络资源，并且区域中可见的数据链路将具有对应的介质类型。对于存储设备，可以指定 ID 来标识区域内的虚拟 NIC 地址。不支持通过 \fBnet\fR 资源添加 InfiniBand 网络链路。
+.sp
+.LP
+内核区域可以自己托管区域（在这种情况下，内核区域充当这些区域的全局区域）。对托管区域的网络访问仅通过以太网数据链路提供，不通过 IPoIB 数据链路提供。但是，因为内核区域的网络配置部分由其区域配置定义，托管区域在可以使用的 MAC 地址方面受到限制。不允许将 \fBmac-address\fR 设置为 random 或特定 MAC 地址来引导区域。
+.sp
+.LP
+要向内核区域提供额外的 MAC 地址，请将其添加到相关资源的 \fBmac-address\fR 属性。请参见 \fBzonecfg\fR(1M)。这将使该 \fBmac-address\fR 成为内核区域中的\fB出厂\fR地址。
+.sp
+.LP
+托管区域然后可以自己使用该 MAC 地址。为此，需要将托管区域的 \fBmac-address\fR 属性配置为所设置的显式 MAC 地址（使用 \fBmac-address\fR 属性），或指定 \fBauto\fR。有关这些设置的详细信息，请参见 \fBzonecfg\fR(1M)。
+.SS "内存配置"
+.sp
+.LP
+必须将固定数量的主机 RAM 分配给内核区域。这通过在 \fBzonecfg\fR(1M) 中为 \fBcapped-memory\fR 资源设置 \fBphysical\fR 属性来配置。指定值必须舍入到支持的平台值。分配的内存将被锁定，因此交互设备不能对其分页。
+.SS "挂起、恢复和热迁移"
+.sp
+.LP
+可以通过 \fBzoneadm suspend\fR 命令将内核区域挂起到磁盘。区域的运行状态将写入到磁盘。由于这包括区域使用的整个 RAM，因此占用的时间和空间相当多。
+.sp
+.LP
+仅当内核区域的配置中有暂停资源时，内核区域才支持暂停和恢复。在暂停资源中，必须指定路径或存储（但不能同时指定两者）。\fBpath\fR 属性指定将包含暂停映像的文件的名称。包含该文件的目录必须存在，并且 \fBroot\fR 用户可写入该目录。在启动 \fBsvc:/system/zones:default\fR 之前挂载的任何文件系统都可使用。\fBstorage\fR 属性指定将包含暂停映像的磁盘设备的存储 URI（请参见 \fBsuri\fR(5)）。将使用整个设备。此设备不能共享。
+.sp
+.LP
+暂停映像会在写入之前压缩。因此，暂停映像的大小通常会明显小于区域的 RAM 大小。在暂停期间，会向控制台日志中输出并记录一条消息，指示暂停映像的大小。
+.sp
+.LP
+在压缩之后，会使用 AES-128-CCM 对暂停映像加密。加密密钥是由 \fB/dev/random\fR（请参见 \fBrandom\fR(7D)）自动生成的，并存储在密钥源资源的 raw 属性中。
+.sp
+.LP
+如果区域挂起，\fBzoneadm boot\fR 命令将恢复区域。如果不需要恢复，可以使用 \fBboot \fB-R\fR\fR 选项进行全新引导。
+.sp
+.LP
+如果多个主机可以访问暂停映像和区域的其余存储（通常通过使用 \fBsuspend:storage\fR 和 \fBdevice:storage\fR 属性访问），则暂停映像可用于支持使用 \fBzoneadm detach\fR 或 \fBzoneadm attach\fR 的一般区域冷迁移之后的热迁移，但使用 \fBzoneadm suspend\fR 而不是 \fBzoneadm shutdown\fR 作为第一步。这将避免在目标主机上产生区域启动成本（不包括恢复区域所用的时间）。
+.sp
+.LP
+源主机和目标主机必须采用相同的平台。在 x86 上，供应商 (AMD/Intel) 以及 CPU 型号名称必须匹配。在 SPARC 上，硬件平台必须相同。例如，不能从 T4 主机向 T5 主机执行热迁移。如果要在不同的硬件平台之间迁移，需要在 cpu-arch 属性中相应地指定迁移类。
+.sp
+.LP
+在恢复时，使用区域的当前配置来引导，并允许指定新的配置。但是，存在一些限制，因为恢复区域需要特定设置。任何不兼容都将导致引导失败。例如，出现以下情况时，引导过程可能会失败：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+CPU 支持不同特性（有关示例，请参见 \fBcpuid\fR(7D)）
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+配置具有不同的 capped-memory 值
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+配置定义了不同的虚拟 CPU 数量
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+缺少磁盘（没有具有合适的 \fBid\fR 属性的 \fBdevice\fR 资源）
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+缺少虚拟 NIC（没有具有合适的 \fBid\fR 属性的 \fBnet\fR 或 \fBanet\fR 资源）
+.RE
+.sp
+.LP
+没有对存储标识执行特定检查请注意，管理员有责任确保在特定 ID 下列出的设备是区域应该看到的设备。
+.SS "实时迁移"
+.sp
+.LP
+可以使用 \fBzoneadm migrate\fR 命令将内核区域实时迁移到兼容的主机，如 \fBzoneadm\fR(1M) 中所述。
+.sp
+.LP
+实时迁移具有与上面“挂起、恢复和热迁移”部分所述相同的兼容性限制。
+.SS "辅助状态"
+.sp
+.LP
+为此标记定义了以下辅助状态（如 \fBzoneadm list -is\fR 所示）：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsuspended\fR\fR
+.ad
+.RS 17n
+.rt  
+此区域已挂起，下一次引导时将恢复。请注意，必须连接此区域才能看到此状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdebugging\fR\fR
+.ad
+.RS 17n
+.rt  
+此区域处于 \fBrunning\fR 状态，但内核调试器正在此区域内运行，因此无法处理网络请求等。可以连接到区域控制台与调试器交互 (\fBkmdb\fR)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpanicked\fR\fR
+.ad
+.RS 17n
+.rt  
+此区域处于 \fBrunning\fR 状态，但区域遇到紧急情况，不过主机未受影响。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmigrating-out\fR\fR
+.ad
+.RS 17n
+.rt  
+区域正在完全运行，但是正迁移到另一个主机。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmigrating-in\fR\fR
+.ad
+.RS 17n
+.rt  
+区域已在主机上引导，且正在接收迁移映像，所以未完全运行，直到迁移完成。
+.RE
+
+.SS "主机数据"
+.sp
+.LP
+内核区域的每个可引导设备都包含称为主机数据的状态信息。此数据跟踪区域在何处使用、是否已暂停以及其他状态信息。主机数据使用 AES-128-CCM 加密和验证，将相同的加密密钥用于暂停映像。
+.sp
+.LP
+在读取或引导某个内核区域时，会读取主机数据以确定是否有其他系统在使用该内核区域的引导存储。如果有其他系统在使用引导存储，则该内核区域将进入不可用状态，并且错误消息将指示哪个系统正在使用引导存储。如果可以确定没有其他系统在使用引导存储，则可以在 \fBzoneadm attach\fR 中使用 \fB-x force-takeover extended\fR 选项修复该内核区域。在执行此命令之前，请查看下面的警告。
+.sp
+.LP
+如果加密密钥不可访问，则将无法读取主机数据和任何暂停映像。在这种情况下，任何读取或引导区域的尝试都将导致区域进入不可用状态。如果无法恢复加密密钥，则可以在 \fBzoneadm attach\fR 子命令中使用 \fB-x initialize-hostdata extended\fR 选项来生成新的加密密钥和主机数据。在执行此命令之前，请查看下面的警告。
+.LP
+注 - 
+.sp
+.RS 2
+警告：强制取代或重新初始化主机数据将导致无法检查是否有其他系统在使用区域。运行引用同一个存储的多个区域实例将对区域的文件系统带来不可修复的损坏。
+.RE
+.sp
+.LP
+要防止在热迁移或冷迁移过程中丢失加密密钥，请在源系统上使用 \fBzonecfg export\fR 生成一个可在目标系统上使用的命令文件。例如：
+.sp
+.in +2
+.nf
+  root@host1# \fBzonecfg -z myzone export -f /net/.../myzone.cfg\fR
+  root@host2# \fBzonecfg -z myzone -f /net/.../myzone.cfg\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+在此示例中，因为 myzone.cfg 包含加密密钥，因此必须保护其内容以防泄露。
+.SS "配置"
+.sp
+.LP
+可以使用 \fBSYSsolaris-kz\fR 模板对 \fBsolaris-kz\fR 标记区域进行配置。
+.sp
+.LP
+此标记不支持以下 \fBzonecfg\fR(1M) 资源和属性：
+.sp
+.in +2
+.nf
+anet:address
+capped-memory:locked
+capped-memory:swap
+dataset
+device:allow-partition
+device:allow-raw-io
+fs
+file-mac-profile
+fs-allowed
+ip-type
+limitpriv
+global-time
+max-lwps
+max-msg-ids
+max-processes
+max-sem-ids
+max-shm-memory
+rctl:zone.max-lofi
+rctl:zone.max-swap
+rctl:zone.max-locked-memory
+rctl:zone.max-shm-memory
+rctl:zone.max-shm-ids
+rctl:zone.max-sem-ids
+rctl:zone.max-msg-ids
+rctl:zone.max-processes
+rctl:zone.max-lwps
+rootzpool
+zpool
+.fi
+.in -2
+
+.sp
+.LP
+对于此标记，实时区域重新配置支持以下 \fBzonecfg\fR(1M) 资源和属性：
+.sp
+.in +2
+.nf
+anet (with exceptions stated below)
+device
+net (with exceptions stated below)
+.fi
+.in -2
+
+.sp
+.LP
+对于此标记，实时区域重新配置不支持以下 \fBzonecfg\fR(1M) 资源和属性：
+.sp
+.in +2
+.nf
+anet:allowed-address
+anet:configure-allowed-address
+anet:defrouter
+capped-cpu (zone.cpu-cap)
+capped-memory
+cpu-shares (zone.cpu-shares)
+dedicated-cpu
+hostid
+ib-vhca
+ib-vhca:port
+cpu-arch
+keysource
+net:allowed-address
+net:configure-allowed-address
+net:defrouter
+pool
+rctl
+scheduling-class
+tenant
+virtual-cpu
+.fi
+.in -2
+
+.sp
+.LP
+如果在持久配置中更改了列出的不支持的资源和属性并将更改应用于正在运行的区域，实时区域重新配置将忽略这些更改。
+.sp
+.LP
+如果尝试在实时配置中修改列出的不支持的资源和属性，这些修改都将被拒绝。
+.sp
+.LP
+应该针对相同的介质类型对 \fBsolaris-kz\fR 标记支持的 \fBanet\fR 和 \fBnet\fR 属性做出更改。
+.sp
+.LP
+\fBsolaris-kz\fR 标记支持的属性具有如下所列的特定缺省值：
+.sp
+.in +2
+.nf
+Resource                Property                    Default Value
+global                  zonepath                    /system/zones/%{zonename}
+                        autoboot                    false
+                        ip-type                     exclusive
+                        auto-shutdown               shutdown
+net                     configure-allowed-address   true
+anet                    mac-address                 auto
+                        lower-link                  auto
+                        link-protection             mac-nospoof
+                        linkmode                    cm
+anet:mac                mac-address                 auto
+ib-vhca:port            pkey                        auto
+.fi
+.in -2
+
+.SH 子命令
+.sp
+.LP
+以下 \fBsolaris-kz\fR 标记特定的子命令选项受 \fBzoneadm\fR(1M) 支持。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBattach [-x force-takeover | initialize-hostdata]\fR\fR
+.ad
+.sp .6
+.RS 4n
+将指定的 \fBsolaris-kz\fR 标记区域映像连接到区域。假定区域的可引导设备已正确填充。
+.sp
+\fB-x force-takeover\fR 扩展选项清除指示区域已在其他系统上安装或运行的状态信息。使用此选项时需要极其谨慎：如果某个区域的两个实例同时使用同一个存储，则将损坏文件系统。
+.sp
+\fB-x initialize-hostdata\fR 扩展选项重新初始化加密密钥和主机数据。与使用 \fB-x force-takeover\fR 一样，在使用此选项之前，要确保没有其他系统在使用该区域。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBboot [-R] -- [-L | -Z \fIbootenv\fR] \fR\fR
+.ad
+.sp .6
+.RS 4n
+如果区域挂起，可以使用 \fB-R\fR 选项忽略挂起的映像（稍后将删除该映像），并进行全新引导。
+.sp
+\fB-L\fR 选项通知引导装载程序列出可用的引导环境。可通过交互方式选择要引导的引导环境。
+.sp
+\fB-Z\fR 选项通知引导装载程序引导特定的引导环境。例如：
+.sp
+.in +2
+.nf
+# \fBzoneadm -z myzone \\fR 
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+\fBboot -- -Z rpool/ROOT/solaris\fR
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBclone [-c config_profile.xml | dir]\fR\fR
+.ad
+.sp .6
+.RS 4n
+提供从系统信息库安装后将应用的配置文件或配置文件的目录。
+.sp
+所有配置文件必须具有 \fB\&.xml\fR 扩展名。
+.sp
+对于 \fBzoneadm clone\fR，如果存储是自动创建的，则其创建时的大小与源区域中磁盘的大小相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstall\fR [\fB-v\fR] [\fB-a\fR \fIarchive\fR [\fB-x\fR no-auto-shutdown] | \fB-m\fR \fImanifest\fR\fB\&.xml\fR] [\fB-c\fR \fIconfig_profile\fR\fB\&.xml\fR | \fIdir\fR] [\fB-C\fR \fIinstall_profile\fR\fB\&.xml\fR | \fIdir\fR] [\fB-S\fR \fIrootsize\fR] [\fB-b\fR \fI/path/to/media.iso\fR [\fB-x\fR no-auto-shutdown]] [\fB-z\fR \fIarchived_zone\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-x\fR <\fBcert|cacert|key \fR>=\fIpath\fR] ...\fR
+.ad
+.sp .6
+.RS 4n
+可以使用全局区域的发布者和缺省 AI 清单、定制 AI 清单、Solaris 安装介质的 ISO 映像或统一归档文件安装核心区域。
+.sp
+除非使用 \fB-a\fR、\fB-b\fR 或 \fB-m\fR 选项，否则使用缺省 AI 清单、\fB/usr/share/auto_install/manifest/default.xml\fR 和全局区域的 \fBpkg\fR(5) 发布者执行安装。支持的介质类型包括文本安装程序和自动安装程序。这允许安装任何支持的 Oracle Solaris 版本。Solaris 11.2 是核心区域中支持的第一个 Solaris 版本。
+.sp
+如果使用 \fB-m\fR 选项指定 AI 清单，将根据 AI 清单的内容执行 IPS 或统一归档文件安装。请参见 \fBai_manifest\fR(4)。
+.sp
+如果使用 \fB-b\fR 选项提供可引导 Solaris 安装介质的 ISO 映像，则从安装介质引导核心区域，且安装程序在区域的控制台上运行。在安装期间建立控制台登录会话，从而允许与安装程序进行交互和/或观察安装程序。
+.sp
+如果使用 \fB-a\fR 选项指定统一归档文件，则从统一归档文件执行安装。如果统一归档文件包含多个区域（\fBarchiveadm info\fR 输出中的可部署系统），使用 \fB-z\fR 选项指定要安装哪个归档的区域。统一归档文件是使用 \fBarchiveadm\fR(1M) 创建。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a archive\fR\fR
+.ad
+.sp .6
+.RS 4n
+从指定的统一归档文件安装。\fIarchived_zone\fR 可以是全局区域、核心区域或 solaris 标记区域。如果归档区域是 solaris 标记区域，则执行非全局-全局 \fBpkg\fR(5) 映像转换。为了成功转换，区域的安装环境必须有足够的网络访问，从而允许访问所有 \fBpkg\fR(5) 发布者。最轻松的实现方式是允许通过 DHCP 配置核心区域的网络。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b /path/to/media.iso\fR\fR
+.ad
+.sp .6
+.RS 4n
+从指定介质引导并安装。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c config_profile.xml | dir\fR\fR
+.ad
+.sp .6
+.RS 4n
+提供从系统信息库安装后将应用的配置文件或配置文件的目录。
+.sp
+所有配置文件必须具有 \fB\&.xml\fR 扩展名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C install_profile.xml | dir\fR\fR
+.ad
+.sp .6
+.RS 4n
+提供引导到 AI 介质来执行安装时要应用于安装环境的配置文件或配置文件目录。
+.sp
+所有配置文件必须具有 \fB\&.xml\fR 扩展名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m manifest.xml\fR\fR
+.ad
+.sp .6
+.RS 4n
+将指定给自动化安装程序的清单文件。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x install-size\fR\fR
+.ad
+.sp .6
+.RS 4n
+显式设置根文件系统的大小（缺省值为 \fB16g\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x no-auto-shutdown\fR\fR
+.ad
+.sp .6
+.RS 4n
+在安装后保持内核区域登录到控制台，从而允许与安装系统进行交互。此选项仅对 \fB-a\fR 或 \fB-b\fR 选项有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB-x cert=\fBpath\fR\fR
+.ad
+.br
+.na
+\fB-x cacert=\fBpath\fR\fR
+.ad
+.br
+.na
+\fB-x key=\fBpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+从 https URI 处的统一归档文件安装时使用指定的证书、CA 证书和/或密钥。仅在与 \fB-a\fR 选项一起使用时有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+安装过程的详细输出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z archived_zone\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fIarchived_zone\fR 从统一归档文件安装区域。请参见 \fBarchiveadm\fR(1M) info 命令的输出中的 "Deployable Systems"（可部署系统）了解特定统一归档文件的可用值列表。仅在与 \fB-a\fR 选项一起使用时有效。
+.RE
+
+.RE
+
+.SH 另请参见
+.sp
+.LP
+\fBarchiveadm\fR(1M)、\fBai_manifest\fR(4)、\fBpkg\fR(5)
+.SH 附注
+.sp
+.LP
+可以在内核区域所在的同一主机上使用 VirtualBox，但必须进行相应地配置。有关更多详细信息，请参见 VirtualBox 文档。因为内核区域在单独的 Solaris 内核环境中运行，所以它们可能会崩溃，并且将与在裸机上运行的全局区域中的内核转储相同的核心。在这种情况下，转储将存储在内核区域存储中并且可以在发现任何 Solaris 故障转储的同一位置中发现它们，具体取决于由 \fBdumpadm\fR(1M) 配置的故障转储参数。内核区域还能够使用 \fBzoneadm savecore\fR 子命令从主机环境生成核心转储。此外，如果内核区域确实崩溃并尝试转储核心映像但无法成功地将核心保存到内核区域的存储中，则它将请求主机来保存核心映像，就像发出了 \fBzoneadm savecore\fR 子命令一样。核心将保存在 \fBcoreadm\fR(1M) 指定的位置中，只有 \fBcoreadm\fR(1M) 已经配置了一个位置并且启用了内核区域核心转储时这才能成功。

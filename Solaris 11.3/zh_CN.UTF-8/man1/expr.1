@@ -1,0 +1,401 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 2003, 2010, Oracle and/or its affiliates.All rights reserved.
+.\"  Portions Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\" Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH expr 1 "2010 年 7 月 20 日" "SunOS 5.11" "用户命令"
+.SH 名称
+expr \- 计算作为表达式的参数
+.SH 用法概要
+.LP
+.nf
+\fB/usr/bin/expr\fR \fIargument\fR...
+.fi
+
+.LP
+.nf
+\fB/usr/xpg4/bin/expr\fR \fIargument\fR...
+.fi
+
+.LP
+.nf
+\fB/usr/xpg6/bin/expr\fR \fIargument\fR...
+.fi
+
+.SH 描述
+.SS "/usr/bin/expr, /usr/xpg4/bin/expr"
+.sp
+.LP
+\fBexpr\fR 实用程序将计算该表达式，并将结果写入标准输出。写入字符 \fB0\fR 表示值为零，不写入任何内容表示字符串为空。
+.SS "/usr/xpg6/bin/expr"
+.sp
+.LP
+\fBexpr\fR 实用程序将计算该表达式，并将结果写入标准输出，其后跟有换行符。如果 \fBexpr\fR 处理未生成任何结果，则将换行符写入标准输出。
+.SH 操作数
+.sp
+.LP
+\fIargument\fR 操作数作为表达式进行计算。表达式的各项之间必须以空格分隔。shell 的特殊字符必须进行转义（请参见 \fBsh\fR(1)）。包含空格或其他特殊字符的字符串必须括在引号中。表达式的长度限制为 \fBLINE_MAX\fR（2048 个字符）。
+.sp
+.LP
+下面列出了运算符和关键字。列表按照优先级递增顺序进行排列，优先级相同的操作符将归为一组，置于 \fB{ }\fR 符号中。所有运算符从左向右执行运算。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIexpr\fR \fB\|\fR \fIexpr\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果既不是 \fINULL\fR 也不是 \fB0\fR，则返回第一个 \fIexpr\fR 的计算结果；否则，如果不是 \fINULL\fR，则返回第二个 \fIexpr\fR 的计算结果；否则，返回\fB 0\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIexpr\fR \fB\&\fR \fIexpr\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果 \fIexpr\fR 既不是 \fINULL\fR 也不是 \fB0\fR，则返回第一个 \fIexpr\fR，否则返回 \fB0\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIexpr\fR{ \fB=\fR, \fB\>\fR, \fB\>=\fR, \fB\<\fR, \fB\<=\fR, \fB!=\fR} \fIexpr\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果所有参数均为整数，则返回整数比较的结果，否则使用语言环境特有的合并序列返回字符串比较的结果。如果指定的关系为 \fBTRUE\fR，则每个比较的结果为 \fB1\fR；如果指定的关系为 \fBFALSE\fR，则每个比较的结果为\fB 0\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIexpr\fR { \fB+\fR, \fB-\fR} \fIexpr\fR\fR
+.ad
+.sp .6
+.RS 4n
+整数值参数的加或减。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIexpr\fR { \fB\*\fR, \fB/\fR, \fB%\fR} \fIexpr\fR\fR
+.ad
+.sp .6
+.RS 4n
+整数值参数的乘、除或余数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIexpr\fR \fB:\fR \fIexpr\fR\fR
+.ad
+.sp .6
+.RS 4n
+匹配运算符 \fB:\fR（冒号）将第一个参数与第二个参数进行比较，除非所有模式均固定在字符串的开头，否则必须按照国际化基本正则表达式 (basic regular expression, BRE) 进行匹配。也就是说，只有从字符串第一个字符开始的序列才可按照正则表达式进行匹配。请参见 \fBregex\fR(5) 和“附注”部分。通常，\fB/usr/bin/expr\fR 匹配运算符将返回匹配的字节数，\fB/usr/xpg4/bin/expr\fR 匹配运算符将返回匹配的字符数（匹配失败返回 \fB0\fR）。如果第二个参数至少包含一个 BRE 子表达式 [\(...\)]，则匹配运算符将返回与 \1 相对应的字符串。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIinteger\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅由一元减号（可选）后跟数字组成的参数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIstring\fR\fR
+.ad
+.sp .6
+.RS 4n
+无法识别为 \fIinteger\fR 参数或表达式运算符符号之一的字符串参数。
+.RE
+
+.sp
+.LP
+以下四种运算符（\fBindex、length、match 和 substr\fR）的优先级相同：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBindex\fR \fIstring character-list\fR\fR
+.ad
+.sp .6
+.RS 4n
+报告 \fIstring\fR 中的第一个字节（从 1 开始计数），其中 \fIcharacter-list\fR 中的字节与 \fIstring\fR 中的字节匹配。如果字符串中未出现 \fIcharacter-list\fR 中的任何字节，则返回 \fB0\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlength\fR \fIstring\fR\fR
+.ad
+.sp .6
+.RS 4n
+返回 \fIstring\fR 的长度（即字节数）。终止空字符不包含在该计数中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmatch\fR \fIstring regular-expression\fR\fR
+.ad
+.sp .6
+.RS 4n
+与 \fBexpr : expr\fR 匹配运算符含义相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsubstr\fR \fIstring integer-1 integer-2\fR\fR
+.ad
+.sp .6
+.RS 4n
+从开始于 \fIinteger-1\fR 位置且长度为 \fIinteger-2\fR 字节的字符串（从 1 开始计数）中提取字节序列。如果 \fIinteger-1\fR 的值大于字符串中的字节数，则 \fBexpr\fR 将返回一个空字符串。如果尝试提取的字节数大于字符串中的字节数，则 \fBexpr\fR 将返回字符串中其余的所有字节。如果 \fIinteger-1\fR 或 \fIinteger-2\fR 为负值，则会产生意外的结果。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR将 shell 变量与整数相加
+.sp
+.LP
+将 shell 变量 \fBa\fR 加 1：
+
+.sp
+.in +2
+.nf
+example$ \fBa=`expr\| $a\| +\| 1`\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR返回路径名称段
+.sp
+.LP
+以下示例模拟了 \fBbasename\fR(1)，返回路径名 \fB$a\fR 的最后一段。如果 \fB$a\fR 等于 \fB/usr/abc/file\fR 或仅为 \fBfile\fR，示例将返回 \fBfile\fR。（请注意 \fB/\fR 单独作为参数的情况：\fBexpr\fR 将其视为除法运算符。请参见下面的“附注”部分。）
+
+.sp
+.in +2
+.nf
+example$ \fBexpr $a : '.*/\e(.*\e)' \e| $a\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR使用 // 字符简化表达式
+.sp
+.LP
+此处为上一个示例的更佳版本。添加 \fB//\fR 字符将消除有关除法运算符的歧义并简化整个表达式。
+
+.sp
+.in +2
+.nf
+example$ \fBexpr //$a : '.*/\e(.*\e)'\fR
+.fi
+.in -2
+.sp
+
+.SS "/usr/bin/expr"
+.LP
+\fB示例 4 \fR返回变量中的字节数
+.sp
+.in +2
+.nf
+example$ \fBexpr "$VAR" : '.*'\fR
+.fi
+.in -2
+.sp
+
+.SS "/usr/xpg4/bin/expr"
+.LP
+\fB示例 5 \fR返回变量中的字符数
+.sp
+.in +2
+.nf
+example$ \fBexpr "$VAR" : '.*'\fR
+.fi
+.in -2
+.sp
+
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBexpr\fR 执行的以下环境变量的说明，请参见 \fBenviron\fR(5)：\fBLANG\fR、\fBLC_ALL\fR、\fBLC_COLLATE\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR 和 \fBNLSPATH\fR。
+.SH 退出状态
+.sp
+.LP
+作为表达式计算的副作用，\fBexpr\fR 将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+如果表达式既不是 \fINULL\fR 也不是 \fB0\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 6n
+.rt  
+如果表达式为 \fINULL\fR 或 \fB0\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 6n
+.rt  
+对于无效表达式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>2\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+CSIT{
+Enabled（已启用）。请参见\fB\fR“附注”部分。
+T}
+_
+接口稳定性请参见下文。
+_
+标准请参见 \fBstandards\fR(5)。
+.TE
+
+.sp
+.LP
+\fBmatch、substr、length\fR 和 \fBindex\fR 运算符的状态为 "Uncommitted"（未确定）。其他内容为 "Committed"（已确定）。
+.SH 另请参见
+.sp
+.LP
+\fBbasename\fR(1)、\fBed\fR(1)、\fBsh\fR(1)、\fBIntro\fR(3)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBregex\fR(5)、\fBstandards\fR(5)
+.SH 诊断
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsyntax error\fR\fR
+.ad
+.RS 24n
+.rt  
+运算符和操作数错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnon-numeric argument\fR\fR
+.ad
+.RS 24n
+.rt  
+尝试对此字符串执行算术计算。
+.RE
+
+.SH 附注
+.sp
+.LP
+以下三个运算符未启用 CSI。这些运算符在 \fB/usr/xpg4/bin/expr\fR 和 \fB/usr/xpg6/bin/expr\fR 中也不可用：
+.sp
+.in +2
+.nf
+\fIindex string character-list\fR
+
+\fIlength string\fR
+
+\fIsubstr string integer-1 integer-2\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+参数经过 shell 处理之后，除非根据值，否则 \fBexpr\fR 无法区别运算符和操作数。如果 \fB$a\fR 为 \fB=\fR，则命令：
+.sp
+.in +2
+.nf
+example$ \fBexpr $a = '='\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+类似如下：
+.sp
+.in +2
+.nf
+example$ \fBexpr = = =\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+参数传递给 \fBexpr\fR（它们均被视为 \fB=\fR 运算符）。以下表达式有效：
+.sp
+.in +2
+.nf
+example$ \fBexpr X$a = X=\fR
+.fi
+.in -2
+.sp
+
+.SS "正则表达式"
+.sp
+.LP
+不同于以前的某些版本，\fBexpr\fR 对所有系统提供的语言环境均使用国际化基本正则表达式。\fBregex\fR(5) 手册中对国际化正则表达式进行了说明。

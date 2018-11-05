@@ -1,0 +1,730 @@
+'\" te
+.\" Copyright (c) 2004, 2014, Oracle and/or its affiliates. All rights reserved.
+.TH trapstat 1M "24 Feb 2014" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+trapstat \- report trap statistics
+.SH SYNOPSIS
+.LP
+.nf
+\fB/usr/sbin/trapstat\fR [\fB-t\fR | \fB-T\fR | \fB-e\fR \fIentry\fR] 
+     [\fB-C\fR \fIprocessor_set_id\fR | \fB-c\fR \fIcpulist\fR] [\fB-P\fR] [\fB-a\fR]
+     [-A cor|soc|bins [-m]] [-k \fIkeys\fR] [-o \fInum\fR]
+     [-r \fIrate\fR | [\fIinterval\fR [\fIcount\fR]] | \fIcommand\fR [\fIargs\fR]...]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/trapstat\fR -O \fIstatfile\fR [-t | -T | -e entry]
+             [-C \fIprocessor_set_id\fR | -c \fIcpulist\fR] [-a]
+             [-r \fIrate\fR | [\fIinterval\fR [\fIcount\fR]] | \fIcommand\fR [\fIargs\fR]...]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/trapstat\fR -I \fIstatfile\fR
+             [-A cor|soc|bins [-m]] [-k \fIkeys\fR] [-o \fInum\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/trapstat\fR -l [-P] [-t | -T]
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBtrapstat\fR utility gathers and displays run-time trap statistics on UltraSPARC-based systems. The default output is a table of trap types and \fBCPU\fR \fBID\fRs, with each row of the table denoting a trap type and each column of the table denoting a \fBCPU\fR. If standard output is a terminal, the table contains as many columns of data as can fit within the terminal width; if standard output is not a terminal, the table contains at most six columns of data. By default, data is gathered and and displayed for all \fBCPU\fRs; if the data cannot fit in a single table, it is printed across multiple tables. The set of \fBCPU\fRs for which data is gathered and displayed can be optionally specified with the \fB-c\fR or \fB-C\fR option.
+.sp
+.LP
+Unless the \fB-r\fR option or the \fB-a\fR option or a command argument is specified, the value displayed in each entry of the table corresponds to the number of traps per second. If the \fB-r\fR option is specified, the value corresponds to the number of traps over the interval implied by the specified sampling rate; if the \fB-a\fR option is specified, the value corresponds to the accumulated number of traps since the invocation of \fBtrapstat\fR. If a command argument is specified, then the value corresponds to the accumulated number of traps over the life of the command.
+.sp
+.LP
+By default, \fBtrapstat\fR displays data once per second, and runs indefinitely; this behavior can be optionally controlled with the \fB-r\fR option or the \fIinterval\fR and \fIcount\fR parameters. The \fB-r\fR option argument specifies the rate in times per second to sample and display data. The \fIinterval\fR is specified in seconds; the \fIcount\fR indicates the number of intervals to be executed before exiting. Alternatively, \fBcommand\fR can be specified, in which case \fBtrapstat\fR executes the provided command and continues to run until the command exits, then diplays the accumulated data. A positive integer is assumed to be an \fIinterval\fR; if the desired \fB\fIcommand\fR\fR cannot be distinguished from an integer, the full path of \fIcommand\fR must be specified. Only one of \fB-r\fR, \fIinterval\fR or \fIcommand\fR may be used.
+.sp
+.LP
+UltraSPARC systems may handle translation lookaside buffer (TLB) misses by trapping to the operating system. TLB miss traps can be a significant component of overall system performance for some workloads; the \fB-t\fR option provides in-depth information on these traps. When run with this option, \fBtrapstat\fR displays both the rate of TLB miss traps \fI\fR and the percentage of time spent processing those traps. Additionally, TLB misses that hit in the translation storage buffer (TSB) are differentiated from TLB misses that further miss in the TSB. (The TSB is a software structure used as a translation entry cache to allow the TLB to be quickly filled; it is discussed in detail in the \fIUltraSPARC II User's Manual\fR.) The TLB and TSB miss information is further broken down into user- and kernel-mode misses.
+.sp
+.LP
+Workloads with working sets that exceed the TLB reach may spend a significant amount of time missing in the TLB. To accommodate such workloads, the operating system supports multiple page sizes: larger page sizes increase the effective TLB reach and thereby reduce the number of TLB misses. To provide insight into the relationship between page size and TLB miss rate, \fBtrapstat\fR optionally provides in-depth TLB miss information broken down by page size using the \fB-T\fR option. The information provided by the \fB-T\fR option is a superset of that provided by the \fB-t\fR option; only one of \fB-t\fR and \fB-T\fR can be specified. 
+.SH OPTIONS
+.sp
+.LP
+The following options are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+Displays the number of traps as accumulating, monotonically increasing values instead of per-second or per-interval rates.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fBcor\fR\fR
+.ad
+.sp .6
+.RS 4n
+Aggregate output by core ID. Data rows having the same core ID are aggregated into one row. The columns are replaced with subtotals, by default. The \fB-m\fR option prints column averages, instead.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fBsoc\fR\fR
+.ad
+.sp .6
+.RS 4n
+Aggregate output by socket ID. Data rows having the same socket ID are aggregated into one row. The columns are replaced with subtotals, by default. The \fB-m\fR option prints column averages, instead.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fBbins\fR\fR
+.ad
+.sp .6
+.RS 4n
+Aggregate the columns into a lesser number of bins within each sampling period, grouping them in the order in which they appear. The \fB-m\fR option may be used in order to compute the arithmetic mean instead of the subtotal. The \fB-k\fR sorting option may be used to change the column order prior to the binning step.
+.sp
+Aggregation by ID (\fB-A\fR \fBcor\fR|\fBsoc\fR) is processed before sorting (\fB-k\fR). Grouping by bins (\fB-A\fR \fBbins\fR) is done next. Finally, the number of output lines printed per interval may be limited by \fB-o\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIcpulist\fR\fR
+.ad
+.sp .6
+.RS 4n
+Enables \fBtrapstat\fR only on the \fBCPU\fRs specified by \fIcpulist\fR.
+.sp
+\fIcpulist\fR can be a single processor \fBID\fR (for example, \fB4\fR), a range of processor\fB ID\fRs (for example, \fB4-6\fR), or a comma separated list of processor\fB ID\fRs or processor \fBID\fR ranges (for example, \fB4,5,6\fR or \fB4,6-8\fR). 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR \fIprocessor_set_id\fR\fR
+.ad
+.sp .6
+.RS 4n
+Enables \fBtrapstat\fR only on the \fBCPU\fRs in the processor set specified by \fIprocessor_set_id\fR.
+.sp
+\fBtrapstat\fR modifies its output to always reflect the \fBCPU\fRs in the specified processor set. If a \fBCPU\fR is added to the set, \fBtrapstat\fR modifies its output to include the added \fBCPU\fR; if a \fBCPU\fR is removed from the set, \fBtrapstat\fR modifies its output to exclude the removed CPU. At most one processor set can be specified. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fIentrylist\fR\fR
+.ad
+.sp .6
+.RS 4n
+Enables \fBtrapstat\fR only for the trap table entry or entries specified by \fIentrylist\fR. A trap table entry can be specified by trap number or by trap name (for example, the level-10 trap can be specified as \fB74\fR, \fB0x4A\fR, \fB0x4a\fR, or \fBlevel-10\fR). 
+.sp
+\fIentrylist\fR can be a single trap table entry or a comma separated list of trap table entries. If the specified trap table entry is not valid, \fBtrapstat\fR prints a table of all valid trap table entries by name and value. A list of valid trap table entries is also found in \fIThe SPARC Architecture Manual, Version 9\fR and the \fISun Microelectronics UltraSPARC II User's Manual.\fR If the parsable option (\fB-P\fR) is specified in addition to the \fB-e\fR option, the format of the data is as specified under the description of the \fB-P\fR option:
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR \fIstatfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+Replay data previously saved in \fIstatfile\fR. Create data files for replay by specifying \fB-O\fR. This option is especially useful for analyzing statistics on machines with large numbers of CPUs. The file may be reprocessed multiple times using different sorting and aggregation options.
+.sp
+In order to help interpret the data, the original command used to gather the data is displayed at the top of the output, unless \fB-P\fR is specified.
+.sp
+The \fB-I\fR option is incompatible with the \fB-O\fR, \fB-T\fR, \fB-t\fR, \fB-e\fR, \fB-c\fR, \fB-C\fR, \fB-a\fR and \fB-r\fR options. It cannot be used with an \fIinterval\fR and \fIcount\fR specification or a command parameter.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR \fIkey1\fR,...\fR
+.ad
+.sp .6
+.RS 4n
+Sort rows within each sampling period from highest to lowest by \fIkey1\fR, then \fIkey2\fR, and so on. Each key may be any of the row headers in the \fBtrapstat\fR output, such as \fBlevel-10\fR, \fBu-itlb-miss\fR, and so forth.
+.sp
+Use \fBtrapstat\fR \fB-l\fR to list all event names. Use \fB-lt\fR or \fB-lT\fR to list key names for the TLB formats. Use \fB-l\fR with \fB-P\fR for parsable lists.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+Lists trap table entries. By default, a table is displayed containing all valid trap numbers, their names and a brief description. The trap name is used in both the default output and in the \fIentrylist\fR parameter for the \fB-e\fR argument. If the parsable option (\fB-P\fR) is specified in addition to the \fB-l\fR option, the format of the data is as follows: 
+.sp
+
+.sp
+.TS
+tab();
+cw(2.75i) cw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+FieldContents
+1Trap number in hexadecimal
+2Trap number in decimal
+3Trap name 
+RemainingTrap description
+.TE
+
+The first three fields are separated with whitespace. The last field may contain whitespaces. If the format is modified it will be compatible with the existing fields.
+.sp
+See the \fB-k\fR, \fB-t\fR and \fB-T\fR options for other uses of \fB-l\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.sp .6
+.RS 4n
+Display the arithmetic mean value rather than the sum when the \fB-A\fR option is used to aggregate data over multiple CPUs.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+Display only the first \fInum\fR rows within each sampling period, after applying any sorting and aggregation options.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-O\fR \fIstatfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+Save gathered data to \fIstatfile\fR. This data may be replayed at a later time using \fB-I\fR.
+.sp
+Write to the standard output if the file name is \fB\(em\fR (hyphen).
+.sp
+The purpose of \fB-O\fR is to capture all the specified data. It is incompatible with the data reduction options: \fB-A\fR, \fB-k\fR, \fB-m\fR, and \fB-o\fR. Since the \fBstatfile\fR format is fixed, the \fB-P\fR option cannot be used with \fB-O\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR\fR
+.ad
+.sp .6
+.RS 4n
+Generates parsable output. When run without other data gathering modifying options (that is, \fB-t\fR or \fB-T\fR) or with \fB-e\fR, \fBtrapstat\fR's parsable output has the following format:
+.sp
+
+.sp
+.TS
+tab();
+cw(2.75i) cw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+FieldContents
+1Timestamp (nanoseconds since start)
+2CPU/core/socket/bin ID
+3Trap number (in hexadecimal)
+4Trap name
+5Trap rate per interval
+.TE
+
+Each field is separated with whitespace. If the format is modified, it will be modified by adding potentially new fields beginning with field 6; extant fields will remain unchanged. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIrate\fR\fR
+.ad
+.sp .6
+.RS 4n
+Explicitly sets the sampling rate to be \fIrate\fR samples per second. If this option is specified, \fBtrapstat\fR's output changes from a traps-per-second to traps-per-sampling-interval. Cannot be used with command or interval parameters.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+Enables TLB/TSB statistics.
+.sp
+A table is displayed with four principal columns of data: \fIitlb-miss\fR, \fIitsb-miss\fR, \fIdtlb-miss\fR, and \fIdtsb-miss\fR. The columns contain both the rate of the corresponding event and the percentage of \fBCPU\fR time spent processing the event. The rows of the table correspond to CPUs, (or cores, sockets or bins, if \fB-A\fR was specified), with each one consuming two rows: one row for: one row for user-mode events (denoted with \fBu\fR) and one row for kernel-mode events (denoted with \fBk\fR). For each row, the percentage of \fBCPU\fR time is totalled and displayed in the rightmost column. The \fBCPU\fRs are delineated with a solid line. If the parsable option (\fB-P\fR) is specified in addition to the \fB-t\fR option, the format of the data is as follows: 
+.sp
+
+.sp
+.TS
+tab();
+cw(0i) cw(5.5i) 
+lw(0i) lw(5.5i) 
+.
+FieldContents
+1Timestamp (nanoseconds since start)
+2CPU/core/socket/bin ID
+3Mode (\fBk\fR denotes kernel, \fBu\fR denotes user.
+4I-TLB misses
+5Percentage of time in I-TLB miss handler
+6I-TSB misses
+7Percentage of time in I-TSB miss handler
+8D-TLB misses
+9Percentage of time in D-TLB miss handler
+10D-TSB misses
+11Percentage of time in D-TSB miss handler
+.TE
+
+Each field is separated with whitespace. If the format is modified, it will be modified by adding potentially new fields beginning with field 12; extant fields will remain unchanged.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR\fR
+.ad
+.sp .6
+.RS 4n
+Enables \fBTLB/TSB\fR statistics, with page size information. As with the \fB-t\fR option, a table is displayed with four principal columns of data: \fIitlb-miss\fR, \fIitsb-miss\fR, \fIdtlb-miss\fR, and \fIdtsb-miss\fR. The columns contain both the absolute number of the corresponding event, and the percentage of \fBCPU\fR time spent processing the event. The rows of the table correspond to CPUs (or cores, sockets or bins if \fB-A\fR was specified), with each \fBCPU\fR consuming two sets of rows: one set for user-level events (denoted with \fBu\fR) and one set for kernel-level events (denoted with \fBk\fR). Each set, in turn, contains as many rows as there are page sizes supported (see \fBgetpagesizes\fR(3C)). For each row, the percentage of \fBCPU\fR time is totalled and displayed in the right-most column. The two sets are delineated with a dashed line; CPUs are delineated with a solid line. If the parsable option (\fB-P\fR) is specified in addition to the \fB-T\fR option, the format of the data is as follows:
+.sp
+
+.sp
+.TS
+tab();
+cw(0i) cw(5.5i) 
+lw(0i) lw(5.5i) 
+.
+FieldContents
+1Timestamp (nanoseconds since start)
+2CPU/core/socket/bin ID
+3Mode \fBk\fR denotes kernel, \fBu\fR denotes user)
+4Page size, in decimal
+5I-TLB misses
+6Percentage of time in I-TLB miss handler
+7I-TSB misses
+8Percentage of time in I-TSB miss handler
+9D-TLB misses
+10Percentage of time in D-TLB miss handler
+11D-TSB misses
+12Percentage of time in D-TSB miss handler
+.TE
+
+Each field is separated with whitespace. If the format is modified, it will be modified by adding potentially new fields beginning with field 13; extant fields will remain unchanged. 
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRUsing \fBtrapstat\fR Without Options
+.sp
+.LP
+When run without options, \fBtrapstat\fR displays a table of trap types and CPUs. At most six columns can fit in the default terminal width; if (as in this example) there are more than six CPUs, multiple tables are displayed: 
+
+.sp
+.in +2
+.nf
+example# \fBtrapstat\fR
+vct  name               |     cpu0     cpu1     cpu4     cpu5     cpu8     cpu9
+------------------------+------------------------------------------------------
+ 24 cleanwin            |     6446     4837     6368     2153     2623     1321
+ 41 level-1             |      100        0        0        0        1        0
+ 44 level-4             |        0        1        1        1        0        0
+ 45 level-5             |        0        0        0        0        0        0
+ 47 level-7             |        0        0        0        0        9        0
+ 49 level-9             |      100      100      100      100      100      100
+ 4a level-10            |      100        0        0        0        0        0
+ 4d level-13            |        6       10        7       16       13       11
+ 4e level-14            |      100        0        0        0        1        0
+ 60 int-vec             |     2607     2740     2642     2922     2920     3033
+ 64 itlb-miss           |     3129     2475     3167     1037     1200      569
+ 68 dtlb-miss           |   121061    86162   109838    37386    45639    20269
+ 6c dtlb-prot           |      997      847     1061      379      406      184
+ 84 spill-user-32       |     2809     2133     2739   200806   332776   454504
+ 88 spill-user-64       |    45819   207856    93487   228529    68373    77590
+ 8c spill-user-32-cln   |      784      561      767      274      353      215
+ 90 spill-user-64-cln   |        9       37       17       39       12       13
+ 98 spill-kern-64       |    62913    50145    63869    21916    28431    11738
+ a4 spill-asuser-32     |     1327      947     1288      460      572      335
+ a8 spill-asuser-64     |       26       48       18       54       10       14
+ ac spill-asuser-32-cln |     4580     3599     4555     1538     1978      857
+ b0 spill-asuser-64-cln |       26        0        0        2        0        0
+ c4 fill-user-32        |     2862     2161     2798   191746   318115   435850
+ c8 fill-user-64        |    45813   197781    89179   217668    63905    74281
+ cc fill-user-32-cln    |     3802     2833     3733    10153    16419    19475
+ d0 fill-user-64-cln    |      329    10105     4873    10603     4235     3649
+ d8 fill-kern-64        |    62519    49943    63611    21824    28328    11693
+108 syscall-32          |     2285     1634     2278      737      957      383
+126 self-xcall          |      100        0        0        0        0        0
+
+vct  name               |    cpu12    cpu13    cpu14    cpu15
+------------------------+------------------------------------
+ 24 cleanwin            |     5435     4232     6302     6104
+ 41 level-1             |        0        0        0        0
+ 44 level-4             |        2        0        0        1
+ 45 level-5             |        0        0        0        0
+ 47 level-7             |        0        0        0        0
+ 49 level-9             |      100      100      100      100
+ 4a level-10            |        0        0        0        0
+ 4d level-13            |       15       11       22       11
+ 4e level-14            |        0        0        0        0
+ 60 int-vec             |     2813     2833     2738     2714
+ 64 itlb-miss           |     2636     1925     3133     3029
+ 68 dtlb-miss           |    90528    70639   107786   103425
+ 6c dtlb-prot           |      819      675      988      954
+ 84 spill-user-32       |   175768    39933     2811     2742
+ 88 spill-user-64       |        0   241348    96907   118298
+ 8c spill-user-32-cln   |      681      513      753      730
+ 90 spill-user-64-cln   |        0       42       16       20
+ 98 spill-kern-64       |    52158    40914    62305    60141
+ a4 spill-asuser-32     |     1113      856     1251     1208
+ a8 spill-asuser-64     |        0       64       16       24
+ ac spill-asuser-32-cln |     3816     2942     4515     4381
+ b0 spill-asuser-64-cln |        0        0        0        0
+ c4 fill-user-32        |   170744    38444     2876     2784
+ c8 fill-user-64        |        0   230381    92941   111694
+ cc fill-user-32-cln    |     8550     3790     3612     3553
+ d0 fill-user-64-cln    |        0    10726     4495     5845
+ d8 fill-kern-64        |    51968    40760    62053    59922
+108 syscall-32          |     1839     1495     2144     2083
+126 self-xcall          |        0        0        0        0
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRUsing \fBtrapset\fR with CPU Filtering
+.sp
+.LP
+The \fB-c\fR option can be used to limit the \fBCPU\fRs on which \fBtrapstat\fR is enabled. This example limits \fBCPU 1\fR and \fBCPU\fRs \fB12\fR through \fB15\fR.
+
+.sp
+.in +2
+.nf
+example# \fBtrapstat -c 1,12-15\fR
+
+
+vct  name               |     cpu1    cpu12    cpu13    cpu14    cpu15
+------------------------+---------------------------------------------
+ 24 cleanwin            |     6923     3072     2500     3518     2261
+ 44 level-4             |        3        0        0        1        1
+ 49 level-9             |      100      100      100      100      100
+ 4d level-13            |       23        8       14       19       14
+ 60 int-vec             |     2559     2699     2752     2688     2792
+ 64 itlb-miss           |     3296     1548     1174     1698     1087
+ 68 dtlb-miss           |   114788    54313    43040    58336    38057
+ 6c dtlb-prot           |     1046      549      417      545      370
+ 84 spill-user-32       |    66551    29480   301588    26522   213032
+ 88 spill-user-64       |        0   318652   111239   299829   221716
+ 8c spill-user-32-cln   |      856      347      331      416      293
+ 90 spill-user-64-cln   |        0       55       21       59       39
+ 98 spill-kern-64       |    66464    31803    24758    34004    22277
+ a4 spill-asuser-32     |     1423      569      560      698      483
+ a8 spill-asuser-64     |        0       74       32       98       46
+ ac spill-asuser-32-cln |     4875     2250     1728     2384     1584
+ b0 spill-asuser-64-cln |        0        2        0        1        0
+ c4 fill-user-32        |    64193    28418   287516    27055   202093
+ c8 fill-user-64        |        0   305016   106692   288542   210654
+ cc fill-user-32-cln    |     6733     3520    15185     2396    12035
+ d0 fill-user-64-cln    |        0    13226     3506    12933    11032
+ d8 fill-kern-64        |    66220    31680    24674    33892    22196
+108 syscall-32          |     2446      967      817     1196      755
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRUsing \fBtrapstat\fR with TLB Statistics
+.sp
+.LP
+The \fB-t\fR option displays in-depth \fBTLB\fR statistics, including the amount of time spent performing \fBTLB\fR miss processing. The following example shows that the machine is spending 14.1 percent of its time just handling D-TLB misses: 
+
+.sp
+.in +2
+.nf
+example# \fBtrapstat -t\fR
+cpu m| itlb-miss %tim itsb-miss %tim | dtlb-miss %tim dtsb-miss %tim |%tim
+-----+-------------------------------+-------------------------------+----
+  0 u|      2571  0.3         0  0.0 |     10802  1.3         0  0.0 | 1.6
+  0 k|         0  0.0         0  0.0 |    106420 13.4       184  0.1 |13.6
+-----+-------------------------------+-------------------------------+----
+  1 u|      3069  0.3         0  0.0 |     10983  1.2       100  0.0 | 1.6
+  1 k|        27  0.0         0  0.0 |    106974 12.6        19  0.0 |12.7
+-----+-------------------------------+-------------------------------+----
+  2 u|      3033  0.3         0  0.0 |     11045  1.2       105  0.0 | 1.6
+  2 k|        43  0.0         0  0.0 |    107842 12.7       108  0.0 |12.8
+-----+-------------------------------+-------------------------------+----
+  3 u|      2924  0.3         0  0.0 |     10380  1.2       121  0.0 | 1.6
+  3 k|        54  0.0         0  0.0 |    102682 12.2        16  0.0 |12.2
+-----+-------------------------------+-------------------------------+----
+  4 u|      3064  0.3         0  0.0 |     10832  1.2       120  0.0 | 1.6
+  4 k|        31  0.0         0  0.0 |    107977 13.0       236  0.1 |13.1
+=====+===============================+===============================+====
+ ttl |     14816  0.3         0  0.0 |    585937 14.1      1009  0.0 |14.5
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 4 \fRUsing \fBtrapstat\fR with TLB Statistics and Page Size Information
+.sp
+.LP
+By specifying the \fB-T\fR option, \fBtrapstat\fR shows \fBTLB\fR misses broken down by page size. In this example, CPU 0 is spending 7.9 percent of its time handling user-mode TLB misses on 8K pages, and another 2.3 percent of its time handling user-mode TLB misses on 64K pages.
+
+.sp
+.in +2
+.nf
+example# \fBtrapstat -T -c 0\fR
+cpu m size| itlb-miss %tim itsb-miss %tim | dtlb-miss %tim dtsb-miss %tim |%tim
+----------+-------------------------------+-------------------------------+----
+  0 u   8k|      1300  0.1        15  0.0 |    104897  7.9        90  0.0 | 8.0
+  0 u  64k|         0  0.0         0  0.0 |     29935  2.3         7  0.0 | 2.3
+  0 u 512k|         0  0.0         0  0.0 |      3569  0.2         2  0.0 | 0.2
+  0 u   4m|         0  0.0         0  0.0 |       233  0.0         2  0.0 | 0.0
+- - - - - + - - - - - - - - - - - - - - - + - - - - - - - - - - - - - - - + - -
+  0 k   8k|        13  0.0         0  0.0 |     71733  6.5       110  0.0 | 6.5
+  0 k  64k|         0  0.0         0  0.0 |         0  0.0         0  0.0 | 0.0
+  0 k 512k|         0  0.0         0  0.0 |         0  0.0       206  0.1 | 0.1
+  0 k   4m|         0  0.0         0  0.0 |         0  0.0         0  0.0 | 0.0
+==========+===============================+===============================+====
+      ttl |      1313  0.1        15  0.0 |    210367 17.1       417  0.2 |17.5
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 5 \fRUsing \fBtrapstat\fR with Entry Filtering
+.sp
+.LP
+By specifying the \fB-e\fR option, \fBtrapstat\fR displays statistics for only specific trap types. Using this option minimizes the probe effect when seeking specific data. This example yields statistics for only the \fIdtlb-prot\fR and \fIsyscall-32\fR traps on CPUs 12 through 15: 
+
+.sp
+.in +2
+.nf
+example# \fBtrapstat -e dtlb-prot,syscall-32 -c 12-15\fR
+vct  name               |    cpu12    cpu13    cpu14    cpu15
+------------------------+------------------------------------
+ 6c dtlb-prot           |      817      754     1018      560
+108 syscall-32          |     1426     1647     2186     1142
+
+vct  name               |    cpu12    cpu13    cpu14    cpu15
+------------------------+------------------------------------
+ 6c dtlb-prot           |     1085      996      800      707
+108 syscall-32          |     2578     2167     1638     1452
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 6 \fRUsing \fBtrapstat\fR with a Higher Sampling Rate
+.sp
+.LP
+The following example uses the \fB-r\fR option to specify a sampling rate of 1000 samples per second, and filter only for the level-10 trap. Additionally, specifying the \fB-P\fR option yields parsable output.
+
+.sp
+.LP
+Notice the timestamp difference between the level-10 events: 9,998,000 nanoseconds and 10,007,000 nanoseconds. These level-10 events correspond to the system clock, which by default ticks at 100 hertz (that is, every 10,000,000 nanoseconds).
+
+.sp
+.in +2
+.nf
+example# \fBtrapstat -e level-10 -P -r 1000\fR
+1070400 0 4a level-10 0
+2048600 0 4a level-10 0
+3030400 0 4a level-10 1
+4035800 0 4a level-10 0
+5027200 0 4a level-10 0
+6027200 0 4a level-10 0
+7027400 0 4a level-10 0
+8028200 0 4a level-10 0
+9026400 0 4a level-10 0
+10029600 0 4a level-10 0
+11028600 0 4a level-10 0
+12024000 0 4a level-10 0
+13028400 0 4a level-10 1
+14031200 0 4a level-10 0
+15027200 0 4a level-10 0
+16027600 0 4a level-10 0
+17025000 0 4a level-10 0
+18026000 0 4a level-10 0
+19027800 0 4a level-10 0
+20025600 0 4a level-10 0
+21025200 0 4a level-10 0
+22025000 0 4a level-10 0
+23035400 0 4a level-10 1
+24027400 0 4a level-10 0
+25026000 0 4a level-10 0
+26027000 0 4a level-10 0
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 7 \fRDisplay Three CPUs with Highest \fBcpu_mondo\fR Rate
+.sp
+.LP
+The following command displays the three CPUs with the highest \fBcpu_mondo\fR rate.
+
+.sp
+.in +2
+.nf
+example% \fBtrapstat -k cpu_mondo -o 3 10 1\fR
+vct name                | cpu0 cpu1 cpu61
+------------------------+----------------
+9   immu-miss           |    0    0     0
+24  cleanwin            |    0    0     0
+31  dmmu-miss           |    0    0     0
+41  level-1             |    0    0     0
+46  level-6             |    0    0     0
+49  level-9             |    0    0     0
+4a  level-10            |  100   31    16
+4d  level-13            |   23   15     8
+4e  level-14            |  100   32    18
+6c  dtlb-prot           |    0    0     0
+7c  cpu_mondo           |   24   16     9
+7d  dev_mondo           |    0    0     0
+84  spill-user-32       |    0    0     0
+8c  spill-user-32-cln   |    0    0     0
+98  spill-kern-64       |  423  180   102
+a4  spill-asuser-32     |    0    0     0
+ac  spill-asuser-32-cln |    0    0     0
+c4  fill-user-32        |    0    0     0
+cc  fill-user-32-cln    |    0    1     0
+d8  fill-kern-64        |  295  165    94
+103 flush-wins          |    0    0     0
+108 syscall-32          |    0    0     0
+122 get-psr             |    0    0     0
+127 gethrtime           |    0    0     0
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 8 \fRAggregating Multiple CPUs into Quartiles
+.sp
+.LP
+The following commands aggregate 96 CPUs into quartiles by level-10 rate.
+
+.sp
+.in +2
+.nf
+example% \fBtrapstat -O /tmp/t1 -e level-10 10 1\fR
+example% \fBtrapstat -I /tmp/t1 -A 4\fR
+
+replay from: trapstat -O /tmp/t1 -e level-10 10 1
+vct name     | bin0 bin1 bin2 bin3
+-------------+--------------------
+4a  level-10 |  440  340  305  306
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 9 \fRAggregating and Sorting Multiple CPUs
+.sp
+.LP
+The following command aggregates 96 CPUs by core ID and sorts for the highest four.
+
+.sp
+.in +2
+.nf
+example% \fBtrapstat -A cor -e level-10 -k level-10 -o 4 10 1\fR
+vct name     |  cor514  cor549  cor542  cor521
+-------------+--------------------------------
+4a  level-10 |     197     120     111     106
+.fi
+.in -2
+.sp
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) cw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+Availabilitysystem/core-os
+Interface Stability
+    Human Readable OutputUncommitted
+    Parsable OutputCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBlockstat\fR(1M), \fBpmap\fR(1), \fBpsrset\fR(1M), \fBpsrinfo\fR(1M), \fBpbind\fR(1M), \fBppgsz\fR(1), \fBgetpagesizes\fR(3C) 
+.sp
+.LP
+\fISun Microelectronics UltraSPARC II User's Manual,\fR January 1997, STP1031, 
+.sp
+.LP
+\fIThe SPARC Architecture Manual, Version 9,\fR 1994, Prentice-Hall. 
+.SH NOTES
+.sp
+.LP
+When enabled, \fBtrapstat\fR induces a varying probe effect, depending on the type of information collected. While the precise probe effect depends upon the specifics of the hardware, the following table can be used as a rough guide: 
+.sp
+
+.sp
+.TS
+tab();
+cw(0i) cw(5.5i) 
+lw(0i) lw(5.5i) 
+.
+OptionApproximate probe effect
+default3-5% per trap
+\fB-e\fR3-5% per specified trap
+\fB-t\fR, \fB-T\fR T{
+40-45% per TLB miss trap hitting in the TSB, 25-30% per TLB miss trap missing in the TSB
+T}
+.TE
+
+.sp
+.LP
+These probe effects are \fIper trap\fR not for the system as a whole. For example, running \fBtrapstat\fR with the default options on a system that spends 7% of total time handling traps induces a performance degradation of less than one half of one percent; running \fBtrapstat\fR with the \fB-t\fR or \fB-T\fR option on a system spending 5% of total time processing TLB misses induce a performance degradation of no more than 2.5%. 
+.sp
+.LP
+When run with the \fB-t\fR or \fB-T\fR option, \fBtrapstat\fR accounts for its probe effect when calculating the \fI%tim\fR fields. This assures that the \fI%tim\fR fields are a reasonably accurate indicator of the time a given workload is spending handling TLB misses \(em regardless of the perturbing presence of \fBtrapstat\fR.
+.sp
+.LP
+While the \fI%tim\fR fields include the explicit cost of executing the TLB miss handler, they do \fInot\fR include the implicit costs of TLB miss traps (for example, pipeline effects, cache pollution, etc). These implicit costs become more significant as the trap rate grows; if high \fI%tim\fR values are reported (greater than 50%), you can accurately infer that much of the balance of time is being spent on the implicit costs of the TLB miss traps.
+.sp
+.LP
+Due to the potential system wide degradation induced, only the super-user can run \fBtrapstat\fR.
+.sp
+.LP
+Due to the limitation of the underlying statistics gathering methodology, only one instance of \fBtrapstat\fR can run at a time.
+.sp
+.LP
+UltraSPARC sun4v platforms with hardware support for handling TLB misses (for example, Hardware Table Walk or HWTW) will mask TLB misses from the operating system. Trapstat normally disables HWTW through the hypervisor when it is enabled. Due to the potentially large performance degradation this can cauase, sun4v platforms provide an alternate, "fast" method for gathering TLB miss data. Currently, only UltraSPARC T1 based system fully implement this functionality: on other sun4v systems, the TLB miss data gathered by trapstat will always be 0.

@@ -1,0 +1,667 @@
+'\" te
+.\" Copyright (c) 2008, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH pbind 1M "2015 年 5 月 20 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+pbind \- プロセスまたは LWP のバインディングの制御およびクエリー
+.SH 形式
+.LP
+.nf
+\fBpbind\fR \fB-b\fR [\fB-c\fR | \fBg\fR | \fBl\fR] [\fItarget_list\fR] [\fB-n\fR] [\fB-s\fR | \fBw\fR] [\fB-xft\fR] [\fB-i\fR \fIidtype\fR] [\fIidlist\fR]
+.fi
+
+.LP
+.nf
+\fBpbind\fR \fB-b\fR [\fB-c\fR | \fBg\fR | \fBl\fR] [\fItarget_list\fR] [\fB-n\fR] [\fB-s\fR | \fBw\fR] [\fB-xft\fR] [\fB-e\fR \fIcommand\fR [\fIargument(s)\fR]]
+.fi
+
+.LP
+.nf
+\fBpbind\fR [\fB-q\fR] [\fB-c\fR | \fBg\fR | \fBl\fR] [\fB-i\fR \fIidtype\fR] [\fIidlist\fR]
+.fi
+
+.LP
+.nf
+\fBpbind\fR \fB-u\fR [\fB-i\fR \fIidtype\fR] \fIidlist\fR
+.fi
+
+.LP
+.nf
+\fBpbind\fR \fB-Q\fR [\fB-c\fR | \fBg\fR | \fBl\fR] [\fItarget_list\fR]
+.fi
+
+.LP
+.nf
+\fBpbind\fR \fB-U\fR [\fB-c\fR | \fBg\fR | \fBl\fR] [\fItarget_list\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBpbind\fR は、CPU に対するプロセスや LWP (軽量プロセス) のバインディングとアフィニティーを制御およびクエリーします。このユーティリティーを使用すると、ユーザーは、1 つまたは複数の LWP の実行をスケジュールすべきプロセッサ、そのようなバインディングを強く強制すべきか、それとも弱く強制すべきか、およびそれを子の LWP に継承すべき方法を決定できます。\fBpbind\fR は、特定のバインディングを使ってコマンドを実行するためにも使用できます。
+.sp
+.LP
+強いアフィニティーを使用すると、ターゲット LWP は指定されたプロセッサでのみ実行されますが、弱いアフィニティーでは、そのような CPU での LWP の実行がベストエフォートの試行になります。\fBpbind\fR によって決定されたバインディングは排他的ではありません。つまり、プロセッサは自由にほかの LWP を実行することもできます。これは結果として、優先度の高いほかの LWP が同じプロセッサを占有している場合に、バインドされているスレッドが実行されなくなる可能性があることを意味します。
+.sp
+.LP
+ターゲット CPU は、そのプロセッサ ID によって直接指定することも、そのプロセッサグループ (PG) または近傍性グループ (lgroup) ID によって間接的に指定することもできます。ユーザーは、負のアフィニティーを指定して、指定された CPU を回避すべきであることを示すこともできます。
+.sp
+.LP
+特定の LWP のバインディングをクエリーする際、ユーザーは、結果となる CPU セットがその ID (それらが含まれるプロセッサグループまたは近傍性グループ) によって識別されるようにリクエストできます。同様に、特定のプロセッサのすべてのバインディングをクエリーまたは削除する際、ユーザーはその PG または lgroup ID によってそれを実行できます。
+.sp
+.LP
+デフォルトでは、バインディングは exec(2)、fork(2)、および thr_create(3C) を介して継承されますが、ユーザーはそのようなアクションの 1 つまたは複数を通じて継承が行われないようにリクエストすることもできます。
+.sp
+.LP
+\fBpbind\fR によって決定された実行時の動作が、指定された CPU の継続するオンライン状態や、ターゲット LWP と同じプロセッサセットへの所属の影響を受けやすいことに注意しておくことが大切です。これらのベースとなる条件が変わると、LWP は特定の CPU へのアフィニティーを失ってしまうため、条件が復元された時点で設定し直す必要があります。
+.sp
+.LP
+スーパーユーザーは任意のプロセスまたは LWP をバインドまたはバインド解除できますが、ほかのユーザーは、自分がシグナルへのアクセス権を持っているプロセスまたは LWP (つまり、ユーザーと同じ実効ユーザー ID を持つプロセス) をバインドまたはバインド解除できます。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションは、1 つまたは複数の識別子とともに使用して、リクエストされたバインディングのターゲットとなる CPU、プロセッサグループ、または近傍性グループを示します。
+.sp
+有効なターゲットタイプとそれに対応する解釈は次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 6n
+.rt  
+CPU またはプロセッサ ID (デフォルト)。指定されたすべての CPU が存在し、オンラインになっている必要があります。\fItarget_list\fR が存在し、オンラインであるかどうかを調べるには、\fBpsrinfo\fR コマンドを使用します。詳細は、\fBpsrinfo\fR(1M) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR\fR
+.ad
+.RS 6n
+.rt  
+プロセッサグループ ID。詳細は、\fBpginfo\fR(1M) を参照してください。システムのすべての CPU、またはゾーンに表示される CPU を表すプロセッサグループ 0 は有効なバインディングターゲットではありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 6n
+.rt  
+近傍性グループ ID。指定された lgroup には、その操作を続行するためのオンラインの CPU が少なくとも 1 つ含まれている必要があります。詳細は、lgrpinfo(1M) を参照してください。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたターゲットプロセッサを回避すべきであることを示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.sp .6
+.RS 4n
+バインディングが強く強制されることを示す (デフォルト) ため、指定された LWP は所定のプロセッサでのみ実行されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-w\fR\fR
+.ad
+.sp .6
+.RS 4n
+バインディングが弱く強制されることを示すため、指定された LWP は所定のプロセッサで実行されるのが望ましいですが、必要に応じてほかの場所でも実行できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBidtype\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションは、\fBidlist\fR 引数とともに使用して、バインディングが適用される 1 つ以上のプロセスまたは LWP を指定します。\fBidlist\fR の解釈は \fBidtype\fR の値によって異なり、省略された場合はデフォルトで pid になります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBpid\fR[/\fBlwps\fR] \fR
+.ad
+.RS 18n
+.rt  
+\fBidlist\fR はプロセス ID のリストであり、各 ID のあとにスラッシュ (/) と、コンマで区切られた LWP ID のリストが続く可能性があります。LWP ID の範囲は、その範囲の開始と終了を - で区切って示すことができます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBppid\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBidlist\fR は親プロセス ID のリストです。バインディングコマンドは、親プロセス ID がそのリスト内にあるすべてのプロセスに適用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBpgid\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBidlist\fR はプロセスグループ ID のリストです。バインディングコマンドは、指定されたプロセスグループ内のすべてのプロセスに適用されます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBuid\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBidlist\fR はユーザー ID のリストです。バインディングコマンドは、実効ユーザー ID がリスト内の ID に等しいすべてのプロセスに適用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBgid\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBidlist\fR はグループ ID のリストです。バインディングコマンドは、実効グループ ID がリスト内の ID に等しいすべてのプロセスに適用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBtaskid\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBidlist\fR はタスク ID のリストです。バインディングコマンドは、指定されたタスク内のすべてのプロセスに適用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBprojid\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBidlist\fR はプロジェクト ID のリストです。バインディングコマンドは、実効プロジェクト ID がリスト内の ID に等しいすべてのプロセスに適用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBzoneid\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBidlist\fR はゾーン ID のリストです。バインディングコマンドは、実効ゾーン ID がリスト内の ID に等しいすべてのプロセスに適用されます。
+.RE
+
+\fBP_MYID\fR 識別子を上記のいずれかの ID タイプと組み合わせて使用すると、目的の ID が指定されたタイプの呼び出し側 LWP のそれになるよう指定できることに注意してください (たとえば、\fBP_PID\fR と \fBP_MYID\fR を組み合わせると、呼び出し側 LWP のプロセス ID になります)。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.sp .6
+.RS 4n
+exec(2) を介してアフィニティーを継承しません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+fork(2) を介してアフィニティーを継承しません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+thr_create(3C) を介してアフィニティーを継承しません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたバインディングでコマンドを実行します。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたプロセスまたはすべてのプロセスの CPU バインディングを表示します。プロセスがバインディングの異なる複数の LWP で構成されていて、LWP が明示的に指定されていない場合は、バインドされている LWP のいずれか 1 つについてのみバインディングが表示されます。プロセス ID の後ろに「/lwpids」を付加することにより、一部の LWP のバインディングを表示できます。複数の LWP を選択するには、区切り記号「-」と「,」を使用します。
+.sp
+さらに、[\fB-gl\fR] オプションを含めると、指定された LWP がバインドされる CPU が含まれているプロセッサグループまたは近傍性グループがレポートに含まれるようにリクエストできます。デフォルトでは、プロセッサ ID が常に表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Q\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された一連の CPU、プロセッサグループ、または近傍性グループにバインドされている LWP、またはプロセッサバインディングを持つすべての LWP を表示します。複数の LWP で構成されているプロセスの場合は、個々の LWP のバインディングが表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたプロセスのすべてまたは一部の LWP のバインディングを削除し、それらを任意のオンラインプロセッサで実行できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-U\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された一連のプロセッサ、または引数が指定されていない場合は任意のプロセッサにバインドされているすべての LWP のバインディングを削除します。
+.RE
+
+.SH 戻り値
+.sp
+.LP
+\fBpbind\fR は、正常終了時に \fB0\fR を返します。エラーが発生した場合は、結果となるエラー番号を示す正の整数が返されます。
+.SH エラー
+.sp
+.LP
+\fBpbind\fR コマンドは、次の場合に失敗します。
+.sp
+.ne 2
+.mk
+.na
+\fBESRCH\fR
+.ad
+.RS 10n
+.rt  
+指定されたプロセスまたは LWP が 1 つも存在しません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBEINVAL\fR
+.ad
+.RS 10n
+.rt  
+指定された idtype または ID が存在しないか、ターゲットプロセッサがすべてオフラインまたは障害発生状態であるか、各種プロセッサセットの一部または指定されたオプションの組み合わせが無効です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBEPERM\fR
+.ad
+.RS 10n
+.rt  
+{\fBPRIV_PROC_OWNER\fR} 特権が呼び出し側プロセスの実効セットで表明されず、その実ユーザーまたは実効ユーザー ID が、バインドされるどの LWP の実ユーザーまたは実効ユーザー ID とも一致しません。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRプロセス 101048 を CPU 1 にバインドする同等の方法
+.sp
+.in +2
+.nf
+# \fBpbind -b 1 101048\fR
+pbind(1M): pid 101048 strongly bound to processor(s) 1.
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBpbind -b -c 1 101048\fR
+pbind(1M): pid 101048 strongly bound to processor(s) 1.
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBpbind -b -c 1 -i pid 101048\fR
+pbind(1M): pid 101048 strongly bound to processor(s) 1.
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBpbind -b -c 1 -s -i pid 101048\fR
+pbind(1M): pid 101048 strongly bound to processor(s) 1.
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRプロセス 101048 を CPU 0-3 に再バインドする
+.sp
+.in +2
+.nf
+# \fBpbind -b -c 0-3 101048\fR
+pbind(1M): pid 101048 strongly bound to processor(s) 1.
+pbind(1M): pid 101048 strongly bound to processor(s) 0 1 2 3.
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fRプロセス 101048 をプロセッサグループ 1 の CPU に再バインドする
+.sp
+.in +2
+.nf
+# \fBpbind -b -g 1 101048\fR
+pbind(1M): pid 101048 strongly bound to Processor Group(s) 1 2.
+pbind(1M): pid 101048 strongly bound to Processor Group(s) 1.
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fRプロセス 101048 を近傍性グループ 2 の CPU に再バインドする
+.sp
+.in +2
+.nf
+# \fBpbind -b -l 2 101048\fR
+pbind(1M): pid 101048 strongly bound to Locality Group(s) 0 1.
+pbind(1M): pid 101048 strongly bound to Locality Group(s) 0 2.
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 5 \fRプロセス 101048 を CPU 2 に弱くバインドする
+.sp
+.in +2
+.nf
+# \fBpbind -b 2 -w 101048\fR
+pbind(1M): pid 101048 weakly bound to processor(s) 2.
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 6 \fRプロセス 101048 を CPU 1 を除くすべての CPU にバインドする
+.sp
+.in +2
+.nf
+# \fBpbind -b 1 -n 101048\fR
+pbind(1M): pid 101048 strongly bound to processor(s) 0 2 3.
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 7 \fRプロセス 101048 をプロセッサグループ 1 の CPU を除くすべての CPU に弱くバインドする
+.sp
+.in +2
+.nf
+# \fBpbind -b -g 1 -n -w 101048\fR
+pbind(1M): pid 101048 strongly bound to Processor Group(s) 1 2.
+pbind(1M): pid 101048 weakly bound to Processor Group(s) 2
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 8 \fRCPU、プロセッサグループ、および近傍性グループについて、プロセス 101048 のバインディングをクエリーする
+.sp
+.in +2
+.nf
+# \fBpbind -q 101048\fR
+pbind(1M): pid 101048 weakly bound to processor(s) 2 3.
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBpbind -q -g 101048\fR
+pbind(1M): pid 101048 weakly bound to Processor Group(s) 2.
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBpbind -q -l 101048\fR
+pbind(1M): pid 101048 weakly bound to Locality Group(s) 0 2.
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 9 \fRプロセス 101048 のバインディングをクエリーする
+.sp
+.in +2
+.nf
+# \fBpbind -q -i pid 101048\fR
+pbind(1M): pid 101048 weakly bound to processor(s) 2 3.
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 10 \fRプロセッサグループについて、プロセス 101048 のバインディングをクエリーする
+.sp
+.in +2
+.nf
+# \fBpbind -q -g -i pid 101048\fR
+pbind(1M): pid 101048 weakly bound to Processor Group(s) 2.
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 11 \fRCPU 2 のすべてのバインディングをクエリーする
+.sp
+.in +2
+.nf
+# \fBpbind -Q 2\fR
+pbind(1M): LWP 101048/1 weakly bound to processor(s) 2 3.
+pbind(1M): LWP 102122/1 weakly bound to processor(s) 2 3.
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 12 \fRプロセス 101048 をバインド解除する
+.sp
+.in +2
+.nf
+# \fBpbind -u 101048\fR
+pbind(1M): pid 101048 successfully unbound.
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 13 \fRCPU 1 からすべてのプロセスをバインド解除する
+.sp
+.in +2
+.nf
+# \fBpbind -U 1\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 14 \fR近傍性グループ 2 からすべてのプロセスをバインド解除する
+.sp
+.in +2
+.nf
+# \fBpbind -U -l 2\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 15 \fR特定のバインディングで ls(1) を実行する
+.sp
+.in +2
+.nf
+# \fBpbind -b -c 3 -e ls\fR
+file1  file2  file3  file4
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+.TE
+
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+正常終了。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB>\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+エラーが発生した。
+.RE
+
+.SH 関連項目
+.sp
+.LP
+\fBpsrinfo\fR(1M)、\fBpsradm\fR(1M)、\fBpsrset\fR(1M)、\fBpginfo\fR(1M)、\fBlgrpinfo\fR(1)、\fBprocessor_info\fR(2)、\fBprocessor_bind\fR(2)、\fBpset_create\fR(2)、\fBpset_assign\fR(2)、\fBpset_bind\fR(2)、\fBpset_destroy\fR(2)、\fBexec\fR(2)、\fBfork\fR(2)、\fBthr_create\fR(3C)、\fBprocset.h\fR(3HEAD)、\fBattributes\fR(5)、\fBprivileges\fR(5)
+.SH 診断
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpbind: cannot query pid 31: No such process\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたプロセスが存在しなかったか、終了しています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpbind: cannot bind pid 31: Not owner\fR\fR
+.ad
+.sp .6
+.RS 4n
+ユーザーに、そのプロセスをバインドする権限がありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpbind: cannot bind pid 31: Invalid argument\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたプロセッサがオンラインではありません。
+.RE
+

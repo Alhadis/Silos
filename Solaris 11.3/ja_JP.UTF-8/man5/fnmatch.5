@@ -1,0 +1,239 @@
+'\" te
+.\"  Copyright (c) 1992, X/Open Company Limited All Rights Reserved Portions Copyright (c) 1995, Sun Microsystems, Inc. All Rights Reserved
+.\"  Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation. Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation. In the following statement, the phrase "this text" refers to portions of the system documentation. Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group. In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.opengroup.org/unix/online.html. This notice shall appear on any product containing this material.
+.TH fnmatch 5 "1995 年 3 月 28 日" "SunOS 5.11" "標準、環境、マクロ"
+.SH 名前
+fnmatch \- ファイル名のパターンマッチング
+.SH 機能説明
+.sp
+.LP
+次に説明するパターンマッチング表記法を使用して、シェル内で一致する文字列のパターンを指定します。従来のパターンマッチング表記法も正規表現に対応していますが、若干異なっています。このため、このパターンマッチング表記法の規則については、\fBregex\fR(5) のマニュアルページで記述されている正規表現表記法に基づいて説明します。
+.SS "単一の文字を照合するパターン"
+.sp
+.LP
+次の\fI単一の文字を照合するパターン\fRは、単一の文字 (\fI通常の文字\fR、\fI特殊パターン文字\fR、\fIパターンブラケット表現\fR) を照合します。パターンブラケット表現は、単一の照合要素もマッチングします。
+.sp
+.LP
+通常の文字とは、その文字自体を照合するパターンです。\fINUL\fR、引用符を必要とする特殊なシェル文字、および次の 3 つの特殊パターン文字を除いて、サポートされる文字セットに任意の文字を指定できます。マッチングは文字のグラフィック表現ではなく、文字のエンコーディングに使用されるビットパターンに基づいて行なわれます。任意の文字 (通常、シェル特殊、特殊パターン) に引用符を付けると、そのパターンはその文字自体を照合します。シェル特殊文字には、常に引用符が必要です。
+.sp
+.LP
+引用符なしで、ブラケット表現以外の次の 3 つの文字には、パターン指定において特別な意味があります:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB ?\fR \fR
+.ad
+.RS 7n
+.rt  
+疑問符は任意の文字を照合するパターンです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB*\fR \fR
+.ad
+.RS 7n
+.rt  
+後述の「\fB複数の文字を照合するパターン\fR」で説明するように、アスタリスクは複数の文字を照合するパターンです。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[\fR \fR
+.ad
+.RS 7n
+.rt  
+開始括弧から、パターンブラケット表現が導入されます。
+.RE
+
+.sp
+.LP
+\fBregex\fR(5) のマニュアルページに記述された基本正規表現におけるブラケット表現についての説明は、正規表現表記法では\fI一致しないリスト\fRの役割において感嘆符 \fB (\fR \fB!\fR \fB)\fR がサーカムフレックス文字 (\fB^\fR) に置換される点を除いて、パターンブラケット表現にも当てはまります。引用符なしのサーカムフレックス文字でブラケット表現が始まる場合は、不特定の結果が発生します。
+.sp
+.LP
+ブラケット表現でサーカムフレックスを制限すると、感嘆符に加えてサーカムフレックスを否定文字として使用するパターンマッチングをサポートする実装が可能になります。移植性のあるアプリケーションでどちらかの文字をマッチングするには、\fB[\^!\fR] などを使用する必要があります。
+.sp
+.LP
+シェルの引用符が削除されていない (\fBexec\fR 関数のいずれかを使用して \fBfind\fR が呼び出されるときの \fBfind\fR \fB–name \fR 一次子への引数や、\fBfnmatch\fR(3C) 関数への \fIpattern\fR 引数など) パターンマッチングが使用されている場合は、特殊文字の前にバックスラッシュ文字を付けてエスケープすれば、特殊な意味を取り除くことができます。このようなエスケープするバックスラッシュは破棄されます。シーケンス \fB\ \\fR は 1 つのリテラルバックスラッシュを表します。通常の文字、特殊なシェル文字、および特殊なパターン文字に引用符を付ける要件および効果はすべて、このコンテキストのエスケープに適用されます。
+.sp
+.LP
+パターンマッチングは 3 つの別々の状況で動作する必要があるため、ここでは引用符とエスケープの両方について説明します。 
+.RS +4
+.TP
+.ie t \(bu
+.el o
+シェルで直接呼び出す (パス名の展開や \fBcase\fR 文など)。次のパターンはすべて、文字列またはファイル \fBabc\fR を照合します。  
+.sp
+
+.sp
+.TS
+tab();
+lw(1.01i) lw(1.18i) lw(1.1i) lw(1.1i) lw(1.11i) 
+lw(1.01i) lw(1.18i) lw(1.1i) lw(1.1i) lw(1.11i) 
+.
+\fBabc\fR\fB"abc"\fR\fBa"b"c\fR\fB a\bc\fR\fBa[b]c \fR
+\fBa["b"]c\fR\fBa[\b]c\fR\fBa["\b"]c\fR\fBa?c\fR\fBa*c\fR
+.TE
+
+次は照合しません:
+.sp
+
+.sp
+.TS
+tab();
+lw(1.83i) lw(1.83i) lw(1.83i) 
+.
+\fB"a?c"\fR\fBa\*c\fR\fBa\[b]c\fR
+.TE
+
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+シェルを介さずにユーティリティーや関数を呼び出す (\fBfind\fR(1) および関数 \fBfnmatch\fR(3C) を参照)。 
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+シェルコマンド行を介して \fBfind\fR、\fBcpio\fR、\fBtar\fR、\fBpax\fR などのユーティリティーを呼び出す。この場合、ユーティリティーで引数が現れる前に、シェルの引用符が削除されます。例: 
+.sp
+find /bin -name e\c[\h]o -print 
+.sp
+引用符が削除されたあとに、バックスラッシュが \fBfind\fR に渡され、エスケープ文字として処理されます。どちらも通常の文字の前に付加されているため、\fBc\fR と \fBh\fR はその文字自体を意味し、\fBecho\fR は (\fB/bin\fR にある) 従来の多くのシステムで見つかります。特殊なシェル文字やパターン文字が含まれるファイル名を検索するには、次のように、引用符とエスケープ文字の両方が必要です:
+.sp
+\fBpax -r . . . "*a\ ( \?"\fR
+.sp
+この目的は、\fBa(?\fR で終わるファイル名を抽出することです。
+.RE
+.sp
+.LP
+特殊なシェル文字 (メタ文字とも呼ばれる) に引用符やエスケープ文字を付けるには、規格に準拠するアプリケーションが必要です。このような保護なしで使用すると、構文エラーが発生したり、実装の拡張機能がトリガーされたりする可能性があります。たとえば、KornShell のパターンでは、括弧に基づく一連の拡張機能がサポートされています。\fBksh\fR(1) を参照してください。
+.SS "複数の文字を照合するパターン"
+.sp
+.LP
+次の規則は、\fI単一の文字を照合するパターン\fRから\fI複数の文字を照合するパターン\fRを構成する際に使用されます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+アスタリスク (*) は、null 文字列を含む任意の文字列を照合するパターンです。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fI単一の文字を照合するパターン\fRの連結は、単一の文字を連結したものや各連結パターンで一致する照合要素と一致する有効なパターンです。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+1 つ以上の\fI単一の文字を照合するパターン\fRと 1 つ以上のアスタリスクとの連結は、有効なパターンです。このようなパターンでは、各アスタリスクは 0 文字以上の文字列を照合し、パターンの残りの部分が文字列と最長一致する文字を照合できます。
+.RE
+.sp
+.LP
+各アスタリスクは 0 回以上の繰り返しを照合するため、パターン \fBa*b\fR と \fBa**b\fR のはたらきはまったく同じです。
+.sp
+.LP
+たとえば、
+.sp
+.ne 2
+.mk
+.na
+\fB\fB a[bc]\fR \fR
+.ad
+.RS 11n
+.rt  
+文字列 \fBab\fR および \fBac\fR に一致します。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBa*d\fR \fR
+.ad
+.RS 11n
+.rt  
+文字列 \fBad\fR、\fBabd\fR、および \fBabcd\fR と一致しますが、文字列 \fBabc\fR とは一致しません。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBa*d*\fR \fR
+.ad
+.RS 11n
+.rt  
+文字列 \fBad\fR、\fBabcd\fR、\fBabcdef\fR、\fBaaaad\fR、および \fBadddd\fR と一致します。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB*a*d\fR \fR
+.ad
+.RS 11n
+.rt  
+文字列 \fBad\fR、\fBabcd\fR、\fBefabcd\fR、\fBaaaad\fR、および \fBadddd\fR と一致します。 
+.RE
+
+.SS "ファイル名の展開に使用されるパターン"
+.sp
+.LP
+これまでに「\fB複数の\fR\fB文字を\fR\fB照合する\fR\fBパターン\fR」および「\fB単一の\fR\fB文字\fR\fBを\fR\fB照合する\fR\fBパターン\fR」で説明した規則は、パターンマッチング表記法がファイル名の展開で使用されるときに適用される次の規則によって限定されます。
+.RS +4
+.TP
+1.
+パス名のスラッシュ文字は、パターン内で 1 つ以上のスラッシュを使用して明示的に照合する必要があり、アスタリスクや疑問符などの特殊文字またはブラケット表現で照合することはできません。パターン内のスラッシュは、ブラケット表現の前に識別されるため、ファイル名の展開に使用されるパターンブラケット表現にスラッシュを含めることはできません。たとえば、パターン \fBa[b/c]d\fR は、\fBabd\fR や \fBa/d\fR などのパス名と一致します。文字どおり \fBa[b/c]d\fR のパス名のみと一致します。 
+.RE
+.RS +4
+.TP
+2.
+ファイル名がピリオド (.) から始まる場合は、パターンの最初の文字としてピリオドを使用するか、直後にスラッシュ文字を付けて、ピリオドを明示的に照合する必要があります。次のパターンでは、先頭のピリオドは照合されません:
+.sp
+· アスタリスクや疑問符などの特殊文字
+.sp
+· 次のような一致しないリストを含むブラケット表現:
+.sp
+\fB[!a]\fR
+.sp
+次のような範囲表現:
+.sp
+\fB[%-0] \fR
+.sp
+または、次のような文字クラス表現:
+.sp
+\fB [[:punct:]]\fR
+.sp
+次のように、ブラケット表現マッチングリスト内の明示的なピリオドが、
+.sp
+\fB[.abc]\fR
+.sp
+ファイル名の先頭ピリオドを照合できるかどうかは指定されません。
+.RE
+.RS +4
+.TP
+3.
+必要に応じて、指定されたパターンは既存のファイル名およびパス名と照合されます。各コンポーネントにパターン文字が含まれている場合は、そのコンポーネントを含むディレクトリに読み取り権限が必要です。コンポーネント (最後のコンポーネントを除く) にパターン文字が含まれていない場合は、検索権限が必要です。たとえば、次のパターンがあるとします:
+.sp
+\fB/foo/bar/x*/bam\fR
+.sp
+ディレクトリ \fB/\fR および \fBfoo\fR には検索権限、ディレクトリ \fBbar\fR には検索権限および読み取り権限、各 \fBx*\fR ディレクトリには検索権限が必要です。 
+.sp
+パターンが既存のファイル名またはパス名と一致すると、それらのファイル名とパス名に置き換えられ、現在のロケールで有効な照合順序に従ってソートされます。パターンに不正なブラケット表現が含まれている場合や、既存のファイル名やパス名と一致しない場合は、パターン文字列は変更されません。
+.RE
+.SH 関連項目
+.sp
+.LP
+\fBfind\fR(1)、\fBksh\fR(1)、\fBfnmatch\fR(3C)、\fBregex\fR(5) 

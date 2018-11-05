@@ -1,0 +1,352 @@
+'\" te
+.\" Copyright (c) 2002, 2011, Oracle and/or its affiliates. All rights reserved.
+.TH 6to4relay 1M "2002 年 11 月 19 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+6to4relay \- 6to4 リレールーター通信の構成の管理
+.SH 形式
+.LP
+.nf
+\fB/usr/sbin/6to4relay\fR 
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/6to4relay\fR [\fB-e\fR] [\fB-a\fR \fIaddr\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/6to4relay\fR [\fB-d\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/6to4relay\fR [\fB-h\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fB6to4relay\fR コマンドは、6to4 リレールーター通信を構成するために使用されます。リレールーター通信のサポートは、\fBtun\fR モジュール内の IPv4 アドレスを格納する変数の値を設定することで有効になります。この変数は、すべてのトンネルに大域で、リレールーターとの通信のポリシーを定義します。このアドレスはデフォルトで \fBINADDR_ANY\fR (\fB0.0.0.0\fR) に設定され、カーネルはこの値をリレールーター通信のサポートが無効になっていることを示すように解釈します。そうでない場合はサポートが有効になっていて、ネイティブ IPv6 (6to4 でない) ホスト宛のパケットが 6to4 トンネルインタフェース経由で送信されるときに、指定されたアドレスが IPv4 着信先アドレスとして使用されます。\fB6to4relay\fR コマンドは、プロジェクト固有の ioctl を使って変数を設定します。
+.sp
+.LP
+オプションなしで使用される \fB6to4relay\fR は、カーネル内の現在の構成ステータスを表示します。デフォルトの \fBanycast\fR アドレスの代わりに特定のリレールーターの \fBunicast\fR アドレスにパケットを送信する場合は、\fB-a\fR オプションを使用します。\fB-a\fR オプションで指定されたアドレスは、リレールーターからトラフィックを受信するためのポリシーを指定しません。送信元ネイティブ IPv6 エンドポイントごとに異なるリレールーターが選択される可能性があるため、受信パケット上の発信元リレールーターは非決定性です。
+.sp
+.LP
+\fB6to4relay\fR を使って行った構成変更は、リブートをまたがって持続しません。変更は、トンネルを停止するまでカーネル内でのみ持続します
+.SH オプション
+.sp
+.LP
+\fB6to4relay\fR コマンドでは次のオプションがサポートされます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fIaddr\fR\fR
+.ad
+.RS 11n
+.rt  
+指定されたアドレス \fIaddr\fR を使用します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.RS 11n
+.rt  
+リレールーターのサポートを有効にします。\fB-a\fR \fIaddr\fR を使用します (指定された場合)。それ以外の場合は、デフォルトの \fBanycast\fR アドレス 192.88.99.1 を使用します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.RS 11n
+.rt  
+リレールーターのサポートを無効にします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.RS 11n
+.rt  
+ヘルプ
+.RE
+
+.SH オペランド
+.sp
+.LP
+次のオペランドがサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIaddr\fR\fR
+.ad
+.RS 8n
+.rt  
+特定のリレールーターのユニキャストアドレス。\fIaddr\fR は、IPv4 アドレスのドット形式 10 進表現として指定する必要があります。それ以外の場合はエラーが発生し、コマンドが失敗します。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRカーネル内構成ステータスの表示
+.sp
+.LP
+カーネル内構成ステータスを表示するには、オプションなしで \fB/usr/sbin/6to4relay\fR を使用します。
+
+.sp
+.in +2
+.nf
+example# \fB/usr/sbin/6to4relay\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+6to4 リレールーター通信が無効になっている場合は、管理者は次のメッセージを見ます。
+
+.sp
+.in +2
+.nf
+6to4relay: 6to4 Relay Router communication support is disabled.
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+6to4 ルーター通信が有効になっている場合は、ユーザーは次のメッセージを見ます。
+.sp
+.in +2
+.nf
+6to4relay: 6to4 Relay Router communication support is enabled.
+IPv4 destination address of Relay Router = 192.88.99.1
+.fi
+.in -2
+.sp
+
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR \fR
+.ad
+.RS 6n
+.rt  
+正常終了。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB>\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+エラーが発生した。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/sbin/6to4relay\fR \fR
+.ad
+.RS 24n
+.rt  
+デフォルトのインストールルート
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBifconfig\fR(1M), \fBattributes\fR(5)
+.sp
+.LP
+Huitema, C. 『\fIRFC 3068, An Anycast Prefix for 6to4 Relay Routers\fR』。Network Working Group 発行、2001 年 6 月。
+.sp
+.LP
+Carpenter, B. and Moore, K. 『\fIRFC 3056, Connection of IPv6 Domains via IPv4 Clouds\fR』。Network Working Group 発行、2001 年 2 月。
+.SH 診断
+.sp
+.LP
+\fB6to4relay\fR から次のメッセージが報告されます。
+.sp
+.in +2
+.nf
+6to4relay: input (0.0.0.0) is not a valid IPv4 unicast address
+.fi
+.in -2
+.sp
+
+.RS +4
+\fB例: \fR
+.sp
+.LP
+次の例は不正なユニキャストアドレスを提供しています。
+.sp
+.in +2
+.nf
+example# \fB6to4relay -e -a 0.0.0.0\fR
+.fi
+.in -2
+.sp
+\fB説明: \fR
+.sp
+.LP
+\fB-a\fR オプションで指定するアドレスは、有効なユニキャストアドレスである必要があります。 
+.RE
+
+.sp
+.in +2
+.nf
+6to4relay: option requires an argument -a
+usage:
+    6to4relay
+    6to4relay -e [-a <addr>]
+    6to4relay -d
+    6to4relay -h
+.fi
+.in -2
+.sp
+
+.RS +4
+\fB例: \fR
+.sp
+.LP
+次の例は \fB-a\fR オプションの引数を含んでいません。
+.sp
+.in +2
+.nf
+example# \fB6to4relay -e -a \fR
+.fi
+.in -2
+.sp
+\fB説明: \fR
+.sp
+.LP
+\fB-a\fR オプションには引数が必要です。
+.RE
+
+.sp
+.in +2
+.nf
+usage:
+    6to4relay
+    6to4relay -e [-a <addr>]
+    6to4relay -d
+    6to4relay -h
+.fi
+.in -2
+.sp
+
+.RS +4
+\fB例: \fR
+.sp
+.LP
+次の例は、許可されていないオプションを指定しています。
+.sp
+.in +2
+.nf
+example# \fB6to4relay -e -d\fR
+.fi
+.in -2
+.sp
+\fB説明: \fR
+.sp
+.LP
+指定されたオプションは許可されません。使用法のメッセージが画面に表示されます。
+.RE
+
+.sp
+.in +2
+.nf
+usage:
+    6to4relay
+    6to4relay -e [-a <addr>]
+    6to4relay -d
+    6to4relay -h
+.fi
+.in -2
+.sp
+
+.RS +4
+\fB例: \fR
+.sp
+.LP
+次の例は、\fB-e\fR オプションを指定せずに \fB-a\fR オプションを指定しています。
+.sp
+.in +2
+.nf
+example# \fB6to4relay -a 1.2.3.4\fR
+.fi
+.in -2
+.sp
+\fB説明: \fR
+.sp
+.LP
+\fB-a\fR オプションには \fB-e\fR オプションを組み合わせる必要があります。使用法のメッセージが画面に表示されます。
+.RE
+
+.sp
+.in +2
+.nf
+6to4relay: ioctl (I_STR) : Invalid argument
+.fi
+.in -2
+.sp
+
+.RS +4
+\fB例: \fR
+.sp
+.LP
+次の例は無効なアドレスを指定しています。
+.sp
+.in +2
+.nf
+example# \fB6to4relay -e -a 239.255.255.255\fR
+.fi
+.in -2
+.sp
+\fB説明: \fR
+.sp
+.LP
+\fB-a\fR オプションに指定するアドレスは、クラス D の \fIaddr\fR であってはいけません。
+.RE
+

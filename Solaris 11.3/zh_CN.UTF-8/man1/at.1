@@ -1,0 +1,651 @@
+'\" te
+.\" Copyright (c) 1992, X/Open Company Limited.All Rights Reserved.
+.\" Copyright 1989 AT&T
+.\" Portions Copyright (c) 2005, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH at 1 "2011 年 11 月 29 日" "SunOS 5.11" "用户命令"
+.SH 名称
+at, batch \- 稍后执行命令
+.SH 用法概要
+.LP
+.nf
+\fB/usr/bin/at\fR [\fB-c\fR | \fB-k\fR | \fB-s\fR] [\fB-m\fR] [\fB-f\fR \fIfile\fR] [\fB-p\fR \fIproject\fR] 
+     [\fB-q\fR \fIqueuename\fR] \fB-t\fR \fItime\fR
+.fi
+
+.LP
+.nf
+\fB/usr/bin/at\fR [\fB-c\fR | \fB-k\fR | \fB-s\fR] [\fB-m\fR] [\fB-f\fR \fIfile\fR] [\fB-p\fR \fIproject\fR] 
+     [\fB-q\fR \fIqueuename\fR] \fItimespec\fR...
+.fi
+
+.LP
+.nf
+\fB/usr/bin/at\fR \fB-l\fR [\fB-p\fR \fIproject\fR] [\fB-q\fR \fIqueuename\fR] [\fIat_job_id.\fR \fI\&..\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/bin/at\fR \fB-r\fR \fIat_job_id.\fR \fI\&..\fR
+.fi
+
+.LP
+.nf
+\fB/usr/bin/batch\fR [\fB-p\fR \fIproject\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/xpg4/bin/at\fR [\fB-c\fR | \fB-k\fR | \fB-s\fR] [\fB-m\fR] [\fB-f\fR \fIfile\fR] [\fB-p\fR \fIproject\fR] 
+     [\fB-q\fR \fIqueuename\fR] \fB-t\fR \fItime\fR
+.fi
+
+.LP
+.nf
+\fB/usr/xpg4/bin/at\fR [\fB-c\fR | \fB-k\fR | \fB-s\fR] [\fB-m\fR] [\fB-f\fR \fIfile\fR] [\fB-p\fR \fIproject\fR] 
+     [\fB-q\fR \fIqueuename\fR] \fItimespec\fR...
+.fi
+
+.LP
+.nf
+\fB/usr/xpg4/bin/at\fR \fB-l\fR [\fB-p\fR \fIproject\fR] [\fB-q\fR \fIqueuename\fR] 
+     [\fIat_job_id.\fR \fI\&..\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/xpg4/bin/at\fR \fB-r\fR \fIat_job_id.\fR \fI\&..\fR
+.fi
+
+.LP
+.nf
+\fB/usr/xpg4/bin/batch\fR [\fB-p\fR \fIproject\fR]
+.fi
+
+.SH 描述
+.SS "at"
+.sp
+.LP
+\fBat\fR 实用程序从标准输入读取命令并将它们作为 \fIat-job\fR 组合在一起，以便稍后执行。
+.sp
+.LP
+at 作业在单独的 shell 调用中执行，在没有控制终端的单独进程组中运行，只是在执行 \fBat\fR 实用程序时生效的环境变量、当前工作目录、文件创建掩码（请参见 \fBumask\fR(1)）和系统资源限制（仅限 \fBsh\fR 和 \fBksh88\fR，请参见 \fBulimit\fR(1)）会保留并在执行 at 作业时使用。
+.sp
+.LP
+当提交 at 作业时，\fIat_job_id\fR 和预定时间会写入标准错误。\fIat_job_id\fR 标识符是一个仅由字母数字字符和句点字符组成的字符串。\fIat_job_id\fR 在调度作业时由系统分配，以便唯一标识特定的作业。
+.sp
+.LP
+作业标准输出和标准错误的用户通知和处理在 \fB-m\fR 选项下介绍。
+.sp
+.LP
+如果用户的名称显示在 \fB/usr/lib/cron/at.allow\fR 文件中，则允许其使用 \fBat\fR 和 \fBbatch\fR（请参见下文）。如果该文件不存在，则检查 \fB/usr/lib/cron/at.deny\fR 文件以确定是否应该拒绝用户访问 \fBat\fR。如果两个文件都不存在，则仅允许具有 \fBsolaris.jobs.user\fR 授权的用户提交作业。如果仅 \fBat.deny\fR 存在并且为空，则允许所有用户使用。\fBat.allow\fR 和 \fBat.deny\fR 文件每行包含一个用户名。
+.sp
+.LP
+如果用户的帐户为锁定状态，则 \fBcron\fR 和 \fBat\fR 作业不会执行。根据 \fBshadow\fR(4) 中的定义，仅未锁定的帐户可以执行其作业或进程。
+.SS "batch"
+.sp
+.LP
+\fBbatch\fR 实用程序读取命令以便稍后执行。 
+.sp
+.LP
+命令格式： 
+.sp
+.in +2
+.nf
+/usr/bin/batch [-p project]
+/usr/xpg4/bin/batch [-p project]
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+分别等效于：
+.sp
+.in +2
+.nf
+/usr/bin/at -q b [-p project] now
+/usr/xpg4/bin/at -q b -m [-p project] now
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+其中队列 \fBb\fR 是一个特殊的 \fBat\fR 队列，特别是对于 batch 作业来说。Batch 作业提交到 batch 队列以便立即执行。提交作业的执行可能会因允许并发运行的作业数量限制而延迟。请参见 \fBqueuedefs\fR(4)。
+.SH 选项
+.sp
+.LP
+如果未指定 \fB-c\fR、\fB-k\fR 或 \fB-s\fR 选项，缺省情况下 \fBSHELL\fR 环境变量会确定使用哪个 shell。
+.sp
+.LP
+对于 \fB/usr/xpg4/bin/at\fR 和 \fB/usr/xpg4/bin/batch\fR，如果 \fBSHELL\fR 未设置或为 \fBNULL\fR，则使用 \fB/usr/xpg4/bin/sh\fR。
+.sp
+.LP
+对于 \fBusr/bin/at\fR 和 \fB/usr/bin/batch\fR，如果 \fBSHELL\fR 未设置或为 \fBNULL\fR，则使用 \fB/bin/sh\fR。
+.sp
+.LP
+支持以下选项： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 16n
+.rt  
+C shell。使用 \fBcsh\fR(1) 执行 at 作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR\fR
+.ad
+.RS 16n
+.rt  
+Korn shell。使用 \fB/bin/ksh\fR 执行 at 作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 16n
+.rt  
+Bourne shell。使用 \fBsh\fR(1) 执行 at 作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfile\fR\fR
+.ad
+.RS 16n
+.rt  
+指定要用作 at 作业源的文件路径，而非标准输入。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 16n
+.rt  
+（字母 ell。）如果未指定 \fIat_job_id\fR 操作数，则报告为调用用户调度的所有作业。如果指定了 \fIat_job_id\fR，则仅报告这些作业的信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.RS 16n
+.rt  
+在 at 作业运行后发送邮件到调用用户，通知用户已完成。at 作业生成的标准输出和标准错误也通过邮件发送到用户，除非将其重定向到了其他位置。即使作业没有输出，也会发送邮件。
+.sp
+如果未使用 \fB-m\fR，则通过邮件将作业的标准输出和标准错误提供给用户，除非将其重定向到了其他位置；如果没有此类输出可供提供，则不向用户通知作业已完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIproject\fR\fR
+.ad
+.RS 16n
+.rt  
+指定 \fBat\fR 或 \fBbatch\fR 作业在哪个项目下运行。当配合 \fB-l\fR 选项使用时，将搜索限制在该特定的项目。\fIproject\fR 的值首先解释为项目名称，然后解释为可能的项目 \fBID\fR（如果全是数字）。缺省情况下，使用用户当前的项目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR \fIqueuename\fR\fR
+.ad
+.RS 16n
+.rt  
+指定调度作业以提交到哪个队列。当配合 \fB-l\fR 选项使用时，将搜索限制在该特定的队列。\fIqueuename\fR 的值限制为从 \fBa\fR 到 \fBz\fR 的小写字母。缺省情况下，在调度 at 作业时将其放在队列 \fBa\fR 中。相对地，会保留队列 \fBb\fR 以用于 batch 作业。由于会保留队列 \fBc\fR 以用于 cron 作业，因此它无法配合 \fB-q\fR 选项使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIat_job_id\fR\fR
+.ad
+.RS 16n
+.rt  
+删除之前由 \fBat\fR 实用程序调度的具有指定 \fIat_job_id\fR 操作数的作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fItime\fR\fR
+.ad
+.RS 16n
+.rt  
+提交作业以在 \fItime\fR 选项参数指定的时间运行，该选项参数必须使用 \fBtouch\fR(1) 实用程序指定的格式。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIat_job_id\fR\fR
+.ad
+.RS 13n
+.rt  
+由之前的 \fBat\fR 实用程序调用在调度作业时报告的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fItimespec\fR\fR
+.ad
+.RS 13n
+.rt  
+提交作业以在指定的日期和时间运行。在解释所有 \fItimespec\fR 操作数时会认为它们由空格字符分隔并且是串联在一起的。日期和时间按照用户的时区解释（由 \fBTZ\fR 变量确定），除非时区名称显示为下面 \fItime\fR 的一部分。
+.sp
+在 C 语言环境中，下面的内容介绍了时间规范字符串的三个部分。C 语言环境 \fBLC_TIME\fR 类别的所有值都可以按照不区分大小写的方式识别。
+.sp
+.ne 2
+.mk
+.na
+\fB\fItime\fR\fR
+.ad
+.RS 13n
+.rt  
+\fItime\fR 可以指定为 1、2 或 4 位数字。一位数和两位数可以视为小时，四位数可以视为小时和分钟。还可以选择将时间指定为由冒号分隔的两个数字，表示 \fIhour\fR\fB :\fR\fIminute\fR。时间后面可以跟有 AM/PM 标识（\fBLC_TIME\fR 语言环境类别中 \fBam_pm\fR 关键字的值之一）；否则，请采用 24 小时时钟时间表示。\fBGMT\fR、\fBUCT\fR 或 \fBZULU\fR 时区名称（不区分大小写）可以紧跟其后以指定时间为世界标准时间。其他时区可以使用 \fBTZ\fR 环境变量指定。\fItime\fR 字段还可以为 C 语言环境中以下标记之一： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmidnight\fR\fR
+.ad
+.RS 12n
+.rt  
+指示时间 12:00 am (00:00)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoon\fR\fR
+.ad
+.RS 12n
+.rt  
+指示时间 12:00 pm。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnow\fR\fR
+.ad
+.RS 12n
+.rt  
+指示当前日期和时间。调用 \fBat\fR \fBnow\fR 会提交 at 作业，作业可能立即执行（即仅受不确定的调度延迟的约束）。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdate\fR\fR
+.ad
+.RS 13n
+.rt  
+可选的 \fIdate\fR 可以指定为月份名称（\fBLC_TIME\fR 语言环境类别中 \fBmon\fR 或 \fBabmon\fR 关键字的值之一），后跟表示日的数字（可能还跟有由逗号分隔的年份数字）或者星期名称（\fBLC_TIME\fR 语言环境类别中 \fBday\fR 或 \fBabday\fR 关键字的值之一）。两种特殊的日期可以在 C 语言环境中识别： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtoday\fR\fR
+.ad
+.RS 12n
+.rt  
+指示当前日期。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtomorrow\fR\fR
+.ad
+.RS 12n
+.rt  
+指示当前日期的后一天。
+.RE
+
+未指定 \fIdate\fR 时，如果指定的时间晚于当前时间，则认为是 \fBtoday\fR，如果早于当前时间，则认为是 \fBtomorrow\fR。如果指定的月份早于当前月份（并且未指定年份），则认为是下一年。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIincrement\fR\fR
+.ad
+.RS 13n
+.rt  
+可选的 \fIincrement\fR 是具有加号 (\fB+\fR) 前缀和以下后缀之一的数字：\fBminutes\fR、\fBhours\fR、\fBdays\fR、\fBweeks\fR、\fBmonths\fR 或 \fByears\fR。（同时还接受单数形式。）关键字 \fBnext\fR 等效于增量数字 \fB+ 1\fR。例如，以下是等效的命令： 
+.sp
+.in +2
+.nf
+\fBat 2pm + 1 week
+at 2pm next week\fR
+.fi
+.in -2
+.sp
+
+.RE
+
+.RE
+
+.SH 用法
+.sp
+.LP
+此处显示的 \fBat\fR 命令行的形式仅适用于 C 语言环境。\fBmidnight\fR、\fBnoon\fR、\fBnow\fR、\fBmon\fR、\fBabmon\fR、\fBday\fR、\fBabday\fR、\fBtoday\fR、\fBtomorrow\fR、\fBminutes\fR、\fBhours\fR、\fBdays\fR、\fBweeks\fR、\fBmonths\fR、\fByears\fR 和 \fBnext\fR 不支持其他语言环境。
+.sp
+.LP
+由于命令在单独的 shell 调用中执行，在没有控制终端的单独进程组中运行，因此从调用环境继承的开放式文件描述符、陷阱和优先级都会丢失。
+.SH 示例
+.SS "at"
+.LP
+\fB示例 1 \fR终端的典型序列
+.sp
+.LP
+此序列可以在终端使用：
+
+.sp
+.in +2
+.nf
+$ at \(mim 0730 tomorrow
+sort < file >outfile
+<EOT>
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR重定向输出
+.sp
+.LP
+此序列演示将标准错误重定向到管道，它在命令过程中非常有用（输出重定向规范的序列很重要）：
+
+.sp
+.in +2
+.nf
+$ at now + 1 hour <<!
+diff file1 file2 2>&1 >outfile | mailx mygroup
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR自行重调度作业
+.sp
+.LP
+为了让作业自行重调度，可以从 at 作业内部调用 \fBat\fR。例如，此名为 \fBmy.daily\fR 的日常处理脚本每天都运行（尽管 \fBcrontab\fR 是更适合处理此类工作的工具）： 
+
+.sp
+.in +2
+.nf
+# my.daily runs every day
+at now tomorrow < my.daily
+daily-processing
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR各种时间和操作数表示法
+.sp
+.LP
+C 语言环境 \fItimespec\fR 三个部分的间隔非常灵活，只要没有歧义即可。各种时间和操作数表示法的示例有： 
+
+.sp
+.in +2
+.nf
+at 0815am Jan 24
+at 8 :15amjan24
+at now "+ 1day"
+at 5 pm FRIday
+at '17
+	utc+
+	30minutes'
+.fi
+.in -2
+.sp
+
+.SS "batch"
+.LP
+\fB示例 5 \fR终端的典型序列
+.sp
+.LP
+此序列可以在终端使用：
+
+.sp
+.in +2
+.nf
+$ batch
+sort <file >outfile
+<EOT>
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR重定向输出
+.sp
+.LP
+此序列演示将标准错误重定向到管道，它在命令过程中非常有用（输出重定向规范的序列很重要）：
+
+.sp
+.in +2
+.nf
+$ batch <<!
+diff file1 file2 2>&1 >outfile | mailx mygroup
+!
+.fi
+.in -2
+.sp
+
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBat\fR 和 \fBbatch\fR 执行的以下环境变量的说明，请参见 \fBenviron\fR(5)：\fBLANG\fR、\fBLC_ALL\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR、\fBNLSPATH\fR 和 \fBLC_TIME\fR。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDATEMSK\fR\fR
+.ad
+.RS 11n
+.rt  
+如果设置了环境变量 \fBDATEMSK\fR，则 \fBat\fR 使用其值作为包含格式字符串的模板文件的全路径名。这些字符串包含格式说明符和文本字符，用于通过适当设置环境变量 \fBLANG\fR 或 \fBLC_TIME\fR 提供一组更丰富的不同语言的所允许的日期格式。所允许的格式说明符列表位于 \fBgetdate\fR(3C) 手册页中。\fB\fR“操作数”部分中针对 \fItime\fR 和 \fIdate\fR 参数介绍的格式、特殊名称 \fBnoon\fR、\fBmidnight\fR、\fBnow\fR、\fBnext\fR、\fBtoday\fR、\fBtomorrow\fR 和 \fIincrement\fR 参数在设置了 \fBDATEMSK\fR 时无法识别。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSHELL\fR\fR
+.ad
+.RS 11n
+.rt  
+确定要用于调用 at 作业的命令解释程序的名称。如果该变量未设置或为 \fINULL\fR，则使用 \fBsh\fR。如果将其设置为非 \fBsh\fR 值，则实现使用该 shell；系统会列显警告诊断以告知将使用哪个 shell。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTZ\fR\fR
+.ad
+.RS 11n
+.rt  
+确定时区。系统提交作业以在 \fItimespec\fR 或 \fB-t\fR \fItime\fR 指定的时间执行（相对于 \fBTZ\fR 变量指定的时区）。如果 \fItimespec\fR 指定了一个时区，则该时区将覆盖 \fBTZ\fR。如果 \fItimespec\fR 未指定时区并且 \fBTZ\fR 未设置或为 \fINULL\fR，则使用不确定的缺省时区。
+.RE
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+\fBat\fR 实用程序已成功提交、删除或列出作业。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+发生错误，并且不调度作业。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/cron/at.allow\fR\fR
+.ad
+.RS 26n
+.rt  
+有权访问 \fBat\fR 和 \fBbatch\fR 实用程序的用户名称（一行一个）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/cron/at.deny\fR\fR
+.ad
+.RS 26n
+.rt  
+禁止访问 \fBat\fR 和 \fBbatch\fR 实用程序的用户名称（一行一个）。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.SS "/usr/bin/at"
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+CSINot enabled（未启用）
+_
+接口稳定性Committed（已确定）
+_
+标准请参见 \fBstandards\fR(5)。
+.TE
+
+.SS "/usr/xpg4/bin/at"
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/xopen/xcu4
+_
+CSINot enabled（未启用）
+_
+接口稳定性Standard（标准）
+.TE
+
+.SS "/usr/bin/batch"
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+CSIEnabled（已启用）
+_
+接口稳定性Standard（标准）
+.TE
+
+.SS "/usr/xpg4/bin/batch"
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/xopen/xcu4
+_
+CSIEnabled（已启用）
+_
+接口稳定性Standard（标准）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBauths\fR(1)、\fBcrontab\fR(1)、\fBcsh\fR(1)、\fBdate\fR(1)、\fBksh88\fR(1)、\fBsh\fR(1)、\fBtouch\fR(1)、\fBulimit\fR(1)、\fBumask\fR(1)、\fBcron\fR(1M)、\fBgetdate\fR(3C)、\fBauth_attr\fR(4)、\fBshadow\fR(4)、\fBqueuedefs\fR(4)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBstandards\fR(5)
+.SH 附注
+.sp
+.LP
+不管使用的是什么队列，\fBcron\fR(1M) 任何时候可执行的作业上限是 100 个。
+.sp
+.LP
+\fBcron\fR 的作业执行可能存在延迟。在某些情况下，这些延迟可能会导致 \fBcron\fR 作业处理看起来似乎已挂起。所有作业最终都会执行。当延迟过长时，唯一的解决方法是终止并重新启动 \fBcron\fR。

@@ -1,0 +1,247 @@
+'\" te
+.\" Copyright (c) 2003, 2015, Oracle and/or its affiliates. All rights             reserved.
+.TH rcapadm 1M "20 Mar 2015" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+rcapadm \- configure resource capping daemon
+.SH SYNOPSIS
+.LP
+.nf
+\fBrcapadm\fR 
+.fi
+
+.LP
+.nf
+\fBrcapadm\fR [ [\fB-n\fR] \fB-E\fR | \fB-D\fR] 
+     [-i {sample|mode}=value]....
+     [\fB-z\fR \fIzonename\fR \fB-m\fR \fImaxvalue\fR]
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBrcapadm\fR command allows a user with the privileges described below to configure various attributes of the resource capping daemon. If used without arguments, \fBrcapadm\fR displays the current status of the resource capping daemon. See \fBrcapd\fR(1M) for more information. 
+.sp
+.LP
+In the current release of the Solaris operating environment, \fBrcapadm\fR is available to users with all privileges and to users who have the Process Management profile in their list of profiles. The System Administrator role includes the Process Management profile.
+.SH OPTIONS
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR\fR
+.ad
+.sp .6
+.RS 4n
+Disable the resource capping daemon so that it will not be started when the system is booted. Also stop the resource capping daemon now, if the \fB-n\fR option is not specified and it is currently running.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-E\fR\fR
+.ad
+.sp .6
+.RS 4n
+Enable the resource capping daemon so that it will be started each time the system is booted. Also start the resource capping daemon now, if the \fB-n\fR option is not specified and it is not currently running.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR {\fBsample\fR|\fBmode\fR}=\fIvalue\fR,....\fR
+.ad
+.sp .6
+.RS 4n
+Set configuration for \fBrcapd\fR operations. Two parameters that are used by \fBrcapd\fR can be set by using this option.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsample\fR\fR
+.ad
+.RS 10n
+.rt  
+The interval of sampling resident set size for collections. The default sample interval is 30 seconds. The minimum value is 5 seconds. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmode\fR\fR
+.ad
+.RS 10n
+.rt  
+Set the mode of operation for \fBrcapd\fR. You can either set the mode for \fBrcapd\fR to just log the results of the scan or enforce the rss caps by paging out resident pages.
+.sp
+The following values are allowed by \fBmode\fR:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlog-only\fR\fR
+.ad
+.RS 12n
+.rt  
+Do not enforce caps. Log the rss cap and usage statistics for all capped collections.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpageout\fR\fR
+.ad
+.RS 12n
+.rt  
+Pageout resident pages for processes of collections that are above their rss caps. This is the default mode for \fBrcapd\fR(1M).
+.RE
+
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fImaxvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+Used in conjunction with the \fB-z\fR option. Specifies a value for \fBrcap.max-rss\fR, a dynamically-set cap on the usage of physical memory for the zone specified by \fB-z\fR. You can apply a scale (\fBK\fR, \fBM\fR, \fBG\fR, \fBT\fR) to the value you specify. \fBK\fR means kilobyte; \fBM\fR, megabyte; \fBG\fR, gigabyte; and \fBT\fR, terabyte. For example, \fB100M\fR is 100 megabytes.
+.sp
+To remove an existing cap, specify \fB0M\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+Do not affect the running state of the resource capping daemon when enabling or disabling it.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fIzonename\fR\fR
+.ad
+.sp .6
+.RS 4n
+Used in conjunction with the \fB-m\fR option. Specifies the zone for which you are dynamically specifying a cap on physical memory usage (using \fB-m\fR).
+.RE
+
+.LP
+Note - 
+.sp
+.RS 2
+To set a persistent cap on memory usage within a zone, use \fBzonecfg\fR(1M).
+.RE
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRConfiguring the Resource Capping Daemon with Memory Cap Enforcement With a 5 Second RSS Sampling Interval
+.sp
+.in +2
+.nf
+# \fBrcapadm -E -i sample=5,mode=pageout\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRConfiguring the Resource Capping Daemon With Log Mode and a 60 Second RSS Sampling Interval
+.sp
+.in +2
+.nf
+# \fBrcapadm -E -i sample=60,mode=log-out\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRSpecifying a Resource Cap for a Zone
+.sp
+.LP
+The command shown below specifies the maximum amount of memory that can be consumed by a specified zone. Note that this value lasts only until the next reboot. To set a persistent cap, use \fBzonecfg\fR(1M).
+
+.sp
+.in +2
+.nf
+# \fBrcapadm -z testzone -m 512M\fR
+.fi
+.in -2
+.sp
+
+.SH EXIT STATUS
+.sp
+.LP
+The following exit values are returned:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+Successful completion. The modifications to the current configuration were valid and made successfully.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+An error occurred. A fatal error occurred either in obtaining or modifying the resource capping configuration.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+Invalid command-line options were specified.
+.RE
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/resource-mgmt/resource-caps
+_
+Interface StabilityCommitted
+.TE
+
+.sp
+.LP
+The \fB-z\fR and \fB-m\fR options are committed interfaces.
+.SH SEE ALSO
+.sp
+.LP
+\fBrcapstat\fR(1), \fBrcapd\fR(1M), \fBzonecfg\fR(1M), \fBproject\fR(4), \fBattributes\fR(5), \fBzones\fR(5)
+.sp
+.LP
+"Physical Memory Control Using the Resource Capping Daemon" in \fISystem Administration Guide: Solaris Containers-Resource Management, and Solaris Zones\fR

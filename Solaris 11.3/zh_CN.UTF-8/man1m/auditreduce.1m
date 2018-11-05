@@ -1,0 +1,817 @@
+'\" te
+.\" Copyright (c) 2006, 2013, Oracle and/or its affiliates.All rights reserved.
+.TH auditreduce 1M "2012 年 4 月 9 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+auditreduce \- 从审计迹文件中合并和选择审计记录
+.SH 用法概要
+.LP
+.nf
+\fBauditreduce\fR [\fIoptions\fR] [\fIaudit-trail-file\fR]...
+.fi
+
+.SH 描述
+.sp
+.LP
+通过 \fBauditreduce\fR，您可以从审计迹文件中选择或合并记录。审计文件可能来自一台或多台计算机。
+.sp
+.LP
+合并功能会将一个或多个输入审计迹文件中的审计记录一起合并到单个输出文件中。假定审计迹文件中的记录按时间顺序进行排序（最早的排在最前面），此顺序在输出文件中是由 \fBauditreduce\fR 维护的。
+.sp
+.LP
+除非另有说明，否则 \fBauditreduce\fR 将合并整个审计迹，其中包括目录结构 \fIaudit_root_dir\fR\fB/*\fR 中的所有审计迹文件（有关审计根目录结构的详细信息，请参见 \fBaudit.log\fR(4)）。除非使用 -\fBR\fR 或 -\fBS\fR 选项指定，否则 \fIaudit_root_dir\fR 缺省为 \fB/var/audit\fR。通过使用文件选择选项，可以选择这些文件的某个子集，或其他目录中的文件，或在命令行中显式指定的文件。
+.sp
+.LP
+通过选择功能，可以基于与记录的内容相关的多个条件选择审计记录（有关记录内容的详细信息，请参见 \fBaudit.log\fR(4)）。记录必须满足所有 \fIrecord-selection-option\fR 条件才会被选择。
+.SS "审计迹文件名格式"
+.sp
+.LP
+未在命令行中指定的任何审计迹文件必须遵循审计迹文件名格式。审计系统生成的文件已经具有此格式。\fBauditreduce\fR 生成的输出文件名采用此格式。此格式为：
+.sp
+.in +2
+.nf
+\fIstart-time\fR\fB\&.\fR\fIend-time\fR\fB\&.\fR\fIsuffix\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+其中，\fIstart-time\fR 为 14 字符时间戳，表示打开文件的时间；\fIend-time\fR 为 14 字符时间戳，表示关闭文件的时间；\fIsuffix\fR 为生成审计迹文件的计算机的名称，或者其他某个有意义的后缀（例如 \fBall\fR，如果文件中混合了来自多台计算机的记录）。\fIend-time\fR 可以是文本字符串 \fBnot_terminated\fR，指示审计系统仍在向该文件进行写入。时间戳采用的格式为 \fIyyyymmddhhmmss\fR（年、月、日、小时、分钟、秒）。时间戳采用国际协调时间 (Coordinated Universal Time, UTC)。
+.SH 选项
+.SS "文件选择选项"
+.sp
+.LP
+文件选择选项指示要处理哪些文件以及特定类型的特殊处理。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.sp .6
+.RS 4n
+将选择输入文件中的所有记录，而不考虑其时间戳。此选项会有效禁用 \fB-a\fR、\fB-b\fR 以及 \fB-d\fR 选项。这可用于防止在处理输入文件后使用 \fB-D\fR 选项删除这些输入文件时丢失记录。但是，请注意，如果由于其他选项而\fI未\fR选择某个记录，则 \fB-A\fR 将不会覆盖该记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅处理完整文件。不处理文件名 \fIend-time\fR 时间戳为 \fBnot_terminated\fR 的文件（审计系统当前正向此类文件进行写入）。这可用于防止在处理输入文件后使用 \fB-D\fR 删除这些输入文件时丢失记录。该选项不适用于在命令行中指定的文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR \fIsuffix\fR\fR
+.ad
+.sp .6
+.RS 4n
+在读取输入文件后整个运行成功时删除这些输入文件。如果在读取某个文件时 \fBauditreduce\fR 检测到错误，则不会删除该文件。如果指定了 \fB-D\fR，也将默示使用 \fB-A\fR、\fB-C\fR 和 \fB-O\fR。\fIsuffix\fR 将指定给 \fB-O\fR 选项。这有助于确保写入所有记录、只处理完整文件，以及在删除记录之前将其写入到文件中，从而防止丢失审计记录。请注意，如果在命令行中同时指定 \fB-D\fR 和 \fB-O\fR，指定顺序至关重要。与后一指定关联的 \fIsuffix\fR 有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR \fImachine\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许从文件名后缀为 \fImachine\fR 的文件中选择记录。如果未指定 \fB-M\fR，则将处理所有文件，而不考虑后缀。也可以使用 \fB-M\fR 允许从混合了多台计算机中的记录且具有通用后缀（例如 \fBall\fR）的文件中选择记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR\fR
+.ad
+.sp .6
+.RS 4n
+采用\fB新模式\fR选择对象。缺省情况下此标志处于关闭状态，因此保留了向后兼容性。在现有的\fB旧模式\fR中，指定 \fB-e\fR、\fB-f\fR、\fB-g\fR、\fB-r\fR 或 \fB-u\fR 标志不仅会选择使用这些 \fBID\fR 采取的操作，还会选择这些 \fBID\fR 所拥有的特定对象。在\fB新模式\fR中运行时，只会选择相应的操作。为了选择对象，必须使用 \fB-o\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-O\fR \fIsuffix\fR\fR
+.ad
+.sp .6
+.RS 4n
+将输出流定向到当前 \fBaudit_root_dir\fR 中具有指定后缀的文件。\fIsuffix\fR 也可以包含全路径名，在这种情况下，最后一部分充当后缀，前面紧接着将是时间戳，再接着将是路径名的剩余部分。如果未指定 \fB-O\fR 选项，则会将输出发送到标准输出。在 \fBauditreduce\fR 将时间戳放置在文件名中时，它分别使用合并内容中第一个记录的时间和最后一个记录的时间作为 \fIstart-time\fR 和 \fIend-time\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Q\fR\fR
+.ad
+.sp .6
+.RS 4n
+静默。隐藏有关输入文件错误的通知。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIpathname\fR\fR
+.ad
+.sp .6
+.RS 4n
+将备用审计根目录 \fIaudit_root_dir\fR 的路径名指定为 \fIpathname\fR。因此，将转而检查 \fIpathname\fR\fB/*\fR，而不是缺省情况下使用 \fB/var/audit\fR。
+.LP
+注 - 
+.sp
+.RS 2
+不得使用 \fB-R\fR 选项引用任何非全局区域的根文件系统。否则，可能会损坏全局区域的文件系统，危及全局区域的安全性，或者损坏非全局区域的文件系统。请参见 \fBzones\fR(5)。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR \fIspecific_directory\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项将导致 \fBauditreduce\fR 从特定位置 (\fIspecific_directory\fR) 读取审计迹文件。\fIspecific_directory\fR 通常解释为审计根目录的某个子目录的名称，因此 \fBauditreduce\fR 将在 \fIaudit_root_dir\fR/\fIspecific_directory\fR 中查找审计迹文件。但是，如果 \fIspecific_directory\fR 中包含任何反斜杠字符 (\fB/\fR)，它将是审计根目录中不一定包含的目录的名称。在这种情况下，将参考 \fIspecific_directory\fR。通过此选项，可以轻松地处理归档文件，而无需要求这些归档文件实际位于某个目录结构（例如 \fB/var/audit\fR）中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR\fR
+.ad
+.sp .6
+.RS 4n
+详细模式。显示打开的每个文件的名称以及写入到输出流中的记录总数。
+.RE
+
+.SS "记录选择选项"
+.sp
+.LP
+下面列出的记录选择选项用于指示将哪些记录写入到 \fBauditreduce\fR 生成的输出文件中。
+.sp
+.LP
+不允许使用同一类型的多个参数。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fIdate-time\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择在 \fIdate-time\fR 或之后发生的记录。下面的 \fBOption Arguments\fR 下介绍了 \fIdate-time\fR 参数。\fIdate-time\fR 采用本地时间。\fB-a\fR 和 \fB-b\fR 选项可以一起使用来形成一个范围。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR \fIdate-time\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择在 \fIdate-time\fR 之前发生的记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIaudit-classes\fR\fR
+.ad
+.sp .6
+.RS 4n
+按审计类选择记录。将选择事件映射到 \fIaudit-classes\fR 指定的审计类的记录。审计类名称是在 \fBaudit_class\fR(4) 中定义的。\fIaudit-classes\fR 可以是 \fBaudit\fR \fIflags\fR（如 \fBaudit_flags\fR(5) 中所述的那些标志）的逗号分隔列表。使用 \fBaudit\fR \fIflags\fR，用户可以基于成功和失败条件选择记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdate-time\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择特定日期（24 小时期限内，从指定日期的 00:00:00 开始，到 23:59:59 结束）发生的记录。指定日期采用本地时间。将忽略参数的时间部分（如果提供）。将选择具有该日时间戳的任何记录。如果在 \fItime\fR 中给定了任何小时、分钟或秒，将会忽略它们。\fB-d\fR不能与 \fB-a\fR 或 \fB\fR\fB-b\fR\fB\fR 一起使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fIeffective-user\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择具有指定 \fIeffective-user\fR 的记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIeffective-group\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择具有指定 \fIeffective-group\fR 的记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR \fIreal-group\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择具有指定 \fIreal-group\fR 的记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-j\fR \fIsubject-ID\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择具有指定 \fIsubject-ID\fR 的记录，其中 \fIsubject-ID\fR 是进程 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR \fIlabel\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择具有指定标签（或标签范围）（如下面的“选项参数”下所述）的记录。仅当系统配置有 Trusted Extensions 时，此选项才可用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fIevent\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择具有指定 \fIevent\fR 的记录。\fIevent\fR 为文本字符串或 \fIevent\fR 编号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIobject_type=objectID_value\fR\fR
+.ad
+.sp .6
+.RS 4n
+按对象类型选择记录。当记录中包含介绍指定 \fIobject_type\fR 的信息且对象 ID 等于 \fIobjectID_value\fR 指定的值时，会出现匹配项。允许的对象类型和值如下所述： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauth=\fR\fIauthorization\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含关于所用授权的信息的记录。授权名称末尾的句点表示授权是一个通配符；将选择包含更具体的所用授权对象的记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfile=\fR\fIpathname\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含具有指定路径名的文件系统对象的记录，其中路径名是正则表达式的逗号分隔列表。如果正则表达式前面有波浪号 (\fB~\fR)，将从输出中排除与表达式匹配的文件。例如，选项 \fBfile=~/usr/openwin,/usr,/etc\fR 将选择 \fB/usr\fR 或 \fB/etc\fR 中的所有文件，\fB/usr/openwin\fR 中的文件除外。正则表达式的顺序很重要，因为 auditreduce 将从左至右处理这些表达式，并在已知选中或排除文件时停止。因此，选项 \fBfile=\fR\fB/usr\fR,\fB/etc\fR,\fB~/usr/openwin\fR 将选择 \fB/usr\fR 中的所有文件和 \fB/etc\fR 中的所有文件。不会排除 \fB/usr/openwin\fR 中的文件，因为首先匹配的是正则表达式 \fB/usr\fR。在 \fIpathname\fR 周围使用引号时应当小心，以便防止 shell 扩展任何波浪号。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfilegroup=\fR\fIgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含以 \fIgroup\fR 作为所属组的文件系统对象的记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfileowner=\fR\fIuser\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含以 \fIuser\fR 作为所属用户的文件系统对象的记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmri=\fR\fIservice_instance\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含具有指定 \fIservice instance\fR 的故障管理资源标识符 (fault management resource identifier, FMRI) 的记录。请参见 \fBsmf\fR(5)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgroup\fR=\fIgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含指定组的组对象的记录。通常会指定组对象以针对某个组执行管理操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmsgqid=\fR\fIID\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含具有指定 \fIID\fR 的消息队列对象的记录，其中 \fIID\fR 为消息队列 \fBID\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmsgqgroup=\fR\fIgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含以 \fIgroup\fR 作为所属组或创建组的消息队列对象的记录。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmsgqowner=\fR\fIuser\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含以 \fIuser\fR 作为所属用户或创建用户的消息队列对象的记录。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpid=\fR\fIID\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含具有指定 \fIID\fR 的进程对象的记录，其中 \fIID\fR 为进程 \fBID\fR。当进程是信号的接收方时，它们是对象。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprocgroup=\fR\fIgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含以 \fIgroup\fR 作为实际组或有效组的进程对象的记录。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprocowner=\fR\fIuser\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含以 \fIuser\fR 作为实际用户或有效用户的进程对象的记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsemid=\fR\fIID\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含具有指定 \fIID\fR 的信号对象的记录，其中 \fIID\fR 为信号 \fBID\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsemgroup=\fR\fIgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含以 \fIgroup\fR 作为所属组或创建组的信号对象的记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsemowner=\fR\fIuser\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含以 \fIuser\fR 作为所属用户或创建用户的信号对象的记录。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshmid=\fR\fIID\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含具有指定 \fIID\fR 的共享内存对象的记录，其中 \fIID\fR 为共享内存 \fBID\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshmgroup=\fR\fIgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含以 \fIgroup\fR 作为所属组或创建组的共享内存对象的记录。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshmowner=\fR\fIuser\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含以 \fIuser\fR 作为所属用户或创建用户的共享内存对象的记录。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsock=\fR\fIport_number|machine\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含具有指定 \fIport_number\fR 或指定 \fImachine\fR 的套接字对象的记录，其中 \fImachine\fR 是如 \fBhosts\fR(4) 中所定义的计算机名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuser=\fR\fIuser\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择包含指定用户的用户对象的记录。通常会指定用户对象以针对某个用户执行管理操作。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIreal-user\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择具有指定 \fIreal-user\fR 的记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIsession-id\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择具有指定 \fIsession-id\fR 的审计记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR \fIaudit-user\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择具有指定 \fIaudit-user\fR 的记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fIzone-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+从指定区域名称中选择记录。区域名称选择区分大小写。
+.RE
+
+.sp
+.LP
+当命令行中出现一个或多个 \fIfilename\fR 参数时，只处理指定的文件。以这种方式指定的文件无需遵循审计迹文件名格式。但是，处理指定的文件时，不得使用 \fB-M\fR、\fB-S\fR 和 \fB-R\fR。如果 \fIfilename\fR 为 "-"，则会从标准输入中获取输入。
+.SS "选项参数"
+.sp
+.ne 2
+.mk
+.na
+\fB\fIaudit-trail-file\fR\fR
+.ad
+.sp .6
+.RS 4n
+审计迹文件，如 \fBaudit.log\fR(4) 中所定义。未在命令行中指定的审计迹文件必须遵循审计迹文件名格式。作为 \fBauditreduce\fR 的输出生成的审计迹文件也采用此格式。该格式为：
+.sp
+\fIstart-time . end-time . suffix\fR
+.sp
+\fIstart-time\fR 为 14 字符时间戳，表示打开文件的时间。\fIend-time\fR 为 14 字符时间戳，表示关闭文件的时间。\fIend-time\fR 也可以是文本字符串 \fBnot_terminated\fR，指示审计守护进程仍在向该文件进行写入或者该文件未正确关闭（发生了系统崩溃或突然停止）。\fIsuffix\fR 是生成审计迹文件的计算机的名称（或其他某个有意义的后缀；例如，如果审计迹文件混合了来自多台计算机的记录，\fBall\fR 将是一个不错的后缀）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdate-time\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-a\fR、\fB-b\fR 和 \fB-d\fR 的 \fIdate-time\fR 参数可以采用两种格式：绝对 \fIdate-time\fR 采用以下格式：
+.sp
+\fI\fR yyyymmdd [ \fIhh\fR [ \fImm\fR [ \fIss\fR ]]]
+.sp
+其中，\fIyyyy\fR 指定年份（1970 为最早年份值）；\fImm\fR 为月份 (01-12)；\fBdd\fR 为日期 (01-31)；\fIhh\fR 为小时 (00-23)；\fImm\fR 为分钟 (00-59)；\fIss\fR 为秒 (00-59)。\fIhh\fR、\fImm\fR 和 \fIss\fR 的缺省值为 00。
+.sp
+时差可以指定为：\fB+\fR\fIn\fR \fBd\fR|\fBh\fR|\fBm\fR| \fBs\fR，其中，\fIn\fR 为单位数，\fBd\fR、\fBh\fR、\fBm\fR 和 \fBs\fR 标志分别代表日期、小时、分钟和秒。时差相对于起始时间。因此，此格式只能用于 \fB-b\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIevent\fR\fR
+.ad
+.sp .6
+.RS 4n
+在 \fBaudit_event\fR(4) 中找到的文本字符串或有序事件编号。如果在 \fBaudit_event\fR 文件中找不到 \fIevent\fR，则将其视为无效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+在 \fBgroup\fR(4) 中找到的文本字符串或有序组 ID 编号。如果在 \fBgroup\fR 文件中找不到 \fIgroup\fR，则将其视为无效。\fIgroup\fR 可以是负值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIlabel\fR\fR
+.ad
+.sp .6
+.RS 4n
+表示 MAC 标签或两个有效 MAC 标签组成的范围的文本字符串。要指定范围，请使用 \fBx;y\fR，其中 \fBx\fR 和 \fBy\fR 是有效的 MAC 标签。将只选择被 \fBx\fR 和 \fBy\fR 完全限定的记录。如果省略 \fBx\fR 或 \fBy\fR，缺省情况下使用 \fBADMIN_LOW\fR 或 \fBADMIN_HIGH\fR。请注意，指定范围时必须使用引号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIpathname\fR\fR
+.ad
+.sp .6
+.RS 4n
+描述路径名的正则表达式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIuser\fR\fR
+.ad
+.sp .6
+.RS 4n
+在 \fBpasswd\fR(4) 中找到的文本用户名或有序用户 ID 编号。如果在 \fBpasswd\fR 文件中找不到用户名，则将其视为无效。\fIuser\fR 可以是负值。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR使用 \fBauditreduce\fR
+.sp
+.LP
+\fBpraudit\fR(1M) 可用于以用户可读的格式显示审计记录。
+
+.sp
+.LP
+这将以用户可读的格式显示整个审计迹：
+
+.sp
+.in +2
+.nf
+% \fBauditreduce | praudit\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果要将所有审计迹文件合并到一个大文件中，则可能需要删除原始文件以防止记录显示两次：
+
+.sp
+.in +2
+.nf
+% \fBauditreduce -V -D /var/audit/combined/all\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+这将显示用户 \fBmilner\fR 在 1988 年 4 月 13 日所执行的操作。系统会以用户可读的格式将输出显示到标准输出：
+
+.sp
+.in +2
+.nf
+% \fBauditreduce -d 19880413 -u milner | praudit\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果 \fBmilner\fR 一直处于繁忙状态，以上示例可能会生成大量数据。只查看登录和注销时间可能会更简单一些。\fB-c\fR 选项将从指定类中选择记录：
+
+.sp
+.in +2
+.nf
+% \fBauditreduce -d 19880413 -u milner -c lo | praudit\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+要查看 \fBmilner\fR 在 4 月 13 日、14 日以及 15 日的登录/注销活动，请使用以下命令行。结果将保存到当前工作目录内的某个文件中。请注意，输出文件的名称将使用 \fBmilnerlo\fR 作为 \fIsuffix\fR，使用相应的时间戳作为前缀。另请注意，名称的长格式用于 \fB-c\fR 选项：
+
+.sp
+.in +2
+.nf
+% \fBauditreduce -a 19880413 -b +3d -u milner -c login_logout -O milnerlo\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+要跟踪 \fBmilner\fR 在 4 月 13 日、14 日以及 15 日的文件系统活动，可以查看 \fBchdir\fR 记录类型。请注意，为了获取与以上示例中相同的时间范围，我们需要将 \fB-b\fR 时间指定为我们的范围\fB之后\fR的日期。这是因为 \fB19880416\fR 缺省为该日期的午夜，此时间之前的记录均落在范围中的最后一天 \fB0415\fR。
+
+.sp
+.in +2
+.nf
+% \fBauditreduce -a 19880413 -b 19880416 -u milner -m AUE_CHDIR | praudit\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+在此示例中，将采用摘要格式收集审计记录（仅限登录/注销记录）。记录将写入到常规审计根目录以外的其他目录内的摘要文件中，以防止选定记录在审计根目录中存在两次。
+
+.sp
+.in +2
+.nf
+% \fBauditreduce -d 19880330 -c lo -O /var/audit/audit_summary/logins\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果已观察到用户 \fBID\fR 9944 的活动，但系统管理员不知道该用户，则以下示例中的命令将搜索整个审计迹以查找该用户生成的任何记录。\fBauditreduce\fR 会就 \fBID\fR 9944 的当前有效性来查询系统，如果该 ID 当前未处于活动状态，则会显示一条警告消息：
+
+.sp
+.in +2
+.nf
+% \fBauditreduce -O /var/audit/audit_suspect/user9944 -u 9944\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+要仅获取全局区域的审计日志，请执行以下命令：
+
+.sp
+.in +2
+.nf
+% \fBauditreduce -z global\fR
+.fi
+.in -2
+.sp
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/audit/\fR\fB*\fR\fR
+.ad
+.RS 16n
+.rt  
+审计迹的缺省存储位置
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性请参见下文。
+.TE
+
+.sp
+.LP
+命令调用为 Stable（稳定）。二进制文件格式是 Stable（稳定）。二进制文件内容是 Unstable（不稳定）。
+.SH 另请参见
+.sp
+.LP
+\fBpraudit\fR(1M)、\fBaudit.log\fR(4)、\fBaudit_class\fR(4)、\fBgroup\fR(4)、\fBhosts\fR(4)、\fBpasswd\fR(4)、\fBattributes\fR(5)、\fBaudit_flags\fR(5)、\fBsmf\fR(5)
+.sp
+.LP
+请参见\fI《Securing Systems and Attached Devices in Oracle Solaris 11.3》\fR中有关审计的部分。
+.SH 诊断
+.sp
+.LP
+如果命令行中存在错误，\fBauditreduce\fR 将显示错误消息，然后退出。如果运行期间存在致命错误，\fBauditreduce\fR 将显示说明性消息并退出。在这种情况下，输出文件可能会处于不一致状态（没有尾部记录或部分写入记录），\fBauditreduce\fR 将显示警告消息，然后退出。如果调用成功，则返回 \fB0\fR；如果调用不成功，则返回 \fB1\fR。
+.sp
+.LP
+由于 \fBauditreduce\fR 可能要处理大量输入文件，因此可能会超出对打开文件的计算机范围内的限制。如果发生这种情况，\fBauditreduce\fR 将针对该效果显示一条消息，给出有关存在多少个文件的信息，然后退出。
+.sp
+.LP
+如果 \fBauditreduce\fR 在诊断消息中显示记录的时间戳，该时间会采用本地时间。但是，显示文件名时，其时间戳会采用 \fBUTC\fR。
+.SH 已知问题
+.sp
+.LP
+应当允许结合使用、取消结合使用和拒绝使用记录选择选项以及对其进行分组。
+.SH 附注
+.sp
+.LP
+仅当设置了审计策略 \fBzonename\fR 时，才应使用 \fB-z\fR 选项。如果没有任何 zonename 标记，则不会选择任何记录。

@@ -1,0 +1,1260 @@
+'\" te
+.\" To view license terms, attribution, and copyright for OpenSSH, the default path is /var/sadm/pkg/SUNWsshdr/install/copyright.If the Solaris operating environment has been installed anywhere other than the default, modify the given path to access the file at the installed location.
+.\" Copyright (c) 1998, 2013, Oracle and/or its affiliates.All rights reserved.
+.TH sshd 1M "2013 年 11 月 22 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+sshd \- 安全 shell 守护进程
+.SH 用法概要
+.LP
+.nf
+\fBsshd\fR [\fB-deiqtD46\fR] [\fB-b\fR \fIbits\fR] [\fB-f\fR \fIconfig_file\fR] 
+     [\fB-g\fR \fIlogin_grace_time\fR] [\fB-h\fR \fIhost_key_file\fR]
+     [\fB-h\fR \fIPKCS#11\fR \fIURI\fR]
+     [\fB-p\fR \fIport\fR] [\fB-V\fR \fIclient_protocol_id\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBsshd\fR（Secure Shell daemon，安全 Shell 守护进程）是 \fBssh\fR(1) 的守护进程程序。这些程序一起使用可替换 \fBrlogin\fR 和 \fBrsh\fR，并可在不安全网络上的两个不可信主机间提供安全的加密通信。这些程序本着尽可能易于安装和使用的目标进行设计。
+.sp
+.LP
+\fBsshd\fR 是侦听来自客户机的连接的守护进程。它为每个传入连接派生一个新的守护进程。这些派生守护进程负责处理密钥交换、加密、验证、命令执行和数据交换。
+.sp
+.LP
+\fBsshd\fR 的此实现仅支持 SSH 协议版本 2。
+.SS "SSH 协议版本 1"
+.sp
+.LP
+守护进程程序不再支持此协议版本。只有客户机支持此协议版本。有关更多信息，请参见 \fBssh\fR(1) 手册页。
+.SS "SSH 协议版本 2"
+.sp
+.LP
+每个主机都有一个特定于主机的 DSA/RSA 密钥，用于识别主机。前向安全性通过 Diffie-Hellman 密钥协议提供。此密钥协议生成共享会话密钥。会话的其余部分使用对称加密算法进行加密，当前加密算法可以为 128/192/256 位 AES CBC 或 CTR、128/256 位 ARCFOUR、Blowfish 或 3DES。客户机从服务器提供的加密算法中选择要使用的算法。此外，还通过加密消息验证代码（\fBhmac-sha1\fR、\fBhmac-sha2-256\fR、\fBhmac-sha2-256-96\fR、\fBhmac-sha2-512\fR、\fBhmac-sha2-512-96\fR 或 \fBhmac-md5\fR）提供会话完整性。
+.sp
+.LP
+协议版本 2 提供基于公钥的用户验证方法 (PubKeyAuthentication)、基于 GSS–API 的用户验证、常规口令验证，并为基于口令的验证提供通用提示/应答协议。
+.SS "命令执行和数据转发"
+.sp
+.LP
+如果客户机成功自行验证，将进入用于准备会话的对话框。此时客户机可以请求诸如以下的操作：通过安全通道分配伪 tty、转发 X11 连接、转发 TCP/IP 连接或转发验证代理连接。
+.sp
+.LP
+最终，客户机请求 shell 或执行命令。然后两端进入会话模式。在此模式下，任何一端均可以随时发送数据，此类数据可在服务器端的 shell 或命令和客户端的用户终端之间相互转发。
+.sp
+.LP
+当用户程序终止且所有转发的 X11 和其他连接均已关闭后，服务器向客户机发送命令退出状态，然后两端均退出。
+.sp
+.LP
+可以使用命令行选项，也可以使用配置文件 \fB/etc/ssh/ssh_config\fR（如 \fBssh_config\fR(4) 中所述）来配置 \fBsshd\fR。命令行选项会覆盖在配置文件中指定的值。
+.sp
+.LP
+当 \fBsshd\fR 收到挂起信号 \fBSIGHUP\fR 时，它将通过启动时所用的名称（即 \fB/usr/lib/ssh/sshd\fR）执行自身，以重新读取其配置文件。
+.SS "主机访问控制"
+.sp
+.LP
+\fBsshd\fR 守护进程使用 TCP 包装来限制对主机的访问。它将 \fBsshd\fR 的服务名称用于 \fBhosts_access()\fR。有关 TCP 包装的更多信息，请参见 \fBtcpd(1M)\fR 和 \fBhosts_access(3)\fR 手册页，这些手册页是 \fBSUNWsfman\fR 软件包的一部分（它们不是 SunOS 手册页）。TCP 包装二进制文件（包括 \fBlibwrap\fR）位于 \fBsecurity/tcp-wrapper\fR，该软件包是包含 \fBsshd\fR 的软件包 \fBservice/network/ssh\fR 的必需软件包。
+.SH 选项
+.sp
+.LP
+\fBsshd\fR 的选项如下：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR \fIbits\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定服务器密钥的位数（缺省值为 768）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+调试模式。服务器向系统日志发送详细的调试输出，并且不将自身放于后台。此外，服务器不执行派生，仅处理一个连接。此选项仅用于对服务器进行调式。使用多个 \fB-d\fR 选项可提高调试级别。最大值为 3。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定此选项时，\fBsshd\fR 将把输出发送到标准错误，而不是发送到系统日志。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIconfiguration_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定配置文件的名称。缺省值为 \fB/etc/ssh/sshd_config\fR。如果没有配置文件，\fBsshd\fR 将拒绝启动。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR \fIlogin_grace_time\fR\fR
+.ad
+.sp .6
+.RS 4n
+提供宽限期以便客户机自行验证（缺省值为 300 秒）。如果客户机未能在该秒数内验证用户，服务器将断开连接并退出。零值表示无限制。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR \fIhost_key_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定从中读取主机密钥的文件。如果 \fBsshd\fR 不是以 root 用户身份运行，则必须指定此选项（因为普通主机密钥文件通常无法由 root 用户以外的其他人读取）。缺省值为 \fB/etc/ssh/ssh_host_key\fR（对于协议版本 1）以及 \fB/etc/ssh/ssh_host_rsa_key\fR 和 \fB/etc/ssh/ssh_host_dsa_key\fR（对于协议版本 2）。对于不同的协议版本和主机密钥算法，可以有多个主机密钥文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR \fIPKCS#11\fR \fI URI\fR\fR
+.ad
+.sp .6
+.RS 4n
+不使用主机密钥文件，而是使用 PKCS#11 令牌中存储的证书和私钥。另请参见下文的“使用 X.509 证书\fB\fR”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定从 \fBinetd\fR 运行 \fBsshd\fR。\fBsshd\fR 通常不会从 \fBinetd\fR 运行，因为它需要生成服务器密钥才能响应客户机，而这可能需要数十秒钟。如果每次都要重新生成密钥，客户机将不得不等待很长时间。不过，当密钥很小（例如 512）时，从 \fBinetd\fR 使用 \fBsshd\fR 可能是合理的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIoption\fR\fR
+.ad
+.sp .6
+.RS 4n
+可用来以配置文件中使用的格式指定选项。在指定没有单独的命令行标志的选项时，这很有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIport\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定服务器侦听连接的端口（缺省值为 22）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR\fR
+.ad
+.sp .6
+.RS 4n
+静默模式。不向系统日志发送任何内容。通常会记录每个连接的开始、验证和终止。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+测试模式。仅检查配置文件的有效性和密钥的合理性。这适用于在配置选项可能发生更改时可靠地更新 sshd。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定此选项时，\fBsshd\fR 不会分离，也不会成为守护进程。这样可方便地监视 \fBsshd\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-4\fR\fR
+.ad
+.sp .6
+.RS 4n
+强制 \fBsshd\fR 仅使用 IPv4 地址。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-6\fR\fR
+.ad
+.sp .6
+.RS 4n
+强制 \fBsshd\fR 仅使用 IPv6 地址。
+.RE
+
+.SH 扩展描述
+.SS "\fBauthorized_keys\fR 文件格式"
+.sp
+.LP
+\fB$HOME/.ssh/authorized_keys\fR 文件列出了协议版本 2 中允许用于公钥验证 (\fBPubkeyAuthentication\fR) 的公钥。可以使用 \fBAuthorizedKeysFile\fR 配置选项来指定备用文件。
+.sp
+.LP
+文件中的每一行都包含一个密钥（空行及以井号 [\fB#\fR] 开头的行会被当作注释而忽略）。
+.sp
+.LP
+对于协议版本 1 的每个 RSA 密钥，该文件包含以下由空格分隔的字段：
+.sp
+.in +2
+.nf
+\fIoptions\fR  \fIbits\fR  \fIexponent\fR  \fImodulus\fR  \fIcomment\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+对于协议版本 2 的公钥，该文件包含以下由空格分隔的字段：
+.sp
+.in +2
+.nf
+\fIoptions\fR \fIkey-type\fR \fIbase64-encoding-key\fR \fIcomment\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+对于协议版本 2，\fIkey-type\fR 是 \fBssh-rsa\fR 或 \fBssh-dsa\fR 之一。
+.sp
+.LP
+\fIoptions\fR 字段是可选的；其出现与否取决于行是否以数字开头。（\fIoptions\fR 字段从不以数字开头。）bits、exponent 和 modulus 字段指定 RSA 密钥；comment 字段是用于标识密钥的便利位置。
+.sp
+.LP
+此文件中的行通常有几百字节长（由于密钥模数的大小所致）。您会发现键入它们非常不方便，因此，可改为复制公钥文件并对其进行编辑。
+.sp
+.LP
+必须设置此文件的权限，以便并非所有人或组都可写入。请参见 \fBsshd_config\fR(4) 的 \fBStrictModes\fR 选项。
+.sp
+.LP
+选项（如果存在）包含以逗号分隔的选项指定值。不允许使用任何空格，除非将其置于在双引号内。支持以下选项指定值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfrom="\fIpattern-list\fR"\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定除公钥验证外，逗号分隔的模式列表中必须存在远程主机的规范名称（"\fB*\fR" 和 "\fB?\fR" 充当通配符）。通过为模式添加 "\fB!\fR" 前缀，该列表还可以包含否定模式。如果规范主机名与某个否定模式匹配，则该密钥不被接受。
+.sp
+此选项的目的在于提高选项的安全性：公钥验证本身只信任密钥，而不信任网络或名称服务器或任何其他项。但是，如果有人设法窃取了密钥，入侵者便可以据此密钥在世界上的任何地方登录。此选项可使得使用窃取的密钥更加困难，因为名称服务器和路由器也必须被泄露，而不仅仅是密钥。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcommand="\fIcommand\fR"\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定无论何时将该密钥用于验证都执行 \fIcommand\fR。用户提供的命令（如果有）将被忽略。如果客户机请求 \fBpty\fR，命令将在 \fBpty\fR 上运行；否则将在无 \fBtty\fR 的情况下运行命令。如果需要使用 8 位清洁通道，则用户不得请求 \fBpty\fR，或应指定 \fBno-pty\fR。可以在命令中包括引号，但必须使用反斜杠对其进行转义。此选项对于限制某些公钥执行特定操作很有用。仅允许进行远程备份的密钥就是一个示例。请注意，客户机可以指定 TCP/IP 和/或 X11 转发，除非显式禁止它们这样做。另请注意，此选项适用于 shell、命令或子系统执行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBenvironment="\fINAME\fR=\fI value\fR"\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定在使用此密钥登录时向环境中添加 \fINAME\fR=\fIvalue\fR 字符串。以此方法设置的环境变量将覆盖其他缺省环境值。允许使用多个这种类型的选项。环境处理通过 \fBPermitUserEnvironment\fR 选项进行控制，缺省情况下处于禁用状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBno-port-forwarding\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用此密钥进行验证时禁止 TCP/IP 转发。客户机提出的任何端口转发请求都将返回错误。可能会用到此选项，例如将其与 \fBcommand\fR 选项结合使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBno-X11-forwarding\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用此密钥进行验证时禁止 X11 转发。客户机提出的任何 X11 转发请求都将返回错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBno-agent-forwarding\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用此密钥进行验证时禁止验证代理转发。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBno-pty\fR\fR
+.ad
+.sp .6
+.RS 4n
+阻止 \fBtty\fR 分配（请求分配 \fBpty\fR 将失败）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpermitopen="\fIhost\fR:\fI port\fR"\fR\fR
+.ad
+.sp .6
+.RS 4n
+限制本地 \fBssh\fR \fB-L\fR 端口转发，以便其仅可连接到指定的主机和端口。可以采用以下备用语法来指定 IPv6 地址：\fIhost\fR/\fIport\fR。可以调用多个 \fBpermitopen\fR 选项，各实例由逗号分隔。不对指定的主机名执行模式匹配。它们必须是文字形式的域或地址。
+.RE
+
+.SS "\fBssh_known_hosts\fR 文件格式"
+.sp
+.LP
+\fB/etc/ssh/ssh_known_hosts\fR 和 \fB$HOME/.ssh/known_hosts\fR 文件包含所有已知主机的主机公钥。全局文件应由管理员准备（可选），而每用户文件是自动维护的：每当用户从未知主机连接时，都会将其密钥添加到每用户文件。
+.sp
+.LP
+对于协议版本 1 的 RSA 密钥，这些文件包含以下由空格分隔的字段：
+.sp
+.in +2
+.nf
+\fIhostnames\fR  \fIbits\fR  \fIexponent\fR  \fImodulus\fR  \fIcomment\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+对于协议版本 2 的公钥，这些文件包含以下由空格分隔的字段：
+.sp
+.in +2
+.nf
+\fIhostnames\fR \fIkey-type\fR \fIbase64-encoding-key\fR \fIcomment\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+对于协议版本 2，\fIkey-type\fR 是 \fBssh-rsa\fR 或 \fBssh-dsa\fR 之一。
+.sp
+.LP
+Hostnames 是一个逗号分隔的模式列表（\fB*\fR 和 \fB?\fR 充当通配符），而每个模式又会针对规范主机名（验证客户机时）或用户提供的名称（验证服务器时）进行匹配。模式前面还可以加上 \fB!\fR 来表示否定：如果主机名与否定模式匹配，则该主机名不被（该行）接受，即使它与该行中的另一模式匹配也是如此。
+.sp
+.LP
+此外，也可以用散列形式存储主机名，在此情况下，如果文件的内容遭暴露，将隐藏主机名和地址。散列形式的主机名以竖线 (\fB|\fR) 字符开头。一行中只能显示一个散列形式的主机名，且上述否定运算符或通配符可能均不适用。
+.sp
+.LP
+Bits、exponent 和 modulus 直接从 RSA 主机密钥取得；例如，它们可以从 \fB/etc/ssh/ssh_host_rsa_key.pub\fR 取得。可选的 comment 字段一直持续到行的末尾，且不被使用。
+.sp
+.LP
+以井号 (\fB#\fR) 开头的行和空行会被作为注释而忽略。
+.sp
+.LP
+执行主机验证时，如果任何匹配行包含正确的密钥，则验证将被接受。因此，允许同一名称对应多行或不同的主机密钥，但建议不要这样做。当在文件中存放不同域中的简短形式主机名时，将不可避免地发生这一情况。文件有可能会包含冲突的信息；如果可以从任一文件中找到有效信息，则验证将被接受。
+.sp
+.LP
+这些文件中的行通常有数百个字符长。您绝不应手动键入主机密钥，而是应通过脚本或通过获取 \fB/etc/ssh/ssh_host_rsa_key.pub\fR 并在前面添加主机名来生成密钥。 
+.SH 环境变量
+.sp
+.LP
+\fBsshd\fR 为 \fBssh\fR 用户执行的命令设置以下环境变量：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDISPLAY\fR\fR
+.ad
+.sp .6
+.RS 4n
+指示 X11 服务器的位置。\fBsshd\fR 自动对其进行设置以指向一个 \fIhostname\fR:\fIn\fR 格式的值：其中 \fIhostname\fR 指示运行 shell 的主机，\fIn\fR 是大于或等于 1 的整数。\fBssh\fR 使用此特殊值来通过安全通道转发 X11 连接。除非有重要原因，否则不应显式设置 \fBDISPLAY\fR，因为这样会致使 X11 连接不安全，而且需要您手动复制所需的任何验证 cookie。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHOME\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置为用户的起始目录路径。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLANG\fR, \fBLC_ALL\fR, \fBLC_COLLATE \fR, \fBLC_CTYPE\fR, \fBLC_MESSAGES\fR, \fBLC_MONETARY \fR, \fBLC_NUMERIC\fR, \fBLC_TIME\fR\fR
+.ad
+.sp .6
+.RS 4n
+语言环境设置。语言环境缺省为 \fBsshd\fR 的语言环境（通常是系统范围的缺省语言环境），或者于初始密钥交换期间在客户机和服务器之间进行协商（根据 RFC 4253）。
+.sp
+进行初始密钥交换后，可按以下顺序覆盖每个变量：
+.RS +4
+.TP
+1.
+如果客户机的环境中设置了语言环境设置且该客户机支持“环境变量传递”（请参见 RFC 4254），则会将该设置传递到服务器端。
+.RE
+.RS +4
+.TP
+2.
+如果使用公钥验证方法来验证服务器，且服务器端上 \fBsshd_config\fR(4) 中的 \fBPermitUserEnvironment\fR 变量设置为 \fByes\fR，则可以通过使用客户机的 \fBAuthorizedKeysFile\fR 文件中的 \fBenvironment\fR 选项来更改该设置。
+.RE
+.RS +4
+.TP
+3.
+在服务器上的客户机 \fB~/.ssh/environment\fR 文件中可以更改该设置。
+.RE
+有关何时处理 \fBAuthorizedKeysFile\fR 和 \fB~/.ssh/environment\fR 文件并将其用于设置用户环境的信息，请参见 \fBsshd_config\fR(4) 中的 \fBPermitUserEnvironment\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLOGNAME\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBUSER\fR 的同义词。为与使用此变量的系统兼容而设置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBMAIL\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置为指向用户的邮箱。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSSH_AUTH_SOCK\fR\fR
+.ad
+.sp .6
+.RS 4n
+指示用于与代理通信的 \fBunix-domain\fR 套接字的路径。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSSH_CONNECTION\fR\fR
+.ad
+.sp .6
+.RS 4n
+标识连接的客户机端和服务器端。该变量包含四个由空格分隔的值：客户机 IP 地址、客户机端口号、服务器 IP 地址和服务器端口号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSSH_CLIENT\fR\fR
+.ad
+.sp .6
+.RS 4n
+标识连接的客户机端。该变量包含三个由空格分隔的值：客户机 IP 地址、客户机端口号和服务器端口号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSSH_TTY\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置为与当前 shell 或命令关联的 \fBtty\fR（设备路径）的名称。如果当前会话没有 \fBtty\fR，则不设置此变量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTZ\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果在 \fB/etc/default/login\fR 中设置了 \fBTIMEZONE\fR 或在启动守护进程时设置了 \fBTZ\fR，则指示当前时区。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHZ\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果在 \fB/etc/default/login\fR 中进行了设置，守护进程将其设置为同一值。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSHELL\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果 \fB/etc/default/login\fR 中设置了 \fBALTSHELL=YES\fR，则表示用户的 shell。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPATH\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置为 \fB/etc/default/login\fR 中的 \fBPATH\fR 或 \fBSUPATH\fR（请参见 \fBlogin\fR(1)）的值，如果未设置上述值，则设置为 \fB/usr/bin:/bin\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBUSER\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置为登录的用户的名称。
+.RE
+
+.sp
+.LP
+此外，\fBsshd\fR 会读取 \fB$HOME/.ssh/environment\fR，并将 \fBVARNAME=\fIvalue\fR\fR 格式的行添加到环境中。
+.SH 示例
+.sp
+.LP
+在以下示例中，某些行可能会因为显示器的行长度限制而换行。您仍应将换行的行看作一行。
+.LP
+\fB示例 1 \fR\fBauthorized_key\fR 文件条目
+.sp
+.LP
+以下是协议 1 的 \fBauthorized_key\fR 文件条目示例：
+
+.sp
+.in +2
+.nf
+1024 33 12121...312314325 ylo@foo.bar
+
+from="*.niksula.hut.fi,!pc.niksula.hut.fi" 1024 35 23...2334 ylo@niksula
+
+command="dump /home",no-pty,no-port-forwarding 1024 33 23...2323 backup.hut.fi
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR协议 2 的 \fBauthorized_key\fR 文件条目
+.sp
+.LP
+以下是协议 2 的 \fBauthorized_key\fR 文件条目示例：
+
+.sp
+.in +2
+.nf
+ssh-rsa AAAAB3NzaC1y.....EU88ovYKg4GfclWGCFYTuw8= ylo@foo.bar
+from="*.niksula.hut.fi" ssh-rsa AAAAB3NzaC...uw8= ylo@niksula
+command="dump /home",no-pty,no-port-forwarding ssh-rsa AA..8= backup.hut.fi
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR协议 1 的 \fBssh_known_hosts\fR 文件条目
+.sp
+.LP
+以下是协议 1 的 \fBssh_known_hosts\fR 文件条目示例：
+
+.sp
+.in +2
+.nf
+closenet,closenet.hut.fi,...,130.233.208.41 1024 37 159...93 closenet.hut.fi
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR协议 2 的 \fBssh_known_hosts\fR 文件条目
+.sp
+.LP
+以下是协议 2 的 \fBssh_known_hosts\fR 文件条目示例：
+
+.sp
+.in +2
+.nf
+closenet,closenet.hut.fi,...,130.233.208.41 ssh-rsa AA..8= closenet.hut.fi
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR使用 X.509 公钥验证
+.sp
+.LP
+以下用户验证示例将帮助您了解 X.509 公钥验证的工作原理。将 X.509 证书/密钥用于主机验证的步骤非常相似。请注意，我们将同一令牌 (\fBsofttoken\fR) 同时用于 TA 证书和用户证书，而通常不会如此。
+
+.sp
+.LP
+创建自签名信任锚证书和信任锚私钥签名的用户证书。配置 SSH 守护进程以进行证书验证，运行 SSH 客户机并使用上一步中生成的用户证书作为其用户标识。
+
+.sp
+.LP
+将用户名 “\fIPUT-YOUR-USERNAME-HERE\fR” 替换为服务器端的现有（您的）用户名。
+
+.sp
+.in +2
+.nf
+# Generate a trusted anchor certificate/key pair in the
+# default token (softtoken).
+pktool gencert keystore=pkcs11 label=authority \e
+    subject="CN=authority" serial=0x01
+
+# Export the trusted anchor certificate (and, after that,
+# put it to /etc/ssh/cert directory).
+pktool export keystore=pkcs11 outfile=ta.cert objtype=cert
+    label=authority outformat=pem
+
+# Generate a user certificate signed by the trusted anchor
+# private key and then import the certificate into the
+# token.
+pktool gencsr keystore=pkcs11 label=user \e
+    outcsr=user.csr subject="CN=<PUT-YOUR-USERNAME-HERE>"
+pktool signcsr keystore=pkcs11 signkey=authority \e
+    csr=user.csr serial=0x02 issuer="CN=authority" \e
+     outcert=user.cert
+pktool import keystore=pkcs11 infile=user.cert label=user
+
+# Create a new policy file.
+kmfcfg create dbfile=/etc/ssh/policy.xml policy=ssh \e
+    ta-name=search mapper-name=cn
+
+# Start the SSH daemon in a debug mode to test the
+# configuration. Use a different port so that you do not
+# clash with the already running daemon.
+/usr/lib/ssh/sshd -p 2222 -ddd \
+    -o TrustedAnchorKeystore=/etc/ssh/cert \
+    -o KMFPolicyDatabase=/etc/ssh/policy.xml \
+    -o KMFPolicyName=ssh
+
+# Run the client in a debug mode to test the configuration
+# (will ask for a PIN for the token, use the 'pinfile'
+# attribute if you do not want to set PIN for each
+# invocation).
+# Note that the space and the hash-sign in the PKCS#11 URI are
+# percent-encoded. Percent-encoding is in particular important when
+# used from config file. Otherwise the '#' would be mistaken for a
+# comment and token name matching would fail!
+ssh -p 2222 -vvv -o \e
+    IdentityFile=\e
+    "pkcs11:object=user;token=Sun%20Software%20PKCS%2311%20softtoken" \e
+    <PUT-YOUR-USERNAME-HERE>@localhost
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+使用 softtoken 前，应通过 \fBsetpin\fR 子命令设置其 PIN。有关更多信息，请参见 \fBpktool\fR(1)。
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 13n
+.rt  
+成功完成。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB>\fB0\fR\fR
+.ad
+.RS 13n
+.rt  
+出现错误。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/default/login\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含多个 \fBsshd_config\fR 参数、环境变量和其他环境因素的缺省值。
+.sp
+以下参数影响环境变量（请参见 \fBlogin\fR(1) 以及上面对这些变量的说明）：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBTIMEZONE\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBHZ\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBALTSHELL\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBPATH\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBSUPATH\fR
+.RE
+以下 \fB/etc/default/login\fR 参数为相应的 \fBsshd_config\fR(4) 参数提供缺省值：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBCONSOLE\fR（请参见 \fBsshd_config\fR(4) 中的 \fBPermitRootLogin\fR）
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBPASSREQ\fR（请参见 \fBsshd_config\fR(4) 中的 \fBPermitEmptyPasswords\fR） 
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBTIMEOUT\fR（请参见 \fBsshd_config\fR(4) 中的 \fBLoginGraceTime\fR）
+.RE
+以下 \fB/etc/default/login\fR 参数：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBUMASK\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBULIMIT\fR
+.RE
+\&...分别设置 \fBsshd\fR 派生的 shell 和命令的 \fBumask\fR(2) 和文件大小限制。
+.sp
+最终，根据 \fBlogin\fR(1)，以下两个 \fB/etc/default/login\fR 参数会影响使用交互式用户验证方法（例如 \fBkeyboard-interactive\fR 而非 \fBpublickey\fR）时允许每个连接进行的最大登录尝试次数：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBRETRIES\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBSYSLOG_FAILED_LOGINS\fR
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ssh/sshd_config\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含 \fBsshd\fR 的配置数据。此文件应仅可由 root 用户写入，但建议（虽然并非必需）可由所有人读取。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ssh/ssh_host_key\fR\fR
+.ad
+.br
+.na
+\fB\fB /etc/ssh/ssh_host_dsa_key\fR\fR
+.ad
+.br
+.na
+\fB\fB/etc/ssh/ssh_host_rsa_key \fR\fR
+.ad
+.sp .6
+.RS 4n
+包含主机密钥的私有部分。此文件应仅由 root 用户所有，仅可由 root 用户读取，其他用户不可访问。如果此文件可由组或所有人访问，则 \fBsshd\fR 不会启动。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ssh/ssh_host_key.pub\fR\fR
+.ad
+.br
+.na
+\fB\fB /etc/ssh/ssh_host_dsa_key.pub\fR\fR
+.ad
+.br
+.na
+\fB\fB/etc/ssh/ssh_host_rsa_key.pub \fR\fR
+.ad
+.sp .6
+.RS 4n
+包含主机密钥的公共部分。此文件应可由所有人读取，但仅可由 root 用户写入。其内容应与私有部分匹配。此文件不用于加密；提供此文件只是为了便于用户将其内容复制到已知主机文件。这些文件是使用 \fBssh-keygen\fR(1) 创建的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/run/sshd.pid\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含侦听连接的 \fBsshd\fR 的进程 ID。如果有多个守护进程针对不同端口同时运行，则此文件包含最后启动的进程的 pid。此文件的内容不属机密，所有人皆可读取。您可以使用 \fBsshd_config\fR 中的 \fBPidFile\fR 关键字指定 \fB/var/run/sshd.pid\fR 以外的文件。请参见 \fBsshd_config\fR(4)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ssh/ssh_known_hosts\fR 和 \fB$HOME/.ssh/known_hosts \fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fBrhosts\fR 及公钥主机验证时将参考这些文件以检查主机的公钥。密钥必须列在这些文件之一中才能被接受。客户机使用相同文件来验证远程主机是否是其想要连接的主机。这些文件应仅可由 root 用户或所有者写入。\fB/etc/ssh/ssh_known_hosts\fR 应可由所有人读取，\fB$HOME/.ssh/known_hosts\fR 可以由所有人读取，但这不是必需的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/nologin\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果此文件存在，\fBsshd\fR 将拒绝 root、分配有 root 角色的用户以及分配有 solaris.system.maintenance 授权的用户以外的任何人登录。该文件的内容会向任何尝试登录的人显示。该文件应可由所有人读取。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.ssh/authorized_keys\fR\fR
+.ad
+.sp .6
+.RS 4n
+列出可用于登录用户帐户的公钥（RSA 或 DSA）。此文件必须可由 root 用户读取。在某些计算机上，如果用户的起始目录位于 NFS 卷上，则这可能意味着所有人都可读取此文件。建议其他人不可访问此文件。上面描述了此文件的格式。用户要将其 \fBidentity.pub\fR、\fBid_dsa.pub\fR 和/或 \fBid_rsa.pub\fR 文件的内容放到此文件中，如 \fBssh-keygen\fR(1) 中所述。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.rhosts\fR\fR
+.ad
+.sp .6
+.RS 4n
+此文件包含主机-用户名对，由空格分隔，每行一个。给定用户在相应主机上登录时无需提供口令。\fBrlogind\fR 和 \fBrshd\fR 也使用这个文件。该文件必须仅可由用户写入；建议其他人不可访问该文件。还可以在该文件中使用 \fBnetgroups\fR。主机或用户名可以采用 \fB+@\fI groupname\fR\fR 格式，以指定组中的所有主机或所有用户。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.shosts\fR\fR
+.ad
+.sp .6
+.RS 4n
+对于 \fBssh\fR，此文件与 \fB\&.rhosts\fR 文件完全相同。不过，\fBrlogin\fR 和 \fBrshd\fR 不使用此文件，因此使用此文件时仅允许使用 SSH 进行访问。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/hosts.equiv\fR\fR
+.ad
+.sp .6
+.RS 4n
+此文件在 \fB\&.rhosts\fR 验证期间使用。采用最简格式时，此文件包含主机名，每行一个。这些主机上的用户登录时可以不使用口令，前提是他们在两台计算机上具有相同的用户名。主机名后面也可以跟有一个用户名；允许此类用户以该计算机上的任何用户身份（root 用户除外）登录。此外，可以使用 \fB+@\fIgroup\fR\fR 语法指定网络组。否定条目以连字符 (\fB-\fR) 开头。
+.sp
+如果客户机主机/用户与此文件中的条目成功匹配，只要客户机和服务器用户名相同，就会自动允许登录。此外，成功的 RSA 主机验证通常是必需的。此文件必须仅可由 root 用户写入；建议所有人均可读取此文件。
+.sp
+警告：在 \fBhosts.equiv\fR 中使用用户名几乎从来不是一个好主意。请注意，这样做实际意味着指定的用户可以以任何用户身份登录，包括 \fBbin\fR、\fBdaemon\fR、\fBadm\fR 以及拥有关键二进制文件和目录的其他帐户。出于实用目的，使用用户名将授予该用户 root 访问权限。用户名的唯一有效用途可能是用于否定条目。此警告同样适用于 \fBrsh\fR/\fBrlogin\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ssh/moduli\fR\fR
+.ad
+.sp .6
+.RS 4n
+一个专用文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ssh/shosts.equiv\fR\fR
+.ad
+.sp .6
+.RS 4n
+此文件的处理方式与 \fB/etc/hosts.equiv\fR 完全相同。不过，在需要同时运行 \fBrsh\fR/\fBrlogin\fR 和 \fBssh\fR 的环境中，此文件可能很有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.ssh/environment\fR\fR
+.ad
+.sp .6
+.RS 4n
+在登录时将此文件（如果存在）读入环境。它仅可包含空行、注释行（以 \fB#\fR 开头的行）以及 \fB\fIname\fR=\fI value\fR\fR 格式的赋值行。该文件应仅可由用户写入；它不需要可由任何其他人读取。环境处理通过 \fBPermitUserEnvironment\fR 选项进行控制，缺省情况下处于禁用状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.ssh/rc\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果此文件存在，将在读取环境文件之后、启动用户的 shell 或命令之前通过 \fB/bin/sh\fR 运行此文件。如果正在使用 X11 电子欺骗，这将会在标准输入（以及环境中的 \fBDISPLAY\fR）中收到 \fBproto cookie\fR 对。在这种情况下必须调用 \fBxauth\fR。
+.sp
+\fB$HOME/.ssh/rc\fR 的主要用途是在可以访问用户的起始目录前运行任何可能需要的初始化例程；AFS 是此类环境的一个特殊示例。如果此文件存在，将在读取环境文件之后、启动用户的 shell 或命令之前通过 \fB/bin/sh\fR 运行此文件。它不得在 stdout 上生成任何输出；而是必须使用 stderr。如果正在使用 X11 转发，它将在其标准输入和其环境中的 \fBDISPLAY\fR 中收到 \fBproto cookie\fR 对。该脚本必须调用 \fBxauth\fR，因为 \fBsshd\fR 不会自动运行 \fBxauth\fR 以添加 X11 cookie。
+.sp
+此文件可能会包含一些初始化代码，后跟一些类似如下的内容：
+.sp
+.in +2
+.nf
+if read proto cookie && [ -n "$DISPLAY" ]
+then
+  if [ `echo $DISPLAY | cut -c1-10`  =  'localhost:' ]
+  then
+    # X11UseLocalhost=yes
+    echo add unix:`echo $DISPLAY |
+    cut -c11-` $proto $cookie
+  else
+    # X11UseLocalhost=no
+    echo add $DISPLAY $proto $cookie
+  fi | xauth -q -
+fi
+.fi
+.in -2
+.sp
+
+如果此文件不存在，将运行 \fB/etc/ssh/sshrc\fR，如果后者也不存在，将使用 \fBxauth\fR 存储 cookie。\fB$HOME/.ssh/rc\fR 应仅可由用户写入，不需要可由任何其他人读取。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ssh/sshrc\fR\fR
+.ad
+.sp .6
+.RS 4n
+类似于 \fB$HOME/.ssh/rc\fR。此文件可用来以全局方式指定特定于计算机的登录时初始化设置。此文件应仅可由 root 用户写入，应可由所有人读取。
+.RE
+
+.SH 安全
+.sp
+.LP
+\fBsshd\fR 支持使用多种用户验证机制：将密钥与用户关联（通过用户的 \fBauthorized_keys\fR 文件）的公钥系统、将密钥与主机关联（请参见 \fBHostbasedAuthentication\fR 配置参数）的公钥系统、基于 GSS-API 的方法（请参见 \fBGssAuthentication\fR 和 \fBGssKeyEx\fR 配置参数）以及三种初始验证方法：\fBnone\fR、\fBpassword\fR 以及通用提示/应答协议 \fBkeyboard-interactive\fR。
+.sp
+.LP
+仅当 \fBsshd\fR 具有用于“主机”服务的 GSS-API 接受者凭证时，它才会与客户机协商 GSS-API 的使用。这意味着，对于基于 GSS-API 的验证，服务器必须具有与可能安装的任何其他 GSS-API 机制对应的 Kerberos V \fBkeytab\fR 条目（请参见下文）或等效项。
+.sp
+.LP
+为使 Kerberos 验证正常工作，对于每个与 \fBin.sshd\fR 服务器关联的全限定域名，必须存在对应的 \fBhost/\fR\fI<FQDN>\fR Kerberos 主体。其中每一个 \fBhost/\fR\fI<FQDN>\fR 主体都必须在 \fBin.sshd\fR 服务器的 \fB/etc/krb5/krb5.keytab\fR 文件中具有 \fBkeytab\fR 条目。一个主体示例如下：
+.sp
+.LP
+\fBhost/bigmachine.eng.example.com\fR
+.sp
+.LP
+有关向 \fBkrb5.keytab\fR 文件添加主体的说明，请参见 \fBkadmin\fR(1M) 或 \fBgkadmin\fR(1M)。有关 Kerberos 验证的讨论，请参见《\fI《Securing Systems and Attached Devices in Oracle Solaris 11.3》\fR。
+.sp
+.LP
+\fBgss_auth_rules\fR(5) 中介绍了 GSS-API 授权。
+.sp
+.LP
+\fBsshd\fR 将 \fBpam\fR(3PAM) 用于三种初始验证方法，以及所有验证方法的帐户管理、会话管理和口令管理。
+.sp
+.LP
+具体来说，\fBsshd\fR 针对 “none”、“password” 和 “keyboard-interactive” SSHv2 \fBuserauth\fR 类型调用 \fBpam_authenticate()\fR。其他 SSHv2 验证方法不调用 \fBpam_authenticate()\fR。将针对每个成功的验证方法调用 \fBpam_acct_mgmt()\fR。
+.sp
+.LP
+验证成功时调用 \fBpam_setcred()\fR 和 \fBpam_open_session()\fR，关闭连接时调用 \fBpam_close_session()\fR。
+.sp
+.LP
+打开和关闭带有 \fBpty\fR 的 SSHv2 通道时也会调用 \fBpam_open_session()\fR 和 \fBpam_close_session()\fR。
+.sp
+.LP
+每个 SSHv2 \fBuserauth\fR 类型都有其自己的 PAM 服务名称：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+SSHv2 UserauthPAM 服务名称
+_
+nonesshd-none
+_
+passwordsshd-password
+_
+keyboard-interactivesshd-kbdint
+_
+pubkeysshd-pubkey
+_
+hostbasedsshd-hostbased
+_
+gssapi-with-micsshd-gssapi
+_
+gssapi-keyexsshd-gssapi
+.TE
+
+.sp
+.LP
+如果 \fBpam_acct_mgmt()\fR 返回\fBPAM_NEW_AUTHTOK_REQD \fR （指示用户的验证令牌已过期），则 \fBsshd\fR 将强制使用 “keyboard-interactive” \fBuserauth\fR（如果在使用协议版本 2）。如果 \fBpam_acct_mgmt()\fR 再次返回 \fBPAM_NEW_AUTHTOK_REQD\fR，“keyboard-interactive” \fBuserauth\fR 将调用 \fBpam_chauthtok()\fR。通过这种方式，管理员可以基于每个用户控制允许用于 SSHv2 的验证方法。
+.SS "设置基于主机的验证"
+.sp
+.LP
+要建立基于主机的验证，必须执行以下步骤：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+配置客户机。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+配置服务器。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+发布已知主机。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在 \fB/etc/ssh/shosts.equiv\fR 和 \fB~/.shosts\fR 中创建适当条目。
+.RE
+.sp
+.LP
+以下段落扩展介绍了这些步骤。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+客户机上的系统范围客户机配置文件 \fB/etc/ssh/ssh_config\fR 中必须具有以下条目：
+.sp
+.in +2
+.nf
+HostbasedAuthentication yes
+.fi
+.in -2
+
+请参见 \fBssh_config\fR(4) 和 \fBssh-keysign\fR(1M)。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+服务器上的系统范围服务器配置文件 \fB/etc/ssh/sshd_config\fR 中必须具有以下条目：
+.sp
+.in +2
+.nf
+HostbasedAuthentication yes
+.fi
+.in -2
+
+如果要允许每用户 \fB\&.shost\fR 文件（请参见最后一步），则同一文件中必须具有：
+.sp
+.in +2
+.nf
+IgnoreRhosts no
+.fi
+.in -2
+
+有关这些关键字的说明，请参见 \fBsshd_config\fR(4)。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+要发布已知主机，必须具有用户可以从其进行基于主机的验证的客户机条目。在系统范围的文件 (\fB/etc/ssh/ssh_known_hosts\fR) 和/或每用户文件 (\fB~/.ssh/known_hosts\fR) 中创建这些条目。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+请注意，\fBsshd\fR 使用 \fB\&.shosts\fR，而不是 \fB\&.rhosts\fR。如果需要 \fB\&.rhosts\fR 提供的功能，但不想使用 \fBrlogin\fR 或 \fBrsh\fR（由于其安全缺陷），可以结合使用 \fB\&.shosts\fR 及 \fBsshd\fR。要使用此功能，请以 \fBrhosts\fR(4) 中指定的格式在 \fB/etc/ssh/shosts.equiv\fR 和 \fB~/.shosts\fR 中创建适当条目。
+.sp
+对于绝大多数网络环境，\fB\&.shosts\fR 均优于 \fB\&.rhosts\fR。
+.RE
+.SS "使用 X.509 证书作为主机密钥和用户标识"
+.sp
+.LP
+SSH 命令可与用作主机密钥和/或用户标识的 X.509v3 证书结合使用。采用这种方式时，可以使用 PKCS#11 URI 代替普通的文件名来查找密钥和证书。主机密钥、用户标识及其用于 X.509 公钥验证的相应证书仅可存储在 PKCS#11 令牌中。SSH 只使用 PKCS#11 URI 属性 \fBobject\fR、\fBtoken\fR 和 \fBpinfile\fR。如果没有可用的硬件密钥库，可以使用 PKCS#11 \fBsofttoken\fR 密钥库。
+.sp
+.LP
+对于证书验证（验证用户的服务器或验证服务器的客户机），KMF 策略需要证书映射器。缺省策略文件中未设置映射器。有关更多信息，请参见 \fBsshd_config\fR(4) 中的 \fBTrustedAnchorKeystore\fR、\fBKMFPolicyDatabase\fR 和 \fBKMFPolicyName\fR 选项，以及 \fBlibkmf\fR(3LIB)。
+.sp
+.LP
+自签名证书只能用作主机密钥，永远不能用作用户标识。如果使用了自签名证书或由于缺少相关的信任锚证书而无法在客户端验证主机证书，SSH 客户机会提请将密钥存储在 \fBknown_host\fR 数据库中（当前普通公钥即采用这种处理方式）。只有公钥会从证书中提取出来并存储在数据库中，因而保持当前格式。在客户端接受此类证书的原因是初始主机密钥交换不可重新启动。有鉴于此，如果服务器将证书用作其唯一主机密钥，无法验证该证书的客户机将被拒绝登录。
+.sp
+.LP
+有关如何使用 X.509 验证的指导，请参见\fB\fR“示例”部分。
+.SS "配置 \fBsshd\fR 来以 FIPS-140 模式运行 OpenSSL"
+.sp
+.LP
+要配置 \fBsshd\fR 来以 FIPS-140 模式运行 OpenSSL，请将变量 \fBUseFIPS140\fR 设置为 \fByes\fR。
+.sp
+.LP
+SunSSH 仍可以将针对用户/主机验证的加密操作委托给 Solaris 的其他部件（可以是也可以不是 FIPS-140 认证的）。\fBUseOpenSSLEngine\fR 选项的缺省值是 \fBno\fR；将 \fBUseOpenSSLEngine\fR 设置为 \fByes\fR 在 FIPS 模式下不起作用。
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性service/network/ssh
+_
+接口稳定性Committed（已确定）
+.TE
+
+.sp
+.LP
+\fB/etc/ssh/moduli\fR 的接口稳定性是 Private（私有）。
+.SH 另请参见
+.sp
+.LP
+\fBkmfcfg\fR(1)、\fBlogin\fR(1)、\fBpktool\fR(1)、\fBscp\fR(1)、\fBssh\fR(1)、\fBssh-add\fR(1)、\fBssh-agent\fR(1)、\fBssh-keygen\fR(1)、\fBsvcs\fR(1)、\fBgkadmin\fR(1M)、\fBkadmin\fR(1M)、\fBsftp-server\fR(1M)、\fBssh-keysign\fR(1M)、\fBsvcadm\fR(1M)、\fBlibkmf\fR(3LIB)、\fBpam\fR(3PAM)、\fBrhosts\fR(4)、\fBssh_config\fR(4)、\fBsshd_config\fR(4)、\fBattributes\fR(5)、\fBgss_auth_rules\fR(5)、\fBkerberos\fR(5)、\fBpam_roles\fR(5)、\fBpkcs11_softtoken\fR(5)、\fBsmf\fR(5)
+.sp
+.LP
+请参见 \fBkrb5_auth_rules\fR(5) 中对 \fB\&.k5login\fR 文件的讨论。
+.sp
+.LP
+\fI《Securing Systems and Attached Devices in Oracle Solaris 11.3》\fR
+.SH 附注
+.sp
+.LP
+\fBsshd\fR 服务由服务管理工具 \fBsmf\fR(5) 管理，其服务标识符为：
+.sp
+.in +2
+.nf
+svc:/network/ssh:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以使用 \fBsvcadm\fR(1M) 来对此服务执行管理操作（如启用、禁用或请求重新启动）。可以使用 \fBsvcs\fR(1) 命令来查询服务的状态。
+.sp
+.LP
+\fBsshd\fR 始终设置 \fBPAM_RHOST\fR 以及设置 \fBPAM_AUSER\fR（对于基于主机的 \fBuserauth\fR 情况）。此行为允许使用基于主机的验证远程登录到角色。请参见 \fBpam_roles\fR(5)。

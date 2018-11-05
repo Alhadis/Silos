@@ -1,0 +1,395 @@
+'\" te
+.\" Copyright (c) 2008, 2012, Oracle and/or its affiliates.All rights reserved.
+.TH mktemp 1 "2012 年 7 月 23 日" "SunOS 5.11" "用户命令"
+.SH 名称
+mktemp \- 创建临时文件名
+.SH 用法概要
+.LP
+.nf
+\fBmktemp\fR [\fB-dtqu\fR] [\fB--directory\fR] [\fB--quiet\fR] [\fB--dry-run\fR] [\fB-p\fR \fIdirectory\fR]
+     [\fB--suffix\fR=\fIsuff\fR] [\fB--tmpdir\fR[=\fIdir\fR]] [\fItemplate\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBmktemp\fR 实用程序可创建临时文件名。要执行此操作，\fBmktemp\fR 会采用指定文件名模板并覆盖该模板的某部分以创建唯一文件名。请参见\fB\fR“操作数”部分。
+.sp
+.LP
+可使用 \fBmktemp\fR(3C)、\fBmkdtemp\fR(3C)、\fBmkstemp\fR(3C) 和 \fBmkstemps\fR(3C) 库函数将该模板转换为路径名。 
+.sp
+.LP
+如果 \fBmktemp\fR 可以成功生成唯一文件名，则会创建具有以下文件权限的文件（或目录）：只有文件所有者可读取和写入该文件（除非给出 \fB-u\fR 标志）且文件名将输出到标准输出。
+.sp
+.LP
+\fBmktemp\fR 允许 shell 脚本安全使用临时文件。传统上，许多 shell 脚本都采用程序的名称加 \fBPID\fR 前缀，并将其用作临时文件名。这种命名方案具有可预测性，在竞争情况下，它为攻击者的成功提供了可趁之机。差一点但比较安全的方法是使用相同的命名方案来创建临时目录。这种方法能保证临时文件不被破坏，同时能够简便地拒绝服务攻击。改为使用 \fBmktemp\fR。 
+.SH 选项
+.sp
+.LP
+支持以下选项： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR, \fB-–directory\fR\fR
+.ad
+.sp .6
+.RS 4n
+创建目录，而不是文件。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIdirectory\fR\fR
+.ad
+.sp .6
+.RS 4n
+生成临时文件名时，使用指定目录作为前缀。用户的 \fBTMPDIR\fR 环境变量（如果已设置）可以覆盖目录。此选项隐式指定 \fB-t\fR 标志。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR, \fB-–quiet\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果发生错误，则会失败而不进行提示。如果脚本不希望错误输出转为标准错误，则该选项十分有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-–suffix\fR=\fIsuff\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIsuff\fR 附加到模板。\fIsuff\fR 不得包含斜杠 (\fB/\fR)。当模板以可替代的 X 字符以外的其他字符结束，且不会删除包括此类 X 字符的要求时，会隐式使用该选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-–tmpdir\fR[=\fIdir\fR]\fR
+.ad
+.sp .6
+.RS 4n
+“模板”与 \fIdir\fR 相关。如果没有指定 \fIdir\fR，则会使用用户的环境变量 \fBTMPDIR\fR（如果已设置），否则会使用 \fB/tmp\fR。该选项不支持带有绝对名称的模板，与 \fB-t\fR 的用法不同，模板可以包含斜杠。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+生成以临时目录为根的路径。选择该目录的情况如下：如果用户的 \fBTMPDIR\fR 环境变量已设置，则会使用其中所包含的目录。否则，如果提供了 \fB-p\fR 标志，则会使用指定目录。如果以上条件均不适用，则使用 \fB/tmp\fR。在此模式下，模板（如果已指定）应该为目录组成部分（与完整路径相对），因此不应该包含任何正斜杠。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR, \fB-–dry-run\fR\fR
+.ad
+.sp .6
+.RS 4n
+在不安全模式下操作。在 \fBmktemp\fR 退出前为临时文件解除了链接。这稍好于 \fBmktemp\fR(3C)，但仍然会引入竞争情况。不建议使用该选项。 
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fItemplate\fR\fR
+.ad
+.RS 12n
+.rt  
+\fItemplate\fR 可以为具有三到六个 \fBX\fR 的任何文件名，例如 \fB/tmp/tfile.XXXXXX\fR。 
+.sp
+如果未指定 \fItemplate\fR，则会使用缺省名 \fBtmp.XXXXXX\fR，并会隐含 \fB-t\fR 标志。
+.sp
+如果 \fItemplate\fR 具有多个 X 系列，则会使用最后一个系列作为替换文本，除非另行指定 \fB--suffix\fR。
+.sp
+如果 \fItemplate\fR 在最后一组 X 之后具有字符，则暗示 \fB--suffix\fR 选项为所有此类字符，除非有显式指定。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR使用 \fBmktemp\fR
+.sp
+.LP
+以下示例说明了 \fBmktemp\fR 在 \fBsh\fR(1) 脚本中的简单使用。在此示例中，如果脚本无法获取安全的临时文件，则会退出。
+
+.sp
+.in +2
+.nf
+TMPFILE=`mktemp /tmp/example.XXXXXX`
+if [ -z "$TMPFILE" ]; then exit 1; fi
+echo "program output" >> $TMPFILE
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR使用 \fBmktemp\fR 支持 \fBTMPDIR\fR
+.sp
+.LP
+以下示例使用 \fBmktemp\fR 支持用户的 \fBTMPDIR\fR 环境变量：
+
+.sp
+.in +2
+.nf
+TMPFILE=`mktemp -t example.XXXXXX`
+if [ -z "$TMPFILE" ]; then exit 1; fi
+echo "program output" >> $TMPFILE
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR在不指定临时文件名称的情况下使用 \fBmktemp\fR
+.sp
+.LP
+以下示例在不指定临时文件的情况下使用 \fBmktemp\fR。此情况暗含 \fB-t\fR 标志。 
+
+.sp
+.in +2
+.nf
+TMPFILE=`mktemp`
+if [ -z "$TMPFILE" ]; then exit 1; fi
+echo "program output" >> $TMPFILE
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR对 \fB/tmp\fR 之外的缺省临时目录使用 \fBmktemp\fR
+.sp
+.LP
+以下示例在 \fB/extra/tmp\fR 中创建临时文件，除非用户的 \fBTMPDIR\fR 环境变量另有指定：
+
+.sp
+.in +2
+.nf
+TMPFILE=`mktemp -p /extra/tmp example.XXXXX`
+if [ -z "$TMPFILE" ]; then exit 1; fi
+echo "program output" >> $TMPFILE
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR使用 \fBmktemp\fR 删除文件
+.sp
+.LP
+以下示例尝试创建两个临时文件。如果创建第二个临时文件失败，则 \fBmktemp\fR 会在退出前删除第一个文件：
+
+.sp
+.in +2
+.nf
+TMP1=`mktemp -t example.1.XXXXXX`
+if [ -z "$TMP1" ]; then exit 1; fi
+TMP2=`mktemp -t example.2.XXXXXX`
+if [ -z "$TMP2" ]; then
+        rm -f $TMP1
+        exit 1
+fi
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR使用 \fBmktemp\fR
+.sp
+.LP
+如果 \fBmktemp\fR 无法创建文件，则以下示例不会退出。脚本的该部分已受到保护。
+
+.sp
+.in +2
+.nf
+TMPFILE=`mktemp -q -t example.XXXXXX`
+if [ ! -z "$TMPFILE" ]
+then
+        # Safe to use $TMPFILE in this block
+        echo data > $TMPFILE
+        ...
+        rm -f $TMPFILE
+fi
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR使用带后缀选项的 \fBmktemp\fR
+.sp
+.LP
+以下命令说明了如何使用后缀选项。该命令的作用是创建临时文件 \fBex.q5N.SUFF\fR。
+
+.sp
+.in +2
+.nf
+# \fBmktemp --suffix=.SUFF ex.XXXXXX\fR
+ex.q5Ngid.SUFF
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 8 \fR使用后缀选项和 Tmpdir 选项
+.sp
+.LP
+以下命令说明了如何使用后缀选项和 tmpdir 选项。
+
+.sp
+.in +2
+.nf
+# \fBmktemp --tmpdir=$HOME --suffix=.bar foo.XXXXXX\fR
+/root/foo.7ZaO_N.bar
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 9 \fR使用目录选项和后缀选项
+.sp
+.LP
+以下命令使用目录选项和后缀选项。
+
+.sp
+.in +2
+.nf
+# \fBmktemp --directory --suffix=.bar foo.XXXXXX\fR
+foo.GSaO3d.bar
+# \fBls -l\fR
+drwx------   2 root     staff        512 Mar 19  2012 foo.GSaO.bar
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 10 \fR支持带有非结尾 X 的模板
+.sp
+.LP
+以下命令显示了如何使用带有非结尾 X 字符的目录选项。此命令中暗含了 \fB-–suffix\fR=\fIsuff\fR 选项，其中 \fBbar\fR 用作后缀。
+
+.sp
+.in +2
+.nf
+# \fBmktemp XXfooXXXXXXbar\fR
+XXfooaFY0N6bar
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 11 \fR使用静默选项和 Tmpdir 选项
+.sp
+.LP
+以下命令说明了如何使用静默选项和 tmpdir 选项。
+
+.sp
+.in +2
+.nf
+# \fBmktemp --quiet --tmpdir=/tmp foo\fR
+[\fBNo diagnostic message is returned\fR]
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 12 \fR使用带多个选项的 \fBmktemp\fR
+.sp
+.LP
+以下命令组合使用了预运行选项、tmpdir 选项和后缀选项。
+
+.sp
+.in +2
+.nf
+# \fBmktemp --dry-run --tmpdir=$HOME --suffix=SUFF\fR
+/root/tmp.qdaGcOSUFF
+# \fBls -l /root/tmp.qdaGcOSUFF\fR
+/root/tmp.qdaGcOSUFF: No such file or directory
+.fi
+.in -2
+.sp
+
+.SH 环境变量
+.sp
+.LP
+有关影响带 \fB-t\fR 选项的 \fBmktemp\fR 执行的以下环境变量的说明，请参见 \fBenviron\fR(5)：\fBTMPDIR。\fR 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTMPDIR\fR\fR
+.ad
+.RS 10n
+.rt  
+指定用于创建临时文件以覆盖系统缺省值的目录；由 \fBmktemp\fR 使用。
+.RE
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+成功完成。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+出现错误。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBsh\fR(1)、\fBmkdtemp\fR(3C)、\fBmkstemp\fR(3C)、\fBmkstemps\fR(3C)、\fBmktemp\fR(3C)、\fBattributes\fR(5)、\fBenviron\fR(5)
+.SH 附注
+.sp
+.LP
+\fBmktemp\fR 实用程序出现在 OpenBSD 2.1 中。Solaris 实现仅使用对 \fBmktemp\fR(3C)、\fBmkstemp\fR(3C) 和 \fBmkstemps\fR(3C) 有意义的多个 X。

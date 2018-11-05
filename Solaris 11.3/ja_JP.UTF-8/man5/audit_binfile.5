@@ -1,0 +1,114 @@
+'\" te
+.\"  Copyright (c) 2009, 2013, Oracle and/or its affiliates. All rights reserved.
+.TH audit_binfile  5 "2012 年 1 月 5 日" "SunOS 5.11" "標準、環境、マクロ"
+.SH 名前
+audit_binfile \- Solaris 監査ログの生成
+.SH 形式
+.LP
+.nf
+\fB/usr/lib/security/audit_binfile.so\fR
+.fi
+
+.SH 機能説明
+.sp
+.LP
+Solaris 監査の \fBaudit_binfile\fR プラグインモジュール (\fB/usr/lib/security/audit_binfile.so\fR) は、\fBauditconfig\fR(1M) で構成されたとおりに、バイナリ形式の監査データをファイルに書き込みます。これは、Solaris 監査デーモン \fBauditd\fR(1M) 用のデフォルトプラグインです。この出力は \fBaudit.log\fR(4) によって書き込まれます。
+.sp
+.LP
+\fBaudit_binfile\fR プラグインが \fBauditconfig\fR によってアクティブとして構成されている場合は、\fBauditd\fR によってロードされます。プラグイン関連のすべての構成パラメータを変更するには、\fBauditconfig\fR \fB-setplugin\fR オプションを使用します。
+.SH オブジェクト属性
+.sp
+.LP
+次の属性は、\fBaudit_binfile\fR プラグインの構成を指定します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp_dir\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+dir1[,dir2],.. [,dirn]
+.fi
+.in -2
+.sp
+
+監査ファイルが作成されるディレクトリのリストです。有効な書き込み可能ディレクトリを指定できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp_minfree\fR\fR
+.ad
+.sp .6
+.RS 4n
+ターゲット \fBp_dir\fR で必要な空き領域を示す割合です。空き領域がこのしきい値を下回ると、監査デーモン \fBauditd\fR(1M) によって、シェルスクリプト \fBaudit_warn\fR(1M) が呼び出されます。しきい値が指定されなかった場合、デフォルトは 1% になります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp_fsize\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBp_fsize\fR 属性は、監査ファイルが自動的に閉じられ、新しい監査ファイルが開かれるまでの最大サイズを定義します。これは、監査ファイルのサイズが管理者によって指定された値と等しい場合に管理者が \fBaudit -n\fR コマンドを発行することと同等です。デフォルトのサイズはゼロ (\fB0\fR) で、ファイルは無制限に増やすことができます。指定された値は、500KB よりも大きく、16 エクサバイト (\fBEB\fR) よりも小さくする必要があります。使用されるファイルシステムは、制限値よりも大幅に小さくなる場合があります。\fBp_fsize\fR 値の形式は、正確な値としてバイト単位で指定することも、\fBB、K、M、G、T、P、E、Z\fR (それぞれ、バイト、キロバイト、メガバイト、ギガバイト、テラバイト、ペタバイト、エクサバイト、またはゼタバイトを表す) のサフィックスを使って人間の読み取り可能な形式で指定することもできます。\fBKB、MB、GB、TB、PB、EB、\fRおよび \fBZB\fR のサフィックスも使用できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp_age\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBp_age\fR 属性は、監査ファイルが自動的に閉じられて新しい監査ファイルが開かれるよりも前に、監査ファイルが開いたままになっている最長時間を定義します。これは、監査ファイルが構成済みの時間の長さだけ開いていたときに、管理者が \fBaudit -n\fR コマンドを発行することと同等です。デフォルトの時間はゼロ (0) で、こうすると、ほかのアクションによってファイルが閉じられるまで、ファイルを開いたままにすることができます。\fBp_age\fR 値の形式は、h、d、w、m、y (時間、日数、週数、月数 (30 日)、年数 (365 日)) という時間の単位を指定する接尾辞を使用した形式で指定できます。
+.RE
+
+.SH 使用例
+.sp
+.LP
+次の指令により、\fBaudit_binfile.so\fR がロードされ、監査ログを書き込むためのディレクトリを指定し、ディレクトリあたり必要な空き容量の割合、ログファイルの最大サイズ、およびログファイルの最長有効期間を指定します。
+.sp
+.in +2
+.nf
+auditconfig -setplugin audit_binfile active \e
+    "p_dir=/var/audit/jedgar/eggplant,/var/audit/jedgar.aux/eggplant,
+     /var/audit/global/eggplant;p_minfree=20;p_fsize=4.5GB;p_age=1w"
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+次の属性については、\fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+\fB属性タイプ\fR\fB属性値\fR
+_
+MT レベルMT-安全
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBauditconfig\fR(1M), \fBauditd\fR(1M), \fBaudit_warn\fR(1M), \fBsyslog.conf\fR(4), \fBattributes\fR(5)
+.sp
+.LP
+\fI『Managing Auditing in Oracle Solaris 11.3 』\fR

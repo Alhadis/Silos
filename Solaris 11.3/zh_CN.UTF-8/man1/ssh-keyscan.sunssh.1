@@ -1,0 +1,248 @@
+'\" te
+.\" Copyright (c) 2004, 2012, Oracle and/or its affiliates.All rights reserved.
+.TH ssh-keyscan 1 "2012 年 6 月 20 日" "SunOS 5.11" "用户命令"
+.SH 名称
+ssh-keyscan \- 收集大量主机的 ssh 主机公钥
+.SH 用法概要
+.LP
+.nf
+\fBssh-keyscan\fR [\fB-v46\fR] [\fB-p\fR \fIport\fR] [\fB-T\fR \fItimeout\fR] [\fB-t\fR \fItype\fR] [\fB-f\fR \fIfile\fR] [\fB-\fR] [\fIhost\fR... | \fIaddrlist\fR \fInamelist\fR] [...]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBssh-keyscan\fR 是一个用于收集大量主机的 ssh 主机公钥的实用程序。该实用程序用于帮助生成和验证 \fBssh_known_hosts\fR 文件。\fBssh-keyscan\fR 提供了适合 shell 和 perl 脚本使用的最小接口。\fBssh-keyscan\fR 的输出定向到标准输出。
+.sp
+.LP
+\fBssh-keyscan\fR 使用非阻塞套接字 I/O，以并行方式联系尽可能多的主机，因此该实用程序非常高效。包括 1,000 个主机的域中的密钥可以在几十秒内收集完毕，即使其中一些主机关闭或未运行 ssh。扫描时，不需要登录访问所扫描的计算机，扫描过程也不涉及加密。
+.SS "文件格式"
+.sp
+.LP
+输入格式：
+.sp
+.in +2
+.nf
+1.2.3.4,1.2.4.4
+\fIname.my.domain,name,n.my.domain,n,\fR1.2.3.4,1.2.4.4
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBrsa1\fR 密钥的输出格式： 
+.sp
+.in +2
+.nf
+\fIhost-or-namelist bits exponent modulus\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBrsa\fR 和 \fBdsa\fR 密钥的输出格式，其中 \fIkeytype\fR 是 \fBssh-rsa\fR 或 `\fBssh-dsa\fR： 
+.sp
+.in +2
+.nf
+\fIhost-or-namelist keytype base64-encoded-key\fR
+.fi
+.in -2
+.sp
+
+.SH 选项
+.sp
+.LP
+支持以下选项： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfilename\fR\fR
+.ad
+.sp .6
+.RS 4n
+从该文件中读取主机或地址列表名称列表对，每行读取一个。如果指定的不是文件名，\fBssh-keyscan\fR 将从标准输入中读取主机或地址列表名称列表对。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIport\fR\fR
+.ad
+.sp .6
+.RS 4n
+所要连接的远程主机上的端口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fItimeout\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置连接尝试的超时时间。如果自发起主机连接以来或自上次从该主机中读取内容以来经过了 \fItimeout\fR 秒，则将关闭连接并且所涉及的主机将被视为不可用。\fItimeout\fR 的缺省值为 5 秒。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fItype\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定要从被扫描的主机提取的密钥类型。\fItype\fR 的可能值包括用于协议版本 1 的 \fBrsa1\fR 和用于协议版本 2 的 \fBrsa\fR 或 \fBdsa\fR。可指定以逗号分隔的多个值。缺省值为 \fBrsa1\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定详细模式。列显有关进度的调试消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-4\fR\fR
+.ad
+.sp .6
+.RS 4n
+强制仅使用 IPv4 地址。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-6\fR\fR
+.ad
+.sp .6
+.RS 4n
+强制仅使用 IPv6 地址。
+.RE
+
+.SH 安全
+.sp
+.LP
+如果在不验证密钥的情况下使用 \fBssh-keyscan\fR 构建 \fBssh_known_hosts\fR 文件，用户容易遭受中间人 (man-in-the-middle) 攻击。如果安全模型允许存在此类风险，可以在创建 \fBssh_known_hosts\fR 文件后使用\fBssh-keyscan\fR 帮助检测被篡改的密钥文件或发生的中间人攻击。
+.SH 示例
+.LP
+\fB示例 1 \fR列显 \fBrsa1\fR 主机密钥
+.sp
+.LP
+以下示例输出了计算机 \fBhostname\fR 的 \fBrsa1\fR 主机密钥：
+
+.sp
+.in +2
+.nf
+$ ssh-keyscan hostname
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR查找所有主机
+.sp
+.LP
+以下命令查找 \fBssh_hosts\fR 文件中密钥与排序文件 \fBssh_known_hosts\fR 中密钥不同（密钥未在该排序文件中出现）的所有主机。
+
+.sp
+.in +2
+.nf
+$ ssh-keyscan -t rsa,dsa -f ssh_hosts | \e
+     sort -u - ssh_known_hosts | diff ssh_known_hosts -
+.fi
+.in -2
+.sp
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ssh_known_hosts\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含 ssh 主机公钥列表。
+.RE
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+没有用法错误。\fBssh-keyscan\fR 可能成功，也可能失败，还有可能无法扫描一个、多个或所有给定的主机。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+用法错误。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性network/ssh
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBssh\fR(1)、\fBsshd\fR(1M)、\fBattributes\fR(5)
+.SH 作者
+.sp
+.LP
+David Mazieres 编写了初始版本，Wayne Davison 添加了对协议版本 2 的支持。 
+.SH 已知问题
+.sp
+.LP
+如果服务器低于版本 2.9，\fBssh—keyscan\fR 会在它扫描的所有计算机的控制台上生成以下消息：
+.sp
+.in +2
+.nf
+Connection closed by remote host
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+这是因为 \fBssh-keyscan\fR 采用以下过程：打开与 \fBssh\fR 端口的连接，读取公钥，在获取密钥后立即放弃该连接。 

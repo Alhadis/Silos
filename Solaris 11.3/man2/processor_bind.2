@@ -1,0 +1,195 @@
+'\" te
+.\" Copyright (c) 1998, 2013, Oracle and/or its affiliates. All rights reserved.
+.TH processor_bind 2 "31 Dec 2013" "SunOS 5.11" "System Calls"
+.SH NAME
+processor_bind \- bind LWPs to a processor
+.SH SYNOPSIS
+.LP
+.nf
+#include <sys/types.h>
+#include <sys/processor.h>
+#include <sys/procset.h>
+
+\fBint\fR \fBprocessor_bind\fR(\fBidtype_t\fR \fIidtype\fR, \fBid_t\fR \fIid\fR, \fBprocessorid_t\fR \fInew_binding\fR,
+     \fBprocessorid_t *\fR\fI*old_binding\fR);
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBprocessor_bind()\fR function binds the LWP (lightweight process) or set of LWPs specified by \fIidtype\fR and \fIid\fR to the processor specified by \fInew_binding\fR. If \fIold_binding\fR is not \fINULL\fR, it will contain the previous binding of one of the specified LWPs, or \fBPBIND_NONE\fR if none were previously bound.
+.sp
+.LP
+The following \fIidtypes\fR can be used to specify one or more LWPs:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBP_PID\fR\fR
+.ad
+.RS 12n
+.rt  
+The binding affects all LWPs of the process with PID \fIid\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBP_LWPID\fR\fR
+.ad
+.RS 12n
+.rt  
+The binding affects the LWP of the current process with LWP ID \fIid\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBP_TASKID\fR\fR
+.ad
+.RS 12n
+.rt  
+The binding affects all LWPs of all processes with task ID \fIid\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBP_PROJID\fR\fR
+.ad
+.RS 12n
+.rt  
+The binding affects all LWPs of all processes with project ID \fIid\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBP_CTID\fR\fR
+.ad
+.RS 12n
+.rt  
+The binding affects all LWPs of all processes with process contract ID \fIid\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBP_ZONEID\fR\fR
+.ad
+.RS 12n
+.rt  
+The binding affects all LWPs of all processes with zone ID \fIid\fR.
+.RE
+
+.sp
+.LP
+If \fIid\fR is \fBP_MYID\fR, the specified LWP, process, task, or project is the current one.
+.sp
+.LP
+If \fIprocessorid\fR is \fBPBIND_NONE\fR, the processor bindings of the specified LWPs are cleared.
+.sp
+.LP
+If \fIprocessorid\fR is \fBPBIND_QUERY\fR, the processor bindings are not changed.
+.sp
+.LP
+It is important to note that the runtime behavior determined by \fBprocessor_bind\fR(2) is subject to the continued online state of the specified CPU and affiliation to the same processor set as the target LWPs. If these underlying conditions change, a LWP may lose its affinity for a given CPU and need to be reset once the conditions are restored.
+.sp
+.LP
+The {\fBPRIV_PROC_OWNER\fR} privilege must be asserted in the effective set of the calling process or the real or effective user ID of the calling process must match the real or effective user ID of the \fBLWP\fRs being bound. If the calling process does not have permission to change all of the specified LWPs, the bindings of the LWPs for which it does have permission will be changed even though an error is returned.
+.sp
+.LP
+Processor bindings are inherited across \fBfork\fR(2) and \fBexec\fR(2).
+.SH RETURN VALUES
+.sp
+.LP
+Upon successful completion, \fB0\fR is returned. Otherwise, \fB\(mi1\fR is returned and \fBerrno\fR is set to indicate the error.
+.SH ERRORS
+.sp
+.LP
+The \fBprocessor_bind()\fR function will fail if:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEFAULT\fR\fR
+.ad
+.RS 11n
+.rt  
+The location pointed to by \fIobind\fR was not \fINULL\fR and not writable by the user.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEINVAL\fR\fR
+.ad
+.RS 11n
+.rt  
+The specified processor is not on-line, or the \fIidtype\fR argument was not \fBP_PID\fR, \fBP_LWPID\fR, \fBP_PROJID\fR, \fBP_TASKID\fR, \fBP_CTID\fR, or \fBP_ZONEID\fR.
+.sp
+The caller is in a non-global zone, the pools facility is active, and the processor is not a member of the zone's pool's processor set.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBENOTSUP\fR\fR
+.ad
+.RS 11n
+.rt  
+Binding a system process to a processor set is not supported.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEPERM\fR\fR
+.ad
+.RS 11n
+.rt  
+The {\fBPRIV_PROC_OWNER\fR} privilege is not asserted in the effective set of the calling process and its real or effective user ID does not match the real or effective user \fBID\fR of one of the \fBLWP\fRs being bound.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBESRCH\fR\fR
+.ad
+.RS 11n
+.rt  
+No processes, \fBLWP\fRs, or tasks were found to match the criteria specified by \fIidtype\fR and \fIid\fR.
+.RE
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Interface StabilityCommitted
+_
+MT-LevelAsync-Signal-Safe
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBpooladm\fR(1M), \fBpsradm\fR(1M), \fBpsrinfo\fR(1M), \fBzoneadm\fR(1M), \fBexec\fR(2), \fBfork\fR(2), \fBp_online\fR(2), \fBpset_bind\fR(2), \fBsysconf\fR(3C), \fBprocess\fR(4), \fBproject\fR(4), \fBattributes\fR(5), \fBprivileges\fR(5)

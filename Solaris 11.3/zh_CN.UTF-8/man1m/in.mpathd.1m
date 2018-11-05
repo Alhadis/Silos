@@ -1,0 +1,313 @@
+'\" te
+.\" Copyright (c) 2009, 2013, Oracle and/or its affiliates.All rights reserved.
+.TH in.mpathd 1M "2012 年 5 月 31 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+in.mpathd \- IP 多路径守护进程
+.SH 用法概要
+.LP
+.nf
+\fB/usr/lib/inet/in.mpathd\fR 
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBin.mpathd\fR 守护进程为 IPMP 组中的 IP 接口（也可以是系统上的所有 IP 接口）执行故障和修复检测。它还按照管理员配置的策略控制 IPMP 组中的哪些 IP 接口处于“活动”状态（由系统使用以发送或接收 IP 数据通信）。
+.sp
+.LP
+\fBin.mpathd\fR 守护进程可以通过三种方法检测 IP 接口故障和修复：通过监视每个 IP 接口的 \fBIFF_PHYSRUNNING\fR 标志（基于链路状态的故障检测）、通过在每个 IP 接口上发送和接收 ICMP 探测器（基于 ICMP 探测器的故障检测）或通过传递式探测。
+.sp
+.LP
+如果启用了传递式探测，则 IP 接口会分成两类：有资格接收和没有资格接收传入 IP 数据通信的 IP 接口（请参见 \fBipmpstat\fR(1M) 中的 \fBINBOUND\fR）。有资格接收传入 IP 数据通信的接口可通过发送和接收 ICMP 探测器来检测故障。没有资格接收传入 IP 数据通信的接口可通过与有资格接收此通信的接口交换链路层（“传递式”）探测器来检测故障。
+.sp
+.LP
+缺省情况下，仅启用基于链路状态的故障检测。这要求驱动程序支持链路状态通知。基于 ICMP 探测器的故障检测必须通过配置一个或多个测试地址来启用，这将在下文中说明。传递式探测可以通过将如下所示的 SMF 属性值修改为 \fBtrue\fR 来启用：
+.sp
+.in +2
+.nf
+svc:/network/ipmp/config/transitive-probing
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有关如何修改 \fBtransitive-probing\fR 属性值的更多信息，请参见\fB\fR“示例”部分。
+.sp
+.LP
+基于 ICMP 和传递式探测器的故障检测方法测试完整的 IP 接口发送和接收路径。\fBipmpstat\fR(1M) 实用程序可用于检查启用了哪些故障检测方法。
+.sp
+.LP
+如果将 \fBtransitive-probing\fR 设置为 \fBtrue\fR，并且没有为给定 IPMP 组配置测试地址，那么将使用传递式探测。如果将其设置为 \fBfalse\fR（缺省值），那么在任何情况下都不会使用传递式探测。
+.sp
+.LP
+如果仅启用了基于链路状态的故障检测，那么接口的运行状况只能根据 \fBIFF_PHYSRUNNING\fR 标志的状态来确定。如果启用了探测器，那么不管是链路状态还是探测器指示存在故障时，系统都认为接口发生故障；一旦故障检测方法指示故障已排除，系统则认为已修复。虽然组中的所有接口不一定都配置使用相同的故障检测方法，但是组中至少具有一个 IP 测试地址的接口会禁用传递式探测。
+.sp
+.LP
+如上所述，要执行基于 ICMP 探测器的故障检测，\fBin.mpathd\fR 要求在每个 IP 接口上配置测试地址，以便发送和接收探测器。使用 \fBipadm\fR(1M) 在底层接口上创建的所有地址都将自动用作测试地址。系统将自动对此类地址设置 \fBNOFAILOVER\fR 标志。每个地址可以静态配置，也可以通过 DHCP 获取。为了查找目标，\fBin.mpathd\fR 首先查询路由表以查找相同子网上的路由，然后使用指定的下一中继站。如果没有符合条件的路由，则向所有主机发送 ICMP 探测器，然后选择一部分发出响应的系统。因此，为了使基于探测器的故障检测能够正常运行，每个子网上必须至少有一个相邻节点来响应 ICMP 回显请求探测器。\fBipmpstat\fR(1M) 实用程序可用于显示当前探测器目标信息和已发送探测器的状态。
+.sp
+.LP
+IPv4 和 IPv6 都受支持。如果某个 IP 接口已针对 IPv4 激活，并配置了 IPv4 测试地址，那么 \fBin.mpathd\fR 将在该 IP 接口上开始发送 ICMPv4 探测器。同样地，如果某个 IP 接口已针对 IPv6 激活，并配置了 IPv6 测试地址，那么 \fBin.mpathd\fR 将在该 IP 接口上开始发送 ICMPv6 探测器。然而，请注意，\fBin.mpathd\fR 将忽略不是链路本地地址的 IPv6 测试地址。如果同时激活 IPv4 和 IPv6，那么只需配置两者之一即可，即要么配置 IPv4 测试地址，要么配置 IPv6 测试地址。如果同时配置了 IPv4 和 IPv6 测试地址，那么 \fBin.mpathd\fR 同时使用 ICMPv4 和 ICMPv6 进行探测。
+.sp
+.LP
+如上所述，\fBin.mpathd\fR 还控制 IPMP 组中哪些 IP 接口处于“活动”状态（供系统用于发送和接收 IP 数据通信）。具体而言，\fBin.mpathd\fR 跟踪每个 IPMP 组的管理配置，并尝试根据该配置在每个组内保留一定数量的活动 IP 接口。因此，如果某个活动 IP 接口发生故障，\fBin.mpathd\fR 将激活该组中的一个 \fBINACTIVE\fR 接口，当然前提是存在这样的接口（它将优先选择还标记为 \fBSTANDBY\fR 的 \fBINACTIVE\fR 接口）。同样，如果某个 IP 接口修复，从而导致 IPMP 组的活动接口超过管理配置指定的数目，那么 \fBin.mpathd\fR 将取消激活其中一个接口（优先选择标记为 \fBSTANDBY\fR 的接口），除非使用了 \fBFAILBACK\fR 变量，如下文所述。使 IP 接口脱机时（例如，响应 \fBif_mpadm\fR(1M) 时），\fBin.mpathd\fR 也将作出类似的调整。
+.sp
+.LP
+\fBin.mpathd\fR 守护进程访问 \fB/etc/default/mpathd\fR 中的三个变量值：\fBFAILURE_DETECTION_TIME\fR、\fBFAILBACK\fR 和 \fBTRACK_INTERFACES_ONLY_WITH_GROUPS\fR。
+.sp
+.LP
+\fBFAILURE_DETECTION_TIME\fR 变量指定基于探测器的故障检测时间。故障检测时间越短，探测器通信量越大。\fBFAILURE_DETECTION_TIME\fR 的缺省值为 10 秒。这意味着 \fBin.mpathd\fR 将在 10 秒内检测到 IP 接口故障。IP 接口修复检测时间始终是 \fBFAILURE_DETECTION_TIME\fR 值的两倍。请注意，虽然一般情况下会立即处理通过基于链路的故障检测所检测到的故障和修复，但是当 \fBin.mpathd\fR 怀疑链路状态因硬件存在缺陷而变得不稳定时，它可能会忽略链路状态更改；请参见\fB\fR“诊断”部分。
+.sp
+.LP
+缺省情况下，\fBin.mpathd\fR 仅对配置为指定 IPMP 组的一部分的 IP 接口进行故障和修复检测。将 \fBTRACK_INTERFACES_ONLY_WITH_GROUPS\fR 设置为 \fBno\fR 将对所有 IP 接口启用故障和修复检测，即使它们不是指定 IPMP 组的一部分。被跟踪但不是指定 IPMP 组的一部分的 IP 接口将被视为“匿名”IPMP 组的一部分。除了没有名称外，该 IPMP 组还有一个比较特殊的地方，即它的 IP 接口不是等效的，因此在某个 IP 接口发生故障时，不能由其他接口替补。也就是说，匿名 IPMP 组仅能用于故障和修复检测，不提供高可用性或负荷分配功能。
+.sp
+.LP
+如上所述，当 \fBin.mpathd\fR 检测到 IP 接口已修复时，它随即激活该接口，以便将该接口重新用于发送和接收 IP 数据通信。但是，如果将 \fBFAILBACK\fR 设置为 \fBno\fR，那么只有在该组中没有其他活动的 IP 接口时才激活该 IP 接口。然而，随后，如果该组中其他 IP 接口发生故障，那么可能会激活该接口。
+.SS "SMF 管理"
+.sp
+.LP
+\fBin.mpathd\fR 守护进程服务由服务管理工具 \fBsmf\fR(5) 管理，其服务标识符为：
+.sp
+.in +2
+.nf
+svc:/network/ipmp:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以使用 \fBsvcadm\fR(1M) 来对此服务执行管理操作（如启用、禁用或请求重新启动）。
+.SH 示例
+.LP
+\fB示例 1 \fR启用传递式探测故障检测
+.sp
+.LP
+以下示例显示了用于启用传递式探测故障检测的 SMF 命令序列。
+
+.sp
+.in +2
+.nf
+# \fBsvccfg -s svc:/network/ipmp setprop config/transitive-probing=true\fR
+# \fBsvcadm refresh svc:/network/ipmp:default\fR
+.fi
+.in -2
+.sp
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/default/mpathd\fR\fR
+.ad
+.RS 23n
+.rt  
+包含 \fBin.mpathd\fR 守护进程使用的缺省值。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBif_mpadm\fR(1M)、\fBifconfig\fR(1M)、\fBipmpstat\fR(1M)、\fBsvcadm\fR(1M)、\fBattributes\fR(5)、\fBsmf\fR(5)、\fBicmp\fR(7P)、\fBicmp6\fR(7P), 
+.sp
+.LP
+\fI《Introduction to Oracle Solaris 11.3 Network         Services》\fR
+.SH 诊断
+.sp
+.LP
+IP 接口 \fIinterface_name\fR 的硬件地址在组 \fIgroup_name\fR 中不唯一；脱机
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+为了使基于探测器的故障检测、负荷分配和其他代码 IPMP 功能能够工作正常，IPMP 组中的每个 IP 接口必须具有唯一的硬件地址。如果不能满足此要求，对于具有重复硬件地址的所有 IP 接口，\fBin.mpathd\fR 只保持其中一个处于联机状态，自动使其他所有接口都脱机。
+.RE
+
+.sp
+.LP
+现在 IP 接口 \fIinterface_name\fR 在组 \fIgroup_name\fR 中具有唯一的硬件地址；联机
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+之前检测到的重复硬件地址现在是唯一的，因此 \fBin.mpathd\fR 使 \fIinterface_name\fR 恢复联机状态。
+.RE
+
+.sp
+.LP
+测试地址 \fIaddress\fR 在组中不唯一；在 \fIinterface_name\fR 上禁用基于探测器的故障检测
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+为了使 \fBin.mpathd\fR 能够执行基于探测器的故障检测，组中的每个测试地址必须唯一。
+.RE
+
+.sp
+.LP
+接口 \fIinterface_name\fR 上未配置测试地址，对该接口禁用基于探测器的故障检测
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+为了使 \fBin.mpathd\fR 能够对 IP 接口执行基于探测器的故障检测，必须为接口配置测试地址：IPv4、IPv6 或者两者。
+.RE
+
+.sp
+.LP
+组 \fIgroup_name\fR 中的 IP \fIinterface_name\fR 未针对 IPv[4|6] 激活，影响 IPv[4|6] 连接
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+多路径组中的所有 IP 接口必须进行同类激活。例如，如果一个 IP 接口针对 IPv4 激活，那么该组中所有的 IP 接口都必须针对 IPv4 激活，否则将无法可靠地发送和接收 IPv4 数据包。所有 IP 接口上推送的 STREAMS 模块也必须相同。
+.RE
+
+.sp
+.LP
+过去的一分钟之内，在 \fIinterface_name\fR 上链路连通次数超过 2 次；在其稳定之前禁用修复。
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+为了限制具有间歇性硬件（例如不良线缆）的接口的影响，在链路状态稳定之前，\fBin.mpathd\fR 不会将频繁更改链路状态的 IP 接口视为已修复。
+.RE
+
+.sp
+.LP
+故障检测时间 \fItime\fR 无效（假定缺省值为 10000 ms）
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+\fB/etc/default/mpathd\fR 文件中的 \fBFAILURE_DETECTION_TIME\fR 值无效。
+.RE
+
+.sp
+.LP
+故障检测时间 \fItime\fR 太短（假定最小值为 100 ms）
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+目前，可以为 \fBFAILURE_DETECTION_TIME\fR 指定的最小值为 100 毫秒。
+.RE
+
+.sp
+.LP
+FAILBACK 的值 \fIvalue\fR 无效
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+布尔变量 \fBFAILBACK\fR 的有效值为 \fByes\fR 或 \fBno\fR。
+.RE
+
+.sp
+.LP
+TRACK_INTERFACES_ONLY_WITH_GROUPS 的值 \fIvalue\fR 无效
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+布尔变量 \fBTRACK_INTERFACES_ONLY_WITH_GROUPS\fR 的有效值为 \fByes\fR 或 \fBno\fR。
+.RE
+
+.sp
+.LP
+无法满足 (inet[6] \fIinterface_name\fR) 请求的故障检测时间 \fItime\fR ms，组 \fIgroup_name\fR 新的故障检测时间为 \fItime\fR ms
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+\fBICMP\fR 探测器的往返时间大于维持当前故障检测时间所需的时间。网络可能会变得拥塞或者探测器目标负荷过重。\fBin.mpathd\fR 自动将故障检测时间增加到在这些条件下完成故障检测所需的时间。
+.RE
+
+.sp
+.LP
+为组 \fIgroup_name\fR 增加了 (inet[6] \fIinterface_name\fR) 的故障检测时间 \fItime\fR ms
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+\fBICMP\fR 探测器的往返时间现已缩短，\fBin.mpathd\fR 相应地减少了故障检测时间。
+.RE
+
+.sp
+.LP
+\fIinterface_name\fR 上检测到 IP 接口故障
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+\fBin.mpathd\fR 在 \fIinterface_name\fR 上检测到故障，并在 \fIinterface_name\fR 上设置了 \fBIFF_FAILED\fR 标志，确保不会将其用于 IP 数据通信。
+.RE
+
+.sp
+.LP
+\fIinterface_name\fR 上检测到 IP 接口修复
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+\fBin.mpathd\fR 在 \fIinterface_name\fR 上检测到修复，并清除了 \fBIFF_FAILED\fR 标志。根据管理配置，\fIinterface_name\fR 可以重新用于 IP 数据通信。
+.RE
+
+.sp
+.LP
+组 \fIgroup\fR 中的所有 IP 接口现在都不可用
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+\fBin.mpathd\fR 已确定 \fIgroup\fR 中的所有 IP 接口都不可用于 IP 数据通信，因此断开了该组的网络连接。
+.RE
+
+.sp
+.LP
+组 \fIgroup\fR 中现在至少有 1 个 IP 接口 (\fIinterface_name\fR) 可用
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+\fBin.mpathd\fR 已确定 \fIgroup\fR 中至少有一个 IP 接口可以重新用于 IP 数据通信，因此恢复了该组的网络连接。
+.RE
+
+.sp
+.LP
+\fIinterface_name\fR 的链路断开 
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+\fBin.mpathd\fR 检测到 \fIinterface_name\fR 的 \fBIFF_PHYSRUNNING\fR 标志已清除，表明链路已断开。
+.RE
+
+.sp
+.LP
+\fIinterface_name\fR 的链路连通
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+\fBin.mpathd\fR 检测到已设置 \fIinterface_name\fR 的 \fBIFF_PHYSRUNNING\fR 标志，表明链路已连通。 
+.RE
+

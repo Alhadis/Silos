@@ -1,0 +1,525 @@
+'\" te
+.\" Copyright (c) 2003, 2013, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1989 AT&T
+.TH share_smb 1M "2012 年 7 月 23 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+share_smb \- SMB 共有をリモートシステムによるマウントに使用可能にする
+.SH 形式
+.LP
+.nf
+\fBshare\fR  \fB-F\fR smb [-a [\fB-o\fR \fIspecific-options\fR] [\fB-d\fR \fIdescription\fR]
+     \fIpathname\fR \fIsharename\fR  | [-A]]
+.fi
+
+.LP
+.nf
+\fBzfs set\fR share.smb=on | off \fIfilesystem|filesystem%share\fR
+.fi
+
+.LP
+.nf
+\fBzfs share\fR -o share.smb=on | off \fIspecific_options\fR
+     \fIfilesystem|filesystem%share\fR
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBshare\fR コマンドは、SMB 共有を定義して公開します。これにより、リモートシステムによるマウントに使用可能なローカルファイルシステムが作成されます。
+.sp
+.LP
+\fBshare\fR コマンドか、あるいは \fBzfs set\fR コマンドまたは \fBzfs share\fR コマンドでプロパティー値を設定することによって、SMB 共有の動作を変更できます。\fBshare\fR(1M) および \fBzfs\fR(1M) のマニュアルページを参照してください。
+.sp
+.LP
+\fBshare\fR コマンドには、次のオプションがあります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-F\fR \fBsmb\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBSMB\fR ファイル共有プロトコルを共有します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+定義されているすべての共有を公開します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIspecific-options\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIspecific-options\fR を、SMB プロトコルによって解釈されるキーワードと属性値表明のコンマ区切りリストで指定します。デフォルトでは、特定のオプションによってデフォルトアクセスがオーバーライドされないかぎり、すべてのクライアントへの読み取り/書き込みアクセス権を持つ共有が公開されます。\fIspecific-options\fR には、特定のファイルシステムでサポートされるプロパティーの任意の組み合わせを指定できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdescription\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有されるファイルシステムを説明したコメントを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.sp .6
+.RS 4n
+定義されているすべての共有を表示します。
+.RE
+
+.SS "共有プロパティー"
+.sp
+.LP
+次の SMB 共有プロパティーがサポートされており、これらは \fBzfs\fR および \fBshare\fR コマンドで設定できます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBabe=\fR\fIboolean\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有のアクセスベースの列挙 (ABE) ポリシーを設定します。\fBtrue\fR に設定されている場合は、この共有に対する ABE フィルタ処理が有効になり、要求しているユーザーがアクセスできないディレクトリエントリはクライアントに返されるディレクトリ一覧から省略されます。\fBfalse\fR に設定されているか、または定義されていない場合、この共有に対する ABE フィルタ処理は実行されません。このプロパティーは、デフォルトでは定義されていません。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfalse\fR\fR
+.ad
+.sp .6
+.RS 4n
+この共有の ABE を無効にします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtrue\fR\fR
+.ad
+.sp .6
+.RS 4n
+この共有の ABE を有効にします。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBad-container\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有を公開する AD コンテナを指定します。
+.sp
+AD コンテナは、LDAP 識別名 (DN) または相対識別名 (RDN) の形式を使用した属性名と値のペアのコンマ区切りリストとして指定されます。
+.sp
+次の例では、\fBshare\fR コマンドを使用して AD コンテナを指定します。
+.sp
+.in +2
+.nf
+$ \fBshare -F smb -o abe=true,ad-container=cn=sales,ou=mycompany,dc=com /export/home\fR
+.fi
+.in -2
+.sp
+
+次の例では、\fBzfs share\fR コマンドを使用して AD コンテナを指定します:
+.sp
+.in +2
+.nf
+$ \fBzfs share -o share.smb=on -o share.smb.ad-container=cn=sales,ou=mycompany,dc=com -o share.smb.abe=on rpool/export/home%share1\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+DN または RDN は、\fBcn=\fR、\fBou=\fR、および \fBdc=\fR 接頭辞を使用して LDAP 形式で指定する必要があります。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBcn\fR は共通名を表します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBou\fR は組織単位を表します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBdc\fR はドメインコンポーネントを表します。
+.RE
+\fBcn=\fR、\fBou=\fR、および \fBdc=\fR は属性タイプです。オブジェクトの RDN を記述するために使用される属性タイプは、ネーミング属性と呼ばれます。ADS の場合、これには次のオブジェクトクラスが含まれます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBuser\fR オブジェクトクラスの \fBcn\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+組織単位 (\fBOU\fR) オブジェクトクラスの \fBou\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBdomainDns\fR オブジェクトクラスの \fBdc\fR
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcatia=\fIboolean\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+CATIA の文字置換を実行するかどうかを指定します。CATIA V4 では、ファイル名に Windows では無効とみなされる文字を使用します。ファイル名に Windows では不正とみなされるいずれかの文字が含まれていると、Windows クライアントから CATIA V4 ファイルにアクセスできません。デフォルトでは、CATIA の文字置換は実行されません。\fI『Managing SMB File Sharing and Windows Interoperability in Oracle Solaris 11.3 』\fRを参照してください。
+.sp
+\fBcatia\fR プロパティーが \fBtrue\fR に設定されている場合は、ファイル名に次の文字置換が適用されます。
+.sp
+.in +2
+.nf
+CATIA    CATIA 
+V4 UNIX  V5 Windows
+  "      \e250   0x00a8  Dieresis
+  *      \e244   0x00a4  Currency Sign
+  /      \e370   0x00f8  Latin Small Letter O with Stroke
+  :      \e367   0x00f7  Division Sign
+  <      \e253   0x00ab  Left-Pointing Double Angle Quotation Mark
+  >      \e273   0x00bb  Right-Pointing Double Angle Quotation Mark
+  ?      \e277   0x00bf  Inverted Question Mark
+  \e      \e377   0x00ff  Latin Small Letter Y with Dieresis
+  |      \e246   0x00a6  Broken Bar
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcsc=\fR\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有のクライアント側のキャッシュポリシーを設定します。クライアント側のキャッシュはクライアントの機能であり、オフラインファイルは完全にクライアントによって管理されます。
+.sp
+.LP
+\fBcsc\fR プロパティーの有効な値は次のとおりです。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBmanual\fR \fB–\fR クライアントは、ユーザーから要求されたオフラインでの使用のために指定した共有からファイルをキャッシュすることを許可されます。ただし、ファイルごとの自動的な再統合は許可されません。\fBmanual\fR がデフォルト値です。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBauto\fR \fB–\fR クライアントは、オフラインでの使用のために指定した共有からファイルを自動的にキャッシュすることを許可され、さらにファイルごとの再統合が許可されます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBvdo\fR \fB–\fR クライアントは、オフラインでの使用のために指定した共有からファイルを自動的にキャッシュすることを許可され、ファイルごとの再統合が許可され、さらにクライアントはオフライン中でもローカルキャッシュから作業することを許可されます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBdisabled\fR \fB–\fR この共有に対するクライアント側のキャッシュは許可されません。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdfsroot=\fIboolean\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有を分散ファイルシステム (DFS) ルート共有としてマークして、通常の共有と区別します。デフォルトでは、\fBdfsroot\fR は定義されていません。\fBdfsroot\fR が \fBfalse\fR であるか、または定義されていない場合、共有は DFS ルート共有ではありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBguestok=\fR\fIboolean\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有のゲストアクセスポリシーを設定します。\fBtrue\fR に設定されている場合は、この共有に対するゲストアクセスが許可されます。\fBfalse\fR に設定されているか、または定義されていない場合、この共有に対するゲストアクセスは許可されません。このプロパティーは、デフォルトでは定義されていません。
+.sp
+\fBidmap\fR(1M) の名前ベースの規則を使用すると、\fBguest\fR を \fBguest\fR や \fBnobody\fR などの任意のローカルユーザー名にマップできます。ローカルアカウントが \fB/var/smb/smbpasswd\fR 内にパスワードを保持している場合は、そのパスワードに対してゲスト接続が認証されます。そのローカルゲストアカウントにマップされるアカウントを使用して作成された接続はすべて、ゲスト接続として処理されます。
+.sp
+次の名前ベースルールは、Windows の \fBGuest\fR ユーザーを UNIX の \fBguest\fR ユーザーにマップします。
+.sp
+.in +2
+.nf
+# \fBidmap add winname:Guest unixuser:guest\fR
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnone=\fR\fIaccess-list\fR\fR
+.ad
+.sp .6
+.RS 4n
+アクセスリストに一致するすべてのクライアントに対してアクセスを禁止することを指定します。アクセスリストがアスタリスク (\fB*\fR) である場合は例外です。この場合、\fBro\fR または \fBrw\fR は \fBnone\fR をオーバーライドできます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBro=\fR\fIaccess-list\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有を \fIaccess-list\fR に示されているクライアントに対して読み取り専用にすることを指定します。指定されたクライアントに対する \fBrw\fR サブオプションをオーバーライドします。\fIaccess-list\fR を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrw=\fR\fIaccess-list\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有を \fIaccess-list\fR に示されているクライアントに対して読み取り/書き込み可能にすることを指定します。指定されたクライアントに対する \fBro\fR サブオプションをオーバーライドします。\fIaccess-list\fR を参照してください。
+.RE
+
+.SS "アクセスリスト引数"
+.sp
+.LP
+\fIaccess-list\fR 引数は、すべてのホストを表す文字列 \fB"*"\fR か、または各コンポーネントに次の要素を任意の数含めることができるコロンで区切られたリストのどちらかです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIhostname\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホストの名前を指定します。ホストが \fBnsswitch.conf\fR ファイルの \fBhosts\fR 部分でこれらの名付けスキームを指定する場合、\fIhostname\fR は完全修飾 \fBDN\fR または \fBLDAP\fR 名である必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIネットグループ\fR\fR
+.ad
+.sp .6
+.RS 4n
+ネットグループには複数のホスト名が含まれています。ホストが \fBnsswitch.conf\fR ファイルの \fBhosts\fR 部分でこれらの名付けスキームを指定する場合、ネットグループ内の \fIhostname\fR はすべて、完全修飾 \fBDN\fR または \fBLDAP\fR 名である必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdomainname\fR\fB\&.\fR\fI suffix\fR\fR
+.ad
+.sp .6
+.RS 4n
+ドメインメンバーシップを使用するには、サーバーは \fBDN\fR または \fBLDAP\fR を使用して、ホスト名を \fBIP\fR アドレスに解決する必要があります。つまり、\fB/etc/nsswitch.conf\fR ファイルの \fBhosts\fR エントリでは、\fBnis\fR の前に \fBDN\fR または \fBldap\fR を指定する必要があります。これを行う必要があるのは、\fBDN\fR と \fBLDAP\fR だけがホストの完全なドメイン名を返すためです。
+.sp
+\fBNIS\fR などのほかのネームサービスは、ドメイン情報を返さないため、サーバー上のホスト名の解決には使用できません。たとえば、次の例は、\fBNIS\fR、\fBDN\fR、および \fBLDAP\fR が IP アドレス \fB172.16.45.9\fR のホスト名情報をどのように返すかを示しています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNIS\fR\fR
+.ad
+.RS 21n
+.rt  
+戻り値: \fBmyhost\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDN\fR または \fBLDAP\fR\fR
+.ad
+.RS 21n
+.rt  
+戻り値: \fBmyhost.mydomain.mycompany.com\fR
+.RE
+
+ドメイン名接尾辞は、接頭辞として付けられたドットによってホスト名やネットグループと区別されます。たとえば、\fBrw=.mydomain.mycompany.com\fR は、\fBmydomain.mycompany.com\fR 内のすべてのホスト名に一致します。
+.sp
+\fBrw=.\fR 表記は、1 つのドットを使用して、接尾辞のないホスト名に一致させます。この表記は \fBmydomain\fR に一致しますが、\fBmydomain.mycompany.com\fR には一致しません。この機能を使用すると、\fBDN\fR や \fBLDAP\fR ではなく、\fBNIS\fR によって解決されたホストに一致させることができます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fInetwork\fR\fR
+.ad
+.sp .6
+.RS 4n
+ネットワークまたはサブネットコンポーネントの前にアットマーク記号 (\fB@\fR) が付けられます。ネットワーク名またはドット形式のアドレスのどちらでもかまいません。
+.sp
+ネットワーク名は、\fBgetnetbyname\fR(3SOCKET) を使用してドット形式のアドレスに変換されます。たとえば、\fB=@mynet\fR は \fB=@172.16\fR または \fB=@172.16.0.0\fR と同等です。
+.sp
+ネットワーク接頭辞は、オクテット型のネットマスクを前提にしています。このネットマスクは、アドレスの下位部分にある 0 番目のオクテットから上位のオクテットまでから決定されます。ネットワーク接頭辞がバイト型でない場合、この構文では、スラッシュの区切り記号 (\fB/\fR) のあとにマスク長を明示的に指定できます。たとえば、\fB=@theothernet/17\fR または \fB=@172.16.132/22\fR とします。ここで、マスクは、対応する IP アドレス内の左端の隣接する上位ビットの数です。
+.sp
+個々の IP アドレスを指定する場合は、前に説明したのと同じ \fB@\fR 表記を使用しますが、ネットマスクの指定は使用しません。たとえば、\fB=@172.16.132.14\fR とします。
+.sp
+コロン文字 (\fB:\fR) を使用して、複数の個々の IP アドレスを区切ることができます。たとえば、\fBroot=@172.16.132.20:@172.16.134.20\fR とします。
+.RE
+
+.sp
+.LP
+接頭辞として付けられたマイナス記号 (\fB-\fR) は、\fIaccess-list\fR のそのコンポーネントへのアクセスを拒否します。このリストは、アクセスを許可または拒否する一致が見つかるまで、またはリストの最後に達するまで順番に検索されます。たとえば、ホスト \fBterra\fR が \fBengineering\fR ネットグループに含まれている場合、\fBrw=-terra:engineering\fR を指定すると \fBterra\fR へのアクセスが拒否されます。ただし、\fBrw=engineering:-terra\fR を指定すると \fBterra\fR へのアクセスが許可されます。
+.SH 使用例
+.LP
+\fB例 1 \fR共有プロパティーの設定
+.sp
+.LP
+次の例では、\fBzfs share\fR および \fBshare\fR コマンドを使用して SMB 共有を作成および公開します。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+次の例は、\fBzfs share\fR コマンドを使用して、ゲストアクセスも有効にする SMB 共有を作成および公開する方法を示しています。
+.sp
+.in +2
+.nf
+# \fBzfs share -o share.smb=on -o share.smb.guestok=on tank/home%hshare\fR
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+次の例は、\fBshare\fR コマンドを使用して共有に対するゲストアクセスを有効にする方法を示しています。
+.sp
+.in +2
+.nf
+# \fBshare -F smb -o guestok=true /tank/home\fR
+.fi
+.in -2
+.sp
+
+.RE
+.LP
+\fB例 2 \fR共有プロパティーの表示
+.sp
+.LP
+次の例は、\fBzfs get\fR コマンドと \fB/etc/dfs/sharetab\fR ファイルを使用して共有プロパティーを表示する方法を示しています。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBzfs get\fR コマンドを使用すると、\fBtank/home\fR データセットに関する共有プロパティーを表示できます。
+.sp
+.in +2
+.nf
+# \fBzfs get share.smb tank/home%hshare\fR
+NAME              PROPERTY   VALUE  SOURCE
+tank/home%hshare  share.smb  on     local
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/dfs/sharetab\fR ファイルは、システム上のすべてのアクティブな共有を示します。各共有のエントリは、プロパティーのセットとそれらの値を示します。
+.sp
+.in +2
+.nf
+# \fBgrep home /etc/dfs/sharetab\fR
+/tank/home      hshare  smb     guestok 
+.fi
+.in -2
+.sp
+
+.RE
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/dfs/sharetab\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有ファイルシステムのシステムレコード
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件service/file-system/smb
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBidmap\fR(1M)、\fBshare\fR(1M)、\fBzfs\fR(1M)、\fBzfs\fR(1M)、\fBgetnetbyname\fR(3SOCKET)、\fBnetgroup\fR(4)、\fBattributes\fR(5)

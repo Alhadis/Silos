@@ -1,0 +1,215 @@
+'\" te
+.\" Copyright (c) 1992, Sun Microsystems, Inc.
+.TH xstr 1 "1992 年 9 月 14 日" "SunOS 5.11" "ユーザーコマンド"
+.SH 名前
+xstr \- 共有文字列を実装するための C プログラムからの文字列抽出
+.SH 形式
+.LP
+.nf
+\fBxstr\fR \fB-c\fR \fIfilename\fR [\fB-v\fR] [\fB-l\fR \fIarray\fR]
+.fi
+
+.LP
+.nf
+\fBxstr\fR [\fB-l\fR \fIarray\fR]
+.fi
+
+.LP
+.nf
+\fBxstr\fR \fIfilename\fR [\fB-v\fR] [\fB-l\fR \fIarray\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBxstr\fR は、大きなプログラムのコンポーネント部分の文字列がハッシュされている \fBstrings\fR と呼ばれるファイルを管理します。これらの文字列は、この共通領域への参照で置き換えられます。これは、共有定数文字列 (読み取り専用でもある場合にもっとも有用) の実装に役立ちます。
+.sp
+.LP
+次のコマンド
+.sp
+.in +2
+.nf
+\fBexample% xstr \(mic\fR \fIfilename\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+名前が指定された C ソースから文字列を抽出し、\fB&xstr[\fR\fInumber\fR\fB]\fR 形式の式で参照される文字列を数値で置き換えます。\fBxstr\fR の適切な宣言が、ファイルの先頭に付加されます。生成される C テキストは、ファイル \fBx.c\fR 内に配置され、ついでコンパイルされます。このファイルからの文字列が \fBstrings\fR データベース内にまだ存在しない場合には、そこに配置されます。繰り返される文字列および既存の文字列の接尾辞である文字列の場合、データベースは変更されません。
+.sp
+.LP
+大きなプログラムのすべてのコンポーネントがコンパイルされたあと、次の形式のコマンドを使って、\fBxs.c\fR と呼ばれる共通の \fBxstr\fR 空間を宣言するファイルを作成できます。
+.sp
+.in +2
+.nf
+\fBexample%\fR \fBxstr\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次に \fBxs.c\fR ファイルをコンパイルして、プログラムの残りとともにロードします。可能な場合には、配列を読み取り専用 (共有) にして、空間とスワップのオーバーヘッドを節約できます。
+.sp
+.LP
+\fBxstr\fR は、単一のファイルでも使用できます。次のコマンドは、
+.sp
+.LP
+\fBexample% xstr\fR \fIfilename\fR
+.sp
+.LP
+前のコマンドと同様にファイル \fBx.c\fR および \fBxs.c\fR を作成し、同じディレクトリ内の \fBstrings\fR ファイルを使用したり、それに影響を及ぼしたりすることがありません。
+.sp
+.LP
+マクロ定義によって文字列が作られたり、実際には不要な文字列を含む条件コードがある場合は、C プリプロセッサのあとで \fBxstr\fR コマンドを実行するのが有用です。\fBxstr\fR は、引数 `\fB-\fR' が指定されているときは標準入力から読み取ります。C プリプロセッサのあとで \fBxstr\fR を実行するための適切なコマンドシーケンスを次に示します。
+.sp
+.in +2
+.nf
+example% cc \(miE name.c | xstr \(mic \(mi
+example% cc \(mic x.c
+example% mv x.o name.o
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBxstr\fR は、新しい項目が追加されないかぎり、ファイル \fBstrings\fR を処理しません。このため、\fBmake\fR(1S) は、本当に必要な場合以外は \fBxs.o\fR を再作成するのを回避できます。
+.SH オプション
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIfilename\fR\fR
+.ad
+.RS 15n
+.rt  
+C ソーステキストを \fIfilename\fR から取得します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 15n
+.rt  
+詳細: 新しいまたは重複する文字列が見つかった場所を示す進捗レポートを表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIarray\fR\fR
+.ad
+.RS 15n
+.rt  
+抽象化された文字列へのプログラム参照内で、名前付きの \fIarray\fR を指定します。デフォルトの配列名は \fBxstr\fR です。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstrings\fR\fR
+.ad
+.RS 12n
+.rt  
+文字列のデータベース
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBx.c\fR\fR
+.ad
+.RS 12n
+.rt  
+対象の C ソース
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBxs.c\fR\fR
+.ad
+.RS 12n
+.rt  
+配列 “xstr*(rq の定義用 C ソース
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/tmp/xs*\fR\fR
+.ad
+.RS 12n
+.rt  
+\fBxstr\fR \fIfilename\fR が \fBstrings\fR を処理しない場合の一時ファイル
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBmake\fR(1S)、\fBattributes\fR(5)
+.SH 使用上の留意点
+.sp
+.LP
+ある文字列がデータベース内の別の文字列の接尾辞であるが、より短い文字列が \fBxstr\fR によって最初に見つかった場合、長い方の文字列を配置すればよい場合でも、両方の文字列がデータベース内に配置されます。
+.SH 注意事項
+.sp
+.LP
+\fBxstr\fR は、すべての文字列を、元の C コードでその文字列がどのように使用されていたかに関係なく、\fB&xstr[\fR\fInumber\fR\fB]\fR 形式の式で無差別に置換することに留意してください。たとえば、\fBsizeof()\fR を使用してリテラル文字列の長さを判定するコードの場合、\fBxstr\fR は、リテラル文字列をそれとはサイズが異なる可能性の高いポインタで置き換えてしまうため、問題が発生します。
+.sp
+.LP
+この問題を回避するには:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsizeof()\fR の代わりに \fBstrlen()\fR を使用します。\fBstrlen()\fR は null バイトをカウントしないのに対し、\fBsizeof()\fR は配列のサイズ (末尾の null バイトを含む) を返すことに留意してください。\fBsizeof("\fR\fI xxx\fR\fB")\fR と真に等価なのは、\fB(strlen("\fR\fIxxx\fR\fB"))+1\fR です。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsizeof()\fR のオペランドとして \fB#define\fR を使用し、\fBdefine\fR されたバージョンを使用します。\fBxstr\fR は、\fB#define\fR 文を無視します。\fBxstr\fR をプリプロセッサ上で実行する前に、必ず \fIfilename\fR 上で実行してください。
+.RE
+.sp
+.LP
+次の形式の初期化済み文字配列を宣言する際にも問題が発生します。
+.sp
+.in +2
+.nf
+\fBchar x[] = "\fR\fIxxx\fR\fB";\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBxstr\fR は \fIxxx\fR を \fB&xstr[\fR\fInumber\fR\fB]\fR 形式の式で置き換えますが、これはコンパイルを実行しません。この問題を回避するには、\fBstatic char x[] = "xxx"\fR の代わりに \fBstatic char *x = "xxx"\fR を使用します。

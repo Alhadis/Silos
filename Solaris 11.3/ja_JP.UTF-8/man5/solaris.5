@@ -1,0 +1,574 @@
+'\" te
+.\" Copyright (c) 2009, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH solaris 5 "2015 年 7 月 14 日" "SunOS 5.11" "標準、環境、マクロ"
+.SH 名前
+solaris, ipkg \- solaris ブランドゾーン
+.SH 機能説明
+.sp
+.LP
+\fBsolaris\fR ブランドは、\fBbrands\fR(5) で説明されているブランドゾーンフレームワークを使用して、大域ゾーンにインストールされているものと同じソフトウェアがインストールされたゾーンを実行します。\fBsolaris\fR ブランドを使用するときは、大域ゾーンとの間でシステムソフトウェアの同期が常に保たれている必要があります。ゾーン内のシステムソフトウェアパッケージは、イメージパッケージングシステムを使用して管理されます。\fBpkg(5)\fR を参照してください。
+.SS "構成と管理"
+.sp
+.LP
+\fBsolaris\fR ブランドは完全ルート非大域ゾーンモデルをサポートします。システムソフトウェアの必須パッケージおよび追加パッケージのすべてが、ゾーン固有のファイルシステムにインストールされます。ゾーンは固有の \fBzfs\fR(1M) データセット上に構築される必要があり、ZFS だけがサポートされています。ZFS データセットは、ゾーンのインストール時または接続時に自動的に作成されます。ZFS データセットを作成できない場合、ゾーンのインストールや接続は行われません。
+.sp
+.LP
+次の \fBzonecfg\fR(1M) のリソースおよびプロパティーは、solaris ブランドによってサポートされていません。
+.sp
+.in +2
+.nf
+autoshutdown=suspend
+anet:id
+device:id
+net:id
+virtual-cpu
+anet:mac
+ib-vhca
+ib-vhca:port
+.fi
+.in -2
+
+.sp
+.LP
+次に示すように、\fBsolaris\fR ブランドに対してサポートされているプロパティーの固有のデフォルト値があります。
+.sp
+.in +2
+.nf
+Resource                Property                    Default Value
+global                  zonepath                    /system/zones/%{zonename}
+                        autoboot                    false
+                        global-time                 false
+                        ip-type                     exclusive
+                        auto-shutdown               shutdown
+net                     configure-allowed-address   true
+anet                    mac-address                 auto
+                        lower-link                  auto
+                        link-protection             mac-nospoof
+.fi
+.in -2
+
+.SH サブコマンド
+.sp
+.LP
+次の \fBzoneadm\fR(1M) リソースおよびプロパティーは、\fBsolaris\fR ブランドのライブゾーン再構成でサポートされています。
+.sp
+.in +2
+.nf
+anet (with exceptions stated below)
+capped-memory
+dedicated-cpu
+device
+fs
+net (with exceptions stated below)
+pool
+scheduling-class
+zone.* rctls
+.fi
+.in -2
+
+.sp
+.LP
+次の \fBzoneadm\fR(1M) リソースおよびプロパティーは、\fBsolaris\fR ブランドのライブゾーン再構成でサポートされていません。
+.sp
+.in +2
+.nf
+anet:allowed-address
+anet:configure-allowed-address
+anet:defrouter
+dataset
+file-mac-profile
+fs-allowed
+hostid
+limitpriv
+global-time
+net:allowed-address
+net:configure-allowed-address
+net:defrouter
+npiv
+tenant
+zpool
+.fi
+.in -2
+
+.sp
+.LP
+永続的な構成に一覧表示されているサポートされないリソースおよびプロパティーが、実行中のゾーンに適用された場合、そのリソースおよびプロパティーに加えたあらゆる変更は、ライブゾーン再構成によって無視されます。
+.sp
+.LP
+ライブ構成にリストされているサポートされないリソースおよびプロパティーを変更するあらゆる試行は拒否されます。
+.sp
+.LP
+\fBzoneadm\fR(1M) でサポートされている \fBsolaris\fR ブランド固有サブコマンドのオプションは次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBattach\fR [\fB-z\fR \fI ZBE\fR] [\fB-u\fR | \fB-U\fR] [\fB-c\fR \fI config_profile\fR\fB\&.xml\fR | \fIdir\fR] [\fB-x\fR \fBdestroy-orphan-zbes\fR | \fBforce-zbe-clone\fR | \fBdeny-zbe-clone\fR | \fBattach-last-booted-zbe\fR]\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fBsolaris\fR ブランドゾーンイメージをゾーンに接続します。\fBzoneadm\fR は、ゾーンの接続先となるマシン上のパッケージレベルを確認します。ゾーンが依存する大域ゾーンのパッケージがソースマシン上の依存パッケージと異なっている (リビジョン番号が異なっている) 場合、\fBzoneadm\fR はこれらの競合を報告し、接続を実行しません。 
+.sp
+接続先のシステムにある依存パッケージの方がソースシステムのものよりすべて新しい (リビジョン番号が大きい) 場合は、依存パッケージを \fB-u\fR または \fB-U\fR オプションで更新して、新しいシステムにあるパッケージのリビジョンに一致させることができます。
+.sp
+ゾーンを接続する際、複数のゾーンブート環境 (\fBZBE\fR) が存在している可能性があるため、\fBattach\fR サブコマンドでどれを接続するかを決める必要があります。選択条件は次のとおりです。最初に一致したものが使用されます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB-z\fR オプションを使用して \fBZBE\fR が指定された場合、それが選択されます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBZBE\fR を指定するために \fB-x attach-last-booted\fR が使用された場合は、最後にブートされた zbe が選択されます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+大域ゾーンブート環境に関連付けられたアクティブな \fBZBE\fR が 1 つしかない場合、それが選択されます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+アクティブな \fBZBE\fR が 1 つしかない場合、それが選択されます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBZBE\fR が 1 つしかない場合、それが選択されます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+最後にブートされた ZBE が選択されます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+大域ゾーンブート環境に関連付けられたZBEが 1 つしかない場合、それが選択されます。
+.RE
+選択された \fBZBE\fR が別の大域ゾーンブート環境に関連付けられている場合、選択された \fBZBE\fR が接続されます。この動作は、\fB-x force-zbe-clone\fR を使用すると変更できます。
+.sp
+選択された \fBZBE\fR がどの大域ゾーンブート環境にも関連付けられていない場合 (孤立したブート環境)、選択された \fBZBE\fR のクローンが作成され、選択された \fBZBE\fR のクローンが接続されます。孤立した \fBZBE\fR はそのまま存在します。
+.sp
+接続時に孤立した \fBZBE\fR をすべて破棄するには、次を使用します。
+.sp
+.in +2
+.nf
+\fB-x destroy-orphan-zbes\fR
+.fi
+.in -2
+.sp
+
+孤立した \fBZBE\fR のクローニングを回避するには、次を使用します。
+.sp
+.in +2
+.nf
+\fB-x deny-zbe-clone\fR
+.fi
+.in -2
+.sp
+
+\fB-x\fR オプションの詳細は、次を参照してください。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+ゾーン内にある最小限の数のパッケージを更新して、大域ゾーンにインストールされているパッケージとの互換性をゾーンのパッケージに持たせます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-U\fR\fR
+.ad
+.sp .6
+.RS 4n
+ゾーン内にあるすべてのパッケージを、大域ゾーンにインストールされているパッケージと互換性のある最新のバージョンに更新します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fIZBE\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された既存のゾーンブート環境を接続します。指定されたゾーンブート環境が異なる大域ゾーンに関連付けられている場合は、指定された \fBZBE\fR のクローンが作成され、\fBZBE\fR のクローンが接続されます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fBdestroy-orphan-zbes\fR\fR
+.ad
+.sp .6
+.RS 4n
+どの大域ゾーンにも関連付けられていないゾーンブート環境をすべて破棄します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fBforce-zbe-clone\fR\fR
+.ad
+.sp .6
+.RS 4n
+選択されたゾーンブート環境のクローンを強制的に作成します。新しくクローン作成されたブート環境が、ゾーンへの接続対象として選択されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fBdeny-zbe-clone\fR\fR
+.ad
+.sp .6
+.RS 4n
+選択されたゾーンブート環境のクローニングをオーバーライドします。このオプションにより、(デフォルトの動作がクローン作成の場合に) クローニングされず、選択された \fBzbe\fR がゾーンに接続されます。それ以外の場合は無効です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fBattach-last-booted-zbe\fR\fR
+.ad
+.sp .6
+.RS 4n
+最後にブートされたゾーンブート環境を選択します。選択されたゾーンブート環境が大域ゾーンに関連付けられていない場合、そのクローンが作成されます。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBclone\fR [\fB-c\fR \fI config_profile\fR\fB\&.xml\fR | \fIdir\fR] \fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIconfig_profile\fR\fB .xml\fR | \fIdir\fR\fR
+.ad
+.sp .6
+.RS 4n
+リポジトリからのインストール後に適用するプロファイルまたはプロファイルのディレクトリを指定します。
+.sp
+すべてのプロファイルは、\fB\&.xml\fR 拡張子を持つ必要があります。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstall\fR [\fB-m\fR \fI manifest.xml\fR] [\fB-c\fR \fIconfig_profile \fR\fB\&.xml\fR | \fIdir\fR]\fR
+.ad
+.br
+.na
+\fB\fR
+.ad
+.br
+.na
+\fB\fBinstall\fR \fB- a\fR \fIunified_archive\fR [\fB-z\fR \fI archived_zone\fR] \fB[\fB-x\fR\fR <\fI cert|cacert|key\fR>=\fIpath\fR]\fR
+.ad
+.br
+.na
+\fB ... [\fB-U\fR] [\fB-p\fR|\fB-u\fR] [\fB- s\fR | \fB-v\fR] [\fB-c\fR \fIconfig_profile \fR\fB\&.xml\fR | \fIdir\fR]\fR
+.ad
+.br
+.na
+\fB\fR
+.ad
+.br
+.na
+\fB\fB install\fR <\fB-a\fR \fIarchive\fR | \fB- d\fR \fIpath\fR> <\fB-p\fR|\fB- u\fR> [-\fB-U\fR] [\fB-s\fR | \fB-v\fR] [\fB-c\fR \fIconfig_profile\fR\fB\&.xml \fR | \fIdir\fR]\fR
+.ad
+.sp .6
+.RS 4n
+\fBsolaris\fR ブランドのインストーラでは、ゾーンをソフトウェアリポジトリからインストールすることも、同じリリースが稼働しているインストール済みシステムのイメージからインストールすることもサポートしています。これは、\fBcpio\fR(1)、\fBpax\fR(1) \fBxustar\fR、または ZFS アーカイブにできます。\fBcpio\fR または ZFS アーカイブは、\fBgzip\fR または \fBbzip2\fR で圧縮できます。また、イメージとして、システムのルートツリーの最上位パス、または既存のゾーンパスも使用できます。 
+.sp
+\fB-a\fR オプションも \fB-d\fR オプションも指定されていない場合、ゾーンはリポジトリからインストールされます。ゾーン内の追加のパッケージをインストールする場合、デフォルトのゾーンマニフェスト \fB/usr/share/auto_install/manifest/zone_default.xml\fR をコピーして、必要なパッケージを含めるように編集できます。この変更されたマニフェストは、\fB-m\fR オプションを付けてインストールするように指定してください。
+.sp
+ゾーンをシステムまたはゾーンイメージからインストールするには、\fB-a\fR または \fB-d\fR オプションのどちらかが必要です。必要に応じて、イメージのアクティブな ZBE 内のソフトウェアは、大域ゾーンのパッケージとの互換性を保つために必要な最小限の変更で更新されます。\fB-U\fR オプションが指定されている場合は、イメージのアクティブな ZBE 内のすべてのソフトウェアが、アクティブな ZBE と互換性がある最新バージョンに更新されます。\fB-a\fR または \fB-d\fR オプションのどちらかが使用されている場合は、\fB-u\fR または \fB-p\fR オプションのどちらかも必要になります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fIarchive\fR\fR
+.ad
+.sp .6
+.RS 4n
+統合されたアーカイブのパス、あるいはファイル、http、または https URI。あるいは、インストールされた大域ゾーンまたは非大域ゾーンの \fBcpio\fR(1)、\fBpax\fR(1) \fBxustar\fR、または ZFS アーカイブのパス。
+.sp
+統合されたアーカイブが指定されている場合は、\fB-z\fR オプションを使用してインストール対象のアーカイブゾーンを選択できます。統合されたアーカイブがセキュアな Web サーバー (https URI) 上にある場合は、\fB-x\fR を使用して、PEM エンコードされた証明書、CA 証明書、および鍵 (あるいはそのいずれか) へのパスを指定できます。統合されたアーカイブからのインストール時に、\fB-u\fR も \fB-p\fR も指定しない場合は、そのアーカイブが復旧用のアーカイブであれば、デフォルトの \fB-p\fR が暗黙に使用されます。それ以外の場合は、\fB-u\fR が暗黙に使用されます。
+.sp
+ZFS アーカイブに複数のブート環境が含まれている場合は、アクティブなブート環境がインストールされます。どのブート環境がアクティブなブート環境なのかをインストールが決定できない場合、インストールは抽出されたブート環境の一覧を表示し、\fB-z\fR オプションを使用した attach コマンドで特定のブート環境を接続するように提案します。
+.sp
+\fBcpio\fR および ZFS アーカイブは、\fBgzip\fR または \fBbzip2\fR で圧縮できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIconfig_profile\fR\fB .xml\fR | \fIdir\fR\fR
+.ad
+.sp .6
+.RS 4n
+リポジトリからのインストール後に適用するプロファイルまたはプロファイルのディレクトリを指定します。
+.sp
+すべてのプロファイルは、\fB\&.xml\fR 拡張子を持つ必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsolaris\fR ブランドゾーンのゾーンパスまたは Solaris 11 大域ゾーンのルートディレクトリのゾーンパスディレクトリへのパス。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fImanifest.xml\fR\fR
+.ad
+.sp .6
+.RS 4n
+Automated Installer に対して指定されるマニフェストファイル。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+アーカイブまたはパスからゾーンをインストールしたあと、システム構成を保持します。統合されたアーカイブからインストールする場合、そのアーカイブが復旧用のアーカイブであれば、\fB-p\fR が暗黙に使用されますが、\fB-u\fR でそれをオーバーライドすることはできません。
+.sp
+.in +2
+.nf
+-x cert=/path/cert.pem
+-x cacert=/path/cacert.pem
+-x key=/path/key.pem
+.fi
+.in -2
+
+指定された証明書、CA 証明書、および鍵 (あるいはそのいずれか) を、統合されたアーカイブへの https アクセスに使用します。
+.sp
+アーカイブが復旧用のアーカイブでない場合、アーカイブにシステム構成が存在しないため、\fB-p\fR は無効です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.sp .6
+.RS 4n
+サイレントインストールします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+システムをインストールしたあと、構成解除します。統合されたアーカイブからインストールする場合で、そのアーカイブが復旧用のアーカイブでなければ、これがデフォルトです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-U\fR\fR
+.ad
+.sp .6
+.RS 4n
+ゾーン内にあるすべてのパッケージを、大域ゾーンにインストールされているパッケージと互換性のある最新のバージョンに更新します。\fB-U\fR オプションは、\fB-a\fR または \fB-d\fR オプションのどちらかが使用されている場合にのみ使用できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+インストールプロセスの詳細情報を出力します。
+.RE
+
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fR大域ゾーンから \fBsolaris\fR ゾーンへの変換
+.sp
+.LP
+次の例は、大域ゾーンのアーカイブを作成したあと、そのアーカイブを使用して非大域ゾーンを構成およびインストールする方法を示しています。インストールプロセスでは、大域ゾーンのイメージを、非大域ゾーンとして機能できるように変換します。このプロセスは一般に \fBP2V\fR (物理から仮想) と呼ばれています。
+
+.sp
+.LP
+アーカイブ内のデータが無効にならないようにするには、アーカイブの作成前にソースシステム上のアプリケーションを停止することをお勧めします。これを行わないと、ゾーンがインストールされたあとで、アプリケーションデータの同期化が必要になる場合があります。
+
+.sp
+.LP
+最初に、ソースシステムの復旧用のアーカイブを作成します。これは、ソースシステムに非大域ゾーンがインストールされていないことを前提としています。
+
+.sp
+.in +2
+.nf
+root@web-1# \fBarchiveadm create --recovery /net/images/web-1.uar\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次に、そのアーカイブを使用して、ターゲットシステムにゾーンを構成します。場合によっては、その構成をさらにカスタマイズする必要があります。\fBzonecfg\fR(1M) に記載されている例を参照してください。最後に、そのアーカイブからゾーンをインストールします。
+
+.sp
+.in +2
+.nf
+root@t4-1# \fBzonecfg -z web-1\fR
+Use 'create' to begin configuring a new zone.
+zonecfg:web-1> \fBcreate -a /net/images/web-1.uar\fR
+zonecfg:web-1> \fBset zonepath=/zones/web-1\fR
+zonecfg:web-1> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+対話モードを使用しないことを優先する場合は、次のコマンドを使用できます。
+
+.sp
+.in +2
+.nf
+# \fBzonecfg -z web-1 "create -a /net/images/web-1.uar; set zonepath=/zones/web-1"\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+ソースシステムと新しくインストールしたゾーンの両方に同じ IP アドレスがあるか、その他の競合の可能性がある場合は、1 回につき、そのどちらかのみを実行するようにします。
+
+.sp
+.LP
+最後に、\fBgzip\fR で圧縮された ZFS レプリケーションストリームアーカイブを生成します。この例では、これはリモート NFS サーバーに格納されています。
+
+.sp
+.in +2
+.nf
+# zfs send -R rpool@p2v | gzip > /net/somehost/p2v/p2v.zfs.gz
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fR統合されたアーカイブを使用したゾーンの移行
+.sp
+.LP
+アーカイブ内のデータが無効にならないようにするには、アーカイブの作成前にソースゾーン上のアプリケーションを停止するか、そのゾーンをシャットダウンすることをお勧めします。これを行わないと、ゾーンがインストールされたあとで、アプリケーションデータの同期化が必要になる場合があります。
+
+.sp
+.LP
+最初に、そのゾーンの復旧用のアーカイブを作成します。これは大域ゾーンからもっともよく行われます。それがゾーン内で行われると、そのゾーンをアーカイブから構成できなくなります。
+
+.sp
+.in +2
+.nf
+root@t4-1# \fBarchiveadm create -r -z web-1 /net/images/v2v/web-1.uar\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次に、そのアーカイブを使用して、ターゲットシステムにゾーンを構成します。
+
+.sp
+.in +2
+.nf
+root@t4-2# \fBzonecfg -z web-1 create -a /net/images/v2v/web-1.uar\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+最後に、そのアーカイブからゾーンをインストールします。
+
+.sp
+.in +2
+.nf
+root@t4-2# \fBzoneadm -z web-1 install -a /net/images/v2v/web-1.uar\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+必ずソースシステムでゾーンをシャットダウンしてから、ターゲットシステムでそれをブートしてください。
+
+.SH 属性
+.sp
+.LP
+次の属性については、\fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/zones
+_
+インタフェースの安定性不確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBcpio\fR(1), \fBpax\fR(1), \fBarchiveadm\fR(1M), \fBbeadm\fR(1M), \fBsysconfig\fR(1M), \fBzfs\fR(1M), \fBzlogin\fR(1), \fBzonename\fR(1), \fBzoneadm\fR(1M), \fBzonecfg\fR(1M), \fBattributes\fR(5), \fBbrands\fR(5), \fBprivileges\fR(5), \fBzones\fR(5)
+.sp
+.LP
+\fBpkg(5)\fR、IPS 統合で利用可能

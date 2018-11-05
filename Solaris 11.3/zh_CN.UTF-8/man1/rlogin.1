@@ -1,0 +1,368 @@
+'\" te
+.\"  Copyright 1989 AT&T
+.\" Copyright © 2008, 2010, Oracle and/or its affiliates.All rights reserved.
+.TH rlogin 1 "2010 年 4 月 1 日" "SunOS 5.11" "用户命令"
+.SH 名称
+rlogin \- 远程登录
+.SH 用法概要
+.LP
+.nf
+\fBrlogin\fR [\fB-8EL\fR] [\fB-e\fIc\fR\fR ] [\fB-A\fR] [\fB-K\fR] [\fB-x\fR] [\fB-PN\fR | \fB-PO\fR] [\fB-f\fR | \fB-F\fR] [\fB-a\fR] 
+     [\fB-l\fR \fIusername\fR] [\fB-k\fR \fIrealm\fR] \fIhostname\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBrlogin\fR 实用程序会在终端与名为 \fIhostname\fR 的远程计算机之间建立一个远程登录会话。用户可选择使用 Kerberos V5 对 rlogin 会话执行 Kerberos 验证，并保护传输的数据。
+.sp
+.LP
+主机名列在 \fIhosts\fR 数据库中，而后者可以包含在 \fB/etc/hosts\fR 文件、网络信息服务 (\fBNIS\fR) \fBhosts\fR 映射、Internet 域名服务器或以上几项的组合之中。每台主机都有一个正式名称（数据库条目中的第一个名称），也可以有一个或多个别名。正式名称或别名都可以在 \fIhostname\fR 中指定。
+.sp
+.LP
+用户可选择采用 Kerberos V5 进行验证的安全 rlogin 会话。此外也可以对会话数据进行加密。rlogin 会话可使用以下 Kerberos 特定选项来执行 Kerberos 验证：\fB-A\fR、\fB-PN\fR 或 \fB-PO\fR、\fB-x\fR、\fB-f\fR 或 \fB-F\fR 以及 \fB-k\fR \fIrealm\fR。上述部分选项（\fB-A\fR、\fB-x\fR、\fB-PN\fR 或 \fB-PO\fR 以及 \fB-f\fR 或 \fB-F\fR）也可以在 \fBkrb5.conf\fR(4) 的 \fB [appdefaults]\fR 部分中指定。这些选项的用法及其预期行为将在下面的“选项”部分中讨论。使用 Kerberos 验证时，帐户授权将通过 \fBkrb5_auth_rules\fR(5) 中的规则控制。如果此授权失败，则仅当在命令行上显式使用 \fB-PO\fR 选项，或者在 \fBkrb5.conf\fR(4) 中指定了该选项时，才会出现使用 \fBrhosts\fR 回退到常规 \fB rlogin\fR 这一情况。另请注意，\fB-PN\fR 或 \fB-PO\fR、\fB-x\fR、\fB-f\fR 或 \fB-F\fR 以及 \fB-k\fR \fIrealm\fR 选项只是 \fB-A\fR 选项的超集。
+.sp
+.LP
+远程终端类型与环境 \fBTERM\fR 变量中所指定的本地终端类型相同。终端或窗口大小也会复制到远程系统中，前提是服务器支持该选项。大小的更改也会反映出来。所有回显都发生在远程站点，因此远程登录对用户是透明的（延迟除外）。使用 Ctrl-S 和 Ctrl-Q 控制流量以及在中断时刷新输入和输出都会得到正确处理。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-8\fR\fR
+.ad
+.RS 15n
+.rt  
+跨网传递八位数据，而非七位数据。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 15n
+.rt  
+通过发送一个空本地用户名，强制远程计算机要求用户输入口令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.RS 15n
+.rt  
+显式启用 Kerberos 验证，并信任用于访问控制的 \fB\&.k5login\fR 文件。如果服务器端的 \fBin.rlogind\fR(1M) 成功执行了授权检查，且 \fB\&.k5login\fR 文件允许访问，则允许用户在不提供口令的情况下登录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fIc\fR\fR
+.ad
+.RS 15n
+.rt  
+为用来与远程主机断开连接的行指定一个不同的转义符 \fIc\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-E\fR\fR
+.ad
+.RS 15n
+.rt  
+防止任何字符被识别为转义符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.RS 15n
+.rt  
+将本地凭据（Kerberos 票证授予票证）的副本转发给远程系统。这是一个不可转发的票证授予票证。如果需要向远程主机上其他使用 Kerberos 验证的网络服务验证自己的身份，则必须转发一个票证授予票证。例如，您在远程主机上的起始目录是通过 Kerberos V5 挂载的 \fBNFS\fR。在此情况下，如果未转发本地凭据，您将无法访问起始目录。此选项与 \fB-F\fR 选项互斥。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fR
+.ad
+.RS 15n
+.rt  
+将本地凭据（Kerberos 票证授予票证）的可转发副本转发给远程系统。\fB-F\fR 选项提供的功能是 \fB-f\fR 选项所提供功能的超集。例如，使用 \fB-f\fR 选项时，如果在连接到远程主机之后试图调用带 \fB-f\fR 或 \fB-F\fR 选项的 \fB/usr/bin/ftp\fR、\fB/usr/bin/telnet\fR、\fB/usr/bin/rlogin\fR 或 \fB/usr/bin/rsh\fR，则这些操作会失败。因此，您无法将单网络登录信任用到一个系统以外。此选项与 \fB-f\fR 选项互斥。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR \fIrealm\fR\fR
+.ad
+.RS 15n
+.rt  
+使 \fBrlogin\fR 获取用于 \fIrealm\fR（而非 \fBkrb5.conf\fR(4) 所确定的远程主机的领域）中的远程主机的票证。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-K\fR\fR
+.ad
+.RS 15n
+.rt  
+此选项会显式禁用 Kerberos 验证。它可用来覆盖 \fBkrb5.conf\fR(4) 中的 \fBautologin\fR 变量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIusername\fR\fR
+.ad
+.RS 15n
+.rt  
+为远程登录指定不同的 \fIusername\fR。如果未使用此选项，则所使用的远程用户名与本地用户名相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR\fR
+.ad
+.RS 15n
+.rt  
+允许 rlogin 会话在 “\fBlitout\fR” 模式下运行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-PN\fR\fR
+.ad
+.br
+.na
+\fB\fB-PO\fR\fR
+.ad
+.RS 15n
+.rt  
+显式请求新版 (\fB-PN\fR) 或旧版 (\fB-PO\fR) Kerberos "\fBrcmd\fR" 协议。新协议避免了旧协议中常见的许多安全问题，安全性大幅提升，但它无法与早期的 (MIT/SEAM) 服务器互操作。缺省情况下会使用新协议，除非使用这些选项或通过使用 \fBkrb5.conf\fR(4) 进行了显式指定。使用旧 "\fBrcmd\fR" 协议时，如果 Kerberos 验证失败，系统会回退到常规的非 Kerberos \fBrlogin\fR。使用更安全的新 "\fBrcmd\fR" 协议时不会发生这种情况。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.RS 15n
+.rt  
+为通过 rlogin 会话的所有数据启用 \fBDES\fR 加密。这可缩短响应时间，并提高 \fBCPU\fR 利用率。
+.RE
+
+.SS "转义序列"
+.sp
+.LP
+键入的以波浪号字符 (\fB~\fR) 开头的行即“转义序列”。转义符可通过 \fB-e\fR 选项更改。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB~.\fR\fR
+.ad
+.RS 10n
+.rt  
+与远程主机断开连接。与远程端断开连接和注销不同，因为本地主机在断开连接时不会向远程端发送警告信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB~susp\fR\fR
+.ad
+.RS 10n
+.rt  
+暂停登录会话，但仅在使用具备作业控制功能的 shell 时进行。\fBsusp\fR 是“暂停”字符，通常为 Ctrl-Z。请参见 \fBtty\fR(1)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB~dsusp\fR\fR
+.ad
+.RS 10n
+.rt  
+在登录中途暂停输入，但是仍可看到输出（仅在使用具备作业控制功能的 shell 时）。\fBdsusp\fR 是“延迟暂停”字符，通常为 Ctrl-Y。请参见 \fBtty\fR(1)。
+.RE
+
+.SH 操作数
+.sp
+.ne 2
+.mk
+.na
+\fB\fIhostname\fR\fR
+.ad
+.RS 12n
+.rt  
+\fIrlogin\fR 建立远程登录会话时所在的远程计算机。
+.RE
+
+.SH 用法
+.sp
+.LP
+对于使用 Kerberos 验证的 rlogin 会话，每个用户都可在其起始目录中的 \fB\&.k5login\fR 文件中拥有一个专用验证列表。此文件中的每一行均应包含一个 \fIprincipal\fR/\fIinstance@realm\fR 格式的 Kerberos 主体名称。如果存在一个 \fB~/.k5login\fR 文件，则当且仅当发起方用户通过了 \fB~/.k5login\fR 文件中所指定的某个主体的验证时，才会授予其对该帐户的访问权限。否则，当且仅当用户的已验证主体名称可以使用 \fIauthenticated-principal-name\fR -> \fIlocal-user-name\fR 映射规则映射至本地帐户名称时，才会授予发起方用户对该帐户的访问权限。\fB\&.k5login\fR 文件（用于访问控制）在 Kerberos 验证完成后才生效。
+.sp
+.LP
+对于非安全 rlogin 会话，各个远程计算机可拥有一个名为 \fB/etc/hosts.equiv\fR 的文件，其中包含一个与其共享用户名的可信主机的名称列表。在本地计算机和远程计算机上拥有相同用户名的用户无需输入口令即可从远程计算机的 \fB/etc/hosts.equiv\fR 文件中所列的计算机执行 \fBrlogin\fR 操作。各个用户可使用其起始目录中的 \fB\&.rhosts\fR 文件建立一个效果类似的专用列表。此文件的每一行都包含两个名称，即主机名和用户名，而且二者由空格隔开。远程用户 \fB\&.rhosts\fR 文件中的条目允许登录到 \fIhostname\fR 的名为 \fIusername\fR 的用户像远程用户一样，无需输入口令即可登录远程计算机。如果远程计算机上的 \fB/etc/hosts.equiv\fR 文件中不含该本地主机的名称，且远程用户的 .\fBrhosts\fR 文件中不含本地用户名和主机名，则远程计算机将提示用户输入口令。\fB/etc/hosts.equiv\fR 和 \fB\&.rhosts\fR 文件中所列的主机名必须是 \fBhosts\fR 数据库中所列的正式主机名。不可在这些文件中使用别名。
+.sp
+.LP
+出于安全原因，\fB\&.rhosts\fR 文件必须由远程用户或 root 用户所有。
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/passwd\fR\fR
+.ad
+.RS 23n
+.rt  
+包含用户帐户的信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/hosts/*\fR\fR
+.ad
+.RS 23n
+.rt  
+面向命令的 \fIhostname\fR 版本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/hosts.equiv\fR\fR
+.ad
+.RS 23n
+.rt  
+包含共享用户名的可信主机名列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/nologin\fR\fR
+.ad
+.RS 23n
+.rt  
+向尝试在计算机关机时登录的用户显示的消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.rhosts\fR\fR
+.ad
+.RS 23n
+.rt  
+可信主机名/用户名组合的专用列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.k5login\fR\fR
+.ad
+.RS 23n
+.rt  
+包含允许访问的 Kerberos 主体的文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/krb5/krb5.conf\fR\fR
+.ad
+.RS 23n
+.rt  
+Kerberos 配置文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/hosts\fR\fR
+.ad
+.RS 23n
+.rt  
+主机数据库。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性service/network/network-clients
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBrsh\fR(1)、\fBstty\fR(1)、\fBtty\fR(1)、\fBin.rlogind\fR(1M)、\fBhosts\fR(4)、\fBhosts.equiv\fR(4)、\fBkrb5.conf\fR(4)、\fBnologin\fR(4)、\fBattributes\fR(5)、\fBkrb5_auth_rules\fR(5)
+.SH 诊断
+.sp
+.LP
+以下消息表明计算机正在关闭，且登录已禁用：
+.sp
+.in +2
+.nf
+NO LOGINS: System going down in \fIN\fR \fBminutes\fR
+.fi
+.in -2
+.sp
+
+.SH 附注
+.sp
+.LP
+将系统列在 \fBhosts.equiv\fR 中时，它必须具有与本地安全相当的安全性。将不安全的系统列在 \fBhosts.equiv\fR 中可能会危及整个系统的安全性。
+.sp
+.LP
+网络信息服务 (\fBNIS\fR) 以前称作 Sun Yellow Pages (\fBYP\fR)。两者的功能相同。仅名称发生更改。
+.sp
+.LP
+此实现仅可使用 \fBTCP\fR 网络服务。

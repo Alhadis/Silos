@@ -1,0 +1,875 @@
+'\" te
+.\" Copyright (c) 2008, 2012, Oracle and/or its affiliates.All rights reserved.
+.\" Portions Copyright (c) 1982-2007 AT&T Knowledge Ventures
+.TH login 1 "2012 年 5 月 22 日" "SunOS 5.11" "用户命令"
+.SH 名称
+login \- 登录系统
+.SH 用法概要
+.LP
+.nf
+\fBlogin\fR [\fB-p\fR] [\fB-d\fR \fIdevice\fR] [\fB-R\fR \fIrepository\fR] [\fB-s\fR \fIservice\fR] 
+     [\fB-t\fR \fIterminal\fR] [\fB-u\fR \fIidentity\fR] [\fB-U\fR \fIruser\fR] 
+     [\fB-h\fR \fIhostname\fR \fI[terminal]\fR | \fB-r\fR \fIhostname\fR] 
+     [\fIname\fR [\fIenviron\fR]...]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBlogin\fR 命令用于每个终端会话的开始，可向系统标识用户的身份。当上一个用户通过发出 \fBexit\fR 命令终止登录 shell 后，下一个用户首次建立连接时，系统将调用 \fBlogin\fR。
+.sp
+.LP
+login 无法作为命令来调用，除非由超级用户执行。
+.sp
+.LP
+如果 \fBlogin\fR 作为命令来调用，它必须替换初始命令解释程序。要以这种方式调用 \fBlogin\fR，请键入：
+.sp
+.in +2
+.nf
+\fBexec login\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+（从初始 shell 中）。C shell 和 Korn shell 都有其自己的 \fBlogin\fR 内置命令。有关登录内置命令和使用方法的说明，请参见 \fBksh\fR(1)、\fBksh88\fR(1) 和 \fBcsh\fR(1)。
+.sp
+.LP
+如果适用，\fBlogin\fR 会要求提供您的用户名（如果未作为参数提供）和口令。当您键入口令时请尽可能关闭回显，从而不会出现在该会话的写入记录中。
+.sp
+.LP
+如果在登录过程中出现任何错误，将列显以下消息：
+.sp
+.in +2
+.nf
+Login incorrect
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+并显示新的登录提示。如果进行了五次错误的登录尝试，所有五次尝试都可以记录在 \fB/var/adm/loginlog\fR（如果存在）中。\fBTTY\fR 行已删除。
+.sp
+.LP
+如果已打开口令有效期功能，并且口令已到期（有关更多信息，请参见 \fBpasswd\fR(1)），将强制用户更改口令。在这种情况下，将参考 \fB/etc/nsswitch.conf\fR 文件以确定口令信息库（请参见 \fBnsswitch.conf\fR(4)）。仅对以下五种情况支持口令更新配置。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBpasswd: files\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBpasswd: files nis\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBpasswd: compat\fR (==> files nis)
+.RE
+.sp
+.LP
+配置不符合要求会阻止用户登录系统，因为 \fBpasswd\fR(1) 会失败。如果未能在一定时间内成功完成登录，则可能已无提示地断开连接。
+.sp
+.LP
+成功登录后，将更新记帐文件。设备所有者、组和权限将根据 \fB/etc/logindevperm\fR 文件的内容进行设置，并将输出您上次登录的时间（请参见 \fBlogindevperm\fR(4)）。
+.sp
+.LP
+用户 ID、组 ID、辅助组列表和工作目录将初始化，并启动命令解释程序。
+.sp
+.LP
+基本\fI环境\fR会如下进行初始化：
+.sp
+.in +2
+.nf
+HOME=\fIyour-login-directory\fR
+LOGNAME=\fIyour-login-name\fR
+PATH=/usr/bin:
+SHELL=\fIlast-field-of-passwd-entry\fR
+MAIL=/var/mail/
+TZ=\fItimezone-specification\fR
+.fi
+.in -2
+
+.sp
+.LP
+对于 Bourne shell 和 Korn shell 登录，shell 将执行 \fB/etc/profile\fR 和 \fB$HOME/.profile\fR（如果存在）。
+.sp
+.LP
+对于 \fBksh\fR Korn shell，交互式 shell 将执行 \fB/etc/ksh.kshrc\fR，后跟 \fBENV\fR 环境变量指定的文件。如果未设置 \fB$ENV\fR，将缺省为 \fB$HOME/.kshrc\fR。对于 \fBksh\fR 和 \fB/usr/xpg4/bin/sh\fR Korn Shell，交互式 shell 将执行 \fB$ENV\fR 指定的文件（没有缺省值）。 
+.sp
+.LP
+对于 C shell 登录，shell 将执行 \fB/etc/.login\fR、\fB$HOME/.cshrc\fR 和 \fB$HOME/.login\fR。缺省 \fB/etc/profile\fR 和 \fB/etc/.login\fR 文件将检查配额（请参见 \fBquota\fR(1M)），输出 \fB/etc/motd\fR，并检查邮件。如果文件 \fB$HOME/.hushlogin\fR 存在，将不会输出任何消息。命令解释程序的名称将设置为 \fB-\fR（短横线），后跟该解释程序路径名称的最后组成部分，如 \fB-sh\fR。
+.sp
+.LP
+如果口令文件中的 \fIlogin-shell\fR 字段（请参见 \fBpasswd\fR(4)）为空，则使用缺省命令解释程序 \fB/usr/bin/sh\fR。如果此字段是 *（星号），则指定的目录将成为根目录。此时，将在新的级别重新执行 \fBlogin\fR，该级别必须拥有其自己的根结构。
+.sp
+.LP
+执行时或 \fBlogin\fR 请求您的登录名时，通过向 \fBlogin\fR 提供其他参数可以扩展或修改环境。参数可以采取 \fIxxx\fR 或 \fIxxx=yyy\fR 的形式。没有 \fB=\fR（等号）的参数将以下列形式置于环境中：
+.sp
+.in +2
+.nf
+L\fIn=xxx\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+其中，\fIn\fR 是以 \fB0\fR 开始的数字，并且每次需要一个新的变量名称时将递增。包含 \fB=\fR（等号）的参数可不加修改地置于环境中。如果它们已出现在环境中，将替换较旧的值。
+.sp
+.LP
+有两个例外：变量 \fBPATH\fR 和 \fBSHELL\fR 无法更改。这可以防止登录到受限 shell 环境的人员派生不受限的二级 shell。\fBlogin\fR 了解简单的单字符引用约定。在字符前键入 \fB\\fR （反斜杠）即可引用该字符，并允许包含空格和制表符这样的字符。
+.sp
+.LP
+此外，通过向 \fBlogin\fR 提供 \fB-p\fR 标志可以传递当前环境。此标志表示应该将当前定义的所有环境变量传递到新的环境（如果可能）。此选项不会绕过任何上述的环境变量限制。如果变量通过这两种方法传递，将优先选择登录行上指定的环境变量。
+.sp
+.LP
+要启用 root 用户远程登录，请编辑 \fB/etc/default/login\fR 文件，在 \fBCONSOLE=/dev/console\fR 条目前插入 \fB#\fR（井号）。请参见“文件”部分。
+.SH 安全
+.sp
+.LP
+对于文件（\fBpasswd\fR(4) 和 \fBshadow\fR(4)）名称服务或 \fBldap\fR 名称服务中的帐户，当使用 \fBenableShadowUpdate true\fR 配置时，如果连续的失败登录尝试次数等于或超出配置的值，帐户可以配置为自动锁定。请参见 \fBldapclient\fR(1M)、\fBuser_attr\fR(4)、\fBpolicy.conf\fR(4) 和 \fBpam_unix_auth\fR(5)。
+.sp
+.LP
+\fBlogin\fR 命令使用 \fBpam\fR(3PAM) 进行验证、帐户管理、会话管理和口令管理。列在 \fB/etc/pam.conf\fR 或 \fB/etc/pam.d/login\fR 中的 \fBPAM\fR 配置策略可指定要用于 \fBlogin\fR 的模块。以下是 \fBpam.conf\fR 文件的一部分，其中具有 \fBlogin\fR 命令使用 UNIX 验证、帐户管理和会话管理模块的相应条目：
+.sp
+.in +2
+.nf
+login  auth       required  pam_authtok_get.so.1
+login  auth       required  pam_dhkeys.so.1
+login  auth       required  pam_unix_auth.so.1
+login  auth       required  pam_dial_auth.so.1
+
+login  account    requisite pam_roles.so.1
+login  account    required  pam_unix_account.so.1
+
+login  session    required  pam_unix_session.so.1
+.fi
+.in -2
+
+.sp
+.LP
+\fB/etc/pam.d/\fR 中的等效 PAM 配置将是 \fB/etc/pam.d/login\fR 中的以下条目：
+.sp
+.in +2
+.nf
+auth     required  pam_authtok_get.so.1
+auth     required  pam_dhkeys.so.1
+auth     required  pam_unix_auth.so.1
+auth     required  pam_dial_auth.so.1
+account  requisite pam_roles.so.1
+account  required  pam_unix_account.so.1
+
+session  required  pam_unix_session.so.1
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fB/etc/pam.conf\fR 中的口令管理栈通常如下所示：
+.sp
+.in +2
+.nf
+other  password   required   pam_dhkeys.so.1
+other  password   requisite  pam_authtok_get.so.1
+other  password   requisite  pam_authtok_check.so.1
+other  password   required   pam_authtok_store.so.1
+.fi
+.in -2
+
+.sp
+.LP
+如果 \fB/etc/pam.conf\fR 和 \fB/etc/pam.d/\fR\fIservice\fR 中没有 PAM 服务的条目，则将使用 \fB/etc/pam.conf\fR 中“”其他服务的条目。如果 \fB/etc/pam.conf \fR 中没有 “other” 服务的条目，那么将使用 \fB/etc/pam.d/other\fR 中的条目。如果列出多个验证模块，将提示用户输入多个口令。
+.sp
+.LP
+当通过 \fBrlogind\fR 或 \fBtelnetd\fR 调用 \fBlogin\fR 时，\fBPAM\fR 使用的服务名分别是 \fBrlogin\fR 或 \fBtelnet\fR。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdevice\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBlogin\fR 接受设备选项 \fIdevice\fR。\fIdevice\fR 被视为要执行 \fBlogin\fR 的 \fBTTY\fR 端口的路径名。使用设备选项有望提高 \fBlogin\fR 性能，因为 \fBlogin\fR 不需要调用 \fBttyname\fR(3C)。\fB-d\fR 选项仅可用于 \fBUID\fR 和有效 \fBUID\fR 是 root 的用户。任何其他使用 \fB-d\fR 的尝试可导致 \fBlogin\fR 静默退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR \fIhostname\fR [\fIterminal\fR]\fR
+.ad
+.sp .6
+.RS 4n
+\fBin.telnetd\fR(1M) 用于传递有关远程主机和终端类型的信息。
+.sp
+作为 \fB-h\fR 选项的第二个参数的终端类型不应以连字符 (\fB-\fR) 开头。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+用于将环境变量传递给登录 shell。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIhostname\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBin.rlogind\fR(1M) 用于传递有关远程主机的信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIrepository\fR\fR
+.ad
+.sp .6
+.RS 4n
+用于指定 \fBPAM\fR 系统信息库，该系统信息库应该用于通知 \fBPAM\fR 有关 “\fBidentity\fR” 的信息（请参见下文的选项 \fB-u\fR）。如果没有传递 “\fBidentity\fR” 信息，则没有使用系统信息库。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIservice\fR\fR
+.ad
+.sp .6
+.RS 4n
+指示应该使用的 \fBPAM\fR 服务名称。通常情况下，此参数不是必需的，仅用于指定备用 \fBPAM\fR 服务名称。例如：Kerberized telnet 进程的 “\fBktelnet\fR”。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR \fIidentity\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定与正在验证的用户关联的 “\fBidentity\fR” 字符串。这通常与用户的 Unix 登录名\fB不\fR相同。对于 Kerberized 登录会话，这是与该用户关联的 Kerberos 主体名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-U\fR \fIruser\fR\fR
+.ad
+.sp .6
+.RS 4n
+指示尝试登录 rlogin 连接的远程端的人员名称。当 \fBin.rlogind\fR(1M) 在 Kerberized 模式下执行时，该守护进程将先处理终端和远程用户名信息，再调用 \fBlogin\fR，因此 “\fBruser\fR” 数据是使用此命令行参数指示的。通常情况下（非 Kerberos 验证的 \fBrlogin\fR），\fBlogin\fR 守护进程会从客户端读取远程用户信息。
+.RE
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+操作成功。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB非零\fR
+.ad
+.sp .6
+.RS 4n
+错误。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.cshrc\fR\fR
+.ad
+.sp .6
+.RS 4n
+每个 \fBcsh\fR 的初始命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.hushlogin\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁止登录消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.kshrc\fR\fR
+.ad
+.sp .6
+.RS 4n
+交互式 \fBksh\fR 的用户命令（如果未设置 \fB$ENV\fR）；在 \fB/etc/ksh.kshrc\fR 后执行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.login\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBcsh\fR 的用户登录命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.profile\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsh\fR 和 \fBksh\fR 的用户登录命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.rhosts\fR\fR
+.ad
+.sp .6
+.RS 4n
+可信主机名/用户名组合的专用列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/.login\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统范围的 \fBcsh\fR 登录命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/issue\fR\fR
+.ad
+.sp .6
+.RS 4n
+问题或项目标识。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ksh.kshrc\fR\fR
+.ad
+.sp .6
+.RS 4n
+交互式 \fBksh\fR 的系统范围命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/logindevperm\fR\fR
+.ad
+.sp .6
+.RS 4n
+基于登录的设备权限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/motd\fR\fR
+.ad
+.sp .6
+.RS 4n
+每日消息 (Message-of-the-day)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/nologin\fR\fR
+.ad
+.sp .6
+.RS 4n
+向尝试在计算机关机时登录的用户显示的消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/passwd\fR\fR
+.ad
+.sp .6
+.RS 4n
+口令文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/profile\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统范围的 \fBsh\fR 和 \fBksh\fR 登录命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/shadow\fR\fR
+.ad
+.sp .6
+.RS 4n
+用户的加密口令列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/bin/sh\fR\fR
+.ad
+.sp .6
+.RS 4n
+用户的缺省命令解释程序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/lastlog\fR\fR
+.ad
+.sp .6
+.RS 4n
+上次登录的时间。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/loginlog\fR\fR
+.ad
+.sp .6
+.RS 4n
+失败的登录尝试的记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/utmpx\fR\fR
+.ad
+.sp .6
+.RS 4n
+记帐。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/wtmpx\fR\fR
+.ad
+.sp .6
+.RS 4n
+记帐。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/mail/\fR\fIyour-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+用户 \fIyour-name\fR 的邮箱。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/default/login\fR\fR
+.ad
+.sp .6
+.RS 4n
+可以在 \fB/etc/default/login\fR 中为以下标志设置缺省值。缺省值指定为 \fB/etc/default/login\fR 文件中的注释，例如 \fBTIMEZONE=EST5EDT\fR。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTIMEZONE\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置 shell 的 \fBTZ\fR 环境变量（请参见 \fBenviron\fR(5)）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHZ\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置 shell 的 \fBHZ\fR 环境变量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBULIMIT\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置登录的文件大小限制。单位是磁盘块。缺省值为零（无限制）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCONSOLE\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果设置了值，root 用户只可以登录该设备。这不会阻止通过 \fBrsh\fR(1) 执行远程命令。注释掉该行可允许由 root 用户登录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPASSREQ\fR\fR
+.ad
+.sp .6
+.RS 4n
+确定登录是否需要非空口令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBALTSHELL\fR\fR
+.ad
+.sp .6
+.RS 4n
+确定登录是否需要设置 \fBSHELL\fR 环境变量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPATH\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置初始 shell \fBPATH\fR 变量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSUPATH\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置根路径的初始 shell \fBPATH\fR 变量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTIMEOUT\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置放弃登录会话前等待的秒数（在 \fB0\fR 和 \fB900\fR 之间）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBUMASK\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置初始 shell 文件创建模式的掩码。请参见 \fBumask\fR(1)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSYSLOG\fR\fR
+.ad
+.sp .6
+.RS 4n
+确定 \fBsyslog\fR(3C) \fBLOG_AUTH\fR 工具是否应该用于在 \fBLOG_NOTICE\fR 级别上记录所有 root 用户登录，以及在 \fBLOG_CRIT\fR 中记录多次失败的登录尝试。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDISABLETIME\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果存在并大于零，则是发生 \fBRETRIES\fR 次失败尝试或 \fBPAM\fR 框架返回 \fBPAM_ABORT\fR 后，\fBlogin\fR 所等待的秒数。缺省值为 \fB20\fR 秒。最小值为 \fB0\fR 秒。不会强制任何最大值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSLEEPTIME\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果存在，设置登录失败消息输出到屏幕上之前所等待的秒数。这用于 \fBPAM_ABORT\fR 之外的所有登录失败。允许再进行一次登录尝试，前提是 \fBRETRIES\fR 尚未达到，或 \fBPAM\fR 框架返回了 \fBPAM_MAXTRIES\fR。缺省值为 \fB4\fR 秒。最小值为 \fB0\fR 秒。最大值为 \fB5\fR 秒。
+.sp
+\fBsu\fR(1M) 和 \fBsulogin\fR(1M) 都受到 \fBSLEEPTIME\fR 值的影响。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBRETRIES\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置登录的重试次数（请参见 \fBpam\fR(3PAM)）。缺省值为 5。最大的重试次数为 15。对于使用自动锁定配置的帐户（请参见上文 \fBSECURITY\fR），帐户会锁定并退出 \fBlogin\fR。如果未配置自动锁定，则将退出 \fBlogin\fR 而不锁定该帐户。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSYSLOG_FAILED_LOGINS\fR\fR
+.ad
+.sp .6
+.RS 4n
+用于在通过 \fBsyslog\fR(3C) \fBLOG_NOTICE\fR 工具记录失败的登录消息之前，确定系统允许的失败登录尝试次数。例如，如果变量设置为 \fB0\fR，\fBlogin\fR 将记录\fI所有\fR失败的登录尝试。
+.RE
+
+在 \fB/etc/default/login\fR 列出的标志中，\fBsshd\fR(1M)（所看到的）将使用：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBTIMEZONE\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBHZ\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBALTSHELL\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBPATH\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBSUPATH\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBCONSOLE\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBPASSREQ\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBUMASK\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBULIMIT\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBRETRIES\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBSYSLOG_AFTER_FAILED_LOGINS\fR
+.RE
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBcsh\fR(1)、\fBexit\fR(1)、\fBksh\fR(1)、\fBksh88\fR(1)、\fBmail\fR(1)、\fBmailx\fR(1)、\fBnewgrp\fR(1)、\fBpasswd\fR(1)、\fBrlogin\fR(1)、\fBrsh\fR(1)、\fBsh\fR(1)、\fBshell_builtins\fR(1)、\fBtelnet\fR(1)、\fBumask\fR(1)、\fBin.rlogind\fR(1M)、\fBin.telnetd\fR(1M)、\fBuser_attr\fR(4)、\fBpolicy.conf\fR(4)、\fBlogins\fR(1M)、\fBquota\fR(1M)、\fBsshd\fR(1M)、\fBsu\fR(1M)、\fBsulogin\fR(1M)、\fBsyslogd\fR(1M)、\fBuseradd\fR(1M)、\fBuserdel\fR(1M)、\fBpam\fR(3PAM)、\fBrcmd\fR(3SOCKET)、\fBsyslog\fR(3C)、\fBttyname\fR(3C)、\fBauth_attr\fR(4)、\fBexec_attr\fR(4)、\fBhosts.equiv\fR(4)、\fBissue\fR(4)、\fBlogindevperm\fR(4)、\fBloginlog\fR(4)、\fBnologin\fR(4)、\fBnsswitch.conf\fR(4)、\fBpam.conf\fR(4)、\fBpasswd\fR(4)、\fBpolicy.conf\fR(4)、\fBprofile\fR(4)、\fBshadow\fR(4)、\fBuser_attr\fR(4)、\fButmpx\fR(4)、\fBwtmpx\fR(4)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBpam_unix_account\fR(5)、\fBpam_unix_auth\fR(5)、\fBpam_unix_session\fR(5)、\fBpam_authtok_check\fR(5)、\fBpam_authtok_get\fR(5)、\fBpam_authtok_store\fR(5)、\fBpam_dhkeys\fR(5)、\fBpam_passwd_auth\fR(5)、\fBtermio\fR(7I)
+.SH 诊断
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLogin incorrect\fR\fR
+.ad
+.sp .6
+.RS 4n
+无法匹配用户名或口令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNot on system console\fR\fR
+.ad
+.sp .6
+.RS 4n
+已拒绝 Root 用户登录。检查 \fB/etc/default/login\fR 中的 \fBCONSOLE\fR 设置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNo directory! Logging in with home=/\fR\fR
+.ad
+.sp .6
+.RS 4n
+找不到 \fBpasswd\fR(4) 数据库中指定的用户起始目录，或其中包含错误的权限。请与您的系统管理员联系。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNo shell\fR\fR
+.ad
+.sp .6
+.RS 4n
+无法执行 \fBpasswd\fR(4) 数据库中指定的 shell。请与您的系统管理员联系。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNO LOGINS: System going down in\fR \fIN\fR \fBminutes\fR\fR
+.ad
+.sp .6
+.RS 4n
+该计算机处于关机过程中，已禁用登录。
+.RE
+
+.SH 警告
+.sp
+.LP
+\fBUID\fR 大于 76695844 的用户不受口令有效期影响，并且系统不会记录其上次登录的时间。
+.sp
+.LP
+如果使用 \fBCONSOLE\fR 设置来禁用 root 用户登录，则也应该禁用 root 用户远程执行命令。有关更多详细信息，请参见 \fBrsh\fR(1)、\fBrcmd\fR(3SOCKET) 和 \fBhosts.equiv\fR(4)。

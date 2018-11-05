@@ -1,0 +1,518 @@
+'\" te
+.\" Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved
+.TH poweradm 1M "2012 年 5 月 3 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+poweradm \- 電源管理プロパティーの管理
+.SH 形式
+.LP
+.nf
+\fBpoweradm\fR [\fB-v\fR] get [\fB-a\fR all|smf|platform|current] \fIproperty\fR ...
+.fi
+
+.LP
+.nf
+\fBpoweradm\fR [\fB-v\fR] set \fIproperty\fR=\fIvalue\fR ...
+.fi
+
+.LP
+.nf
+\fBpoweradm\fR [\fB-v\fR] list
+.fi
+
+.LP
+.nf
+\fBpoweradm\fR show
+.fi
+
+.LP
+.nf
+\fBpoweradm\fR \fB-?\fR
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBpoweradm\fR プログラムは、Solaris インスタンス内の電源管理設定の表示および管理に使用されます。
+.sp
+.LP
+電源管理プロパティーとその値はサービス管理機構に格納されます (\fBsmf\fR(5) を参照)。
+.sp
+.LP
+「\fB形式\fR」に示されている \fBlist\fR、\fBget\fR、および \fBshow\fR 形式は、すべてのユーザーが実行できます。これらのコマンドでは、すべてのユーザーが Solaris インスタンス内の現在の電源管理設定を表示できます。
+.sp
+.LP
+「\fB形式\fR」に示されている \fBpoweradm\fR の \fBset\fR 形式は、「Maintenance and Repair」RBAC プロファイルに属しているユーザーおよび役割だけが実行できます。後述の「\fB注意事項\fR」のセクションも参照してください。
+.sp
+.LP
+\fBpoweradm\fR は次のサービスプロパティーをサポートしています。
+.sp
+.in +2
+.nf
+administrative-authority
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+このプロパティーの値は文字列として指定され、次の値を取ることができます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsmf\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBplatform\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBnone\fR
+.RE
+.sp
+.LP
+デフォルト値は \fBplatform\fR です。このプロパティーは、Solaris カーネル内の電源管理に対する管理制御のソースを意味します。つまり、このプロパティーは、Solaris カーネル内の \fBtime-to-full-capacity\fR および \fBtime-to-minimum-responsiveness \fR の設定元を示します。適切な特権を持つ Solaris ユーザーだけがこのプロパティーを設定できます。
+.sp
+.LP
+\fBadministrative-authority\fR が \fBplatform\fR に設定されている場合、\fBtime-to-full-capacity\fR および \fBtime-to-minimum-responsiveness\fR の値はプラットフォームコードから取得されます。\fBpoweradm\fR コマンドを使用して SMF でこれらの値を設定しても、カーネルの値には影響しません。\fBpoweradm list\fR コマンドは、カーネルが現在プラットフォーム値を使用していることを示します。これらの値はプラットフォーム管理者によって変更されるため、カーネル内で変更されます。また、Solaris カーネル内の電源管理を有効または無効にするコマンドも、プラットフォームコードから取得されます。仮想マシンを実行するシステムでは、ハイパーバイザまたは仮想マシンマネージャーをこのプロパティーのソースにできます。
+.sp
+.LP
+\fBadministrative-authority\fR が \fBsmf\fR に設定されているとき、\fBtime-to-full-capacity\fR および \fBtime-to-minimum-responsiveness\fR の値は SMF から取得されます。SMF 内のこれらの値は Solaris 管理者によって変更されるため、カーネルに適用されます。プラットフォーム内のこれらの値を設定しても、administrative-authority が \fBsmf\fR に設定されているときは、カーネル内の値は影響を受けません。この状況では、\fBpoweradm\fR コマンドは、カーネルが現在 SMF の値を使用していることを示します。これらの値は Solaris 管理者によって変更されるため、カーネル内で変更されます。
+.sp
+.LP
+\fBadministrative-authority\fR が \fBnone\fR に設定されている場合、電源サービスは実行を継続しますが、Solaris カーネル内の電源管理は無効になります。プラットフォームからの電源管理命令も SMF 内の設定も無視されます。\fBadministrative-authority\fR がほかのいずれかの値に設定されたときのみ、指定されたソースの設定を使用して Solaris カーネル内の電源管理が再起動します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtime-to-full-capacity\fR\fR
+.ad
+.sp .6
+.RS 4n
+マイクロ秒単位で指定されます。
+.sp
+このパラメータは、システムがアクティブ状態のときに許可される動的容量調整を制約します。
+.sp
+このパラメータは、この範囲内にある PM 機能のいずれかまたはすべてを使用しているときに、システムがより低い容量またはより応答性の低い状態から戻ってその全容量に到達する (再度プロビジョニングして使用可能にする) ために許可される最大時間を定義します。
+.sp
+デフォルトでは、\fBadministrative-authority\fR のデフォルト設定は \fBplatform\fR なので、この値はプラットフォーム (\fBi86pc\fR など) から取得されます。
+.sp
+あるいは、\fBadministrative-authority\fR が \fBsmf\fR に設定されている場合、この値は電源サービス (つまり、SMF) で指定されている定義から取得されます。インストール時にこの値は \fBundefined\fR に設定されます。Solaris 管理者がこのプロパティーを変更する場合は、ワークロードやアプリケーションの要求に適した値を選択する必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtime-to-minimum-responsiveness\fR\fR
+.ad
+.sp .6
+.RS 4n
+ミリ秒単位で指定されます。
+.sp
+このパラメータは、システムがアクティブでない状態のときに許可される動的容量調整を制約します。
+.sp
+このパラメータは、システムがそのアクティブ状態に戻る、つまり、上記の time-to-full-capacity 制約を満たすのに必要な最小容量を提供するために許可される時間を定義します。
+.sp
+中程度の値 (秒単位) を指定した場合、プラットフォーム上のハードウェアコンポーネントやサブシステムをより応答性の低いアクティブでない状態にすることができ、大きい値 (たとえば、30 秒から分単位) を指定した場合でも、RAM への保存停止などの方法を使用して、システム全体の保存停止などが可能です。
+.sp
+デフォルトでは、\fBadministrative-authority\fR のデフォルト設定は \fBplatform\fR なので、この値はプラットフォーム (\fBi86pc\fR など) から取得されます。
+.sp
+あるいは、\fBadministrative-authority\fR が \fBsmf\fR に設定されている場合、この値は電源サービス (つまり、SMF) で指定されている定義から取得されます。インストール時にこの値は \fBundefined\fR に設定されます。Solaris 管理者がこのプロパティーを変更する場合は、ワークロードやアプリケーションの要求に適した値を選択する必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsuspend-enable\fR\fR
+.ad
+.sp .6
+.RS 4n
+デフォルトでは、Solaris を実行しているマシンは停止操作の試行を許可されません。このプロパティーを \fBtrue\fR に設定すると、停止操作の試行が許可されます。\fBadministrative-authority\fR の値はこのプロパティーに影響を与えません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBplatform-disabled\fR\fR
+.ad
+.sp .6
+.RS 4n
+このプロパティーは \fBpoweradm\fR コマンドで変更できません。\fBplatform-disabled\fR の値を表示するには、\fBlist\fR サブコマンドを実行できます。\fBtrue\fR に設定され、\fBadministrative-authority\fR が \fBplatform\fR に設定されている場合、電源管理はプラットフォームによって無効にされています。\fBfalse\fR に設定されている場合、上述されているように、他のプロパティーの値によって電源管理が制御されます。\fBshow\fR サブコマンドの出力には、これらのプロパティーの値が表示されます。仮想マシンを実行するシステムでは、ハイパーバイザまたは仮想マシンマネージャーを \fBplatform-disabled\fR のソースにできます。\fBplatform-disabled\fR のデフォルト値は \fBfalse\fR です。
+.RE
+
+.SH オプション
+.sp
+.LP
+以下のオプションがサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-?\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用可能なサブコマンドとオプションの形式を表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+冗長な出力を表示します。次のサブコマンドのいずれでも使用できます。
+.RE
+
+.SH サブコマンド
+.sp
+.LP
+サポートされているサブコマンドは次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBget\fR [\fB-a\fR \fBall\fR|\fBsmf\fR|\fBplatform\fR|\fBcurrent\fR]\fR
+.ad
+.sp .6
+.RS 4n
+指定されたプロパティーの現在の値を取得します。\fB-a\fR オプションを使用して、値の取得元を SMF (\fBsmf\fR)、プラットフォーム (\fBplatform\fR)、カーネルで現在使用されている値 (\fBcurrent\fR)、またはこれらすべて (\fBall\fR) に指定できます。デフォルトでは、取得元が指定されていない場合は \fBcurrent\fR と見なされます。
+.sp
+\fBadministrative-authority\fR および \fBsuspend-enable\fR プロパティーにはプラットフォーム値はありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset\fR \fIproperty\fR=\fIvalue\fR...\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fIproperty\fR を指定の \fIvalue\fR に変更します。プロパティー \fBadministrative-authority\fR および \fBsuspend-enable\fR は、カーネル内の新しい値に自動的に同期されます。プロパティー \fBtime-to-full-capacity\fR および \fBtime-to-minimum-responsiveness\fR は、\fBadministrative-authority\fR が \fBsmf\fR に設定されている場合にかぎり、カーネルに同期されます。\fB-v\fR オプションが使用されている場合、\fBadministrative-authority\fR が \fBsmf\fR に設定されていないためにカーネルをただちに更新できないときは、警告メッセージが発行されます。
+.sp
+「Maintenance and Repair」RBAC プロファイルに属しているユーザーおよび役割だけが、\fBset\fR サブコマンドを実行できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlist\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用可能なすべての電源管理プロパティーの値を一覧表示し、電源管理がアクティブかどうかを示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshow\fR\fR
+.ad
+.sp .6
+.RS 4n
+プラットフォームまたは Solaris インスタンスが電源管理を制御しているかどうか、電源管理が有効になっているかどうか、および、有効になっている場合は \fBtime-to-full-capacity\fR および \fBtime-to-minimum-responsiveness\fR の値を示す、人間が読めるテキストを出力します。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRプラットフォームが電源管理を制御するように設定する
+.sp
+.LP
+次のコマンドは、プラットフォームが電源管理を制御するように設定します。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm set administrative-authority=platform\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fR電源管理を無効にする
+.sp
+.LP
+次のコマンドは、電源管理を無効にします。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm set administrative-authority=none\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fR便利なパラメータを設定する
+.sp
+.LP
+次の一連のコマンドは、\fBtime-to-full-capacity\fR を 300 ミリ秒に設定し、\fBtime-to-minimum-responsiveness\fR を 500 ミリ秒に設定し、新しい値を Solaris インスタンスに通知します。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm set time-to-full-capacity=300\fR
+# \fBpoweradm set time-to-minimum-responsiveness=500\fR
+# \fBpoweradm set administrative-authority=smf\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fR保存停止と復元再開を無効にする
+.sp
+.LP
+次のコマンドは、保存停止と復元再開を無効にします。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm set suspend-enable=false\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 5 \fR電源管理プロパティーを一覧表示する
+.sp
+.LP
+次のコマンドは、使用可能なすべての電源管理プロパティーを一覧表示します。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm list\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 6 \fRプロパティーの値を取得する
+.sp
+.LP
+次のコマンドは、\fBtime-to-full-capacity\fR の現在の値を表示します。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm get time-to-full-capacity\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 7 \fRプラットフォームで設定されているプロパティーの値を表示する
+.sp
+.LP
+次のコマンドは、プラットフォームで設定されている \fBtime-to-full-capacity\fR の値を取得します。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm get -a platform time-to-full-capacity\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBadministrative-authority\fR が platform に設定されている場合のみ、これは現在の値と一致します。前述の \fBadministrative-authority\fR プロパティーの説明を参照してください。
+
+.LP
+\fB例 8 \fRSolaris インスタンスで設定されているプロパティーの値を表示する
+.sp
+.LP
+次のコマンドは、Solaris インスタンスで設定されている \fBtime-to-full-capacity\fR の値を取得します。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm get -a smf time-to-full-capacity\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBadministrative-authority\fR が \fBsmf\fR に設定されている場合のみ、これは現在の値と一致します。前述の \fBadministrative-authority\fR プロパティーの説明を参照してください。
+
+.LP
+\fB例 9 \fR\fBshow\fR サブコマンドを呼び出す
+.sp
+.LP
+次の例のコマンドは、\fBpoweradm show\fR が呼び出される可能性のある 4 つの状況を示しています。
+
+.sp
+.LP
+次のコマンドは、プラットフォームによって電源管理が無効にされているときに呼び出されます。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm show\fR
+Power management is disabled with the hardware platform as the authority
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次のコマンドは、Solaris 管理者によって電源管理が無効にされているときに呼び出されます。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm show\fR
+Power management is disabled with the Solaris instance as the authority
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次のコマンドは、プラットフォームによって電源管理が有効にされているときに呼び出されます。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm show\fR
+Power management is enabled with the hardware platform as the authority
+time-to-full-capacity 300 microseconds
+time-to-minimum-responsiveness 500 milliseconds
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次のコマンドは、Solaris インスタンスによって電源管理が有効にされているときに呼び出されます。
+
+.sp
+.in +2
+.nf
+# \fBpoweradm show\fR
+Power management is enabled with the Solaris instance as the authority
+time-to-full-capacity 300 microseconds
+time-to-minimum-responsiveness 500 milliseconds
+.fi
+.in -2
+.sp
+
+.SH 終了ステータス
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+正常終了。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+エラーが発生した。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.sp .6
+.RS 4n
+無効なコマンド行オプションが指定された。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/kernel/power
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBattributes\fR(5), \fBsmf\fR(5), \fBsmf_security\fR(5)
+.SH 注意事項
+.sp
+.LP
+電源サービスは、サービス管理機構 \fBsmf\fR(5) によって、次のサービス識別子として管理されます。
+.sp
+.in +2
+.nf
+svc:/system/power:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBpoweradm\fR で設定できるプロパティーは、そのサービスでは次のように定義されています。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBactive_control\fR/\fBadministrative-authority\fR (前述の \fBadministrative-authority\fR の説明を参照)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBactive_config\fR/\fBtime-to-full-capacity\fR (前述の \fBtime-to-full-capacity\fR の説明を参照)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBactive_config\fR/\fBtime-to-minimum-responsiveness\fR (前述の \fBtime-to-minimum-responsiveness\fR の説明を参照)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsuspend\fR/\fBsuspend-enable\fR (前述の \fBsuspend-enable\fR の説明を参照)
+.RE
+.sp
+.LP
+サービスが無効にされた場合、電源管理設定はそれ以降カーネルにアップロードされません。既存の設定は、次回のリブートまで取り消されません。すべての電源管理を無効にする最適な方法は、\fBadministrative-authority\fR を \fBnone\fR に設定することです。
+.sp
+.LP
+\fBtime-to-full-capacity\fR と \fBtime-to-minimum-responsiveness\fR の両方が設定される前に、\fBadministrative-authority\fR が値 \fBsmf\fR に設定された場合、サービスは保守モードに入ります。そのような場合は、\fBadministrative-authority\fR を値 \fBnone\fR に設定したあと、\fBtime-to-full-capacity\fR と \fBtime-to-minimum-responsiveness\fR の両方を必要な値に設定し、サービスをクリアしてから、administrative-authority を \fBsmf\fR に設定します。
+.sp
+.LP
+\fBactive_config\fR および \fBsuspend\fR プロパティーグループのプロパティーを設定するには、\fBsolaris.smf.value.power_config\fR 承認が必要です。\fBactive_control\fR プロパティーグループのプロパティーを設定するには、\fBsolaris.smf.value.power_control\fR 承認が必要です。これらの承認はどちらも「Maintenance and Repair」プロファイルに含まれています。

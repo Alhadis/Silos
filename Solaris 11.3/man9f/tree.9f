@@ -1,0 +1,539 @@
+'\" te
+.\" Copyright 2002 Niels Provos <provos@citi.umich.edu> All rights reserved
+.\" Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: 1. Redistributions of source code must retain the above copyright    notice, this list of conditions and the following disclaimer. 2. Redistributions in binary form must reproduce the above copyright    notice, this list of conditions and the following disclaimer in the    documentation and/or other materials provided with the distribution.  THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+.\" Portions Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+.TH tree 9F "28 Nov 2011" "SunOS 5.11" "Kernel Functions for Drivers"
+.SH NAME
+tree, SPLAY_PROTOTYPE, SPLAY_GENERATE, SPLAY_ENTRY, SPLAY_HEAD, SPLAY_INITIALIZER, SPLAY_ROOT, SPLAY_EMPTY, SPLAY_NEXT, SPLAY_MIN, SPLAY_MAX, SPLAY_FIND, SPLAY_LEFT, SPLAY_RIGHT, SPLAY_FOREACH, SPLAY_INIT, SPLAY_INSERT, SPLAY_REMOVE, RB_PROTOTYPE, RB_PROTOTYPE_STATIC, RB_GENERATE, RB_GENERATE_STATIC, RB_ENTRY, RB_HEAD, RB_INITIALIZER, RB_ROOT, RB_EMPTY, RB_NEXT, RB_PREV, RB_MIN, RB_MAX, RB_FIND, RB_NFIND, RB_LEFT, RB_RIGHT, RB_PARENT, RB_FOREACH, RB_FOREACH_SAFE, RB_FOREACH_REVERSE, RB_FOREACH_REVERSE_SAFE, RB_INIT, RB_INSERT, RB_REMOVE \- implementations of splay and red-black trees
+.SH SYNOPSIS
+.LP
+.nf
+#include <sys/tree.h>
+
+SPLAY_PROTOTYPE(\fINAME\fR, \fITYPE\fR, \fIFIELD\fR, \fICMP\fR);
+.fi
+
+.LP
+.nf
+SPLAY_GENERATE(\fINAME\fR, \fITYPE\fR, \fIFIELD\fR, \fICMP\fR);
+.fi
+
+.LP
+.nf
+SPLAY_ENTRY(\fITYPE\fR);
+.fi
+
+.LP
+.nf
+SPLAY_HEAD(\fIHEADNAME\fR, \fITYPE\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *SPLAY_INITIALIZER(SPLAY_HEAD *\fIhead\fR);
+.fi
+
+.LP
+.nf
+SPLAY_ROOT(SPLAY_HEAD *\fIhead\fR);
+.fi
+
+.LP
+.nf
+int SPLAY_EMPTY(SPLAY_HEAD *\fIhead\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *SPLAY_NEXT(NAME, SPLAY_HEAD *\fIhead\fR, struct TYPE *\fIelm\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *SPLAY_MIN(NAME, SPLAY_HEAD *\fIhead\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *SPLAY_MAX(NAME, SPLAY_HEAD *\fIhead\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *SPLAY_FIND(NAME, SPLAY_HEAD *\fIhead\fR, struct TYPE *\fIelm\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *SPLAY_LEFT(struct TYPE *\fIelm\fR, SPLAY_ENTRY \fINAME\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *SPLAY_RIGHT(struct TYPE *\fIelm\fR, SPLAY_ENTRY \fINAME\fR);
+.fi
+
+.LP
+.nf
+SPLAY_FOREACH(\fIVARNAME\fR, \fINAME\fR, SPLAY_HEAD *\fIhead\fR);
+.fi
+
+.LP
+.nf
+void SPLAY_INIT(SPLAY_HEAD *\fIhead\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *SPLAY_INSERT(\fINAME\fR, SPLAY_HEAD *\fIhead\fR, struct TYPE *\fIelm\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *SPLAY_REMOVE(\fINAME\fR, SPLAY_HEAD *\fIhead\fR, struct TYPE *\fIelm\fR);
+.fi
+
+.LP
+.nf
+RB_PROTOTYPE(\fINAME\fR, \fITYPE\fR, \fIFIELD\fR, \fICMP\fR);
+.fi
+
+.LP
+.nf
+RB_PROTOTYPE_STATIC(\fINAME\fR, \fITYPE\fR, \fIFIELD\fR, \fICMP\fR);
+.fi
+
+.LP
+.nf
+RB_GENERATE(\fINAME\fR, \fITYPE\fR, \fIFIELD\fR, \fICMP\fR);
+.fi
+
+.LP
+.nf
+RB_GENERATE_STATIC(\fINAME\fR, \fITYPE\fR, \fIFIELD\fR, \fICMP\fR);
+.fi
+
+.LP
+.nf
+RB_ENTRY(\fITYPE\fR);
+.fi
+
+.LP
+.nf
+RB_HEAD(\fIHEADNAME\fR, \fITYPE\fR);
+.fi
+
+.LP
+.nf
+RB_INITIALIZER(RB_HEAD *\fIhead\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *RB_ROOT(RB_HEAD *\fIhead\fR);
+.fi
+
+.LP
+.nf
+int RB_EMPTY(RB_HEAD *\fIhead\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *RB_NEXT(\fINAME\fR, RB_HEAD *\fIhead\fR, struct TYPE *\fIelm\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *RB_PREV(\fINAME\fR, RB_HEAD *\fIhead\fR, struct TYPE *\fIelm\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *RB_MIN(\fINAME\fR, RB_HEAD *\fIhead\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *RB_MAX(\fINAME\fR, RB_HEAD *\fIhead\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *RB_FIND(\fINAME\fR, RB_HEAD *\fIhead\fR, struct TYPE *\fIelm\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *RB_NFIND(\fINAME\fR, RB_HEAD *\fIhead\fR, struct TYPE *\fIelm\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *RB_LEFT(struct TYPE *\fIelm\fR, RB_ENTRY \fINAME\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *RB_RIGHT(struct TYPE *\fIelm\fR, RB_ENTRY \fINAME\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *RB_PARENT(struct TYPE *\fIelm\fR, RB_ENTRY \fINAME\fR);
+.fi
+
+.LP
+.nf
+RB_FOREACH(\fIVARNAME\fR, \fINAME\fR, RB_HEAD *\fIhead\fR);
+.fi
+
+.LP
+.nf
+RB_FOREACH_SAFE(\fIVARNAME\fR, \fINAME\fR, RB_HEAD *\fIhead\fR, \fITEMP_VARNAME\fR);
+.fi
+
+.LP
+.nf
+RB_FOREACH_REVERSE(\fIVARNAME\fR, \fINAME\fR, RB_HEAD *\fIhead\fR);
+.fi
+
+.LP
+.nf
+RB_FOREACH_REVERSE_SAFE(\fIVARNAME\fR, \fINAME\fR, RB_HEAD *\fIhead\fR, \fITEMP_VARNAME\fR);
+.fi
+
+.LP
+.nf
+void RB_INIT(RB_HEAD *\fIhead\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *RB_INSERT(\fINAME\fR, RB_HEAD *\fIhead\fR, struct TYPE *\fIelm\fR);
+.fi
+
+.LP
+.nf
+struct TYPE *RB_REMOVE(\fINAME\fR, RB_HEAD *\fIhead\fR, struct TYPE *\fIelm\fR);
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+These macros define data structures for different types of trees: splay trees and red-black trees.
+.sp
+.LP
+In the macro definitions, \fITYPE\fR is the name tag of a user-defined structure that must contain a field named \fIFIELD\fR, of type \fBSPLAY_ENTRY\fR or \fBRB_ENTRY\fR. The argument \fIHEADNAME\fR is the name tag of a user defined structure that must be declared using the macros \fBSPLAY_HEAD()\fR or \fBRB_HEAD()\fR. The argument \fINAME\fR has to be a unique name prefix for every tree that is defined.
+.SS "Splay Trees"
+.sp
+.LP
+A splay tree is a self-organizing data structure. Every operation on the tree causes a splay to happen. The splay moves the requested node to the root of the tree and partly rebalances it. This has the benefit that request locality causes faster lookups as the requested nodes move to the top of the tree. On the other hand, every lookup causes memory writes
+.sp
+.LP
+The Balance Theorem bounds the total access time for \fIm\fR operations and \fIn\fR inserts on an initially empty tree as O((\fIm\fR + \fIn\fR)lg \fIn\fR). The amortized cost for a sequence of \fIm\fR accesses to a splay tree is O(lg \fIn\fR).
+.sp
+.LP
+A splay tree is headed by a structure defined by the \fBSPLAY_HEAD()\fR macro. A SPLAY_HEAD structure is declared as follows:
+.sp
+.in +2
+.nf
+SPLAY_HEAD(HEADNAME, TYPE) head;
+.fi
+.in -2
+
+.sp
+.LP
+where \fIHEADNAME\fR is the name of the structure to be defined, and \fBstruct\fR \fITYPE\fR is the type of the elements to be inserted into the tree.
+.sp
+.LP
+The \fBSPLAY_ENTRY()\fR macro declares a structure that allows elements to be connected in the tree.
+.sp
+.LP
+To use the functions that manipulate the tree structure, their prototypes need to be declared with the \fBSPLAY_PROTOTYPE()\fR macro, where \fINAME\fR is a unique identifier for this particular tree. The \fITYPE\fR argument is the type of the structure that is being managed by the tree. The \fIFIELD\fR argument is the name of the element defined by \fBSPLAY_ENTRY()\fR.
+.sp
+.LP
+The function bodies are generated with the \fBSPLAY_GENERATE()\fR macro. It takes the same arguments as the \fBSPLAY_PROTOTYPE()\fR macro, but should be used only once.
+.sp
+.LP
+The \fICMP\fR argument is the name of a function used to compare trees' nodes with each other. The function takes two arguments of type \fBstruct\fR \fITYPE\fR *. If the first argument is smaller than the second, the function returns a value smaller than zero. If they are equal, the function returns zero. Otherwise, it should return a value greater than zero. The compare function defines the order of the tree elements.
+.sp
+.LP
+The \fBSPLAY_INIT()\fR macro initializes the tree referenced by head.
+.sp
+.LP
+The splay tree can also be initialized statically by using the \fBSPLAY_INITIALIZER()\fR macro as follows:
+.sp
+.in +2
+.nf
+SPLAY_HEAD(HEADNAME, TYPE) head = SPLAY_INITIALIZER(&head);
+.fi
+.in -2
+
+.sp
+.LP
+The \fBSPLAY_INSERT()\fR macro inserts the new element \fIelm\fR into the tree. Upon success, \fINULL\fR is returned. If a matching element already exists in the tree, the insertion is aborted, and a pointer to the existing element is returned.
+.sp
+.LP
+The \fBSPLAY_REMOVE()\fR macro removes the element \fIelm\fR from the tree pointed by head. Upon success, a pointer to the removed element is returned. \fINULL\fR is returned if \fIelm\fR is not present in the tree.
+.sp
+.LP
+The \fBSPLAY_FIND()\fR macro can be used to find a particular element in the tree.
+.sp
+.in +2
+.nf
+struct TYPE find, *res;
+find.key = 30;
+res = SPLAY_FIND(NAME, &head, &find);
+.fi
+.in -2
+
+.sp
+.LP
+The \fBSPLAY_ROOT()\fR, \fBSPLAY_MIN()\fR, \fBSPLAY_MAX()\fR, and \fBSPLAY_NEXT()\fR macros can be used to traverse the tree
+.sp
+.in +2
+.nf
+for (np = SPLAY_MIN(NAME, &head); np != NULL; np = SPLAY_NEXT(NAME, &head, np))
+.fi
+.in -2
+
+.sp
+.LP
+Or, for simplicity, one can use the \fBSPLAY_FOREACH()\fR macro:
+.sp
+.in +2
+.nf
+SPLAY_FOREACH(np, NAME, &head)
+.fi
+.in -2
+
+.sp
+.LP
+The \fBSPLAY_EMPTY()\fR macro should be used to check whether a splay tree is empty.
+.SS "Red-Black Trees"
+.sp
+.LP
+A red-black tree is a binary search tree with the node color as an extra attribute. It fulfills a set of conditions:
+.RS +4
+.TP
+1.
+every search path from the root to a leaf consists of the same number of black nodes,
+.RE
+.RS +4
+.TP
+2.
+each red node (except for the root) has a black parent,
+.RE
+.RS +4
+.TP
+3.
+each leaf node is black.
+.RE
+.sp
+.LP
+Every operation on a red-black tree is bounded as O(lg \fIn\fR). The maximum height of a red-black tree is 2lg (\fIn\fR+1).
+.sp
+.LP
+A red-black tree is headed by a structure defined by the \fBRB_HEAD()\fR macro. A \fBRB_HEAD\fR structure is declared as follows:
+.sp
+.in +2
+.nf
+RB_HEAD(HEADNAME, TYPE) head;
+.fi
+.in -2
+
+.sp
+.LP
+where \fIHEADNAME\fR is the name of the structure to be defined, and \fBstruct\fR \fITYPE\fR is the type of the elements to be inserted into the tree.
+.sp
+.LP
+The \fBRB_ENTRY()\fR macro declares a structure that allows elements to be connected in the tree.
+.sp
+.LP
+To use the functions that manipulate the tree structure, their prototypes need to be declared with the \fBRB_PROTOTYPE()\fR or \fBRB_PROTOTYPE_STATIC()\fR macros, where \fINAME\fR is a unique identifier for this particular tree. The \fITYPE\fR argument is the type of the structure that is being managed by the tree. The \fIFIELD\fR argument is the name of the element defined by \fBRB_ENTRY()\fR.
+.sp
+.LP
+The function bodies are generated with the \fBRB_GENERATE()\fR or \fBRB_GENERATE_STATIC()\fR macros. These macros take the same arguments as the \fBRB_PROTOTYPE()\fR and \fBRB_PROTOTYPE_STATIC()\fR macros, but should be used only once.
+.sp
+.LP
+The \fICMP\fR argument is the name of a function used to compare trees' nodes with each other. The function takes two arguments of type \fBstruct\fR \fITYPE\fR *. If the first argument is smaller they are equal, the function returns zero. Otherwise, it should return a value greater than zero. The compare function defines the order of the tree elements.
+.sp
+.LP
+The \fBRB_INIT()\fR macro initializes the tree referenced by head.
+.sp
+.LP
+The red-black tree can also be initialized statically by using the \fBRB_INITIALIZER()\fR macro as follows:
+.sp
+.in +2
+.nf
+RB_HEAD(HEADNAME, TYPE) head = RB_INITIALIZER(&head)
+.fi
+.in -2
+
+.sp
+.LP
+The \fBRB_INSERT()\fR macro inserts the new element \fIelm\fR into the tree. Upon success, \fINULL\fR is returned. If a matching element already exists in the tree, the insertion is aborted, and a pointer to the existing element is returned.
+.sp
+.LP
+The \fBRB_REMOVE()\fR macro removes the element \fIelm\fR from the tree pointed by head. \fBRB_REMOVE()\fR returns \fIelm\fR.
+.sp
+.LP
+The \fBRB_FIND()\fR and \fBRB_NFIND()\fR macros can be used to find a particular element in the tree. \fBRB_FIND()\fR finds the node with the same key as \fIelm\fR. \fBRB_NFIND()\fR finds the first node greater than or equal to the search key.
+.sp
+.in +2
+.nf
+struct TYPE find, *res;
+find.key = 30;
+res = RB_FIND(NAME, &head, &find)
+.fi
+.in -2
+
+.sp
+.LP
+The \fBRB_ROOT()\fR, \fBRB_MIN()\fR, \fBRB_MAX()\fR, \fBRB_NEXT()\fR, and \fBRB_PREV()\fR macros can be used to traverse the tree:
+.sp
+.in +2
+.nf
+for (np = RB_MIN(NAME, &head); np != NULL; np = RB_NEXT(NAME, &head, np))
+.fi
+.in -2
+
+.sp
+.LP
+Or, for simplicity, one can use the \fBRB_FOREACH()\fR or \fBRB_FOREACH_REVERSE()\fR macros:
+.sp
+.in +2
+.nf
+RB_FOREACH(np, NAME, &head)
+.fi
+.in -2
+
+.sp
+.LP
+The macros \fBRB_FOREACH_SAFE()\fR and \fBRB_FOREACH_REVERSE_SAFE()\fR traverse the tree referenced by head in a forward or reverse direction respectively, assigning each element in turn to \fInp\fR. However, unlike their unsafe counterparts, they permit both the removal of \fInp\fR as well as freeing it from within the loop safely without interfering with the traversal.
+.sp
+.LP
+The \fBRB_EMPTY()\fR macro should be used to check whether a red-black tree is empty.
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRDeclare a red-black tree holding integers.
+.sp
+.LP
+The following example demonstrates how to declare a red-black tree holding integers.  Values are inserted into it and the contents of the tree are printed in order.  Lastly, the internal structure of the tree is printed.
+
+.sp
+.in +2
+.nf
+#include <sys/tree.h>
+#include    struct node {
+        RB_ENTRY(node) entry;
+        int i;
+};
+
+int
+intcmp(struct node *e1, struct node *e2)
+{
+        return (e1->i < e2->i ? -1 : e1->i > e2->i);
+}
+
+RB_HEAD(inttree, node) head = RB_INITIALIZER(&head);
+RB_GENERATE(inttree, node, entry, intcmp)
+
+int testdata[] = {
+        20, 16, 17, 13, 3, 6, 1, 8, 2, 4, 10, 19, 5, 9, 12, 15, 18,
+        7, 11, 14
+};
+
+void
+print_tree(struct node *n)
+{
+        struct node *left, *right;
+
+        if (n == NULL) {
+                printf("nil");
+                return;
+        }
+        left = RB_LEFT(n, entry);
+        right = RB_RIGHT(n, entry);
+        if (left == NULL && right == NULL)
+                printf("%d", n->i);
+        else {
+                printf("%d(", n->i);
+                print_tree(left);
+                    main()
+{
+        int i;
+        struct node *n;
+
+        for (i = 0; i < sizeof(testdata) / sizeof(testdata[0]); i++) {
+                if ((n = malloc(sizeof(struct node))) == NULL)
+                        err(1, NULL);
+                n->i = testdata[i];
+                RB_INSERT(inttree, &head, n);
+        }
+
+        RB_FOREACH(n, inttree, &head) {
+                printf("%d\en", n->i);
+        }
+        print_tree(RB_ROOT(&head));
+        printf("\en");
+        return (0);
+}
+.fi
+.in -2
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Interface StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBattributes\fR(5)
+.SH NOTES
+.sp
+.LP
+Trying to free a tree in the following way is a common error:
+.sp
+.in +2
+.nf
+SPLAY_FOREACH(var, NAME, &head) {
+        SPLAY_REMOVE(NAME, &head, var);
+        free(var);
+}
+free(head);
+.fi
+.in -2
+
+.sp
+.LP
+Since \fIvar\fR is freed, the \fBFOREACH()\fR macro refers to a pointer that may have been reallocated already.  Proper code needs a second variable.
+.sp
+.in +2
+.nf
+for (var = SPLAY_MIN(NAME, &head); var != NULL; var = nxt) {
+        nxt = SPLAY_NEXT(NAME, &head, var);
+        SPLAY_REMOVE(NAME, &head, var);
+        free(var);
+}
+.fi
+.in -2
+
+.SH AUTHORS
+.sp
+.LP
+The author of the tree macros is Niels Provos.

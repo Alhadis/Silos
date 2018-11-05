@@ -1,0 +1,166 @@
+'\" te
+.\" Copyright (c) 1999, 2011, Oracle and/or its affiliates. All rights reserved.
+.\" Copyright 1989 AT&T
+.TH acctcon 1M "2011 年 8 月 16 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+acctcon, acctcon1, acctcon2 \- 接続時間のアカウンティング
+.SH 形式
+.LP
+.nf
+\fB/usr/lib/acct/acctcon\fR [\fB-l\fR \fIlineuse\fR] [\fB-o\fR \fIreboot\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/acctcon1\fR [\fB-p\fR] [\fB-t\fR] [\fB-l\fR \fIlineuse\fR] [\fB-o\fR \fIreboot\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/acctcon2\fR 
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBacctcon\fR は、一連のログイン/ログオフレコードを合計アカウンティングレコード (\fBacct.h\fR(3HEAD) の \fBtacct\fR 形式を参照) に変換します。ログイン/ログオフレコードは標準入力から読み取られます。ファイル \fB/var/adm/wtmpx\fR が通常ログイン/ログオフレコードのソースになりますが、破損したレコードやシステム日付変更が含まれる可能性があるため、まず \fBwtmpfix\fR を使ってこのファイルを修正すべきです。その後、修正版のファイル \fB/var/adm/wtmpx\fR を \fBacctcon\fR にリダイレクトできます。\fBtacct\fR レコードは標準出力に書き込まれます。
+.sp
+.LP
+\fBacctcon\fR はプログラム \fBacctcon1\fR と \fBacctcon2\fR を組み合わせたものです。\fBacctcon1\fR は、修正済みの \fB/var/adm/wtmpx\fR ファイルからのログイン/ログオフレコードを ASCII 出力に変換します。\fBacctcon2\fR は、\fBacctcon1\fR によって生成された ASCII レコードを読み取り、それらを \fBtacct\fR レコードに変換します。\fBacctcon1\fR の使用時には、次で説明するように \fB-l\fR および \fB-o\fR オプションを使用できるほか、\fB-p\fR および \fB-t\fR オプションも使用できます。
+.SH オプション
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 14n
+.rt  
+入力のみを表示し、回線名、ログイン名、および時間 (数値と日付/時間の両方の形式) を表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.RS 14n
+.rt  
+\fBacctcon1\fR は、ユーザーがログインしている回線のリストを保持します。入力の末尾に達した時点で、まだアクティブと思われる回線ごとにセッションレコードを出力します。通常、入力は現在のファイルであると仮定するため、まだ進行中の各セッションの終了時間として現在時間を使用します。\fB-t\fR フラグを指定すると、入力内で見つかった最終時間が代わりに使用されるため、現在のファイル以外での妥当かつ繰り返し可能な数値が保証されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIlineuse\fR\fR
+.ad
+.RS 14n
+.rt  
+\fIlineuse\fR が作成され、回線名、使用時間 (分)、合計経過時間の使用率、課金対象のセッション数、ログイン回数、およびログオフ回数を示す回線使用のサマリーが格納されます。このファイルがあれば、回線使用状況の追跡、不良回線の特定、ソフトウェアやハードウェアの異常検出が容易になります。ハングアップ時、\fBlogin\fR(1) の終了時、ログインシェルの終了時にそれぞれログオフレコードが生成されるので、ログオフ回数はしばしばセッション数の 3 倍から 4 倍になります。\fBinit\fR(1M) および \fButmpx\fR(4) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIreboot\fR\fR
+.ad
+.RS 14n
+.rt  
+開始時間、終了時間、リブート回数、および日付変更回数を含むアカウンティング期間に対する概要レコードが、\fBreboot\fR に格納されます。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fR\fBacctcon\fR コマンドの使用。
+.sp
+.LP
+\fBacctcon\fR コマンドは通常、次のように使用されます。
+
+.sp
+.in +2
+.nf
+example% acctcon \fB-l\fR lineuse \fB-o\fR reboots < tmpwtmp > ctacct
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBacctcon1\fR および \fBacctcon2\fR コマンドは通常、次のように使用されます。
+
+.sp
+.in +2
+.nf
+example% acctcon1 \fB-l\fR lineuse \fB-o\fR reboots < tmpwtmp | sort +1n +2 > ctmp
+example% acctcon2 < ctmp > ctacct 
+.fi
+.in -2
+.sp
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/wtmp\fR \fR
+.ad
+.RS 18n
+.rt  
+ユーザーアクセスと管理情報の履歴
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/accounting/legacy-accounting
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBacctcom\fR(1), \fBlogin\fR(1), \fBacct\fR(1M), \fBacctcms\fR(1M), \fBacctmerg\fR(1M), \fBacctprc\fR(1M), \fBacctsh\fR(1M), \fBfwtmp\fR(1M), \fBinit\fR(1M), \fBrunacct\fR(1M), \fBacct\fR(2), \fBacct.h\fR(3HEAD), \fButmpx\fR(4), \fBattributes\fR(5)
+.sp
+.LP
+\fIIntroduction to Oracle Solaris 11.3                 Administration\fR
+.SH 注意事項
+.sp
+.LP
+回線使用レポートでは日付変更による混乱が生じます。この状況に対処するには、\fB/var/adm/wtmpx\fR ファイルを引数として指定して \fBwtmpfix\fR (\fBfwtmp\fR(1M) を参照) を使用してください。
+.sp
+.LP
+任意の指定されたコマンドの単一の呼び出し中に、\fBacctcon\fR、\fBacctcon1\fR、および \fBacctcon2\fR コマンドは最大で次を処理できます
+.RS +4
+.TP
+.ie t \(bu
+.el o
+6000 件の異なるセッション
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+1000 件の異なる端末回線
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+2000 件の異なるログイン名
+.RE
+.sp
+.LP
+ある時点でこれらの項目のいずれかの実際の数が最大を超えた場合、このコマンドは成功しません。

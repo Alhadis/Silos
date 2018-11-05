@@ -1,0 +1,558 @@
+'\" t
+.\"     Title: zonesbridge
+.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\"      Date: 08/20/2015
+.\"    Manual: RAD Module Definitions
+.\"    Source: SunOS 5.11
+.\"  Language: English
+.\"
+.TH "ZONESBRIDGE" "3rad" "08/20/2015" "SunOS 5.11" "RAD Module Definitions"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+zonesbridge
+.SH "SYNOPSIS"
+.SS "interface IO"
+.sp
+.nf
+.fi
+.sp
+.nf
+integer\ \&available(long\ \&token);
+.fi
+.sp
+.nf
+close(long\ \&token);
+.fi
+.sp
+.nf
+long\ \&openConsole(string\ \&zone);
+.fi
+.sp
+.nf
+long\ \&openRad(string\ \&zone,
+.
+\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&string\ \&user);
+.fi
+.sp
+.nf
+opaque\ \&read(long\ \&token,
+.
+\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&integer\ \&nbyte);
+.fi
+.sp
+.nf
+write(long\ \&token,
+.
+\ \&\ \&\ \&\ \&\ \&\ \&opaque\ \&buf);
+.fi
+.SS "interface Util"
+.sp
+.nf
+.fi
+.sp
+.nf
+string[]\ \&getZones(ZoneState\ \&state);
+.fi
+.SH "DESCRIPTION"
+.PP
+\fBapi com\&.oracle\&.solaris\&.rad\&.zonesbridge\fR
+.PP
+This API provides
+\fBrad(1m)\fR
+client connectivity to a non\-global zone through its global zone\&.
+.PP
+Two modes of connectivity are provided:
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  1." 4.2
+.\}
+access to the non\-global zone\'s local RAD agent
+.sp
+Using the
+openRad
+method, clients can connect to a local
+\fBrad(1m)\fR
+daemon running on a non\-global zone, through an established, authenticated RAD connection to its global zone\&.
+.sp
+This mode of connectivity is useful when a non\-global zone:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+has no network connectivity, or
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+has no dedicated management network interface, and chooses not to expose a remote
+\fBrad(1m)\fR
+daemon on its service network
+.RE
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  2." 4.2
+.\}
+access to the non\-global zone\'s console
+.sp
+Using the
+openConsole
+method, RAD clients can access the consoles of non\-global zones on the connected host\&.
+.RE
+.SH "INTERFACES"
+.SS "interface IO"
+.PP
+primary API for non\-global zone connectivity
+.PP
+The
+io
+interface provides connectivity to a zone\&. Handles to this type of object can be retrieved from the RAD server using an object name built with:
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  1." 4.2
+.\}
+the "com\&.oracle\&.solaris\&.rad\&.zonesbridge" domain name
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  2." 4.2
+.\}
+a key named "type" paired with a value of "IO"
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBIO Methods\fR
+.RS 4
+.PP
+\fBinteger\fR
+\fBavailable\fR(\fBlong\fR\ \&\fItoken\fR)
+.RS 4
+.PP
+get the number of bytes available
+.PP
+Gets the number of bytes available to be read, without blocking, on the connection identified by the given token\&.
+.PP
+\fBArguments:\fR
+.PP
+\fItoken\fR
+\(em the token identifying the open connection to query, as returned by
+openRad
+or
+openConsole
+.PP
+\fBResult:\fR
+.PP
+\fBinteger\fR
+\(em a non\-negative integer
+.PP
+\fBError:\fR
+.PP
+\fBZonesBridgeError\fR
+.RE
+.PP
+\fBclose\fR(\fBlong\fR\ \&\fItoken\fR)
+.RS 4
+.PP
+close a rad connection
+.PP
+Close a connection previously opened by
+openRad\&.
+.PP
+\fBArguments:\fR
+.PP
+\fItoken\fR
+\(em the token identifying the open connection to close, as returned by
+openRad
+or
+openConsole
+.PP
+\fBError:\fR
+.PP
+\fBZonesBridgeError\fR
+.RE
+.PP
+\fBlong\fR
+\fBopenConsole\fR(\fBstring\fR\ \&\fIzone\fR)
+.RS 4
+.PP
+open a connection to the console of the given non\-global zone
+.PP
+openConsole
+can be used to connect to a non\-global zone\'s console:
+.PP
+\fBExample\ \&1.\ \&openConsole (Python)\fR
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+import rad\&.client as radcli
+import rad\&.connect as radcon
+import rad\&.bindings\&.com\&.oracle\&.solaris\&.rad\&.zonesbridge as zbind
+
+# Create a connection to the global zone
+con = radcon\&.connect_unix()
+
+# Get a native\-looking python object that throws RAD exceptions
+zio = con\&.get_object(zbind\&.IO())
+
+# Open myzone\'s console
+token = zio\&.\fBopenConsole\fR("myzone")
+
+# Monitor output on zone\'s console
+while True:
+    input = zio\&.read(token, 1024)
+    if input is None:
+        break
+    print input,
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Unlike
+openRad,
+openConsole
+does not require a
+\fBrad(1m)\fR
+daemon to be running on the non\-global zone\&.
+.PP
+Connecting to a zone\'s console requires the
+solaris\&.zone\&.manage/\fBzonename\fR
+authorization\&.
+.PP
+Note that a zone\'s console is an exclusive resource that prohibits multiple simultaneous connections\&.
+.PP
+\fBArguments:\fR
+.PP
+\fIzone\fR
+\(em the non\-global zone to connect to
+.PP
+\fBResult:\fR
+.PP
+\fBlong\fR
+\(em a token used to
+read
+from and
+write
+to the console
+.PP
+\fBError:\fR
+.PP
+\fBZonesBridgeError\fR
+.RE
+.PP
+\fBlong\fR
+\fBopenRad\fR(\fBstring\fR\ \&\fIzone\fR, \fBstring\fR\ \&\fIuser\fR)
+.RS 4
+.PP
+open a connection to the rad server on the given non\-global zone
+.PP
+openRad
+is rarely invoked directly\&. Instead, a connection is usually established through the RAD infrastructure:
+.PP
+\fBExample\ \&2.\ \&openRad (Python)\fR
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+import rad\&.connect as radcon
+
+# Create a connection to the global zone
+gcon = radcon\&.connect_unix()
+
+# Create a connection to zone "myzone" as user "talley"
+# (if user is None or not specified, connect as root)
+zcon = \fBradcon\&.connect_zone\fR(gcon, "myzone", "garypen")
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Here, the
+radcon\&.connect_zone
+utility method plumbs the connection to the non\-global zone using an established, authenticated connection to the global zone\&.
+zcon
+is now authenticated as the given zone user and can be used to interact with the non\-global zone\'s
+\fBrad(1m)\fR
+daemon\&.
+.PP
+Note that, for simplicity of example,
+gcon
+is created via the standard unix domain socket, an automatically authenticated connection\&. Connections to remote hosts or through other transports must be authenticated
+\fBbefore\fRradcon\&.connect_zone
+is called\&.
+.PP
+Connecting to a zone\'s
+\fBrad(1m)\fR
+daemon requires the
+solaris\&.zone\&.manage/\fBzonename\fR
+authorization\&.
+.PP
+\fBArguments:\fR
+.PP
+\fIzone\fR
+\(em the non\-global zone to connect to
+.PP
+\fIuser\fR
+(\fInullable\fR) \(em the user (local to the given zone) to connect as (root if not specified)
+.PP
+\fBResult:\fR
+.PP
+\fBlong\fR
+\(em a token used to
+read
+from and
+write
+to the new connection
+.PP
+\fBError:\fR
+.PP
+\fBZonesBridgeError\fR
+.RE
+.PP
+\fBopaque\fR
+\fBread\fR(\fBlong\fR\ \&\fItoken\fR, \fBinteger\fR\ \&\fInbyte\fR)
+.RS 4
+.PP
+read data
+.PP
+Read up to
+nbyte
+bytes from the connection identified by the given token\&. If
+nbyte
+is non\-positive, no bytes are read and a zero\-length array is returned\&. Otherwise, this method will block until at least one byte is read\&.
+.PP
+\fBArguments:\fR
+.PP
+\fItoken\fR
+\(em the token identifying the open connection to read from, as returned by
+openRad
+or
+openConsole
+.PP
+\fInbyte\fR
+\(em a number identifying the maximum number of bytes to read
+.PP
+\fBResult:\fR
+.PP
+\fBopaque\fR
+(\fInullable\fR) \(em the read data, or null if the connection identified by the given token is open but the end of the data stream has been reached
+.PP
+\fBError:\fR
+.PP
+\fBZonesBridgeError\fR
+.RE
+.PP
+\fBwrite\fR(\fBlong\fR\ \&\fItoken\fR, \fBopaque\fR\ \&\fIbuf\fR)
+.RS 4
+.PP
+write data
+.PP
+Write the given bytes to the connection identified by the given token\&. If that connection is open but the end of the data stream has been reached, the written data is silently discarded\&.
+.PP
+\fBArguments:\fR
+.PP
+\fItoken\fR
+\(em the token identifying the open connection to write to, as returned by
+openRad
+or
+openConsole
+.PP
+\fIbuf\fR
+\(em the data to write
+.PP
+\fBError:\fR
+.PP
+\fBZonesBridgeError\fR
+.RE
+.RE
+.SS "interface Util"
+.PP
+utility API for zone\-related functionality
+.PP
+The
+util
+interface provides utility methods related to zone connectivity\&. Handles to this type of object can be retrieved from the RAD server using an object name built with:
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  1." 4.2
+.\}
+the "com\&.oracle\&.solaris\&.rad\&.zonesbridge" domain name
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  2." 4.2
+.\}
+a key named "type" paired with a value of "Util"
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBUtil Methods\fR
+.RS 4
+.PP
+\fBstring[]\fR
+\fBgetZones\fR(\fBZoneState\fR\ \&\fIstate\fR)
+.RS 4
+.PP
+get non\-global zones in the given state
+.PP
+Gets the names of the non\-global zones in the given state\&.
+.PP
+\fBArguments:\fR
+.PP
+\fIstate\fR
+\(em the state of the returned zones
+.PP
+\fBResult:\fR
+.PP
+\fBstring[]\fR
+.PP
+\fBError:\fR
+.PP
+\fI(no type)\fR
+.RE
+.RE
+.SH "ENUMERATED TYPES"
+.PP
+\fBenum ZonesBridgeErrorCode\fR
+.RS 4
+.PP
+NONE
+(0)
+.PP
+INVALID_TOKEN
+(1)
+.RS 4
+.PP
+if the given token is invalid or refers to a closed connection
+.RE
+.PP
+INVALID_ZONE
+(2)
+.RS 4
+.PP
+if the given zone is invalid
+.RE
+.PP
+INVALID_ZONE_PLATFORM
+(3)
+.RS 4
+.PP
+if the given zone\'s platform is inappropriate for the requested platform\-specific operation
+.RE
+.PP
+INVALID_ZONE_STATE
+(4)
+.RS 4
+.PP
+if the given zone\'s state is inappropriate for the requested operation
+.RE
+.PP
+COMMAND_FAILED
+(5)
+.RS 4
+.PP
+if a command to effect changes to or retrieve configuration from the system fails
+.RE
+.RE
+.PP
+\fBenum ZoneState\fR
+.RS 4
+.PP
+CONFIGURED
+(0)
+.PP
+INCOMPLETE
+(1)
+.PP
+INSTALLED
+(2)
+.PP
+READY
+(3)
+.PP
+RUNNING
+(4)
+.PP
+SHUTTING_DOWN
+(5)
+.PP
+DOWN
+(6)
+.PP
+MOUNTED
+(7)
+.RE
+.SH "STRUCTURE TYPES"
+.PP
+\fBstruct ZonesBridgeError\fR
+.RS 4
+.PP
+\fBFields:\fR
+.PP
+\fBZonesBridgeErrorCode\fR\ \&\fIerrorCode\fR
+.RE
+.PP
+\fBVersion:\fR
+(1\&.0)

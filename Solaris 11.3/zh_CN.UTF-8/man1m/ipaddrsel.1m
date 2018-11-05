@@ -1,0 +1,260 @@
+'\" te
+.\" Copyright (c) 2006, 2012, Oracle and/or its affiliates.All rights reserved.
+.TH ipaddrsel 1M "2012 年 5 月 22 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+ipaddrsel \- 配置 IPv6 缺省地址选择方式
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/ipaddrsel\fR 
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipaddrsel\fR \fB-f\fR \fIfile\fR
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipaddrsel\fR \fB-d\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+使用 \fBipaddrsel\fR 实用程序可配置 IPv6 缺省地址选择策略表。策略表是最长匹配前缀查找表，用于在将名称解析为 \fBAF_INET6\fR 地址时选择 IPv6 源地址和排列目标地址。有关如何使用策略表选择源地址的说明，请参见 \fBinet6\fR(7P)。有关如何使用策略表对目标地址排序的说明，请参见 \fBgetaddrinfo\fR(3SOCKET)。
+.sp
+.LP
+未修改的策略表适用于所有的典型 IPv6 部署。仅在环境的缺省 IPv6 源地址选择行为或者目标地址排序机制无法满足要求时，才需要修改表。有关这类环境的示例，请参见Examples部分。在更改表提供的缺省设置之前，您应该认真考虑您的寻址策略。
+.sp
+.LP
+发出不带任何参数的 \fBipaddrsel\fR 命令时，输出当前使用的地址选择策略。输出的格式与 \fB-f\fR 选项接受的配置文件的格式一致。
+.LP
+注 - 
+.sp
+.RS 2
+如果对特定物理接口应用 \fBifconfig\fR(1M) 的子命令 \fBusesrc\fR，则 \fBusesrc\fR 指定的选择策略会覆盖 \fBipaddrsel\fR 指定的源地址选择策略。对于在本地生成的包和未使用 \fBbind\fR(3SOCKET) 选择非零源地址的应用程序来说也是如此。
+.RE
+.SS "配置文件"
+.sp
+.LP
+\fB-f\fR 选项接受的配置文件可包含命令行或策略条目。命令行将 '\fB#\fR' 字符作为第一个非空白字符。\fBipaddrsel\fR 实用程序会忽略该字符。策略条目行的格式如下：
+.sp
+.in +2
+.nf
+\fIprefix\fR/\fIprefix_length\fR \fIprecedence\fR \fIlabel\fR [# \fIcomment\fR]
+.fi
+.in -2
+
+.sp
+.LP
+\fIprefix\fR 必须是格式符合 \fBinet\fR(3SOCKET) 的 IPv6 前缀。\fIprefix_length\fR 是 0 至 128 之间的整数。IPv6 源地址选择和目标地址排序算法通过使用此表中的前缀执行最长前缀匹配查找来确定地址的优先级或标签，这与通过使用 IP 路由表执行最长前缀匹配查找来确定下一中继目标非常相似。
+.sp
+.LP
+优先级是非负整数，表示目标地址排序机制如何对查找名称时返回的地址进行排序。一般来说，优先级高的地址排在优先级低的地址前面。然而，其他因素（如目标的源地址不符合要求）可能会覆盖这些优先级值。
+.sp
+.LP
+标签是最多包含 15 个字符（不包括 \fINULL\fR 结束符）的字符串。标签允许特定源地址前缀与具有同一标签的目标前缀配合使用。具体地说，对于特定目标地址，IPv6 源地址选择算法优先选择与目标具有相同标签的源地址。
+.sp
+.LP
+标签后可添加注释。
+.sp
+.LP
+文件必须包含缺省策略条目，缺省策略条目是指将 \fB::0/0\fR 作为 \fIprefix\fR 和 \fIprefix_length\fR 的条目。这是为了确保所有可能的地址都遵从一个策略。
+.SH 选项
+.sp
+.LP
+\fBippadrsel\fR 实用程序支持下列选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfile\fR\fR
+.ad
+.RS 11n
+.rt  
+使用在 \fIfile\fR 中指定的策略替换地址选择策略表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.RS 11n
+.rt  
+将内核的地址选择策略表恢复为缺省表。以这种方式调用 \fBipaddrsel\fR 只更改当前运行的内核策略表，不会更改配置文件 \fB/etc/inet/ipaddrsel.conf\fR。要将配置文件恢复为缺省设置，请使用 \fBipaddrsel\fR \fB-d\fR，然后将 \fBipaddrsel\fR 的输出重定向到 \fB/etc/inet/ipaddrsel.conf\fR，以将表的内容转储到配置文件。 
+.sp
+.in +2
+.nf
+example# \fBipaddrsel -d\fR
+example# \fBipaddrsel > /etc/inet/ipaddrsel.conf\fR
+.fi
+.in -2
+.sp
+
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR\fB/etc/inet/ipaddrsel.conf\fR 中的缺省策略
+.sp
+.LP
+以下示例显示了位于 \fB/etc/inet/ipaddrsel.conf\fR 中的缺省策略：
+
+.sp
+.in +2
+.nf
+# Prefix                            Precedence Label
+::1/128                             50 Loopback
+::/96                               20 IPv4_Compatible
+::ffff:0.0.0.0/96                   10 IPv4
+2002::/16                           30 6to4
+::/0                                40 Default
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR向链路本地和站点本地地址分配较低的优先级
+.sp
+.LP
+缺省情况下，目标地址排序规则将范围较小的地址排在范围较大的地址前面。例如，如果一个名称解析为一个全局地址和一个站点本地地址，则站点本地地址将排在全局地址前面。管理员可以通过向范围较小的地址分配较低的优先级来覆盖此排序规则，如下表所示。
+
+.sp
+.in +2
+.nf
+# Prefix                             Precedence Label
+::1/128                              50 Loopback
+::/0                                 40 Default
+2002::/16                            30 6to4
+fec0::/10                            27 Site-Local
+fe80::/10                            23 Link-Local
+::/96                                20 IPv4_Compatible
+::ffff:0.0.0.0/96                    10 IPv4
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR向 IPv4 目标分配较高的优先级
+.sp
+.LP
+缺省情况下，在查找名称时，IPv6 地址排在 IPv4 地址前面。\fB::ffff:0.0.0.0/96\fR 在缺省表中的优先级最低。在以下示例中，向 IPv4 地址分配了较高的优先级，因此 IPv4 地址排在 IPv6 目标前面：
+
+.sp
+.in +2
+.nf
+# Prefix                             Precedence Label
+::1/128                              50 Loopback
+::/0                                 40 Default
+2002::/16                            30 6to4
+::/96                                20 IPv4_Compatible
+::ffff:0.0.0.0/96                    60 IPv4
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR确保使用特定源地址
+.sp
+.LP
+本示例确保仅在与特定网络中的目标通信时才使用特定源地址。
+
+.sp
+.LP
+以下策略表将标签 5 分配给本地系统上的特定源地址 \fB2001:1111:1111::1\fR。该表将同一标签分配给网络 \fB2001:2222:2222::/48\fR。此策略的作用是，仅在与 \fB2001:2222:2222::/48\fR 网络中包含的目标通信时才使用 \fB2001:1111:1111::1\fR 源地址。在本示例中，该网络是 \fBClientNet\fR，表示特定客户网络。
+
+.sp
+.in +2
+.nf
+# Prefix                              Precedence Label
+::1/128                               50 Loopback
+2001:1111:1111::1/128                 40 ClientNet
+2001:2222:2222::/48                   40 ClientNet
+::/0                                  40 Default
+2002::/16                             30 6to4
+::/96                                 20 IPv4_Compatible
+::ffff:0.0.0.0/96                     10 IPv4
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+本示例假定本地系统具有一个物理接口，并且所有全局前缀都已分配给该物理接口。
+
+.SH 退出状态
+.sp
+.LP
+\fBipaddrsel\fR 返回以下退出值： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+\fBipaddrsel\fR 成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB>\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。如果遇到故障，内核的当前策略表不会发生改变。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ipaddrsel.conf\fR\fR
+.ad
+.RS 28n
+.rt  
+引导时要安装的文件，包含 IPv6 缺省地址选择策略。该文件在启动 Internet 服务之前装入。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBnscd\fR(1M)、\fBinet\fR(3SOCKET)、\fBgetaddrinfo\fR(3SOCKET)、\fBipaddrsel.conf\fR(4)、\fBattributes\fR(5)、\fBinet6\fR(7P)
+.SH 附注
+.sp
+.LP
+\fBnscd\fR(1M) 的 IP 节点高速缓存包含使用目标地址排序算法排序的地址，这就是在引导序列中先调用 \fBipaddrsel\fR 再调用 \fBnscd\fR 的原因之一。如果在 \fBnscd\fR 启动后使用 \fBipaddrsel\fR 更改了地址选择策略，您应该调用以下命令来使 \fBnscd\fR IP 节点高速缓存失效：
+.sp
+.in +2
+.nf
+example# \fB/usr/sbin/nscd -i ipnodes\fR
+.fi
+.in -2
+.sp
+

@@ -1,0 +1,451 @@
+'\" te
+.\" Copyright (c) 2015, Oracle and/or its affiliates. All rights             reserved.
+.TH svc.periodicd 1M "02 Jun 2015" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+svc.periodicd \- Service Management Facility periodic restarter
+.SH SYNOPSIS
+.LP
+.nf
+/lib/svc/bin/svc.periodicd
+.fi
+
+.LP
+.nf
+svc:/system/svc/periodic-restarter:default
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+\fBsvc.periodicd\fR is a restarter for the Service Management Facility (SMF) and handles services that are implemented not as long-running daemons, but rather as short-running processes that need to be run at regular intervals. Such services are known as periodic services.
+.sp
+.LP
+\fBsvc.periodicd\fR is invoked automatically during startup as part of the \fBsystem/svc/periodic-restarter\fR service and will be automatically restarted if any failures occur. Do not invoke \fBsvc.periodicd\fR directly.
+.sp
+.LP
+See \fBsmf_restarter\fR(5) for information about configuration and behavior common to all restarters.
+.sp
+.LP
+The \fBsvcs\fR command can report additional status for services managed by \fBsvc.periodicd\fR. See the \fBsvcs\fR(1) man page for more information.
+.SS "Service Methods"
+.sp
+.LP
+Periodic services support only one of the methods described in \fBsvc.startd\fR(1M). Only the start method is supported for periodic services. The stop and refresh methods are not supported by the periodic restarter and, if defined, are ignored.
+.SS "Service Reporting"
+.sp
+.LP
+\fBsvc.periodicd\fR provides logging of significant restarter actions for the service as well as method standard output and standard error file descriptors to \fB/var/svc/log/service:instance.log\fR.
+.SS "Periodic Service Definition"
+.sp
+.LP
+Qualitatively, periodic services (those managed by \fBsvc.periodicd\fR) differ from other services in that the processes that represent such a service are not persistent throughout the time in that the service is online. Instead, periodic services consist of relatively short lived process that are executed on regular intervals. For example, a periodic service might be used to check the status of a remote resource once every 30 seconds or to download software updates on a weekly basis. \fBsvc.periodicd\fR implements this behavior by running the start method for a delegated instance on regular intervals.
+.sp
+.LP
+When developing or configuring a periodic service, a common set of properties is used to affect how \fBsvc.periodicd\fR should handle the service. In addition to the common properties understood by \fBsvc.startd\fR(1M), svc.periodicd recognizes the following set of properties, each of which can be present in a property group named 'periodic':
+.sp
+.ne 2
+.mk
+.na
+\fBperiodic/period\fR
+.ad
+.RS 23n
+.rt  
+A time value specifying the duration to wait between invocations of the service's start method. This property is required.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBperiodic/jitter\fR
+.ad
+.RS 23n
+.rt  
+A time value specifying a random delay after the period has been reached before the start method is actually run. The delay ranges from between 0 seconds and the value of this property. This property is optional, and taken to be 0 if undefined.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBperiodic/delay\fR
+.ad
+.RS 23n
+.rt  
+A time value specifying the duration to wait after the the services reaches the 'online' state state before invoking the start method for that service. This property is optional, and taken to be 0 if undefined. The total delay time is the sum of \fBperiodic/delay\fR and \fBperiodic/jitter\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBperiodic/persistent\fR
+.ad
+.RS 23n
+.rt  
+A boolean value indicating whether the periodic restarter should maintain scheduling for an instance across system downtime. If the value is false, an instance will be scheduled from boot as though it has reached the online state for the first time. If this value is true, the periodic restarter will instead execute the start method for the instance at the current value of the instance's periodic_restarter/next_run property. If that value is in the past, the next execution will be scheduled such that it occurs at the next multiple of the period established before the downtime occurred.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBperiodic/recover\fR
+.ad
+.RS 23n
+.rt  
+A boolean value indicating whether the periodic restarter should invoke the service's start method during boot to compensate for an execution that was missed due to system downtime. For this effect to occur, it is also necessary that the periodic/persistent property be true. Subsequent exections will occur on schedule.
+.RE
+
+.SS "Scheduled Service Definition"
+.sp
+.LP
+Scheduled services behave in much the same way as periodic services. The key difference is that scheduled services run at specific times rather than on regular intervals. A scheduled service might be used, for example, to back up certain directories at 18:00 every Sunday.
+.sp
+.LP
+When developing or configuring a scheduled service, a common set of properties is used to affect how svc.periodicd should handle the service. In addition to the common properties understood by \fBsvc.startd\fR(1M), svc.periodicd recognizes the following set of properties, each of which can be present in a property group with type 'schedule':
+.sp
+.ne 2
+.mk
+.na
+\fBinterval\fR
+.ad
+.RS 20n
+.rt  
+This value and the frequency value together define how often the start method for a service should be run. Possible values are 'year', 'month', 'week', 'day', 'hour', and 'minute'. Start methods for services are guaranteed to be run exactly once for each scheduled period. That is, a service with a schedule of 'day' will have its start method executed precisely once each day.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBfrequency\fR
+.ad
+.RS 20n
+.rt  
+This value defines how many intervals must pass before the start method for the service is to be run. That is, if the interval is week and frequency is 3, the start method is executed every 3 weeks. Legal values are any positive integer. This property is optional, and taken to be 1 if undefined.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBtimezone\fR
+.ad
+.RS 20n
+.rt  
+This value specifies which timezone should be used to derive the execution time for the start method of the service. This value is optional, and if omitted is treated as the system timezone. Otherwise, valid values are timezone names.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fByear\fR
+.ad
+.RS 20n
+.rt  
+A value specifiying which Gregorian calendar year the schedule should be based on. This property is only useful when creating scheduled service with a frequency other than 1, and creates a reference point from which to compute the rest of the schedule.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBweek_of_year\fR
+.ad
+.RS 20n
+.rt  
+A value specifying in which ISO 8901 week a service is scheduled to run, based on an ISO Week Date year. Legal values are 1 through 53. Negative numbers can be used to count backward from the end of the year.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBmonth\fR
+.ad
+.RS 20n
+.rt  
+A value specifying in which month a service is scheduled to run. Legal values are 1 through 12, the full name of the month, or the three-letter abbreviation for that month. All names must be specified using the C Locale. Negative numbers can be used to count backward from the end of the year.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBweekday_of_month\fR
+.ad
+.RS 20n
+.rt  
+A value specifying on which occurrence of a given weekday a service is scheduled to run. Legal values are 1 through 5. Negative numbers can be used to count backward from the end of the month.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBday\fR
+.ad
+.RS 20n
+.rt  
+A value specifying on which day of an ISO 6801 week a service is schedule to run. Legal values are 1 through 7, the full name of the day, or the three-letter abbreviation for that day. All names must be specified using the C Locale. Negative number can be used to count backward from the end of the week.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBday_of_month\fR
+.ad
+.RS 20n
+.rt  
+A value specifying on which day of the month a service is scheduled to run. Legal values are 1 through 31. If a month has fewer days that the value of this property, the start method for the service will be run on the last day of that month. Negative numbers can be used to count backward from the end of the month. This property cannot be used along with the day property.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBhour\fR
+.ad
+.RS 20n
+.rt  
+A value specifying in which hour of the day a service is scheduled to run. Legal values are 0 through 23. Negative numbers can be used to count backward from the end of the day (-1 thru -24). If a given hour occurs more than once on a particular day, the start method for the service will be run only during the first occurrence of that hour. If the hour does not occur on a particular day, the start method for the service will run in the next hour.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBminute\fR
+.ad
+.RS 20n
+.rt  
+A value specifying in which minute of the hour a service is schedule to run. Legal values are 0 through 59. Negative numbers can be used to count backward from the end of the hour (-1 thru -60).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBrecover\fR
+.ad
+.RS 20n
+.rt  
+A boolean value indicating whether the periodic restarter should invoke the start method of the service during boot to compensate for an execution that was missed due to system downtime. 
+.RE
+
+.sp
+.LP
+The only required property in this property group is 'interval'. All other properties except for \fBrecovery\fR are used to put additional constraings on the schedule. The only properties that contribute to the constraint are those that are shorter lengths of time than the value of interval. If the value of 'interval' is 'week', it is permissible to constrain that schedule by defining values for 'scheduled/day' down to 'minute'. Constraints must start one level down from the value of 'interval' and must also be continuous, but it is not necessary to define all possible constraints. In fact, service developers are encouraged to define as few constraints as possible. This way, a service can be scheduled to run on a particular hour of a given day, but leave it to \fBsvc.periodicd\fR to decide which minute of that hour the start method for the service should run.
+.sp
+.LP
+For the initial invocation of the start method, undefined constraints acquire random values. For subsequent invocations, \fBsvc.periodicd\fR provides some consistency to ensure that executions of the start method for the service are sufficiently separated. Specifically, the first unconstrained unit of time will be generated randomly only for the first execution of the service and then used until the service is disabled. A service with an interval of 'year' and no other constraints will always run in the same month of the year, but not necessarily on the same day of that month. Similarly, a service with a schedule of 'week' and a constraint for the 'day' will always run in the same hour of that day, but not necessarily in the same minute of that hour.
+.sp
+.LP
+If the value of 'frequency' is greater than one, you must also specify all constraints at or above the value of 'interval'. When defined in this context, the constraints are used to determine a reference point from which the rest of the schedule is computed. A service with an interval equal to 'year' with a frequency of '2' can specify a constraint with 'year = 2002' or 'year = 1936' to ensure that the start method for the service is executed in even numbered years. Note that these constraints are reference points and do not represent a start or end date. It is possible to use any time on any date in any year, provided that the choice of values accurately reflects when the start method for the service should be run.
+.SS "Service States"
+.sp
+.LP
+Services managed by \fBsvc.periodicd\fR can appear in any of the states described in \fBsmf\fR(5). The state definitions are unmodified by this restarter.
+.SS "Service Failure"
+.sp
+.LP
+\fBsvc.periodicd\fR follows the failure conditions outlined in the Service Failure section of \fBsvc.startd\fR(1M), with two modifications. The \fBSMF_EXIT_TEMP_TRANSIENT\fR exit code will be treated identically to \fBSMF_EXIT_ERR_OTHER\fR. Additionally, should a method run such that the execution time is longer than the configured period but shorter than the configured method timeout, svc.periodicd(1M) will not attempt to invoke the method again but will instead wait for the method to exit and will invoke the method at the subsequent multiple of the period.
+.sp
+.LP
+On the first failure for an instance, that instance will be placed into the 'degraded' state. After three successive failures, the instance will be immediately put into the maintenance state. Should a successful invocation occur before the third failure, the instance will be moved back to the online state.
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRCreating a Periodic Service
+.sp
+.LP
+The following is the manifest for a simple periodic service. Following an invocation of '\fBsvcadm enable example/periodic_service:default\fR', \fBsvc.periodicd\fR will wait between 15 and 20 seconds before running the start method. After the first invocation of the start method, the method will be run thereafter every 30 to 35 seconds.
+
+.sp
+.in +2
+.nf
+<?xml version='1.0'?> 
+     <!DOCTYPE service_bundle SYSTEM 
+     '/usr/share/lib/xml/dtd/service_bundle.dtd.1'> 
+ . 
+     <service_bundle type='manifest' name='SUNWsvc:test'> 
+ . 
+     <service    name='example/periodic_service'   type='service' 
+     version='1'> 
+ . 
+ . 
+         <instance name='default' enabled='false'> 
+ . 
+     <periodic_method 
+         period='30' 
+ delay='15' 
+ jitter='5' 
+ exec='/usr/bin/periodic_service_method' 
+ timeout_seconds='0'> 
+     <method_context> 
+         <method_credential user='root' group='root' /> 
+     </method_context> 
+     </periodic_method> 
+ . 
+         </instance> 
+ . 
+     </service> 
+ . 
+     </service_bundle>
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRCreating a Scheduled Service
+.sp
+.LP
+Below is a manifest for a simple scheduled service. \fBsvc.periodicd\fR will execute the start method for this service on the first day of each month, between 2:00am and 3:00am.
+
+.sp
+.in +2
+.nf
+<?xml version='1.0'?> 
+     <!DOCTYPE service_bundle SYSTEM 
+     '/usr/share/lib/xml/dtd/service_bundle.dtd.1'> 
+  
+     <service_bundle type='manifest' name='SUNWsvc:test'> 
+  
+     <service    name='example/scheduled_service'   type='service' 
+     version='1'> 
+  
+  
+         <instance name='default' enabled='true'> 
+ 
+     <scheduled_method 
+         interval='month' 
+ day='1' 
+ hour='2' 
+ exec='/usr/bin/scheduled_service_method' 
+ timeout_seconds='0'> 
+     <method_context> 
+         <method_credential user='root' group='root' /> 
+     </method_context> 
+     </scheduled_method> 
+  
+         </instance> 
+  
+     </service> 
+  
+     </service_bundle>
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRCreating a Scheduled Service With a Frequency
+.sp
+.LP
+Below is a manifest for a scheduled service with a frequency greater than one. \fBsvc.periodicd\fR will execute the start method for this service on Thanksgiving (United States), whenever the year is divisible by five.
+
+.sp
+.in +2
+.nf
+<?xml version='1.0'?> 
+     <!DOCTYPE service_bundle SYSTEM 
+     '/usr/share/lib/xml/dtd/service_bundle.dtd.1'> 
+  
+     <service_bundle type='manifest' name='SUNWsvc:test'> 
+  
+     <service    name='example/scheduled_service'   type='service' 
+     version='1'> 
+  
+  
+         <instance name='default' enabled='true'> 
+  
+     <scheduled_method 
+         interval='year' 
+ frequency='5' 
+ year='1900' 
+ month='nov' 
+ weekday_of_month='4' 
+ day='Thu' 
+ exec='/usr/bin/scheduled_service_method' 
+ timeout_seconds='0'> 
+     <method_context> 
+         <method_credential user='root' group='root' /> 
+     </method_context> 
+     </scheduled_method> 
+  
+         </instance> 
+  
+     </service> 
+  
+     </service_bundle>
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 4 \fRCreating a Multiple-Week Service
+.sp
+.LP
+Below is a manifest for a scheduled service. \fBsvc.periodicd\fR will execute the start method for this service every three weeks, with a reference point of the 15th week of 2027, on Tuesday at 10:30pm.
+
+.sp
+.in +2
+.nf
+<?xml version='1.0'?> 
+     <!DOCTYPE service_bundle SYSTEM 
+     '/usr/share/lib/xml/dtd/service_bundle.dtd.1'> 
+  
+     <service_bundle type='manifest' name='SUNWsvc:test'> 
+  
+     <service    name='example/scheduled_service'   type='service' 
+     version='1'> 
+  
+  
+         <instance name='default' enabled='true'> 
+  
+     <scheduled_method 
+         interval='week' 
+ frequency='3' 
+ year='2027' 
+ week_of_year='15' 
+ day='2' 
+ hour='22' 
+ minute='30' 
+ exec='/usr/bin/scheduled_service_method' 
+ timeout_seconds='0'> 
+     <method_context> 
+         <method_credential user='root' group='root' /> 
+     </method_context> 
+     </scheduled_method> 
+  
+         </instance> 
+  
+     </service> 
+  
+     </service_bundle>
+.fi
+.in -2
+.sp
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/core-os
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBsvc.startd\fR(1M), \fBsvcs\fR(1), \fBsmf\fR(5), \fBsmf_method\fR(5), \fBservice_bundle\fR(4)

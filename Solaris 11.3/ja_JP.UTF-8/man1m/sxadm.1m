@@ -1,0 +1,542 @@
+'\" te
+.\" Copyright (c) 2015, Oracle and/or its affiliates.All rights reserved.
+.TH sxadm 1M "2015 年 6 月 15 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+sxadm \- Solaris セキュリティー拡張の構成の管理
+.SH 形式
+.LP
+.nf
+sxadm enable [-c property=value[,property=value,...]]
+      extension[,extension,...]
+
+sxadm delcust [extension,...]
+
+sxadm disable extension[,extension,...]
+
+sxadm get [-p] [-o "all" | field[,...]] <"all" | property[,...]>
+     [extension]
+
+sxadm help [subcommand]
+
+sxadm set property=value[,property=value,...] extension
+
+sxadm status [-p] [extension]
+.fi
+
+.LP
+.nf
+sxadm exec [-s extension=value],... command
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBsxadm\fR コマンドは、Solaris セキュリティー拡張を構成し、関連する情報を提供します。これらの拡張は、システムレベルまたはプロセスレベルで適用できます。
+.sp
+.LP
+プロセスのセキュリティー拡張は \fBexec\fR(2) によって決定され、その時点からプロセスに対して有効になります。拡張は、プロセスが終了するか、再度 \fBexec\fR(2) を呼び出すまで、プロセスの有効期間の間持続します。システムレベルの拡張はすべてのプロセスに影響を与えます。プロセスレベルの拡張は、個々のプロセスに影響を与え、子プロセスが特権プロセスでない場合はすべての子プロセスによって継承されます。「\fBセキュリティー拡張\fR」を参照してください。
+.sp
+.LP
+個々の実行可能ファイルには、\fBld\fR(1) で構築する際に、セキュリティー拡張の要件をタグ付けできます。このタグ付けにより、システムレベルの拡張にかかわらず、関連付けられたプロセス要件が確実に満たされます。セキュリティー拡張がタグ付けされている実行可能ファイルは、プロセスレベルの拡張でオーバーライドできます。「\fB実行可能ファイルにタグ付けされる拡張\fR」を参照してください。
+.SS "セキュリティー拡張"
+.sp
+.LP
+次のセキュリティー拡張が使用可能です。これらの拡張は、攻撃者が既知のエントリポイントを見つけたり、あとで実行される場所に攻撃用コードを埋め込んだりする可能性を減らします。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBASLR\fR - アドレス空間レイアウトのランダム化\fR
+.ad
+.sp .6
+.RS 4n
+\fBASLR\fR は、スタック、brk ベースのヒープ、メモリーセグメントマッピングなどのプロセスの重要な部分のランダム化をアクティブにします。位置独立実行可能ファイルとして構築されたアプリケーションのメモリーマッピングも、\fBASLR\fR でランダム化されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNXHEAP\fR - 実行不能ヒープ\fR
+.ad
+.sp .6
+.RS 4n
+\fBNXHEAP\fR は、プロセスヒープに割り当てられたページが実行可能になることを防ぎます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNXSTACK\fR - 実行不能スタック\fR
+.ad
+.sp .6
+.RS 4n
+\fBNXSTACK\fR は、プロセススタックに割り当てられたページが実行可能になることを防ぎます。旧バージョンの \fB/etc/system noexec_user_stack\fR および \fBnoexec_user_stack_log\fR 設定との下位互換性は維持されていますが、このような制御は非推奨であり、代わりに \fBsxadm\fR を使用するようにしてください。
+.RE
+
+.sp
+.LP
+デフォルトでは、大域ゾーンおよびすべての非大域ゾーンで、\fBASLR\fR および \fBNXHEAP\fR 拡張はタグ付けされたバイナリに対してのみ有効になり、\fBNXSTACK\fR 拡張はすべてのプロセスに対して有効になります。
+.SS "セキュリティー拡張のプロパティー"
+.sp
+.LP
+セキュリティー拡張には 1 つ以上のプロパティーを設定できます。すべての拡張に model プロパティーがあります。このプロパティーは、拡張が適用される対象を定義します。次の model プロパティーがあります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmodel=all\fR\fR
+.ad
+.RS 22n
+.rt  
+すべてのプロセスに対してセキュリティー拡張を有効にします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmodel=tagged-files\fR\fR
+.ad
+.RS 22n
+.rt  
+タグ付けされているバイナリに対してセキュリティー拡張を有効にします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmodel=default\fR\fR
+.ad
+.RS 22n
+.rt  
+セキュリティー拡張システムのデフォルトに従います。「\fBセキュリティー拡張\fR」を参照してください。
+.RE
+
+.sp
+.LP
+セキュリティー拡張に追加のプロパティーが存在する場合もあります。
+.sp
+.LP
+\fBNXHEAP\fR および \fBNXSTACK\fR にはロギングプロパティーがあり、これが有効になっている場合、実行不能なメモリー範囲 (\fBNXSTACK\fR の場合はスタック、\fBNXHEAP\fR の場合はヒープとデータ) から実行が試行されると報告されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlog=enable\fR\fR
+.ad
+.RS 15n
+.rt  
+ロギングを有効にします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlog=disable\fR\fR
+.ad
+.RS 15n
+.rt  
+ロギングを無効にします。(デフォルト構成)
+.RE
+
+.SS "セキュリティー拡張の管理"
+.sp
+.LP
+\fBsxadm\fR のサブコマンド \fBenable\fR、\fBdisable\fR、\fBset\fR、および \fBdelcust\fR を使用すると、システム全体のセキュリティー拡張を変更できます。たとえば、次の \fBsxadm\fR コマンドは、拡張をシステム全体で有効にします。
+.sp
+.in +2
+.nf
+% \fBsxadm enable nxstack\fR
+% \fBsxadm enable aslr,nxheap\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次の \fBsxadm\fR コマンドも拡張をシステム全体で有効にしますが、各プロパティーを明示的に指定しています。
+.sp
+.in +2
+.nf
+% \fBsxadm enable -c model=all aslr\fR
+% \fBsxadm enable -c model=all -c log=enable nxstack\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+また、\fBsxadm\fR のサブコマンド \fBexec\fR を使用すると、セキュリティー拡張をプロセスに対して有効または無効にすることができます。このサブコマンドは、セキュリティー拡張のステータスにのみ影響します。拡張のほかのプロパティーは、すべてシステムプロパティーから継承されます。次の \fBsxadm\fR コマンドにより、\fBfoobar\fR プロセスは必ず拡張が無効になった状態で実行されます。
+.sp
+.in +2
+.nf
+% \fBsxadm exec -s aslr=disable -s nxheap=disable foobar\fR
+.fi
+.in -2
+.sp
+
+.SS "実行可能ファイルにタグ付けされる拡張"
+.sp
+.LP
+個々の実行可能ファイルには、次の \fBld\fR(1) オプションで構築する際に、セキュリティー拡張の要件をタグ付けできます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBalsr\fR[=\fImode\fR]\fR
+.ad
+.RS 21n
+.rt  
+\fBASLR\fR のタグ付けを制御します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnxheap\fR[=\fImode\fR]\fR
+.ad
+.RS 21n
+.rt  
+実行不能ヒープのタグ付けを制御します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnxstack\fR[=\fImode\fR]\fR
+.ad
+.RS 21n
+.rt  
+実行不能スタックのタグ付けを制御します。
+.RE
+
+.sp
+.LP
+mode には enabled または disabled を指定できます。mode が指定されていない場合、デフォルトは \fBenabled\fR です。
+.sp
+.LP
+タグ付けされた実行可能ファイル内に定義されているセキュリティー拡張は、システム全体のセキュリティー設定と次のように相互に作用します。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+セキュリティー設定が有効または無効に指定されている実行可能ファイルは、システムのセキュリティー設定にかかわらず尊重されます。プロセスレベルのセキュリティー設定は、タグ付けされた実行可能ファイルの設定をオーバーライドします。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+システムのセキュリティー設定が tagged-files の場合、セキュリティー設定がタグ付けされている実行可能ファイルだけが尊重されます。
+.RE
+.SH サブコマンド
+.sp
+.LP
+\fBsxadm\fR コマンドには次のサブコマンドがあります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm enable\fR [\fB-c\fR \fIproperty\fR=\fIvalue\fR[\fI,property\fR=\fIvalue\fR,...]] \fIextension\fR[\fI,extension\fR,...]\fR
+.ad
+.sp .6
+.RS 4n
+現在のゾーンに対して指定したセキュリティー拡張を有効にします。\fB-c\fR オプションにより \fBsxadm\fR で特定の拡張のプロパティー値を渡すことができます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm delcust\fR [\fIextension\fR,...]\fR
+.ad
+.sp .6
+.RS 4n
+拡張をデフォルト構成に復元します。このオプションは実質的にすべてのカスタマイズ内容を削除します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm disable\fR \fIextension\fR[\fI,extension\fR,...]\fR
+.ad
+.sp .6
+.RS 4n
+現在のゾーンに対して指定したセキュリティー拡張を無効にします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm help\fR [\fIsubcommand\fR]\fR
+.ad
+.sp .6
+.RS 4n
+sxadm に関する使用法の情報または各サブコマンドの詳細情報を表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm status\fR [\fB-p\fR] [\fIextension\fR]\fR
+.ad
+.sp .6
+.RS 4n
+現在のゾーンのすべてのセキュリティー拡張のステータスに関する情報を報告します。\fB-p\fR を指定した場合、出力は簡単に解析可能な形式で表示されます。コマンド行にextensionを指定すると、特定の拡張にフィルタします。マシン解析可能な出力はコロン区切りのフィールドのリストです。
+.sp
+.in +2
+.nf
+extension:status (model):configuration (model)
+.fi
+.in -2
+.sp
+
+各表記の意味は次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBextension\fR\fR
+.ad
+.RS 17n
+.rt  
+拡張の名前
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstatus\fR\fR
+.ad
+.RS 17n
+.rt  
+拡張の現在のステータス (有効または無効)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmodel\fR\fR
+.ad
+.RS 17n
+.rt  
+セキュリティー拡張に対して現在有効になっているモデル (すべて、デフォルト、タグ付けされたバイナリ)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfiguration\fR\fR
+.ad
+.RS 17n
+.rt  
+拡張の保存されている構成 (有効、無効、またはシステムデフォルト)
+.sp
+文字のコロン (\fB:\fR)、NULL 記号 (\fB\0\fR)、および改行 (\fB\n\fR) は、どのコンポーネント (extension_name、status、extra、および configuration) にも使用できません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm get\fR [\fB-p\fR] [\fB-o\fR "all" | field[,...]] <"all" | property[,...]> [extension]\fR
+.ad
+.sp .6
+.RS 4n
+セキュリティー拡張のプロパティーの値を表示します。拡張が指定されている場合は、指定された拡張のプロパティーの値だけを表示します。すべてのセクションに関連するプロパティーを表示するには、"all" を指定します。プロパティーごとに、次の列が表示されます。
+.sp
+.in +2
+.nf
+extension: the extension the property refers to
+name: the name of the property
+value: the value of the property
+.fi
+.in -2
+.sp
+
+デフォルトでは、すべての列が表示されます。特定の列またはすべての列を指定するには、\fB-o\fR オプションを使用します。\fB-p\fR を指定した場合、出力は簡単に解析可能な形式で表示されます。そのような形式は、フィールドをコロンで区切ったリストです。
+.sp
+.in +2
+.nf
+extension:property:value
+.fi
+.in -2
+.sp
+
+文字のコロン (\fB:\fR)、NULL 記号 (\fB\0\fR)、および改行 (\fB\n\fR) は、どのコンポーネントにも使用できません。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm set\fR \fIproperty\fR=\fIvalue\fR[\fI,property\fR=\fIvalue\fR,...] \fIextension\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された拡張のプロパティーに値を割り当てます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm exec\fR \fB-s\fR [\fIextension\fR=\fIvalue\fR]... command\fR
+.ad
+.sp .6
+.RS 4n
+セキュリティー拡張の特定の構成で、指定したコマンドを実行します。コマンド行に明示的に構成されていない各セキュリティー拡張に対しては、システム構成が使われます。command によって最終的に生成される子プロセスは、コマンド行に指定された同じセキュリティー拡張の構成を継承します。setuids および特権バイナリはどの構成も継承しません。複数の \fB-s\fR オプションを使用して、コマンド行から複数の構成を表すことができます。同じ拡張が複数回構成されている場合、最後の構成が優先されます。次の例で、\fBfoobar\fR は \fBASLR\fR が有効になった状態で実行されます。
+.sp
+.in +2
+.nf
+% \fBsxadm exec -s aslr=disable -s aslr=enable foobar\fR
+.fi
+.in -2
+.sp
+
+\fBsxadm exec\fR サブコマンドは、デバッガがデバッガによって直接起動された単一のプロセスに適用される一般的な例に対応するように設計されています。もっと複雑なシナリオでは十分でないことがあります。その場合は、\fBsxadm\fR を使用して、システムまたはゾーンレベルのセキュリティー拡張のデフォルトを変更するか、デバッグを容易にするために、\fBld\fR(1) ユーティリティーを使用して、オブジェクト単位でのタグ付けを適用する必要がある可能性があります。
+.sp
+この機能が有用になるのは主に、ランダム化されたシークレットに基づく拡張 (\fBASLR\fR など) がアクティブになっているときです。このような場合、メモリーアドレスの変更によってデバッグシナリオが複雑になる可能性があるためです。この機能は、セキュリティー拡張の構成が異なっているアプリケーションを明示的にテストする場合にも役立ちます。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRセキュリティー拡張の現在の構成を表示する
+.sp
+.in +2
+.nf
+$ \fBsxadm status -p\fR
+       aslr:enabled (tagged-files):system default (default)
+       nxstack:enabled (all):system default (default)
+       nxheap:enabled (tagged-files):system default (default)
+       $
+
+       $ \fBsxadm status\fR
+       EXTENSION        STATUS                   CONFIGURATION            
+       aslr             enabled (tagged-files)   system default (default)
+       nxstack          enabled (all)            system default (default)
+       nxheap           enabled (tagged-files)   system default (default)
+       $
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRset/get を使用してセキュリティー拡張のプロパティーを設定/取得する
+.sp
+.in +2
+.nf
+$ \fBsxadm get model aslr\fR
+       EXTENSION       PROPERTY          VALUE
+       aslr            model            tagged-files
+       $
+
+       $ \fBsxadm set log=enable nxheap\fR
+       $ \fBsxadm get log nxheap\fR
+       EXTENSION       PROPERTY         VALUE
+       nxheap          log              enable
+       $
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fRデバッグセッションの実行
+.sp
+.LP
+次のコマンドシーケンスは、\fBASLR\fR を無効にして実行されているデバッグセッションを示しています。
+
+.sp
+.in +2
+.nf
+$ \fBsxadm exec -s aslr=disable /bin/bash\fR
+       $
+       # Because all processes (except privileged ones) inherit the(disabled)
+       # ASLR configuration mdb, truss & co will have repeatable results.
+
+       $ truss -t mmap /bin/true
+       mmap(0x00000000, 32, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE5B0000
+       mmap(0x00000000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE5A0000
+       mmap(0x00000000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE590000
+       [...]
+       $ truss -t mmap /bin/true
+       mmap(0x00000000, 32, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE5B0000
+       mmap(0x00000000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE5A0000
+       mmap(0x00000000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE590000
+       [...]
+       $ truss -t mmap /bin/true
+       mmap(0x00000000, 32, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE5B0000
+       mmap(0x00000000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE5A0000
+       mmap(0x00000000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE590000
+.fi
+.in -2
+.sp
+
+.SH 終了ステータス
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+コマンドが正常に完了しました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+エラーが発生したため、コマンドが終了しました。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBld\fR(1), \fBexec\fR(2), \fBattributes\fR(5)

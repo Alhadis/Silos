@@ -1,0 +1,999 @@
+'\" te
+.\" Copyright (c) 2007, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH bootadm 1M "2015 年 3 月 25 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+bootadm \- 管理引导配置
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR update-archive [\fB-v] [-f | -n\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR list-archive [\fB-vn\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR install-bootloader [\fB-Mfv\fR] [\fB-P\fR \fIpool\fR] [\fB-R\fR \fIpath\fR]
+     [\fIdevice1\fR ... \fIdeviceN\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm boot-pool\fR {
+     [{\fBadd|remove\fR} [\fB-P\fR \fIrpool\fR] <\fIdevice list\fR>] |
+     \fBlist\fR [\fB-P\fR \fIrpool\fR] |
+     \fBresync\fR [\fB-P\fR \fIrpool\fR] [\fB-vA\fR] [<\fIBE_list\fR>] |
+     \fBset\fR [\fB-P\fR \fIrpool\fR] <\fIparam\fR>=<\fIvalue\fR> ... }
+.fi
+
+.LP
+.nf
+x86 only
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR set-menu [\fB-P\fR \fIpool\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]
+     {\fIkey\fR=\fIvalue\fR [\fIkey\fR=\fIvalue\fR ...]}
+.fi
+
+.LP
+.nf
+/usr/sbin/bootadm set-menu-password [-P \fIpool\fR] [-R \fIaltroot\fR [-p \fIplatform\fR]]
+          [-f <\fIpath to file\fR>] | -s] | [-r] | [-l -t [-i \fIentry_number\fR] | -g]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR list-menu [\fB-P\fR \fIpool\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]
+     [[\fB-i\fR \fIentry_number\fR] | \fIentry_title\fR]
+.fi
+
+.LP
+.nf
+/usr/sbin/bootadm use-batch -f file
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR generate-menu [\fB-P\fR \fIpool\fR] [\fB-f\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR show-entry [-P \fIpool\fR] <\fIentry_name\fR> | -i <\fIindex\fR>
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR add-entry [\fB-P\fR \fIpool\fR] [\fB-i\fR \fIentry_number\fR] \fIentry_title\fR
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR change-entry [\fB-P\fR \fIpool\fR] {[\fIentry_title\fR[,\fIentry_title\fR...]
+| \fB-i\fR \fIentry_number\fR[,\fIentry_number\fR]...]} {\fIkey\fR=\fIvalue\fR [\fIkey\fR=\fIvalue\fR ...]
+| set-default }
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR remove-entry [\fB-P\fR \fIpool\fR] {[\fIentry_title\fR[,\fIentry_title\fR...]
+| \fB-i\fR \fIentry_number\fR[,\fIentry_number\fR]...]}
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBbootadm\fR 命令用于管理引导归档文件以及 x86 引导环境中的 GRUB (GRand Unified Bootloader) 菜单。对于 x86，传统 GRUB 和 GRUB2 都受支持（但不是同时支持）。
+.sp
+.LP
+\fBupdate–archive\fR 选项提供了一种用于用户更新引导归档文件的方法，作为恢复过程的一种预防措施或一部分。
+.sp
+.LP
+\fBset-menu\fR 子命令可用于切换 GRUB 菜单中的 \fBauto-boot\fR 超时以及缺省的引导项。
+.sp
+.LP
+\fBset-menu-password\fR 子命令设置口令来阻止查看 GRUB 菜单。要进行设置，请使用 \fB-f\fR <\fIpath to file\fR>；如果使用了 \fB-s\fR，将会两次提示输入口令；\fB-r\fR 删除口令；\fB-l\fR 列出是否存在全局菜单口令锁，菜单项 \fBuserlisti\fR \fB-l\fR \fB-t\fR 在可解析的输出中列出菜单项用户列表；如果使用了 \fB-l\fR \fB-t\fR \fB-i\fR <\fIentry number\fR>，则在可解析的输出中为包含该项数的列表列出用户列表；如果使用了 \fB-l\fR \fB-t\fR \fB-g\fR，则在可解析的输出中列出是否存在全局菜单口令锁。
+.sp
+.LP
+\fBlist-menu\fR 子命令显示当前 GRUB 菜单项，或者选择性地显示由索引（如果使用了 \fB-i\fR）或标题字符串（如果省略了 \fB-i\fR）标识的特定条目的详细信息。
+.sp
+.LP
+\fBuse-batch\fR 子命令 \fB-f\fR <\fIfile\fR> 执行提供的文件中的 bootadm 指令。这对于在通过清单文件进行安装期间设置口令非常有用。
+.sp
+.LP
+\fBinstall-bootloader\fR 子命令安装系统引导装载程序。它取代了 x86 上的 \fBinstallgrub\fR(1M) 的功能和 SPARC 上的 \fBinstallboot\fR(1M)，并且支持在 x86 上安装 GRUB2 引导装载程序。
+.sp
+.LP
+存在活动的引导池时，将维护可引导数据集，每个数据集与一个引导环境对应并存储该引导环境的可引导 \fBartifacts\fR（工件）（例如 boot_archive（x64 和 SPARC 平台）和 unix 内核可执行文件（仅 x64 平台））。\fBboot-pool\fR 子命令允许管理员管理引导池的各个方面，包括设备成员关系（使用 \fBadd/remove\fR 子命令）、引导工件的手动同步（使用 \fBresync\fR 子命令）和设置引导池属性（使用 \fBset\fR 子命令）。
+.sp
+.LP
+\fBgenerate-menu\fR 子命令提供了一种为 Solaris 条目创建新菜单配置文件的方法。如果引导装载程序配置文件已存在，则必须传递 \fB-f\fR 以强制该子命令覆盖这些文件。
+.sp
+.LP
+\fBshow-entry\fR、\fBadd-entry\fR、\fBchange-entry\fR 和 \fBremove-entry\fR 子命令提供了相应的选项来显示、添加、更改或者从 GRUB 菜单中删除菜单项。\fBchange-entry\fR 还提供了相应的选项来向菜单项添加安全保护。
+.sp
+.LP
+请注意，基于 OpenBoot PROM (OBP) 的计算机（如 SPARC 系统），不使用 GRUB，也不存在可由 \fBbootadm\fR 管理的引导菜单。
+.sp
+.LP
+\fBbootadm\fR 命令动态确定要管理的映像支持的选项。这样，平台上调用的 \fBbootadm\fR 命令可用于管理其他平台类型的无盘客户机。
+.SH 子命令
+.sp
+.LP
+对于支持对 \fIentry_title\fR 进行指定的子命令，\fIentry_title\fR 是括在双引号或单引号内的一个字符串。
+.sp
+.LP
+\fIentry_number\fR 是一个非负整数，表示 GRUB 菜单中的菜单条目的索引。
+.sp
+.LP
+\fBbootadm\fR 命令包含以下子命令：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBupdate-archive\fR [\fB-v] [-f | -n\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]\fR
+.ad
+.sp .6
+.RS 4n
+根据需要更新当前引导归档文件。适用于 SPARC 和 x86 平台。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlist-archive\fR [\fB-vn\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]\fR
+.ad
+.sp .6
+.RS 4n
+列出引导归档文件中包含的文件以及目录。适用于 SPARC 和 x86 平台。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset-menu\fR [\fB-vn\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]] {\fIkey\fR=\fIvalue\fR [\fIkey\fR=\fIvalue\fR]...} \fR
+.ad
+.sp .6
+.RS 4n
+维护 GRUB 菜单。可以指定以空格分隔的键-值对列表。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIkey\fR=\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+可能的值为：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdefault\fR=\fIentry_number\fR\fR
+.ad
+.sp .6
+.RS 4n
+GRUB 菜单中的条目编号（例如，\fB0\fR、\fB1\fR 或 \fB2\fR），用于指定当计时器结束时要引导的操作系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtimeout\fR=\fIseconds\fR\fR
+.ad
+.sp .6
+.RS 4n
+由缺省的菜单项编号指定的操作系统进行引导之前等待的时间（以秒为单位）。如果值为 \fB-1\fR，则会禁用自动引导。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconsole\fR=\fIGRUB_console_type\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置用于 GRUB 的控制台的类型。
+.sp
+可能的值为：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\&'text'\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择一个高分辨率控制台。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\&'graphics'\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择还会导致图形化引导的一个高分辨率控制台。如果启用了 BIOS 控制台重定向，切勿使用 \fBgraphics\fR 来设置控制台。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\&'serial'\fR\fR
+.ad
+.sp .6
+.RS 4n
+用于 GRUB 引导装载程序的串行控制台。有关串行参数的具体设置，请参见下面的 \fBserial_params\fR。
+.sp
+如果启用了 BIOS 控制台重定向，切勿使用 \fB\&'serial'\fR 来设置控制台\fB\fR。
+.sp
+如果通过串行控制台引导来安装系统，则该串行控制台将成为 Solaris 的内核缺省控制台设备。不过，GRUB 的控制台\fB不会\fR更改为 \fBserial\fR（它将是 \fB\&'text'\fR）。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[add|del]-user\fR=<\fIusername\fR>\fR
+.ad
+.sp .6
+.RS 4n
+将用户名添加到授权用户列表或将其从中删除。将两次提示输入口令。口令将以散列形式存储。用户名不必与 Solaris 用户名相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[auth-file]\fR=<\fIfile path\fR>\fR
+.ad
+.sp .6
+.RS 4n
+将 <\fIfile path\fR> 中的用户名和口令添加到授权用户列表。<\fIfile path\fR> 是包含 <username>=<password> 对的文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[add|del]-superuser\fR=<\fIusername\fR>\fR
+.ad
+.sp .6
+.RS 4n
+将用户名添加到超级用户列表或将其从中删除。用户名必须已存在于授权用户列表中。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBserial_params\fR='\fIport\fR[,\fIspeed\fR[,\fIdatabits\fR[,\fIparity\fR[,\fIstopbits\fR[,\fIflowcontrol\fR]]]]]'\fR
+.ad
+.sp .6
+.RS 4n
+为串行控制台指定串行参数。
+.sp
+\fIport\fR 是用于指定串行端口号的数字。
+.sp
+\fIspeed\fR 是用于指定连接的数据速率的数字（以比特/秒为单位）。
+.sp
+\fIdatabits\fR 是每个字符中的数据位数。
+.sp
+\fIparity\fR 指定用于检测传输错误的方法。可能的值为：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBN\fR 表示不进行奇偶校验
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBO\fR 表示进行奇数奇偶校验
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBE\fR 表示进行偶数奇偶校验
+.RE
+\fIparity\fR 的值不区分大小写。
+.sp
+\fIstopbits\fR 指定为字符传输发送的停止位。可能的值为 \fB0\fR 或 \fB1\fR。
+.sp
+\fIflowcontrol\fR 指定流控制。可能的值为：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBH\fR 表示进行硬件流控制
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBS\fR，表示软件流控制
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBN\fR，表示没有流控制
+.RE
+如果未设置 \fIserial_params\fR，则缺省值为：
+.sp
+.in +2
+.nf
+0,9600,8,N,1,N
+.fi
+.in -2
+.sp
+
+\&......这将使以下设置成为缺省设置：第一个串行端口 (\fBCOM1\fR)、使用 9600 比特/秒波特率、不进行奇偶校验、每个字符 8 个数据位、1 个停止位、不进行流控制。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBquiet\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定是否应当禁止将信息性消息输出到控制台。缺省情况下，其值为 \fBfalse\fR。
+.sp
+可能的值为 \fBtrue\fR 或 \fBfalse\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsplashimage\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定要用作引导期间的显示图像的文件的路径。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBforeground\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置前景色。它是 \fIRRGGBB\fR 格式的一个十六进制字符串值，其中 \fIRR\fR 代表红色，\fIGG\fR 代表绿色，而 \fIBB\fR 代表蓝色。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbackground\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置背景色。有关可能值，请参见 \fBforeground\fR。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset-menu-password\fR [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]] [\fB-f\fR <\fIpath to file\fR> | \fB-s\fR] [\fB-r\fR] [\fB-l\fR \fB-t\fR [\fB-i\fR \fIentry_number\fR[,\fIentry_number\fR]...]|\fB-g\fR]\fR
+.ad
+.sp .6
+.RS 4n
+设置和删除用来阻止查看 GRUB 菜单的口令。另外，还会列出是否设置了整个 GRUB 菜单口令，并且会列出每个菜单项的用户列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlist-menu\fR [\fB-P\fR \fIpool\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]\fR
+.ad
+.sp .6
+.RS 4n
+列出当前的 GRUB 菜单项。包括自动引导超时、缺省的菜单项数量以及每个菜单项的标题。仅适用于 x86 平台。如果提供了某个条目标题或条目索引，则会列显该特定条目的详细信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgenerate-menu\fR [\fB-P\fR \fIpool\fR]\fR
+.ad
+.sp .6
+.RS 4n
+创建一个新菜单配置，使其仅包含系统上当前安装的 Solaris 项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbootadm show-entry\fR [\fB-P\fR \fIpool\fR] <\fIentry_name\fR> | \fB-i\fR <\fIindex\fR>\fR
+.ad
+.sp .6
+.RS 4n
+显示根据名称 <\fIentry_name\fR> 或索引从菜单中找到的菜单项。\fIentry_name\fR 和 \fIindex\fR 都还可以是菜单项/索引的逗号分隔列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBadd-entry\fR [-P \fIpool\fR] [-i \fIentry_number\fR] \fIentry_title\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用给定的条目标题在菜单中创建一个新条目。
+.sp
+如果指定了 \fIentry_number\fR，则新条目将插入在给定位置，或添加为最后的条目（如果给定的 \fIentry_number\fR 超出了当前的条目数）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchange-entry\fR [\fB-P\fR \fIpool\fR] {[\fIentry_title\fR[,\fIentry_title\fR...] | \fB-i\fR \fIentry_number\fR[,\fIentry_number\fR]...]} { \fIkey\fR=\fIvalue\fR [ \fIkey\fR=\fIvalue\fR ...] | \fBset-default\fR }\fR
+.ad
+.sp .6
+.RS 4n
+修改一个给定条目或以逗号分隔的一组条目的内容。可以通过条目标题或条目编号指定条目。如果有多个条目具有相同的标题，则会影响所有条目。
+.sp
+特殊属性 \fBset-default\fR 用于设置将成为在计时器结束时要引导的缺省条目的条目。当指定了此属性时，只能在子命令中指定一个条目。
+.sp
+可以指定以空格分隔的键值对列表：\fIkey\fR=\fIvalue\fR
+.sp
+可能的值为：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtitle\fR=\fIentry_title\fR\fR
+.ad
+.sp .6
+.RS 4n
+条目的新标题。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkernel\fR=\fIpath_to_kernel\fR\fR
+.ad
+.sp .6
+.RS 4n
+内核的路径。示例：
+.sp
+.in +2
+.nf
+/platform/i86pc/kernel/amd64/unix
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkargs\fR=\fIkernel_arguments\fR\fR
+.ad
+.sp .6
+.RS 4n
+引导期间传递给内核的参数或参数列表。有关可能的选项，请参阅 \fBkernel\fR(1M)。如果列表中有空格，则键值应该括在单引号或双引号中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBboot_archive\fR=\fIpath_to_boot_archive\fR\fR
+.ad
+.sp .6
+.RS 4n
+引导归档文件的路径。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbootfs\fR=\fIbootfs\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBbootfs\fR 属性值。有关进一步的信息，请参阅 \fBzpool\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[add|del]-auth\fR=<\fIusername\fR>\fR
+.ad
+.sp .6
+.RS 4n
+授予或撤销 username 对菜单项标题或菜单项索引进行引导的特权。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBremove-entry\fR [\fB-P\fR \fIpool\fR] [{\fIentry_title\fR [,\fIentry_title\fR...] | \fB-i\fR \fIentry_number\fR[,\fIentry_number\fR...]}\fR
+.ad
+.sp .6
+.RS 4n
+删除一个给定条目或以逗号分隔的一组条目。如果有多个条目具有相同的指定标题，则会删除所有条目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstall-bootloader\fR [\fB-Mfv\fR] [\fB-P\fR \fIpool\fR] [\fB-R\fR \fIpath\fR] [\fIdevice1\fR ... \fIdeviceN\fR]\fR
+.ad
+.sp .6
+.RS 4n
+安装系统引导装载程序。如果指定了一组设备，则将只在给定的设备上安装引导装载程序。否则，将在从系统配置中自动提取的一组设备上安装引导装载程序。
+.sp
+设备是根文件系统所在的磁盘上的一个分片或分区的原始字符设备的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBboot-pool\fR [{\fBadd|remove\fR} [\fB-P\fR \fIrpool\fR] <\fIdevice list\fR>] | \fBlist\fR [\fB-P\fR \fIrpool\fR] | \fBresync\fR [\fB-P\fR \fIrpool\fR] [\fB-vA\fR] [<\fIBE_list\fR>] | \fBset\fR [\fB-P\fR \fIrpool\fR] <\fIparam\fR>=<\fIvalue\fR> ... }\fR
+.ad
+.sp .6
+.RS 4n
+\fBboot-pool\fR 子命令处理活动的引导池（如果安装系统时启用了引导池）。某些平台定义引导池中应包括的设备集。其他平台可能需要管理员在安装时选择一组设备来构成引导池。安装后，可以更改和检查引导池中的设备集，并可以更改引导池的行为。引导池中的每个设备出现故障并在随后被更换后，会自动将其重新添加到池中，所以只要指定了引导池中的设备集，在更换设备后重建池时不需要管理员交互。
+.sp
+每个子命令都接受 \fB-P\fR 参数，可以在其中专门选择某个根池。
+.sp
+如果未提供 \fB-P\fR 参数，则从根文件系统的数据集所位于的池派生根池。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBadd\fR [\fB-P\fR \fIrpool\fR] <\fIdevice list\fR>\fR
+.ad
+.sp .6
+.RS 4n
+向引导池添加设备。设备会立即添加。非常重要的是，在重新同步新添加的设备之前，任何系统重新启动都要延迟，从而确保这些设备可以独立引导（因为引导池是镜像，所以在重新同步进程完成后会将引导装载程序安装到镜像中的每个设备上。）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBremove\fR [\fB-P\fR \fIrpool\fR] <\fIdevice list\fR>\fR
+.ad
+.sp .6
+.RS 4n
+立即从引导池中删除设备。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlist\fR [\fB-P\fR \fIrpool\fR]\fR
+.ad
+.sp .6
+.RS 4n
+输出有关引导池的配置和设置的详细信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBresync\fR [\fB-P\fR \fIrpool\fR] [\fB-vA\fR] {<\fIBE_list\fR>}\fR
+.ad
+.sp .6
+.RS 4n
+重新同步引导池（如果需要，使用先前定义的设备集重建该池）并在指定引导环境（如果有）的引导池上创建可引导数据集。命令选项如下：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.RS 6n
+.rt  
+使用最近引导/创建的引导环境重新填充整个引导池。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 6n
+.rt  
+重新同步过程中的详细输出
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset\fR [\fB-P\fR \fIrpool\fR] <\fIparam\fR>=<\fIvalue\fR> ...\fR
+.ad
+.sp .6
+.RS 4n
+将指定的引导池参数设置为指定值。
+.sp
+支持以下参数：
+.sp
+.ne 2
+.mk
+.na
+\fBeviction_algorithm\fR
+.ad
+.RS 22n
+.rt  
+\fBeviction_algorithm\fR 可以具有 \fBnone\fR 或 \fBlru\fR 作为值。缺省情况下，值设置为 \fBlru\fR。
+.sp
+\fBeviction_algorithm\fR 设置为 \fBnone\fR 且引导环境的可引导文件需要复制到引导池时，如果引导池上没有足够空间，复制操作将失败。请注意，将不允许引导池超过其最大容量的 85% 以确保最大系统性能。
+.sp
+\fBeviction_algorithm\fR 设置为 \fBlru\fR 时，将去除与最近最少使用的引导环境相对应的可引导数据集，直到存在足够空间来成功执行复制操作。请注意 \fBnoevict\fR 引导环境策略（可以按引导环境进行设置，可更改此行为并阻止去除这些引导环境相对应的可引导数据集（如果有相当多的引导环境标记为 \fBnoevict\fR，则可引导数据集创建可能会失败，因为系统将无法通过去除数据集来找到足够空闲空间。））
+.RE
+
+.RE
+
+.RE
+
+.SH 选项
+.sp
+.LP
+\fBbootadm\fR 命令包含以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+在 \fBinstall-bootloader\fR 安装中，为了不将系统上的引导装载程序的版本降级，将强制安装引导装载程序并绕过所有的版本检查。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.sp .6
+.RS 4n
+要对其应用指定操作的条目编号或以逗号分隔的一组条目编号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR [仅限具有 BIOS 固件的 x86 系统]\fR
+.ad
+.sp .6
+.RS 4n
+在 x86 系统上执行的 \fBinstall-bootloader\fR 操作中，会将引导装载程序安装到主引导记录 (Master Boot Record, MBR) 中，使其成为系统引导装载程序。缺省设置（在具有 BIOS 固件的系统上）是将引导装载程序安装到分区引导记录 (Partition Boot Record, PBR) 中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+在 \fBupdate-archive\fR 操作中，只检查归档文件内容但不更新归档文件内容。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+与要使用的指定池相关联的引导配置。未使用此选项时，会将从中引导系统的当前池用于引导配置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIplatform\fR\fR
+.ad
+.sp .6
+.RS 4n
+该客户机的平台或计算机硬件类型。该平台类型只能与 \fB-R\fR 一起指定，并且通常只用于管理与服务器不属于同一平台类型的无盘客户机。平台必须为 \fBi86pc\fR、\fBsun4u\fR 或 \fBsun4v\fR 之一。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIaltroot\fR\fR
+.ad
+.sp .6
+.RS 4n
+操作将应用于该路径或替代的根路径。
+.LP
+注 - 
+.sp
+.RS 2
+不得使用 \fB-R\fR 选项引用任何非全局区域的根文件系统。否则，可能会损坏全局区域的文件系统，危及全局区域的安全性，或者损坏非全局区域的文件系统。请参见 \fBzones\fR(5)。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR \fBverbose mode\fR\fR
+.ad
+.sp .6
+.RS 4n
+在 \fBupdate-archive\fR 操作中，过时的文件显示在标准错误中。在 \fBinstall-bootloader\fR 操作中，启用详细模式以输出有关该过程的更多信息。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR更新当前的引导归档文件
+.sp
+.LP
+以下命令更新当前的引导归档文件：
+
+.sp
+.in +2
+.nf
+# \fBbootadm update-archive\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR更新备用根中的引导归档文件
+.sp
+.LP
+以下命令更新备用根下的引导归档文件：
+
+.sp
+.in +2
+.nf
+# \fBbootadm update-archive -R /a\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR切换缺省的引导项
+.sp
+.LP
+以下命令指向上一示例中显示的菜单。用户选择 Linux（菜单项 2）。
+
+.sp
+.in +2
+.nf
+# \fBbootadm set-menu default=2\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+或
+
+.sp
+.in +2
+.nf
+# \fBbootadm change-entry -i 2 set-default\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR列出 GRUB 菜单项
+.sp
+.LP
+以下命令列出 GRUB 菜单项：
+
+.sp
+.in +2
+.nf
+# \fBbootadm list-menu\fR
+The location for the active GRUB menu is: /stubboot/boot/grub/menu.lst
+default 0
+timeout 10
+0 Solaris10
+1 Solaris10 failsafe
+2 Linux
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR添加和更改菜单项
+.sp
+.LP
+以下命令在 GRUB 菜单中的位置 8 添加一个标题为 "New Solaris Entry" 的菜单项。
+
+.sp
+.in +2
+.nf
+# bootadm  add-entry -i 8  "New Solaris Entry"
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下命令使用内核参数 \fB-s\fR 更改刚添加的条目以便引导至级别 \fBs\fR。
+
+.sp
+.in +2
+.nf
+# bootadm  change-entry "New Solaris Entry" kargs="-s"
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR在另一根池上安装引导装载程序
+.sp
+.LP
+以下命令在池 \fBsecondrpool\fR 上安装引导装载程序。
+
+.sp
+.in +2
+.nf
+# \fBbootadm install-bootloader -P secondrpool\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR设置前景色和背景色
+.sp
+.LP
+以下命令将前景色设置为红色，将背景色设置为蓝色。
+
+.sp
+.in +2
+.nf
+# \fBbootadm set-menu splashimage=/boot/grub/splash.xpm.gz \e\fR
+foreground=ff0000 background=0000ff
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 8 \fR显示有关活动的引导池的信息
+.sp
+.in +2
+.nf
+# \fBbootadm boot-pool list\fR                                              
+Boot pool name: bpool                                                  
+Parameters: eviction_algorithm=lru                                    
+Current: /dev/dsk/c1t0d0, /dev/dsk/c1t1d0                              
+Pending: /dev/dsk/c1t0d0, /dev/dsk/c1t1d0                              
+Platform-specified devices excluded: /dev/dsk/c1t2d0                  
+Platform-specified (auto-added, unless excluded): /dev/dsk/c1t0d0,
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+在此示例中，平台具有指定的三个引导池设备，但是系统仅使用其中两个设备。当前引导池设备的列表与暂挂引导池设备的列表相同，所以没有引导池成员关系更改等待处理。请注意，如果没有活动的引导池，会返回以下输出：
+
+.sp
+.in +2
+.nf
+bootadm: Boot pool operations are not applicable to root pool rpool.
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+命令执行成功。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+命令因运行出错而退出。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 附注
+.sp
+.LP
+\fBbootadm\fR 缺省情况下在 \fB/var/tmp\fR 中存储临时文件，而不考虑 \fBTMPDIR\fR 的设置。
+.SH 另请参见
+.sp
+.LP
+\fBboot\fR(1M)、\fBinstallboot\fR(1M)、\fBinstallgrub\fR(1M)、\fBkernel\fR(1M)、\fBzpool\fR(1M)、\fBattributes\fR(5)、\fBgrub\fR(5)
+.sp
+.LP
+登录以下网址查阅 GRUB 主页：
+.sp
+.in +2
+.nf
+http://www.gnu.org/
+.fi
+.in -2
+

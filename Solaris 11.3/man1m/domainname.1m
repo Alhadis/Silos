@@ -1,0 +1,108 @@
+'\" te
+.\" Copyright (c) 2004, 2012, Oracle and/or its affiliates. All rights reserved.
+.\" Copyright 1989 AT&T
+.TH domainname 1M "29 May 2012" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+domainname \- set or display name of the current domain
+.SH SYNOPSIS
+.LP
+.nf
+\fBdomainname\fR [\fIname-of-domain\fR]
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+Without an argument, \fBdomainname\fR displays the name of the current domain name used in RPC exchanges, usually referred to as the NIS domain name. This name typically encompasses a group of \fBhosts\fR or \fBpasswd\fR entries under the same administration. The \fBdomainname\fR command is used by various components of Solaris to resolve names for entries such as are found in \fBpasswd\fR, \fBhosts\fR and \fBaliases\fR. By default, naming services such as \fBNIS\fR use \fBdomainname\fR to resolve names.
+.sp
+.LP
+With the "Name Service Management" \fBrbac\fR(5) profile, you can permanently set the name of the domain with the following command:
+.sp
+.in +2
+.nf
+% \fBdomainname nisdomain.example.com\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+If not yet enabled, the \fBnis/domain\fR service is enabled.
+.sp
+.LP
+The super-user can temporary set the domain name using:
+.sp
+.in +2
+.nf
+# \fBdomainname -t nisdomain.example.com\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The domain name for various naming services can also be set by other means. DNS ignores the domain name set by \fBdomainname\fR and LDAP uses it as a last resort.
+.sp
+.LP
+The \fBsendmail\fR(1M) daemon, as shipped with Solaris, and the \fBsendmail\fR implementation provided by \fBsendmail.org\fR (formerly referred to as "Berkeley 8.x sendmail") both attempt to determine a local host's fully qualified host name at startup and both pursue follow-up actions if the initial search fails. It is in these follow-up actions that the two implementations differ.
+.sp
+.LP
+Both implementations use a standard Solaris or Unix system call to determine its fully qualified host name at startup, following the name service priorities specified in \fBnsswitch.conf\fR(4). To this point, the Solaris and \fBsendmail.org\fR versions behave identically.
+.sp
+.LP
+If the request for a fully qualified host name fails, the \fBsendmail.org\fR \fBsendmail\fR sleeps for 60 seconds, tries again, and, upon continuing failure, resorts to a short name. The Solaris version of \fBsendmail\fR makes the same initial request, but then, following initial failure, calls \fBdomainname\fR. If successful, the sleep is avoided.
+.sp
+.LP
+On a Solaris machine, if you run the \fBsendmail.org\fR version of sendmail, you get the startup behavior (omitting the \fBdomainname\fR call) described above. If you run the Solaris \fBsendmail\fR, the \fBdomainname\fR call is made if needed.
+.sp
+.LP
+If the Solaris \fBsendmail\fR cannot determine the fully qualified host name, use \fBcheck-hostname\fR(1M) as a troubleshooting aid. This script can offer guidance as to appropriate corrective action.
+.SH FILES
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/defaultdomain\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/nsswitch.conf\fR
+.RE
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/core-os
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBsvcs\fR(1), \fBcheck-hostname\fR(1M), \fBhostconfig\fR(1M), \fBnamed\fR(1M), \fBsendmail\fR(1M), \fBsvcadm\fR(1M), \fBsvccfg\fR(1M), \fBypinit\fR(1M), \fBaliases\fR(4), \fBdefaultdomain\fR(4), \fBhosts\fR(4), \fBnsswitch.conf\fR(4), \fBpasswd\fR(4), \fBattributes\fR(5), \fBrbac\fR(5), \fBsmf\fR(5)
+.SH NOTES
+.sp
+.LP
+The \fBdomainname\fR service is managed by the service management facility, \fBsmf\fR(5), under the service identifier:
+.sp
+.in +2
+.nf
+svc:/system/identity:domain
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Administrative actions on this service, such as enabling, disabling, or requesting restart, can be performed using \fBsvcadm\fR(1M). The service's status can be queried using the \fBsvcs\fR(1) command.

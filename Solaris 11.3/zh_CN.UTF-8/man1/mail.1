@@ -1,0 +1,800 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 2008, Sun Microsystems, Inc. All Rights Reserved
+.\" Portions Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\"  Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH mail 1 "2008 年 7 月 24 日" "SunOS 5.11" "用户命令"
+.SH 名称
+mail, rmail \- 阅读邮件或向用户发送邮件
+.SH 用法概要
+.SS "发送邮件"
+.LP
+.nf
+\fBmail\fR [\fB-tw\fR] [\fB-m\fR \fImessage_type\fR] \fIrecipient\fR...
+.fi
+
+.LP
+.nf
+\fBrmail\fR [\fB-tw\fR] [\fB-m\fR \fImessage_type\fR] \fIrecipient\fR...
+.fi
+
+.SS "阅读邮件"
+.LP
+.nf
+\fBmail\fR [\fB-ehpPqr\fR] [\fB-f\fR \fIfile\fR]
+.fi
+
+.SS "调试"
+.LP
+.nf
+\fBmail\fR [\fB-x\fR \fIdebug_level\fR] [\fIother_mail_options\fR] \fIrecipient\fR...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fIrecipient\fR 通常是域名式地址 (“\fIuser\fR@\fImachine\fR”)，或 \fBlogin\fR(1) 可识别的用户名。当指定多个 \fIrecipient\fR 时，\fBmail\fR 会假定只发送一个消息。程序将从标准输入读取内容，直至文件结尾 (Control-d)，或者如果从终端设备读取，读取到只有一个句号的一行为止。接收到这些指示符中的任何一个时，\fBmail\fR 会将\fI信件\fR添加到每个 \fIrecipient\fR 的 \fImailfile\fR 中。
+.sp
+.LP
+\fI信件\fR的内容包括一些\fI标题行\fR，后跟一个空白行，然后是\fI消息内容\fR。信件的\fI标题行\fR部分由一个或多个 UNIX 邮戳组成：
+.sp
+.in +2
+.nf
+\fBFrom\fR \fIsender date_and_time\fR [\fBremote from\fR \fIremote_system_name\fR]
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+后跟一个或多个标准化的消息标题行，形式如下：
+.sp
+.in +2
+.nf
+\fIkeyword-name\fR\fB:\fR [\fIprintable text\fR]
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+其中，\fIkeyword-name\fR 由任何可列显非空白字符组成，冒号 (`\fB:\fR') 除外。\fBMIME-version:\fR 标题行指示消息已按 RFC 2045 所述进行格式化。\fBContent-Length:\fR 标题行始终存在，指示\fI消息内容\fR中的字节数，除非信件仅由标题行组成而没有任何消息内容。还会有一个 \fBContent-Type:\fR 标题行，表明\fI消息内容\fR的类型（例如文本/纯文本、应用程序/八位字节流等），除非信件仅由标题行组成而没有任何消息内容。如果标题行的下一行以空格开始，则标题行可以在该行中继续。
+.SH 选项
+.SS "发送邮件"
+.sp
+.LP
+以下命令行参数将影响发送邮件：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fImessage_type\fR\fR
+.ad
+.RS 19n
+.rt  
+使用 \fImessage_type\fR 的值在消息标题中添加一个 \fBMessage-Type:\fR 行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.RS 19n
+.rt  
+为每个预定的 \fIrecipient\fR 在消息标题中添加一个 \fBTo:\fR 行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-w\fR\fR
+.ad
+.RS 19n
+.rt  
+信件将发送到远程收件人，而无需等待远程传输程序完成操作。
+.RE
+
+.sp
+.LP
+如果发现某信件无法送达，该信件将返回给发件人，并带有指示故障位置和性质的诊断信息。如果 \fBmail\fR 在输入期间中断，消息将保存在文件 \fBdead.letter\fR 中以允许编辑和重新发送。\fB dead.letter\fR 始终采用附加方式，因此可保留任何以前的内容。初次尝试附加内容到（或创建）\fBdead.letter\fR 的操作在当前目录中进行。如果此操作失败，\fBdead.letter\fR 将附加内容到（或创建在）用户登录目录中。如果第二次尝试也失败，则不能完成任何 \fBdead.letter\fR 处理。
+.sp
+.LP
+\fBrmail\fR 仅允许发送邮件；\fBuucp\fR(1C) 使用 \fBrmail\fR 作为安全预防措施。生成邮件消息的任何应用程序都应该确保调用 \fBrmail\fR 而非 \fBmail\fR 进行消息传输和/或发送。
+.sp
+.LP
+如果本地系统已安装基本网络实用程序，则邮件可以发送给远程系统上的收件人。根据本地系统上可用的传输机制，将邮件发送至远程系统上的收件人有很多种方式。两种最普遍的寻址方案是域名式和 UUCP 式。
+.sp
+.ne 2
+.mk
+.na
+\fB域名式寻址\fR
+.ad
+.RS 19n
+.rt  
+指定远程收件人的方法是，将 `\fB@\fR' 和域（可能是子域）信息附加到收件人名后面（如 \fBuser@sf.att.com\fR）。（应咨询本地系统管理员，以了解有关本地系统上可用的寻址约定的详细信息。）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBUUCP 式寻址\fR
+.ad
+.RS 19n
+.rt  
+指定远程收件人的方法是，在收件人名前面添加远程系统名和叹号作为前缀，如 \fBsysa!user\fR。如果 \fBcsh\fR(1) 是缺省 shell，则应该使用 \fBsysa\!user\fR。一系列以叹号分隔的系统名可以用来指引信件通过扩展网络（如 \fBsysa!sysb!sysc!user\fR 或 \fBsysa\!sysb\!sysc\!user\fR）。
+.RE
+
+.SS "阅读邮件"
+.sp
+.LP
+以下命令行参数将影响邮件的阅读：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.RS 11n
+.rt  
+测试是否存在邮件。\fBmail\fR 不会输出任何内容。
+.sp
+如果用户有邮件，将返回退出状态 \fB0\fR。否则，将返回退出状态 \fB1\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-E\fR\fR
+.ad
+.RS 11n
+.rt  
+与 \fB-e\fR 类似，但是仅测试是否存在\fB新\fR邮件。
+.sp
+如果用户有要阅读的新邮件，则返回退出状态 \fB0\fR；如果用户没有邮件，则返回退出状态 \fB1\fR；如果用户有已经阅读的邮件，则返回退出状态 \fB2\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.RS 11n
+.rt  
+初始显示的是标题窗口，而不是最新消息。显示内容后跟 \fB?\fR 提示符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 11n
+.rt  
+将列显所有消息而不提示您如何进行处理。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR\fR
+.ad
+.RS 11n
+.rt  
+将列显所有消息并显示\fI所有\fR标题行，而非显示缺省选择性标题行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR\fR
+.ad
+.RS 11n
+.rt  
+\fBmail\fR 中断后将终止。通常情况下，中断只会导致消息列显终止。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.RS 11n
+.rt  
+消息将以先入先出顺序列显。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfile\fR\fR
+.ad
+.RS 11n
+.rt  
+\fBmail\fR 使用 \fIfile\fR（如 \fBmbox\fR）而非缺省 \fImailfile\fR。
+.RE
+
+.sp
+.LP
+\fBmail\fR 将以先入先出顺序列显用户邮件消息，除非另受命令行参数的影响。列显消息的缺省模式是仅显示最直接相关的标题行。这些包括但不限于 UNIX \fBFrom（发件人）\fR和 \fB>From（>发件人）\fR邮戳、\fBFrom:（发件人:）\fR、\fBDate:（日期:）\fR、\fBSubject:（主题:）\fR和 \fBContent-Length:（内容-长度:）\fR标题行，以及任何收件人标题行，例如 \fBTo:（收件人:）\fR、\fBCc:（抄送:）\fR、\fBBcc:（密件抄送:）\fR等。显示标题行后，仅当消息不包含不可列显字符时，\fBmail\fR 才会显示消息内容（正文）。否则，\fBmail\fR 将发出警告声明，指出消息含有二进制内容，并且\fB不\fR显示该内容。这可以通过使用 \fBp\fR 命令的方式覆盖。 
+.sp
+.LP
+对于每条消息，程序会使用 \fB?\fR 符号向用户提示，并从标准输入读取一行。以下命令可用于确定消息的处理方式：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB#\fR\fR
+.ad
+.RS 24n
+.rt  
+列显当前消息的数量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-\fR\fR
+.ad
+.RS 24n
+.rt  
+列显上一条消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB<new-line>、\fB+\fR 或 \fBn\fR\fR
+.ad
+.RS 24n
+.rt  
+列显下一条消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!\fR\fIcommand\fR\fR
+.ad
+.RS 24n
+.rt  
+退回 shell 以执行 \fIcommand\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBa\fR\fR
+.ad
+.RS 24n
+.rt  
+列显在 \fBmail\fR 会话期间到达的消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBd\fR 或 \fBdp\fR\fR
+.ad
+.RS 24n
+.rt  
+删除当前消息并输出下一条消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBd\fR \fIn\fR\fR
+.ad
+.RS 24n
+.rt  
+删除消息编号 \fIn\fR。不访问下一条消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdq\fR\fR
+.ad
+.RS 24n
+.rt  
+删除消息并退出 \fBmail\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBh\fR\fR
+.ad
+.RS 24n
+.rt  
+围绕当前消息显示标题窗口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBh\fR\fIn\fR\fR
+.ad
+.RS 24n
+.rt  
+围绕消息编号 \fIn\fR 显示标题窗口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBh a\fR\fR
+.ad
+.RS 24n
+.rt  
+显示用户的 \fImailfile\fR 中所有消息的标题。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBh d\fR\fR
+.ad
+.RS 24n
+.rt  
+显示计划删除的消息的标题。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBm\fR [ \fIpersons\fR ]\fR
+.ad
+.RS 24n
+.rt  
+将当前消息邮递（并删除）到指定的 \fIpersons\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIn\fR\fR
+.ad
+.RS 24n
+.rt  
+列显消息编号 \fIn\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp\fR\fR
+.ad
+.RS 24n
+.rt  
+再次列显当前消息，覆盖任何二进制（不可列显）内容的标识。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBP\fR\fR
+.ad
+.RS 24n
+.rt  
+覆盖缺省简短模式，再次列显当前消息，显示所有标题行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBq\fR 或 Control-d\fR
+.ad
+.RS 24n
+.rt  
+将取消删除的邮件放回 \fImailfile\fR 中并退出 \fBmail\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBr\fR [ \fIusers\fR ]\fR
+.ad
+.RS 24n
+.rt  
+回复发件人和其他 \fIusers\fR，然后删除该消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBs\fR [ \fIfiles\fR ]\fR
+.ad
+.RS 24n
+.rt  
+将消息保存在指定的 \fIfiles\fR（缺省为 \fBmbox\fR）中，然后删除该消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBu\fR [ \fIn\fR ]\fR
+.ad
+.RS 24n
+.rt  
+取消删除消息编号 \fIn\fR（缺省为上一次读取的消息）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBw\fR [ \fIfiles\fR ]\fR
+.ad
+.RS 24n
+.rt  
+将消息内容（没有任何标题行）保存在指定的 \fIfiles\fR（缺省为 \fBmbox\fR）中，然后删除该消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBx\fR\fR
+.ad
+.RS 24n
+.rt  
+将所有邮件不加更改地放回 \fImailfile\fR 中并退出 \fBmail\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBy\fR [ \fIfiles\fR ]\fR
+.ad
+.RS 24n
+.rt  
+与 \fB-w\fR 选项相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB?\fR\fR
+.ad
+.RS 24n
+.rt  
+列显命令摘要。
+.RE
+
+.sp
+.LP
+当用户登录时，通常会指示有邮件存在（如果有）。此外，使用 \fBmail\fR 时如果有新邮件到达将发送通知。
+.sp
+.LP
+可以使用 \fBchmod\fR(1) 以两种方式控制 \fImailfile\fR 的权限，从而更改 \fBmail\fR 的功能。该文件的其他权限可以是读写 (\fB0666\fR)、只读 (\fB0664\fR) 或者不可读写 (\fB0660\fR) 以实现不同级别的保密性。如果更改为非缺省值（模式 \fB0660\fR）的其他设置，将保存该文件以永久保持所需的权限，即使该文件为空也是如此。（管理员可以使用 \fBmailcnfg\fR 的 \fBDEL_EMPTY_MAILFILE\fR 选项覆盖此文件保存操作。）
+.sp
+.LP
+邮件文件的组 \fBID\fR 必须是 \fBmail\fR 才允许发送新的消息，并且邮件文件必须对组 \fBmail\fR 是可写的。
+.SS "调试"
+.sp
+.LP
+以下命令行参数将导致 \fBmail\fR 提供调试信息：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fIdebug_level\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBmail\fR 可创建包含调试信息的跟踪文件。
+.RE
+
+.sp
+.LP
+\fB-x\fR 选项将导致 \fBmail\fR 创建名为 \fB/tmp/MLDBG\fR\fIprocess_id\fR 的文件，其中包含与 \fBmail\fR 如何处理当前消息相关的调试信息。\fIdebug_level\fR 的绝对值将控制调试信息的详细程度。\fB0\fR 表示没有调试。如果 \fIdebug_level\fR 大于 \fB0\fR，则仅当 \fBmail\fR 在处理消息时遇到一些问题，\fI才会\fR保留调试文件。如果 \fIdebug_level\fR 小于 \fB0\fR，将始终保留调试文件。通过 \fB-x\fR 指定的 \fIdebug_level\fR 将覆盖 \fB/etc/mail/mailcnfg\fR 中的任何 \fBDEBUG\fR 的规范。\fB-x\fR 选项所提供的信息很深奥，可能只对系统管理员有用。
+.SS "发送通知"
+.sp
+.LP
+通过在消息标题中包含以下行之一，邮件可以使用几种形式的通知。
+.sp
+.LP
+\fBTransport-Options:\fR [ \fB/\fR\fIoptions\fR ]
+.sp
+.LP
+\fBDefault-Options:\fR [ \fB/\fR\fIoptions\fR ]
+.sp
+.LP
+\fB>To:\fR \fIrecipient\fR [ \fB/\fR\fIoptions\fR ]
+.sp
+.LP
+其中 “/\fIoptions\fR” 可以是以下一项或多项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/delivery\fR\fR
+.ad
+.RS 15n
+.rt  
+通知发件人消息已成功发送到 \fIrecipient\fR 的邮箱。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/nodelivery\fR\fR
+.ad
+.RS 15n
+.rt  
+不向发件人通知成功发送。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/ignore\fR\fR
+.ad
+.RS 15n
+.rt  
+不向发件人通知发送失败。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/return\fR\fR
+.ad
+.RS 15n
+.rt  
+如果邮件发送失败，通知发件人。将失败的消息返回给发件人。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/report\fR\fR
+.ad
+.RS 15n
+.rt  
+与 \fB/return\fR 相同，但是不会返回原始消息。
+.RE
+
+.sp
+.LP
+缺省值为 \fB/nodelivery/return\fR。如果有矛盾的选项，则识别第一个选项后，将忽略后面有冲突的条目。
+.SH 操作数
+.sp
+.LP
+发送邮件时支持以下操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIrecipient\fR\fR
+.ad
+.RS 13n
+.rt  
+域名式地址 (“\fIuser\fR@\fImachine\fR”) 或 \fBlogin\fR(1) 可识别的用户登录名。
+.RE
+
+.SH 用法
+.sp
+.LP
+有关 \fBmail\fR 和 \fBrmail\fR 遇到大于或等于 2 GB（2^31 字节）文件时行为的说明，请参见 \fBlargefile\fR(5)。
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBmail\fR 执行的环境变量 \fBLC_CTYPE\fR、\fBLC_MESSAGES\fR 和 \fBNLSPATH\fR 的说明，请参见 \fBenviron\fR(5)。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTZ\fR\fR
+.ad
+.RS 6n
+.rt  
+确定与日期和时间字符串一起使用的时区。
+.RE
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+用户有邮件，已成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 6n
+.rt  
+用户没有邮件或发生初始化错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>1\fR\fR
+.ad
+.RS 6n
+.rt  
+初始化后发生错误。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdead.letter\fR\fR
+.ad
+.RS 20n
+.rt  
+不可邮递的文本
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/passwd\fR\fR
+.ad
+.RS 20n
+.rt  
+标识发件人身份并定位 \fIrecipient\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/mbox\fR\fR
+.ad
+.RS 20n
+.rt  
+保存的邮件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$MAIL\fR\fR
+.ad
+.RS 20n
+.rt  
+包含 \fImailfile\fR 路径名的变量
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/tmp/MLDBG\fR*\fR
+.ad
+.RS 20n
+.rt  
+调试跟踪文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/mail/*.lock\fR\fR
+.ad
+.RS 20n
+.rt  
+锁定邮件目录
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/mail/:saved\fR\fR
+.ad
+.RS 20n
+.rt  
+保留临时文件的目录，以防止在系统崩溃的情况下丢失数据
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/mail/\fIuser\fR\fR\fR
+.ad
+.RS 20n
+.rt  
+\fIuser\fR 的传入邮件；即 \fImailfile\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvar/tmp/ma\fR*\fR
+.ad
+.RS 20n
+.rt  
+临时文件
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBchmod\fR(1)、\fBcsh\fR(1)、\fBlogin\fR(1)、\fBmailx\fR(1)、\fBuucp\fR(1C)、\fBuuencode\fR(1C)、\fBvacation\fR(1)、\fBwrite\fR(1)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBlargefile\fR(5)
+.SH 附注
+.sp
+.LP
+针对“发送通知”部分中所述的标题行而做出的解释和相应采取的操作，仅当将此版本的 \fBmail\fR 安装在执行邮件发送（或发送失败）的系统上时才适用。早期版本的 \fBmail\fR 可能不支持任何类型的发送通知。
+.sp
+.LP
+某些情况有时会导致无法删除锁定文件。
+.sp
+.LP
+中断后，可能不会输出下一条消息。可以通过键入 \fBp\fR 强制列显。

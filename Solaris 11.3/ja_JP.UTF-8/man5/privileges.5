@@ -1,0 +1,1276 @@
+'\" te
+.\" Copyright (c) 2009, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH privileges 5 "2015 年 4 月 3 日" "SunOS 5.11" "標準、環境、マクロ"
+.SH 名前
+privileges \- プロセスの特権モデル
+.SH 機能説明
+.sp
+.LP
+Oracle Solaris ソフトウェアには、プロセスのアクションをきめ細かく制御できるようにするための特権セットが実装されています。特定の特権の所有により、プロセスは、特定の一連の制限された操作を実行できるようになります。
+.sp
+.LP
+開発者は、Oracle Solaris オペレーティングシステム内の主に特権に基づくセキュリティーモデルを変更することによって、プロセスをすべての特権 (スーパーユーザー) や特権なし (0 以外の UID) ではなく、実際に必要な特権操作に制限する機会が得られます。さらに、以前は制限されていなかった一連の操作にも特権が必要になりました。これらの特権は「基本」特権と呼ばれ、すべてのプロセスにデフォルトで付与されます。
+.sp
+.LP
+まとめると、「基本」特権を除く定義されているすべての特権が、従来は root ユーザーに関連付けられた特権セットを構成します。「基本」特権は、以前、特権の設定されていないプロセスに与えられた「特権」です。
+.sp
+.LP
+定義されている特権は次のとおりです:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_CONTRACT_EVENT\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、イベントの信頼できる配信をイベントエンドポイントにリクエストできるようにします。
+.sp
+プロセスが、ユーザーによって大量に生成される可能性のあるイベントをテンプレートのクリティカルイベント設定期間内に含めることができるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_CONTRACT_IDENTITY\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスがプロセス契約テンプレートのサービス FMRI 値を設定できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_CONTRACT_OBSERVER\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、プロセスの実効ユーザー ID 以外のユーザーによって作成され、所有されている契約によって生成された契約イベントを監視できるようにします。
+.sp
+プロセスが、プロセスの実効ユーザー ID 以外のユーザーによって作成され、所有されている契約に属する契約イベントエンドポイントを開けるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_CPC_CPU\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが CPU ごとのハードウェアパフォーマンスカウンタにアクセスできるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBPRIV_DAX_ACCESS\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、DAX ハードウェアでサポートされているすべての操作を実行できるようにします。
+.sp
+この特権は、ソフトウェアインシリコンをサポートするシステム上で使用できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_DTRACE_KERNEL\fR\fR
+.ad
+.sp .6
+.RS 4n
+DTrace のカーネルレベルのトレースを許可します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_DTRACE_PROC\fR\fR
+.ad
+.sp .6
+.RS 4n
+DTrace のプロセスレベルのトレースを許可します。プロセスレベルのトレースのプローブを、ユーザーがアクセス権を持っているプロセス内に配置し、有効にできるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_DTRACE_USER\fR\fR
+.ad
+.sp .6
+.RS 4n
+DTrace のユーザーレベルのトレースを許可します。ユーザーがアクセス権を持っているプロセスを検査するために、システムコールおよびプロファイル DTrace プロバイダの使用を許可します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_CHOWN\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスがファイルの所有者ユーザー ID を変更できるようにします。プロセスが、ファイルのグループ ID をプロセスの実効グループ ID 以外のグループ ID か、またはプロセスのいずれかの補助グループ ID に変更できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_CHOWN_SELF\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが自身のファイルを渡せるようにします。この特権を持つプロセスは、{\fB_POSIX_CHOWN_RESTRICTED\fR} が有効でないかのように動作します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_DAC_EXECUTE\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、通常であればプロセスの実行権を禁止するアクセス権ビットまたは ACL を持つ実行可能ファイルを実行できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_DAC_READ\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、通常であればプロセスの読み取り権を禁止するアクセス権ビットまたは ACL を持つファイルまたはディレクトリを読み取れるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_DAC_SEARCH\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、通常であればプロセスの検索権を許可しないアクセス権ビットまたは ACL を持つディレクトリを検索できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_DAC_WRITE\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、プロセスの書き込み権を許可しないアクセス権ビットまたは ACL を持つファイルまたはディレクトリを書き込めるようにします。0 の実効 UID が存在しない場合に UID 0 によって所有されているファイルを書き込むには、すべての特権が必要です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_DOWNGRADE_SL\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、ファイルまたはディレクトリの機密ラベルを既存の機密ラベルより優位でない機密ラベルに設定できるようにします。
+.sp
+この特権は、システムが Trusted Extensions で構成されている場合にのみ解釈されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_FLAG_SET\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが \fBimmutable\fR、\fBnounlink\fR、または \fBappendonly\fR ファイル属性を設定できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_LINK_ANY\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、プロセスの実効 UID とは異なる UID によって所有されているファイルへのハードリンクを作成できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_OWNER\fR\fR
+.ad
+.sp .6
+.RS 4n
+ファイルの所有者でないプロセスが、そのファイルのアクセスや変更時間を変更できるようにします。ディレクトリの所有者でないプロセスが、そのディレクトリのアクセスや変更時間を変更できるようにします。ファイルまたはディレクトリの所有者でないプロセスが、「実行後にテキストイメージを保存する」(スティッキー) ビットが設定された親ディレクトリを持つファイルまたはディレクトリの削除または名前変更を行うことができるようにします。ファイルの所有者でないプロセスが、そのファイル上に \fBnamefs\fR をマウントできるようにします。ファイルまたはディレクトリの所有者でないプロセスが、そのファイルまたはディレクトリのアクセス権ビットまたは ACL を変更できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_READ\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、プロセスの読み取り権を許可するアクセス権または ACL を持つファイルまたはディレクトリを読み取れるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_SETID\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、セットユーザー ID およびセットグループ ID ビットをクリアせずにファイルの所有権を変更したり、ファイルに書き込んだりできるようにします。プロセスが、プロセスの実効グループでも、プロセスのいずれかの補助グループでもないグループに属しているファイルまたはディレクトリにセットグループ ID ビットを設定できるようにします。プロセスが、\fBPRIV_FILE_OWNER\fR が存在する場合に、別の所有権を持つファイルにセットユーザー ID ビットを設定できるようにします。追加の制限は、\fBsetuid\fR 0 のファイルを作成または変更する場合に適用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_UPGRADE_SL\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、ファイルまたはディレクトリの機密ラベルを既存の機密ラベルより優位な機密ラベルに設定できるようにします。
+.sp
+この特権は、システムが Trusted Extensions で構成されている場合にのみ解釈されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_WRITE\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、プロセスの書き込み権を許可するアクセス権または ACL を持つファイルまたはディレクトリを書き込めるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_GRAPHICS_ACCESS\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスがグラフィックスデバイスへの特権付き ioctl を作成できるようにします。通常、この特権を持つ必要があるのは xserver プロセスだけです。この特権を持つプロセスは、特権付きグラフィックスデバイスマッピングも実行できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_GRAPHICS_MAP\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、グラフィックスデバイスから特権付きマッピングを実行できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_IPC_DAC_READ\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、通常であればプロセスの読み取り権を許可しないアクセス権ビットを持つ System V IPC メッセージキュー、セマフォーセット、または共有メモリーセグメントを読み取れるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_IPC_DAC_WRITE\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、通常であればプロセスの書き込み権を許可しないアクセス権ビットを持つ System V IPC メッセージキュー、セマフォーセット、または共有メモリーセグメントを書き込めるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_IPC_OWNER\fR\fR
+.ad
+.sp .6
+.RS 4n
+System V IPC メッセージキュー、セマフォーセット、または共有メモリーセグメントの所有者でないプロセスが、メッセージキュー、セマフォーセット、または共有メモリーセグメントを削除したり、その所有権を変更したり、そのアクセス権ビットを変更したりできるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_NET_ACCESS\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが TCP、UDP、SDP、または SCTP ネットワークエンドポイントを開けるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_NET_BINDMLP\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、プロセスのゾーンのマルチレベルポート (MLP) として構成されているポートにバインドできるようにします。この特権は、共有アドレスとゾーン固有のアドレスの両方の MLP に適用されます。MLP ポートの構成については、Trusted Extensions のマニュアルページの \fBtnzonecfg\fR(\fB4\fR) を参照してください。
+.sp
+この特権は、システムが Trusted Extensions で構成されている場合にのみ解釈されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_NET_ICMPACCESS\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが ICMP パケットを送受信できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_NET_MAC_AWARE\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、\fBsetpflags\fR(2) を使用して \fBNET_MAC_AWARE\fR プロセスフラグを設定できるようにします。また、この特権により、プロセスは \fBsetsockopt\fR(3SOCKET) を使用して \fBSO_MAC_EXEMPT\fR ソケットオプションも設定できるようになります。\fBNET_MAC_AWARE\fR プロセスフラグと \fBSO_MAC_EXEMPT\fR ソケットオプションはどちらも、ローカルプロセスのラベルがピアのデフォルトラベルより優位な場合や、ローカルプロセスが大域ゾーンで実行されている場合に、ローカルプロセスがラベルの付いていないピアと通信できるようにします。
+.sp
+この特権は、システムが Trusted Extensions で構成されている場合にのみ解釈されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_NET_OBSERVABILITY\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、ネットワークトラフィックの受信やトラフィックの送信のみが禁止されているデバイスを開けるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_NET_PRIVADDR\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが特権ポート番号にバインドできるようにします。特権ポート番号は 1 - 1023 (従来の UNIX 特権ポート) であり、さらに NFS や SMB で使用するために予約されているポートを除き、これらのポートは「\fBudp/tcp_extra_priv_ports\fR」とマークされています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_NET_RAWACCESS\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスがネットワークレイヤーに直接アクセスできるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_AUDIT\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが監査レコードを生成できるようにします。プロセスが独自の監査事前選択情報を取得できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_CHROOT\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが自身のルートディレクトリを変更できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_CLOCK_HIGHRES\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが高精度タイマーを使用できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_EXEC\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが \fBexec\fR(2) を呼び出せるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_FORK\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが \fBfork\fR(2)、\fBfork1\fR(2)、または \fBvfork\fR(2) を呼び出せるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_INFO\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、シグナルを送信できるプロセス以外のプロセスのステータスを検査できるようにします。検査できないプロセスは \fB/proc\fR に表示できないため、存在していないように見えます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_LOCK_MEMORY\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが物理メモリー内のページをロックできるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_OWNER\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、所有権には関係なく、ほかのプロセスにシグナルを送信したり、ほかのプロセスにあるプロセスの状態を検査して変更したりできるようにします。別のプロセスを変更する場合は、追加の制限が適用されます: 接続しているプロセスの実効特権セットは、ターゲットプロセスの実効セット、許可セット、および継承可能セットのスーパーセットである必要があります。制限セットは、ターゲットの制限セットのスーパーセットである必要があります。ターゲットプロセスでいずれかの UID が 0 に設定されている場合は、実効 UID が 0 でないかぎり、すべての特権が表明されている必要があります。プロセスが CPU に任意のプロセスをバインドできるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_PRIOCNTL\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、自身の優先度を現在のレベルを超えて引き上げることができるようにします。プロセスが、自身のスケジューリングクラスを任意のスケジューリングクラス (RT クラスを含む) に変更できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_SESSION\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、シグナルまたはトレースプロセスをセッションの外部に送信できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_SETID\fR\fR
+.ad
+.sp .6
+.RS 4n
+UID 0 ですべての特権が表明されている必要がある場合、プロセスが自身の UID を自由に設定できるようにします。また、プロセスフラグ \fBPRIV_PFEXEC_AUTH\fR の設定も可能にします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_TASKID\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、呼び出し元プロセスに新しいタスク ID を割り当てることができるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_ZONE\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスがシグナルをトレースしたり、ほかのゾーン内のプロセスに送信したりできるようにします。\fBzones\fR(5) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_ACCT\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、\fBacct\fR(2) を使用してアカウンティングを有効または無効にしたり、管理したりできるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_ADMIN\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、ノードおよびドメイン名の設定や、\fBcoreadm\fR(1M) および \fBnscd\fR(1M) 設定の指定などのシステム管理タスクを実行できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_AUDIT\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが (カーネル) 監査デーモンを起動できるようにします。プロセスが監査状態 (監査ユーザー ID、監査端末 ID、監査セッション ID、監査事前選択マスク) を表示したり、設定したりできるようにします。プロセスが監査を無効にしたり、有効にしたりできるようにします。プロセスが監査パラメータ (キャッシュとキューのサイズ、イベントからクラスへのマッピング、およびポリシーオプション) を構成できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_CONFIG\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスがさまざまなシステム構成タスクを実行できるようにします。ファイルシステム固有の管理手順 (ファイルシステム構成 ioctl、割り当て制限の呼び出し、スナップショットの作成と削除、PCFS ブートセクターの操作など) を許可します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_DEVICES\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスがデバイス特殊ファイルを作成できるようにします。プロセスが、許可されたアクセスをチェックするために、カーネルの \fBdrv_priv\fR(9F) 関数を呼び出すカーネルモジュールを正常に呼び出せるようにします。プロセスが、実際のコンソールデバイスを直接開けるようにします。プロセスが、排他的に開かれていたデバイスを開けるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_DL_CONFIG\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスがシステムのデータリンクインタフェースを構成できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_IB_CONFIG\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスがすべての InfiniBand (IB) Management Datagram (MAD) API や、ホストベースの IB 管理および診断ツールにアクセスできるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_IB_INFO\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが InfiniBand (IB) Management Datagram (MAD) API や、ホストベースの IB 管理および診断ツールにアクセスし、構成情報を読み取れるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_IP_CONFIG\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスがシステムの IP インタフェースと経路を構成できるようにします。プロセスが TCP/IP パラメータを構成できるようにします。プロセスが、アンカーされた \fBSTREAMS\fR モジュールを一致する \fBzoneid\fR とともに pop できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_IPC_CONFIG\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが System V IPC メッセージキューバッファーのサイズを大きくすることができるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_LINKDIR\fR\fR
+.ad
+.sp .6
+.RS 4n
+廃止: プロセスがディレクトリをリンク解除またはリンクすることを許可する場合に使用します。これを実装すると、ディレクトリでのリンクおよびリンク解除操作が禁止されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_MOUNT\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、通常であれば制限されるファイルシステム (つまり、\fBnamefs\fR を除くほとんどのファイルシステム) をマウントしたり、アンマウントしたりできるようにします。プロセスがスワップデバイスを追加したり、削除したりできるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_NET_CONFIG\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、\fBPRIV_SYS_IP_CONFIG\fR、\fBPRIV_SYS_DL_CONFIG\fR、\fBPRIV_SYS_PPP_CONFIG\fR、および \fBPRIV_SYS_IB_CONFIG\fR で許可されるすべての操作に加え、\fBrpcmod\fR STREAMS モジュールの使用や、モジュールスタックの先頭以外の場所への STREAMS モジュールの挿入または削除を実行できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_NFS\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが NFS サービスを行うことができるようにします: NFS カーネルスレッドの起動、NFS ロック処理の実行、NFS で予約されたポート (ポート 2049 (\fBnfs\fR) およびポート 4045 (\fBlockd\fR)) へのバインド。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_PPP_CONFIG\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、pppd(1M) \fBpppd\fR(1M) を使用して PPP インスタンスを作成、構成、および破棄したり、\fBsppptun\fR(1M)sppptun(1M) を使用して PPPoE の plumb を制御したりできるようにします。この特権は、排他的な IP スタックインスタンスゾーンにデフォルトで付与されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_RES_BIND\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスがプロセッサセットにプロセスをバインドできるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_RES_CONFIG\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、この段落で概要が説明されている次の操作に加えて、プロセッサセットにプロセスを \fBPRIV_SYS_RES_BIND\fR としてバインドできるようにします。プロセスが、プロセッサセットを作成および削除したり、プロセッサセットに CPU を割り当てたり、\fBPSET_NOESCAPE\fR プロパティーをオーバーライドしたりできるようにします。プロセスが、\fBp_online\fR(2) を使用してシステム内の CPU の動作ステータスを変更できるようにします。プロセスがファイルシステムの割り当て制限を構成できるようにします。プロセスがリソースプールを構成したり、プールにプロセスをバインドしたりできるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_RESOURCE\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、\fBsetrlimit\fR(2) および \fBsetrctl\fR(2) を使用して、自身に課せられたリソース制限を超えられるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_SHARE\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスがファイルシステムを共有したり、共有解除したりできるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_SMB\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが NetBIOS または SMB サービスを行うことができるようにします: SMB カーネルスレッドの起動、NetBIOS または SMB で予約されたポート (ポート 137、138、139 (NetBIOS)、および 445 (SMB)) へのバインド。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_SUSER_COMPAT\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、許可されたアクセスをチェックするために、カーネルの \fBsuser()\fR 関数を呼び出すサードパーティー製のロード可能なモジュールを正常に呼び出せるようにします。この特権は、サードパーティー製のロード可能なモジュールの互換性のためにのみ存在し、Oracle Solaris では使用されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_TIME\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、\fBstime\fR(2)、\fBadjtime\fR(2)、\fBntp_adjtime\fR(2) のいずれかの適切なシステムコールを使用してシステム時間を操作できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_TRANS_LABEL\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、プロセスの機密ラベルと同等か、またはより優位なラベルを外部の文字列形式との間で変換できるようにします。
+.sp
+この特権は、システムが Trusted Extensions で構成されている場合にのみ解釈されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_VIRT_MANAGE\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが仮想化環境を管理できるようにします。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_COLORMAP\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスがカラーマップの制限をオーバーライドできるようにします。
+.sp
+プロセスがカラーマップをインストールまたは削除できるようにします。
+.sp
+プロセスが、ほかのプロセスによって割り当てられたカラーマップセルエントリを取得できるようにします。
+.sp
+この特権は、システムが Trusted Extensions で構成されている場合にのみ解釈されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_CONFIG\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、X サーバーによって永続的に保持されているリソースを構成または破棄できるようにします。
+.sp
+プロセスがスクリーンセーバーのタイムアウト値を設定するために SetScreenSaver を使用できるようにします。
+.sp
+プロセスが表示アクセス制御リストを変更するために ChangeHosts を使用できるようにします。
+.sp
+プロセスが GrabServer を使用できるようにします。
+.sp
+プロセスが、ウィンドウ、ピクセルマップ、カラーマップ、プロパティー、カーソル、フォント、またはグラフィックコンテキストのリソースを保持できる SetCloseDownMode リクエストを使用できるようにします。
+.sp
+この特権は、システムが Trusted Extensions で構成されている場合にのみ解釈されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_DAC_READ\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、所有していない (別のユーザー ID を持つ) ウィンドウリソースから読み取れるようにします。
+.sp
+この特権は、システムが Trusted Extensions で構成されている場合にのみ解釈されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_DAC_WRITE\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、所有していない (別のユーザー ID を持つ) ウィンドウリソースに書き込んだり、このようなウィンドウリソースを作成したりできるようにします。新しく作成されるウィンドウのプロパティーは、そのウィンドウのユーザー ID を使用して作成されます。
+.sp
+この特権は、システムが Trusted Extensions で構成されている場合にのみ解釈されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_DEVICES\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスがウィンドウ入力デバイスに対する操作を実行できるようにします。
+.sp
+プロセスがキーボードやポインタの制御を取得したり、設定したりできるようにします。
+.sp
+プロセスがポインタボタンやキーのマッピングを変更できるようにします。
+.sp
+この特権は、システムが Trusted Extensions で構成されている場合にのみ解釈されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_DGA\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスがダイレクトグラフィックスアクセス (DGA) X プロトコルの拡張機能を使用できるようにします。フレームバッファーへの直接のプロセスアクセスは引き続き必要です。このため、プロセスがフレームバッファーへのアクセスを許可する MAC および DAC 特権を持っているか、またはそのプロセスにフレームバッファーが割り当てられている必要があります。
+.sp
+この特権は、システムが Trusted Extensions で構成されている場合にのみ解釈されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_DOWNGRADE_SL\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、ウィンドウリソースの機密ラベルを既存の機密ラベルより優位でない機密ラベルに設定できるようにします。
+.sp
+この特権は、システムが Trusted Extensions で構成されている場合にのみ解釈されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_FONTPATH\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスがフォントパスを設定できるようにします。
+.sp
+この特権は、システムが Trusted Extensions で構成されている場合にのみ解釈されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_MAC_READ\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、プロセスの機密ラベルと等しくない機密ラベルを持つウィンドウリソースから読み取れるようにします。
+.sp
+この特権は、システムが Trusted Extensions で構成されている場合にのみ解釈されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_MAC_WRITE\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、プロセスの機密ラベルと等しくない機密ラベルを持つウィンドウリソースを作成できるようにします。新しく作成されるウィンドウのプロパティーは、そのウィンドウの機密ラベルを使用して作成されます。
+.sp
+この特権は、システムが Trusted Extensions で構成されている場合にのみ解釈されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_SELECTION\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、選択確認ダイアログボックスの介入なしでウィンドウ間のデータ移動をリクエストできるようにします。
+.sp
+この特権は、システムが Trusted Extensions で構成されている場合にのみ解釈されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_UPGRADE_SL\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが、ウィンドウリソースの機密ラベルを既存の機密ラベルより優位な機密ラベルに設定できるようにします。
+.sp
+この特権は、システムが Trusted Extensions で構成されている場合にのみ解釈されます。
+.RE
+
+.sp
+.LP
+上に示された特権のうち、\fBPRIV_FILE_LINK_ANY\fR、\fBPRIV_FILE_READ\fR、\fBPRIV_FILE_WRITE\fR、\fBPRIV_PROC_INFO\fR、\fBPRIV_PROC_SESSION\fR、\fBPRIV_NET_ACCESS\fR、\fBPRIV_PROC_FORK\fR、\fBPRIV_PROC_EXEC\fR の各特権が「基本」特権と見なされます。これらは、特権の設定されていないプロセスから常に使用可能であった特権です。デフォルトでは、プロセスには引き続き基本特権が割り当てられます。
+.sp
+.LP
+\fBsetuid\fR root \fBexec\fR を成功させる (つまり、0 の実効 UID と追加の特権を取得する) には、プロセスの制限セット (下記を参照) 内に \fBPRIV_PROC_SETID\fR、\fBPRIV_PROC_AUDIT\fR、\fBPRIV_SYS_RESOURCE\fR の各特権が存在する必要があります。
+.sp
+.LP
+Oracle Solaris での特権の実装では、プロセス資格が次の 4 つの特権セットで拡張されています:
+.sp
+.ne 2
+.mk
+.na
+\fBI、継承可能セット\fR
+.ad
+.RS 29n
+.rt  
+\fBexec\fR で継承される特権。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBP、許可セット\fR
+.ad
+.RS 29n
+.rt  
+プロセスのための最大の特権セット。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBE、実効セット\fR
+.ad
+.RS 29n
+.rt  
+現在有効な特権。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBL、制限セット\fR
+.ad
+.RS 29n
+.rt  
+プロセスおよびその子孫が取得できる特権の上限。L への変更は、次回の \fBexec\fR で有効になります。
+.RE
+
+.sp
+.LP
+I、P、E の各セットは通常、特権の設定されていないプロセスの基本的な特権セットと同じです。制限セットは通常、完全な特権セットです。
+.sp
+.LP
+各プロセスには、PA (特権を認識する) と NPA (PA 以外) の値を取ることができる特権認識状態 (PAS) があります。PAS は、古いスーパーユーザーモデルとの完全な互換性と、実効 UID の完全な無視のどちらかを選択できるようにするための移行メカニズムです。
+.sp
+.LP
+説明を簡単にするために、「監視された実効セット」(oE) および「監視された許可セット」(oP) の概念と、実装セット iE および iP を導入します。
+.sp
+.LP
+プロセスは、\fBsetppriv\fR(2) を使用して実効セット、許可セット、または制限特権セットを操作するか、あるいは \fBsetpflags\fR(2) を使用することによって、特権を認識するようになります。いずれの場合も、特権を認識するようになるプロセスでは oE および oP は不変です。特権を認識するようになるプロセスでは、次の割り当てが実行されます:
+.sp
+.in +2
+.nf
+iE = oE
+iP = oP
+.fi
+.in -2
+
+.sp
+.LP
+プロセスが特権を認識する場合、UID の変更の下で oE および oP は不変です。プロセスが特権を認識しない場合、oE および oP は次のように監視されます:
+.sp
+.in +2
+.nf
+oE = euid == 0 ? L : iE
+oP = (euid == 0 || ruid == 0 || suid == 0) ? L : iP
+.fi
+.in -2
+
+.sp
+.LP
+特権を認識しないプロセスに 0 の実効 UID が割り当てられている場合、そのプロセスは、その制限セット (特権の上限) に含まれている特権を行使できます。特権を認識しないプロセスにいずれかの UID 0 が割り当てられている場合は、潜在的に L 内のすべての特権を行使できることを示します。
+.sp
+.LP
+\fBsetpflags()\fR を使用すると、特権を認識しない状態にプロセスを戻すことができます。カーネルは常に、\fBexec\fR(2) でこれを試みます。この操作は、次の条件が満たされた場合にのみ許可されます:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+いずれかの UID が 0 に等しい場合は、P が L に等しいことが必要です。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+実効 UID が 0 に等しい場合は、E が L に等しいことが必要です。
+.RE
+.sp
+.LP
+プロセスが特権の認識を放棄した場合は、次の割り当てが実行されます:
+.sp
+.in +2
+.nf
+if (euid == 0) iE = L & I
+if (any uid == 0) iP = L & I
+.fi
+.in -2
+
+.sp
+.LP
+\fB0\fR の UID を持っていないときに取得された特権は、制限セットで制限された、プロセスの継承可能セットです。
+.sp
+.LP
+プロセスの (監視された) 実効特権セット内の特権によってのみ、プロセスは制限された操作の実行を許可されます。プロセスは、いずれかの特権操作関数を使用して特権セットに特権を追加したり、特権セットから特権を削除したりすることができます。特権は、常に削除できます。実効セットや継承可能セットに追加できるのは、許可セットにある特権だけです。制限セットは拡張できません。継承可能セットは、許可セットより大きくすることができます。
+.sp
+.LP
+プロセスが \fBexec\fR(2) を実行すると、カーネルは次の特権セットの変更を行う前に、まず特権の認識を放棄しようとします。
+.sp
+.in +2
+.nf
+E' = P' = I' = L & I
+L is unchanged
+.fi
+.in -2
+
+.sp
+.LP
+プロセスが自身の特権を操作していない場合は、E、P、および I がすでに同一であるため、特権セットは実質的に同じままになります。
+.sp
+.LP
+制限セットは、\fBexec\fR の実行時に適用されます。
+.sp
+.LP
+特権を認識しないアプリケーションを下位互換性がある方法で実行するには、特権を認識するアプリケーションが、特権を認識しないアプリケーションを I=basic で起動するようにしてください。
+.sp
+.LP
+ほとんどの特権の場合は、その特権が存在しなければ単に失敗するだけです。場合によっては、特権が存在しないためにシステムコールが異なった動作をすることがあります。その他の場合として、特権を削除すると、強制的に \fBsetuid\fR ルートアプリケーションの重大な誤動作が引き起こされることがあります。このタイプの特権は「安全ではない」と見なされます。プロセスの制限セットに、いずれかの安全ではない特権が含まれていない場合、システムは \fBsetuid\fR ルートアプリケーションの \fBsetuid\fR ビットに従いません。実効ユーザー ID を変更することも、特権を増やすこともなく、\fBsetuid\fR ルートアプリケーションの実行が続行されます。安全ではない特権として、\fBPRIV_PROC_SETID\fR、\fBPRIV_SYS_RESOURCE\fR および \fBPRIV_PROC_AUDIT\fR が識別されています。
+.SS "特権エスカレーション"
+.sp
+.LP
+特定の状況では、1 つの特権によってプロセスが、そのプロセスに明示的には付与されていなかった 1 つ以上の追加の特権を取得する可能性があります。特権のこのようなエスカレーションを回避するために、セキュリティーポリシーには、これらの追加の特権に対する明示的なアクセス権が必要になります。
+.sp
+.LP
+エスカレーションの一般的な例として、「生の」インタフェースによるシステムリソースの変更を許可するメカニズムがあります。たとえば、\fB/dev/kmem\fR によるカーネルデータ構造の変更や、\fB/dev/dsk/*\fR によるファイルの変更があります。エスカレーションはまた、プロセスが、制御プロセスより多くの特権を使用してプロセスを制御する場合にも発生します。この特殊な場合として、UID 0 によって所有されているオブジェクトの操作または作成や、\fBsetuid\fR(2) を使用して UID 0 を取得しようとする場合が挙げられます。UID 0 はすべてのシステム構成ファイルを所有するだけでなく、通常のファイル保護メカニズムでは UID 0 を持つプロセスがシステム構成を変更できるため、UID 0 には特別な扱いが必要です。適切なファイル変更を使用すると、0 の実効 UID で実行されている特定のプロセスがすべての特権を取得できます。
+.sp
+.LP
+プロセスが UID 0 を取得する可能性のある状況では、セキュリティーポリシーに追加の特権 (最大の場合、完全な特権セット) が必要です。システムファイルの保護のための追加のメカニズムが使用できる場合には、このような制限を緩和または解消できる可能性があります。Oracle Solaris の現在のリリースには、このようなメカニズムはありません。
+.sp
+.LP
+UID 0 プロセスの使用は、できるだけ制限するようにしてください。別の UID の下で実行されていて、しかも必要な特権を持つプログラムに置き換えるようにしてください。
+.sp
+.LP
+サブプロセスを \fBexec\fR で実行する必要がないデーモンの場合は、その許可セットと制限セットから \fBPRIV_PROC_EXEC\fR 特権を削除するようにしてください。
+.SS "割り当てられる特権と保護手段"
+.sp
+.LP
+ユーザーに特権が割り当てられる場合、システム管理者はそのユーザーに、意図したより多くの権限を与える可能性があります。管理者は、保護手段が必要かどうかを考慮するべきです。たとえば、ユーザーに \fBPRIV_PROC_LOCK_MEMORY\fR 特権が与えられる場合、そのユーザーがすべてのメモリーをロックしないようにするために、管理者は \fBproject.max-locked-memory\fR リソース制御も設定することを考慮するべきです。
+.SS "拡張ポリシー"
+.sp
+.LP
+構成ファイル内またはコマンド行に特権が一覧表示されているときに、拡張ポリシーの構文を使用できる場合があります。拡張ポリシーとは、特権セットを中括弧で囲み、そのあとにコロンとオブジェクトを続けたものです。拡張ポリシーによって、指定されたオブジェクトに対してその特権の一覧を使用する機能が追加されます。現在は、ネットワークポート、UID、およびファイルオブジェクトのための拡張ポリシーがサポートされています。
+.sp
+.LP
+たとえば、
+.sp
+.ne 2
+.mk
+.na
+\fB\fB{file_dac_read}:/var/core/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB/var/core\fR の下にあるファイルへのアクセス時に特権 \fBfile_dac_read\fR を使用できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB{net_privaddr}:80/tcp,{net_privaddr}:443/tcp \fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが TCP ポート 80 および 443 にネットワークエンドポイントをバインドできるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB{proc_setid}:80-100\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが UID を UID 80 から 100 まで (80 と 100 を含む) に変更できるようにします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB{proc_setid}:casper\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが UID をユーザー名「casper」の UID に変更できるようにします。
+.RE
+
+.sp
+.LP
+拡張ポリシーに一覧表示されている特権セットは、そのポリシーの特権セットにゾーン内で使用可能なすべての特権が含まれていないかぎり、その拡張ポリシーがインストールされたときに継承可能セットから削除され、その結果、許可セットと実効セットから削除されます。たとえば、\fB{zone}:/etc/shadow\fR という形式の拡張ポリシーをインストールした場合は、どの特権も削除されません。これに対して、拡張ポリシーの形式が \fB{file_dac_read}:/etc/shadow\fR である場合は、\fBPRIV_FILE_DAC_READ\fR 特権が削除されます。
+.sp
+.LP
+拡張ポリシーは、実効セットに特権が存在しない場合にのみ有効になります。
+.sp
+.LP
+\fB{all}:/some/file\fR などの拡張ポリシーを指定することは可能ですが、システムは引き続き、\fBsetuid\fR ビットの追加など、一部のアプリケーションを制限します。
+.sp
+.LP
+拡張ポリシーに一覧表示されているすべての特権は、プロセスがそのポリシーをインストールするときに、そのプロセス内で有効である必要があります。たとえば、ポリシーをインストールするために \fBppriv\fR(1) が使用される場合は、その実効セットに記載されたすべての特権を持っている必要があります。\fBppriv\fR のオブジェクトであるプロセスには、このような制限は適用されません。ただし、その制限セットによって拡張ポリシー内のすべての特権がオーバーライドされます。
+.sp
+.LP
+一部のコンテキストでは、拡張ポリシーの構文の一部をエスケープする必要があります。たとえば、\fBexec_attr\fR(4) では、コロン (:) をバックスラッシュ (\) でエスケープする必要があります。また、コンテキストによっては、ファイル名にある一部の文字もバックスラッシュでのエスケープが必要になる可能性があります。
+.sp
+.LP
+拡張ポリシーは、ファイルシステム内のすべてのレイヤーで評価されます。\fBlofs\fR(7FS) ファイルシステムの場合、指定されたポリシーでは、そのポリシーが \fBlofs\fR ファイルシステムとベースとなるファイルシステムの両方を指定する必要があるという点を考慮に入れる必要があります。
+.sp
+.LP
+次の一覧には、オブジェクトとそれに関連する特権のタイプが含まれています。
+.sp
+
+.sp
+.TS
+tab();
+cw(1.18i) cw(1.85i) cw(2.47i) 
+lw(1.18i) lw(1.85i) lw(2.47i) 
+.
+オブジェクト構文特権
+_
+ユーザー名名前\fBproc_setid\fR
+Uiduid\fBproc_setid\fR
+uid の範囲uid1-uid2\fBproc_setid\fR
+ネットワークポート^1\fBport/udp\fR、\fBport/tcp\fR、 \fBnet_privaddr\fR
+\fBport/sctp\fR、\fBport/\fR*
+ポートの範囲port1-port2/<proto>\fBnet_privaddr\fR
+ファイル名パス名ファイル特権、\fBproc_exec\fR
+ワイルドカード^2パス名*ファイル特権、\fBproc_exec\fR
+.TE
+
+.sp
+.LP
+^1 \fBservices\fR(4) で定義されている数値
+.sp
+.LP
+^2 指定されたパス名で始まるすべてのファイル名に一致する
+.SS "特権のデバッグ"
+.sp
+.LP
+システムコールがアクセス権のエラーで失敗した場合は、その問題の原因がただちに明らかになるとは限りません。このような問題をデバッグするには、\fB特権のデバッグ\fRと呼ばれるツールを使用できます。あるプロセスに対して特権のデバッグが有効になっている場合、カーネルは、存在しない特権をそのプロセスの制御端末に報告します。(プロセスに対するデバッグは、\fBppriv\fR(1) の \fB-D\fR オプションを使用して有効にします。)さらに、管理者は次を使用して \fBsystem\fR(4) の変数 \fBpriv_debug\fR を設定することにより、システム全体の特権のデバッグを有効化できます。
+.sp
+.in +2
+.nf
+set priv_debug = 1
+.fi
+.in -2
+
+.sp
+.LP
+実行中のシステムでは、\fBmdb\fR(1) を使用すると、この変数を変更できます。
+.SS "特権の管理"
+.sp
+.LP
+ユーザーまたは役割に特権を割り当てたり、ユーザーまたは役割への特権を変更したりするには、それぞれ、\fBusermod\fR(1M) または \fBrolemod\fR(1M) を使用します。システム上でサポートされている特権を列挙するには \fBppriv\fR(1) を、プログラムにどの特権が必要かを確認するには \fBtruss\fR(1) を使用します。
+.SH 関連項目
+.sp
+.LP
+\fBmdb\fR(1), \fBppriv\fR(1), \fBadd_drv\fR(1M), \fBifconfig\fR(1M), \fBlockd\fR(1M), \fBnfsd\fR(1M), \fBpppd\fR(1M), \fBrem_drv\fR(1M), \fBsmbd\fR(1M), \fBsppptun\fR(1M), \fBupdate_drv\fR(1M), \fBIntro\fR(2), \fBaccess\fR(2), \fBacct\fR(2), \fBacl\fR(2), \fBadjtime\fR(2), \fBchmod\fR(2), \fBchown\fR(2), \fBchroot\fR(2), \fBcreat\fR(2), \fBexec\fR(2), \fBfcntl\fR(2), \fBfork\fR(2), \fBfpathconf\fR(2), \fBgetacct\fR(2), \fBgetpflags\fR(2), \fBgetppriv\fR(2), \fBgetsid\fR(2), \fBkill\fR(2), \fBlink\fR(2), \fBmemcntl\fR(2), \fBmknod\fR(2), \fBmount\fR(2), \fBmsgctl\fR(2), \fBnice\fR(2), \fBntp_adjtime\fR(2), \fBopen\fR(2), \fBp_online\fR(2), \fBpriocntl\fR(2), \fBpriocntlset\fR(2), \fBprocessor_bind\fR(2), \fBpset_bind\fR(2), \fBpset_create\fR(2), \fBreadlink\fR(2), \fBresolvepath\fR(2), \fBrmdir\fR(2), \fBsemctl\fR(2), \fBsetegid\fR(2), \fBseteuid\fR(2), \fBsetgid\fR(2), \fBsetgroups\fR(2), \fBsetpflags\fR(2), \fBsetppriv\fR(2), \fBsetrctl\fR(2), \fBsetregid\fR(2), \fBsetreuid\fR(2), \fBsetrlimit\fR(2), \fBsettaskid\fR(2), \fBsetuid\fR(2), \fBshmctl\fR(2), \fBshmget\fR(2), \fBshmop\fR(2), \fBsigsend\fR(2), \fBstat\fR(2), \fBstatvfs\fR(2), \fBstime\fR(2), \fBswapctl\fR(2), \fBsysinfo\fR(2), \fBuadmin\fR(2), \fBulimit\fR(2), \fBumount\fR(2), \fBunlink\fR(2), \fButime\fR(2), \fButimes\fR(2), \fBbind\fR(3SOCKET), \fBdoor_ucred\fR(3C), \fBpriv_addset\fR(3C), \fBpriv_set\fR(3C), \fBpriv_getbyname\fR(3C), \fBpriv_getbynum\fR(3C), \fBpriv_set_to_str\fR(3C), \fBpriv_str_to_set\fR(3C), \fBsocket\fR(3SOCKET), \fBt_bind\fR(3NSL), \fBtimer_create\fR(3C), \fBucred_get\fR(3C), \fBexec_attr\fR(4), \fBproc\fR(4), \fBservices\fR(4), \fBsystem\fR(4), \fBuser_attr\fR(4), \fBlofs\fR(7FS)\fBddi_cred\fR(9F), \fBdrv_priv\fR(9F), \fBpriv_getbyname\fR(9F), \fBpriv_policy\fR(9F), \fBpriv_policy_choice\fR(9F), \fBpriv_policy_only\fR(9F)
+.sp
+.LP
+\fI『Securing Systems and Attached Devices in Oracle Solaris 11.3』\fR
+.SH 注意事項
+.sp
+.LP
+プロセスからいずれかの基本特権を削除することは、そのプロセスを標準に準拠しない状態のままにするだけでなく、予期しないアプリケーション障害を引き起こす可能性があるため、その潜在的な副作用を完全に理解した上でのみ行うようにしてください。

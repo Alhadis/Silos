@@ -1,0 +1,2090 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 1998, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH ld 1 "2015 年 1 月 14 日" "SunOS 5.11" "用户命令"
+.SH 名称
+ld \- 目标文件的链接编辑器
+.SH 用法概要
+.LP
+.nf
+\fBld\fR [\fB-32\fR | \fB-64\fR] [\fB-B\fR direct | nodirect] [\fB-B\fR dynamic | static]
+[\fB-B\fR eliminate[=\fImode\fR] | local[=\fImode\fR]] [\fB-B\fR reduce] [\fB-c\fR \fIname\fR]
+[\fB-C\fR] [\fB-D\fR [\fB!\fR]\fItoken1\fR,[\fB!\fR]\fItoken2\fR,...] [\fB-e\fR \fIepsym\fR]
+[\fB-f\fR \fIname\fR | \fB-F\fR \fIname\fR] [\fB-G\fR] [\fB-h\fR \fIname\fR] [\fB-i\fR] [\fB-l\fR \fIx\fR] [\fB-L\fR \fIpath\fR]
+[\fB-m\fR] [\fB-M\fR \fImapfile\fR] [\fB-N\fR \fIstring\fR] [\fB-o\fR \fIoutfile\fR] [\fB-p\fR \fIauditlib\fR]
+[\fB-P\fR \fIauditlib\fR] [\fB-Q\fR y | n] [\fB-r\fR] [\fB-R\fR \fIpath\fR] [\fB-s\fR]
+[\fB-S\fR \fIsupportlib\fR] [\fB-u\fR \fIsymname\fR] [\fB-V\fR]
+[\fB-z\fR allextract | defaultextract | weakextract ]
+[\fB-z\fR ancillary[=\fIoutfile\fR]] [\fB-z\fR aslr[=\fImode\fR]]
+[\fB-z\fR assert-deflib[=\fIlibname\fR]] [\fB-z\fR compress-sections[=\fIcmp-type\fR]]
+[\fB-z\fR deferred | nodeferred] [\fB-z\fR defs | nodefs] 
+[\fB-z\fR direct | nodirect] [\fB-z\fR discard-unused=\fIitem1\fR,\fIitem2\fR,...]
+[\fB-z\fR endfiltee] [\fB-z\fR fatal-warnings | nofatal-warnings]
+[\fB-z\fR finiarray=\fIfunction\fR] [\fB-z\fR globalaudit]
+[\fB-z\fR guidance[=\fIitem1\fR,\fIitem2\fR,...]] [\fB-z\fR help]
+[\fB-z\fR ignore | record] [\fB-z\fR initarray=\fIfunction\fR] [\fB-z\fR initfirst]
+[\fB-z\fR interpose] [\fB-z\fR lazyload | nolazyload]
+[\fB-z\fR ld32=\fIarg1\fR,\fIarg2\fR,...] [\fB-z\fR ld64=\fIarg1\fR,\fIarg2\fR,...]
+[\fB-z\fR loadfltr] [\fB-z\fR mapfile-add=\fIname\fR] [\fB-z\fR nodelete]
+[\fB-z\fR nodlopen] [\fB-z\fR nxheap[=\fImode\fR]] [\fB-z\fR nxstack[=\fImode\fR]]
+[\fB-z\fR parent=\fIobject\fR] [\fB-z\fR preinitarray=\fIfunction\fR]
+[\fB-z\fR rescan-now] [\fB-z\fR rescan-start ... \fB-z\fR rescan-end]
+[\fB-z\fR strip-class=[\fB!\fR]\fIclass1\fR,[\fB!\fR]\fIclass2\fR,...] [\fB-z\fR stub]
+[\fB-z\fR symbolcap] [\fB-z\fR target=sparc | x86]
+[\fB-z\fR text | textwarn | textoff] [\fB-z\fR type=\fIobject-type\fR]
+[\fB-z\fR verbose] [\fB-z\fR wrap=\fIsymbol\fR]
+\fIfilename\fR ...
+.fi
+
+.SH 描述
+.sp
+.LP
+链接编辑器 \fBld\fR 通过解析对符号定义的符号引用以及执行重定位来合并可重定位的目标文件。在所有情况下，链接编辑器的缺省输出都留在文件 \fBa.out\fR 中。请参见“附注”部分。
+.sp
+.LP
+链接编辑器具有大量选项。“用法概要”部分中定义了与现代编程实践有关的选项，手册页后面的几个部分对这些选项进行了介绍。其他选项不太常用，“辅助选项”部分对这些选项进行了介绍。
+.sp
+.LP
+链接编辑器使用多种输入文件，这些文件是从编译器、汇编程序或对链接编辑器的先前调用生成的。链接编辑器会串联并解释这些输入文件内的数据，以形成输出文件。生成的输出文件是以下基本类型之一。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB动态可执行文件\fR－要求运行时链接程序 \fBld.so.1\fR(1) 进行干预以生成可运行进程的输入可重定位目标文件的串联。动态可执行文件通常具有一个或多个以共享目标文件形式存在的依赖项。
+.sp
+使用 \fB-z\fR \fBtype=exec\fR 选项时将创建动态可执行文件，或者未提供控制输出文件类型的其他选项时动态可执行文件是缺省值。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB与位置无关的可执行文件\fR－共享目标文件的特殊情况，指定解释程序。应该基于与位置无关的代码创建与位置无关的可执行文件。与需要固定地址空间以执行的动态可执行文件不同，可以在由 \fBexec\fR(2) 选择的任意地址处装入与位置无关的可执行文件。
+.sp
+使用 \fB-z\fR \fBtype=pie\fR 选项时将创建与位置无关的可执行文件。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB可重定位目标文件\fR－可在后续链接编辑阶段中使用的输入可重定位目标文件的串联。
+.sp
+使用 \fB-z\fR \fBtype=reloc\fR 选项或 \fB-r\fR 选项时将创建可重定位目标文件。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB共享目标文件\fR－提供各种服务的输入可重定位目标文件的串联，运行时这些服务可能绑定到动态可执行文件。应基于与位置无关的代码创建共享目标文件。共享目标文件可能依赖于其他共享目标文件。
+.sp
+使用 \fB-z\fR \fBtype=shared\fR 选项或 \fB-G\fR 选项时将创建共享目标文件。
+.RE
+.sp
+.LP
+链接编辑器在两种模式（动态或静态）中的一种模式下运行。动态链接模式是缺省设置，供用来创建动态可执行文件、共享目标文件和与位置无关的可执行文件。此动态链接环境紧密结合了链接编辑器和运行时链接程序 \fBld.so.1\fR(1) 的工作。这两个实用程序及其相关的技术和实用程序详细记录在\fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR中。
+.sp
+.LP
+静态链接模式供用来创建可重定位目标文件。现代版本的 Oracle Solaris 操作系统不支持创建静态可执行文件。请参见\fBStatic Executables\fR。本部分中的所有讨论均假定使用 \fB-ztype=reloc\fR 或 \fB-r\fR 选项进行动态链接或静态链接。
+.sp
+.LP
+如果任何参数是库，当在命令行中遇到该库时，缺省情况下，链接编辑器将仅搜索该库一次。库可以是共享目标文件也可以是可重定位归档文件。请参见 \fBar\fR(1)。
+.sp
+.LP
+共享目标文件由以前通过链接编辑一个或多个输入文件而生成的不可分割的整个单元组成。链接编辑器处理共享目标文件时，共享目标文件的所有内容将成为生成的输出文件映像的逻辑部分。在链接编辑期间，实际上不会复制共享目标文件，因为其实际包含将延迟到进程执行。包含此逻辑部分意味着，链接编辑过程可以使用在共享目标文件中定义的所有符号项。请参见Chapter 4, \fI"Shared Objects,"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.sp
+.LP
+对于归档库，缺省情况下，链接编辑器仅装入定义未解析的外部引用的归档成员。链接编辑器按顺序搜索归档库的符号表以解析可满足归档成员的外部引用。此搜索操作将重复执行，直到不存在可由归档解析的外部引用。因此，库中成员的顺序对功能没有影响，除非存在定义相同外部符号的多个归档成员。另请参见 \fB-z\fR \fBallextract\fR 选项。具有相互依赖关系的归档库可能需要多个命令行定义或使用 \fB-z rescan\fR 选项之一。请参见\fI"Archive Processing"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.sp
+.LP
+对于 SPARC 或 x86 目标，链接编辑器是一个\fB\fR跨链接编辑器，可以链接 32 位目标文件或 64 位目标文件。链接编辑器使用命令行中第一个可重定位目标文件的 \fBELF\fR 类和计算机类型来控制操作的模式。不允许混用 32 位目标文件和 64 位目标文件。同样，只允许单个计算机类型的目标文件。请参见 \fB-32\fR、\fB-64\fR 和 \fB-z target\fR 选项。
+.SS "静态可执行文件"
+.sp
+.LP
+许多发行版都建议不要创建静态可执行文件。实际上，Solaris 中从未提供过 64 位系统归档库。因为静态可执行文件是基于系统归档库生成的，所以这种可执行文件包含关于系统实现的详细信息。该自包含特性有许多缺点：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+静态可执行文件无法利用以共享目标文件形式发布的系统修补程序。因此，必须重新生成静态可执行文件，才能利用众多的系统改进功能。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+这种可执行文件是否能够在未来的发行版上运行可能会受到影响。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+系统实现详细信息的重复会对系统性能造成负面影响。
+.RE
+.sp
+.LP
+从 Oracle Solaris 10 开始，不再提供 32 位系统归档库。如果没有这些库（特别是 \fBlibc.a\fR），没有对未记录的和可更改的系统详细信息的访问权限将无法再创建静态可执行文件。但是，链接编辑器处理静态链接选项以及归档库的功能保持不变。
+.SS "选项处理"
+.sp
+.LP
+通常，使用命令行选项充分指定链接编辑。但是，提供了各种环境变量来扩充命令行处理。这些变量提供可能与编译器选项冲突的选项。这些变量还用于覆盖或取消设置嵌入脚本和构建环境的命令行选项。
+.sp
+.LP
+命令行选项之间的任何不一致都将导致致命错误状态。与环境变量提供的选项有关的任何不一致都将导致警告，第一个选项优先。
+.sp
+.LP
+按以下顺序从环境和命令行解释选项。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+从 \fBLD_OPTIONS\fR 环境变量。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+从命令行。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+从 \fBLD_UNSET\fR 环境变量。
+.RE
+.sp
+.LP
+从这三个组件确定输出目标文件类型。然后使用此目标文件类型来调查任何 \fBLD_{object-type}_UNSET\fR 和 \fBLD_{object-type}_OPTIONS\fR 环境变量，以删除或添加特定于正在构建的目标文件类型的选项。\fIobject-type\fR 以大写形式提供 \fB-z type\fR 选项定义的类型，是 \fBEXEC\fR、\fBPIE\fR、\fBRELOC\fR 或 \fBSHARED\fR 之一。例如，输出文件类型是动态可执行文件时，将解释 \fBLD_EXEC_OPTIONS \fR 选项。按以下顺序处理这些环境变量。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+从 \fBLD_{object-type}_UNSET\fR 环境变量。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+从 \fBLD_{object-type}_OPTIONS\fR 环境变量。
+.RE
+.sp
+.LP
+与此输出目标文件类型不一致的任何命令行选项都将导致致命错误状态。环境变量提供的任何不一致选项都将导致警告，并将忽略该选项。
+.sp
+.LP
+任何 \fBUNSET\fR 操作都会伴随有警告通知。通过设置 \fB-z fatal-warnings\fR 选项，任何其他选项处理警告都可以升级为致命错误状态。
+.SH 选项
+.sp
+.LP
+支持以下选项。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-32\fR | \fB-64\fR\fR
+.ad
+.br
+.na
+\fB\fB-m32\fR | \fB-m64\fR\fR
+.ad
+.sp .6
+.RS 4n
+创建 32 位或 64 位目标文件。
+.sp
+缺省情况下，要生成的目标文件的类根据从命令行处理的第一个 \fBELF\fR 目标文件来确定。如果未指定任何目标文件，类由从命令行处理的第一个归档文件中遇到的第一个目标文件确定。如果没有目标文件或归档文件，链接编辑器将创建 32 位目标文件。
+.sp
+仅从 \fBmapfile\fR 创建 64 位目标文件时才需要 \fB-64\fR 选项。
+.sp
+\fB-32\fR 或 \fB-64\fR 选项还可用在下面的罕见情况中：完全从同时包含 32 和 64 位目标文件的归档文件链接。如果归档文件中的第一个目标文件不是需要创建的目标文件的类，\fB-32\fR 或 \fB-64\fR 选项可用来指向链接编辑器。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-B\fR \fBdirect\fR | \fBnodirect\fR\fR
+.ad
+.sp .6
+.RS 4n
+这些选项控制是否直接绑定。\fB-B\fR \fBdirect\fR 通过记录符号引用与提供符号定义的依赖项之间的关系来建立直接绑定信息。此外，可以在符号引用与要创建的目标文件中的关联定义之间建立直接绑定信息。运行时链接程序使用此信息直接在关联目标文件中搜索符号而不是执行缺省符号搜索。
+.sp
+只能对使用链接编辑指定的依赖项建立直接绑定信息。因此，还应添加 \fB-z\fR \fBdefs\fR 选项。希望在直接绑定环境中插入符号的目标文件应使用 \fB-z\fR \fBinterpose\fR 选项将自身标识为插入项。使用 \fB-B\fR \fBdirect\fR 还会对所有依赖项启用 \fB-z\fR \fBlazyload\fR。
+.sp
+\fB-B\fR \fBnodirect\fR 选项禁止直接绑定到要创建的目标文件所提供的接口。通过指定 \fB-z\fR \fBdirect\fR 选项，可以将要创建的目标文件继续直接绑定到外部接口。请参见Chapter 6, \fI"Direct Bindings,"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-B\fR \fBdynamic\fR | \fBstatic\fR\fR
+.ad
+.sp .6
+.RS 4n
+这些选项用于控制库包含。\fB-B\fR \fBdynamic\fR 允许 \fB-l\fR 选项库搜索扩展至共享目标文件和归档库名称。此选项仅在动态模式下有效，并且是缺省选项。\fB-B\fR \fBstatic\fR 将 \fB-l\fR 选项库搜索限定为仅扩展至归档库名称。可以在命令行上任意次地指定这些选项以进行切换。如果指定了 \fB-B\fR \fBstatic\fR 选项，在切换为 \fB-B\fR \fBdynamic\fR 选项之前，不会接受任何共享目标文件。请参见 \fB-l\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-B\fR \fBeliminate[=\fImode\fR]\fR | \fBlocal[=\fImode\fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+导致缺省设置为全局绑定的任何符号从符号表中被删除，或缩减为局部可见。具有 \fBSTV_DEFAULT\fR 可见性的全局符号可以由链接编辑器缩减为更具限制性的可见性。具有任何其他 \fBSTV_\fR 可见性的全局符号被视为具有显式可见性。链接编辑器遵循显式可见性，不能修改。请参见\fI"Symbol Visibility"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。符号可见性可以通过编译器指令或通过定义版本或接口定义的 \fBmapfiles\fR 显式定义。
+.sp
+\fBMapfile\fR 版本和接口定义可以包含 \fIauto-elimination\fR 或 \fIauto-reduction\fR 指令。请参见\fI"SYMBOL_SCOPE and SYMBOL_VERSION Directives"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。这些指令将导致未在 \fBmapfile\fR 中显式定义或者没有定义显示可见性的符号分别被删除或缩减为局部。除了任何显式符号定义，符号的删除或缩减还会受所生成目标文件类型影响，如随后的段落所述。\fB-B\fR \fBeliminate\fR 选项与 \fBmapfile\fR \fIauto-elimination\fR 指令请求相同的符号删除。\fB-B\fR \fBlocal\fR 选项与 \fBmapfile\fR \fI auto-reduction\fR 指令请求相同的符号缩减。
+.sp
+任一选项均可通过模式 \fBexternal\fR 或 \fBnoexternal\fR 来控制对删除全局符号或缩减全局符号的选择。此微调通常是不必要的，因为缺省情况下链接编辑器会根据所生成目标文件的类型来采用相应模式：\fBexternal\fR 适用于可执行文件，\fBnoexternal\fR 适用于共享目标文件。
+.sp
+构建动态目标文件时，可能需要确保某些符号保持全局状态，以便可以从外部依赖项引用这些符号。对于动态可执行文件而言尤其如此。构建可执行文件时，可重定位目标文件由支持运行时进程初始化的编译环境提供。这些可重定位目标文件可以包含从系统依赖项引用的全局符号。无论采用任何自动删除或自动缩减符号技术，这些符号均应保持全局状态，以便不会影响运行时执行。
+.sp
+将 \fBmode\fR 定义为 \fBexternal\fR 时会分析任何外部依赖项，以确定依赖项中的任何符号引用是否可能绑定到所构建目标文件内的符号定义。任何符合此绑定的全局符号都不会被删除或缩减为局部。此模式是生成动态可执行文件时的缺省模式。
+.sp
+将 \fBmode\fR 定义为 \fBnoexternal\fR 会绕过对任何外部依赖项的分析，这样，所有未在 \fBmapfile\fR 中显式定义或没有定义显式可见性的符号均会缩减。此模式是生成共享目标文件时的缺省模式。
+.sp
+另请参见 \fB-B\fR \fBreduce\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-B\fR \fBreduce\fR\fR
+.ad
+.sp .6
+.RS 4n
+生成可重定位目标文件时，任何符号可见性属性所定义的符号信息或者通过定义版本或接口定义的 \fBmapfiles\fR 定义的符号信息会被缩减。缺省情况下，生成可重定位目标文件时，可见性属性、版本定义或接口定义仅会记录在输出映像中。创建动态可执行文件或共享目标文件时，可见性属性或 \fBmapfile\fR 版本或接口定义始终应用于任何符号信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+记录配置文件的 \fIname\fR 以便在运行时使用。可以使用配置文件来改变缺省搜索路径，提供目录高速缓存以及提供备选目标文件依赖项。请参见 \fBcrle\fR(1)。仅当创建动态可执行文件或与位置无关的可执行文件时才能使用此选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR\fR
+.ad
+.sp .6
+.RS 4n
+取消改编 C++ 符号名称显示在诊断消息中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR [\fB!\fR]\fItoken1\fR,[\fB!\fR]\fItoken2\fR,...\fR
+.ad
+.sp .6
+.RS 4n
+按每个 \fItoken\fR 的指定将调试信息列显到标准错误。特殊标记 \fBhelp\fR 指示可用标记的完整列表。请参见\fI"Debugging Aids"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fIepsym\fR\fR
+.ad
+.br
+.na
+\fB\fB--entry\fR \fIepsym\fR\fR
+.ad
+.sp .6
+.RS 4n
+将输出文件的入口点地址设置为符号 \fIepsym\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIname\fR\fR
+.ad
+.br
+.na
+\fB\fB--auxiliary\fR \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅当构建共享目标文件时才使用。指定将共享目标文件的符号表用作 \fIname\fR 所指定的共享目标文件的符号表上的辅助过滤器。允许使用此选项的多个实例。此选项不能与 \fB-F\fR 选项一起使用。请参见\fI"Generating Auxiliary Filters"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR \fIname\fR\fR
+.ad
+.br
+.na
+\fB\fB--filter\fR \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅当构建共享目标文件时才使用。指定将共享目标文件的符号表用作 \fIname\fR 所指定的共享目标文件的符号表上的过滤器。允许使用此选项的多个实例。此选项不能与 \fB-f\fR 选项一起使用。请参见\fI"Generating Standard Filters"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-G\fR\fR
+.ad
+.br
+.na
+\fB\fB-shared\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅在动态模式下，生成共享目标文件。允许使用未定义的符号。另请参见 \fB-ztype=shared\fR 选项。请参见Chapter 4, \fI"Shared Objects,"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR \fIname\fR\fR
+.ad
+.br
+.na
+\fB\fB-soname\fR \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅在动态模式下，当构建共享目标文件时，在目标文件的动态部分中记录 \fIname\fR。\fIname\fR 记录在与此目标文件而不是目标文件的文件系统名链接的任何动态目标文件中。因此，\fIname\fR 由运行时链接程序用作共享目标文件的名称以在运行时进行搜索。请参见\fI"Recording a Shared Object Name"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.sp .6
+.RS 4n
+忽略 \fBLD_LIBRARY_PATH\fR。当 \fBLD_LIBRARY_PATH\fR 设置实际影响运行时库搜索（这会干扰正在执行的链接编辑）时，此选项非常有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIx\fR\fR
+.ad
+.br
+.na
+\fB\fB--library\fR \fIx\fR\fR
+.ad
+.sp .6
+.RS 4n
+搜索 \fBlib\fR\fIx\fR\fB\&.so\fR 或 \fBlib\fR\fIx\fR\fB\&.a\fR 库，它们分别是共享目标文件和归档库的常规名称。在动态模式下，除非 \fB-B\fR \fBstatic\fR 选项有效，否则链接编辑器将在库搜索路径中指定的每个目录中搜索 \fBlib\fR\fIx\fR\fB\&.so\fR 或 \fBlib\fR\fIx\fR\fB\&.a\fR 文件。目录搜索在包含任何一个文件的第一个目录处停止。链接编辑器会选择以 \fB\&.so\fR 结尾的文件，条件是 \fB-l\fR\fIx\fR 扩展为两个文件，这两个文件的名称采用 \fBlib\fR\fIx\fR\fB\&.so\fR 和 \fBlib\fR\fIx\fR\fB\&.a\fR 形式。如果未找到 \fBlib\fR\fIx\fR\fB\&.so\fR，链接编辑器将接受 \fBlib\fR\fIx\fR\fB\&.a\fR。在静态模式下，或 \fB-B\fR \fBstatic\fR 选项有效时，链接编辑器仅选择以 \fB\&.a\fR 结尾的文件。遇到库时链接编辑器将搜索库，所以 \fB-l\fR 的位置非常重要。请参见\fI"Linking With Additional Libraries"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR \fIpath\fR\fR
+.ad
+.br
+.na
+\fB\fB--library-path\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIpath\fR 添加到库搜索目录。链接编辑器首先在 \fB-L\fR 选项指定的任何目录中搜索库，然后在标准目录中搜索。仅当此选项位于 \fB-L\fR 选项应用到的 \fB-l\fR 选项之前时，此选项才有用。请参见\fI"Directories Searched by the Link-Editor"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.sp
+环境变量 \fBLD_LIBRARY_PATH\fR 可用于补充库搜索路径，但是建议使用 \fB-L\fR 选项，因为环境变量也会由运行时环境解释。请参见“环境变量”部分的 \fBLD_LIBRARY_PATH\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.sp .6
+.RS 4n
+在标准输出中生成内存映射或输入/输出部分列表，以及任何非致命多重定义符号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR \fImapfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+读取 \fImapfile\fR 作为链接编辑器指令的文本文件。可以多次指定此选项。如果 \fImapfile\fR 是目录，则将处理该目录中的所有正规文件（如 \fBstat\fR(2) 所定义）。请参见Chapter 9, \fI"Mapfiles,"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。\fB/usr/lib/ld\fR 中提供了示例 \fBmapfile\fR。另请参见“文件”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR \fIstring\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项会将 \fBDT_NEEDED\fR 条目添加到所生成的目标文件的 \fB\&.dynamic\fR 部分中。\fBDT_NEEDED\fR 字符串的值为在命令行上指定的 \fIstring\fR。此选项与位置有关，且 \fBDT_NEEDED\fR \fB\&.dynamic\fR 条目与链接编辑行上搜索到的其他动态依赖项有关。当组合使用 \fB-dy\fR 和 \fB-r\fR 选项时，此选项适用于在设备驱动程序可重定位目标文件中指定依赖项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIoutfile\fR\fR
+.ad
+.br
+.na
+\fB\fB--output\fR \fIoutfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+生成名为 \fIoutfile\fR 的输出目标文件。缺省目标文件的名称为 \fBa.out\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIauditlib\fR\fR
+.ad
+.sp .6
+.RS 4n
+标识审计库 \fIauditlib\fR。此审计库用于审计在运行时创建的目标文件。共享目标文件被标识为要求使用 \fB-p\fR 选项进行审计，将该共享目标文件指定为依赖项的任何目标文件都将继承此项要求。请参见 \fB-P\fR 选项。另请参见\fI"Runtime Linker Auditing Interface"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIauditlib\fR\fR
+.ad
+.sp .6
+.RS 4n
+标识审计库 \fIauditlib\fR。此审计库用于审计在运行时创建的目标文件的依赖项。依赖项审计还可以从标识为要求审计的依赖项继承。请参见 \fB-p\fR 选项和 \fB-z\fR \fBglobalaudit\fR 选项。另请参见\fI"Runtime Linker Auditing Interface"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Q\fR \fBy\fR | \fBn\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fB-Q\fR \fBy\fR 时，会将 \fBident\fR 字符串添加到输出文件的 \fB\&.comment\fR 部分。此字符串标识用于创建文件的链接编辑器的版本。当有多个链接步骤时，例如，当使用链接编辑器 \fB- ztype=reloc\fR 或 \fB-r\fR 选项时，这将导致多个链接编辑器 \fBidents\fR。此标识与 \fBcc\fR 命令的缺省操作相同。\fB-Q\fR \fBn\fR 将隐藏版本标识。\fB\&.comment\fR 部分可以通过 \fBmcs\fR(1) 实用程序来处理。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.br
+.na
+\fB\fB--relocatable\fR\fR
+.ad
+.sp .6
+.RS 4n
+合并可重定位目标文件以生成一个可重定位目标文件。链接编辑器不受未解析引用的影响。此选项不能与 \fB-a\fR 选项一起使用。另请参见 \fB-ztype=reloc\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIpath\fR\fR
+.ad
+.br
+.na
+\fB\fB-rpath\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+冒号分隔的目录列表，用于指定运行时链接程序的库搜索目录。如果路径存在且不为空，将在输出目标文件中记录路径并将其传递给运行时链接程序。此选项的多个实例与各个用冒号分隔的 \fIpath\fR 串联在一起。请参见\fI"Directories Searched by the Runtime Linker"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.sp
+在关联目标文件中使用 runpath 比设置全局搜索路径（例如通过 \fBLD_LIBRARY_PATH\fR 环境变量）更可取。仅应记录查找目标文件依赖项所需的 runpaths。\fBldd\fR(1) 在与 \fB-U\fR 选项一起使用时，还可用于在动态目标文件中搜索未使用的 runpaths。
+.sp
+还可以通过 runpath 来提供各种标记，运行路径提供了标识系统功能或目标文件位置的灵活方式。请参见Chapter 11, \fI"Establishing Dependencies with Dynamic String Tokens,"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。\fB$ORIGIN\fR 标记特别适用于将动态目标文件重定位到文件系统中的其他位置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.br
+.na
+\fB\fB--strip-all\fR\fR
+.ad
+.sp .6
+.RS 4n
+从输出文件中分离任何符号信息。这些选项等效于组合使用 \fB-z strip-class\fR 选项与 \fBdebug\fR 和 \fBsymbol\fR 类标识符。另请参见 \fB-z\fR \fBredlocsym\fR 和 \fB-z\fR \fBnoldynsym\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR \fIsupportlib\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用链接编辑器装入共享目标文件 \fIsupportlib\fR，并提供有关链接进程的信息。使用 \fB-S\fR 选项定义的共享目标文件还可通过使用 \fBSGS_SUPPORT\fR 环境变量来提供。请参见\fI"Link-Editor Support Interface"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR \fIsymname\fR\fR
+.ad
+.br
+.na
+\fB\fB--undefined\fR \fIsymname\fR\fR
+.ad
+.sp .6
+.RS 4n
+在符号表中作为未定义的符号输入 \fIsymname\fR。此选项适用于完全从归档库装入。在此实例中，需要使用未解析的引用来强制装入第一个例程。此选项在命令行上的位置非常重要。此选项必须置于定义符号的库之前。请参见\fI"Defining Additional Symbols with the -u                                         option"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR\fR
+.ad
+.br
+.na
+\fB\fB--version\fR\fR
+.ad
+.sp .6
+.RS 4n
+输出消息，提供关于正在使用的链接编辑器版本的信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBallextract\fR | \fBdefaultextract\fR | \fBweakextract\fR\fR
+.ad
+.br
+.na
+\fB\fB--whole-archive\fR | \fB--no-whole-archive \fR\fR
+.ad
+.sp .6
+.RS 4n
+从跟随的任何归档中更改目标文件的提取条件。缺省情况下，将提取归档成员以满足未定义的引用并通过数据定义提升暂定的定义。弱符号引用不会触发提取。使用 \fB-z\fR \fBallextract\fR 或 \fB--whole-archive\fR 选项时，从归档中提取所有归档成员。使用 \fB-z\fR \fBweakextract\fR 时，弱引用触发归档提取。\fB-z\fR \fBdefaultextract\fR 或 \fB--no-whole-archive\fR 选项提供一种在使用前面的提取选项之后返回缺省值的方法。请参见\fI"Archive Processing"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBancillary[=\fIoutfile\fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定一个辅助输出文件，用于接收通常将添加到输出目标文件的不可分配部分。运行时不需要不可分配部分，它们主要由调试器和其他监测工具使用。如果 \fIoutfile\fR 存在，将使用指定的名称创建辅助文件。如果 \fIoutfile \fR 不存在，则辅助文件的名称为主输出文件的名称加 \fB\&.anc\fR 后缀。请参见\fI"Ancillary Objects"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.sp
+与 \fB-z\fR \fBstub\fR 选项一起使用时，\fB-z\fR \fBancillary\fR 选项会被静默忽略。在以下情况下也会忽略 \fB-z\fR \fBancillary\fR 选项：即在指定该选项时未指定 \fIoutfile\fR，以及通过 \fB-o\fR 选项指定的输出文件是设备特殊文件（如 \fB/dev/null\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBaslr[=\fImode\fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定进程的地址空间布局随机化 (Address Space Layout Randomization, ASLR) 行为。可以将模式值设置为 \fBenable\fR 或 \fBdisable\fR。如果省略模式，则启用 ASLR。仅当创建动态可执行文件或与位置无关的可执行文件时才能使用此选项。请参见 \fBsxadm\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBassert-deflib[=\fIlibname\fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许为使用通过检查链接编辑器提供的缺省搜索路径找到的 \fB-l\fR 命令行选项指定的库发出警告消息。如果提供 \fIlibname\fR 值，将启用缺省库警告功能，并将指定的库添加到不为其发出警告的库列表中。可以指定多个 \fB-z\fR \fBassert-deflib\fR 选项以指定多个不应为其发出警告的库。
+.sp
+\fIlibname\fR 值应为链接编辑器找到的不带任何路径组件的库文件的名称。例如，以下选项允许发出缺省库警告，但标准 C 库除外。
+.sp
+.in +2
+.nf
+$ \fBld ... -z assert-deflib=libc.so ...\fR
+.fi
+.in -2
+.sp
+
+\fB-z\fR \fBassert-deflib\fR 是专用选项，主要用于这样的版本环境：其中存在多个具有相同名称的目标文件且需要对所使用的库实行严格控制。该选项不用于一般用途。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBcompress-sections[=\fIcmp-type\fR]\fR\fR
+.ad
+.br
+.na
+\fB\fB--compress-debug-sections\fR \fIcmp-type\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用注释和调试输出节的压缩。可识别 \fIcmp-type\fR 的以下值。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnone\fR\fR
+.ad
+.sp .6
+.RS 4n
+不进行压缩。这等效于不指定 \fB-z\fR \fBcompress-sections\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzlib\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fBZLIB\fR 压缩来压缩候选节。生成的输出节将设置 \fBSHF_COMPRESSED\fR 节标志来标识使用了压缩。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzlib-gnu\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fBZLIB\fR 压缩、使用 \fBGNU\fR 节压缩格式来压缩所有候选节。此格式要求候选节具有以 \fB\&.debug\fR 开头的名称。生成的节将重命名为以 \fB\&.zdebug\fR 开头来标识使用了压缩。
+.RE
+
+如果省略了 \fIcmp-type\fR，则使用 \fBzlib\fR 样式。对于压缩格式将大于原始未压缩数据的任何节，链接编辑器将静默跳过压缩。
+.sp
+要成为压缩候选项，节必须是不可分配的并且属于以下类之一。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBannotate\fR\fR
+.ad
+.sp .6
+.RS 4n
+注释节提供内存访问工具和覆盖相关工具使用的信息。这些部分通过 \fBSHT_SUNW_ANNOTATE\fR 节类型来进行标识。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdebug\fR\fR
+.ad
+.sp .6
+.RS 4n
+调试节通过 \fB\&.compcom\fR、\fB\&.line\fR、\fB\&.stab*\fR、\fB\&.debug*\fR 或 \fB\&.zdebug*\fR 节名称来进行标识。这些节还通过 \fBSHT_PROGBITS\fR 或 \fBSHT_SUNW_DEBUG*\fR 节类型进行标识。
+.RE
+
+\fBzlib-gnu\fR 压缩类型仅限于名称以 \fB\&.debug\fR 开头的节。使用 \fBzlib-gnu\fR 时，将不压缩本将是压缩候选项的节。对于 \fBzlib\fR 和 \fBzlib-gnu\fR 样式，底层 \fBZLIB\fR 压缩是相同的，这两种格式对于给定输入节提供相同压缩量。这两种样式的不同之处在于候选节选择、压缩头的格式以及如何标识压缩的节。请参见\fI"Compressed Debug Sections"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。除非特别要求使用 \fBzlib-gnu\fR 样式，否则推荐使用更通用的缺省 \fBzlib\fR 样式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBdeferred\fR | \fBnodeferred\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许或禁止将动态依赖项标记为延迟。标记为 \fBdeferred\fR 的动态依赖项也将标记为延迟可装入，且不会在初始进程启动时装入。在首次绑定到延迟引用时，延迟依赖项的装入过程会延迟到进程执行。与基本的延迟可装入依赖项不同，不会在处理 \fBLD_BIND_NOW\fR 时处理延迟依赖项，也不会通过带有 \fBRTLD_NOW\fR 标志的 \fBdlopen\fR(3C) 来处理延迟依赖项。请参见\fI"Testing for Functionality"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.sp
+组合使用延迟依赖项以及 \fBdlsym\fR(3C) 和 \fBRTLD_PROBE\fR 句柄，可提供灵活机制和自然编码样式以供测试功能使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBdefs\fR | \fBnodefs\fR\fR
+.ad
+.br
+.na
+\fB\fB--no-undefined\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-z\fR \fBdefs\fR 选项和 \fB--no-undefined\fR 选项会在链接末尾保留有任何未定义的符号时强制生成致命错误。此模式是构建可执行文件时的缺省模式。由于历史原因，此模式\fB不\fR是构建共享目标文件时的缺省模式。建议使用 \fB-z\fR \fBdefs\fR 选项，因为此模式可保证所构建的目标文件是自包含的。自包含目标文件在内部解析所有符号引用，或解析到目标文件的直接依赖项。
+.sp
+\fB-z\fR \fBnodefs\fR 选项允许未定义的符号。由于历史原因，此模式是构建共享目标文件时的缺省模式。与可执行文件一起使用时，未指定对此类未定义符号的引用的行为。不建议使用 \fB-z\fR \fBnodefs\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBdirect\fR | \fBnodirect\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许或禁止直接绑定到命令行上跟在其后的任何依赖项。与全局等效 \fB-B\fR \fBdirect\fR 相比，这些选项允许对直接绑定进行更精确的控制。\fB-z\fR \fBdirect\fR 选项在以下方面也与 \fB-B\fR \fBdirect\fR 选项不同。不会在符号引用与要创建的目标文件中的关联定义之间建立直接绑定信息。不支持延迟装入。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBdiscard-unused=\fR\fIitem1\fR\fB,\fR\fIitem2\fR\fB,...\fR\fR
+.ad
+.sp .6
+.RS 4n
+缺省情况下，链接编辑器会放弃未使用的空部分。在链接编辑期间，可能会将其他类别的输入材料确定为未使用。使用 \fB-z discard-unused\fR 选项可自动删除此类项目。可以识别以下 \fIitem\fR 标记。
+.sp
+.ne 2
+.mk
+.na
+\fBsections\fR
+.ad
+.sp .6
+.RS 4n
+通过链接编辑创建的输出文件中未使用的部分将被放弃。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBfiles\fR
+.ad
+.sp .6
+.RS 4n
+通过链接编辑创建的输出文件中未使用的可重定位目标文件将被放弃。
+.sp
+如果可重定位目标文件提供的所有可分配部分均未使用，则可将该输入可重定位目标文件确定为未使用。另请参见 \fB-z guidance\fR 选项中有关“不需要的可重定位目标文件”的论述。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdependencies\fR
+.ad
+.sp .6
+.RS 4n
+通过链接编辑创建的输出文件中不会记录未使用的显式共享目标文件依赖项。
+.sp
+显式依赖项是指使用路径名或通过使用 \fB-l\fR 选项（更为常用）在命令行上定义的依赖项。显式依赖项可以依赖于其他目标文件，后者被称为隐式依赖项。如果符合以下两个条件，则可将显式依赖项确定为未使用。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+未从所构建的目标文件中引用该依赖项提供的任何全局符号。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+该依赖项不补偿任何隐式依赖项的要求。
+.RE
+另请参见 \fB-z guidance\fR 选项中有关“不需要的或补偿性的依赖项”的论述。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBnone\fR
+.ad
+.sp .6
+.RS 4n
+禁用所有未使用的处理，包括删除未使用的空部分的缺省操作。
+.RE
+
+另请参见\fI"Removing Unused Material"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBendfiltee\fR\fR
+.ad
+.sp .6
+.RS 4n
+标记 filtee 以便在过滤器进行处理时，filtee 可终止过滤器进行的任何进一步的 filtee 搜索。请参见\fI"Reducing Capability Filtee Searches"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBfatal-warnings\fR | \fBnofatal-warnings\fR\fR
+.ad
+.br
+.na
+\fB\fB--fatal-warnings\fR | \fB--no-fatal-warnings\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fB-z\fR \fBfatal-warnings\fR 和 \fB--fatal-warnings\fR 选项可使链接编辑器将警告视为致命错误。
+.sp
+使用 \fB-z\fR \fBnofatal-warnings\fR 和 \fB--no-fatal-warnings\fR 选项可使链接编辑器将警告视为非致命错误。这是缺省行为。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBfiniarray=\fR\fIfunction\fR\fR
+.ad
+.sp .6
+.RS 4n
+在所构建的目标文件的 \fB\&.fini_array\fR 部分后附加一个条目。如果不存在 \fB\&.fini_array\fR 部分，将创建该部分。新条目将初始化为指向 \fIfunction\fR。请参见\fI"Initialization and Termination Sections"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBglobalaudit\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项对已使用 \fB-P\fR 选项记录的审计库定义进行补充。仅当创建动态可执行文件或与位置无关的可执行文件时才能使用此选项。使用 \fB-P\fR 选项在目标文件中定义的审计库通常允许审计该目标文件的直接依赖项。\fB-z\fR \fBglobalaudit\fR 将审计程序升级为全局审计程序，因此允许审计所有依赖项。请参见\fI"Invoking the Auditing Interface"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.sp
+使用 \fB-P\fR 选项和 \fB-z\fR \fBglobalaudit\fR 选项建立的审计程序等效于使用 \fBLD_AUDIT\fR 环境变量建立的审计程序。请参见 \fBld.so.1\fR(1)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBguidance[=\fR\fIitem1\fR\fB,\fR\fIitem2\fR\fB,...]\fR\fR
+.ad
+.sp .6
+.RS 4n
+提供指南消息来指示链接编辑器选项，这些选项可以改进所生成目标文件的质量，或者在其他方面被视为有益。提供的特定指南在系统升级时可能会发生更改。链接编辑器早期版本中提供的过时指南在新版本中可能会被删除。类似地，新指南可能会添加到链接编辑器的新版本中。因此，指南始终代表当前最佳做法。
+.sp
+通过提供代表要禁止的指南类的 \fIitem\fR 标记列表，可以启用指南但禁止特定指南消息。这样，可以禁止不需要的建议而不会失去其他指南的优点。链接编辑器将静默忽略无法识别的 \fIitem\fR 标记，从而可在 Solaris 的各种早期或新版本上执行给定命令行。
+.sp
+下面是当前版本的链接编辑器提供的指南以及用于禁止这些消息的 \fIitem\fR 标记。
+.sp
+.ne 2
+.mk
+.na
+\fB指定所需依赖项\fR
+.ad
+.sp .6
+.RS 4n
+动态可执行文件和共享目标文件应明确定义它们所需的所有依赖项。如果在构建动态目标文件时有任何符号引用不能满足要求，指南建议使用 \fB-z\fR \fBdefs\fR 选项。可以使用 \fB-z\fR \fBguidance=nodefs\fR 禁用此指南。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB不指定不需要的或补偿性的依赖项\fR
+.ad
+.sp .6
+.RS 4n
+动态可执行文件和共享目标文件不应定义不满足动态目标文件建立的符号引用的任何显式依赖项。指南建议删除不需要的或未使用的依赖项。未使用的依赖项可以是以下两个类别中的一种。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+不满足符号引用要求的显式依赖项。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+不满足所构建动态目标文件的符号引用要求，但会补偿隐式依赖项的显式依赖项。请参见 \fB-z discard-unused\fR 选项中有关“依赖项”的论述。
+.RE
+可以通过 \fB-z guidance=nounused-dependencies\fR 或同义词 \fB-z guidance=nounused\fR 来禁用这两个类别的指南。可以通过 \fB-z guidance=nounused-compensators\fR 禁用补偿依赖项的指南。
+.sp
+另请参见\fI"Removing Unused Material"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB不指定不需要的可重定位目标文件\fR
+.ad
+.sp .6
+.RS 4n
+如果某个可重定位目标文件的可分配部分未由链接编辑所涉及的任何其他目标文件所引用，则所创建的输出文件不应包含该可重定位目标文件的任何信息。指南建议删除未使用的可重定位目标文件。可以使用 \fB-z guidance=nounused-files\fR 禁用此指南。
+.sp
+另请参见\fI"Removing Unused Material"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB延迟装入\fR
+.ad
+.sp .6
+.RS 4n
+应标识依赖项以进行延迟装入。如果在遇到 \fB-z\fR \fBlazyload\fR 或 \fB-z\fR \fBnolazyload\fR 选项之前要处理任何依赖项，指南建议使用 \fB-z\fR \fBlazyload\fR 选项。可以使用 \fB-z\fR \fBguidance=nolazyload\fR 禁用此指南。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB直接绑定\fR
+.ad
+.sp .6
+.RS 4n
+应使用直接绑定来引用依赖项。如果在遇到 \fB-B\fR \fBdirect\fR 或 \fB-z\fR \fBdirect\fR 选项之一或者 \fB-z\fR \fBnodirect\fR 选项之前要处理任何依赖项，指南建议使用前两个选项中的一个。可以使用 \fB-z\fR \fBguidance=nodirect\fR 禁用此指南。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB纯文本段\fR
+.ad
+.sp .6
+.RS 4n
+动态目标文件不应包含不可写但可分配部分的重定位。如果针对文本段的任何重定位持续，且未遇到 \fB-z\fR \fBtextwarn\fR 和 \fB-z\fR \fBtextoff\fR 选项，指南建议使用位置无关代码 (Position Independent Code, PIC) 编译目标文件。可以使用 \fB-z\fR \fBguidance=notext\fR 禁用此指南。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBMapfile 语法\fR
+.ad
+.sp .6
+.RS 4n
+所有 \fBmapfile\fR 应使用版本 2 \fBmapfile\fR 语法。如果遇到任何使用版本 1 语法的 \fBmapfile\fR，指南将建议使用版本 2 语法。可以使用 \fB-z\fR \fBguidance=nomapfile\fR 禁用此指南。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB库搜索路径\fR
+.ad
+.sp .6
+.RS 4n
+将静默忽略链接编辑器遇到的不正确的依赖项。例如，将忽略在生成 64 位目标文件时遇到的 32 位依赖项。这些依赖项可以由不正确的搜索路径设置产生，例如提供不正确的 \fB-L\fR 选项。尽管此依赖项是有利的，但其处理会造成浪费，而且可能会隐藏应解决的版本问题。指南建议删除任何不合适的依赖项。可以使用 \fB-z\fR \fBguidance=nolibpath\fR 禁用此指南。
+.RE
+
+此外，\fB-z\fR \fBguidance=noall\fR 可用来完全禁用指南功能。有关指南的更多信息和构建更好的目标文件的建议，请参见Chapter 5, \fI"Link-Editor Quick Reference,"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBhelp\fR\fR
+.ad
+.br
+.na
+\fB\fB--help\fR\fR
+.ad
+.sp .6
+.RS 4n
+在标准输出中列显命令行选项的摘要并退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBignore\fR | \fBrecord\fR\fR
+.ad
+.br
+.na
+\fB\fB--as-needed\fR | \fB--no-as-needed\fR\fR
+.ad
+.sp .6
+.RS 4n
+忽略或记录未作为链接编辑的一部分引用的共享目标文件依赖项。这些选项是位置选项，用于切换链接编辑器如何处理在命令行上遇到的未引用的依赖项。遇到 \fB-z\fR \fBignore\fR 时，将静默忽略任何后续未引用依赖项。遇到 \fB-z\fR \fBrecord\fR 时，将记录所有依赖项，而不考虑依赖项是否被引用。
+.sp
+缺省情况下，链接编辑器记录所有依赖项，无论是否引用了依赖项。可以使用非位置 \fB-z\fR \fBdiscard-unused=dependencies\fR 选项来更改此初始缺省设置。确立初始设置后，可以使用 \fB-z\fR \fBignore\fR 和 \fB-z\fR \fBrecord\fR 来更改缺省行为。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBinitarray=\fR\fIfunction\fR\fR
+.ad
+.sp .6
+.RS 4n
+在所构建的目标文件的 \fB\&.init_array\fR 部分后附加一个条目。如果不存在 \fB\&.init_array\fR 部分，将创建该部分。新条目将初始化为指向 \fIfunction\fR。请参见\fI"Initialization and Termination Sections"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBinitfirst\fR\fR
+.ad
+.sp .6
+.RS 4n
+标记目标文件以便先对该目标文件进行运行时初始化，然后再对同时进入进程的任何其他目标文件进行运行时初始化。此外，在对该目标文件进行运行时终结化之前，先对同时从进程中删除的任何其他目标文件进行运行时终结化。此选项仅在构建共享目标文件时有意义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBinterpose\fR\fR
+.ad
+.sp .6
+.RS 4n
+将目标文件标记为插入项。在运行时，如果已使用 \fB-z interpose\fR 选项标记某个目标文件，则会将该目标文件标识为显式插入项。在使用 \fBLD_PRELOAD\fR 环境变量装入目标文件时，也会建立显式插入项。请参见 \fBld.so.1\fR(1)。由于目标文件的装入顺序可能会出现隐含插入，但是，此隐含插入对于运行时链接程序是未知的。显式插入可确保不论目标文件的装入顺序如何都会进行插入。显式插入还可确保当直接绑定有效时，运行时链接程序在任何显式插入项中搜索符号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBlazyload\fR | \fBnolazyload\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许或禁止将动态依赖项标记为延迟装入。标记为 \fBlazyload\fR 的动态依赖项在初始进程启动时不会装入。这些依赖项将延迟到首次绑定目标文件时装入。\fB注意：\fR延迟装入要求对依赖项以及进程中使用的每个动态目标文件的关联 runpaths 进行正确声明。请参见\fI"Lazy Loading of Dynamic Dependencies"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBld32\fR=\fIarg1\fR,\fIarg2\fR,...\fR
+.ad
+.br
+.na
+\fB\fB-z\fR \fBld64\fR=\fIarg1 \fR,\fIarg2\fR,...\fR
+.ad
+.sp .6
+.RS 4n
+\fB-z\fR \fB32\fR 和 \fB-z\fR \fB64\fR 选项用于指定仅在运行 32 位或 64 位链接编辑器类时才解释的选项。
+.sp
+例如，支持库是类特定的，因此可以使用以下选项确保支持库的类正确：
+.sp
+.in +2
+.nf
+$ \fBld ... -z ld32=-Saudit32.so.1 -z ld64=-Saudit64.so.1 ...\fR
+.fi
+.in -2
+.sp
+
+在 Solaris 12 之前，已执行的链接编辑器的类由所创建的 \fBELF\fR 目标文件的类决定。现在，执行的链接编辑器类始终是 64 位。保留这些选项是为了向后兼容早期版本的 Solaris。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBloadfltr\fR\fR
+.ad
+.sp .6
+.RS 4n
+标记过滤器以指示必须在运行时立即处理 filtee。通常，过滤器处理会延迟到某个符号引用绑定到该过滤器。包含此标志的目标文件的运行时处理将模拟 \fBLD_LOADFLTR\fR 环境变量生效时的运行时处理。请参见 \fBld.so.1\fR(1)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBmapfile-add=\fR\fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIname\fR 添加到已知的 \fBmapfile\fR 条件输入表达式谓词列表中。此选项等效于在链接编辑器读取的第一个 \fBmapfile\fR 的顶部放置以下行。
+.sp
+.in +2
+.nf
+$mapfile_version 2
+$add \fIname\fR
+.fi
+.in -2
+
+通过 \fB-z mapfile-add\fR 输入的名称可以与 \fBmapfile\fR \fB$if\fR 和 \fB$elif\fR 指令一起使用来有条件地处理 \fBmapfile\fR 输入。请参见Chapter 9, \fI"Mapfiles,"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnodelete\fR\fR
+.ad
+.sp .6
+.RS 4n
+将目标文件标记为在运行时不可删除。此模式类似于通过组合使用 \fBdlopen\fR(3C) 与 \fBRTLD_NODELETE\fR 模式将目标文件添加到进程中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnodlopen\fR\fR
+.ad
+.sp .6
+.RS 4n
+将目标文件标记为对 \fBdlopen\fR(3C) 不可用，即标记为 \fBdlopen()\fR 指定的目标文件或标记为 \fBdlopen()\fR 指定的目标文件所需的任何形式的依赖项。此选项仅在构建共享目标文件时有意义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnxheap[=\fImode\fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定进程的非可执行堆 (NXHEAP) 要求。可以将模式值设置为 \fBenable\fR 或 \fBdisable\fR。如果省略模式，则启用 NXHEAP。仅当创建动态可执行文件或与位置无关的可执行文件时才能使用此选项。请参见 \fBsxadm\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnxstack[=\fImode\fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定进程的非可执行堆栈 (NXSTACK) 要求。可以将模式值设置为 \fBenable\fR 或 \fBdisable\fR。如果省略模式，则启用 NXSTACK。仅当创建动态可执行文件或与位置无关的可执行文件时才能使用此选项。请参见 \fBsxadm\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBparent=\fIobject\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定\fI父\fR目标文件，该目标文件可以是可执行文件或共享目标文件，针对该目标文件链接输出目标文件。通常，在创建要在运行时由可执行文件通过 \fBdlopen()\fR 函数装入的\fI插件\fR共享目标文件时，使用此选项。父目标文件的符号表用于满足来自\fB插件\fR目标文件的引用。请参见\fI"Parent Objects"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBpreinitarray=\fR\fIfunction\fR\fR
+.ad
+.sp .6
+.RS 4n
+在所构建的目标文件的 \fB\&.preinit_array\fR 部分后附加一个条目。如果不存在 \fB\&.preinit_array\fR 部分，将创建该部分。新条目将初始化为指向 \fIfunction\fR。请参见\fI"Initialization and Termination Sections"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBrescan-now\fR\fR
+.ad
+.sp .6
+.RS 4n
+这些选项重新扫描提供给链接编辑的归档文件。缺省情况下，当命令行上出现归档时，将立即处理归档。传统上来说，在命令行末尾指定归档，以便其符号定义可解析任何前述引用。但是，有必要多次指定归档以满足其自身的相互依赖项。
+.sp
+\fB-z\fR \fBrescan-now\fR 是位置选项，在命令行上遇到该选项时链接编辑器会立即处理该选项。将立即重新处理命令行上此时显示的所有归档以尝试定位解析符号引用的其他归档成员。将重复此归档重新扫描操作，直到通过归档传递时未提取新成员。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBrescan-start\fR ... \fB-z\fR \fBrescan-end\fR\fR
+.ad
+.br
+.na
+\fB\fB--start-group\fR ... \fB--end-group\fR\fR
+.ad
+.br
+.na
+\fB\fB-(\fR ... \fB-)\fR\fR
+.ad
+.sp .6
+.RS 4n
+定义归档重新扫描组。这是位置构造，在遇到封闭分隔符选项时链接编辑器会立即进行处理。将在组分隔符选项中找到的归档重新处理为组以尝试定位解析符号引用的其他归档成员。将重复此归档重新扫描操作，直到通过归档传递时未提取新成员。无法嵌套归档重新扫描组。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBstrip-class=\fR[\fB!\fR]\fIclass1\fR\fB,\fR[\fB!\fR]\fIclass2\fR\fB ,...\fR\fR
+.ad
+.sp .6
+.RS 4n
+从任何输入目标文件分离特定的部分类，禁止将这些部分添加到输出文件。通过此选项，可以对可在输出文件中忽略的部分进行细粒度控制。
+.sp
+以下分离类说明仅适用于不可分配的部分。
+.sp
+可以在每个类标记前加上“\fB!\fR”，以指示不应删除该类。此定义在与 \fBnonalloc\fR 类结合时非常有用。例如，使用 "\fB-z\fR \fBstrip-class=nonalloc,!note\fR" 将删除所有不可分配部分（附注部分除外）。
+.sp
+分离的部分将从输出目标文件中彻底删除。使用 \fB-z\fR \fBancillary\fR 选项可更改与非动态符号表 \fB\&.symtab\fR 有关的此行为以及与其相关的部分。缺省情况下，符号表会同时写入主目标文件和辅助目标文件。分离后，符号表将仅写入辅助目标文件，而在主目标文件中标记为不存在。如果在不使用 \fB-z\fR \fBancillary\fR 的情况下从目标文件分离 \fB\&.symtab\fR，将以常规方式彻底删除该部分。
+.sp
+可以定义以下部分类。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnonalloc\fR\fR
+.ad
+.sp .6
+.RS 4n
+分离任何不可分配部分。这些部分标识为不包括 \fBSHF_ALLOC\fR 节标志。此类可封装除 \fBsymbol\fR 类以外的所有其他类。\fBnonalloc\fR 类往往本身即足以删除任何不需要的部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBannotate\fR\fR
+.ad
+.sp .6
+.RS 4n
+分离任何注释部分。这些部分提供内存访问工具和覆盖相关工具使用的信息。这些部分通过 \fBSHT_SUNW_ANNOTATE\fR 节类型来进行标识。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcomment\fR\fR
+.ad
+.sp .6
+.RS 4n
+分离任何注释部分。这些部分通过 \fB\&.comment\fR 节名称来进行标识。此外，\fBmcs\fR(1) 实用程序通常用于处理注释部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdebug\fR\fR
+.ad
+.sp .6
+.RS 4n
+分离通常用于包含调试数据的部分。这些部分通过 \fB\&.compcom\fR、\fB\&.line\fR、\fB\&.stab*\fR、\fB\&.debug*\fR 或 \fB\&.zdebug*\fR 节名称来进行标识。这些部分还可通过 \fBSHT_SUNW_DEBUG*\fR 节类型来进行标识。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexclude\fR\fR
+.ad
+.sp .6
+.RS 4n
+分离任何可排除的部分。这些部分通过 \fBSHF_EXCLUDE\fR 节标志来进行标识。在创建可重定位目标文件时此类非常有用。缺省情况下，当创建动态可执行文件或共享目标文件时会自动排除此类部分，在创建可重定位目标文件时将保留此类部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB说明\fR\fR
+.ad
+.sp .6
+.RS 4n
+分离任何注释部分。这些部分通过 \fBSHT_NOTE\fR 节类型来进行标识。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB符号\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果输出文件不是可重定位目标文件，则分离任何不可分配符号表和字符串表部分。这些部分通过 \fBSHT_SYMTAB\fR 节类型来进行标识。任何关联的字符串表也将删除。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBstub\fR\fR
+.ad
+.sp .6
+.RS 4n
+生成桩共享目标文件。桩目标文件是可提供与实际目标文件相同的链接接口但不包含代码或数据的共享目标文件，完全由 \fBmapfile\fR 生成。桩目标文件不能在运行时使用。但是，可以根据桩目标文件构建应用程序，桩目标文件提供要在运行时使用的实际目标文件名称，然后在运行时使用实际目标文件。
+.sp
+只能为共享目标文件生成桩目标文件，必须提供定义要导出的全局符号的 \fBmapfile\fR。因此使用 \fB-z\fR \fBstub\fR 时将需要 \fB-ztype=shared\fR 或 \fB-G\fR 选项和 \fB-M\fR 选项。在生成桩目标文件时，链接编辑器将忽略在命令行中指定的任何目标文件或库文件，无需存在这些文件即可生成桩目标文件。由于可以省略编译步骤，并且相对而言链接编辑器只需进行少量操作，因此可以很快生成桩目标文件。
+.sp
+请参见《\fI《链接程序和库指南》\fR》中的“\fI"桩目标文件"\fR”。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBsymbolcap\fR\fR
+.ad
+.sp .6
+.RS 4n
+将定义目标文件功能的可重定位目标文件转换为定义符号功能的可重定位目标文件。请参见\fI"Converting Object Capabilities to Symbol Capabilities"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBtarget=sparc | x86\fR \fI\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定输出目标文件的机器类型。支持的目标有 SPARC 和 x86。使用指定目标的 32 位机器类型，除非存在 \fB-64\fR 选项，这种情况下使用相应的 64 位机器类型。缺省情况下，要生成的目标文件的机器类型根据在命令行处理的第一个 \fBELF\fR 目标文件来决定。如果未指定任何目标文件，机器类型由在命令行处理的第一个归档文件中遇到的第一个目标文件决定。如果没有目标文件或归档文件，链接编辑器将假定使用本地机器。使用输入仅来自 \fBmapfile\fR 的链接编辑器直接创建目标文件时，此选项非常有用。请参见 \fB-M\fR 选项。在极少数情况下，完全从包含不同机器类型目标文件的归档文件进行链接时（此时第一个目标文件不是所需的机器类型），此选项也非常有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBtext\fR | \fBtextoff\fR | \fBtextwarn\fR\fR
+.ad
+.sp .6
+.RS 4n
+这些选项只能在动态模式下使用。如果针对不可写但可分配部分的任何重定位持续进行，\fB-z\fR \fBtext\fR 选项将强制发出致命错误。由于历史原因，此模式不是构建可执行文件或共享目标文件时的缺省模式。但是，建议使用此模式以确保可在多个正在运行的进程之间共享所构建的动态目标文件的文本段。共享文本段可使在装入内存时重定位系统开销最少。请参见\fI"Position-Independent Code"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.sp
+\fB-z\fR \fBtextoff\fR 选项允许针对所有可分配部分（包括不可写部分）进行重定位。此模式是构建共享目标文件时的缺省模式。
+.sp
+如果针对不可写但可分配部分的任何重定位持续进行，\fB-z\fR \fBtextwarn\fR 选项将列出警告。此模式是构建可执行文件时的缺省模式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBtype=\fIobject-type\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定要创建的目标文件的类型。可使用以下目标文件类型。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexec\fR\fR
+.ad
+.sp .6
+.RS 4n
+动态可执行文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpie\fR\fR
+.ad
+.sp .6
+.RS 4n
+与位置无关的可执行文件。此选项还声明 \fB-ztext\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreloc\fR\fR
+.ad
+.sp .6
+.RS 4n
+可重定位目标文件。这等效于指定 \fB-r\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshared\fR\fR
+.ad
+.sp .6
+.RS 4n
+共享目标文件。这等效于指定 \fB-G\fR 选项。此选项还声明 \fB-ztext\fR 选项。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBverbose\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项在链接编辑期间提供附加警告诊断。当前，此选项支持以下警告。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+对交换区重新定位的可疑使用。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+构建共享目标文件时限制使用静态 \fBTLS\fR 重定位。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+符号可见性不一致。
+.RE
+将来可能会增强此选项的功能，以提供被认为太混乱而不能在缺省情况下生成的其他诊断。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR\fBwrap=\fR\fIsymbol\fR\fR
+.ad
+.br
+.na
+\fB\fB-wrap=\fR\fIsymbol\fR\fR
+.ad
+.br
+.na
+\fB\fB--wrap=\fR\fIsymbol\fR\fR
+.ad
+.sp .6
+.RS 4n
+重命名对 \fIsymbol\fR 的未定义引用以允许将包装代码链接到输出目标文件而不必修改源代码。如果指定 \fB-z wrap\fR 选项，将修改对 \fIsymbol\fR 的所有未定义引用以引用 \fB__wrap_\fR\fIsymbol\fR，并修改对 \fB__real_\fR\fIsymbol\fR 的所有引用以引用 \fIsymbol\fR。您应提供包含 \fB__wrap_\fR\fIsymbol\fR 函数的目标文件。此包装函数可以调用 \fB__real_\fR\fIsymbol\fR 以引用要包装的实际函数。
+.sp
+以下是适用于 \fBmalloc\fR(3C) 函数的包装示例。
+.sp
+.in +2
+.nf
+void *
+__wrap_malloc(size_t c)
+{
+        (void) printf("malloc called with %zu\en", c);
+        return (__real_malloc(c));
+}
+.fi
+.in -2
+
+如果使用 \fB-z\fR \fBwrap=malloc\fR 将其他代码链接到此文件以编译所有目标文件，则对 \fBmalloc\fR 的所有调用将改为调用函数 \fB__wrap_malloc\fR。对 \fB__real_malloc\fR 的调用将调用 \fBmalloc\fR 实函数。
+.sp
+应在单独的源文件中维护实函数和包装函数。否则，编译器或汇编程序可能会解析调用而不是将该操作留给链接编辑器执行，并且可能阻止进行包装。
+.RE
+
+.SH 辅助选项
+.sp
+.LP
+以下选项不太常用。这些选项支持向后兼容性、非常专业化的功能或已被改进的选项变体取代的选项。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅在静态模式下，生成静态可执行文件。不允许未定义的引用。此选项是静态模式的缺省行为。\fB-a\fR 选项不可与 \fB-ztype=reloc\fR 或 \fB-r\fR 选项一起使用。请参见“说明”部分的\fB\fR“静态可执行文件”。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅在动态模式下，不对引用共享目标文件中的符号的动态可执行文件重定位进行特殊处理。如果不提供 \fB-b\fR 选项，链接编辑器将在动态可执行文件中应用技术以便文本段可以保持只读状态。一种技术是为共享目标文件中定义的函数的引用创建特殊位置无关重定位。另一种技术安排在运行时将在共享目标文件中定义的数据目标文件复制到可执行文件的内存映像中。
+.sp
+\fB-b\fR 选项旨在用于专用动态目标文件，不建议用于一般用途。使用该选项将禁止执行确保目标文件可共享性时需要的所有专门处理操作，甚至可能会禁止重定位 64 位可执行文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-B\fR \fBgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+建立作为组的共享目标文件及其依赖项。组中的目标文件在运行时绑定到组的其他成员。此模式类似于通过组合使用 \fBdlopen\fR(3C) 和 \fBRTLD_GROUP\fR 模式将目标文件添加到进程中。对标识为组的目标文件具有显式依赖性的目标文件会成为该组的成员。
+.sp
+由于该组必须为自包含，因此，使用 \fB-B\fR \fBgroup\fR 选项还将断言 \fB-z\fR \fBdefs\fR 选项。
+.sp
+建立一个组可提供控制一组目标文件绑定的基本方式。不过，可以通过直接绑定实现更好的控制。请参见 \fB-B\fR \fBdirect\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-B\fR \fBsymbolic\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅适用于动态模式。构建共享目标文件时，将该目标文件中全局符号的引用绑定到其定义（如果可用）。通常，在运行时才会绑定共享目标文件中全局符号的引用，即使有定义可用也是如此。此模型允许在可执行文件或其他共享目标文件中定义相同符号来覆盖目标文件自己的定义。链接编辑器针对未定义的符号发出警告，除非 \fB-z\fR \fBdefs\fR 覆盖。
+.sp
+\fB-B\fR \fBsymbolic\fR 选项旨在用于专用动态目标文件，不建议用于一般用途。要缩减目标文件所需的运行时重定位处理，建议创建版本定义并使用直接绑定。请参见 \fB-B\fR \fBdirect\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fBy\fR | \fBn\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 \fB-d\fR \fBy\fR（缺省值）时，链接编辑器使用动态链接。指定 \fB-d\fR \fBn\fR 时，链接编辑器使用静态链接。请参见“说明”部分的\fB\fR“静态可执行文件”以及 \fB-B\fR \fBdynamic\fR|\fBstatic\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR \fIname\fR\fR
+.ad
+.br
+.na
+\fB\fB--dynamic-linker\fR \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+在构建可执行文件时，使用 \fIname\fR 作为要写入程序头的解释程序的路径名。在静态模式下，缺省为没有解释程序。在动态模式下，缺省为运行时链接程序 \fBld.so.1\fR(1) 的名称。任何一种情况都可以由 \fB-I\fR \fIname\fR 覆盖。\fBexec\fR(2) 在装入 \fBa.out\fR 时会装入此解释程序，并将控件传递给该解释程序而不是直接传递给 \fBa.out\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+对具有不同大小或不同对齐方式的多重定义的暂定（通用块）数据符号关闭警告。此选项等效于指定 \fB-z\fR \fBrelax=common\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Wl,\fR\fIoption\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-Wl,\fR 选项提供一种通过编译器驱动程序传递链接编辑器选项的方式。编译器驱动程序通常分离 \fB-Wl,\fR 并将其余选项传递到链接编辑器。实例已经发生，特别是当构建复杂可移植软件时，其中已经使用整个 \fB-Wl,\fR 选项直接调用了链接编辑器。要在这种情况下提供灵活性，链接编辑器分离 \fB-Wl,\fR 并解释其余选项。因为此类选项通常不在用户控制之下，所有无法识别的 \fB-W\fR 选项都会导致警告，而不是致命错误，并将忽略该选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Y\fR \fBP,\fR\fIdirlist\fR\fR
+.ad
+.sp .6
+.RS 4n
+更改用于查找库的缺省目录。\fIdirlist\fR 是冒号分隔的路径列表。应该不需要更改缺省搜索路径。在较新版本的操作系统中可以更改缺省搜索路径。使用此选项显式指示完整搜索路径会有变为与较新版本操作系统不兼容的风险。将维护此选项来支持一些编译器驱动程序的历史使用。虽然受支持，但不建议这样使用。链接编辑需要使用的其他搜索路径应该使用 \fB-L\fR 选项来提供。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBabsexec\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅当构建动态可执行文件时才使用。指定应立即解析外部绝对符号的引用而不是留到运行时进行解析。在非常专业化的情况下，此选项将删除可能导致可执行文件要求的交互空间过大的文本重定位。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBaltexec64\fR\fR
+.ad
+.sp .6
+.RS 4n
+执行 64 位链接编辑器。在 Solaris 11 之前，已执行的链接编辑器的类由所创建的 \fBELF\fR 目标文件的类决定。现在，执行的链接编辑器类始终是 64 位。保留此选项是为了向后兼容早期版本的 Solaris。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBcombreloc\fR | \fBnocombreloc\fR\fR
+.ad
+.sp .6
+.RS 4n
+缺省情况下，当构建可执行文件或共享目标文件时，链接编辑器会合并多个重定位部分。此部分合并不同于可重定位目标文件合并，在部分合并中，重定位部分与必须应用重定位的部分维持一一对应的关系。\fB-z\fR \fBnocombreloc\fR 选项禁止合并重定位部分，并保持在原始可重定位目标文件中找到的一一对应关系。
+.sp
+链接编辑器按数据重定位部分条目的符号引用对这些条目进行排序。此排序会减少运行时符号查找。在合并多个重定位部分时，此排序在将目标文件装入内存时可能产生最少的重定位系统开销，并加快动态目标文件的运行时装入。
+.sp
+历史上，单个重定位部分已转入任何可执行文件或共享目标文件中，并且需要 \fB-z\fR \fBcombreloc\fR 选项才能启用前面所述的重定位部分合并。重定位部分合并现在是缺省设置。由于旧版本环境的好处，\fB-z\fR \fBcombreloc\fR 选项仍可接受，但该选项不是必需的，且不起作用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBgroupperm\fR | \fBnogroupperm\fR\fR
+.ad
+.sp .6
+.RS 4n
+分配或取消分配跟在唯一组后的每个依赖项。将依赖项分配给组的作用就如同使用 \fB-B\fR \fBgroup\fR 选项构建依赖项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBmuldefs\fR\fR
+.ad
+.br
+.na
+\fB\fB--allow-multiple-definition\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许多个全局符号定义。缺省情况下，在可重定位目标文件之间出现多个符号定义会导致致命错误。此选项将禁止错误条件出现，并允许采用第一个符号定义。专用编译器选项或高级别的编译器优化可以规避此选项的使用。请参见\fI"Fatal Resolutions"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnocompstrtab\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁用 \fBELF\fR 字符串表和注释部分的压缩。缺省情况下，字符串压缩适用于 \fBSHT_STRTAB\fR 部分、设置了 \fBSHF_MERGE\fR 和 \fBSHF_STRINGS\fR 节标志的 \fBSHT_PROGBITS\fR 部分以及注释部分。
+.sp
+\fBmcs\fR(1) 实用程序搭配 \fB-c\fR 选项时，可用于在构建目标文件后压缩注释部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnodefaultlib\fR\fR
+.ad
+.sp .6
+.RS 4n
+标记目标文件以忽略在任何 \fBLD_LIBRARY_PATH\fR 或 runpaths 后使用的运行时缺省库搜索路径。此选项表明可以通过目标文件的 runpath 来满足目标文件的所有依赖项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnodump\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项以前用于将目标文件标记为不可用于 \fBdldump\fR(3C)。仍接受 \fB-z\fR \fBnodump\fR 选项，但该选项不是必需的，且不起作用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnoldynsym\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁止在动态可执行文件或共享目标文件中包含 \fB\&.SUNW_ldynsym\fR 部分。\fB\&.SUNW_ldynsym\fR 部分通过为本地函数提供符号来增大 \fB\&.dynsym\fR 部分。本地函数符号允许调试器在精简程序的栈跟踪中显示本地函数名称。同样，\fBdladdr\fR(3C) 能够提供更准确的结果。
+.sp
+\fB-z\fR \fBnoldynsym\fR 选项还禁止包含与 \fB\&.SUNW_ldynsym\fR 部分相关的两个符号排序部分。\fB\&.SUNW_dynsymsort\fR 部分提供对正则函数和变量符号的有序访问。\fB\&.SUNW_dyntlssort\fR 部分提供对线程本地存储 (\fBTLS\fR) 变量符号的有序访问。
+.sp
+成为所生成文件的可分配文本段一部分的 \fB\&.SUNW_ldynsym\fR、\fB\&.SUNW_dynsymsort\fR 和 \fB\&.SUNW_dyntlssort\fR 部分无法通过 \fBstrip\fR(1) 删除。因此，\fB-z\fR \fBnoldynsym\fR 选项是禁止其包含的唯一方式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnopartial\fR\fR
+.ad
+.sp .6
+.RS 4n
+在要生成的输出文件中扩展在可重定位目标文件中定义的部分初始化的符号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnoversion\fR\fR
+.ad
+.sp .6
+.RS 4n
+消除版本控制信息。输出映像中未生成版本节或关联的 \fB\&.dynamic\fR 节条目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnow\fR\fR
+.ad
+.sp .6
+.RS 4n
+将目标文件标记为需要 non-lazy 运行时绑定。此模式类似于通过组合使用 \fBdlopen\fR(3C) 与 \fBRTLD_NOW\fR 模式将目标文件添加到进程中。此模式还类似于使 \fBLD_BIND_NOW\fR 环境变量起作用。请参见 \fBld.so.1\fR(1)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBorigin\fR\fR
+.ad
+.sp .6
+.RS 4n
+将目标文件标记为需要在运行时立即进行 \fB$ORIGIN\fR 处理。维护此选项只是为了历史兼容性，因为现在缺省提供目标文件的运行时分析以进行 \fB$ORIGIN\fR 处理。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBredlocsym\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除所有本地符号，但符号表 \fBSHT_SYMTAB\fR 中的 \fISECT\fR 符号除外。引用本地符号的所有重定位将更新为引用相应的 \fISECT\fR 符号。通过此选项，专用目标文件可显著减小其符号表大小。另请参见 \fB-z\fR \fBstrip-class\fR 和 \fB-z\fR \fBnoldynsym\fR 选项。
+.sp
+尽管 \fB-z\fR \fBredlocsym\fR 选项对特殊目标文件（例如在操作系统内核中使用的那些目标文件）很有用，但不建议将该选项用于一般用途。符号表 \fBSHT_SYMTAB\fR 的大小不影响运行时行为，而删除本地符号可能会对过程观察产生负面影响。删除本地符号可以减少使用编译器驱动程序 \fB-g\fR 选项生成的调试信息。删除本地符号还会删除正常写入到 \fB\&.SUNW_ldynsym\fR 部分中的信息，从而会降低调试器和工具（如 \fBpstack\fR(1) 和 \fBtruss\fR(1)）的效用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBrelax=\fR\fIitem1\fR\fB,\fR\fIitem2\fR\fB,...\fR\fR
+.ad
+.sp .6
+.RS 4n
+链接编辑器执行有效性检查，以便确保生成的输出目标文件有效并可在运行时使用。此外，链接编辑器还可以转换各种重定位来生成更好的说明序列。
+.sp
+可以使用 \fB-z\fR \fBrelax\fR 选项来解除这些操作，以便生成原本会被拒绝的输出目标文件。
+.LP
+注 - 
+.sp
+.RS 2
+禁用有效性检查可能会导致创建的目标文件受损或不可用。\fB-z\fR \fBrelax\fR 是专用选项，主要由编译器作者使用，不用于一般用途。
+.RE
+可以识别以下 \fBitem\fR 标记。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcomdat\fR\fR
+.ad
+.sp .6
+.RS 4n
+针对 \fBCOMDAT\fR 节中消除的符号保留的重定位会导致致命错误。\fB-z\fR \fBrelax=comdat\fR 选项将此类重定位重定向到保留的 \fBCOMDAT\fR 节中的等效符号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcommon\fR\fR
+.ad
+.sp .6
+.RS 4n
+多重定义的暂定数据符号（具有不同的大小或不同的对齐方式）将生成警告。这些条件通常源于 Fortran 通用块。\fB-z\fR \fBrelax=common\fR 选项禁用此警告。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsecadj\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBELF\fR 目标文件要求特定部分在输出目标文件中按指定顺序互相相邻。显式对各部分进行布局的链接编辑器 \fBmapfiles\fR 可能会中断此自动布局。无效的布局会导致致命错误。\fB-z\fR \fBrelax=secadj\fR 选项禁止布局验证。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsymbound\fR\fR
+.ad
+.sp .6
+.RS 4n
+引用超出其关联部分边界的数据的符号会导致内存访问无效。此类符号会导致致命错误。\fB-z\fR \fBrelax=symbound\fR 选项禁止此错误条件出现。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtransdisp\fR\fR
+.ad
+.sp .6
+.RS 4n
+在 SPARC 上，一系列 \fBGOTDATA\fR 重定位可以相对于全局偏移表 (Global Offset Table, \fBGOT\fR) 提供对数据的访问。本地绑定的数据项允许链接编辑器转换关联的代码序列，从而提供更优化的访问模型。但是，仅为访问 \fBGOT\fR 地址的 +/- 2 GB 内的数据提供此模型。超出此限制的重定位会导致致命错误。数据引用极少会超出此限制，可以使用 \fB-z\fR \fBrelax=transdisp\fR 选项调整 \fBGOTOP\fR 访问模型转换。此解除可以删除地址范围限制，但是会轻微降低代码序列优化。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtranstls\fR\fR
+.ad
+.sp .6
+.RS 4n
+线程局部存储 (Thread-Local Storage, \fBTLS\fR) 访问提供大量数据访问模型。请参见\fI"Thread-Local Storage Access Models"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。链接编辑器可以基于正在创建的输出文件转换关联的代码序列和符号可见性。\fB-z\fR \fBrelax=transtls\fR 选项禁止 \fBTLS\fR 访问模型转换。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBrelaxreloc\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项等效于指定 \fB-z \fR \fBrelax=comdat\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBrescan\fR\fR
+.ad
+.sp .6
+.RS 4n
+一个与位置无关的选项，可导致重新扫描提供给链接编辑的归档文件。链接编辑器会将重新扫描操作推迟到在它处理整个命令行之后再进行，然后开始对命令行上显示的所有归档执行最终重新扫描操作。\fB-z\fR \fBrescan\fR 操作可与包含初始化 (\&.init) 或终结化 (\&.fini) 部分的目标文件进行不正确地交互，从而禁止这些部分中的代码运行。由于此原因，\fB-z\fR \fBrescan\fR 已过时，建议使用 \fB-z\fR \fBrescan-now\fR。
+.RE
+
+.SH 环境变量
+.sp
+.LP
+链接编辑器识别以下环境变量。前缀为 \fBLD_\fR 的其他环境变量可与运行时链接程序一起使用。请参见 \fBld.so.1\fR(1)。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLD_ALTEXEC\fR\fR
+.ad
+.sp .6
+.RS 4n
+备用链接编辑器路径名称。链接编辑器执行并将控制传递给此备用链接编辑器。此环境变量提供用于覆盖从各种编译器驱动程序调用的缺省链接编辑器的通用方法。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLD_LIBRARY_PATH\fR\fR
+.ad
+.sp .6
+.RS 4n
+要在其中搜索使用 \fB-l\fR 选项指定的库的目录列表。多个目录之间用冒号分隔。在最普遍的情况中，此环境变量包含两个由分号分隔的目录列表。
+.sp
+.in +2
+.nf
+\fIdirlist1\fR\fB;\fR\fIdirlist2\fR
+.fi
+.in -2
+.sp
+
+如果使用出现的任意数量的 \fB-L\fR 来调用链接编辑器，如下所示：
+.sp
+.in +2
+.nf
+$ \fBld ... -L\fIpath1\fR ... -L\fIpathn\fR ...\fR
+.fi
+.in -2
+.sp
+
+则搜索路径顺序为：
+.sp
+.in +2
+.nf
+\fB\fIdirlist1 path1\fR ... \fIpathn dirlist2\fR LIBPATH\fR
+.fi
+.in -2
+.sp
+
+如果目录列表不包含分号，该列表将被解释为 \fIdirlist2\fR。
+.sp
+\fBLD_LIBRARY_PATH\fR 环境变量还会影响动态依赖项的运行时链接程序搜索。
+.sp
+可以使用 _32 或 _64 后缀指定此环境变量。这会使环境变量分别特定于 32 位或 64 位进程，并覆盖任何有效的无后缀版的环境变量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLD_NOEXEC_64\fR\fR
+.ad
+.sp .6
+.RS 4n
+在 Solaris 12 之前，已执行的链接编辑器的类由底层系统的类决定，并且可以是 32 位或 64 位。\fBLD_NOEXEC_64\fR 环境变量用于禁止自动执行 64 位链接编辑器。在当前系统中，链接编辑器始终是 64 位，\fBLD_NOEXEC_64\fR 将被忽略且没有任何作用。保留此变量是为了向后兼容早期版本的 Solaris。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLD_OPTIONS\fR、\fBLD_UNSET\fR、\fBLD_{object-type}_UNSET\fR、\fBLD_{object-type}_OPTIONS\fR\fR
+.ad
+.sp .6
+.RS 4n
+这些环境变量提供了一种在链接编辑器命令行中添加其他选项或删除现有选项的方式。\fIobject-type\fR 以大写形式提供 \fB-z type\fR 选项定义的类型，是 \fBEXEC\fR、\fBPIE\fR、\fBRELOC\fR 或 \fBSHARED\fR 之一。这些变量用于覆盖或取消设置嵌入脚本和构建环境的命令行选项。请参见“选项处理”。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLD_RUN_PATH\fR\fR
+.ad
+.sp .6
+.RS 4n
+用于指定链接编辑器的 runpath 的备用机制。请参见 \fB-R\fR 选项。如果同时指定 \fBLD_RUN_PATH\fR 和 \fB-R\fR 选项，\fB-R\fR 将取代另一个选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSGS_SUPPORT\fR\fR
+.ad
+.sp .6
+.RS 4n
+提供使用链接编辑器装入的共享目标文件的冒号分隔列表以及有关链接进程的给定信息。可以使用 _32 或 _64 后缀指定此环境变量。这会使环境变量分别特定于链接编辑器的 32 位或 64 位类，并覆盖任何有效的无后缀版的环境变量。请参见 \fB-S\fR 选项。
+.RE
+
+.sp
+.LP
+请注意，以字符 "\fBLD_\fR" 开头的环境变量名称是保留名称，供将来可能提升 \fBld\fR 和 \fBld.so.1\fR(1) 时使用。
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlib\fIx\fR.so\fR\fR
+.ad
+.RS 15n
+.rt  
+共享目标文件库。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlib\fIx\fR.a\fR\fR
+.ad
+.RS 15n
+.rt  
+归档库。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBa.out\fR\fR
+.ad
+.RS 15n
+.rt  
+缺省输出文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fILIBPATH\fR\fR
+.ad
+.RS 15n
+.rt  
+对于 32 位库，缺省搜索路径为 \fB/lib\fR，后跟 \fB/usr/lib\fR。对于 64 位库，缺省搜索路径为 \fB /lib/64\fR，后跟 \fB/usr/lib/64\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/ld\fR\fR
+.ad
+.RS 15n
+.rt  
+包含多个可在链接编辑期间使用的 \fBmapfile\fR 的目录。这些 \fBmapfile\fR 提供多种功能，例如定义内存布局、对齐 bss 以及定义不可执行栈。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/linker
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBas\fR(1)、\fBcrle\fR(1)、\fBelfcompress\fR(1)、\fBgprof\fR(1)、\fBld.so.1\fR(1)、\fBldd\fR(1)、\fBmcs\fR(1)、\fBpvs\fR(1)、\fBstrip\fR(1)、\fBsxadm\fR(1M)、\fBexec\fR(2)、\fBstat\fR(2)、\fBzlib\fR(3)、\fBdlopen\fR(3C)、\fBdldump\fR(3C)、\fBelf\fR(3ELF)、\fBar.h\fR(3HEAD)、\fBa.out\fR(4)、\fBattributes\fR(5)
+.sp
+.LP
+\fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR
+.SH 附注
+.sp
+.LP
+由于历史原因，维护由链接编辑器应用的缺省选项。在今天的编程环境中，动态目标文件占主导地位，备用缺省选项通常会更有意义。但是，必须维护历史缺省选项以确保与现有程序开发环境的兼容性。本手册中在可能的地方提到了历史缺省选项。有关最新推荐的选项的说明，请参见Chapter 5, \fI"Link-Editor Quick Reference,"\fR in \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.sp
+.LP
+如果由链接编辑器创建的文件已经存在，则在处理完所有输入文件后，该文件将解除链接。然后，将创建具有指定名称的新文件。这允许链接编辑器创建新版本的文件，同时允许正在访问旧文件内容的现有进程继续运行。如果旧文件没有其他链接，则当最后一个引用文件的进程终止时，将释放已删除文件的磁盘空间。
+.sp
+.LP
+在 Oracle Solaris 11 中，对于所创建的文件已存在的情况，链接编辑器的行为已更改。在早期版本中，将现有文件重写到适当的位置，这种方法可能会损坏任何使用该文件的正在运行的进程。此更改对于在文件系统中具有多个硬链接的输出文件有意义。以前，所有链接都保持不变，而且所有链接都可以访问新文件内容。新的链接编辑器行为中断\fB\fR了此类链接，其结果是只有指定的输出文件名才能引用新文件。所有其他链接继续引用旧文件。为了确保行为一致，依赖于指向链接程序输出文件的多个硬链接的应用程序应该明确删除其他文件名，然后再重新链接这些文件名。

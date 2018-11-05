@@ -1,0 +1,452 @@
+'\" te
+.\" Copyright (c) 2012, 2014, Oracle and/or its affiliates.All rights reserved
+.TH nscfg 1M "2014 年 2 月 13 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+nscfg \- 导入、导出名称服务配置
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/nscfg\fR \fIcommand\fR [\fIcmd_options\fR] [\fIoperands\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/nscfg\fR import [\fB-fnvq\fR] \fIFMRI\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/nscfg\fR export [\fB-nvq\fR] \fIFMRI\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/nscfg\fR unconfig [\fB-nvq\fR] \fIFMRI\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/nscfg\fR validate [\fB-vq\fR] \fIFMRI\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/nscfg\fR help
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBnscfg\fR 实用程序用于将传统名称服务配置文件导入到 SMF 系统信息库或从中导出该配置文件。假定 SMF 配置和相应的 FMRI 有效，\fBnscfg\fR 将在传统名称服务配置文件的传统位置重新生成这些文件，例如 \fBnsswitch.conf\fR、\fBresolv.conf\fR、\fBnscd.conf\fR 等。此外，\fBnscfg\fR 还可以导入这些相同的配置文件，从而在当前未填充 SMF 系统信息库的情况下填充该系统信息库。
+.sp
+.LP
+以下是可以作为 \fBnscfg\fR 的操作数的 SMF 服务。在许多情况下，都会列出 SMF 服务替换的传统配置文件。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/system/name-service/switch:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+传统文件：\fB/etc/nsswitch.conf\fR
+.sp
+名称服务转换配置（由 \fBnscd\fR 使用）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/system/name-service/cache:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+传统文件：\fB/etc/nscd.conf\fR
+.sp
+名称服务高速缓存 (\fBnscd\fR)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/network/dns/client:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+传统文件：\fB/etc/resolv.conf\fR
+.sp
+DNS 命名服务。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/network/nis/domain:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+传统文件：\fB/etc/defaultdomain\fR
+.sp
+传统文件：\fB/var/yp/binding/$DOMAIN/*\fR
+.sp
+共享的 NIS 域配置。由所有 NIS 服务使用。还可由 LDAP 命名服务进行历史分享在使用 \fBnis/client\fR 或 \fBldap/client\fR 时必须启用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/network/nis/client:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+NIS 客户机命名服务（\fBypbind\fR 和相关项）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/network/ldap/client:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+传统文件：\fB/var/ldap/*\fR
+.sp
+LDAP 客户机命名服务（\fBldap_cachemgr\fR 和相关项）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/network/nis/server:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+NIS 服务器服务 (\fBypserv\fR)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/network/nis/passwd:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+NIS 服务器 \fBpasswd\fR 服务 (\fBrpc.yppasswd\fR)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/network/nis/xfr:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+NIS 服务器 \fBxfr\fR 服务 (\fBypxfrd\fR)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/network/nis/update:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+NIS 服务器更新服务 (\fBrpc.ypupdated\fR)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/system/name-service/upgrade:default\fR\fR
+.ad
+.sp .6
+.RS 4n
+将传统配置文件导入到 SMF 服务中。
+.RE
+
+.SS "与位置配置文件交互"
+.sp
+.LP
+以下服务的配置是由位置配置文件管理的：
+.sp
+.in +2
+.nf
+svc:/system/name-service/switch:default
+svc:/network/dns/client:default
+svc:/network/nis/domain:default
+svc:/network/nis/client:default
+svc:/network/ldap/client:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有关位置配置文件的更多信息，请参见 \fBnetcfg\fR(1M)。
+.sp
+.LP
+这些配置文件要么是固定的，表示以传统方式管理网络配置；要么是反应性的，表示自动管理网络配置，并会根据配置文件中指定的策略规则对网络环境的变化作出反应。
+.sp
+.LP
+当某个固定位置（当前只能有一个，即 \fBDefaultFixed\fR 位置）处于活动状态时，对 SMF 系统信息库所做的更改（包括通过 \fBnscfg\fR 所做的那些更改）将在该位置被禁用时应用于该位置，因此，如果以后重新启用了该位置，更改将被恢复。
+.sp
+.LP
+当反应性位置处于活动状态时，不应将更改直接应用于 SMF 系统信息库；这些更改不会保留在位置配置文件中，因此如果禁用该位置，或者刷新或重新启动系统的网络配置（由 \fBsvc:/network/physical:default \fR 和 \fBsvc:/network/location:default\fR 管理），更改将会丢失。应使用 \fBnetcfg\fR(1M) 命令将更改应用于位置本身；这样会将更改保存到位置配置文件系统信息库中，还会将其应用于 SMF 系统信息库（如果更改是针对当前活动的位置进行的）。
+.SH 子命令
+.sp
+.LP
+\fBnscfg\fR 实用程序支持下述子命令。选项在相应子命令中进行了说明。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBimport\fR [\fB-fvq\fR] \fIFMRI\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果当前未填充指定 FMRI 的任何 SMF 系统信息库属性，请将与指定 FMRI 关联的传统配置文件导入到 SMF 系统信息库中。
+.sp
+使用 \fB-f\fR，会强制使用传统配置重新填充 SMF 系统信息库，即使当前其已填充也是如此。
+.sp
+使用 \fB-v\fR，会在执行请求的操作期间发出详细进度消息。使用 \fB-q\fR，将不会在执行请求的操作期间发出任何错误或其他消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexport\fR [\fB-vq\fR] \fIFMRI\fR\fR
+.ad
+.sp .6
+.RS 4n
+将指定 FMRI 的 SMF 配置导出到传统配置文件。此操作将删除现有的任何受影响传统文件并使用 SMF 配置生成新文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunconfig\fR [\fB-vq\fR] \fIFMRI\fR\fR
+.ad
+.sp .6
+.RS 4n
+取消配置指定 FMRI 的 SMF 配置。此操作会将指定 FMRI 和现有的任何传统文件重置为其初始未配置状态。
+.sp
+使用 \fB-v\fR，会在执行请求的操作期间发出详细进度消息。使用 \fB-q\fR，将不会在执行请求的操作期间发出任何错误或其他消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvalidate\fR [\fB-vq\fR] \fIFMRI\fR\fR
+.ad
+.sp .6
+.RS 4n
+验证指定 FMRI 的 SMF 配置。此操作将检查当前配置并验证是否存在任何错误。
+.sp
+使用 \fB-v\fR，会在执行请求的操作期间发出详细进度消息。使用 \fB-q\fR，将不会在执行请求的操作期间发出任何错误或其他消息。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR导入 DNS 客户机配置
+.sp
+.LP
+以下命令将存储在 \fBresolv.conf\fR 中的 DNS 客户机配置导入到 SMF 系统信息库中。
+
+.sp
+.in +2
+.nf
+# \fBnscfg import svc:/network/dns/client:default\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR导出 SMF LDAP 客户机配置
+.sp
+.LP
+以下命令将 SMF LDAP 客户机配置导出到 \fB/var/ldap\fR 中的传统配置文件。
+
+.sp
+.in +2
+.nf
+# \fBnscfg export svc:/network/ldap/client:default\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR重置名称服务转换配置
+.sp
+.LP
+以下命令将名称服务转换配置重置为其初始未配置状态。该命令不生成任何输出，只以相应状态静默退出。
+
+.sp
+.in +2
+.nf
+# \fBnscfg unconfig -q svc:/system/name-service/switch:default\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR验证 LDAP 客户机配置
+.sp
+.LP
+以下命令验证 LDAP 客户机配置中是否存在错误或不一致。该命令不生成任何输出，只以相应状态静默退出。
+
+.sp
+.in +2
+.nf
+# \fBnscfg validate -q svc:/network/ldap/client:default\fR
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+命令已成功执行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+出现错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.sp .6
+.RS 4n
+配置未修改，不需要任何更改。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.sp .6
+.RS 4n
+没有要导入的配置。
+.RE
+
+.SH 文件
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/default/{nss, yppasswd}\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/defaultdomain\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/nscd.conf\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/nsswitch.conf\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/resolv.conf\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/var/ldap/ldap_client_cred\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/var/ldap/ldap_client_file\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/var/yp/binding/{\fInisdomainname\fR}/ypservers\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/var/yp/NISLDAPmapping\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/var/yp/securenets\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/var/yp/updaters\fR
+.RE
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Uncommitted（未确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBsvcs\fR(1)、\fBldapclient\fR(1M)、\fBnetcfg\fR(1M)、\fBnscd\fR(1M)、\fBsvcadm\fR(1M)、\fBsvccfg\fR(1M)、\fBypinit\fR(1M)、\fBdefaultdomain\fR(4)、\fBnsswitch.conf\fR(4)、\fBresolv.conf\fR(4)、\fBypfiles\fR(4)、\fBattributes\fR(5)

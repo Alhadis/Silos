@@ -1,0 +1,567 @@
+'\" te
+.\" Copyright (c) 2009, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1989 AT&T
+.TH rpcgen 1 "2011 年 6 月 8 日" "SunOS 5.11" "用户命令"
+.SH 名称
+rpcgen \- RPC 协议编译器
+.SH 用法概要
+.LP
+.nf
+\fBrpcgen\fR \fIinfile\fR
+.fi
+
+.LP
+.nf
+\fBrpcgen\fR [\fB-a\fR] [\fB-A\fR] [\fB-b\fR] [\fB-C\fR] [\fB-D\fR \fIname\fR [= \fIvalue\fR]] [\fB-i\fR \fIsize\fR] 
+     [\fB-I\fR [\fB-K\fR \fIseconds\fR]] [\fB-L\fR] [\fB-M\fR] [\fB-N\fR] [\fB- T\fR] [\fB-v\fR] 
+     [\fB-Y\fR \fIpathname\fR] \fIinfile\fR
+.fi
+
+.LP
+.nf
+\fBrpcgen\fR [\fB-c\fR | \fB-h\fR | \fB-l\fR | \fB-m\fR | \fB-t\fR | \fB-Sc\fR | \fB-Ss\fR | \fB-Sm\fR] 
+     [\fB-o\fR \fIoutfile\fR] [\fIinfile\fR]
+.fi
+
+.LP
+.nf
+\fBrpcgen\fR [\fB-s\fR \fInettype\fR] [\fB-o\fR \fIoutfile\fR] [\fIinfile\fR]
+.fi
+
+.LP
+.nf
+\fBrpcgen\fR [\fB-n\fR \fInetid\fR] [\fB-o\fR \fIoutfile\fR] [\fIinfile\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBrpcgen\fR 实用程序是生成 C 代码以实现 \fBRPC\fR 协议的工具。\fBrpcgen\fR 的输入是类似 C 语言的语言，被称为 \fBRPC\fR 语言（远程过程调用语言）。
+.sp
+.LP
+\fBrpcgen\fR 实用程序通常用于第一个用法概要中，它会采用输入文件并生成三个输出文件。如果 \fIinfile\fR 是指定的 \fBproto.x\fR，那么 \fBrpcgen\fR 会在 \fBproto.h\fR 中生成标题，在 \fBproto_xdr.c\fR 中生成 \fBXDR\fR 例程，在 \fBproto_svc.c\fR 中生成服务器端桩并在 \fBproto_clnt.c\fR 中生成客户端桩。使用 \fB-T\fR 选项，它还会在 \fBproto_tbl.i\fR 中生成 \fBRPC\fR 分发表。
+.sp
+.LP
+\fBrpcgen\fR 还可以生成样例客户机和服务器文件，可对其进行定制以适应特定应用程序。\fB-Sc\fR、\fB-Ss\fR 和 \fB-Sm\fR 选项分别生成样例客户机、服务器和 makefile。\fB-a\fR 选项生成所有文件，包括样例文件。如果 infile 为 \fBproto.x\fR，那么客户端样例文件会写入 \fBproto_client.c\fR、服务器端样例文件会写入 \fBproto_server.c\fR 且样例 makefile 文件会写入 \fBmakefile.proto\fR。
+.sp
+.LP
+所创建的服务器可由端口监视器（例如 \fBinetd\fR）启动或自行启动。由端口监视器启动时，它仅为传递文件描述符 \fB0\fR 的传输创建服务器。必须通过设置环境变量 \fBPM_TRANSPORT\fR 来指定传输的名称。当执行由 \fBrpcgen\fR 生成的服务器时，它会为在 \fBNETPATH\fR 环境变量中指定的所有传输创建服务器句柄，如果没有设置，则它会为来自 \fB/etc/netconfig\fR 文件的所有可见传输创建服务器句柄。注：传输是在运行时选择的，而不是编译时。当服务器自行启动时，它会在缺省情况下将自己作为后台。可使用特殊定义符号 \fBRPC_SVC_FG\fR 在前台运行服务器进程。
+.sp
+.LP
+第二个用法概要提供了特殊功能，允许创建更为复杂的 \fBRPC\fR 服务器。这些功能包括对用户提供的 \fB#defines\fR 和 \fBRPC\fR 分发表的支持。\fBRPC\fR 分发表中的条目包括：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+指向与该过程对应的服务例程的指针
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+指向输入和输出参数的指针
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+这些例程的大小
+.RE
+.sp
+.LP
+服务器可使用分发表来检查授权，然后执行服务例程。客户机库可使用分发表来处理存储管理和 \fBXDR\fR 数据转换的详细信息。
+.sp
+.LP
+如果用户不希望生成所有输出文件，只希望生成特定输出文件，则可使用上面显示的其他三个用法概要。请参见下文的“示例”部分以了解 \fBrpcgen\fR 用法的示例。使用 \fB-s\fR 选项执行 \fBrpcgen\fR 时，会为该特定传输类创建服务器。使用 \fB-n\fR 选项执行时，它将为 \fInetid\fR 指定的传输创建服务器。如果没有指定 \fIinfile\fR，则 \fBrpcgen\fR 接受标准输入。
+.sp
+.LP
+在第二个用法概要中提到的所有选项都可用于其他三个用法概要，但只能对指定输出文件进行更改。
+.sp
+.LP
+\fBrpcgen\fR 实际解释 C 预处理程序 \fBcc\fR \fB-E\fR 前，该预处理程序会在输入文件上运行。对于每种类型的输出文件，\fBrpcgen\fR 会定义 \fBrpcgen\fR 程序员所使用的特殊预处理程序符号：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBRPC_HDR\fR\fR
+.ad
+.RS 12n
+.rt  
+在编译为标题时定义
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBRPC_XDR\fR\fR
+.ad
+.RS 12n
+.rt  
+在编译为 \fBXDR\fR 例程时定义
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBRPC_SVC\fR\fR
+.ad
+.RS 12n
+.rt  
+在编译为服务器端桩时定义
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBRPC_CLNT\fR\fR
+.ad
+.RS 12n
+.rt  
+在编译为客户端桩时定义
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBRPC_TBL\fR\fR
+.ad
+.RS 12n
+.rt  
+在编译为 \fBRPC\fR 分发表时定义
+.RE
+
+.sp
+.LP
+任何以 "\fB%\fR" 开头的行都会直接传递至输出文件，无需 \fBrpcgen\fR 解释，除非删除了前导 "\fB%\fR"。要指定 C 预处理程序的路径名，请使用 \fB-Y\fR 标志。
+.sp
+.LP
+对于每个在 \fIinfile\fR 中引用的数据类型，\fBrpcgen\fR 会假设存在一个例程，其中的字符串 \fBxdr_\fR 会附加到数据类型名称之前。如果 \fBRPC\fR/\fBXDR\fR 库中不存在该例程，则必须提供该例程。提供未定义的数据类型允许对 \fBXDR\fR 例程进行定制。
+.SS "服务器错误报告"
+.sp
+.LP
+缺省情况下会将 \fBproto_svc.c\fR 检测到的错误报告到标准错误和/或系统日志。
+.sp
+.LP
+可通过编译带有 \fBRPC_MSGOUT\fR 定义的文件来覆盖该行为，例如 \fB-DRPC_MSGOUT=mymsgfunc\fR。可调用指定的函数以报告错误。它必须符合以下类似 \fBprintf\fR 的签名：
+.sp
+.in +2
+.nf
+extern void RPC_MSGOUT(const char *fmt, ...);
+.fi
+.in -2
+.sp
+
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 18n
+.rt  
+生成所有文件，包括样例文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.RS 18n
+.rt  
+在服务器主程序中启用自动 \fBMT\fR 模式。在此模式中，\fBRPC\fR 库会自动将线程创建到服务客户机请求。该选项可通过隐式启用 \fB-M\fR 选项来生成多线程安全桩。可使用 \fBrpc_control\fR(3NSL) 调用来设置服务器多线程模式和参数。\fBrpcgen\fR 生成的代码不会更改自动 \fBMT\fR 模式的缺省值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.RS 18n
+.rt  
+向后兼容性模式。为早期版本的操作系统生成特定于传输的 \fBRPC\fR 代码。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 18n
+.rt  
+编译到 \fBXDR\fR 例程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR\fR
+.ad
+.RS 18n
+.rt  
+生成 ANSI C 编译器可使用的标题和桩文件。使用此标志生成的标题也可用于 C++ 程序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR\fIname\fR\fB[=\fR\fIvalue\fR\fB]\fR\fR
+.ad
+.RS 18n
+.rt  
+定义符号 \fIname\fR。等效于源中的 \fB#define\fR 指令。如果未提供 \fIvalue\fR，则会将 \fIvalue\fR 定义为 \fB1\fR。可多次指定此选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.RS 18n
+.rt  
+编译到 \fBC\fR 数据定义（一个标题）。可结合使用 \fB-T\fR 选项以生成支持 \fBRPC\fR 分发表的标题。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fIsize\fR\fR
+.ad
+.RS 18n
+.rt  
+开始生成内联代码时的大小。该选项是实用的优化选项。缺省 \fIsize\fR 为 5。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR\fR
+.ad
+.RS 18n
+.rt  
+编译支持服务器端桩中的 \fBinetd\fR(1M)。此类服务器可自行启动，也可由 \fBinetd\fR 启动。当服务器自行启动时，它会在缺省情况下将自己作为后台。可使用特殊定义符号 \fBRPC_SVC_FG\fR 在前台运行服务器进程，用户也可不使用 \fB-I\fR 选项，直接进行编译。
+.sp
+如果没有暂挂的客户机请求，则 \fBinetd\fR 服务器会在 120 秒（缺省值）后退出。可使用 \fB-K\fR 选项更改缺省值。\fBinetd\fR 服务器的所有错误消息始终都由 \fBsyslog\fR(3C) 记录。
+.sp
+\fB注：\fR该选项仅受向后兼容性支持。它始终应该与生成向后兼容性代码的 \fB-b\fR 选项结合使用。缺省情况下（即未指定 \fB-b\fR 的情况下），\fBrpcgen\fR 会生成可通过端口监视器调用的服务器。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-K\fR \fIseconds\fR\fR
+.ad
+.RS 18n
+.rt  
+缺省情况下，使用 \fBrpcgen\fR 创建且通过端口监视器调用的服务会在处理请求后等待 120 再退出。可使用 \fB-K\fR 标志更改该间隔。要创建在处理请求后立即退出的服务器，请使用 \fB-K\fR \fB0\fR。要创建从不退出的服务器，相应的参数为 \fB-K\fR \fB-1\fR。
+.sp
+监视服务器时，某些端口监视器\fB始终\fR会派生一个新进程以响应服务请求。如果已知服务器使用此类监视器，则服务器应该在完成后立即退出。对于此类服务器，\fBrpcgen\fR 应该与 \fB-K\fR \fB0\fR 一起使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 18n
+.rt  
+编译到客户端桩。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR\fR
+.ad
+.RS 18n
+.rt  
+如果服务器是在前台启动的，请使用\fBsyslog\fR(3C) 记录服务器错误，而不是将其输出到标准错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.RS 18n
+.rt  
+编译到服务器端桩，但不生成“主”例程。对于处理回调例程和需要编写自己的“主”例程以处理初始化的用户而言，该选项十分有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR\fR
+.ad
+.RS 18n
+.rt  
+生成多线程安全桩以在 \fBrpcgen\fR 生成的代码和用户编写的代码间传递参数和结果。对于希望在其代码中使用线程的用户而言，该选项十分有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR\fR
+.ad
+.RS 18n
+.rt  
+该选项允许过程拥有多个参数。它同样会使用与 C 非常类似的传递参数的样式。所以，向远程过程传递参数时，您不应该向该参数传递指针，但可以传递参数本身。此行为与 \fBrpcgen\fR 生成的代码的旧样式不同。为维护向后兼容性，此选项并非缺省值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR \fInetid\fR\fR
+.ad
+.RS 18n
+.rt  
+为 \fInetid\fR 指定的传输编译到服务器端桩。\fBnetconfig\fR 数据库中应该有一个 \fInetid\fR 条目。应该多次指定该选项以编译为多个传输提供服务的服务器。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR  \fIoutfile\fR\fR
+.ad
+.RS 18n
+.rt  
+指定输出文件的名称。如果没有指定任何选项，则应该使用标准输出（仅适用于 \fB-c\fR、\fB-h\fR、\fB-l\fR、\fB-m\fR、\fB-n\fR、\fB-s\fR、\fB-Sc\fR、\fB-Sm\fR、\fB-Ss\fR 和 \fB-t\fR 模式）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fInettype\fR\fR
+.ad
+.RS 18n
+.rt  
+为属于 \fInettype\fR 类的所有传输编译到服务器端桩。支持的类有 \fBnetpath\fR、\fBvisible\fR、\fBcircuit_n\fR、\fBcircuit_v\fR、\fBdatagram_n\fR、\fBdatagram_v\fR、\fBtcp\fR 和 \fBudp\fR（请参见 \fBrpc\fR(3NSL) 了解与这些类相关联的含义）可多次指定此选项。\fB注：\fR传输是在运行时选择的，而不是编译时。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Sc\fR\fR
+.ad
+.RS 18n
+.rt  
+生成使用远程过程调用的样例客户机代码。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Sm\fR\fR
+.ad
+.RS 18n
+.rt  
+生成可用于编译应用程序的样例 Makefile
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Ss\fR\fR
+.ad
+.RS 18n
+.rt  
+生成使用远程过程调用的样例服务器代码。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.RS 18n
+.rt  
+编译到 \fBRPC\fR 分发表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR\fR
+.ad
+.RS 18n
+.rt  
+生成代码以支持 \fBRPC\fR 分发表。
+.sp
+\fB-c\fR、\fB-h\fR、\fB-l\fR、\fB-m\fR、\fB-s\fR、\fB-Sc\fR、\fB-Sm\fR、\fB-Ss\fR 和 \fB-t\fR 选项专用于生成特定文件类型，而 \fB-D\fR 和 \fB-T\fR 选项是全局性的，可与其他选项一起使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 18n
+.rt  
+显示版本号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Y\fR \fIpathname\fR\fR
+.ad
+.RS 18n
+.rt  
+提供 \fBrpcgen\fR 开始查找 C 预处理程序的目录的名称。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIinfile\fR\fR
+.ad
+.RS 10n
+.rt  
+输入文件
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR生成输出文件和分发表
+.sp
+.LP
+以下条目
+
+.sp
+.in +2
+.nf
+example% \fBrpcgen -T prot.x\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+生成全部五个文件：\fBprot.h\fR、\fBprot_clnt.c\fR、\fBprot_svc.c\fR、\fBprot_xdr.c\fR 和 \fBprot_tbl.i\fR。
+
+.LP
+\fB示例 2 \fR将标题发送至标准输出
+.sp
+.LP
+以下示例将 C 数据定义（标题）发送到标准输出：
+
+.sp
+.in +2
+.nf
+example% \fBrpcgen -h prot.x\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR发送测试版本
+.sp
+.LP
+要为属于 \fBdatagram_n\fR 类的所有传输将服务器端桩的 \fB-DTEST\fR 测试版本发送到标准输出，请使用：
+
+.sp
+.in +2
+.nf
+example% \fBrpcgen -s datagram_n -DTEST prot.x\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR创建服务器端桩
+.sp
+.LP
+要为 \fInetid\fR \fBtcp\fR 指定的传输创建服务器端桩，请使用：
+
+.sp
+.in +2
+.nf
+example% \fBrpcgen -n tcp -o prot_svc.c prot.x\fR
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+操作成功。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性developer/base-developer-utilities
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBinetd\fR(1M)、\fBrpc\fR(3NSL)、\fBrpc_control\fR(3NSL)、\fBrpc_svc_calls\fR(3NSL)、\fBsyslog\fR(3C)、\fBnetconfig\fR(4)、\fBattributes\fR(5)
+.sp
+.LP
+\fI《ONC+ RPC Developer\&'s Guide》\fR中的 \fBrpcgen\fR 一章。

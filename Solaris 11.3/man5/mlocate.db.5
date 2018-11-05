@@ -1,0 +1,158 @@
+'\" te
+.\" A man page for mlocate.db. -*- nroff -*-
+.\"
+.\" Copyright (C) 2005, 2007 Red Hat, Inc. All rights reserved.
+.\"
+.\" This copyrighted material is made available to anyone wishing to use,
+.\" modify, copy, or redistribute it subject to the terms and conditions of the
+.\" GNU General Public License v.2.
+.\"
+.\" This program is distributed in the hope that it will be useful, but WITHOUT
+.\" ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+.\" FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for 
+.\" more details.
+.\"
+.\" You should have received a copy of the GNU General Public License along
+.\" with this program; if not, write to the Free Software Foundation, Inc.,
+.\" 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+.\"
+.\" Author: Miloslav Trmac <mitr@redhat.com>
+.TH mlocate.db 5 "Jan 2007" mlocate
+
+.SH NAME
+mlocate.db \- a mlocate database
+
+.SH DESCRIPTION
+A mlocate database starts with a file header:
+8 bytes for a magic number (\fB"\\0mlocate"\fR like a C literal),
+4 bytes for the
+.I configuration block
+size in big endian,
+1 byte for file format version (\fB0\fR),
+1 byte for the \*(lqrequire visibility\*(rq flag (\fB0\fR or \fB1\fR),
+2 bytes padding,
+and a \f(SMNUL\fR-terminated path name of the root of the database.
+
+The header is followed by a \fIconfiguration block\fR,
+included to ensure databases are not reused
+if some configuration changes
+could affect their contents.
+The size of the configuration block in bytes is stored in the file header.
+The configuration block is a sequence of \fIvariable assignments\fR,
+ordered by variable name.
+Each 
+.I variable assignment
+consists of a \f(SMNUL\fR-terminated variable name
+and an ordered list of \f(SMNUL\fR-terminated values.
+The value list is terminated by one more
+.SM NUL
+character.
+The ordering used is defined by the
+.B strcmp ()
+function.
+
+Currently defined variables are:
+.TP
+\fBprune_bind_mounts\fR
+A single entry, the value of \fbPRUNE_BIND_MOUNTS\fR; one of the strings
+.B 0
+or \fB1\fR.
+
+.TP
+\fBprunefs\fR
+The value of \fBPRUNEFS\fR, each entry is converted to uppercase.
+
+.TP
+\fBprunepaths\fR
+The value of \fBPRUNEPATHS\fR.
+
+.P
+The rest of the file until
+.SM EOF
+describes directories and their contents.
+Each directory starts with a header:
+8 bytes for
+.I directory time
+(seconds) in big endian,
+4 bytes for
+.I directory time
+(nanoseconds) in big endian (0 if unknown, less than 1,000,000,000),
+4 bytes padding,
+and a \f(SMNUL\fR-terminated path name of the the directory.
+Directory contents, a sequence of
+.I file entries
+sorted by name, follow.
+
+.I Directory time
+is the maximum of
+.B st_ctime
+and
+.B st_mtime
+of the directory.
+.BR updatedb (8)
+uses the original data if the 
+.I directory time
+in the database and in the file system match exactly.
+.I Directory time
+equal to 0 always causes rescanning of the directory:
+this is necessary to handle directories
+which were being updated while building the database.
+
+Each
+.I file entry
+starts with a single byte, marking its type:
+.TP
+\fB0\fR
+A non-directory file.
+Followed by a \f(SMNUL\fR-terminated file (not path) name.
+
+.TP
+\fB1\fR
+A subdirectory.
+Followed by a \f(SMNUL\fR-terminated file (not path) name.
+
+.TP
+\fB2\fR
+Marks the end of the current directory.
+
+.P
+.BR locate(1)
+only reports file entries,
+directory names are not reported
+because they are reported as an entry in their parent directory.
+The only exception is the root directory of the database,
+which is stored in the file header.
+
+.SH AUTHOR
+Miloslav Trmac <mitr@redhat.com>
+
+
+.\" Oracle has added the ARC stability level to this manual page
+.SH ATTRIBUTES
+See
+.BR attributes (5)
+for descriptions of the following attributes:
+.sp
+.TS
+box;
+cbp-1 | cbp-1
+l | l .
+ATTRIBUTE TYPE	ATTRIBUTE VALUE 
+=
+Availability	file/mlocate
+=
+Stability	Uncommitted
+.TE 
+.PP
+.SH SEE ALSO
+.BR locate (1),
+.BR updatedb.conf (5),
+.BR updatedb (8)
+
+
+.SH NOTES
+
+.\" Oracle has added source availability information to this manual page
+This software was built from source available at https://java.net/projects/solaris-userland.  The original community source was downloaded from  https://fedorahosted.org/releases/m/l/mlocate/mlocate-0.25.tar.xz
+
+Further information about this software can be found on the open source community website at https://fedorahosted.org/mlocate.

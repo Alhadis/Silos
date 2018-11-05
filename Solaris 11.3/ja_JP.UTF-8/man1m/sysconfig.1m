@@ -1,0 +1,455 @@
+'\" te
+.\" Copyright (c) 2012, 2015, Oracle and/or its affiliates.All rights reserved
+.TH sysconfig 1M "2015 年 4 月 6 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+sysconfig \- Solaris インスタンスの構成解除または再構成
+.SH 形式
+.LP
+.nf
+\fB/usr/sbin/sysconfig\fR
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/sysconfig\fR configure [\fB-s\fR] [\fB-c\fR \fIconfig_profile\fR.xml | \fIdir\fR]
+     [\fB--destructive\fR] [\fB-g\fR <\fIgrouping\fR>,<\fIgrouping\fR>]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/sysconfig\fR unconfigure [\fB-s\fR] [\fB--destructive\fR]
+     [\fB-g\fR <\fIgrouping\fR>,<\fIgrouping\fR>]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/sysconfig\fR unconfigure [\fB-s\fR] [\fB-g\fR \fIsystem\fR] [\fB--destructive\fR]
+\fB--include-site-profile\fR
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/sysconfig\fR create-profile [\fB-o\fR \fIoutput_directory\fR [\fB-l\fR \fIlogfile\fR]
+     [\fB-v\fR \fIverbosity\fR] [\fB-b\fR] [\fB-g\fR <\fIgrouping\fR>,<\fIgrouping\fR>]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBsysconfig\fR ユーティリティーは、Solaris インスタンスを構成解除または再構成するためのインタフェースです。Solaris インスタンスは、大域ゾーン内または非大域ゾーン内のいずれかのブート環境として定義されます。ユーザーは、特定の定義済みのサブシステムを構成解除できます。あるシステムの構成可能なサブシステムは、「機能グループ」と呼ばれます。機能グループは、このユーティリティーを実行したときに構成または構成解除されるサービスまたはサービスの集合です。
+.sp
+.LP
+\fBsysconfig\fR ユーティリティーを使用して実行される操作は、構成解除、構成、プロファイル作成の 3 つです。
+.sp
+.LP
+\fBunconfigure\fR サブコマンドを指定して \fBsysconfig\fR を呼び出すと、システムは構成解除され、構成解除された状態のままになります。
+.sp
+.LP
+システム構成は対話形式または非対話形式で実行できます。プロファイルを指定せずに \fBconfigure\fR サブコマンドを呼び出すと、対話型のインタフェースがアクティブ化され、システム構成プロセスをユーザーに案内します。プロファイルを指定して configure サブコマンドを呼び出すと、プロファイルから構成が読み取られ、非対話形式で構成が実行されます。どちらの場合も、リクエストされた機能グループに対して新しい構成が作成されます。
+.sp
+.LP
+構成と再構成は同義です。reconfigure サブコマンドは、configure サブコマンドの別名です。
+.sp
+.LP
+\fBsysconfig\fR コマンドでは、\fBcreate-profile\fR サブコマンドを使用してシステム構成プロファイルを生成することもできます。生成されたプロファイルは、\fBsysconfig\fR \fBconfigure\fR サブコマンドで非対話形式で機能グループを構成するために使用されます。有効なプロファイル名には、\fB\&.xml\fR 拡張子が付けられています。
+.sp
+.LP
+システムの構成は、対話式システム構成 (SCI) ツールを使用して対話形式で実行するか、システム構成プロファイルを使用して非対話形式で実行することができます。
+.sp
+.LP
+SCI ツールは、テキストユーザーインタフェースを使用して対話形式でターゲットシステムを構成します。また、ユーザーによって生成された、ターゲットシステムの望ましい構成を示す情報を収集するために使用することもできます。その場合、このツールは望ましいシステム構成を含むシステム構成プロファイルを生成します。
+.sp
+.LP
+SCI ツールは、新規にインストールされたシステム、または構成解除されたシステムの構成をサポートします。新規に作成された非大域ゾーンのシステム構成をテキストインストール時に提供するように設計されています。SCI ツールを利用して、すでに構成されているシステムの構成を変更する必要がある場合は、SCI ツールを実行する前にそのようなシステムを構成解除する必要があります。
+.sp
+.LP
+\fBsysconfig\fR を使用してシステム構成を実行するだけでなく、個々の機能グループを再構成および構成解除することもできます。システム上で構成できる機能グループは、\fBdate_time\fR、\fBnetwork\fR、\fBnaming_services\fR、\fBlocation\fR、\fBusers\fR、\fBidentity\fR、\fBsupport\fR、および \fBkeyboard\fR です。システムグループは、すべての機能グループを構成または構成解除します。グループを構成解除して、構成解除された状態のままにすることもできます。構成解除されたグループのデフォルト値を次に示します。
+.sp
+.LP
+次のグループを構成できます。
+.sp
+.in +2
+.nf
+Grouping | Components            | Unconfigured Stat
+------------------------------------------------------------
+identity        | system nodename       | unknown
+------------------------------------------------------------
+keyboard        | Keyboard              | U.S. English
+------------------------------------------------------------
+naming_services | DNS, NIS and LDAP     | No network naming
+                | clients, nsswitch     | services
+------------------------------------------------------------
+network         | network               | No network
+------------------------------------------------------------
+location        | timezone              | UTC
+                | locale                | C locale
+------------------------------------------------------------
+support         | ASR                   | ASR disabled
+                | OCM                   | Disconnected Mode
+------------------------------------------------------------
+system          | all groupings         | all groupings
+                |                       | unconfigured
+------------------------------------------------------------
+users           | root                  | Empty root password
+                | initial user account  | Remove user account
+------------------------------------------------------------
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBsysconfig\fR ユーティリティーは、Solaris サービス管理機能 (SMF) を使用して構成情報を集中管理します。システム構成操作によって生成されたデータは、SMF リポジトリ向けの管理カスタマイズであり、SMF リポジトリの管理レイヤーに格納されます。構成中に生成されたプロファイルは \fB/etc/svc/profile/sysconfig\fR にアーカイブされます。ユーザーがほかの SMF レイヤーに格納しているシステム構成情報は、管理レイヤーによってオーバーライドされます。
+.SH サブコマンド
+.sp
+.LP
+このセクションでは、サポートされているサブコマンドとそれらに関連するオプションについて説明します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunconfigure\fR [\fB-s\fR] [\fB- g\fR \fIsystem\fR] [\fB--destructive\fR]\fR
+.ad
+.sp .6
+.RS 4n
+システムを構成解除し、\fBunconfigured\fR 状態のままにします。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.sp .6
+.RS 4n
+構成解除が完了したあとで、システムをシャットダウンします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR \fIgrouping\fR\fR
+.ad
+.sp .6
+.RS 4n
+構成解除するグループ。\fB-g\fR が指定されていない場合は、すべてのグループが構成解除され、その結果としてシステムが構成解除されます。システムの構成解除を実行する前に、ユーザーは確認を求められます。\fB-g\fR システムが指定されている場合は、ユーザーに確認が求められます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB--destructive\fR\fR
+.ad
+.sp .6
+.RS 4n
+通常は構成解除中に保存されるシステムデータを保存しません。このフラグを指定することで、ユーザーは構成解除されるグループに対して通常は保存されるデータが削除される可能性があることを示します。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunconfigure\fR [\fB-s\fR] [\fB- g\fR \fIsystem\fR] \fB--include-site-profile\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.ne 2
+.mk
+.na
+\fB\fB--include-site-profile\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションは、\fBunconfigure\fR サブコマンドでのみ有効です。
+.sp
+このフラグは、システムを構成解除し、SMF の \fBsite-profile\fR および \fBadmin\fR レイヤーから構成データを削除します。これにより、システムは実質的にインストーラによって提供された元のシステム構成状態に戻ります。
+.sp
+\fB/etc/svc/profile/site\fR の \fBsite-profile\fR ディレクトリに格納されている XML プロファイルが削除され、このプロセスの一部として保存されます。すべてのグループの管理カスタマイズが削除されます。\fB/etc/svc/profile/sysconfig\fR に格納されているすべてのデータが削除されます。
+.sp
+このアクションは広い範囲に及ぶため、削除される XML プロファイルは \fB/etc/svc/profile/sysconfig\fR ディレクトリにある \fBsite-profile.tar\fR という名前の tar ファイルにアーカイブされます。
+.sp
+このオプションは、システムグループに対してのみ有効です。このオプションを呼び出す場合、\fB-g\fR \fIsystem\fR の使用はオプションです。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfigure\fR|\fBreconfigure\fR [\fB- s\fR] [\fB-g\fR \fIgrouping\fR] [\fB-c\fR \fI config_profile\fR.xml | \fIdir\fR] [\fB--destructive \fR]\fR
+.ad
+.sp .6
+.RS 4n
+グループを構成または再構成します。\fBconfigure\fR サブコマンドは、\fBunconfigure\fR サブコマンドと同じオプションにアクセスできます。また、次の追加オプションも含まれています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR \fIsystem\fR\fR
+.ad
+.sp .6
+.RS 4n
+構成するグループ。\fB-g\fR が指定されていない場合は、システムの構成が実行される前にユーザーに確認が求められます。\fB-g\fR システムが指定されている場合は、ユーザーに確認が求められます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIconfig_profile\fR.xml | \fIdir\fR\fR
+.ad
+.sp .6
+.RS 4n
+構成時に適用する、プロファイルまたはプロファイルのディレクトリを指定します。プロファイルが適用されると、構成手順が非対話的に実行されます。プロファイルが指定されていない場合は、対話型のシステム構成ツールがグループの構成に使用されます。
+.sp
+すべてのプロファイルは、\fB\&.xml\fR ファイル拡張子を持つ必要があります。
+.sp
+\fB-c\fR にディレクトリを指定した場合は、そのディレクトリ内のすべてのプロファイルが有効な (正しい形式の) 構成プロファイルである必要があります。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate-profile\fR [\fB-o\fR \fI output_directory\fR [\fB-l\fR \fIlogfile\fR] [\fB-v\fR \fIverbosity\fR] [\fB-b\fR] [\fB-g\fR \fIgrouping\fR,...]\fR
+.ad
+.sp .6
+.RS 4n
+SCI ツールを実行し、システム構成プロファイルを作成します。プロファイルのデフォルトの場所は \fB/system/volatile/profile/sc_profile.xml\fR です。生成された構成はシステムに適用されません。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIoutput_directory\fR\fR
+.ad
+.sp .6
+.RS 4n
+構成プロファイルのデフォルトプロファイルの場所を \fIoutput_directory\fR に置き換えます。このディレクトリの下に \fBsc_profile.xml\fR ファイルが作成されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIlogfile\fR, \fB- -log-location\fR=\fIlogfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+ログファイルの場所。デフォルトは \fB/var/tmp/install/sysconfig.log\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR \fIverbosity\fR, \fB- -log-level\fR=\fIverbosity\fR\fR
+.ad
+.sp .6
+.RS 4n
+詳細レベル (\fBerror\fR、\fBwarn\fR、\fBinfo\fR、\fBdebug\fR、\fBinput\fR のいずれか)。これらは、詳細レベルの低い方から高い方へ順に並んでいます。デフォルトは \fBinfo\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.sp .6
+.RS 4n
+SCI ツールのモノクロバージョン。
+.RE
+
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fR構成解除とシャットダウン
+.sp
+.LP
+次のコマンドは、システムを構成解除し、\fBunconfigured\fR 状態のままにします。デフォルトでは、グループが指定されていない場合はシステム全体のグループが構成解除されます。
+
+.sp
+.in +2
+.nf
+# \fBsysconfig unconfigure -s\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRシステムの構成解除
+.sp
+.LP
+次のコマンドは、システムを構成解除し、システムを \fBunconfigured\fR のままにします。
+
+.sp
+.in +2
+.nf
+# \fBsysconfig unconfigure -g system\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fRSCI ツールを使用したシステムの再構成
+.sp
+.LP
+次のコマンドは、SCI ツールを起動してシステムを再構成します。
+
+.sp
+.in +2
+.nf
+# \fBsysconfig configure\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fRプロファイルを使った再構成
+.sp
+.LP
+次のコマンドは、プロファイルを使用してシステムを再構成します。
+
+.sp
+.in +2
+.nf
+# \fBsysconfig configure -c some_profile.xml\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 5 \fRプロファイルの作成と使用
+.sp
+.LP
+次の一連のコマンドは、プロファイルを作成してから、それを使用してシステムを再構成します。
+
+.sp
+.in +2
+.nf
+# \fBsysconfig create-profile -o /tmp/myprofile.xml\fR
+# \fBsysconfig configure -g system -c /tmp/myprofile.xml\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 6 \fRゾーン内のシステムの構成
+.sp
+.LP
+次のコマンドは、ゾーン内にシステムを構成します。
+
+.sp
+.in +2
+.nf
+# \fBzlogin ZONENAME\fR
+root@ZONENAME# \fBsysconfig configure -g system\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 7 \fR対話形式での機能グループの構成
+.sp
+.LP
+次のコマンドは、ネットワークおよびネームサービス機能グループを再構成します。SCI ツールが呼び出され、対話形式でグループが再構成されます。
+
+.sp
+.in +2
+.nf
+# \fBsysconfig configure -g network,naming_services\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 8 \fR非対話形式での機能グループの構成
+.sp
+.LP
+次の一連のコマンドは、ネットワークとネームサービスのプロファイルを作成し、そのプロファイルを使用して非対話形式でグループを再構成します。
+
+.sp
+.in +2
+.nf
+# \fBsysconfig create-profile -g network,naming_services \e\fR
+\fB-o /tmp/my_sysconfig_directory/\fR
+# \fBsysconfig configure -g network,naming_services \e\fR
+\fB-c /tmp/my_sysconfig_directory/sc_profile.xml\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 9 \fRシステムの構成解除とグループの復帰
+.sp
+.LP
+次のコマンドは、システムを構成解除し、グループをデフォルトのインストール状態に戻します。
+
+.sp
+.in +2
+.nf
+# \fBsysconfigure unconfigure --include-site-profile\fR
+.fi
+.in -2
+.sp
+
+.SH 終了ステータス
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB>\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+失敗。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+system/install
+_
+system/install/configuration
+_
+system/library/install
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBsvcprop\fR(1)、\fBsvcadm\fR(1M)、\fBsvccfg\fR(1M)、\fBattributes\fR(5)、\fBattributes\fR(5)

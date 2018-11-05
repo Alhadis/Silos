@@ -1,0 +1,525 @@
+'\" te
+.\" Copyright (c) 2003, 2013, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1989 AT&T
+.TH share_smb 1M "2012 年 7 月 23 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+share_smb \- 使 SMB 共享可供远程系统挂载
+.SH 用法概要
+.LP
+.nf
+\fBshare\fR  \fB-F\fR smb [-a [\fB-o\fR \fIspecific-options\fR] [\fB-d\fR \fIdescription\fR]
+     \fIpathname\fR \fIsharename\fR  | [-A]]
+.fi
+
+.LP
+.nf
+\fBzfs set\fR share.smb=on | off \fIfilesystem|filesystem%share\fR
+.fi
+
+.LP
+.nf
+\fBzfs share\fR -o share.smb=on | off \fIspecific_options\fR
+     \fIfilesystem|filesystem%share\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBshare\fR 命令用于定义和发布 SMB 共享，这使得本地文件系统可供远程系统挂载。
+.sp
+.LP
+通过使用 \fBshare\fR 命令或者使用 \fBzfs set\fR 命令或 \fBzfs share\fR 命令设置属性值来修改 SMB 共享的行为。请参见 \fBshare\fR(1M) 和 \fBzfs\fR(1M) 手册页。
+.sp
+.LP
+\fBshare\fR 命令包含以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-F\fR \fBsmb\fR\fR
+.ad
+.sp .6
+.RS 4n
+共享 \fBSMB\fR 文件共享协议。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+发布所有已定义的共享。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIspecific-options\fR\fR
+.ad
+.sp .6
+.RS 4n
+以逗号分隔的关键字和属性-值-断言列表形式指定 \fIspecific-options\fR，以供 SMB 协议进行解释。缺省情况下，以读写访问权限向所有客户机发布共享，除非使用特定选项覆盖缺省访问权限。\fIspecific-options\fR 可以是给定文件系统所支持属性的任意组合。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdescription\fR\fR
+.ad
+.sp .6
+.RS 4n
+提供用于描述要共享的文件系统的注释。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示所有定义的共享。
+.RE
+
+.SS "共享属性"
+.sp
+.LP
+支持以下 SMB 共享属性，可通过 \fBzfs\fR 和 \fBshare\fR 命令设置这些属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBabe=\fR\fIboolean\fR\fR
+.ad
+.sp .6
+.RS 4n
+为共享设置基于访问权限的枚举 (access-based enumeration, ABE) 策略。设置为 \fBtrue\fR 时，会为此共享启用 ABE 过滤，在返回给客户机的目录列表中将省略提出请求的用户无权访问的目录条目。设置为 \fBfalse\fR 或者未定义时，将不会对此共享执行 ABE 过滤。缺省情况下，未定义此属性。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfalse\fR\fR
+.ad
+.sp .6
+.RS 4n
+为此共享禁用 ABE。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtrue\fR\fR
+.ad
+.sp .6
+.RS 4n
+为此共享启用 ABE。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBad-container\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定要用于发布共享的 AD 容器。
+.sp
+可将 AD 容器指定为以逗号分隔的属性名称-值对列表，名称-值对使用 LDAP 标识名 (distinguished name, DN) 或相对标识名 (relative distinguished name, RDN) 格式。
+.sp
+以下示例使用 \fBshare\fR 命令指定 AD 容器：
+.sp
+.in +2
+.nf
+$ \fBshare -F smb -o abe=true,ad-container=cn=sales,ou=mycompany,dc=com /export/home\fR
+.fi
+.in -2
+.sp
+
+以下示例使用 \fBzfs share\fR 命令指定 AD 容器：
+.sp
+.in +2
+.nf
+$ \fBzfs share -o share.smb=on -o share.smb.ad-container=cn=sales,ou=mycompany,dc=com -o share.smb.abe=on rpool/export/home%share1\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+必须使用 \fBcn=\fR、\fBou=\fR 和 \fBdc=\fR 前缀以 LDAP 格式指定 DN 或 RDN：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBcn\fR 表示通用名称 (common name)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBou\fR 表示组织单元 (organizational unit)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBdc\fR 表示域组件 (domain component)
+.RE
+\fBcn=\fR、\fBou=\fR 和 \fBdc=\fR 均为属性类型。用于描述对象 RDN 的属性类型称为命名属性，ADS 的命名属性包括以下对象类：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBcn\fR 表示 \fBuser\fR 对象类
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBou\fR 表示组织单元 (organizational unit, \fBOU\fR) 对象类
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBdc\fR 表示 \fBdomainDns\fR 对象类
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcatia=\fIboolean\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定是否执行 CATIA 字符替换。CATIA V4 允许在文件名中使用 Windows 视为无效的字符。如果 CATIA V4 文件名包含任何在 Windows 中被视为非法的字符，Windows 客户机可能无法访问该 CATIA V4 文件。缺省情况下，不执行 CATIA 字符替换。请参见\fI《Managing SMB File Sharing and Windows Interoperability in Oracle Solaris 11.3》\fR。
+.sp
+如果 \fBcatia\fR 属性设置为 \fBtrue\fR，将对文件名应用以下字符替换。
+.sp
+.in +2
+.nf
+CATIA    CATIA 
+V4 UNIX  V5 Windows
+  "      \e250   0x00a8  Dieresis
+  *      \e244   0x00a4  Currency Sign
+  /      \e370   0x00f8  Latin Small Letter O with Stroke
+  :      \e367   0x00f7  Division Sign
+  <      \e253   0x00ab  Left-Pointing Double Angle Quotation Mark
+  >      \e273   0x00bb  Right-Pointing Double Angle Quotation Mark
+  ?      \e277   0x00bf  Inverted Question Mark
+  \e      \e377   0x00ff  Latin Small Letter Y with Dieresis
+  |      \e246   0x00a6  Broken Bar
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcsc=\fR\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置共享的客户端高速缓存策略。客户端高速缓存是一项客户机功能，脱机文件完全由客户机管理。
+.sp
+.LP
+以下是 \fBcsc\fR 属性的有效值：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBmanual\fR\fB－\fR允许客户机缓存指定共享中的文件，以供用户请求时脱机使用。但是，不允许自动基于每个文件重新整合。\fBmanual\fR 为缺省值。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBauto\fR\fB－\fR允许客户机自动缓存指定共享中的文件以供脱机使用，允许基于每个文件重新整合。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBvdo\fR\fB－\fR允许客户机自动缓存指定共享中的文件以供脱机使用，允许基于每个文件重新整合，允许客户机使用其本地高速缓存进行处理，即使在脱机时也如此。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBdisabled\fR\fB－\fR不允许对此共享执行客户端高速缓存。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdfsroot=\fIboolean\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+将共享标记为分布式文件系统 (distributed file system, DFS) 根共享，以区别于常规共享。缺省情况下，未定义 \fBdfsroot\fR。如果 \fBdfsroot\fR 为 \fBfalse\fR 或者未进行定义，则共享不是 DFS 根共享。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBguestok=\fR\fIboolean\fR\fR
+.ad
+.sp .6
+.RS 4n
+为共享设置来宾访问策略。设置为 \fBtrue\fR 时，允许对此共享进行来宾访问。设置为 \fBfalse\fR 或未进行定义时，不允许对此共享进行来宾访问。缺省情况下，未定义此属性。
+.sp
+可以使用 \fBidmap\fR(1M) 中基于名称的规则将 \fBguest\fR 映射到任何本地用户名（例如 \fBguest\fR 或 \fBnobody\fR）。如果该本地帐户在 \fB/var/smb/smbpasswd\fR 中具有口令，将根据此口令对来宾连接进行验证。使用映射到本地来宾帐户的帐户创建的任何连接将被视为来宾连接。
+.sp
+以下基于名称的规则将 Windows \fBGuest\fR 用户映射到 UNIX \fBguest\fR 用户：
+.sp
+.in +2
+.nf
+# \fBidmap add winname:Guest unixuser:guest\fR
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnone=\fR\fIaccess-list\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定不允许与访问列表匹配的所有客户机进行访问。访问列表是一个星号 (\fB*\fR) 时例外，在这种情况下，\fBro\fR 或 \fBrw\fR 可以覆盖 \fBnone\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBro=\fR\fIaccess-list\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 \fIaccess-list\fR 中列出的客户机对于共享具有只读权限。覆盖指定客户机的 \fBrw\fR 子选项。请参见 \fIaccess-list\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrw=\fR\fIaccess-list\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 \fIaccess-list\fR 中列出的客户机对于共享具有读写权限。覆盖指定客户机的 \fBro\fR 子选项。请参见 \fIaccess-list\fR。
+.RE
+
+.SS "访问列表参数"
+.sp
+.LP
+\fIaccess-list\fR 参数可以是字符串 \fB"*"\fR（表示所有主机），也可以是由冒号分隔的列表，其组件可以是任意数量的以下项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIhostname\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定主机名。如果主机在 \fBnsswitch.conf\fR 文件的 \fBhosts\fR 部分中指定了 DNS 或 LDAP 命名模式，\fIhostname\fR 必须为全限定的 \fBDNS\fR 或 \fBLDAP\fR 名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fInetgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+网络组包含多个主机名。如果主机在 \fBnsswitch.conf\fR 文件的 \fBhosts\fR 部分中指定了 DNS 或 LDAP 命名模式，网络组中的任何 \fIhostname\fR 都必须为全限定的 \fBDNS\fR 或 \fBLDAP\fR 名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdomainname\fR\fB\&.\fR\fI suffix\fR\fR
+.ad
+.sp .6
+.RS 4n
+要使用域成员关系，服务器必须使用 \fBDNS\fR 或 \fBLDAP\fR 将主机名解析为 \fBIP\fR 地址。这意味着，\fB/etc/nsswitch.conf\fR 文件的 \fBhosts\fR 条目必须在 \fBnis\fR 之前指定 \fBdns\fR 或 \fBldap\fR。必须执行此操作，因为只有 \fBDNS\fR 和 \fBLDAP\fR 会返回主机的完整域名。
+.sp
+其他命名服务（如 \fBNIS\fR）不能用于解析服务器上的主机名，因为这些命名服务不返回域信息。例如，下面展示了 \fBNIS\fR、\fBDNS\fR 和 \fBLDAP\fR 如何返回 \fB172.16.45.9\fR IP 地址的主机名信息：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNIS\fR\fR
+.ad
+.RS 16n
+.rt  
+返回：\fBmyhost\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDNS\fR 或 \fBLDAP\fR\fR
+.ad
+.RS 16n
+.rt  
+返回：\fBmyhost.mydomain.mycompany.com\fR
+.RE
+
+域名后缀通过前缀句点与主机名和网络组区分开来。例如，\fBrw=.mydomain.mycompany.com\fR 匹配 \fBmydomain.mycompany.com\fR 中的所有主机名。
+.sp
+\fBrw=.\fR 表示法使用一个句点匹配无后缀的主机名。此表示法匹配 \fBmydomain\fR 但不匹配 \fBmydomain.mycompany.com\fR。此功能可用于匹配通过 \fBNIS\fR（而不是 \fBDNS\fR 和 \fBLDAP\fR）解析的主机。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fInetwork\fR\fR
+.ad
+.sp .6
+.RS 4n
+网络或子网组件位于 at 符号 (\fB@\fR) 之后。该值可以是一个网络名称或点分地址。
+.sp
+可使用 \fBgetnetbyname\fR(3SOCKET) 将网络名称转换为点分地址。例如，\fB=@mynet\fR 等效于 \fB=@172.16\fR 或 \fB=@172.16.0.0\fR。
+.sp
+网络前缀采用八位字节对齐的网络掩码。网络掩码由地址低位部分中的第零个八位字节直至（包括）高位八位字节确定。如果网络前缀未按字节对齐，语法允许在斜杠 (\fB/\fR) 分隔符后显式指定掩码长度。例如，\fB=@theothernet/17\fR 或 \fB=@172.16.132/22\fR，其中掩码是对应 IP 地址中最左侧的连续有效数位。
+.sp
+指定单个 IP 地址时，也使用上述 \fB@\fR 表示法，但不指定网络掩码。例如，\fB=@172.16.132.14\fR。
+.sp
+可以使用冒号字符 (\fB:\fR) 分隔多个单独的 IP 地址。例如，\fBroot=@172.16.132.20:@172.16.134.20\fR。
+.RE
+
+.sp
+.LP
+减号 (\fB-\fR) 前缀表示拒绝 \fIaccess-list\fR 中的该组件访问。系统将按顺序搜索该列表，直至找到允许或拒绝访问的匹配项，或直至到达该列表的末尾。例如，如果主机 \fBterra\fR 位于 \fBengineering\fR 网络组中，指定 \fBrw=-terra:engineering\fR 将拒绝 \fBterra\fR 访问。但是，指定 \fBrw=engineering:-terra\fR 则允许 \fBterra\fR 访问。
+.SH 示例
+.LP
+\fB示例 1 \fR设置共享属性
+.sp
+.LP
+以下示例使用 \fBzfs share\fR 和 \fBshare\fR 命令创建并发布 SMB 共享。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+以下示例显示如何使用 \fBzfs share\fR 命令创建并发布同时启用来宾访问的 SMB 共享：
+.sp
+.in +2
+.nf
+# \fBzfs share -o share.smb=on -o share.smb.guestok=on tank/home%hshare\fR
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+以下示例显示如何使用 \fBshare\fR 命令对共享启用来宾访问：
+.sp
+.in +2
+.nf
+# \fBshare -F smb -o guestok=true /tank/home\fR
+.fi
+.in -2
+.sp
+
+.RE
+.LP
+\fB示例 2 \fR查看共享属性
+.sp
+.LP
+以下示例显示如何使用 \fBzfs get\fR 命令和 \fB/etc/dfs/sharetab\fR 文件查看共享属性：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+通过 \fBzfs get\fR 命令可以查看 \fBtank/home\fR 数据集的共享属性：
+.sp
+.in +2
+.nf
+# \fBzfs get share.smb tank/home%hshare\fR
+NAME              PROPERTY   VALUE  SOURCE
+tank/home%hshare  share.smb  on     local
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/dfs/sharetab\fR 文件显示了系统中的所有活动共享。每个共享的对应条目会显示属性集及其值：
+.sp
+.in +2
+.nf
+# \fBgrep home /etc/dfs/sharetab\fR
+/tank/home      hshare  smb     guestok 
+.fi
+.in -2
+.sp
+
+.RE
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/dfs/sharetab\fR\fR
+.ad
+.sp .6
+.RS 4n
+共享文件系统的系统记录
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性service/file-system/smb
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBidmap\fR(1M)、\fBshare\fR(1M)、\fBzfs\fR(1M)、\fBzfs\fR(1M)、\fBgetnetbyname\fR(3SOCKET)、\fBnetgroup\fR(4)、\fBattributes\fR(5)

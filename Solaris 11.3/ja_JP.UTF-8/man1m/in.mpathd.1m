@@ -1,0 +1,313 @@
+'\" te
+.\" Copyright (c) 2009, 2013, Oracle and/or its affiliates. All rights reserved.
+.TH in.mpathd 1M "2012 年 5 月 31 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+in.mpathd \- IP マルチパスデーモン
+.SH 形式
+.LP
+.nf
+\fB/usr/lib/inet/in.mpathd\fR 
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBin.mpathd\fR デーモンは、IPMP グループに配置された IP インタフェース (またはオプションでシステム上のすべての IP インタフェース) の障害および修復検出を実行します。また、管理者が構成したポリシーと一致する方法で、IPMP グループ内のどの IP インタフェースが「アクティブ」になるか (システムによって IP データトラフィックの送受信に使用されるか) を制御します。
+.sp
+.LP
+\fBin.mpathd\fR デーモンは、3 つの方法で IP インタフェースの障害と修復を検出できます。各 IP インタフェースの \fBIFF_PHYSRUNNING\fR フラグをモニターする方法 (リンク状態ベースの障害検出)、各 IP インタフェースに対して ICMP プローブを送受信する方法 (ICMP プローブベースの障害検出)、または推移的プローブによる方法です。
+.sp
+.LP
+推移的プローブが有効になっている場合、IP インタフェースは、インバウンド IP データトラフィックを受信できるクラス (\fBipmpstat\fR(1M)の \fBINBOUND\fR を参照) と、受信できないクラスの 2 つのクラスに分割されます。インバウンド IP データトラフィックを受信できるインタフェースは、ICMP プローブを送受信することで障害を検出します。IP データトラフィックを受信できないクラスは、受信できるインタフェースとリンクレイヤー (「推移的」) プローブを交換することで障害を検出します。
+.sp
+.LP
+デフォルトでは、リンク状態ベースの障害検出だけが有効になっています。これには、リンクステータスの通知をサポートするドライバが必要です。ICMP プローブベースの障害検出を有効にするには、後述するように、1 つ以上のテストアドレスを構成する必要があります。推移的プローブを有効にするには、(次に示す) SMF プロパティーの値を \fBtrue\fR に変更します。
+.sp
+.in +2
+.nf
+svc:/network/ipmp/config/transitive-probing
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBtransitive-probing\fR プロパティーの値を変更する方法の詳細は、「\fB使用例\fR」を参照してください。
+.sp
+.LP
+ICMP プローブベースと推移的プローブベースのどちらの障害検出方法でも、IP インタフェースの送受信パスの全体がテストされます。どの障害検出方法が有効になっているかを確認するには、\fBipmpstat\fR(1M) ユーティリティーを使用します。
+.sp
+.LP
+\fBtransitive-probing\fR が \fBtrue\fR に設定され、指定された IPMP グループにテストアドレスが構成されていない場合は、推移的プローブが使用されます。\fBfalse\fR (デフォルト値) に設定された場合は、どのような状況でも推移的プローブは使用されません。
+.sp
+.LP
+リンク状態ベースの障害検出だけが有効になっている場合は、\fBIFF_PHYSRUNNING\fR フラグの状態だけからインタフェースの健全性が判定されます。プローブが有効になっている場合は、リンク状態とプローブのどちらかによって障害が示されれば、インタフェースに障害が発生したとみなされ、その障害検出方法によって障害が修正されたことが示されれば、インタフェースが修復されたとみなされます。グループ内のすべてのインタフェースを同じ障害検出方法で構成する必要はありませんが、少なくとも 1 つの IP テストアドレスが存在するグループのインタフェースでは、推移的プローブは無効になります。
+.sp
+.LP
+前述のように、ICMP プローブベースの障害検出を実行するには、IP インタフェースごとに \fBin.mpathd\fR がプローブを送受信するためのテストアドレスが必要です。\fBipadm\fR(1M)を使用してベースとなるインタフェース上に作成されたアドレスは、自動的にテストアドレスとして使用されます。システムはこのようなアドレスに対して自動的に \fBNOFAILOVER\fR フラグを設定します。各アドレスは、静的に構成することも、DHCP によって取得することもできます。ターゲットを見つけるため、\fBin.mpathd\fR は最初にルーティングテーブルで同じサブネット上の経路を参照し、指定されている次のホップを使用します。一致する経路がない場合は、すべてのホストに ICMP プローブを送信し、応答したシステムのサブネットを選択します。したがって、プローブベースの障害検出を動作させるためには、ICMP エコー要求プローブに対して応答する各サブネット上に少なくとも 1 つの近傍が存在する必要があります。\fBipmpstat\fR(1M) ユーティリティーを使用して、現在のプローブターゲットの情報と送信されたプローブのステータスの両方を表示できます。
+.sp
+.LP
+IPv4 と IPv6 の両方がサポートされます。IP インタフェースが IPv4 用に plumb され、IPv4 テストアドレスが構成されている場合、\fBin.mpathd\fR はその IP インタフェース経由で ICMPv4 プローブの送信を開始します。同様に、IP インタフェースが IPv6 用に plumb され、IPv6 テストアドレスが構成されている場合、\fBin.mpathd\fR はその IP インタフェース経由で ICMPv6 プローブの送信を開始します。ただし、\fBin.mpathd\fR はリンクローカルでない IPv6 テストアドレスを無視します。IPv4 と IPv6 の両方が plumb されている場合は、2 つのうち 1 つだけ (つまり、IPv4 テストアドレスと IPv6 テストアドレスのどちらか) を構成すれば十分です。IPv4 と IPv6 の両方のテストアドレスが構成されている場合、\fBin.mpathd\fR は ICMPv4 と ICMPv6 の両方を使用して検索します。
+.sp
+.LP
+前述のように、\fBin.mpathd\fR は IPMP グループ内のどの IP インタフェースが「アクティブ」になるか (システムによって IP データトラフィックの送受信に使用されるか) も制御します。特に、\fBin.mpathd\fR は各 IPMP グループの管理構成を追跡し、各グループ内のアクティブな IP インタフェースの数をその構成と一致させようとします。したがって、アクティブな IP インタフェースに障害が発生した場合、\fBin.mpathd\fR はグループ内に \fBINACTIVE\fR 状態のインタフェースが存在すれば、それをアクティブ化します (\fBSTANDBY\fR としてもマークされている \fBINACTIVE\fR 状態のインタフェースが優先されます)。同様に、IP インタフェースが修復され、修復の結果として IPMP グループに管理構成で指定された数より多くのアクティブなインタフェースが残った場合、後述のように \fBFAILBACK\fR 変数が使用された場合を除き、\fBin.mpathd\fR はいずれかのインタフェースを (\fBSTANDBY\fR としてマークされたものを優先して) 非アクティブ化します。(たとえば、\fBif_mpadm\fR(1M) に対応して) IP インタフェースをオフラインにするときも、\fBin.mpathd\fR によって同じような調整が行われます。
+.sp
+.LP
+\fBin.mpathd\fR デーモンは、\fB/etc/default/mpathd\fR 内の \fBFAILURE_DETECTION_TIME\fR、\fBFAILBACK\fR、および \fBTRACK_INTERFACES_ONLY_WITH_GROUPS\fR の 3 つの変数値にアクセスします。
+.sp
+.LP
+\fBFAILURE_DETECTION_TIME\fR 変数は、プローブベースの障害検出時間を指定します。障害検出時間が短いほど、プローブのトラフィックが増加します。\fBFAILURE_DETECTION_TIME\fR のデフォルト値は 10 秒です。これは、IP インタフェースの障害が \fBin.mpathd\fR によって 10 秒以内に検出されることを意味します。IP インタフェースの修復検出時間は、常に \fBFAILURE_DETECTION_TIME\fR の値の 2 倍です。リンクベースの障害検出によって検出された障害と修復はただちに作用しますが、ハードウェアの障害によってリンク状態が頻繁に変化していることが疑われる場合、\fBin.mpathd\fR はリンク状態の変化を無視することがあります。「\fB診断\fR」を参照してください。
+.sp
+.LP
+デフォルトでは、\fBin.mpathd\fR は障害と修復の検出を名前付きの IPMP グループの一部として構成されている IP インタフェースに限定します。\fBTRACK_INTERFACES_ONLY_WITH_GROUPS\fR を \fBno\fR に設定すると、名前付きの IPMP グループの一部でなくても、すべての IP インタフェースで障害と修復の検出が実行されます。追跡されているが、名前付きの IPMP グループの一部ではない IP インタフェースは、「匿名の」IPMP グループの一部であるとみなされます。この IPMP グループは、名前がないことに加えて、その IP インタフェースが同等でないため、IP インタフェースの障害発生時に相互に引き継ぎができないという点で特殊です。つまり、匿名の IPMP グループは障害と修復の検出にのみ使用可能であり、高可用性や負荷分散を提供しません。
+.sp
+.LP
+前述のように、\fBin.mpathd\fR は IP インタフェースが修復されたことを検出すると、それをアクティブ化して、IP データトラフィックの送受信に再度使用できるようにします。しかし、\fBFAILBACK\fR が \fBno\fR に設定されている場合は、グループ内にほかのアクティブな IP インタフェースが残っていない場合にのみ、IP インタフェースがアクティブ化されます。ただし、その後グループ内の別の IP インタフェースに障害が発生した場合は、インタフェースがアクティブ化されることがあります。
+.SS "SMF による管理"
+.sp
+.LP
+\fBin.mpathd\fR デーモンサービスは、サービス管理機能 \fBsmf\fR(5) により、サービス識別子の下で管理されます。
+.sp
+.in +2
+.nf
+svc:/network/ipmp:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有効化、無効化、または再起動要求など、このサービスに関する管理操作は、\fBsvcadm\fR(1M) を使用して実行できます。
+.SH 使用例
+.LP
+\fB例 1 \fR推移的プローブによる障害検出を有効にする
+.sp
+.LP
+次の例は、推移的プローブによる障害検出を有効にするために使用される SMF コマンドのシーケンスを示しています。
+
+.sp
+.in +2
+.nf
+# \fBsvccfg -s svc:/network/ipmp setprop config/transitive-probing=true\fR
+# \fBsvcadm refresh svc:/network/ipmp:default\fR
+.fi
+.in -2
+.sp
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/default/mpathd\fR\fR
+.ad
+.RS 23n
+.rt  
+\fBin.mpathd\fR デーモンによって使用されるデフォルト値が含まれています。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBif_mpadm\fR(1M), \fBifconfig\fR(1M), \fBipmpstat\fR(1M), \fBsvcadm\fR(1M), \fBattributes\fR(5), \fBsmf\fR(5), \fBicmp\fR(7P), \fBicmp6\fR(7P), 
+.sp
+.LP
+\fI『Introduction to Oracle Solaris 11.3 Network         Services』\fR
+.SH 診断
+.sp
+.LP
+IP interface \fIinterface_name\fR has a hardware address which is not unique in group \fIgroup_name\fR; offlining
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+プローブベースの障害検出、負荷分散、およびその他のコード IPMP 機能が正常に機能するためには、IPMP グループ内の各 IP インタフェースが一意のハードウェアアドレスを持つ必要があります。この要件が満たされない場合、\fBin.mpathd\fR は重複するハードウェアアドレスを持つ IP インタフェースの 1 つを除くすべての IP インタフェースを自動的にオフラインにします。
+.RE
+
+.sp
+.LP
+IP interface \fIinterface_name\fR now has a unique hardware address in group \fIgroup_name\fR; onlining
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+直前に検出された重複するハードウェアアドレスが一意になったため、\fBin.mpathd\fR は \fIinterface_name\fR をオンライン状態に戻しました。
+.RE
+
+.sp
+.LP
+Test address \fIaddress\fR is not unique in group; disabling probe-based failure detection on \fIinterface_name\fR
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+\fBin.mpathd\fR がプローブベースの障害検出を実行するには、グループ内の各テストアドレスが一意である必要があります。
+.RE
+
+.sp
+.LP
+No test address configured on interface \fIinterface_name\fR disabling probe-based failure detection on it
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+\fBin.mpathd\fR が IP インタフェースに対してプローブベースの障害検出を実行するには、IP インタフェースが IPv4、IPv6、またはその両方のテストアドレスを使用して構成されている必要があります。
+.RE
+
+.sp
+.LP
+IP \fIinterface_name\fR in group \fIgroup_name\fR is not plumbed for IPv[4|6], affecting IPv[4|6] connectivity
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+マルチパスグループ内のすべての IP インタフェースが均一に plumb されている必要があります。たとえば、1 つの IP インタフェースが IPv4 用に plumb されている場合は、グループ内のすべての IP インタフェースが IPv4 用に plumb されている必要があり、そうしないと IPv4 パケットを確実に送受信できなくなります。すべての IP インタフェース上にプッシュされる STREAMS モジュールも、同一である必要があります。
+.RE
+
+.sp
+.LP
+The link has come up on \fIinterface_name\fR more than 2 times in the last minute; disabling repair until it stabilizes. 
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+(ケーブル不良などで) ハードウェアが断続的に停止するインタフェースの影響を抑えるため、\fBin.mpathd\fR はリンク状態が頻繁に変化する IP インタフェースを、リンク状態が安定するまで修復されたとみなしません。
+.RE
+
+.sp
+.LP
+Invalid failure detection time of \fItime\fR, assuming default 10000 ms
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+\fB/etc/default/mpathd\fR ファイルの \fBFAILURE_DETECTION_TIME\fR で無効な値が検出されました。
+.RE
+
+.sp
+.LP
+Too small failure detection time of \fItime\fR, assuming minimum of 100 ms
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+\fBFAILURE_DETECTION_TIME\fR に指定できる最小値は現在のところ 100 ミリ秒です。
+.RE
+
+.sp
+.LP
+Invalid value for FAILBACK \fIvalue\fR
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+ブール値変数 \fBFAILBACK\fR の有効な値は \fByes\fR または \fBno\fR です。
+.RE
+
+.sp
+.LP
+Invalid value for TRACK_INTERFACES_ONLY_WITH_GROUPS \fIvalue\fR
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+ブール値変数 \fBTRACK_INTERFACES_ONLY_WITH_GROUPS\fR の有効な値は \fByes\fR または \fBno\fR です。
+.RE
+
+.sp
+.LP
+Cannot meet requested failure detection time of \fItime\fR ms on (inet[6] \fIinterface_name\fR) new failure detection time for group \fIgroup_name\fR is \fItime\fR ms
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+\fBICMP\fR プローブの往復時間が、現在の障害検出時間を維持するのに必要な時間より長くなっています。ネットワークに輻輳が発生しているか、プローブターゲットに負荷がかかっています。\fBin.mpathd\fR は、これらの状況でも障害検出を完了できる程度まで障害検出時間を自動的に延長します。
+.RE
+
+.sp
+.LP
+Improved failure detection time \fItime\fR ms on (inet[6] \fIinterface_name\fR) for group \fIgroup_name\fR
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+\fBICMP\fR プローブの往復時間が短縮されたため、\fBin.mpathd\fR はそれに合わせて障害検出時間を短縮しました。
+.RE
+
+.sp
+.LP
+IP interface failure detected on \fIinterface_name\fR
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+\fBin.mpathd\fR は、\fIinterface_name\fR 上で障害を検出し、IP データトラフィックに使用されないように \fIinterface_name\fR に対して \fBIFF_FAILED\fR フラグを設定しました。
+.RE
+
+.sp
+.LP
+IP interface repair detected on \fIinterface_name\fR
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+\fBin.mpathd\fR は、\fIinterface_name\fR 上で修復を検出し、\fBIFF_FAILED\fR フラグをクリアしました。管理構成によっては、\fIinterface_name\fR が再度 IP データトラフィックに使用される可能性があります。
+.RE
+
+.sp
+.LP
+All IP interfaces in group \fIgroup\fR are now unusable
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+\fBin.mpathd\fR は、\fIgroup\fR 内のどの IP インタフェースも IP データトラフィックに使用できなくなり、グループのネットワーク接続が切断されたと判定しました。
+.RE
+
+.sp
+.LP
+At least 1 IP interface (\fIinterface_name\fR) in group \fIgroup\fR is now usable
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+\fBin.mpathd\fR は、\fIgroup\fR 内の少なくとも 1 つの IP インタフェースがふたたび IP データトラフィックに使用できるようになり、グループのネットワーク接続が復元されたと判定しました。
+.RE
+
+.sp
+.LP
+The link has gone down on \fIinterface_name\fR 
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+\fBin.mpathd\fR は、\fIinterface_name\fR の \fBIFF_PHYSRUNNING\fR フラグがクリアされ、リンクが停止したことを検出しました。
+.RE
+
+.sp
+.LP
+The link has come up on \fIinterface_name\fR
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+\fBin.mpathd\fR は、\fIinterface_name\fR の \fBIFF_PHYSRUNNING\fR フラグが設定され、リンクが復旧したことを検出しました。 
+.RE
+

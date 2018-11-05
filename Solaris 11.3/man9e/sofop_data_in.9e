@@ -1,0 +1,183 @@
+'\" te
+.\" Copyright (c) 2012, 2015, Oracle and/or its affiliates. All rights                reserved.
+.TH sofop_data_in 9E "6 Mar 2015" "SunOS 5.11" "Driver Entry Points"
+.SH NAME
+sofop_data_in, sofop_data_in_proc, sofop_data_out \- filter incoming and outgoing data
+.SH SYNOPSIS
+.LP
+.nf
+#include <sys/sockfilter.h>
+
+mblk_t *prefix_data_in(sof_handle_t \fIhdl\fR, void *\fIcookie\fR, mblk_t *\fImp\fR);
+.fi
+
+.LP
+.nf
+mblk_t *prefix_data_in_proc(sof_handle_t \fIhdl\fR, void *\fIcookie\fR,
+     mblk_t *\fImp\fR, cred_t *\fIcr\fR);
+.fi
+
+.LP
+.nf
+mblk_t *prefix_data_out(sof_handle_t \fIhdl\fR, void *\fIcookie\fR,
+     mblk_t *\fImp\fR, cred_t *\fIcr\fR, sof_rval_t *\fIrvalp\fR);
+.fi
+
+.SH PARAMETERS
+.sp
+.ne 2
+.mk
+.na
+\fB\fIhdl\fR\fR
+.ad
+.RS 10n
+.rt  
+per-socket filter handle
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcookie\fR\fR
+.ad
+.RS 10n
+.rt  
+per-socket filter-private data
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcr\fR\fR
+.ad
+.RS 10n
+.rt  
+pointer to the user credential structure for the operation
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fImp\fR\fR
+.ad
+.RS 10n
+.rt  
+pointer to \fBmsgb\fR(9S) chain
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fImsg\fR\fR
+.ad
+.RS 10n
+.rt  
+pointer to \fBmsghdr\fR structure
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIrvalp\fR\fR
+.ad
+.RS 10n
+.rt  
+result parameter, modified on return to give reason for operation failure
+.RE
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBsofop_data_in()\fR entry point is called when data is received, but before the data is placed in the socket's receive buffer. \fBsofop_data_in()\fR may be called from the protocol data path, and the filter should perform minimum amount of processing to minimize the performance impact. Intensive data operations should be performed by \fBsofop_data_in_proc()\fR, if possible.
+.sp
+.LP
+The \fBsofop_data_in_proc()\fR entry point is called before data is copied out from the socket's receive buffer.
+.sp
+.LP
+The \fBsofop_data_out()\fR entry point is called before data is passed to the protocol for transmission. The filter can directly modify the content of the address and control buffers pointed to by the message header. If the buffers provided by the message header are insufficient, then the filter can return a control message block as described below.
+.sp
+.LP
+The message chain passed to \fBsofop_data_in()\fR, \fBsofop_data_in_proc()\fR, and \fBsofop_data_out()\fR consist of one or more message blocks, linked together via \fIb_cont\fR. For \fBsofop_data_in()\fR and \fBsofop_data_in_proc()\fR, the first message block may be of a type other than \fBM_DATA\fR, indicating that control and/or address information may be present, and accessible via \fBsof_mblk_msghdr\fR(9F). In-place modification of a message block is only allowed if \fIdb_ref\fR is 1 (see \fBdatab\fR(9S)).
+.sp
+.LP
+Returning a message chain resumes the data operation. The first message block may contain control and/or address information, which can be constructed from a message header structure using \fBsof_mblk_create\fR(9F). The filter can return \fINULL\fR, which ends the data operation. It is the filter's responsibility to free any message blocks that are not returned to the framework. The filter must not return an empty message chain (a message chain containing no data). In such a case, the message chain should be freed and \fINULL\fR is returned instead.
+.SH RETURN VALUES
+.sp
+.LP
+The \fBsofop_data_in()\fR, \fBsofop_data_in_proc()\fR, and \fBsofop_data_out()\fR entry points return a message block chain on success and \fINULL\fR if the original message was consumed or if an error occurred. If \fBsofop_data_out()\fR returns \fINULL\fR, then \fIrvalp\fR must be set to one of the following:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSOF_RVAL_EINVAL\fR\fR
+.ad
+.RS 19n
+.rt  
+An argument was invalid.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSOF_RVAL_ENOMEM\fR\fR
+.ad
+.RS 19n
+.rt  
+There was insufficient memory for the operation to complete.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSOF_RVAL_EPERM\fR\fR
+.ad
+.RS 19n
+.rt  
+Permission was denied.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSOF_RVAL_RETURN\fR\fR
+.ad
+.RS 19n
+.rt  
+The filter satisfied the request.
+.RE
+
+.SH CONTEXT
+.sp
+.LP
+The \fBsofop_data_in()\fR, \fBsofop_data_in_proc()\fR, and \fBsofop_data_out()\fR entry points can be called from kernel or user context. The \fBsofop_data_in()\fR entry point can also be called from interrupt context.
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/kernel
+_
+Interface StabilityUncommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBattributes\fR(5), \fBsof_flowctrl_data_in\fR(9F), \fBsof_inject_data_in\fR(9F), \fBsof_mblk_create\fR(9F), \fBsof_mblk_msghdr\fR(9F), \fBdatab\fR(9S), \fBmsgb\fR(9S), \fBsof_ops\fR(9S)

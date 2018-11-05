@@ -1,0 +1,259 @@
+'\" te
+.\" Copyright (c) 2011, Oracle and/or its affiliates.All rights reserved
+.TH asr-notify 1M "2011 年 8 月 16 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+asr-notify \- 用于故障管理事件的自动服务请求通知守护进程
+.SH 用法概要
+.LP
+.nf
+\fB/usr/lib/fm/notify/asr-notify\fR [\fB-\fR \fI\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBasr-notify\fR 是一个守护进程，用于订阅故障管理生命周期事件并根据存储在 SMF 服务配置系统信息库中的一组通知首选项生成 HTTPS/XML 通知。
+.sp
+.LP
+使用 \fBasradm\fR(1M) 命令或通过设置 SMF 自动注册属性注册了服务之后，会向 Oracle Auto Service Request (ASR) 服务发送消息。如果设置了自动注册属性，服务将尝试在启动或刷新时注册。如果注册失败，服务将进入维护模式。如果注册成功，将删除 SMF 自动注册属性。
+.sp
+.LP
+\fBasr-notify\fR 由服务管理工具 \fBsmf\fR(5) 管理，其服务 FMRI 为：
+.sp
+.in +2
+.nf
+svc:/system/fm/asr-notify:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以使用 \fBsvcadm\fR(1M) 来对此服务执行管理操作（如启用、禁用或请求重新启动）。可以使用 \fBsvcs\fR(1) 命令来查询服务的状态。
+.sp
+.LP
+ASR 通知首选项是使用 \fBsvccfg\fR(1M) 设置的。
+.SS "属性"
+.sp
+.LP
+可以设置以下服务属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig\fR/\fIrootdir\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是缺省值为 \fB/\fR 的一个 \fBastring\fR 属性。设置了此属性时，将为 \fBasr-notify\fR 评估的所有路径名使用指定的根目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig\fR/\fIhttp_timeout\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是一个整数属性，用于设置在生成错误之前等待 HTTP 连接的秒数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig\fR/\fIendpoint\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是一个 \fBastring\fR 属性，用于设置注册和所有消息遥测使用的端点 URL。可以将端点 URL 设置为聚合来自多个主机实例的遥测的本地 ASR 管理器。如果不设置该属性，会将所有遥测直接发送到 Oracle Auto Service Request 服务。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBautoreg\fR/\fIuser\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是一个 \fBastring\fR 属性，用于设置自动注册使用的 My Oracle Support 用户名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBautoreg\fR/\fIpassword\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是一个 \fBastring\fR 属性，可用来设置用于进行自动注册的 My Oracle Support 口令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBautoreg\fR/\fIproxy-host\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是一个 \fBastring\fR 属性，用于设置 HTTP 代理 \fIhostname\fR:\fIport\fR，仅当使用 HTTP 代理连接 Internet 时才需要设置该属性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBautoreg\fR/\fIproxy-user\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是一个 \fBastring\fR 属性，用于设置 HTTP 代理用户名，仅当 HTTP 代理需要凭证时才需要设置该属性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBautoreg\fR/\fIproxy-password\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是一个用于设置 HTTP 代理口令的 \fBastring\fR 属性，仅当 HTTP 代理需要凭证时才需要设置该属性。
+.RE
+
+.SS "消息"
+.sp
+.LP
+服务将发送以下类型的消息：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+发生 FMA 故障时的故障消息
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+表示系统仍处于活动状态的每日心跳消息
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+提供运行组件的完整清单的运行审计消息和每周审计消息
+.RE
+.sp
+.LP
+每条消息的内容都是遵循 ASR 消息 XML 模式的 XML 文档。每条消息都以通用消息标头开始，后跟事件特定内容。
+.sp
+.LP
+ASR 事件标头信息：
+.sp
+.in +2
+.nf
+XML Element     Description
+------------    -----------
+site-id         the serial number of the host sending
+                the event
+host-id         the hostname(1) of the system that the
+                message is about
+message-uuid    a unique id generated for each message
+message-time    local time on the system that generated
+                the message
+system-id       the serial number of the system that the
+                message is about
+asset-id        the registered service tag for the system
+product-id      the unique product identifier for the system
+product-name    the name of the product for the system
+event           element containing fault specific event
+                information
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+事件中的故障特定内容将包含在 primary-event-information XML 元素中。
+.sp
+.in +2
+.nf
+XML Element     Description
+-----------     -----------
+message-id      the knowledge article message ID
+event-uuid      the FMA event UUID
+event-time      the time that the FMA event was generated
+severity        the severity of the FMA event
+component       element containing list of suspects
+summary         a short summary of the event
+description     event description
+payload         the raw FMA event contents
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+对于与故障事件关联的每个可疑 FRU，都会在组件中包含一个 hardware-component 元素。
+.sp
+.in +2
+.nf
+XML Element              Description
+-----------              -----------
+name                     the component path name of the FRU
+serial                   the FRU serial number
+part                     the FRU part number
+revision                 the FRU revision level
+additional-information   a list of additional properties
+                         containing values such as FRU
+                         manufacturer and FRU model
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+某些故障可能与软件问题关联而不是与硬件问题关联。在这种情况下，故障事件的组件列表中将包含 software-module 元素。
+.sp
+.in +2
+.nf
+XML Element              Description
+-----------              -----------
+name                     the name or FMRI of the software
+                         module in error
+description              a description of the software
+                         module error
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+心跳事件不包含任何其他数据，审计事件包含系统可用的所有 hardware-component、software-package 以及 software-module 元素的列表。
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/fault-management/asr-notify
+_
+接口稳定性Uncommitted（未确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBsvcs\fR(1)、\fBasradm\fR(1M)、\fBsvcadm\fR(1M)、\fBsvccfg\fR(1M)、\fBsyslogd\fR(1M)、\fBattributes\fR(5)、\fBsmf\fR(5)

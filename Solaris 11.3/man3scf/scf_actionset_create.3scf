@@ -1,0 +1,297 @@
+'\" te
+.\" Copyright (c) 2013, Oracle and/or its affiliates. All rights reserved.
+.TH scf_actionset_create  3SCF "16 July 2013" "SunOS 5.11" "Service Configuration Facility Library Functions"
+.SH NAME
+scf_actionset_create, scf_actionset_add, scf_actionset_destroy, scf_actionset_initiate, scf_actionset_prepare, scf_actionset_perform, scf_actionset_next_error \- create sets of administrative actions which apply to the Service Configuration Facility, and perform them either synchronously or asynchronously
+.SH SYNOPSIS
+.LP
+.nf
+cc [\fIflag\fR... ] \fIfile\fR... -lscf [ \fIlibrary\fR... ]
+.fi
+
+.LP
+.nf
+#include <libscf.h>
+.fi
+
+.LP
+.nf
+scf_actionset_t *scf_actionset_create(scf_handle_t *handle);
+.fi
+
+.LP
+.nf
+int scf_actionset_add(scf_actionset_t *set, const char *fmri,
+	 scf_action_t action, int flags);
+.fi
+
+.LP
+.nf
+int scf_actionset_perform(scf_actionset_t *set, int timeout);
+.fi
+
+.LP
+.nf
+scf_actionset_t *scf_actionset_prepare(scf_handle_t *handle,
+	 const char *fmri, scf_action_t action, int flags, ...);
+.fi
+
+.LP
+.nf
+int scf_actionset_next_error(scf_actionset_t *set);
+.fi
+
+.LP
+.nf
+void scf_actionset_destroy(scf_actionset_t *set);
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+These functions provide administrative control over groups of services and	instances. Using these	interfaces, it is possible to start,	stop, restart, refresh, mark, or clear	a group of instances as well as transition between milestones. After creating a set of actions, the set of actions can be performed either synchronously or asynchronously.
+.sp
+.LP
+\fBscf_actionset_create()\fR allocates and	initializes a \fBscf_actionset_t\fR and returns a pointer to the allocated structure. Actions can then be added to the structure which can be executed later.	Conversely, \fBscf_actionset_destroy()\fR will clean \fBscf_actionset_t\fR which has been passed in. After calling this function, further use of the destroyed action set is illegal.
+.sp
+.LP
+The \fBscf_actionset_add()\fR function adds actions to a previously created set.	The specified action is performed on the \fBfmri\fR, subject to flags. For a detailed explanation of which actions take what flags, see \fBsmf_enable_instance\fR(3SCF). The available actions are defined as follows:
+.sp
+.in +2
+.nf
+typedef enum {
+		 SCF_ENABLE,
+		 SCF_DISABLE,
+		 SCF_RESTART,
+		 SCF_REFRESH,
+		 SCF_DEGRADE,
+		 SCF_MAINTENANCE,
+		 SCF_CLEAR,
+		 SCF_MILESTONE
+	    } scf_action_t;
+.fi
+.in -2
+
+.sp
+.LP
+\fBscf_actionset_prepare()\fR is	a convenience function which combines \fBscf_actionset_create()\fR and	\fBscf_actionset_add()\fR. The function returns an action set which contains all the actions specified	in the argument list. Each action is fully defined by an ordered triple	which must be	the same order as the explicit arguments in the function signature, that is \fBfmri\fR, \fBaction\fR, \fBflags\fR. The list of arguments is terminated by a triple consisting of \fBNULL\fR, \fB0\fR, \fB0\fR.  If \fBlibscf.h\fR is	included in a file being compiled against a C99	compliant toolset, the macro \fBSCF_ACTIONSET_PREPARE()\fR is provided. This macro simply	defined as a call to \fBscf_actionset_prepare()\fR with the termination triple automatically appends to the arguments provided to the macro.
+.sp
+.LP
+\fBscf_actionset_perform()\fR executes all the actions in a set either asynchronously, or synchronously subject to timeout. Each action is performed in the order in which it was added to the set. If each action is completed successfully within timeout seconds, the function returns \fBSCF_COMPLETE\fR. If the timeout is reached, the function returns \fBSCF_SUCCESS\fR. If one or more errors occur while processing any of the actions in the set, \fBSCF_FAILED\fR is returned. Note that \fBscf_actionset_perform()\fR often handles more than one action, each of which can have errors associated with it. As such, \fBscf_error()\fR does not necessarily correspond to the error which cause \fBscf_actionset_perform()\fR to fail. If timeout is \fB-1\fR, \fBscf_actionset_perform()\fR waits for actions to complete indefinitely. A \fB0\fR second timeout returns immediately after initiating all the actions in set, making the call effectively asynchronous.
+.sp
+.LP
+\fBscf_actionset_next_error()\fR extracts the details of any errors which may have occurred during \fBscf_actionset_perform()\fR, one error at a time. See \fBscf_error\fR(3SCF) for a detailed explanation of possible values. Errors are iterated in the order they occur that naturally follows the order in which actions were added to the set. Each time the function returns, the arguments are populated with the following values:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaction_id\fR\fR
+.ad
+.RS 13n
+.rt  
+The string passed to \fBscf_actionset_add\fR(3SCF) via the \fBfmri\fR argument	corresponding to the action which caused the current error.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfmri\fR\fR
+.ad
+.RS 13n
+.rt  
+The FMRI of the particular entity for	which the error occurred.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaction\fR\fR
+.ad
+.RS 13n
+.rt  
+The code representing which action was attempted on \fBaction_id\fR.
+.RE
+
+.sp
+.LP
+For example, if enabling \fBsvcA\fR failed due to a dependency, the action \fBsvcB\fR failing to come online will be set to \fBSCF_ENABLE\fR. Then, \fBfmri\fR will be populated with the FMRI for \fBsvcB\fR, and \fBaction_id\fR will be populated with \fBsvcA\fR.
+.sp
+.LP
+Actions are considered complete once the following conditions have	been met:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSCF_ENABLE\fR\fR
+.ad
+.RS 19n
+.rt  
+\fBrestarter\fR/\fBstate\fR is either \fBonline\fR or \fBdegraded\fR or in \fBmaintenance\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSCF_DISABLE\fR\fR
+.ad
+.RS 19n
+.rt  
+\fBrestarter\fR/\fBstate\fR is \fBdisabled\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSCF_RESTART\fR\fR
+.ad
+.RS 19n
+.rt  
+\fBrestarter\fR/\fBstate_timestamp\fR has a later time when the command was issued
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSCF_REFRESH\fR\fR
+.ad
+.RS 19n
+.rt  
+\fBrestarter\fR/\fBstate_timestamp\fR has a later time when the command was issued and restarter/state is either \fBonline\fR, \fBdegraded\fR, or \fBmaintenance\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSCF_DEGRADE\fR\fR
+.ad
+.RS 19n
+.rt  
+\fBrestarter\fR/\fBstate\fR is \fBdegraded\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSCF_MAINTENANCE\fR\fR
+.ad
+.RS 19n
+.rt  
+\fBrestarter\fR/\fBstate\fR is \fBmaintenance\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSCF_CLEAR\fR\fR
+.ad
+.RS 19n
+.rt  
+\fBrestarter\fR/\fBstate\fR is either \fBonline\fR or \fBdegraded\fR or in \fBmaintenance\fR and state transition has occurred
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSCF_MILESTONE\fR\fR
+.ad
+.RS 19n
+.rt  
+A milestone is	considered reached in one of two ways, depending on	if a milestone is higher or lower than the current requested milestone. On transition to a higher milestone, the milestone is considered reached when that milestone's service is \fBonline\fR just like enabling any other service. However, on	transition to a lower milestone, the service for the requested milestone will already be in the	\fBonline\fR state. Furthermore, the service for the current milestone will transition to \fBdisabled\fR before any of it's dependencies transition. Thus, it is necessary	for all services to wait, which	constitute the current milestone are not participants in any lower	milestone, to transition to disabled state. More precisely, on a transition to a lower  milestone, the milestone is considered reached	when the set of services from all higher milestones which have either no dependencies or have a direct dependency on a service in the target milestone have transitioned to \fBoffline\fR.
+.RE
+
+.sp
+.LP
+Additionally, any action is considered complete when all  instances which have not met the conditions listed	above are unable to do so without further administrative action (such as an unsatisfied dependency).
+.sp
+.LP
+The \fBscf_actionset_create()\fR function returns either a pointer to an initialized \fBscf_actionset_t\fR, or \fBNULL\fR if an error occurs.
+.sp
+.LP
+The \fBscf_actionset_add()\fR function returns \fBSCF_SUCCESS\fR upon success, and \fBSCF_FAILED\fR should an error occur.
+.sp
+.LP
+The \fBscf_actionset_perform()\fR function returns \fBSCF_COMPLETE\fR if all actions are completed before the specified timeout. If all actions were initiated successfully and no errors occur but the timeout expires, the function returns \fBSCF_SUCCESS\fR. \fBSCF_FAILED\fR will be returned in all other cases.
+.sp
+.LP
+The \fBscf_actionset_prepare()\fR function returns either a pointer to an initialized \fBscf_actionset_t\fR populated with all the actions specified in the arguments list, or \fBNULL\fR if an error occurs.
+.sp
+.LP
+The \fBscf_actionset_next_error()\fR function returns the error code for the current error. Once there are no errors to iterate over, the function returns \fB0\fR. If an error occurs, \fBSCF_FAILED\fR is returned.
+.SH ERRORS
+.sp
+.LP
+The \fBscf_actionset_create()\fR and \fBscf_actionset_prepare()\fR functions return \fBNULL\fR if memory could not	be allocated.
+.sp
+.LP
+The \fBscf_actionset_add()\fR function will fail if:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSCF_ERROR_NO_MEMORY\fR\fR
+.ad
+.RS 28n
+.rt  
+The memory allocation failed.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSCF_ERROR_INVALID_ACTION\fR\fR
+.ad
+.RS 28n
+.rt  
+Either \fBfmri\fR did not correspond	to a service or	instance, or \fBflags\fR were invalid for the specified	action.
+.RE
+
+.sp
+.LP
+The \fBscf_actionset_next_error()\fR function will fail if:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSCF_ERROR_INVALID_ARGUMENT\fR\fR
+.ad
+.RS 30n
+.rt  
+Set is \fBNULL\fR.
+.RE
+
+.sp
+.LP
+The \fBscf_actionset_perform()\fR function fails if an error occurred initiating or waiting for the completion of any actions in the set. Should a failure occur, the details of any error can be extracted through the error iterator interface. Note that the value returned by the \fBscf_error\fR(3SCF) function after calling this function is meaningless and does not correspond to any particular error.
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Interface StabilityCommitted
+_
+MT-LevelSafe
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBlibscf\fR(3LIB), \fBsmf\fR(5), \fBattributes\fR(5), \fBsvc.configd\fR(1M), \fBsvc.startd\fR(1M), 

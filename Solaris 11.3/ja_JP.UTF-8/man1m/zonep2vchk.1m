@@ -1,0 +1,2206 @@
+'\" te
+.\" Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved
+.TH zonep2vchk 1M "2011 年 7 月 1 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+zonep2vchk \- 大域ゾーンの構成で非大域ゾーンへの物理から仮想移行を調べる
+.SH 形式
+.LP
+.nf
+\fBzonep2vchk\fR \fB-V\fR
+.fi
+
+.LP
+.nf
+\fBzonep2vchk\fR [\fB-T\fR \fIrelease\fR] \fB-c\fR
+.fi
+
+.LP
+.nf
+\fBzonep2vchk\fR [\fB-T\fR \fIrelease\fR] [\fB-P\fR] [\fB-b\fR] [ \fB-s\fR path[,path...] ] [\fB-S\fR \fIfile\fR]
+     [ \fB-r\fR {\fItime\fR}(h|m|s} ] [\fB-x\fR] [\fB-e\fR \fIexecname\fR[,\fIexecname\fR...] ]
+     [\fB-E\fR \fIfile\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBzonep2vchk\fR ユーティリティーは、非大域ゾーンへの物理から仮想 (\fBp2v\fR) 移行プロセスの前に大域ゾーンの構成を評価するために使用します。
+.sp
+.LP
+p2v プロセスでは、大域ゾーン (ソース) をアーカイブしてから、そのアーカイブを使用して非大域ゾーン (ターゲット) をインストールする必要があります。\fBsolaris\fR(5) および \fBsolaris10\fR(5) のマニュアルページの \fBinstall\fR \fB-a\fR のドキュメントを参照してください。
+.sp
+.LP
+\fBzonep2vchk\fR は 2 つの機能を果たします。まず、\fBp2v\fR 移行の成功を妨げる可能性のある、ソースの問題を報告するために使用できます。次に、非大域ゾーンターゲットの構成の支援に使用できるテンプレート \fBzonecfg\fR を出力できます。
+.sp
+.LP
+\fBzonep2vchk\fR は Solaris 10 以降の大域ゾーンで実行できます。Solaris 10 で実行するには、\fBzonep2vchk\fR ユーティリティーを Solaris 10 ソースの大域ゾーンにコピーします。
+.SH セキュリティ
+.sp
+.LP
+\fBzonep2vchk\fR ユーティリティーは、0 の実効ユーザー ID で実行する必要があります。それは Solaris のさまざまなサブシステムの構成状態を調べます。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR \fR
+.ad
+.sp .6
+.RS 4n
+コマンドのバージョンを表示して終了します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fIrelease\fR\fR
+.ad
+.sp .6
+.RS 4n
+ターゲットリリースを指定します。デフォルトは次のとおりです。
+.sp
+.in +2
+.nf
+Global Zone         Default Target
+Solaris 10          S10
+Solaris 11          S11
+.fi
+.in -2
+.sp
+
+\fBzonep2chk\fR によって生成された構成ファイルはすべてターゲットリリースに適用できます。下記の \fB-c\fR を参照してください。
+.sp
+Solaris 10 で実行している場合、\fBS11\fR というターゲットリリースを指定できます。これにより、Solaris 10 ブランドゾーンへの \fBp2v\fR がチェックされます。
+.sp
+ターゲットが S10 の場合は、共有スタックが使用されると想定されます。排他的 IP スタックが必要となる問題があれば報告されます。
+.sp
+ターゲットが S11 の場合は、排他的 IP スタックが使用されると想定されます。
+.sp
+大域ゾーンで使用中の特定の機能を動作させるためにターゲットの特定のパッチ/更新レベルが必要な場合は、この情報が \fBzonep2vchk\fR 出力に表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR\fR
+.ad
+.sp .6
+.RS 4n
+マシン解析可能な出力を生成します。下記の「解析可能な出力の形式」のセクションを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.sp .6
+.RS 4n
+テンプレートゾーンの構成を \fBzonecfg\fR(1M) \fBexport\fR 出力の形式で標準出力に表示します。この構成には、ソースホストの物理リソースやネットワーク構成に基づいたリソース制限やネットワーク構成が含まれます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.sp .6
+.RS 4n
+基本検査を行います。これは、大域ゾーンで、正常な \fBp2v\fR を妨げる可能性のある問題を調べます。\fB-b\fR、\fB-c\fR、\fB-s\fR、\fB-S\fR、\fB-r\fR、\fB-x\fR のどれも指定されていない場合は、これがデフォルトの動作です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR{\fItime\fR} (h|m|s)\fR
+.ad
+.sp .6
+.RS 4n
+指定された期間中、実行時検査を行います。これは、大域ゾーン内の現在実行中のプロセスを解析して、非大域ゾーンの内側での正常な実行を妨げる可能性のある問題を報告します。報告された問題は、\fBzonep2vchk\fR が実行されていた間にプロセスによって行われた処理を反映しています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBSIGINT\fR (たとえば、ほとんどのシェルから \fBCtrl-c\fR によって配信される) が受信されるまで実行時検査 (\fB-r\fR と同様) を行います。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fIexecname\fR[,\fIexecname\fR...]\fR
+.ad
+.sp .6
+.RS 4n
+実行時解析 (\fB-r\fR、\fB-x\fR) を行うときに、検査対象のプログラムを、指定された \fIexecname\fR のリストと一致するものだけに制限します。\fIexecname\fR は、\fBps\fR \fB- o\fR \fBcomm\fR によって返されるプロセスの名前です。\fBzonep2vchk\fR が呼び出されるときに指定されたプロセスが存在している必要はありません。\fBzonep2vchk\fR の実行中に作成された、一致するすべてのプロセスが検査されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-E\fR \fIfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-e\fR と同様ですが、\fIexecname\fR のリストを \fIfile\fR から読み取ります (1 行につき 1 つずつ)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIpath\fR[,\fIpath\fR...]\fR
+.ad
+.sp .6
+.RS 4n
+指定されたファイルまたはディレクトリで静的バイナリ解析を行います。これにより、ELF バイナリで、ゾーンの内側の機能に影響を及ぼす可能性のあるシステムコールとライブラリコールが検査されます。ディレクトリは再帰的に処理され、ELF 以外のファイルは無視されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR \fIfile\fR \fR
+.ad
+.sp .6
+.RS 4n
+\fB-s\fR と同様ですが、パスリストを \fIfile\fR から読み取ります (1 行につき 1 つずつ)。
+.RE
+
+.SH 解析可能な出力形式
+.sp
+.LP
+\fBzonep2vchk\fR は問題が検出されるたびに解析可能な 1 行の出力を表示します。行形式は次のとおりです。
+.sp
+.in +2
+.nf
+\fIcategory\fR:\fIissue\fR:\fIfield1\fR:[\fIfield2\fR:...]
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+各フィールドはコロン (\fB:\fR) で区切られます。バックスラッシュ (\fB\:\fR) でエスケープされたコロン文字は、フィールド区切り記号として扱わないようにしてください。
+.sp
+.LP
+同じ問題の複数のインスタンスを報告することができ、それぞれに問題の特定のインスタンスについて説明するフィールドが設けられています。
+.sp
+.LP
+次に、既存のカテゴリと問題が定義されています。\fBzonep2vchk\fR の将来のバージョンにはカテゴリと問題がさらに追加されている可能性があります。既存の問題の新しいフィールドが、既存の問題の既存のフィールドのあとに追加されている可能性もあります。
+.SS "\fBheader\fR カテゴリ"
+.sp
+.LP
+\fBheader\fR カテゴリには、ソース、ターゲット、および \fBzonep2vchk\fR のバージョンに関する情報が一覧表示されます。このカテゴリの問題は次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBversion\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBzonep2vchk\fR コマンドのバージョン。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+\fBzonep2vchk\fR コマンドのバージョン。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsource\fR\fR
+.ad
+.sp .6
+.RS 4n
+ソースシステムに関する情報。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+ソースシステムのノード名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+ソースシステムの /etc/release バージョン。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField3\fR:\fR
+.ad
+.RS 11n
+.rt  
+ソースシステムのカーネルバージョン。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField4\fR:\fR
+.ad
+.RS 11n
+.rt  
+ソースシステムのプラットフォーム。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtarget\fR \fR
+.ad
+.sp .6
+.RS 4n
+\fBp2v\fR 検査の指定されたターゲットに関する情報。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+ターゲットの Solaris バージョン。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+ターゲットで使用されるブランドタイプ。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField3\fR:\fR
+.ad
+.RS 11n
+.rt  
+ターゲットでの予想されるゾーンの IP タイプ。
+.RE
+
+.RE
+
+.SS "\fBfooter\fR カテゴリ"
+.sp
+.LP
+\fBfooter\fR カテゴリには、最終的なサマリー情報が一覧表示されます。このカテゴリの問題は次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBissues\fR\fR
+.ad
+.sp .6
+.RS 4n
+見つかった問題の数のサマリー。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+検出された問題の数。
+.RE
+
+.RE
+
+.SS "\fBincompatible\fR カテゴリ"
+.sp
+.LP
+\fBincompatible\fR カテゴリは、非大域ゾーン内で機能しない問題を表しています。このカテゴリの問題は次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBetcsystem\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB/etc/system\fR 調整可能ファイルが存在します。これらの調整可能ファイルはゾーンの内側では機能しません。\fB/etc/system\fR 調整可能ファイルはターゲットの大域ゾーンに転送できますが、すべてのゾーンや大域ゾーンを含む、システム全体に影響を及ぼします。ゾーン内部から構成できる代替の調整可能ファイルがある場合は、その調整可能ファイルが記述されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.sp .6
+.RS 4n
+\fB/etc/system\fR 調整可能ファイルの設定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.sp .6
+.RS 4n
+次のいずれか:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoalternate\fR\fR
+.ad
+.RS 15n
+.rt  
+非大域ゾーン内部からの代替の調整可能ファイルはありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBobsolete\fR\fR
+.ad
+.RS 15n
+.rt  
+その調整可能ファイルはターゲットで廃止されています。それはどの機能も果たさなくなりました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreplaced\fR\fR
+.ad
+.RS 15n
+.rt  
+その調整可能ファイルはターゲットで置き換えられています。この置き換えは大域ゾーンで構成され、フィールド 3 と 4 で記述されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBalternate\fR\fR
+.ad
+.RS 15n
+.rt  
+代替の調整可能ファイルが存在します。この調整可能ファイルは、非大域ゾーン内部から構成できます。その調整可能ファイルはフィールド 3 と 4 で記述されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoinfo\fR\fR
+.ad
+.RS 15n
+.rt  
+\fBzonep2vchk\fR は調整可能ファイルについての知識を持っていません。ゾーンの内側に代替の調整可能ファイルはおそらくありません。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField3\fR:\fR
+.ad
+.sp .6
+.RS 4n
+代替/交換用の調整可能ファイルのタイプ。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField4\fR:\fR
+.ad
+.sp .6
+.RS 4n
+代替/交換用の調整可能ファイルの説明。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbe\fR\fR
+.ad
+.sp .6
+.RS 4n
+ブート環境が 2 つ以上存在します。アクティブなブート環境のみが非大域ゾーンに転送可能です。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+アクティブでないブート環境の名前。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunsupported\fR\fR
+.ad
+.sp .6
+.RS 4n
+ゾーン内で動作しない機能が有効になっています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR: \fBmobileip\fR\fR
+.ad
+.RS 20n
+.rt  
+ゾーン内で機能しないモバイル IP エージェントが構成されています。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnfs\fR (S10 ソースのみ)\fR
+.ad
+.sp .6
+.RS 4n
+システムが NFS を使ってファイルシステムを共有しています。Solaris 10 のネイティブゾーンと Solaris 11 の Solaris 10 ゾーンは、NFS による共有を行うことができません。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+共有されているファイルシステムのパス。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsmb\fR\fR
+.ad
+.sp .6
+.RS 4n
+システムがカーネル内の \fBsmb/cifs\fR を使ってファイルシステムを共有しています。ゾーンでは SMB によってファイルシステムを共有することはできません。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+共有されているファイルシステムのパス。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkg\fR\fR
+.ad
+.sp .6
+.RS 4n
+ゾーン内で動作しないことがわかっているソフトウェアを提供するパッケージがインストールされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+パッケージの名前。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBiscsi-target\fR\fR
+.ad
+.sp .6
+.RS 4n
+システムが iSCSI ターゲットをエクスポートしています。ゾーンでは iSCSI ターゲットをエクスポートできません。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+iSCSI ターゲットの名前。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfcoe-target\fR\fR
+.ad
+.sp .6
+.RS 4n
+システムが FCOE ターゲットを構成しました。ゾーンでは FCOE ターゲットを構成することはできません。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+使用された Ethernet デバイス。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+FCOE ターゲットの WWN。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfc-target\fR\fR
+.ad
+.sp .6
+.RS 4n
+システムがファイバチャネルターゲットを構成しました。ゾーンではファイバチャネルターゲットを構成できません。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+ファイバチャネルターゲットの WWN。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnpiv\fR\fR
+.ad
+.sp .6
+.RS 4n
+システムが仮想 NPIV HBA を構成しました。ゾーンでは仮想 HBA を構成できません。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+仮想 HBA をホストする物理 WWN。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+仮想 WWN。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBscsi\fR\fR
+.ad
+.sp .6
+.RS 4n
+システムが SCSI ブロックデバイスを構成しました。ゾーンでは SCSI ブロックデバイスを構成できません。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+SCSI デバイスとして構成されたオブジェクト。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvcnotallowed\fR\fR
+.ad
+.sp .6
+.RS 4n
+ゾーン内で機能しないサービスが有効になっています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+サービスの名前。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBresourcepool\fR\fR
+.ad
+.sp .6
+.RS 4n
+Solaris リソースプールが構成されています。ゾーンではリソースプールを構成できません。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+プールの名前。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpset\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセッサセットが構成されています。ゾーンではプロセッサセットを構成できません。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+プロセッサセット ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+プロセッサセット内の CPU ID のリスト。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzones\fR\fR
+.ad
+.sp .6
+.RS 4n
+ゾーンが構成されています。ゾーンではゾーンをホストすることができません。\fBp2v\fR のあと、ターゲットの非大域ゾーンにゾーンは一切存在しません。ゾーンを個別に移行するには、\fBzoneadm\fR(1M) の \fBdetach\fR/\fBattach\fR 機能を使用します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+ゾーンの名前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+ゾーンの状態。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlofi\fR (Solaris 10 ターゲットのみ)\fR
+.ad
+.sp .6
+.RS 4n
+lofi デバイスが構成されています。ゾーンでは lofi デバイスを構成できません。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+lofi デバイスの名前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+そのデバイスを戻すファイルのパス。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsyscall\fR (\fB-s\fR と \fB-f\fR によって生成)\fR
+.ad
+.sp .6
+.RS 4n
+バイナリによって、ゾーンから行えないシステムコールまたはライブラリコールが行われます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+バイナリファイルの名前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+システムコールまたはライブラリコールの名前。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsyscallargs\fR (\fB-s\fR と \fB-f\fR によって生成)\fR
+.ad
+.sp .6
+.RS 4n
+特定の引数を指定して呼び出された場合にゾーンから行えないシステムコールまたはライブラリコールがバイナリによって行われます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+システムコールまたはライブラリコールの名前。
+.RE
+
+許可されていない引数の詳細は、通常の出力 (\fB-P\fR なし) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlib\fR (\fB-s\fR と \fB-f\fR によって生成)\fR
+.ad
+.sp .6
+.RS 4n
+バイナリが、ゾーンの内側で使用できないライブラリとリンクします。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+バイナリファイルの名前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+許可されていないライブラリの名前。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprivnotallowed\fR (\fB-r\fR と \fB-x\fR によって作成)\fR
+.ad
+.sp .6
+.RS 4n
+ゾーンに追加できないプロセスによって特権が使用されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+プロセスの名前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+特権の名前。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdevnotallowed\fR (\fB-r\fR と \fB-x\fR によって生成)\fR
+.ad
+.sp .6
+.RS 4n
+ゾーンに追加できないプロセスによってデバイスが開かれます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+プロセスの名前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+デバイスの名前。
+.RE
+
+.RE
+
+.SS "\fBconfiguration\fR カテゴリ"
+.sp
+.LP
+\fBconfiguration\fR カテゴリは、問題が非大域ゾーンの内側で機能できるようにするために構成設定が必要となる問題を表しています。これは、\fBzonecfg\fR(1M) の構成設定、大域ゾーンでの構成変更、あるはその両方である可能性があります。
+.sp
+.LP
+このカテゴリの問題は次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdatalink\fR\fR
+.ad
+.sp .6
+.RS 4n
+ゾーン内部から構成できないデータリンク機能が構成されています。データリンク機能は大域ゾーンで構成され、さらに必要なら、\fBzonecfg add anet\fR (Solaris 11 のみ) または \fBzonecfg add net\fR を使用してそのゾーンに委任される必要があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+データリンク機能の名前。次のいずれか:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaggr\fR\fR
+.ad
+.RS 13n
+.rt  
+アグリゲーション。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBibiface\fR\fR
+.ad
+.RS 13n
+.rt  
+InfiniBand インタフェース。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBibpart\fR\fR
+.ad
+.RS 13n
+.rt  
+InfiniBand パーティション。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvnic\fR\fR
+.ad
+.RS 13n
+.rt  
+仮想 NIC。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBetherstub\fR\fR
+.ad
+.RS 13n
+.rt  
+Ethernet スタブ。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbridge\fR\fR
+.ad
+.RS 13n
+.rt  
+ブリッジインスタンス。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsecobj\fR\fR
+.ad
+.RS 13n
+.rt  
+ワイヤレス WPA または WEB セキュリティーオブジェクト。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+データリンクオブジェクトの名前。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdhcp-server\fR (Solaris 10 ターゲットのみ)\fR
+.ad
+.sp .6
+.RS 4n
+ホストが DHCP サーバーです。DHCP サービスを提供するには、ゾーンに \fBip-type=exclusive\fR が指定されているか、または特権 \fBnet_rawaccess\fR とデバイス \fB/dev/ip\fR が割り当てられている必要があります。これによって、排他的なスタックゾーンまたは大域ゾーンと同様に、共有スタックゾーンでネットワーク上の raw IP パケットの読み取り/書き込みが可能になることに注意してください。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+DHCP サーバーサービスの FMRI。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBntp-client\fR\fR
+.ad
+.sp .6
+.RS 4n
+NTP クライアントサービスが有効になっています。このサービスはシステムクロックを更新します。すべてのゾーンで同じシステムクロックを共有しているため、\fBp2v\fR の間にこのサービスは自動的に無効になります。ゾーンによってターゲットホストのシステムクロックが更新されることが望ましい場合は、ゾーンに特権 \fBsys_time\fR が必要となり、\fBp2v\fR のあとにゾーンの内側でそのサービスを有効にする必要があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+クライアントサービスの FMRI。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdriverconf\fR\fR
+.ad
+.sp .6
+.RS 4n
+ネットワークデバイスの \fB\&.conf\fR ファイルに構成設定が含まれています。ゾーンではドライバを構成できません。ドライバは大域ゾーンで構成する必要があります。一部のネットワークドライバ設定は、ドライバ構成ファイルを編集するのではなく、\fBdladm\fR(1M) を使用して構成できる場合があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+構成ファイルのパス。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBifname\fR (Solaris 10 ターゲットのみ)\fR
+.ad
+.sp .6
+.RS 4n
+ネットワークデバイス名の変更によって既存の構成ファイルが影響を受けます。たとえば、ターゲットの非大域ゾーンに指定されたネットワークデバイスが \fBbge0\fR でない場合、\fB/etc/hostname.bge0\fR ファイルは影響を受けます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+影響を受けるファイルのパス。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBiscsi-initiator\fR\fR
+.ad
+.sp .6
+.RS 4n
+システムが iSCSI ターゲットにクライアントとしてアクセスしています。ゾーンから iSCSI ターゲットにアクセスすることはできません。大域ゾーンを iSCSI イニシエータにする必要があります。これで \fBzonecfg add device\fR を使用してデバイスをゾーンに追加できます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+アクセスされている iSCSI ターゲット。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfcoe-initiator\fR\fR
+.ad
+.sp .6
+.RS 4n
+システムに FCOE イニシエータが構成されています。ゾーンでは FCOE イニシエータを構成することはできません。大域ゾーンで FCOE イニシエータを構成し、ゾーンで \fBzonecfg add fs\fR または \fBzonecfg add device\fR を使って SCSI ターゲットデバイスを利用できるようにする必要があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+Ethernet ネットワークデバイス。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+イニシエータの WWN。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfc-initiator\fR\fR
+.ad
+.sp .6
+.RS 4n
+システムで HBA ファイバチャネルポートがオンラインになっています。ゾーンではファイバチャネルターゲットにアクセスできません。大域ゾーンからそのターゲットにアクセスし、ゾーンで使用できるようにする必要があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+ファイバチャネル HBA ポートの WWN。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlinkprop\fR\fR
+.ad
+.sp .6
+.RS 4n
+データリンクプロパティーが構成されています。ゾーンではデータリンクプロパティーを構成できません。それらは大域ゾーンから構成する必要があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+データリンクの名前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+プロパティーの名前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField3\fR:\fR
+.ad
+.RS 11n
+.rt  
+プロパティーの値。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBndd\fR\fR
+.ad
+.sp .6
+.RS 4n
+ゾーンで構成できない調整可能パラメータが \fBndd\fR を使用して構成されています。これらの調整可能パラメータは大域ゾーンから構成する必要があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+調整可能パラメータを設定するファイルまたはスクリプト。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+調整されているドライバ。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField3\fR:\fR
+.ad
+.RS 11n
+.rt  
+調整可能パラメータ。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdynaddr\fR\fR
+.ad
+.sp .6
+.RS 4n
+動的に割り当てられた 1 つ以上の IP アドレスがネットワークインタフェース上に構成されています。これらのアドレスは、共有 IP ゾーンでサポートされていません。MAC アドレスの変更によって、これらの IP アドレスが変わる可能性があります。DHCP サーバーと、DNS、LDAP、または NIS ネームサーバーでこのシステムのアドレス情報を変更することが必要な場合があります。
+.sp
+\fIField1\fR は次のいずれかにできます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdhcp\fR\fR
+.ad
+.sp .6
+.RS 4n
+構成された DHCP アドレス。この場合、\fIField2\fR は DHCP 用に構成されたインタフェースの名前になります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBv6autoconf\fR\fR
+.ad
+.sp .6
+.RS 4n
+IPv6 ステートレスアドレス構成が有効になっています。この場合、\fIField2\fR は IPv6 自動構成を備えたインタフェースの名前になります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrarp\fR (Solaris 10 ソースのみ)\fR
+.ad
+.sp .6
+.RS 4n
+逆 ARP によって割り当てられたアドレスが有効になっています。この場合、\fIField2\fR は逆 ARP が有効になっているインタフェースの名前になります。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpatch\fR (Solaris 11+ ターゲットを持つ Solaris 10 ソースのみ)\fR
+.ad
+.sp .6
+.RS 4n
+非大域ゾーンへの \fBp2v\fR の前にパッチが必要です。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+必要なパッチ。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBphysif\fR (Solaris 10 ターゲットのみ)\fR
+.ad
+.sp .6
+.RS 4n
+排他的 IP ゾーンに移行する場合、宛先システムで専用の物理または VLAN インタフェースと交換する必要のある物理インタフェースがソースシステム上にあります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+ソースシステム上のインタフェースの名前。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsched\fR\fR
+.ad
+.sp .6
+.RS 4n
+システムがデフォルトのスケジューリングクラスで構成されています。非大域ゾーンのデフォルトのスケジューリングクラスは、\fBzonecfg set scheduler\fR プロパティーを使用して構成できます。これは \fB-c\fR の出力で提供されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+構成されたデフォルトのスケジューリングクラス。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsharedip\fR (Solaris 10 ターゲットのみ)\fR
+.ad
+.sp .6
+.RS 4n
+共有 IP ゾーンに移行する場合、このゾーンの代わりに大域ゾーンから次のネットワーク機能を構成する必要があります。
+.sp
+\fIField1\fR は次のいずれかにできます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipmpgroup\fR\fR
+.ad
+.RS 16n
+.rt  
+IPMP グループが構成されています。IPMP が必要な場合は、それを大域ゾーンから構成する必要があります。この場合、\fIField2\fR は IPMP グループの名前になります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvni\fR\fR
+.ad
+.RS 16n
+.rt  
+仮想ネットワークインタフェースが構成されています。これらは大域ゾーンから構成する必要があります。この場合、\fIField2\fR は VNI インタフェースの名前になります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBv4forwarding\fR\fR
+.ad
+.br
+.na
+\fB\fBv6forwarding\fR\fR
+.ad
+.RS 16n
+.rt  
+IP 転送 (v4 または v6) がインタフェース上で構成されています。この場合、\fIField2\fR は IP 転送が構成されているインタフェースになります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstaticroute\fR\fR
+.ad
+.RS 16n
+.rt  
+静的経路が構成されています。静的経路は大域ゾーンから構成する必要があります。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexclusiveonly\fR (Solaris 10 ターゲットのみ)\fR
+.ad
+.sp .6
+.RS 4n
+共有 IP ゾーンで使用するようにサポートされていないネットワーク機能が構成されています。排他的 IP ゾーンでは、この機能は変更なしに機能します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+.sp
+.ne 2
+.mk
+.na
+\fB\fBiptun\fR\fR
+.ad
+.RS 9n
+.rt  
+IPv4、IPv6、または 6to4 トンネルインタフェースが plumb されています。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+トンネルインタフェースの名前。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsharedonly\fR\fR
+.ad
+.sp .6
+.RS 4n
+排他的 IP ゾーンでサポートされていないネットワーク機能が構成されています。共有 IP ゾーンに移行する場合、通信をサポートするように大域ゾーンでこの機能を構成する必要があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcgtp\fR\fR
+.ad
+.RS 8n
+.rt  
+Carrier Grade Transport Protocol インタフェースが plumb されています。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+CGTP インタフェースの名前。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnetdevalloc\fR\fR
+.ad
+.sp .6
+.RS 4n
+ネットワーク機能で、そのベースとなるデバイスを zonecfg(1M) の add device コマンドを使ってゾーンに割り当てる必要があります。この機能は共有 IP ゾーンではサポートされていません。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+次にできます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBppp\fR\fR
+.ad
+.RS 7n
+.rt  
+ポイントツーポイントプロトコル (PPP)。PPP 構成ファイルは \fB/etc/ppp\fR の下にあります。ゾーンに割り当てる必要のある、ベースとなるデバイスは、シリアルポートか、Ethernet 物理または VNIC インタフェース (\fBpppoe\fR の場合) のどちらかです。
+.RE
+
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvcexlip\fR (Solaris 10 ターゲットのみ)\fR
+.ad
+.sp .6
+.RS 4n
+排他的 IP ゾーンを必要とするサービスが有効になっています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+サービスの FMRI の名前。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvcpriv\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBzonecfg\fR(1M) の \fBlimitpriv\fR プロパティーを使ってさらなる特権をゾーンに追加する必要があるサービスが有効になっています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+そのサービスの FMRI。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+そのサービスによって要求される特権のリスト。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvm\fR\fR
+.ad
+.sp .6
+.RS 4n
+Solaris ボリュームマネージャーのメタデバイスが構成されています。メタデバイスは大域ゾーンで構成し、非大域ゾーンで \fBzonecfg\fR(1M) の \fBadd device\fR、\fBadd fs\fR、または \fBadd dataset\fR を使って利用できるようにする必要があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+メタデバイスの名前。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBramdisk\fR\fR
+.ad
+.sp .6
+.RS 4n
+ramdisk デバイスが構成されています。ゾーンでは ramdisk デバイスを構成できません。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+ramdisk デバイスのパス。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvfstab\fR\fR
+.ad
+.sp .6
+.RS 4n
+ファイルシステムのマウントが \fB/etc/vfstab\fR によって構成されています。ファイルシステムは、ターゲットの大域ゾーンに移行し、非大域ゾーンで使用できるようにする必要があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+マウントされているデバイス。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+マウントポイント。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+システムに追加の zpool が構成されています。これらの zpool は、ターゲットの大域ゾーンに移行し、ゾーンで \fBzonecfg add dataset\fR または \fBzonecfg add fs\fR を使って利用できるようにする必要があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+プールの名前。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprivexclip\fR (Solaris 10 ターゲットのみ)\fR
+.ad
+.sp .6
+.RS 4n
+排他的 IP スタックを必要とする特権がプロセスで使用されました。\fBip-type\fR プロパティーについては、\fBzonecfg\fR(1M) を参照してください。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+プロセスの名前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+使用された特権。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdevexclip\fR (Solaris 10 ターゲットのみ)\fR
+.ad
+.sp .6
+.RS 4n
+排他的 IP スタックを必要とするデバイスがプロセスで開かれました。\fBip-type\fR プロパティーについては、\fBzonecfg\fR(1M) を参照してください。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+プロセスの名前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+デバイスの名前。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprivoptional\fR\fR
+.ad
+.sp .6
+.RS 4n
+さらなる特権をターゲットの非大域ゾーンに追加する必要がある特権がプロセスで使用されました。\fBlimitpriv\fR プロパティーについては、\fBzonecfg\fR(1M) を参照してください。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+プロセスの名前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+使用された特権。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdevoptional\fR\fR
+.ad
+.sp .6
+.RS 4n
+デフォルトではゾーン内で使用できないデバイスがプロセスで開かれました。\fBadd device\fR リソースについては、\fBzonecfg\fR(1M) を参照してください。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+プロセスの名前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+デバイスのパス。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsyscallpriv\fR (\fB-s\fR と \fB-f\fR によって生成)\fR
+.ad
+.sp .6
+.RS 4n
+さらなる特権をターゲットの非大域ゾーンに追加する必要がある可能性のあるシステムコールまたはライブラリコールがバイナリによって行われます。\fBlimitpriv\fR プロパティーについては、\fBzonecfg\fR(1M) を参照してください。システムコールまたはライブラリコールに関する詳細は、解析不可能な出力を参照してください。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+バイナリのパス。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+システムコールの名前。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsyscallexclip\fR (\fB-s\fR と \fB-f\fR によって生成)\fR
+.ad
+.sp .6
+.RS 4n
+排他的 IP スタックを必要とする可能性のあるシステムコールまたはライブラリコールがバイナリによって行われます。\fBip-type\fR プロパティーについては、\fBzonecfg\fR(1M) を参照してください。システムコールまたはライブラリコールに関する詳細は、解析不可能な出力を参照してください。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+バイナリのパス。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+システムコールの名前。
+.RE
+
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fR静的バイナリ解析の実行
+.sp
+.LP
+次のコマンドでは、2 つのアプリケーションディレクトリツリー内のすべての ELF バイナリに対して静的解析を実行します。
+
+.sp
+.in +2
+.nf
+# \fBzonep2vchk -s /opt/myapplication,/usr/local\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRターゲットゾーン用のテンプレートの生成
+.sp
+.LP
+次のコマンドでは、Solaris 10 の大域ゾーンで実行される場合に Solaris 11 用のテンプレートゾーン構成を生成します。
+
+.sp
+.in +2
+.nf
+# \fBzonep2vchk T S11 -c\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fRある期間にわたる実行中のアプリケーションの解析
+.sp
+.LP
+次のコマンドでは、\fBmyapplication\fR というプロセスを 1 時間解析し、ゾーン内で機能しない可能性のあるアクティビティーをすべて報告します。
+
+.sp
+.in +2
+.nf
+# \fBzonep2vchk -s 1h -e myapplication\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fR基本検査の実行
+.sp
+.LP
+次のコマンドでは、大域ゾーンを解析して、ゾーン内で機能しない可能性のある使用中の構成や Solaris の機能を調べます。検出された各問題は、解析可能な 1 行の出力として報告されます。
+
+.sp
+.in +2
+.nf
+# \fBzonep2vchk  -bP\fR
+.fi
+.in -2
+.sp
+
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+正常終了。問題は検出されませんでした。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+内部エラーが発生しました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.sp .6
+.RS 4n
+無効な使用法。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.sp .6
+.RS 4n
+1 つ以上の問題が検出されました。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/zones
+_
+インタフェースの安定性下記を参照
+.TE
+
+.sp
+.LP
+コマンド呼び出しおよび解析可能な出力は「確実」です。人間が読める形式の出力 (デフォルト出力) は「不確実」です。
+.SH 関連項目
+.sp
+.LP
+\fBdladm\fR(1M), \fBzoneadm\fR(1M), \fBzonecfg\fR(1M), \fBattributes\fR(5), \fBsolaris\fR(5), \fBsolaris10\fR(5), \fBzones\fR(5)
+.SH 注意事項
+.sp
+.LP
+静的 (\fB-s\fR と \fB-f\fR) 検査では、次のパッケージによって提供される \fBelfdump\fR(1) ユーティリティーを使用します。
+.sp
+.ne 2
+.mk
+.na
+\fBSolaris 11\fR
+.ad
+.RS 14n
+.rt  
+\fBdeveloper/base-developer-utilities\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBSolaris 10\fR
+.ad
+.RS 14n
+.rt  
+\fBSUNWbtool\fR
+.RE
+
+.sp
+.LP
+実行時 (\fB-r\fR) 検査では、次のパッケージによって提供される \fBdtrace\fR(1M) ユーティリティーを使用します。
+.sp
+.ne 2
+.mk
+.na
+\fBSolaris 11\fR
+.ad
+.RS 14n
+.rt  
+\fBsystem/dtrace\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBSolaris 10\fR
+.ad
+.RS 14n
+.rt  
+\fBSUNWdtrc\fR
+.RE
+

@@ -1,0 +1,222 @@
+'\" te
+.\" Copyright (c) 2012, 2013, Oracle and/or its affiliates. All rights reserved.
+.TH pam_user_policy 5 "9 Apr 2012" "SunOS 5.11" "Standards, Environments, and Macros"
+.SH NAME
+pam_user_policy \- PAM user authentication policy module
+.SH SYNOPSIS
+.LP
+.nf
+pam_user_policy.so.1
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBpam_user_policy\fR module causes a user-specific PAM configuration to be evaluated and returns the result of evaluating such a configuration.
+.sp
+.LP
+The \fBpam_user_policy\fR module implements all PAM service module functions.
+.sp
+.LP
+The PAM configuration to evaluate is determined by looking for a \fBpam_policy\fR key in a user's attributes (see \fBuser_attr\fR(4)) or any rights profiles assigned to the user in \fBuser_attr\fR(4) or in a default rights profile granted in \fBpolicy.conf\fR(4), and then finally for any value assigned to \fBPAM_POLICY\fR in \fBpolicy.conf\fR. If no PAM configuration is found, the "unix" policy is used.
+.sp
+.LP
+Failure to obtain a user name is considered an error (see below).
+.sp
+.LP
+This module should generally be stacked as the first module, possibly as the only module, in a PAM service configuration using a \fIcontrol_flag\fR value of 'sufficient' or \&'binding', depending on the contents of the user-specific PAM configuration.
+.sp
+.LP
+The pathname to the user-specific PAM configuration file passed to \fBpam_eval\fR(3PAM) must be absolute so \fBpam_user_policy\fR prepends "\fB/etc/security/pam_policy\fR" to any non-absolute PAM configuration pathnames.
+.sp
+.LP
+The following option can be passed to the module:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdebug\fR\fR
+.ad
+.RS 9n
+.rt  
+\fBsyslog\fR(3C) debugging information at the \fBLOG_DEBUG\fR level
+.RE
+
+.SS "Authentication Module"
+.sp
+.LP
+The \fBpam_get_user\fR(3PAM) function is used to retrieve the current user name and sets this to be the value of \fBPAM_USER\fR if \fBPAM_USER\fR was not already set. If no user name can be obtained, \fBPAM_USER_UNKNOWN\fR is returned.
+.sp
+.LP
+The \fBpam_user_policy\fR authentication module then looks up the name of a PAM configuration file to use for that user as described above and evaluates the named configuration by calling \fBpam_eval()\fR with the same flags as were passed to the \fBpam_user_policy\fR authentication module.
+.sp
+.LP
+The configuration file name found or the default "unix" is saved as module data (see \fBpam_set_data\fR(3PAM) for use by other \fBpam_user_policy\fR modules.
+.SS "Other Modules"
+.sp
+.LP
+If the \fBPAM_USER\fR item is not set to a non-empty string then \fBpam_user_policy\fR returns \fBPAM_USER_UNKNOWN\fR immediately. If a PAM configuration file name was saved as module data by a previous call to a \fBpam_user_policy\fR module, then that configuration will be used; otherwise a PAM configuration will be looked up as described above. The service module then evaluates the named configuration by calling \fBpam_eval()\fR with the same flags as were passed to the service module.
+.sp
+.LP
+The configuration file name found or the default "unix" is saved as module data (see \fBpam_set_data\fR(3PAM)) for use by other \fBpam_user_policy\fR modules.
+.SH RETURN VALUES
+.sp
+.LP
+If \fBPAM_USER\fR is not set or cannot be obtained, the module's service functions return \fBPAM_USER_UNKNOWN\fR. If module-specific data cannot be stored, \fBPAM_SERVICE_ERR\fR is returned. Failure to allocate resources causes the module to return \fBPAM_BUF_ERR\fR. Otherwise the value returned by \fBpam_eval()\fR is returned.
+.SH FILES
+.sp
+.LP
+A number of \fBpam.conf\fR files for inclusion by \fBpam_user_policy\fR can be found in \fB/etc/security/pam_policy\fR:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunix\fR\fR
+.ad
+.RS 17n
+.rt  
+Use only Unix passwords for authentication, account management, and password management.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkrb5_only\fR\fR
+.ad
+.RS 17n
+.rt  
+Use Kerberos V5 only for authentication, account management, and password management.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkrb5_first\fR\fR
+.ad
+.RS 17n
+.rt  
+Use Kerberos V5 for authentication with fallback on Unix authentication, use Kerberos V5 for account management and password management for Kerberos users and Unix for account management and password management for Unix users.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkrb5_optional\fR\fR
+.ad
+.RS 17n
+.rt  
+Use Unix for authentication, account management, and password management and then optionally using Kerberos V5 for authentication, account management and password management for Kerberos users.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBldap\fR\fR
+.ad
+.RS 17n
+.rt  
+Use \fBpam_ldap\fR(5) for authentication, account management, and password management for LDAP users and Unix for authentication, account management, and password management for Unix users.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBany\fR\fR
+.ad
+.RS 17n
+.rt  
+Try Kerberos V, LDAP and Unix, in that order, and as sufficient, for authentication, account management, and password management.
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRAuthenticate a user with Kerberos V5 for all PAM services.
+.sp
+.LP
+In the following example, user 'larry' should only be authenticated with Kerberos V5 for all PAM services.
+
+.sp
+.in +2
+.nf
+$ usermod -K pam_policy=krb5_only larry
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRUse the PAM configuration /etc/security/pam_policy/custom for a user.
+.sp
+.LP
+In the following example, the PAM configuration \fB/etc/security/pam_policy/custom\fR should be used for user 'curly'.  This custom PAM configuration might have different configurations for different PAM services, such as requiring Unix authentication for console logins but Kerberos V5 for all other PAM services.
+
+.sp
+.in +2
+.nf
+$ usermod -K pam_policy=custom curly
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRCreate a new profile.
+.sp
+.LP
+The following example creates a new profile named "PAM Per-User Policy of LDAP" and assign it to user 'moe' indicating that \fBpam_ldap\fR(5) should be used for all PAM services.  Alternatively the profile could be assigned to all users by adding it to  \fBPROFS_GRANTED\fR in \fBpolicy.conf\fR(4).
+
+.sp
+.in +2
+.nf
+$ profiles -p "PAM Per-User Policy of LDAP" \e
+   'set desc="Profile which sets pam_policy=ldap";
+   set pam_policy=ldap; exit;'
+$ usermod -P "PAM Per-User Policy of LDAP" moe
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 4 \fRAdd a new user.
+.sp
+.LP
+The following example adds a new user named 'shemp' who uses the PAM configuration \fB/usr/local/etc/pam.conf\fR for all PAM services.
+
+.sp
+.in +2
+.nf
+$ useradd -K pam_policy=/usr/local/etc/pam.conf shemp
+.fi
+.in -2
+.sp
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Interface StabilityCommitted
+_
+MT-LevelMT-Safe with exceptions
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBlibpam\fR(3LIB), \fBpam\fR(3PAM), \fBpam_eval\fR(3PAM), \fBpam_get_user\fR(3PAM), \fBpam_set_data\fR(3PAM), \fBsyslog\fR(3C), \fBpam.conf\fR(4), \fBpolicy.conf\fR(4), \fBprof_attr\fR(4), \fBuser_attr\fR(4), \fBattributes\fR(5), \fBpam_ldap\fR(5)
+.SH NOTES
+.sp
+.LP
+The interfaces in \fBlibpam\fR(3LIB) are MT-Safe only if each thread within the multithreaded application uses its own PAM handle.

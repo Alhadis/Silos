@@ -1,0 +1,186 @@
+'\" te
+.TH TIFFWriteScanline 3tiff "05 Apr 2004" "" ""
+.SH "NAME"
+TIFFWriteScanline \- write a scanline to an open TIFF file
+.SH "SYNOPSIS"
+.sp
+.nf
+\f(CW#include <tiffio\&.h>
+int TIFFWriteScanline(TIFF* tif, tdata_t buf, uint32 row,
+tsample_t sample);
+\fR
+.fi
+.sp
+.SH ""
+.PP
+Write data to a file at the specified row\&. The \fBsample\fR
+parameter is used only if data is organized in separate planes (PlanarConfiguration=2)\&.
+The data is assumed to be uncompressed and in the native bit- and byte-order
+of the host machine\&. The data written to the file is compressed according
+to the compression scheme of the current TIFF directory as described below\&.
+If the current scanline is past the end of the current subfile, the \fBImageLength\fR field is automatically increased to include the scanline
+(except for PlanarConfiguration=2, where the \fBImageLength\fR
+cannot be changed once the first data is written)\&. If the \fBImageLength\fR is increased, the \fBStripOffsets\fR and \fBStripByteCounts\fR fields are similarly enlarged to reflect data written
+past the previous end of image\&.
+.SH ""
+.PP
+The library writes encoded data using the native machine byte order\&.
+Correctly implemented TIFF readers are expected to do any necessary byte-swapping
+to correctly process image data with \fBBitsPerSample\fR greater
+than 8\&. The library attempts to hide bit-ordering differences between the
+image and the native machine by converting data from the native machine order\&.
+.SS "Diagnostics"
+.PP
+All error messages are directed to the \fBTIFFError(3tiff)\fR
+routine\&.
+.sp
+.ne 2
+.mk
+\fB%s: File not open for writing\&.\fR
+.in +24n
+.rt
+The file was opened for reading, not writing\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fBCan not write scanlines to a tiled image\&.\fR
+.in +24n
+.rt
+An attempt was made to write a scanline to a tiled image\&. The image
+is assumed to be organized in tiles because the \fBTileWidth\fR
+and \fBTileLength\fR tags have been set with \fBTIFFSetField(3tiff)\fR\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fBCompression algorithm does not support random access\&.\fR
+.in +24n
+.rt
+Data was written in a non-sequential order to a file
+that uses a compression algorithm and that has \fBRowsPerStrip\fR
+greater than one\&. That is, data in the image is to be stored in a compressed
+form, and with multiple rows packed into a strip\&. In this case, the library
+does not support random access to the data\&. The data should either be written
+as entire strips, sequentially by rows, or the value of \fBRowsPerStrip\fR should be set to one\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fB%s: Must set "ImageWidth" before writing data\&.\fR
+.in +24n
+.rt
+The image width has not been set before the first write\&. See \fBTIFFSetField(3tiff)\fR for information on how to do this\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fB%s: Must set "PlanarConfiguration" before writing data\&.\fR
+.in +24n
+.rt
+The organization of data has not been defined before
+the first write\&. See \fBTIFFSetField(3tiff)\fR for information on
+how to do this\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fBCan not change "ImageLength" when using separate planes\&.\fR
+.in +24n
+.rt
+Separate image planes are being used (PlanarConfiguration=2),
+but the number of rows has not been specified before the first write\&. The
+library supports the dynamic growth of an image only when data is organized
+in a contiguous manner (PlanarConfiguration=1)\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fB%d: Sample out of range, max %d\&.\fR
+.in +24n
+.rt
+The \fBsample\fR parameter was greater than the value of the \fBSamplesPerPixel\fR tag\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fB%s: No space for strip arrays"\&.\fR
+.in +24n
+.rt
+There was not enough space for the arrays that hold strip offsets and byte
+counts\&.
+.sp
+.sp 1
+.in -24n
+.SH ""
+.PP
+Returns \(em1 if it immediately detects an error, and 1 for a successful
+write\&.
+.SH ""
+.PP
+See \fBattributes\fR(5)
+for descriptions of the following attributes:
+.sp
+.TS
+tab() allbox;
+cw(2.750000i)| cw(2.750000i)
+lw(2.750000i)| lw(2.750000i).
+ATTRIBUTE TYPEATTRIBUTE VALUE
+Availabilityimage/library/libtiff
+Interface stabilityUncommitted
+.TE
+.sp
+.SH ""
+.PP
+\fBlibtiff\fR(3), \fBTIFFOpen\fR(3tiff), \fBTIFFWriteEncodedStrip\fR(3tiff), \fBTIFFWriteRawStrip\fR(3tiff)
+.SH ""
+.PP
+In C++, the sample parameter defaults to 0\&.
+.PP
+Once data is written to a file for the current directory, the values
+of certain tags may not be altered\&. See \fBTIFFSetField(3tiff)\fR
+for more information\&.
+.PP
+It is not possible to write scanlines to a file that uses a tiled organization\&.
+The routine \fBTIFFIsTiled\fR can be used to determine if the
+file is organized as tiles or strips\&.
+.PP
+Writing subsampled YCbCR data does not work correctly because:
+.sp
+.in +2
+\(bu
+.mk
+.in +3
+.rt
+For PlanarConfiguration=2, the size of a scanline is not calculated
+on a per-sample basis\&.
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+For PlanarConfiguration=1, the library does not unpack the
+block-interleaved samples\&.
+.sp
+.in -3
+.in -2
+.PP
+This man page was originally written by Sam Leffler\&. Updated by Breda
+McColgan, Sun Microsystems Inc\&., 2004\&.
+...\" created by instant / solbook-to-man, Thu 20 Mar 2014, 02:30
+...\" LSARC 2003/085 libtiff, libjpeg, and libpng

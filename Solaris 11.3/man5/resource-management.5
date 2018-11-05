@@ -1,0 +1,246 @@
+'\" te
+.\" Copyright (c) 2015, Oracle and/or its affiliates. All rights             reserved.
+.TH resource-management 5 "21 May 2015" "SunOS 5.11" "Standards, Environments, and Macros"
+.SH NAME
+resource-management \- Resource Management subsystem
+.SH DESCRIPTION
+.sp
+.LP
+Oracle Solaris Resource Management functionality enables to control how applications use available system resources. It consists of the resource management kernel subsystem, system libraries, and command line utilities.
+.SS "RESOURCE POOLS AND PSETS"
+.sp
+.LP
+The Solaris Resource Management subsystem manages resource pools, processor sets (psets), and CPUs. There are several types of \fBpools\fR and \fBpsets\fR. The following paragraph defines terminology used in man pages that are relevant to the Solaris Resource Management subsystem.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpool, pset\fR\fR
+.ad
+.sp .6
+.RS 4n
+Any type of a \fBpool\fR or \fBpset\fR if it is not relevant what exact pool or pset type is referenced. May also be used to reference a specific type if the context makes such reference to its type unambiguous.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBregular pool\fR\fR
+.ad
+.sp .6
+.RS 4n
+It refers to a \fBpool\fR created using \fBpoolcfg\fR(1M) or \fBlibpool\fR(3LIB).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpool pset\fR\fR
+.ad
+.sp .6
+.RS 4n
+It refers to a \fBpset\fR created via \fBpoolcfg\fR(1M) or \fBlibpool\fR(3LIB).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdedicated-cpu pool/dedicated-cpu pset\fR\fR
+.ad
+.sp .6
+.RS 4n
+It refers to a \fBpool\fR or/and \fBpset\fR created on behalf of a zone on boot. For more information, see \fBdedicated-cpu\fR resource type in \fBzonecfg\fR(1M).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpsrset pool/psrset pset\fR\fR
+.ad
+.sp .6
+.RS 4n
+It refers to a \fBpool\fR or/and \fBpset\fR created using the \fBpsrset\fR(1M) command or \fBpset\fR system calls.
+.RE
+
+.sp
+.LP
+Solaris zones can be bound to regular pools using the \fBpool\fR property in \fBzonecfg\fR(1M).
+.sp
+.LP
+Solaris projects can be bound to regular pools using the \fBproject.pool\fR property described in \fBproject\fR(4) or \fBsetproject\fR(3PROJECT).
+.sp
+.LP
+The \fBpsrset\fR(1M) utility supports binding individual threads and processes to cpus. See the specific manpages for details and examples.
+.SS "CPU ASSIGNMENTS AND BINDING USING ID LIST STRINGS"
+.sp
+.LP
+The following interfaces allow cpus, cores, sockets, processor groups and/or lgroups to be assigned or bound to using id list strings.
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBzonecfg\fR(1M)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBpoolcfg\fR(1M)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBproject\fR(4)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsetproject\fR(3PROJECT)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBpbind\fR(1M)
+.RE
+.sp
+.LP
+These interfaces allow for ids to be specified using the following format:
+.sp
+.in +2
+.nf
+#[-#][,#[-#]]*
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+This represents a comma separated list of id ranges, for example, the following specifies ids 0 through 7, and 16 through 23.
+.sp
+.in +2
+.nf
+0-7,16-23
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The most simple id list is a single integer. For example:
+.sp
+.in +2
+.nf
+1
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The specific property names and supported targets vary by interface.
+.sp
+.LP
+\fBzonecfg\fR(1M) uses these properties on the dedicated-cpu resource;
+.sp
+.in +2
+.nf
+> add dedicated-cpu
+dedicated-cpu> cpus=<id list>
+dedicated-cpu> cores=<id list>
+dedicated-cpu> sockets=<id list>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBpoolcfg\fR(1M) uses the assign subcommand.
+.sp
+.in +2
+.nf
+assign to pool mypool ( cpu <id list> )
+assign to pool mypool ( core <id list> )
+assign to pool mypool ( socket <id list> )
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The \fBproject\fR(4) and \fBsetproject\fR(3PROJECT) use these project attributes:
+.sp
+.in +2
+.nf
+project.mcb.cpus=<id list>
+project.mcb.cores=<id list>
+project.mcb.sockets=<id list>
+project.mcb.pgs=<id list>
+project.mcb.lgroups=<id list>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The \fBpbind\fR(1M) utility supports id list strings for binding currently running:
+.sp
+.in +2
+.nf
+zones
+    projects
+    tasks
+    users
+    groups
+    process groups
+    processes
+    threads
+to:
+    cpus
+    processor groups
+    locality groups (lgroups)
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The following utilities can be used to identify ids which can be specified in id list strings:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+CPU, core, or socket ids are the ids outputted by the \fBpsrinfo\fR(1M) with the \fB-t\fR option.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Processor group ids are those ids outputted by \fBpginfo\fR command.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Locality group ids are those ids outputted by \fBlgrpinfo\fR. The \fB-c\fR option will list the cpus in each locality group. Note that the \fBlgrpinfo\fR command only lists cpus in the on-line or no-intr state.
+.RE
+.sp
+.LP
+See the specific manpages for details and examples.
+.SH SEE ALSO
+.sp
+.LP
+\fBpooladm\fR(1M), \fBpoolcfg\fR(1M), \fBpsrset\fR(1M), \fBpbind\fR(1M), \fBzonecfg\fR(1M), \fBproject\fR(4), \fBsetproject\fR(3PROJECT)
+.sp
+.LP
+\fIOracle Solaris 11.2 Administration: Resource Management\fR
+.SH NOTES
+.sp
+.LP
+Historically, resource pools were supposed to be associated with different types of resources with \fBpset\fR to be one of those resources. Resources were supposed to be composed of different types of components, with a CPU to be one of those components. However, the only type of resource Solaris ever used is a \fBpset\fR, and the only type of a component a \fBpset\fR can be composed of is a CPU. Thus, while relevant \fBlibpool\fR(3LIB) API function names contain words "resource" and "component", all man pages related to the Solaris Resource Management subsystem directly refer to psets and CPUs instead of resources and components.

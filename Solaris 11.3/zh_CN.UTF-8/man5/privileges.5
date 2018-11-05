@@ -1,0 +1,1276 @@
+'\" te
+.\" Copyright (c) 2009, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH privileges 5 "2015 年 4 月 3 日" "SunOS 5.11" "标准、环境和宏"
+.SH 名称
+privileges \- 进程特权模型
+.SH 描述
+.sp
+.LP
+Oracle Solaris 软件实现了一组特权，用于提供对进程操作的精细控制。如果拥有某种特权，则进程可以执行一组特定的受限操作。
+.sp
+.LP
+现在 Oracle Solaris 操作系统转变为一个主要基于特权的安全模型，这使开发人员可以限制进程只执行实际需要的那些特权操作，而不是授予所有特权（超级用户）或不授予任何特权（非零 UID）。此外，一组先前不受限制的操作现在需要特权；这类特权被称为“基本”特权，会缺省提供给所有进程。
+.sp
+.LP
+除了“基本”特权以外，定义的所有特权构成了过去与 root 用户关联的那组特权。“基本”特权是过去无特权的进程拥有的“特权”。
+.sp
+.LP
+定义的特权包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_CONTRACT_EVENT\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程请求将事件可靠地提交到事件端点。
+.sp
+允许进程将事件包括在模板的关键事件集术语中，该模板可以由用户批量生成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_CONTRACT_IDENTITY\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程设置进程合同模板的服务 FMRI 值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_CONTRACT_OBSERVER\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程观察由进程的有效用户 ID 以外的用户创建和拥有的合同生成的合同事件。
+.sp
+允许进程打开属于进程的有效用户 ID 以外的用户创建和拥有的合同的合同事件端点。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_CPC_CPU\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程访问每个 CPU 的硬件性能计数器。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBPRIV_DAX_ACCESS\fR
+.ad
+.sp .6
+.RS 4n
+允许进程执行 DAX 硬件支持的所有操作。
+.sp
+此特权将可用于支持软件芯片化 (software in silicon) 的系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_DTRACE_KERNEL\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许执行 DTrace 内核级跟踪。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_DTRACE_PROC\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许执行 DTrace 进程级跟踪。允许在用户具有权限的进程中放置和启用进程级跟踪探测。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_DTRACE_USER\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许执行 DTrace 用户级跟踪。允许使用 syscall 和配置文件 DTrace 提供者检查用户具有权限的进程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_CHOWN\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程更改文件的所有者用户 ID。允许进程将文件的组 ID 更改为进程的有效组 ID 之外的某个 ID 或进程的某个补充组 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_CHOWN_SELF\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程放弃其文件。具有此特权的进程运行时就像 {\fB_POSIX_CHOWN_RESTRICTED\fR} 未生效一样。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_DAC_EXECUTE\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程执行其权限位或 ACL 禁止进程执行权限的可执行文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_DAC_READ\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程读取其权限位或 ACL 禁止进程读取权限的文件或目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_DAC_SEARCH\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程搜索其权限位或 ACL 禁止进程搜索权限的目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_DAC_WRITE\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程写入其权限位或 ACL 禁止进程写入权限的文件或目录。缺少有效的 UID 0 时，写入 UID 0 拥有的文件需要所有特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_DOWNGRADE_SL\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程将文件或目录的敏感标签设置为不影响现有敏感标签的敏感标签。
+.sp
+仅当系统配置有 Trusted Extensions 时，才会解释该特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_FLAG_SET\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程设置 \fBimmutable\fR、\fBnounlink\fR 或 \fBappendonly\fR 文件属性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_LINK_ANY\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程创建指向进程有效 UID 以外的 UID 拥有的文件的硬链接。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_OWNER\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许不是文件的所有者的进程修改该文件的访问权限和修改时间。允许不是目录的所有者的进程修改该目录的访问权限和修改时间。允许不是文件或目录的所有者的进程删除或重命名其父目录设置了“执行后保存文本图像”(sticky) 位的文件或目录。允许不是文件的所有者的进程将 \fBnamefs\fR 挂载到该文件上。允许不是文件或目录的所有者的进程修改该文件或目录的权限位或 ACL。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_READ\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程读取其权限或 ACL 允许进程读取权限的文件或目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_SETID\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程更改文件的所有权，或写入未清除 set-user-ID 和 set-group-ID 位的文件。允许进程对所属组不是进程的有效组或进程的某个补充组的文件或目录设置 set-group-ID 位。允许进程在存在 \fBPRIV_FILE_OWNER\fR 时对具有不同所有权的文件设置 set-user-ID 位。当创建或修改 \fBsetuid\fR 0 文件时，还适用其他限制。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_UPGRADE_SL\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程将文件或目录的敏感标签设置为影响现有敏感标签的敏感标签。
+.sp
+仅当系统配置有 Trusted Extensions 时，才会解释该特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_FILE_WRITE\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程写入其权限或 ACL 允许进程写入权限的文件或目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_GRAPHICS_ACCESS\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程对图形设备创建带特权的 ioctl。通常仅 xserver 进程需要具有此特权。具有此特权的进程也允许执行带特权的图形设备映射。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_GRAPHICS_MAP\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程通过图形设备执行带特权的映射。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_IPC_DAC_READ\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程读取其权限位禁止进程读取权限的 System V IPC 消息队列、信号集或共享内存区段。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_IPC_DAC_WRITE\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程写入其权限位禁止进程写入权限的 System V IPC 消息队列、信号集或共享内存区段。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_IPC_OWNER\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许不是 System V IPC 消息队列、信号集或共享内存区段的所有者的进程删除、更改该消息队列、信号集或共享内存区段的所有权或权限位。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_NET_ACCESS\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程打开 TCP、UDP、SDP 或 SCTP 网络端点。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_NET_BINDMLP\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程绑定到配置为进程区域的多级端口 (multi-level port, MLP) 的端口。此特权适用于共享地址和区域特定的地址 MLP。有关配置 MLP 端口的信息，请参见 Trusted Extensions 手册页中的 \fBtnzonecfg\fR(\fB4\fR)。
+.sp
+仅当系统配置有 Trusted Extensions 时，才会解释该特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_NET_ICMPACCESS\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程发送和接收 ICMP 包。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_NET_MAC_AWARE\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程使用 \fBsetpflags\fR(2) 设置 \fBNET_MAC_AWARE\fR 进程标志。此特权还允许进程使用 \fBsetsockopt\fR(3SOCKET) 设置 \fBSO_MAC_EXEMPT\fR 套接字选项。\fBNET_MAC_AWARE\fR 进程标志和 \fBSO_MAC_EXEMPT\fR 套接字选项都允许本地进程与无标签的对等进程通信（如果本地进程的标签影响对等进程的缺省标签，或本地进程在全局区域中运行）。
+.sp
+仅当系统配置有 Trusted Extensions 时，才会解释该特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_NET_OBSERVABILITY\fR\fR
+.ad
+.sp .6
+.RS 4n
+只允许进程打开设备接收网络通信，禁止发送通信。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_NET_PRIVADDR\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程绑定到特权端口号。特权端口号是 1-1023（传统 UNIX 特权端口）和标记为 “\fBudp/tcp_extra_priv_ports \fR” 的端口（保留供 NFS 和 SMB 使用的端口除外）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_NET_RAWACCESS\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程直接访问网络层。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_AUDIT\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程生成审计记录。允许进程获取自身的审计预选信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_CHROOT\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程更改其根目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_CLOCK_HIGHRES\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程使用高分辨率计时器。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_EXEC\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程调用 \fBexec\fR(2)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_FORK\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程调用 \fBfork\fR(2)、\fBfork1\fR(2) 或 \fBvfork\fR(2)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_INFO\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程检查它可以向其发送信号的进程以外的进程的状态。不能被检查的进程在 \fB/proc\fR 中不可见，并且显示为不存在。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_LOCK_MEMORY\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程锁定物理内存中的页。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_OWNER\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程向其他进程发送信号，以及检查和修改其他进程中的进程状态，而不管所有权如何。修改其他进程时，还适用其他限制：访问进程的有效特权集必须是目标进程的有效特权集、允许特权集和可继承特权集的超集；其限制特权集必须是目标的限制特权集的超集；如果目标进程的任何 UID 设置为 0，则必须声明所有特权，除非有效 UID 为 0。允许进程将任意进程绑定到 CPU。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_PRIOCNTL\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程将其优先级提升到其当前级别之上。允许进程将其调度类更改为任何调度类，包括 RT 类。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_SESSION\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程向其会话之外的进程发送信号或对其跟踪。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_SETID\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程随意设置其 UID，设置为 UID 0 要求声明所有特权。还允许设置进程标志 \fBPRIV_PFEXEC_AUTH\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_TASKID\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程将一个新任务 ID 分配给其调用进程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_PROC_ZONE\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程跟踪其他区域中的进程或向其发送信号。请参见 \fBzones\fR(5)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_ACCT\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程通过 \fBacct\fR(2) 启用、禁用和管理记帐。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_ADMIN\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程执行系统管理任务，例如设置节点和域名称、指定 \fBcoreadm\fR(1M) 和 \fBnscd\fR(1M) 设置等
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_AUDIT\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程启动（内核）审计守护进程。允许进程查看和设置审计状态（审计用户 ID、审计终端 ID、审计会话 ID、审计预选掩码）。允许进程禁用和启用审计。允许进程配置审计参数（高速缓存和队列大小、事件到类的映射以及策略选项）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_CONFIG\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程执行各种系统配置任务。允许执行文件系统特定的管理过程，例如文件系统配置 ioctl、配额调用、创建和删除快照以及处理 PCFS 引导扇区。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_DEVICES\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程创建设备特殊文件。允许进程成功调用某个调用内核 \fBdrv_priv\fR(9F) 函数的内核模块以检查允许的访问权限。允许进程直接打开真实控制台设备。允许进程打开已以独占方式打开的设备。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_DL_CONFIG\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程配置系统的数据链路接口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_IB_CONFIG\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程访问所有 InfiniBand 管理 (IB) 数据报 (MAD) API 和基于主机的 IB 管理和诊断工具。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_IB_INFO\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程访问所有 InfiniBand 管理 (IB) 数据报 (MAD) API 和基于主机的 IB 管理和诊断工具以读取配置信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_IP_CONFIG\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程配置系统的 IP 接口和路由。允许进程配置 TCP/IP 参数。允许进程弹出具有匹配 \fBzoneid\fR 的固定 \fBSTREAM\fR 模块。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_IPC_CONFIG\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程增加 System V IPC 消息队列缓冲区的大小。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_LINKDIR\fR\fR
+.ad
+.sp .6
+.RS 4n
+已过时：用于允许进程链接目录以及解除该链接。此实现禁止对目录进行链接和解除链接操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_MOUNT\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程挂载和卸载本来操作受限的文件系统（即，除 \fBnamefs\fR 之外的大多数文件系统）。允许进程添加和删除交换设备。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_NET_CONFIG\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程执行 \fBPRIV_SYS_IP_CONFIG\fR、\fBPRIV_SYS_DL_CONFIG\fR、\fBPRIV_SYS_PPP_CONFIG\fR 和 \fBPRIV_SYS_IB_CONFIG\fR 允许的所有操作以及以下操作：使用 \fBrpcmod\fR STREAMS 模块和插入/删除模块栈顶部之外的位置上的 STREAMS 模块。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_NFS\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程提供 NFS 服务：启动 NFS 内核线程、执行 NFS 锁定操作、绑定到 NFS 保留端口：端口 2049 (\fBnfs\fR) 和端口 4045 (\fBlockd\fR)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_PPP_CONFIG\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程使用 pppd(1M) \fBpppd\fR(1M) 创建、配置和销毁 PPP 实例，以及使用 \fBsppptun\fR(1M) sppptun(1M) 控制 PPPoE 激活。缺省情况下此特权会授予独占 IP 栈实例区域。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_RES_BIND\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程将进程绑定到处理器集。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_RES_CONFIG\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程将进程绑定到处理器集（如同 \fBPRIV_SYS_RES_BIND\fR 特权），还允许执行此段落中所述的下列操作。允许进程创建和删除处理器集，将 CPU 分配给处理器集，以及覆盖 \fBPSET_NOESCAPE\fR 属性。允许进程使用 \fBp_online\fR(2) 更改系统中 CPU 的运行状态。允许进程配置文件系统配额。允许进程配置资源池和将进程绑定到池。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_RESOURCE\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程超出通过 \fBsetrlimit\fR(2) 和 \fBsetrctl\fR(2) 对其施加的资源限制。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_SHARE\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程共享文件系统和取消共享。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_SMB\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程提供 NetBIOS 或 SMB 服务：启动 SMB 内核线程或绑定到 NetBIOS 或 SMB 保留端口：端口 137、138、139 (NetBIOS) 和 445 (SMB)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_SUSER_COMPAT\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程成功调用某个调用内核 \fBsuser()\fR 函数的第三方可装入模块以检查允许的访问权限。仅当兼容第三方可装入模块时才存在此特权，Oracle Solaris 属性不使用该特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_TIME\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程使用以下任何合适的系统调用管理系统时间：\fBstime\fR(2)、\fBadjtime\fR(2) 和 \fBntp_adjtime\fR(2)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_SYS_TRANS_LABEL\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程将不受进程的敏感标签影响的标签转换为外部字符串格式或反之。
+.sp
+仅当系统配置有 Trusted Extensions 时，才会解释该特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_VIRT_MANAGE\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程管理虚拟化环境。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_COLORMAP\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程覆盖颜色映射限制。
+.sp
+允许进程安装或删除颜色映射。
+.sp
+允许进程检索其他进程分配的颜色映射单元条目。
+.sp
+仅当系统配置有 Trusted Extensions 时，才会解释该特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_CONFIG\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程配置或销毁 X 服务器永久保留的资源
+.sp
+允许进程使用 SetScreenSaver 设置屏幕保护程序超时值
+.sp
+允许进程使用 ChangeHosts 修改显示访问控制列表。
+.sp
+允许进程使用 GrabServer。
+.sp
+允许进程使用 SetCloseDownMode 请求保留窗口、像素映射、颜色映射、属性、光标、字体或图形文本资源。
+.sp
+仅当系统配置有 Trusted Extensions 时，才会解释该特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_DAC_READ\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程从不归其所有的窗口资源中读取（具有不同的用户 ID）。
+.sp
+仅当系统配置有 Trusted Extensions 时，才会解释该特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_DAC_WRITE\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程写入或创建不归其所有的窗口资源（具有不同的用户 ID）。新创建的窗口属性使用窗口的用户 ID 创建。
+.sp
+仅当系统配置有 Trusted Extensions 时，才会解释该特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_DEVICES\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程对窗口输入设备执行各种操作。
+.sp
+允许进程获取和设置键盘和指针控制。
+.sp
+允许进程修改指针按钮和按键映射。
+.sp
+仅当系统配置有 Trusted Extensions 时，才会解释该特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_DGA\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程使用直接图形访问 (DGA) X 协议扩展。仍需要对帧缓存器有直接进程访问权限。因此，该进程必须具有可访问帧缓存器的 MAC 和 DAC 特权，或者必须为该进程分配了帧缓存器。
+.sp
+仅当系统配置有 Trusted Extensions 时，才会解释该特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_DOWNGRADE_SL\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程将窗口资源的敏感标签设置为不影响现有敏感标签的敏感标签。
+.sp
+仅当系统配置有 Trusted Extensions 时，才会解释该特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_FONTPATH\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程设置字体路径。
+.sp
+仅当系统配置有 Trusted Extensions 时，才会解释该特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_MAC_READ\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程从其敏感标签不等于进程敏感标签的窗口资源中读取。
+.sp
+仅当系统配置有 Trusted Extensions 时，才会解释该特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_MAC_WRITE\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程创建其敏感标签不等于进程敏感标签的窗口资源。新创建的窗口属性使用窗口的敏感标签创建。
+.sp
+仅当系统配置有 Trusted Extensions 时，才会解释该特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_SELECTION\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程在没有选择确认器干预的情况下请求在窗口间移动数据。
+.sp
+仅当系统配置有 Trusted Extensions 时，才会解释该特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPRIV_WIN_UPGRADE_SL\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程将窗口资源的敏感标签设置为影响现有敏感标签的敏感标签。
+.sp
+仅当系统配置有 Trusted Extensions 时，才会解释该特权。
+.RE
+
+.sp
+.LP
+在上面列出的特权中，特权 \fBPRIV_FILE_LINK_ANY\fR、\fBPRIV_FILE_READ\fR、\fBPRIV_FILE_WRITE\fR、\fBPRIV_PROC_INFO\fR、\fBPRIV_PROC_SESSION\fR、\fBPRIV_NET_ACCESS\fR、\fBPRIV_PROC_FORK\fR 和 \fBPRIV_PROC_EXEC\fR 视为“基本”特权。过去，没有特权的进程始终具有这些特权。缺省情况下，进程仍具有基本特权。
+.sp
+.LP
+进程的限制特权集（请参见下文）中必须存在特权 \fBPRIV_PROC_SETID\fR、\fBPRIV_PROC_AUDIT\fR 和 \fBPRIV_SYS_RESOURCE\fR，\fBsetuid\fR root \fBexec\fR 才能成功，即获取值为 0 的有效 UID 和附加特权。
+.sp
+.LP
+Oracle Solaris 中的特权实现使用四个特权集扩展进程凭证：
+.sp
+.ne 2
+.mk
+.na
+\fBI，可继承特权集\fR
+.ad
+.RS 26n
+.rt  
+\fBexec\fR 中继承的特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBP，允许特权集\fR
+.ad
+.RS 26n
+.rt  
+进程的最大特权集。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBE，有效特权集\fR
+.ad
+.RS 26n
+.rt  
+当前有效的特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBL，限制特权集\fR
+.ad
+.RS 26n
+.rt  
+进程及其子级可以获取的特权的上限。对 L 的更改将在下一个 \fBexec\fR 中生效。
+.RE
+
+.sp
+.LP
+对于没有特权的进程，I、P 和 E 集通常与基本特权集相同。限制特权集通常是整个特权集。
+.sp
+.LP
+每个进程都有权限识别状态 (Privilege Awareness State, PAS)，该状态可以接受的值为 PA（privilege-aware，可识别特权）和 NPA（非 PA）。PAS 是一种过渡机制，用于允许用户在与旧超级用户模型完全兼容的方式和完全忽略有效 UID 的方式之间进行选择。
+.sp
+.LP
+为了方便讨论，下面引入了“观察到的有效特权集”(oE) 和“观察到的允许特权集”(oP) 概念以及实现特权集 iE 和 iP。
+.sp
+.LP
+通过 \fBsetppriv\fR(2) 或者使用 \fBsetpflags\fR(2) 处理有效特权集、允许特权集或限制特权集，进程将变为可识别特权的进程。在所有情况下，在变为可识别特权的过程中 oE 和 oP 都是不变的。在变为可识别特权的过程中，将进行以下赋值：
+.sp
+.in +2
+.nf
+iE = oE
+iP = oP
+.fi
+.in -2
+
+.sp
+.LP
+如果进程可识别特权，oE 和 oP 在更改 UID 时保持不变。如果进程不识别特权，观察到的 oE 和 oP 如下：
+.sp
+.in +2
+.nf
+oE = euid == 0 ? L : iE
+oP = (euid == 0 || ruid == 0 || suid == 0) ? L : iP
+.fi
+.in -2
+
+.sp
+.LP
+如果不识别特权的进程具有值为 0 的有效 UID，它可以行使其限制特权集中包含的特权（特权的上限）。如果不识别特权的进程具有任何值为 0 的 UID，则它表现为有能力行使 L 中的所有特权。
+.sp
+.LP
+使用 \fBsetpflags()\fR 可以使进程恢复到不识别特权的状态。内核在执行 \fBexec\fR(2) 时始终会尝试此操作。仅当满足以下条件时，才允许执行此操作。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果有任何 UID 等于 0，则 P 必须等于 L。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果有效 UID 等于 0，则 E 必须等于 L。
+.RE
+.sp
+.LP
+当进程放弃特权识别时，将进行以下赋值：
+.sp
+.in +2
+.nf
+if (euid == 0) iE = L & I
+if (any uid == 0) iP = L & I
+.fi
+.in -2
+
+.sp
+.LP
+在 UID 不为 \fB0\fR 时获取的特权是受限制特权集限制的进程可继承特权集。
+.sp
+.LP
+只有进程的（观察到的）有效特权集中的特权才允许进程执行受限的操作。进程可以使用任何特权处理函数来在特权集中添加或删除特权。特权始终是可删除的。只能将允许特权集中的特权添加到有效特权集和可继承特权集中。限制特权集无法扩展。可继承特权集可以大于允许特权集。
+.sp
+.LP
+当进程执行 \fBexec\fR(2) 时，内核将首先尝试取消特权识别，然后进行以下特权集修改：
+.sp
+.in +2
+.nf
+E' = P' = I' = L & I
+L is unchanged
+.fi
+.in -2
+
+.sp
+.LP
+如果进程未处理其特权，则特权集实际上保持不变，因为 E、P 和 I 已相同。
+.sp
+.LP
+在执行 \fB exec\fR 时，将强制使用限制特权集。
+.sp
+.LP
+要以向后兼容的方式运行不识别特权的应用程序，可识别特权的应用程序应以 I=basic 启动不识别特权的应用程序。
+.sp
+.LP
+对于大多数特权，缺少特权仅会导致失败。在某些情况下，缺少特权会导致系统调用的行为方式发生变化。在其他情况下，删除特权会导致 \fBsetuid\fR root 应用程序出现严重故障。此类型的特权被视为“不安全的”。当进程的限制特权集中缺少任何不安全的特权时，系统将不会接受 \fBsetuid\fR root 应用程序的 \fBsetuid\fR 位。\fBsetuid\fR root 应用程序可继续执行，不会更改有效用户 ID 或增加特权。已经确定以下特权是不安全的：\fBPRIV_PROC_SETID\fR、\fBPRIV_SYS_RESOURCE\fR 和 \fBPRIV_PROC_AUDIT\fR。
+.SS "特权升级"
+.sp
+.LP
+在某些情况下，某一个特权会导致进程获取一个或多个未显式授予给该进程的其他特权。为了阻止此类特权升级，安全策略应要求显式授予这些其他特权。
+.sp
+.LP
+升级通常源自那些允许通过“原始”接口修改系统资源的机制；例如，通过 \fB/dev/kmem\fR 更改内核数据结构或者通过 \fB/dev/dsk/*\fR 更改文件。当受控制的进程比控制进程具有更多特权时，也会发生升级。上述这种特殊情况包括：处理或创建 UID 0 所有的对象或尝试使用 \fBsetuid\fR(2) 获取 UID 0。由于 UID 0 拥有所有系统配置文件，并且普通文件保护机制允许 UID 为 0 的进程修改系统配置，因此需要对 UID 0 进行特殊处理。通过进行相应的文件修改，以值为 0 的有效 UID 运行的给定进程可以获取所有特权。
+.sp
+.LP
+在进程可能获取 UID 0 的情况下，安全策略应要求具有其他特权，最高为整个特权集。在有其他机制保护系统文件的情况下，可以放松或删除此类限制。当前的 Oracle Solaris 发行版中没有此类机制。
+.sp
+.LP
+应尽可能限制使用 UID 0 进程。这些进程应替换为以其他 UID 运行的程序，并且该 UID 具有恰好需要的特权。
+.sp
+.LP
+不再需要执行 (\fBexec\fR) 子进程的守护进程应从其允许特权集和限制特权集中删除 \fBPRIV_PROC_EXEC\fR 特权。
+.SS "分配的特权和保护"
+.sp
+.LP
+向用户分配特权时，系统管理员可能会为该用户提供比所需更多的权限。管理员应考虑是否需要添加保护。例如，如果为用户指定了 \fBPRIV_PROC_LOCK_MEMORY\fR 特权，则管理员还应考虑设置 \fBproject.max-locked-memory\fR 资源控制，以阻止该用户锁定所有内存。
+.SS "扩展策略"
+.sp
+.LP
+在配置文件或命令行中列出特权时，有时可以使用扩展策略语法。在扩展策略中，特权集括在花括号中，后跟一个分号和一个对象。扩展策略可为指定的对象添加使用该列表中特权的能力。当前网络端口、UID 和文件对象支持扩展策略。
+.sp
+.LP
+例如，
+.sp
+.ne 2
+.mk
+.na
+\fB\fB{file_dac_read}:/var/core/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+访问 \fB/var/core\fR 下的文件时允许使用特权 \fBfile_dac_read\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB{net_privaddr}:80/tcp,{net_privaddr}:443/tcp \fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程将网络端点绑定到 TCP 端口 80 和 443。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB{proc_setid}:80-100\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程将 UID 更改为 UID 80 到 100（包括两端）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB{proc_setid}:casper\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许进程将 UID 更改为用户名 "casper" 的 UID。
+.RE
+
+.sp
+.LP
+安装扩展策略时，扩展策略中列出的特权集将从可继承特权集中删除，并随后从允许特权集和有效特权集中删除，除非该策略中设置的特权包括该区域中可用的所有特权。例如，当安装 \fB{zone}:/etc/shadow\fR 格式的扩展策略时，将不会删除任何特权；而如果扩展策略的格式为 \fB{file_dac_read}:/etc/shadow\fR，将会删除 \fBPRIV_FILE_DAC_READ\fR 特权。
+.sp
+.LP
+仅当有效特权集中缺少相应特权时，扩展策略才会生效。
+.sp
+.LP
+虽然可以指定 \fB{all}:/some/file\fR 这样的扩展策略，但系统仍会对某些应用进行限制，例如添加 \fBsetuid\fR 位。
+.sp
+.LP
+当进程安装扩展策略时，该策略中列出的所有特权都需要在该进程中有效。例如，当使用 \fBppriv\fR(1) 安装策略时，需要所有特权都列在其有效权限集中。不会对作为 \fBppriv\fR 的对象的进程应用此类限制。但是，其限制特权集将覆盖该扩展策略中的所有特权。
+.sp
+.LP
+在某些上下文中，需要对部分扩展策略语法进行转义。例如，在 \fBexec_attr\fR(4) 中，需要使用反斜杠 (\) 转义分号 (:)。文件名中的某些字符可能也需要使用反斜杠进行转义，具体取决于上下文。
+.sp
+.LP
+会在文件系统中的每一层对扩展策略进行评估；对于 \fBlofs\fR(7FS) 文件系统，指定的策略需要考虑以下方面：该策略需要同时指定 \fBlofs\fR 文件系统和底层文件系统。
+.sp
+.LP
+以下列表包含对象类型和相关特权。
+.sp
+
+.sp
+.TS
+tab();
+cw(1.18i) cw(1.85i) cw(2.47i) 
+lw(1.18i) lw(1.85i) lw(2.47i) 
+.
+对象语法特权
+_
+用户名name\fBproc_setid\fR
+Uiduid\fBproc_setid\fR
+uid 范围uid1-uid2\fBproc_setid\fR
+网络端口^1\fBport/udp\fR, \fBport/tcp\fR, \fBnet_privaddr\fR
+\fBport/sctp\fR, \fBport/\fR*
+端口范围port1-port2/<proto>\fBnet_privaddr\fR
+文件名pathname文件特权 \fBproc_exec\fR
+通配符^2pathname*文件特权 \fBproc_exec\fR
+.TE
+
+.sp
+.LP
+^1 如 \fBservices\fR(4) 中所定义的数字
+.sp
+.LP
+^2 匹配以指定路径名开头的所有文件名
+.SS "特权调试"
+.sp
+.LP
+当系统调用由于权限错误失败时，导致该问题的原因并不总是显而易见。要调试此类问题，可以使用名为\fB特权调试\fR的工具。当对进程启用特权调试时，内核会在进程的控制终端报告缺少的特权。（使用 \fBppriv\fR(1) 的 \fB-D\fR 选项可对进程启用调试。）此外，管理员可以通过以下方式设置 \fBsystem\fR(4) 变量 \fBpriv_debug\fR 来启用系统范围的特权调试：
+.sp
+.in +2
+.nf
+set priv_debug = 1
+.fi
+.in -2
+
+.sp
+.LP
+在运行系统上，可以使用 \fBmdb\fR(1) 更改此变量。
+.SS "特权管理"
+.sp
+.LP
+使用 \fBusermod\fR(1M) 或 \fBrolemod\fR(1M) 可分别为用户或角色分配用于分配或修改特权的特权。使用 \fBppriv\fR(1) 可枚举系统上支持的特权，使用 \fBtruss\fR(1) 可确定程序需要哪些特权。
+.SH 另请参见
+.sp
+.LP
+\fBmdb\fR(1)、\fBppriv\fR(1)、\fBadd_drv\fR(1M)、\fBifconfig\fR(1M)、\fBlockd\fR(1M)、\fBnfsd\fR(1M)、\fBpppd\fR(1M)、\fBrem_drv\fR(1M)、\fBsmbd\fR(1M)、\fBsppptun\fR(1M)、\fBupdate_drv\fR(1M)、\fBIntro\fR(2)、\fBaccess\fR(2)、\fBacct\fR(2)、\fBacl\fR(2)、\fBadjtime\fR(2)、\fBchmod\fR(2)、\fBchown\fR(2)、\fBchroot\fR(2)、\fBcreat\fR(2)、\fBexec\fR(2)、\fBfcntl\fR(2)、\fBfork\fR(2)、\fBfpathconf\fR(2)、\fBgetacct\fR(2)、\fBgetpflags\fR(2)、\fBgetppriv\fR(2)、\fBgetsid\fR(2)、\fBkill\fR(2)、\fBlink\fR(2)、\fBmemcntl\fR(2)、\fBmknod\fR(2)、\fBmount\fR(2)、\fBmsgctl\fR(2)、\fBnice\fR(2)、\fBntp_adjtime\fR(2)、\fBopen\fR(2)、\fBp_online\fR(2)、\fBpriocntl\fR(2)、\fBpriocntlset\fR(2)、\fBprocessor_bind\fR(2)、\fBpset_bind\fR(2)、\fBpset_create\fR(2)、\fBreadlink\fR(2)、\fBresolvepath\fR(2)、\fBrmdir\fR(2)、\fBsemctl\fR(2)、\fBsetegid\fR(2)、\fBseteuid\fR(2)、\fBsetgid\fR(2)、\fBsetgroups\fR(2)、\fBsetpflags\fR(2)、\fBsetppriv\fR(2)、\fBsetrctl\fR(2)、\fBsetregid\fR(2)、\fBsetreuid\fR(2)、\fBsetrlimit\fR(2)、\fBsettaskid\fR(2)、\fBsetuid\fR(2)、\fBshmctl\fR(2)、\fBshmget\fR(2)、\fBshmop\fR(2)、\fBsigsend\fR(2)、\fBstat\fR(2)、\fBstatvfs\fR(2)、\fBstime\fR(2)、\fBswapctl\fR(2)、\fBsysinfo\fR(2)、\fBuadmin\fR(2)、\fBulimit\fR(2)、\fBumount\fR(2)、\fBunlink\fR(2)、\fButime\fR(2)、\fButimes\fR(2)、\fBbind\fR(3SOCKET)、\fBdoor_ucred\fR(3C)、\fBpriv_addset\fR(3C)、\fBpriv_set\fR(3C)、\fBpriv_getbyname\fR(3C)、\fBpriv_getbynum\fR(3C)、\fBpriv_set_to_str\fR(3C)、\fBpriv_str_to_set\fR(3C)、\fBsocket\fR(3SOCKET)、\fBt_bind\fR(3NSL)、\fBtimer_create\fR(3C)、\fBucred_get\fR(3C)、\fBexec_attr\fR(4)、\fBproc\fR(4)、\fBservices\fR(4)、\fBsystem\fR(4)、\fBuser_attr\fR(4)、\fBlofs\fR(7FS)\fBddi_cred\fR(9F)、\fBdrv_priv\fR(9F)、\fBpriv_getbyname\fR(9F)、\fBpriv_policy\fR(9F)、\fBpriv_policy_choice\fR(9F)、\fBpriv_policy_only\fR(9F)
+.sp
+.LP
+\fI《Securing Systems and Attached Devices in Oracle Solaris 11.3》\fR
+.SH 附注
+.sp
+.LP
+删除进程的任何基本特权会使进程处于不符合标准的状态，可能导致意外的应用程序故障，只能在完全了解可能的副作用的情况下执行该操作。

@@ -1,0 +1,256 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 2000, Sun Microsystems, Inc. All Rights Reserved
+.\" Portions Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\"  Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH write 1 "2000 年 11 月 3 日" "SunOS 5.11" "用户命令"
+.SH 名称
+write \- 写入其他用户
+.SH 用法概要
+.LP
+.nf
+\fBwrite\fR \fIuser\fR [\fIterminal\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBwrite\fR 实用程序可从用户的标准输入中读取行，然后将其写入其他用户的终端。首次调用时，会将以下消息：
+.sp
+.in +2
+.nf
+Message from \fIsender-login-id\fR (\fIsending-terminal\fR) [date]...
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+写入 \fIuser\fR。成功完成连接后，会向发送者的终端发出两次警告，指明要将发送者键入的内容写入接收者的终端。
+.sp
+.LP
+如果接收者要回复，只需在收到初始消息后键入
+.sp
+.in +2
+.nf
+write \fIsender-login-id\fR [\fIsending-terminal\fR]
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+即可做到。只要在规范输入模式下累计以 \fBNL\fR、\fBEOF\fR 或 \fBEOL\fR 特殊字符分隔的输入行，就会将累计的数据写入其他用户的终端。字符的处理方式如下：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果键入警报字符，会将警报字符写入接收者的终端。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果键入清除和删除字符，会按 \fBtermios\fR(3C) 界面中所述的方式影响发送者的终端。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果键入中断或文件结束字符，\fBwrite\fR 会将相应的消息（在 C 语言环境中，为 EOT\）写入接收者的终端并退出。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果键入 \fBLC_CTYPE\fR 分类 \fBprint\fR 或 \fBspace\fR 中的字符，会将这些字符发送到接收者的终端。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+当且仅当启用了 \fBstty\fR \fBiexten\fR 本地模式，才会将其他特殊控制字符和多字节或单字节字符（如果其等效宽字符可输出）作为可输出字符处理。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果键入其他不可列显字符，会按以下方式将其写入接收者的终端：控制字符将显示为 "\fB^\fR" 后跟相应的 \fBASCII\fR 字符，设置了高序位的字符将以“元数据”表示法显示。例如，\fB\003\fR 显示为 \fB^C\fR，\fB\372\fR 显示为 \fBM-z\fR。
+.RE
+.sp
+.LP
+要写入多次登录系统的用户的终端，可以使用 \fIterminal\fR 参数指明要写入的终端。否则，接收者的终端是在 \fB/usr/adm/utmpx\fR 中找到的第一个可写用户实例，会将以下信息性消息写入发送者的标准输出，指明选择的终端：
+.sp
+.in +2
+.nf
+\fIuser\fR is logged on more than one place.
+You are connected to \fIterminal\fR.
+Other locations are:\fIterminal\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以使用 \fBmesg\fR 实用程序拒绝或授予接收 \fBwrite\fR 消息的权限。但是，用户的特权可以进一步限制其他用户终端的可访问性域。如果用户缺少执行所请求操作的相应特权，\fBwrite\fR 实用程序将会失败。
+.sp
+.LP
+如果在行开头发现了字符 \fB!\fR，则 \fBwrite\fR 会调用 shell，以将行中的其余数据作为命令执行。
+.sp
+.LP
+为了获得对其他用户终端的写入权限，\fBwrite\fR 将对组 \fBID\fR \fBtty\fR 运行 \fBsetgid()\fR（请参见 \fBsetuid\fR(2)）。
+.sp
+.LP
+使用 \fBwrite\fR 时，建议采用以下协议：首次向其他用户执行 \fBwrite\fR 时，等待其通过 \fBwrite\fR 发回确认，然后再开始发送。各个用户应该使用特有的信号结束消息（即使用 \fB(o)\fR 表示\fI结束\fR），以便其他用户知道何时回复。要终止会话时，建议使用信号 \fB(oo)\fR（表示\fB会话完毕\fR）。
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIuser\fR\fR
+.ad
+.RS 12n
+.rt  
+要将消息写入其终端的人的用户（登录）名。该操作数必须采用 \fBwho\fR(1) 实用程序返回的格式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIterminal\fR\fR
+.ad
+.RS 12n
+.rt  
+与 \fBwho\fR 实用程序提供的格式相同的终端标识。
+.RE
+
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBwrite\fR 执行的环境变量 \fBLANG\fR、\fBLC_ALL\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR 和 \fBNLSPATH\fR 的说明，请参见 \fBenviron\fR(5)。
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+发往的用户未登录或者发往的用户拒绝了权限。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/utmpx\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBwrite\fR 的用户和计帐信息
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/bin/sh\fR\fR
+.ad
+.RS 18n
+.rt  
+Bourne shell 可执行文件
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+CSIEnabled（已启用）
+_
+接口稳定性Committed（已确定）
+_
+标准请参见 \fBstandards\fR(5)。
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBmail\fR(1)、\fBmesg\fR(1)、\fBpr\fR(1)、\fBsh\fR(1)、\fBtalk\fR(1)、\fBwho\fR(1)、\fBsetuid\fR(2)、\fBtermios\fR(3C)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBstandards\fR(5)
+.SH 诊断
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuser is not logged on\fR\fR
+.ad
+.sp .6
+.RS 4n
+尝试向其终端\fB写入\fR数据的用户未登录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPermission denied\fR\fR
+.ad
+.sp .6
+.RS 4n
+尝试向其终端\fB写入\fR数据的用户拒绝了该权限（使用 \fBmesg\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBWarning: cannot respond, set mesg\fR\fB-y\fR\fR
+.ad
+.sp .6
+.RS 4n
+您的终端设置为 \fBmesg\fR \fBn\fR，接收者无法给予回复。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCan no longer write to user\fR\fR
+.ad
+.sp .6
+.RS 4n
+接收者在您开始写入后拒绝了权限 (\fBmesg n\fR)。
+.RE
+

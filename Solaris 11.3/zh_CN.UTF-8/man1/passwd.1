@@ -1,0 +1,1072 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Portions Copyright (c) 2010, 2014, Oracle and/or its affiliates.All rights reserved.
+.TH passwd 1 "2014 年 2 月 13 日" "SunOS 5.11" "用户命令"
+.SH 名称
+passwd \- 更改登录口令和口令属性 
+.SH 用法概要
+.LP
+.nf
+\fBpasswd\fR [\fB-r\fR files | \fB-r\fR ldap | \fB-r\fR nis] [\fIname\fR]
+.fi
+
+.LP
+.nf
+\fBpasswd\fR [\fB-r\fR files] [\fB-egh\fR] [\fIname\fR]
+.fi
+
+.LP
+.nf
+\fBpasswd\fR [\fB-r\fR files] \fB-s\fR [\fB-a\fR]
+.fi
+
+.LP
+.nf
+\fBpasswd\fR [\fB-r\fR files] \fB-s\fR [\fIname\fR]
+.fi
+
+.LP
+.nf
+\fBpasswd\fR [\fB-r\fR files] [\fB-d\fR | \fB-l\fR | \fB-u\fR | \fB-N\fR] [\fB-f\fR] [\fB-n\fR \fImin\fR] 
+     [\fB-w\fR \fIwarn\fR] [\fB-x\fR \fImax\fR] \fIname\fR
+.fi
+
+.LP
+.nf
+\fBpasswd\fR \fB-r\fR ldap [\fB-egh\fR] [\fIname\fR]
+.fi
+
+.LP
+.nf
+\fBpasswd\fR [\fB-r\fR ldap ] \fB-s\fR [\fB-a\fR]
+.fi
+
+.LP
+.nf
+\fBpasswd\fR [\fB-r\fR ldap ] \fB-s\fR [\fIname\fR]
+.fi
+
+.LP
+.nf
+\fBpasswd\fR \fB-r\fR ldap [\fB-d | -l | -u | -N\fR] [\fB-f\fR] [\fB-n\fR \fImin\fR] 
+     [\fB-w\fR \fIwarn\fR] [\fB-x\fR \fImax\fR] \fIname\fR
+.fi
+
+.LP
+.nf
+\fBpasswd\fR \fB-r\fR nis [\fB-egh\fR] [\fIname\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBpasswd\fR 命令可以更改口令，或者列出与用户的登录 \fIname\fR 关联的口令属性。此外，授权用户能够使用 \fBpasswd\fR 安装或更改与任何登录 \fIname\fR 相关联的口令和属性。
+.sp
+.LP
+用于更改口令时，\fBpasswd\fR 会提示每位用户输入他们的旧口令（如果有）。然后，它会两次提示用户输入新口令。输入旧口令时，\fBpasswd\fR 会检查并确定旧口令是否已到期。如果\fB生命期\fR未满，\fBpasswd\fR 会终止；请参见 \fBpwconv\fR(1M) 和 \fBshadow\fR(4) 了解其他信息。
+.sp
+.LP
+\fBpwconv\fR 命令会使用来自 \fB/etc/passwd\fR 的信息创建和更新 \fB/etc/shadow\fR。\fBpwconv\fR 依赖于 \fB/etc/passwd\fR 口令字段中的特殊值 \fBx\fR。值 \fBx\fR 表示用户的口令已在 \fB/etc/shadow\fR 中，并且不应当修改。
+.sp
+.LP
+如果生命期已满，则会执行检查，以确保新口令符合构造要求。在第二次输入新口令时，系统会比较新口令的两个副本。如果两个副本不同，将再次提示输入新口令（此循环最多重复执行两次）。
+.sp
+.LP
+构造的口令必须符合以下要求：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+每个口令必须包含 \fBPASSLENGTH\fR 个字符，其中 \fBPASSLENGTH\fR 在 \fB/etc/default/passwd\fR 中定义，并且设置为 \fB6\fR。将 \fBPASSLENGTH\fR 设置为超过八个字符时，需要为 \fBpolicy.conf\fR(4) 配置支持超过八个字符的算法。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+每个口令都必须满足 \fB/etc/default/passwd\fR 中指定的已配置复杂性约束。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+每个口令都不得是 \fB/etc/default/passwd\fR 中指定的已配置字典的成员。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+对于支持口令历史记录检查的名称服务中的帐户，如果定义了先前的口令历史记录，则新口令不得包含在先前的口令历史记录中。
+.RE
+.sp
+.LP
+如果满足所有要求，在缺省情况下，\fBpasswd\fR 命令会查询 \fB/etc/nsswitch.conf\fR，以确定在哪个系统信息库中执行口令更新。它会搜索 \fBpasswd\fR 和 \fBpasswd_compat\fR 条目。与这些条目相关联的源（系统信息库）会得到更新。然而，支持的口令更新配置有限，并且必须遵循以下规则：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBpasswd\fR 行必须有 1 个、2 个或 3 个条目
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+第一个 \fBpasswd\fR 条目必须为 files
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在口令更新过程中，将忽略和跳过不是 files、\fBnis\fR、\fBldap\fR 和 \fBcompat\fR 的\fBpasswd\fR 条目。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+有必要使用特定于源的工具更新此类数据库中的口令。
+.RE
+.sp
+.LP
+当用户将口令存储在一个名称服务和一个本地 \fBfiles\fR 条目中时，\fBpasswd\fR 命令会同时更新两者。名称服务和本地 files 条目可以包含不同的口令。使用 \fBpasswd\fR \fB-r\fR 可更改特定口令系统信息库。 
+.sp
+.LP
+\fBpasswd\fR 命令不会提示授权用户输入旧口令。
+.sp
+.LP
+如果 LDAP 起作用，任何本地 LDAP 客户端系统上的授权用户都能更改任何口令，并且不会收到输入旧 LDAP 口令的提示。
+.sp
+.LP
+在缺省情况下，即使有权更改其他用户口令的用户也必须遵循已配置的口令策略。请参见 \fBpam_authtok_check\fR(5)。
+.sp
+.LP
+正常情况下，输入无参数的 \fBpasswd\fR 可以更改当前用户的口令。当用户登录并且调用 \fBsu\fR(1M) 成为角色或另一个用户时，\fBpasswd\fR 将更改原始用户的口令，而不是角色或新用户的口令。
+.sp
+.LP
+\fB-s\fR 参数仅适用于授权用户。
+.sp
+.LP
+其显示格式为：
+.sp
+.in +2
+.nf
+\fIname status mm/dd/yy min max warn\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+或者（如果没有口令生命期信息）：
+.sp
+.in +2
+.nf
+\fIname status\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+其中
+.sp
+.ne 2
+.mk
+.na
+\fB\fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+用户的登录 \fBID\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIstatus\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIname\fR 的口令状态。 
+.sp
+\fIstatus\fR 字段可以采用以下值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLK\fR\fR
+.ad
+.sp .6
+.RS 4n
+帐户已锁定。运行了 \fBpasswd -l\fR，或者由于验证失败次数达到了配置的最大允许次数而自动锁定了帐户。请参见 \fBpolicy.conf\fR(4) 和 \fBuser_attr\fR(4) 以及“安全性”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNL\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是一个\fB非 UNIX 验证\fR帐户。已经运行了 \fBpasswd\fR \fB-N\fR。请参见“安全”部分。系统或每用户策略为 \fBLOCK_AFTER_RETRIES=YES\fR 时，不会自动锁定处于此状态的帐户。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNP\fR\fR
+.ad
+.sp .6
+.RS 4n
+此帐户没有口令，因此，无需验证即可打开。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPS\fR\fR
+.ad
+.sp .6
+.RS 4n
+此帐户有口令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBUN\fR\fR
+.ad
+.sp .6
+.RS 4n
+口令字段中的数据未知。它不是一个可识别的散列口令或上述各项中的任何一个。请参见 \fBcrypt\fR(3C) 了解有效的口令散列。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBUP\fR\fR
+.ad
+.sp .6
+.RS 4n
+管理员尚未激活帐户，因此无法使用。请参见\fB\fR“安全”部分。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fImm/dd/yy\fR\fR
+.ad
+.sp .6
+.RS 4n
+上次更改 \fIname\fR 的口令的日期。所有口令生命期日期都使用格林威治标准时间（世界标准时间）确定，因此最多可以与其他时区相差一天。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fImin\fR\fR
+.ad
+.sp .6
+.RS 4n
+为 \fIname\fR 更改口令需要间隔的最少天数。在 \fB/etc/default/passwd\fR 中有 \fBMINWEEKS\fR，并且设置为 \fBNULL\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fImax\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIname\fR 口令的最大有效天数。在 \fB/etc/default/passwd\fR 中有 \fBMAXWEEKS\fR，并且设置为 \fBNULL\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIwarn\fR\fR
+.ad
+.sp .6
+.RS 4n
+口令到期之前相对于 \fImax\fR 的天数，达到此天数后 \fIname\fR 将收到警告消息。
+.RE
+
+.SS "安全性"
+.sp
+.LP
+\fBpasswd\fR 使用 \fBpam\fR(3PAM) 更改口令。它通过服务名称 \fBpasswd\fR 调用 PAM，并使用服务模块类型 \fBauth\fR 进行验证，使用口令更改口令。
+.sp
+.LP
+锁定帐户（\fB-l\fR 选项）可以禁止使用帐户进行任何登录或延迟执行操作（例如 \fBat\fR(1)、\fBbatch\fR(1) 或 \fBcron\fR(1M)）。\fB-N\fR 选项可以用于禁止基于口令的登录，同时继续允许通过非 UNIX 验证方法进行延迟执行或登录。
+.sp
+.LP
+从来没有口令的已锁定帐户不能将其状态直接更改为活动口令。请参见 \fB-d\fR 选项。对于锁定之前有口令的锁定帐户，更改其口令时，无需解锁帐户即可更改口令。请参见用于解锁帐户的 \fB-u\fR 选项。授权管理员可以激活处于尚未激活状态的帐户，具体方法是为该帐户提供口令或运行 \fBpasswd\fR \fB- N\fR，但管理员只能出于非 UNIX 验证或延迟执行的目的激活该帐户。
+.sp
+.LP
+帐户在不活动之后会被锁定。要解锁此类帐户，请使用 \fB-u\fR 或 \fB-f\fR 选项。使用 \fB-u\fR 无法更改口令；使用 \fB-f\fR 可以强制更改口令。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示所有条目的口令属性。只能与 \fB-s\fR 选项一起使用。不得提供 \fIname\fR。对于 \fBfiles\fR 和 \fBldap\fR 系统信息库，这仅限于授权用户。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.sp .6
+.RS 4n
+更改登录 shell。对于 files 系统信息库，这仅适用于超级用户。普通用户可以更改 \fBldap\fR、\fBnis\fR 或 \fBnisplus\fR 系统信息库。选择 shell 时会受到 \fBgetusershell\fR(3C) 的要求的限制。如果用户当前具有的 shell 是 \fBgetusershell\fR 所不允许的，则只有 root 用户可以更改此 shell。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR\fR
+.ad
+.sp .6
+.RS 4n
+更改 \fBgecos\fR（指针）信息。对于 files 系统信息库，这仅适用于超级用户。普通用户可以更改 \fBldap\fR、\fBnis\fR 或 \fBnisplus\fR 系统信息库。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.sp .6
+.RS 4n
+更改起始目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定向其应用操作的系统信息库。支持的系统信息库包括 \fBfiles\fR、\fBldap\fR 或 \fBnis\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示登录 \fIname\fR 的口令属性。对于 \fBfiles\fR 和 \fBldap\fR 系统信息库，这仅适用于授权用户。它完全不适用于 \fBnis\fR 系统信息库，因为此系统信息库不支持口令生命期。
+.sp
+此选项（也只有此选项）的输出为 "Committed"（已确定）并且可解析。格式为 \fIusername\fR 后跟空格，然后跟以下代码之一。 
+.sp
+将来有可能添加新代码，因此，解析此命令的代码必须能够灵活应对未知代码。所有现有代码均为两个字符，但将来未必始终如此。 
+.sp
+以下为当前状态代码：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLK\fR\fR
+.ad
+.sp .6
+.RS 4n
+帐户已锁定。运行了 \fBpasswd -l\fR，或者由于验证失败次数达到了配置的最大允许次数而自动锁定了帐户。请参见 \fBpolicy.conf\fR(4) 和 \fBuser_attr\fR(4) 以及“安全性”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNL\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是一个\fB非 UNIX 验证\fR帐户。已经运行了 \fBpasswd\fR \fB-N\fR。请参见“安全”部分。系统或每用户策略为 \fBLOCK_AFTER_RETRIES=YES\fR 时，不会自动锁定处于此状态的帐户。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNP\fR\fR
+.ad
+.sp .6
+.RS 4n
+帐户没有口令。运行了 \fBpasswd -d\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPS\fR\fR
+.ad
+.sp .6
+.RS 4n
+帐户可能有一个有效口令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBUN\fR\fR
+.ad
+.sp .6
+.RS 4n
+口令字段中的数据未知。它不是一个可识别的散列口令或上述各项中的任何一个。请参见 \fBcrypt\fR(3C) 了解有效的口令散列。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBUP\fR\fR
+.ad
+.sp .6
+.RS 4n
+管理员尚未激活帐户，因此无法使用。请参见\fB\fR“安全”部分。
+.RE
+
+.RE
+
+.SS "授权用户选项"
+.sp
+.LP
+管理员需要获得 "User Security"（用户安全）配置文件才能锁定和解锁现有帐户。此配置文件也可以提供激活新建帐户、设置口令生命期选项和查看口令属性的功能。下表列出了执行各种操作所需的授权。
+.sp
+.LP
+只有授权用户才能使用以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除 \fIname\fR 的口令并解锁帐户。登录 \fIname\fR 不会收到输入口令的提示。仅适用于 \fBfiles\fR 和 \fBldap\fR 系统信息库。
+.sp
+如果配置了 \fBlogin\fR(1) 选项 \fBPASSREQ=YES\fR，帐户将无法登录。\fBPASSREQ=YES \fR 为缺省设置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+通过使 \fIname\fR 的口令到期，强制用户在下一次登录时更改口令。解锁由于不活动而遭到锁定的帐户时，此选项十分有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+锁定 \fIname\fR 的帐户，除非已经锁定。请参见用于解锁帐户的 \fB-u\fR 选项。标记为非 UNIX 验证或延迟执行的帐户只能锁定并会在解锁时返回同一状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR\fR
+.ad
+.sp .6
+.RS 4n
+使 \fIname\fR 的口令条目成为一个无法用于通过 UNIX 验证进行登录的值，但不会锁定该帐户。请参见用于删除此值的 \fB-d\fR 选项或者用于锁定帐户的 \fB-l\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR \fImin\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置 \fIname\fR 的最小值字段。\fImin\fR 字段包含更改 \fIname\fR 的口令需间隔的最少天数。如果 \fImin\fR 大于 \fImax\fR，用户将无法更改口令。此选项应始终与 \fB-x\fR 选项配合使用，除非 \fImax\fR 设置为 \fB-1\fR（禁用生命期）。在这种情况下，\fImin\fR 无需设置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+解锁 \fIname\fR 条目的已锁定口令。解锁由于登录尝试失败而遭到锁定或者通过管理方式（使用 \fB-l\fR 选项）锁定的帐户时，\fB-u\fR 选项十分有用。标记为非 UNIX 验证帐户 (\fBpasswd\fR \fB-N\fR) 的帐户会返回解锁时的状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-w\fR \fIwarn\fR\fR
+.ad
+.sp .6
+.RS 4n
+为 \fIname\fR 设置警告字段。\fIwarn\fR 字段包含口令到期之前的天数，达到此天数时用户将收到警告消息。如果禁用口令生命期，此选项无效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fImax\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置 \fIname\fR 的最大值字段。\fImax\fR 字段包含 \fIname\fR 的口令的有效天数。如果 \fImax\fR 设置为 \fB-1\fR，会立即禁用 \fIname\fR 的生命期。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+用户登录名。
+.RE
+
+.SH 环境变量
+.sp
+.LP
+如果任一 \fBLC_*\fR 变量（即 \fBLC_CTYPE\fR、\fB LC_MESSAGES\fR、\fBLC_TIME\fR、\fBLC_COLLATE\fR、\fBLC_NUMERIC\fR 和 \fBLC_MONETARY\fR（请参见 \fBenviron\fR(5)））未在此环境中进行设置，则 \fBpasswd\fR 针对每个对应语言环境类别的操作行为将由 \fBLANG\fR 环境变量的值确定。如果设置了 \fBLC_ALL\fR，则会使用其内容覆盖 \fBLANG\fR 和其他 \fBLC_*\fR 变量。如果以上变量都未在此环境中进行设置，则 \fBC\fR（美国样式）语言环境将确定 \fBpasswd\fR 的行为。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_CTYPE\fR\fR
+.ad
+.sp .6
+.RS 4n
+确定 \fBpasswd\fR 如何处理字符。当为 \fBLC_CTYPE\fR 设置了有效值时，\fBpasswd\fR 可以显示并处理包含该语言环境下有效字符的文本和文件名。\fBpasswd\fR 可以显示并处理扩展 Unix 编码 (\fBEUC\fR) 字符，其中任意单个字符的宽度可以为 1 个、2 个或 3 个字节。\fBpasswd\fR 还可以处理宽度为 1 个、2 个或更多个列的 \fBEUC\fR 字符。在 \fBC\fR 语言环境中，只有 ISO 8859-1 中的字符有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_MESSAGES\fR\fR
+.ad
+.sp .6
+.RS 4n
+确定如何显示诊断和信息性消息。这包括消息的语言和风格，以及肯定性和否定性响应的正确形式。在 \fBC\fR 语言环境中，消息将以程序自身中的缺省格式显示（大多数情况下，为美式英文）。
+.RE
+
+.SH 退出状态
+.sp
+.LP
+\fBpasswd\fR 命令退出时会返回以下值之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+权限被拒绝。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.sp .6
+.RS 4n
+无效的选项组合。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.sp .6
+.RS 4n
+意外失败。口令文件未更改。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR\fR
+.ad
+.sp .6
+.RS 4n
+意外失败。口令文件缺失。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB5\fR\fR
+.ad
+.sp .6
+.RS 4n
+口令文件正忙。请稍后重试。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB6\fR\fR
+.ad
+.sp .6
+.RS 4n
+无效的选项参数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB7\fR\fR
+.ad
+.sp .6
+.RS 4n
+生命期选项已禁用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB8\fR\fR
+.ad
+.sp .6
+.RS 4n
+无内存。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB9\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB10\fR\fR
+.ad
+.sp .6
+.RS 4n
+帐户已过期。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB11\fR\fR
+.ad
+.sp .6
+.RS 4n
+口令信息未更改。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/default/passwd\fR\fR
+.ad
+.sp .6
+.RS 4n
+可以在 \fB/etc/default/passwd\fR 中为以下标志设置缺省值。例如：\fBMAXWEEKS=26\fR
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDICTIONDBDIR\fR\fR
+.ad
+.sp .6
+.RS 4n
+生成的字典数据库所在的目录。缺省值为 \fB/var/passwd\fR。 
+.sp
+如果未指定 \fBDICTIONLIST\fR 和 \fBDICTIONDBDIR\fR，系统将不会执行字典检查。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDICTIONLIST\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBDICTIONLIST\fR 可以包含以逗号分隔的字典文件列表，例如 \fBDICTIONLIST=\fR\fIfile1\fR, \fI file2\fR, \fIfile3\fR。每个字典文件都包含多行，每行由一个词和一个换行符组成。您必须指定全路径名。来自这些文件的词会合并为一个数据库，用于确定口令是否基于字典中的词。
+.sp
+可以在 \fBDICTIONLIST\fR 中列出拼写检查字典（类似于 \fB/usr/share/lib/dict/words\fR），但需要预先进行处理。请参见下文的 \fBDICTIONMINWORDLENGTH\fR 了解更简便的方法。
+.sp
+如果未指定 \fBDICTIONLIST\fR 和 \fBDICTIONDBDIR\fR，系统将不会执行字典检查。
+.sp
+要预先构建字典数据库，请参见 \fBmkpwdict\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDICTIONMINWORDLENGTH\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBDICTIONMINWORDLENGTH\fR 可以包含一个数字，用于指定 \fBDICTIONLIST\fR 中源文件的最小词长。小于指定长度的词将在口令字典中省略。
+.sp
+ 允许的最小值为 2 [个字母]；缺省值为 3 [个字母]。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHISTORY\fR\fR
+.ad
+.sp .6
+.RS 4n
+为用户所保存的先前口令历史记录的最大数量。将 \fBHISTORY\fR 值设为零 (\fB0\fR) 或者删除标志都会导致下一次任何用户更改口令时放弃所有用户的先前口令历史记录。缺省情况下不会定义 \fBHISTORY\fR 标志。最大值为 \fB26。\fR目前，仅针对在 \fBfiles\fR 名称服务（局部 \fBpasswd\fR(4)/\fBshadow\fR(4)）中定义的用户帐户强制实施此功能。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBMAXREPEATS\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许的连续重复字符的最大个数。如果未设置 \fBMAXREPEATS\fR，或者将其设为零 (\fB0\fR)，则缺省情况下不会进行检查。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBMAXWEEKS\fR\fR
+.ad
+.sp .6
+.RS 4n
+口令的最长有效期。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBMINALPHA\fR\fR
+.ad
+.sp .6
+.RS 4n
+必须包含的最少字母字符个数。如果未设置 \fBMINALPHA\fR，则缺省值为 \fB2\fR。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBMINDIFF\fR\fR
+.ad
+.sp .6
+.RS 4n
+旧口令和新口令之间必须具有的最小差异。如果未设置 \fBMINDIFF\fR，则缺省值为 \fB3\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBMINDIGIT\fR\fR
+.ad
+.sp .6
+.RS 4n
+必须包含的最少数字个数。如果未设置 \fBMINDIGIT\fR，或者将其设为零 (\fB0\fR)，则缺省情况下不会进行检查。如果同时指定了 \fBMINNONALPHA\fR，将无法指定 \fBMINDIGIT\fR。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBMINLOWER\fR\fR
+.ad
+.sp .6
+.RS 4n
+必须包含的最少小写字母个数。如果未设置，或者将其设为零 (0)，则缺省情况下不会进行检查。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBMINNONALPHA\fR\fR
+.ad
+.sp .6
+.RS 4n
+必须包含的最少非字母字符（包括数字和特殊字符）个数。如果未设置 \fBMINNONALPHA\fR，则缺省值为 \fB1\fR。如果同时指定了 \fBMINDIGIT \fR 或 \fBMINSPECIAL\fR，则将无法指定 \fBMINNONALPHA\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBMINWEEKS\fR\fR
+.ad
+.sp .6
+.RS 4n
+更改口令所需的最短间隔时间。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBMINSPECIAL\fR\fR
+.ad
+.sp .6
+.RS 4n
+必须包含的最少特殊字符（非字母和数字）个数。如果未设置 \fBMINSPECIAL\fR，或者将其设为零 (\fB0\fR)，则缺省情况下不会进行检查。如果同时指定了 \fBMINNONALPHA\fR，则将无法指定 \fBMINSPECIAL\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBMINUPPER\fR\fR
+.ad
+.sp .6
+.RS 4n
+要求的大写字母的最少个数。如果未设置 \fBMINUPPER\fR 或者将其设为零 (\fB0\fR)，则缺省情况下不会进行检查。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNAMECHECK\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用/禁用登录名检查。缺省设置为执行登录名检查。使用 \fBno\fR 值（不区分大小写）会禁用此功能。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPASSLENGTH\fR\fR
+.ad
+.sp .6
+.RS 4n
+口令的最小长度（以字符为单位）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBWARNWEEKS\fR\fR
+.ad
+.sp .6
+.RS 4n
+发出口令即将到期警告前的时间长度。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBWHITESPACE\fR\fR
+.ad
+.sp .6
+.RS 4n
+确定口令中是否允许使用空格字符。有效值为 \fBYES\fR 和 \fBNO\fR。如果未设置 \fBWHITESPACE\fR，或者将其设为 \fBYES\fR，则允许使用空格字符。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/oshadow\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpasswd\fR 和 \fBpwconv\fR 用来更新实际影子文件的临时文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/passwd\fR\fR
+.ad
+.sp .6
+.RS 4n
+口令文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/shadow\fR\fR
+.ad
+.sp .6
+.RS 4n
+影子口令文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/shells\fR\fR
+.ad
+.sp .6
+.RS 4n
+Shell 数据库。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+CSIEnabled（已启用）
+_
+接口稳定性请参见下文。
+.TE
+
+.sp
+.LP
+用户可读的输出是 "Uncommitted"（未确定）。选项为 "Committed"（已确定）。
+.SH 另请参见
+.sp
+.LP
+\fBat\fR(1)、\fBbatch\fR(1)、\fBfinger\fR(1)、\fBlogin\fR(1)、\fBcron\fR(1M)、\fBdomainname\fR(1M)、\fBeeprom\fR(1M)、\fBid\fR(1M)、\fBldapclient\fR(1M)、\fBmkpwdict\fR(1M)、\fBpwconv\fR(1M)、\fBsu\fR(1M)、\fBuseradd\fR(1M)、\fBuserdel\fR(1M)、\fBusermod\fR(1M)、\fBcrypt\fR(3C)、\fBgetpwnam\fR(3C)、\fBgetspnam\fR(3C)、\fBgetusershell\fR(3C)、\fBpam\fR(3PAM)、\fBloginlog\fR(4)、\fBnsswitch.conf\fR(4)、\fBpam.conf\fR(4)、\fBpasswd\fR(4)、\fBpolicy.conf\fR(4)、\fBshadow\fR(4)、\fBshells\fR(4)、\fBuser_attr\fR(4)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBpam_authtok_check\fR(5)、\fBpam_authtok_get\fR(5)、\fBpam_authtok_store\fR(5)、\fBpam_dhkeys\fR(5)、\fBpam_ldap\fR(5)、\fBpam_unix_account\fR(5)、\fBpam_unix_auth\fR(5)、\fBpam_unix_session\fR(5)、\fBcrypt_unix\fR(5)
+.SH 附注
+.sp
+.LP
+\fByppasswd\fR 命令是 \fBpasswd\fR 的包装器。建议不要使用 \fByppasswd\fR，而是使用 \fBpasswd \fR \fB-r\fR \fIrepository_name\fR。
+.sp
+.LP
+在 \fBfiles\fR 和 \fBldap\fR 系统信息库中更改口令将清除失败登录次数。
+.sp
+.LP
+更改口令会重新激活由于不活动达到一定时间而被禁用的帐户。
+.sp
+.LP
+输入终端处理可能会解释某些键序列而不将其传递给 \fBpasswd\fR 命令。
+.sp
+.LP
+无口令帐户（状态代码为 \fBNP\fR）可能无法登录。请参见 \fBlogin\fR(1) \fB PASSREQ\fR 选项。
+.sp
+.LP
+执行各种选项所需的授权：
+.sp
+.in +2
+.nf
+-d     delete password               solaris.passwd.assign
+-N     set nologin                   solaris.passwd.assign
+       change any passwd             solaris.passwd.assign
+
+-l     lock account                  solaris.account.setpolicy
+-u     unlock account                solaris.account.setpolicy
+-n     set min field for name        solaris.account.setpolicy
+-w     set warn field for name       solaris.account.setpolicy
+-x     set max field for name        solaris.account.setpolicy
+-f     forces password expiration    solaris.account.setpolicy
+-s     display password attributes   solaris.account.setpolicy  
+-a     display password attributes   solaris.account.setpolicy  
+       for all entries
+
+-e     change login shell            solaris.user.manage
+-g     change gecos information      solaris.user.manage
+-h     change home directory         solaris.user.manage
+       set a newly created account's 
+         passwd for the first time   solaris.account.activate
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+除 \fBcrypt_unix\fR(5) 以外的所有口令散列算法所支持的最大口令长度均为 \fB255\fR。

@@ -1,0 +1,177 @@
+'\" te
+.\" To view license terms, attribution, and copyright for OpenSSH, the default path is /var/sadm/pkg/SUNWsshdr/install/copyright.If the Solaris operating environment has been installed anywhere other than the default, modify the given path to access the file at the installed location.
+.\" Portions Copyright (c) 2009, Sun Microsystems, Inc. All Rights Reserved.
+.TH ssh-agent 1 "2009 年 8 月 17 日" "SunOS 5.11" "用户命令"
+.SH 名称
+ssh-agent \- 验证代理
+.SH 用法概要
+.LP
+.nf
+\fBssh-agent\fR [\fB-a\fR \fIbind_address\fR] [\fB-c\fR | \fB-s\fR ] [\fB-d\fR] 
+     [-t \fIlife\fR] [\fIcommand\fR [\fIargs\fR]...]
+.fi
+
+.LP
+.nf
+\fBssh-agent\fR [\fB-c\fR | \fB-s\fR] \fB-k\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBssh-agent\fR 是一个用于保存公钥验证（\fBRSA\fR、\fBDSA\fR）所使用的私钥的程序。\fBssh-agent\fR 通常在登录会话开始时启动。所有其他窗口或程序作为 \fBssh-agent\fR 程序的客户机启动。通过使用环境变量，可在使用 \fBssh\fR(1) 登录到其他计算机时查找代理并自动使用代理进行验证。请参见\fI《Securing Systems and Attached Devices in Oracle Solaris 11.3》\fR。
+.sp
+.LP
+如果在命令行上指定了命令，该命令将作为代理的子进程执行。命令终止时，代理也随之终止。
+.sp
+.LP
+最初，代理没有任何私钥。密钥是使用 \fBssh-add\fR(1) 添加的，此命令将标识发送给代理。一些标识可以存储在代理中；代理可以自动使用其中的任何标识。在 \fBssh-add\fR(1) 中使用 \fB-l\fR 选项可显示代理当前拥有的标识。
+.sp
+.LP
+代理在用户的本地主机中运行。验证数据不需要存储在任何其他计算机上，验证口令短语也决不会通过网络传输。但是，如果与代理的连接是通过 \fBSSH\fR 远程登录转发的，用户可以在网络中的任何位置安全地使用标识赋予的特权。
+.sp
+.LP
+获取代理设置主要有两种方式。您可以使代理启动一个新的子命令，将某些环境变量导出到该子命令中，或者令代理列显所需的 shell 命令（可以生成 \fBsh\fR(1) 或 \fBcsh\fR(1) 语法样式），之后可以在调用方 shell 中通过 eval 显示这些命令的结果。稍后，可使用 \fBssh\fR(1) 查看这些变量并使用这些变量与代理建立连接。
+.sp
+.LP
+将创建 Unix 域套接字 (\fB/tmp/ssh-XXXXXXXX/agent.\fIpid\fR\fR) 并该套接字的名称将存储在 \fBSSH_AUTH_SOCK\fR 环境变量中。只有当前用户可访问该套接字。此方法很容易被 root 用户或同一用户的另一实例错误使用。
+.sp
+.LP
+\fBSSH_AGENT_PID\fR 环境变量保存代理的 \fBPID\fR。
+.sp
+.LP
+在命令行上指定的命令终止时，代理将自动退出。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fIbind_address\fR\fR
+.ad
+.RS 19n
+.rt  
+将代理绑定到 Unix 域套接字 bind_address。缺省值是 \fB/tmp/ssh-XXXXXXXX/agent.\fIpid\fR\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 19n
+.rt  
+在 stdout 上生成 C-shell 命令。如果 \fBSHELL\fR 指出它为 csh 样式的 shell，此选项将为缺省值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.RS 19n
+.rt  
+调试模式。指定此选项时，\fBssh-agent\fR 不执行派生。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR\fR
+.ad
+.RS 19n
+.rt  
+中止当前代理（由 \fBSSH_AGENT_PID\fR 环境变量指定）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 19n
+.rt  
+在 stdout 上生成 Bourne shell 命令。如果 \fBSHELL\fR 未指出它为 csh 样式的 shell，此选项将为缺省值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fIlife\fR\fR
+.ad
+.RS 19n
+.rt  
+为添加到代理的标识设置最大生命周期 (\fIlife\fR) 缺省值。\fIlife\fR 可以按秒为单位指定或使用 \fBsshd_config\fR(4) 中指定的时间格式指定。使用 \fBssh-add\fR(1) 为标识指定的 \fIlife\fR 可覆盖此值。如果不指定此选项，则缺省的最大生命周期 (\fIlife\fR) 为永久。
+.RE
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+出现错误。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/tmp/ssh-XXXXXXXX/agent.\fIpid\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+用于包含验证代理连接的 Unix 域套接字。这些套接字应仅供所有者读取。代理退出时，将删除套接字。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性network/ssh
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBssh\fR(1)、\fBssh-add\fR(1)、\fBssh-keygen\fR(1)、\fBsshd\fR(1M)、\fBsshd_config\fR(4)、\fBattributes\fR(5)
+.sp
+.LP
+\fI《Securing Systems and Attached Devices in Oracle Solaris 11.3》\fR

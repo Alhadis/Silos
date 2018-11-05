@@ -1,0 +1,179 @@
+'\" te
+.\" Copyright (c) 2014, Oracle and/or its affiliates.All rights reserved.
+.TH elfcompress 1 "2014 年 4 月 23 日" "SunOS 5.11" "用户命令"
+.SH 名称
+elfcompress \- 目标文件的压缩/解压调试节
+.SH 用法概要
+.LP
+.nf
+\fBelfcompress\fR [\fB-fV\fR] [\fB-t\fR \fItype\fR] \fIfilename\fR...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBelfcompress\fR 命令用于在 \fBELF\fR 目标文件中压缩或解压调试节。除非另有说明，否则会处理所有调试和注释节。
+.sp
+.LP
+如果输入文件是归档文件（请参见 \fBar.h\fR(3HEAD)），则会将归档文件视为一组独立文件。如果归档成员并非目标文件，则会保留不变。
+.sp
+.LP
+\fBelfcompress\fR 无法修改包含在分段中的节。此类可分配的节会设置其 \fBSHF_ALLOC\fR 节标志。\fBelfcompress\fR 无法修改类型为 \fB SHT_NOBITS\fR 的节。\fB-t\fR 选项指定的压缩操作可能对候选节带来额外限制。请参见 \fB-t\fR 选项和附注。
+.sp
+.LP
+当使用 \fB-n\fR 选项指定一个或多个要处理的节时，只会处理指定的节，其他所有节会保留未修改状态。如果没有使用 \fB-n\fR 选项，则 \fBelfcompress \fR 会选择与 \fB-t\fR 选项指定的压缩操作兼容的所有节。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+缺省情况下，仅当压缩后生成的大小不超过原始数据大小时，\fBelfcompress\fR 才会压缩节。指定 \fB-f\fR 进行强制压缩，即使生成大小超过原始大小。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定要处理的节的名称。\fBelfcompress \fR 可采用多个 \fB-n\fR 选项，以允许指定多个节。如果没有使用 \fB-n\fR，则 \fBelfcompress\fR 会选择与指定的压缩操作兼容的所有调试节。请参见 \fB-t\fR 选项和附注。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fItype\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定要执行的压缩操作。以下是可识别的压缩类型。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnone\fR\fR
+.ad
+.sp .6
+.RS 4n
+压缩的节已解压。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzlib\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fBZLIB\fR 压缩来压缩调试节。候选节必须不可分配（未设置 \fBSHF_ALLOC\fR 标志）并采用节类型 \fBSHT_PROGBITS\fR、\fBSHT_SUNW_DEBUG\fR、\fBSHT_SUNW_DEBUGSTR\fR 或 \fBSHT_SUNW_ANNOTATE\fR。生成的节将设置 \fBSHF_COMPRESSED\fR 节标志来标识使用了压缩。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzlib-gnu\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fBZLIB\fR 压缩来压缩调试节，使用 \fBGNU\fR 节压缩格式。候选节必须不可分配（未设置 \fBSHF_ALLOC\fR 标志）、无法拥有 \fBSHT_NOBITS\fR 类型，且必须拥有以 \fB\&.debug\fR 开始的名称。生成的节将重命名为以 \fB\&.zdebug\fR 开头来标识使用了压缩。
+.RE
+
+如果未指定 \fB-t\fR 选项，则效果等同于指定 \fB-t\fR \fBzlib\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR\fR
+.ad
+.sp .6
+.RS 4n
+列显提供了有关 \fBelfcompress\fR 版本信息的标准错误消息。
+.RE
+
+.SH 附注
+.sp
+.LP
+\fBzlib-gnu\fR 压缩格式限制为名称以 \fB\&.debug\fR 开始的节，同时可将缺省 \fB zlib\fR 压缩格式应用于具有任意名称的节。如果指定了 \fB-t\fR \fBzlib-gnu\fR，但未指定 \fB-n\fR 选项，则会解压名称与 \fBzlib-gnu\fR 格式不兼容的之前压缩的任何节。
+.SH 示例
+.LP
+\fB示例 1 \fR向所有调试节应用 \fBzlib\fR 压缩。
+.sp
+.in +2
+.nf
+% \fBelfcompress file\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR解压所有调试节
+.sp
+.in +2
+.nf
+% \fBelfcompress -t none file\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR压缩 \fB\&.debug_info\fR 节，使用 \fBGNU\fR 类型格式
+.sp
+.in +2
+.nf
+% \fBelfcompress -t zlib-gnu -n .debug_info file\fR
+.fi
+.in -2
+.sp
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/tmp/elfcompress*\fR\fR
+.ad
+.RS 21n
+.rt  
+临时文件
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性developer/base-developer-utilities
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBar\fR(1)、\fBas\fR(1)、\fBld\fR(1)、\fBmcs\fR(1)、\fBstrip\fR(1)、\fBar.h\fR(3HEAD)、\fBelf\fR(3ELF)、\fBzlib\fR(3)、\fBa.out\fR(4)、\fBattributes\fR(5)
+.sp
+.LP
+\fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR

@@ -1,0 +1,248 @@
+'\" te
+.\" Copyright (c) 2004, 2012, Oracle and/or its affiliates. All rights reserved.
+.TH ssh-keyscan 1 "2012 年 6 月 20 日" "SunOS 5.11" "ユーザーコマンド"
+.SH 名前
+ssh-keyscan \- 複数のホストの公開 SSH ホスト鍵の収集
+.SH 形式
+.LP
+.nf
+\fBssh-keyscan\fR [\fB-v46\fR] [\fB-p\fR \fIport\fR] [\fB-T\fR \fItimeout\fR] [\fB-t\fR \fItype\fR] [\fB-f\fR \fIfile\fR] [\fB-\fR] [\fIhost\fR... | \fIaddrlist\fR \fInamelist\fR] [...]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBssh-keyscan\fR は、複数のホストの公開 SSH ホスト鍵を収集するためのユーティリティーです。このユーティリティーは、\fBssh_known_hosts\fR ファイルの構築および検証を支援するように設計されました。\fBssh-keyscan\fR は、シェルや Perl スクリプトでの使用に適した最小のインタフェースを提供します。\fBssh-keyscan\fR の出力は、標準出力にリダイレクトされます。
+.sp
+.LP
+\fBssh-keyscan\fR は、非ブロックソケット入出力を使用してできるだけ多くのホストに並列に接続するため、非常に効率的です。一部のホストが停止しているか、または SSH を実行していない場合でも、1,000 のホストから成るドメインからの鍵を数十秒で収集できます。走査のために、走査されているマシンへのログインアクセスも、走査プロセスでの暗号化も必要ありません。
+.SS "ファイル形式"
+.sp
+.LP
+入力形式:
+.sp
+.in +2
+.nf
+1.2.3.4,1.2.4.4
+\fIname.my.domain,name,n.my.domain,n,\fR1.2.3.4,1.2.4.4
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBrsa1\fR 鍵の出力形式: 
+.sp
+.in +2
+.nf
+\fIhost-or-namelist bits exponent modulus\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBrsa\fR および \fBdsa\fR 鍵の出力形式。ここで、\fIkeytype\fR は \fBssh-rsa\fR または \fBssh-dsa\fR のどちらかです。 
+.sp
+.in +2
+.nf
+\fIhost-or-namelist keytype base64-encoded-key\fR
+.fi
+.in -2
+.sp
+
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfilename\fR\fR
+.ad
+.sp .6
+.RS 4n
+このファイルからホストまたはアドレスリストと名前リストのペアを読み取ります (1 行に 1 つ)。ファイル名の代わりに - を指定した場合、\fBssh-keyscan\fR は、ホストまたはアドレスリストと名前リストのペアを標準入力から読み取ります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIport\fR\fR
+.ad
+.sp .6
+.RS 4n
+リモートホスト上の接続先のポート。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fItimeout\fR\fR
+.ad
+.sp .6
+.RS 4n
+接続試行のタイムアウトを設定します。ホストへの接続が開始されてから、またはそのホストから任意のデータが最後に読み取られてから \fItimeout\fR 秒が経過すると、その接続は閉じられ、対象のホストは使用不可であると見なされます。\fItimeout\fR のデフォルトは 5 秒です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fItype\fR\fR
+.ad
+.sp .6
+.RS 4n
+走査されるホストから取得する鍵のタイプを指定します。\fItype\fR の指定可能な値は、プロトコルバージョン 1 の場合は \fBrsa1\fR、プロトコルバージョン 2 の場合は \fBrsa\fR または \fBdsa\fR です。複数の値はコンマで区切って指定します。デフォルトは \fBrsa1\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+詳細表示モードを指定します。進捗に関するデバッグメッセージを表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-4\fR\fR
+.ad
+.sp .6
+.RS 4n
+強制的に IPv4 アドレスのみを使用します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-6\fR\fR
+.ad
+.sp .6
+.RS 4n
+強制的に IPv6 アドレスのみを使用します。
+.RE
+
+.SH セキュリティ
+.sp
+.LP
+\fBssh_known_hosts\fR ファイルが、鍵を検証せずに \fBssh-keyscan\fR を使用して構築されている場合、ユーザーは中間者攻撃に対して脆弱です。セキュリティーモデルでこのようなリスクが許可されている場合、\fBssh-keyscan\fR は、改ざんされた鍵ファイルや、\fBssh_known_hosts\fR ファイルが作成されたあとに開始された「man-in-the-middle attack」を検出するのに役立ちます。
+.SH 使用例
+.LP
+\fB例 1 \fR\fBrsa1\fR ホスト鍵の表示
+.sp
+.LP
+次の例では、マシン \fBhostname\fR の \fBrsa1\fR ホスト鍵を表示します。
+
+.sp
+.in +2
+.nf
+$ ssh-keyscan hostname
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRすべてのホストの検索
+.sp
+.LP
+次のコマンドは、ソートされたファイル \fBssh_known_hosts\fR 内の鍵とは異なる鍵や新しい鍵を含むファイル \fBssh_hosts\fR からすべてのホストを検索します。
+
+.sp
+.in +2
+.nf
+$ ssh-keyscan -t rsa,dsa -f ssh_hosts | \e
+     sort -u - ssh_known_hosts | diff ssh_known_hosts -
+.fi
+.in -2
+.sp
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ssh_known_hosts\fR\fR
+.ad
+.sp .6
+.RS 4n
+公開 SSH ホスト鍵のリストが含まれます。
+.RE
+
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用方法のエラーはありません。\fBssh-keyscan\fR が、指定されたホストのうちの 1 つ、それ以上、またはすべての走査に成功したか失敗したかは明確ではありません。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用方法のエラー。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件network/ssh
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBssh\fR(1), \fBsshd\fR(1M), \fBattributes\fR(5)
+.SH 著者
+.sp
+.LP
+David Mazieres が最初のバージョンを記述し、Wayne Davison がプロトコルバージョン 2 のサポートを追加しました。 
+.SH 使用上の留意点
+.sp
+.LP
+サーバーがバージョン 2.9 よりも古い場合、\fBssh—keyscan\fR はスキャンするすべてのマシンのコンソールに次のメッセージを生成します:
+.sp
+.in +2
+.nf
+Connection closed by remote host
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+これは、\fBssh-keyscan\fR が \fBssh\fR ポートへの接続を開いて公開鍵を読み取り、その鍵を取得するとすぐに接続を解除するためです。 

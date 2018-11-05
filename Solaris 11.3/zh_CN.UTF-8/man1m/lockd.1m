@@ -1,0 +1,213 @@
+'\" te
+.\" Copyright (c) 1998, 2012, Oracle and/or its affiliates.All rights reserved.
+.TH lockd 1M "2012 年 2 月 7 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+lockd \- 网络锁定守护进程
+.SH 用法概要
+.LP
+.nf
+\fB/usr/lib/nfs/lockd\fR [\fB-g\fR \fIgraceperiod\fR] [\fB-l\fR \fIlisten_min_backlog\fR] 
+     [\fB-t\fR \fItimeout\fR] [\fInthreads\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBlockd\fR 实用程序是 NFS 锁定管理器的一部分，后者支持对 NFSv2 和 NFSv3 中的 NFS 文件执行记录锁定操作。请参见 \fBfcntl\fR(2) 和 \fBlockf\fR(3C)。锁定管理器提供以下两项功能：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+将对 NFS 挂载的文件系统的 \fBfcntl\fR(2) 锁定请求转发到 NFS 服务器上的锁定管理器。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+生成本地文件锁定操作以响应从 NFS 客户机上运行的锁定管理器转发的请求。
+.RE
+.sp
+.LP
+如果中止 \fBlockd\fR 或者操作系统重新引导，锁定管理器保存的有关这些锁定请求的状态信息可能会丢失。其中的部分信息可按如下方式恢复。服务器锁定管理器重新启动时，会有一个等待宽限期，在此期限内等待所有客户机站点锁定管理器提交回收请求。另一方面，客户机站点锁定管理器会收到状态监视器守护进程 \fBstatd\fR(1M) 有关重新启动的通知，并立即重新提交先前授权的锁定请求。如果锁定守护进程未能在服务器站点保护先前授权的锁定，就会将 \fBSIGLOST\fR 发送到某个进程。
+.sp
+.LP
+管理员可通过以 root 身份登录并使用 \fBsharectl\fR(1M) 命令来更改 \fBlockd\fR 的启动参数。
+.SS "SMF 管理"
+.sp
+.LP
+\fBlockd\fR 服务由服务管理工具 \fBsmf\fR(5) 管理，其服务标识符为：
+.sp
+.in +2
+.nf
+svc:/network/nfs/nlockmgr
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以使用 \fBsvcadm\fR(1M) 来对此服务执行管理操作（如启用、禁用或请求重新启动）。可以使用 \fBsvcs\fR(1) 命令来查询服务的状态。
+.sp
+.LP
+如果该服务处于禁用状态，那么，除非其 \fBapplication/auto_enable \fR 属性设置为 \fBfalse\fR，否则可通过 \fBmount_nfs\fR(1M)、\fBshare_nfs\fR(1M) 和 \fBautomountd\fR(1M) 将其启用。
+.sp
+.LP
+\fBsharectl\fR(1M) 命令用于处理 \fBlockd\fR 的启动 SMF 参数。当前支持的参数如下：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlockd_listen_backlog\fR=\fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+为面向连接的传输上的 \fBlockd\fR 设置连接队列长度。缺省值和最小值都为 \fB32\fR。等效于 \fB-l\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlockd_servers\fR=\fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+并发 \fBlockd\fR 请求的最大数目。缺省值为 \fB1024\fR。等效于 \fInthreads\fR 操作数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlockd_retransmit_timeout\fR=\fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBlockd\fR 重新尝试之前的重新传输超时（以秒为单位）。缺省值为 \fB5\fR。等效于 \fB-t\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgrace_period\fR=\fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+所有客户机（NLM 和 NFSv4）在服务器重新引导后必须回收锁定的宽限期（以秒为单位）。此参数还控制 NFSv4 租用间隔。缺省值为 \fB90\fR。等效于 \fB-g\fR 选项。
+.RE
+
+.sp
+.LP
+请参见下文的\fB\fR“示例”部分。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR \fIgraceperiod\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项已过时，建议使用 \fBgrace_period\fR 选项。指定在服务器重新引导后所有客户机（\fBNLM\fR 和 \fBNFSv4\fR）必须回收锁定的秒数。该选项还控制 \fBNFSv4\fR 租用间隔。此选项等效于上面所述的 \fBgrace_period\fR 属性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIlisten_min_backlog\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定侦听器后备队列 (\fIlisten_min_backlog\fR)。\fIlisten_min_backlog\fR 是开始丢弃新连接请求之前排队等待处理的连接请求数。等效于上面所述的 \fBlockd_listen_backlog\fR 属性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fItimeout\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定将锁定请求重新传输到远程服务器之前等待的秒数。缺省值为 5 秒。等效于上面所述的 \fBlockd_retransmit_timeout\fR 属性。
+.RE
+
+.SH 操作数
+.sp
+.ne 2
+.mk
+.na
+\fB\fInthreads\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定服务器可以处理的最大并发线程数。此并发性是由根据需要在内核中创建的最多 \fInthreads\fR 个线程来实现的。\fInthreads\fR 应当基于该服务器上的预期负荷而设置。如果未指定 \fInthreads\fR，则最大并线程数将缺省设置为 1024。等效于上面所述的 \fBlockd_servers\fR 属性。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR设置 \fBlockd\fR 属性
+.sp
+.LP
+以下命令将 \fBlockd_listen_backlog\fR 设置为一个新值：
+
+.sp
+.in +2
+.nf
+# \fBsharectl set -p lockd_listen_backlog=40 nfs\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+下面的\fB\fR“附注”下介绍了 \fBlockd_listen_backlog\fR 及其他 \fBlockd\fR 属性。
+
+.LP
+\fB示例 2 \fR获取 \fBlockd\fR 属性值
+.sp
+.LP
+以下命令检索 \fBlockd_listen_backlog\fR 属性的值。
+
+.sp
+.in +2
+.nf
+% \fBsharectl get -p lockd_listen_backlog nfs\fR
+lockd_listen_backlog=40
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/file-system/nfs
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBsvcs\fR(1)、\fBautomountd\fR(1M)、\fBclear_locks\fR(1M)、\fBmount_nfs\fR(1M)、\fBshare\fR(1M)、\fBshare_nfs\fR(1M)、\fBsharectl\fR(1M)、\fBstatd\fR(1M)、\fBsvcadm\fR(1M)、\fBfcntl\fR(2)、\fBlockf\fR(3C)、\fBattributes\fR(5)、\fBsmf\fR(5)
+.SH 附注
+.sp
+.LP
+不需要为 NFSv4 运行 \fBlockd\fR 守护进程。
+.sp
+.LP
+将来的 Solaris 发行版中可能不存在 \fBlockd\fR 守护进程。

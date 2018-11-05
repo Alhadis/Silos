@@ -1,0 +1,151 @@
+'\" te
+.\" Copyright (c) 1998, 2011, Oracle and/or its affiliates.All rights reserved.
+.\"  Copyright 1989 AT&T
+.TH sar 1M "2011 年 8 月 16 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+sar, sa1, sa2, sadc \- システムアクティビティー報告パッケージ
+.SH 形式
+.LP
+.nf
+\fB/usr/lib/sa/sadc\fR [\fIt\fR \fIn\fR] [\fIofile\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/sa/sa1\fR [\fIt\fR \fIn\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/sa/sa2\fR [\fB-aAbcdgkmpqruvwy\fR] [\fB-e\fR \fItime\fR] [\fB-f\fR \fIfilename\fR] 
+     [\fB-i\fR \fIsec\fR] [\fB-s\fR \fItime\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+システムアクティビティーデータには、ここで説明しているように、日常的に、ユーザーの特別なリクエスト (\fBsar\fR(1) を参照) を受けて自動的にアクセスされます。オペレーティングシステムには、各種システムアクションが発生したときに増分されるいくつかのカウンタが含まれています。具体的には、\fBCPU\fR 使用率、バッファーサイズ、ディスクおよびテープの \fBI/O\fR アクティビティー、\fBTTY\fR デバイスアクティビティー、切り替えおよびシステムコールのアクティビティー、ファイルアクセス、キューアクティビティー、プロセス間通信、ページングのカウンタなどがあります。一般的なシステム統計の場合は、\fBiostat\fR(1M)、\fBsar\fR(1)、または \fBvmstat\fR(1M) を使用してください。
+.sp
+.LP
+\fBsadc\fR と 2 つのシェルプロシージャー \fBsa1\fR および \fBsa2\fR は、このデータのサンプリング、保存、および処理に使用されます。
+.sp
+.LP
+データコレクタである \fBsadc\fR は、システムデータを \fIt\fR 秒の間隔で \fIn\fR 回サンプリングし、バイナリ形式で \fIofile\fR または標準出力に書き出します。サンプリング間隔 \fIt\fR は 5 秒よりも大きくするようにしてください。それ以外の場合は、\fBsadc\fR そのもののアクティビティーがサンプルに影響する可能性があります。\fIt\fR と \fIn\fR が省略された場合は、特別なレコードが書き出されます。この機能をシステムブート時 (ブートしてマルチユーザー状態になるとき) に使用すると、カウンタがゼロから再起動する時間をマークできます。たとえば、アカウンティングが有効になっている場合、\fBsvc:/system/sar:default\fR サービスは次のコマンドエントリを使用して、その再起動マークを日次データファイルに書き出します。 
+.sp
+.in +2
+.nf
+su sys -c "/usr/lib/sa/sadc /var/adm/sa/sa`date +%d`"
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBsadc\fR のバリアントの 1 つであるシェルスクリプト \fBsa1\fR は、データを収集して、バイナリファイル \fB/var/adm/sa/sa\fR\fIdd\fR (ここでの \fBdd\fR は当日) に格納するために使用されます。引数 \fIt\fR および \fIn\fR を使用すると、\fIt\fR 秒の間隔で \fIn\fR 回レコードが書き出され、省略した場合は 1 回書き出されます。\fB/var/spool/cron/crontabs/sys\fR の次のエントリでは、レコードを就業時間中は 20 分ごとに生成し、それ以外の場合は 1 時間ごとに生成します。
+.sp
+.in +2
+.nf
+0 * * * 0-6 /usr/lib/sa/sa1
+20,40 8\(mi17 * * 1\(mi5 /usr/lib/sa/sa1
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+詳細は、\fBcrontab\fR(1) を参照してください。
+.sp
+.LP
+\fBsar\fR のバリアントの 1 つであるシェルスクリプト \fBsa2\fR は、日次レポートをファイル \fB/var/adm/sa/sar\fR\fIdd.\fR に書き出します。各種オプションの説明については、\fBsar\fR(1) の「\fBオプション\fR」セクションを参照してください。\fB/var/spool/cron/crontabs/sys\fR の次のエントリでは、重要なアクティビティーを就業日に 1 時間ごとに報告します。
+.sp
+.in +2
+.nf
+5 18 * * 1\(mi5 /usr/lib/sa/sa2 \fB-s\fR 8:00 \fB-e\fR 18:01 \fB-i\fR 1200 \fB-A\fR
+.fi
+.in -2
+.sp
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/tmp/sa.adrfl\fR\fR
+.ad
+.sp .6
+.RS 4n
+アドレスファイル
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/sa/sa\fR\fBdd\fR\fR
+.ad
+.sp .6
+.RS 4n
+日次データファイル
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/sa/sar\fR\fBdd\fR\fR
+.ad
+.sp .6
+.RS 4n
+日次レポートファイル
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/spool/cron/crontabs/sys\fR\fR
+.ad
+.sp .6
+.RS 4n
+パフォーマンスの収集用
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/accounting/legacy-accounting
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBcrontab\fR(1), \fBsar\fR(1), \fBsvcs\fR(1), \fBtimex\fR(1), \fBiostat\fR(1M), \fBsvcadm\fR(1M), \fBvmstat\fR(1M), \fBattributes\fR(5), \fBsmf\fR(5)
+.sp
+.LP
+\fIIntroduction to Oracle Solaris 11.3                 Administration\fR
+.SH 注意事項
+.sp
+.LP
+\fBsar\fR サービスは、サービス管理機能 \fBsmf\fR(5) によって、次のサービス識別子の下で管理されます。
+.sp
+.in +2
+.nf
+svc:/system/sar
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有効化、無効化、または再起動要求など、このサービスに関する管理操作は、\fBsvcadm\fR(1M) を使用して実行できます。サービスステータスを照会するには、\fBsvcs\fR(1) コマンドを使用します。

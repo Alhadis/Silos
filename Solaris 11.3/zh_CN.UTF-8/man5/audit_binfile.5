@@ -1,0 +1,114 @@
+'\" te
+.\"  Copyright (c) 2009, 2013, Oracle and/or its affiliates.All rights reserved.
+.TH audit_binfile  5 "2012 年 1 月 5 日" "SunOS 5.11" "标准、环境和宏"
+.SH 名称
+audit_binfile \- 生成 Solaris 审计日志
+.SH 用法概要
+.LP
+.nf
+\fB/usr/lib/security/audit_binfile.so\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+用于 Solaris 审计的 \fBaudit_binfile\fR 插件模块 \fB/usr/lib/security/audit_binfile.so\fR 可按照 \fBauditconfig\fR(1M) 中的配置将二进制审计数据写入文件；它是 Solaris 审计守护进程 \fBauditd\fR(1M) 的缺省插件。其输出由 \fBaudit.log\fR(4) 进行描述。
+.sp
+.LP
+如果 \fBaudit_binfile\fR 插件通过 \fBauditconfig\fR 配置为活动状态，则由 \fBauditd\fR 装入该插件。使用 \fBauditconfig\fR \fB-setplugin\fR 选项可以更改所有与插件相关的配置参数。
+.SH 对象属性
+.sp
+.LP
+下列属性指定 \fBaudit_binfile\fR 插件的配置：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp_dir\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+dir1[,dir2],.. [,dirn]
+.fi
+.in -2
+.sp
+
+将在其中创建审计文件的目录列表。可以指定任何有效可写目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp_minfree\fR\fR
+.ad
+.sp .6
+.RS 4n
+一个百分比，用于指示目标 \fBp_dir\fR 上所需的可用空间量。如果可用空间低于此阈值，则审计守护进程 \fBauditd\fR(1M) 将调用 shell 脚本 \fBaudit_warn\fR(1M)。如果未指定阈值，则缺省百分比为 1%。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp_fsize\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBp_fsize\fR 属性定义审计文件在自动关闭并打开一个新审计文件之前可以达到的最大大小。这与审计文件大小等于管理员指定的值时管理员发出 \fBaudit -n\fR 命令等效。缺省大小为零 (\fB0\fR)，这允许文件一直增长而不受约束。指定的值必须大于 500KB 并小于 16 艾字节 (\fBEB\fR)。所使用的文件系统可能会进一步降低该限制。\fBp_fsize\fR 值的格式可以指定为以字节为单位的确切值，或者使用后缀 \fBB, K, M, G, T, P, E, Z\fR（分别代表字节、千字节、兆字节、千兆字节、兆兆字节、千兆兆字节、艾字节和泽字节）以可读的格式指定值。也接受 \fBKB, MB, GB, TB, PB, EB\fR 和 \fBZB\fR 作为后缀。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp_age\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBp_age\fR 属性定义审计文件在自动关闭并打开一个新审计文件之前将保持打开的最长时间。这等效于管理员在审计文件处于打开状态的时间已经达到配置的时间时发出 \fBaudit -n\fR 命令。缺省时间为零 (0)，这样允许文件一直保持打开状态，直到某个其他操作导致该文件关闭。可使用具有用于指定时间单位的后缀的形式指定 \fBp_age\fR 值的格式：h、d、w、m、y（小时、天、周、月 (30d)、年 (365d)）。
+.RE
+
+.SH 示例
+.sp
+.LP
+使用以下指令可装入 \fBaudit_binfile.so\fR，指定用于写入审计日志的目录，指定每个目录的必需可用空间的百分比，日志文件的最大大小以及日志文件的最长使用寿命。
+.sp
+.in +2
+.nf
+auditconfig -setplugin audit_binfile active \e
+    "p_dir=/var/audit/jedgar/eggplant,/var/audit/jedgar.aux/eggplant,
+     /var/audit/global/eggplant;p_minfree=20;p_fsize=4.5GB;p_age=1w"
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+有关以下属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型\fB\fR属性值\fB\fR
+_
+MT 级别MT-Safe（MT 安全）
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBauditconfig\fR(1M)、\fBauditd\fR(1M)、\fBaudit_warn\fR(1M)、\fBsyslog.conf\fR(4)、\fBattributes\fR(5)
+.sp
+.LP
+\fI《Managing Auditing in Oracle Solaris 11.3》\fR

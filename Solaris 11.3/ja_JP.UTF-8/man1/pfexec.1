@@ -1,0 +1,110 @@
+'\" te
+.\" Copyright (c) 2003, 2013, Oracle and/or its affiliates.All rights reserved.
+.TH pfexec 1 "2012 年 3 月 15 日" "SunOS 5.11" "ユーザーコマンド"
+.SH 名前
+pfexec, pfbash, pfcsh, pfksh, pfsh, pftcsh, pfzsh \- プロファイル内のコマンドの実行
+.SH 形式
+.LP
+.nf
+\fB/usr/bin/pfexec\fR \fIcommand\fR
+.fi
+
+.LP
+.nf
+\fB/usr/bin/pfexec\fR \fB-P\fR \fIprivspec\fR \fIcommand\fR [ \fIarg\fR ]...
+.fi
+
+.LP
+.nf
+\fB/usr/bin/pfsh\fR [ \fIoptions\fR ] [ \fIargument\fR ]...
+.fi
+
+.LP
+.nf
+\fB/usr/bin/pfcsh\fR [ \fIoptions\fR ] [ \fIargument\fR ]...
+.fi
+
+.LP
+.nf
+\fB/usr/bin/pfksh\fR [ \fIoptions\fR ] [ \fIargument\fR ]...
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBpfexec\fR プログラムは \fBPRIV_PFEXEC\fR プロセスフラグを設定し、現プロセスをプロファイルシェルとしてマークします。次に、指定されたコマンドを実行します。カーネルは \fBexec_attr\fR(4) データベースに照会し、適切な属性を使用して実行します。
+.sp
+.LP
+プロファイルは、\fBuser_attr\fR(4) データベース内のユーザーのエントリと \fBpolicy.conf\fR(4) に指定された順序で検索されます。ユーザーごとに、認証されたセットと認証されていないセットという、プロファイルの 2 つのセットがあります。ユーザーは、認証されたプロファイルのセットに対応する \fBexec_attr\fR(4) データベース内のエントリに一致するコマンドを実行する前に、再認証する必要があります。このコマンドが端末から実行された場合、PAM スタック \fB/etc/pam.d/pfexec\fR 内の \fBpam_tty_tickets\fR(5) に対して設定されたタイムアウトオプションに従って、現在のユーザーと tty の認証状態がキャッシュされます。現在の tty は存在しないが、アクティブな X11 セッションが存在する場合、ユーザーは zenity ダイアログを通して認証するよう求められます。現在のユーザーと DISPLAY 環境設定の認証状態がキャッシュされます。正常に再認証されたプロセス (キャッシュのタイムアウト値内に暗黙的に認証されたプロセスを含む) は、以降の再認証から子プロセスを除外する追加のプロセスフラグ \fBPRIV_PFEXEC_AUTH\fR でマークされます。\fBPRIV_PFEXEC\fR フラグと \fBPRIV_PFEXEC_AUTH\fR フラグはどちらも、実 UID が変更されないかぎり、子プロセスによって継承されます。認証されていないプロファイルのセットに一致するコマンドは、再認証する必要はありませんが、認証されたプロファイルのセット内のコマンドに比べて優先順位が低くなります。同じコマンドが複数のプロファイルに存在する場合、プロファイルシェルは最初に一致したエントリを使用します。
+.sp
+.LP
+2 番目の形式 \fBpfexec\fR \fB-P\fR \fIprivspec\fR を使用すると、ユーザーは、\fBprof_attr\fR(4) 内のユーザーのプロファイルに与えられた追加の特権を取得できます。コマンド行での特権の指定は、\fBpriv_str_to_set\fR(3C) を使用して解析されます。その結果得られた特権と、該当ユーザーのすべてのプロファイルに対して \fBprof_attr\fR(4) の \fBprivs\fR キーワードで指定されている特権の和集合との間で、積集合をとった上で、その結果がコマンドの実行前に継承可能セットに追加されます。
+.SH 使用法
+.sp
+.LP
+\fBpfexec\fR は、特定のユーザーまたはグループ \fBID\fR など、定義済みのプロセス属性でコマンドを実行するために使用します。
+.sp
+.LP
+プロファイルシェルの使用法の詳細は、\fBsh\fR(1)、\fBcsh\fR(1)、および \fBksh\fR(1) のマニュアルページを参照してください。
+.SH 使用例
+.LP
+\fB例 1 \fR追加ユーザー特権の取得
+.sp
+.in +2
+.nf
+example% \fBpfexec -P all chown user file\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+このコマンドは、現在のユーザーに割り当てられているすべての特権 (必ずしもすべての特権であるとは限らない) で \fBchown user file\fR を実行します。
+
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+正常終了。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+エラーが発生した。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBbash\fR(1), \fBcsh\fR(1), \fBksh\fR(1), \fBksh88\fR(1), \fBprofiles\fR(1), \fBsh\fR(1), \fBtcsh\fR(1), \fBzsh\fR(1), \fBexec_attr\fR(4), \fBprof_attr\fR(4), \fBuser_attr\fR(4), \fBattributes\fR(5)

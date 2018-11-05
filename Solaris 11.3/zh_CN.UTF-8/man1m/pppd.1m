@@ -1,0 +1,2397 @@
+'\" te
+.\" Copyright (c) 1989 Carnegie Mellon University.All rights reserved.
+.\" Redistribution and use in source and binary forms are permitted provided that the above copyright notice and this paragraph are duplicated in all such forms and that any documentation, advertising materials, and other materials related to such distribution and use acknowledge that the software was developed by Carnegie Mellon University.The name of the University may not be used to endorse or promote products derived from this software without specific prior written permission.THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+.\" Portions Copyright (c) 2008, 2012, Oracle and/or its affiliates. All Right Reserved.
+.TH pppd 1M "2001 年 11 月 21 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+pppd \- 点对点协议守护进程
+.SH 用法概要
+.LP
+.nf
+\fBpppd\fR [\fItty_name\fR] [\fIspeed\fR] [\fIoptions\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+点对点协议 (Point-to-Point Protocol, PPP) 提供了通过串行点对点链路传输数据报的方法。PPP 包括三个组件：一个用于封装基于串行链路的数据报的工具、一个可扩展的链路控制协议 (link control protocol, LCP) 和一个用于设立和配置不同的网络层协议的网络控制协议 (network control protocol, NCP) 族。
+.sp
+.LP
+封装方案是由内核中的驱动程序代码提供的。\fBpppd\fR 提供了用于设立和配置 Internet 协议（称为 IP 控制协议或 “IPCP”）和 IPv6 (IPV6CP) 的基本 LCP 验证支持和多个 NCP。
+.SH 选项
+.sp
+.LP
+以下各节讨论了 \fBpppd\fR 选项：
+.SS "选项文件"
+.sp
+.LP
+选项是从文件和命令行获取的。\fBpppd\fR 先读取文件 \fB/etc/ppp/options\fR、\fB$HOME/.ppprc\fR 和 \fB/etc/ppp/options.\fR\fIttyname\fR 中的选项（按照该顺序），然后才处理命令行上的选项。（在读取 \fBoptions\fR.\fIttyname\fR 文件之前将扫描命令行选项来查找终端名称。）为构成 \fBoptions\fR.\fIttyname\fR 文件的名称，将从终端名称中删除开头的 \fB/dev/\fR，并且使用点替换任何剩余的正斜杠字符。例如，对于串行设备 \fB/dev/cua/a\fR，将读取选项文件 \fB/etc/ppp/options.cua.a\fR。
+.sp
+.LP
+选项文件将被解析为以空格分隔的一系列词。通过将词括在双引号 (") 中，可以在词内包含空格。反斜杠 (\) 用于引用其后的字符。井号 (#) 用于开始注释，注释一直持续到行末。对于选项文件内 \fBfile\fR 或 \fBcall\fR 选项的使用没有限制。
+.SS "常用选项"
+.sp
+.ne 2
+.mk
+.na
+\fB\fB<tty_name>\fR\fR
+.ad
+.RS 22n
+.rt  
+通过指定的设备进行通信。如果需要，将在其前附加字符串 \fB/dev/\fR。如果没有指定设备名称，或者指定了连接到标准输入的终端的名称，则 \fBpppd\fR 将使用该终端并且不会派生来将其自身置于后台。来自特权源的此选项的值无法由非特权用户覆盖。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB<speed>\fR\fR
+.ad
+.RS 22n
+.rt  
+将波特率设置为 <\fBspeed\fR>（一个十进制数字）。缺省设置是不更改波特率。通常只有拨出时才需要此选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBasyncmap\fR \fB\fI<map>\fR\fR\fR
+.ad
+.RS 22n
+.rt  
+将 \fBasync\fR 字符映射设置为 \fI<map>\fR。映射描述了哪些控制字符无法通过串行线路成功接收。\fBpppd\fR 会要求对等方以 2 字节转义序列的形式发送这些字符。参数是一个 32 位的十六进制数字，每个位表示要转义的一个字符。第 0 位 (00000001) 表示字符 0x00；第 31 位 (80000000) 表示字符 0x1f 或 ^_。如果指定了多个 \fBasyncmap\fR 选项，则会对所有这些值一起执行 \fBOR\fR 运算。如果未指定 \fBasyncmap\fR 选项，则 \fBpppd\fR 会尝试协商使用值 0。如果对等方同意，这将禁止对标准控制字符进行转义。使用 \fBdefault-asyncmap\fR 选项可以禁止协商并对所有控制字符进行转义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauth\fR\fR
+.ad
+.RS 22n
+.rt  
+在允许发送或接收网络数据包之前要求对等方证明自己的身份。如果系统具有一个缺省路由，则此选项是缺省设置。如果未指定 \fBauth\fR 或 \fBnoauth\fR 选项，则 \fBpppd\fR 将仅允许对等方使用系统与其之间尚没有路由的那些 IP 地址。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcall\fR \fB\fIname\fR\fR\fR
+.ad
+.RS 22n
+.rt  
+从文件 \fB/etc/ppp/peers/\fR\fIname\fR 读取选项。此文件可能包含特权选项（包括 \fBnoauth\fR），即使 \fBpppd\fR 不是由 root 在运行。\fIname\fR 字符串不能以斜杠 (“/”) 开头，也不能包括连续的句点 \fB("..")\fR 作为路径名组件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcallback\fR \fB\fInumber\fR\fR\fR
+.ad
+.RS 22n
+.rt  
+请求使用 Microsoft CBCP 回呼指定的电话号码。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconnect\fR \fB\fIscript\fR\fR\fR
+.ad
+.RS 22n
+.rt  
+使用由 \fIscript\fR 指定的可执行文件或 shell 命令来设置串行线路。此脚本通常将使用 \fBchat\fR(1M) 程序拨打调制解调器并启动远程 \fBPPP\fR 会话。来自特权源的此选项的值无法由非特权用户覆盖。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcrtscts\fR\fR
+.ad
+.RS 22n
+.rt  
+使用硬件流量控制（即 RTS/CTS）来控制串行端口上的数据流。如果未提供 \fBcrtscts\fR、\fBnocrtscts\fR、\fBcdtrcts\fR 或 \fBnocdtrcts\fR 选项，则串行端口的硬件流量控制设置将保留不变。某些串行端口缺少真正的 RTS 输出，因此使用此模式来实施单向流量控制。当请求是由调制解调器通过 CTS 发出的，但无法请求调制解调器停止向计算机发送时，串行端口可暂停传输。此模式允许使用 DTR 作为调制解调器控制线路。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdefaultroute\fR\fR
+.ad
+.RS 22n
+.rt  
+当 IPCP 协商成功完成时，向系统路由表添加一个缺省路由（使用对等方作为网关）。当 \fBPPP\fR 连接断开时，将删除此条目。如果指定了 \fBnodefaultroute\fR 选项，则此选项为特权选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdisconnect\fR \fB\fIscript\fR\fR \fR
+.ad
+.RS 22n
+.rt  
+在 \fBpppd\fR 终止链路后，运行由 \fIscript\fR 指定的可执行文件或 shell 命令。通常，如果硬件调制解调器控制信号不可用，可使用此脚本来命令调制解调器挂起。如果调制解调器已经挂起，则 \fBdisconnect\fR 不会运行。来自特权源的此选项的值无法由非特权用户覆盖。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBescape\fR \fB\fIxx,yy,...\fR\fR\fR
+.ad
+.RS 22n
+.rt  
+指定在传输时对特定字符进行转义，无论对等方是否使用其 \fBasync\fR 控制字符映射请求对它们进行转义。要转义的字符指定为以逗号分隔的十六进制数字列表。请注意，几乎任何字符都可以随 \fBescape\fR 选项一起指定，这不同于 \fBasyncmap\fR 选项，后者只允许指定控制字符。无法转义的字符是包含十六进制值 0x20 直到 0x3f 和 0x5e 的那些字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfile\fR \fB\fIname\fR\fR\fR
+.ad
+.RS 22n
+.rt  
+从文件 \fIname\fR 读取选项。如果此选项在命令行上或 \fB$HOME/.ppprc\fR 中使用，则该文件必须能够由调用 \fBpppd\fR 的用户读取。有关 \fBpppd\fR 始终会读取的文件的列表（无论是否使用了此选项），请参见上文中的“选项文件”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinit\fR \fB\fIscript\fR\fR\fR
+.ad
+.RS 22n
+.rt  
+运行由 \fIscript\fR 指定的可执行文件或 shell 命令来初始化串行线路。该脚本通常将使用 \fBchat\fR(1M) 程序来配置调制解调器以启用自动应答。来自特权源的此选项的值无法由非特权用户覆盖。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlock\fR\fR
+.ad
+.RS 22n
+.rt  
+指示 \fBpppd\fR 为串行设备创建一个 UUCP 样式的锁文件以确保对设备的独占访问。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmru\fR \fB\fIn\fR\fR \fR
+.ad
+.RS 22n
+.rt  
+将最大接收单元 (Maximum Receive Unit, MRU) 值设置为 \fIn\fR。\fBpppd\fR 要求对等方发送的包不要超过 \fIn\fR 个字节。最小 MRU 值为 128。缺省 MRU 值为 1500。对于慢速链路，建议使用值 296（40 字节的 TCP/IP 标头 + 256 字节的数据）。对于 IPv6，MRU 必须至少为 1280。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmtu\fR \fB\fIn\fR\fR \fR
+.ad
+.RS 22n
+.rt  
+将最大传输单元 (Maximum Transmit Unit, MTU) 值设置为 \fIn\fR。除非对等方通过 MRU 协商请求一个较小的值，否则，\fBpppd\fR 将要求内核联网代码通过 PPP 网络接口发送的数据包不要超过 \fIn\fR 个字节。对于 IPv6，MTU 必须至少为 1280。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpassive\fR\fR
+.ad
+.RS 22n
+.rt  
+在 LCP 中启用“被动”选项。指定了此选项时，\fBpppd\fR 将尝试启动一个连接；如果没有从对等方收到回复，则 \fBpppd\fR 将被动等待有效的 LCP 包而不是退出（未指定此选项时将退出）。
+.RE
+
+.SS "选项"
+.sp
+.ne 2
+.mk
+.na
+\fB\fB<local_IP_address>:<remote_IP_address>\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置本地和/或远程接口 IP 地址。两者都可以省略，但冒号是必需的。IP 地址可以通过主机名来指定，也可以通过十进制点记法来指定，例如：\fB:10.1.2.3\fR。缺省本地地址是系统的第一个 IP 地址，除非提供了 \fBnoipdefault\fR 选项。如果未在任何选项中指定远程地址，则将从对等方获取远程地址。因此，在简单情况下，此选项不是必需的。如果通过此选项指定了本地和/或远程 IP 地址，则 \fBpppd\fR 在 IPCP 协商中将不会接受来自对等方的不同值，除非分别指定了 \fBipcp-accept-local\fR 和/或 \fBipcp-accept-remote\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBallow-fcs\fR \fB\fIfcs-type\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+为发送到对等方的数据设置 FCS 类型。\fIfcs-type\fR 是由 "crc16"、"crc32"、"null" 或整数构成的以逗号分隔的列表。缺省情况下允许所有已知类型。如果指定了此选项并且对等方请求了未列出的某个类型，则会发送一个 LCP Configure-Nak 以仅请求所列出的类型。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBallow-ip\fR \fB\fIaddress(es)\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许对等方在不证明自己身份的情况下使用指定的 IP 地址或子网。对参数的解析方式与在密钥文件中解析允许的 IP 地址列表中的每个元素的方式相同。有关更多详细信息，请参见“验证”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbsdcomp\fR \fB\fInr,nt\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+请求对等方以 BSD-Compress 模式采用最大代码大小 \fInr\fR 位压缩它发送的包，并同意以最大代码大小 \fInt\fR 位压缩发送到对等方的包。如果未指定 \fInt\fR，将缺省使用为 \fInr\fR 指定的值。可以将范围 9 到 15 中的值用于 \fInr\fR 和 \fInt\fR；较大的值可以提供更好的压缩，但是对于压缩字典会占用更多的内核内存。此外，\fInr\fR 或 \fInt\fR 的值为 0 将在相应的方向禁用压缩。使用 \fBnobsdcomp\fR 或 \fBbsdcomp 0\fR 可完全禁用 BSD-Compress 压缩。如果此选项是从特权来源读取的，则非特权用户不能指定大于来自特权源的值的代码大小。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcdtrcts\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用非标准硬件流量控制（例如 DTR/CTS）来控制串行端口上的数据流。如果未指定 \fBcrtscts\fR、\fBnocrtscts\fR、\fBcdtrcts\fR 或 \fBnocdtrcts\fR 选项，则串行端口的硬件流量控制设置将保留不变。某些串行端口缺少真正的 RTS 输出。这样的串行端口使用此模式来实现真正的双向流量控制。请注意，此流量控制模式不允许使用 DTR 作为调制解调器控制线路。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchap-interval\fR \fB\fIn\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果指定了此选项，则 \fBpppd\fR 将每隔 \fIn\fR 秒重新质询一次对等方。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchap-max-challenge\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将 CHAP 质询传输最大数目设置为 \fIn\fR（缺省值为 10）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchap-restart\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将 CHAP 重新启动间隔（质询的重新传输超时）设置为 \fIn\fR 秒。缺省设置为 3。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconnect-delay\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+在连接脚本完成后，最多等待 \fIn\fR 毫秒以等待来自对等方的有效 PPP 包。当等待期间过去后或者从对等方收到有效的 PPP 包时，\fBpppd\fR 将通过发送其第一个 LCP 包开始协商。缺省值为 1000（1 秒）。只有使用了 \fBconnect\fR 或 \fBpty\fR 选项时，等待期间才适用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdatarate\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+当使用 \fBpty\fR、\fBnotty\fR、\fBrecord\fR 或 \fBsocket\fR 选项时，将最大数据速率设置为 \fIn\fR（每秒字节数）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdebug\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用连接调试工具。如果指定了此选项，则 \fBpppd\fR 将以可阅读格式记录所发送或接收的所有控制包的内容。包使用工具 \fBdaemon\fR 和级别 \fBdebug\fR 在系统日志中进行记录。可以通过相应地配置 \fB/etc/syslog.conf\fR 将该信息定向到一个文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdefault-asyncmap\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁用 \fBasyncmap\fR 协商，在传输和接收方向都强制对所有控制字符进行转义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdefault-fcs\fR\fR
+.ad
+.sp .6
+.RS 4n
+完全禁用 FCS Alternatives 协商。缺省情况下，不会向对等方发送 FCS Alternatives 选项，但是会接受此选项。如果对等方指定了此选项，则会发送 LCP Configure-Reject。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdefault-mru\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁用 MRU [Maximum Receive Unit, 最大接收单元] 协商。指定了此选项时，\fBpppd\fR 针对传送和接收方向都将使用缺省 MRU 值 1500 字节。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdeflate\fR \fB\fInr,nt,e\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+请求对等方使用 \fBdeflate\fR 模式以最大窗口大小 \fI2**nr\fR 字节压缩它发送的包，并同意以最大窗口大小 \fI2**nt\fR 字节和努力程度 \fIe\fR（1 到 9）压缩发送到对等方的包。如果未指定 \fInt\fR，将缺省使用为 \fInr\fR 指定的值。如果未指定 \fIe\fR，则它缺省为 6。可以将范围 9 到 15 中的值用于 \fInr\fR 和 \fInt\fR；较大的值可以提供更好的压缩，但是对于压缩字典会占用更多的内核内存。（由于存在一个 zlib 错误，不允许使用值 8）。此外，\fInr\fR 或 \fInt\fR 的值为 0 将在相应的方向禁用压缩。使用 \fBnodeflate\fR 或 \fBdeflate 0\fR 可完全禁用 \fBdeflate\fR 压缩。（注：如果对等方既能执行 deflate 压缩又能执行 BSD-Compress 压缩，则 \fBpppd\fR 将优先请求它执行 deflate 压缩。如果此选项是从特权来源读取的，则非特权用户不能指定大于来自特权源的值的代码大小。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdemand\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅在需要时启动链路，也就是说，当存在数据通信时。对于此选项，用户必须在命令行上或在选项文件中指定远程 IP 地址。\fBpppd\fR 会在不连接对等方的情况下对用于 IP 通信的接口进行初始配置和启用。当发生通信时，\fBpppd\fR 将连接到对等方并执行协商、验证和其他操作。当完成时，\fBpppd\fR 会通过链路传递数据包。\fBdemand\fR 选项隐含了 \fBpersist\fR 选项。如果不希望发生此行为，请在 \fBdemand\fR 选项后使用 \fBnopersist\fR 选项。\fBidle\fR 和 \fBholdoff\fR 选项可以与 \fBdemand\fR 选项结合使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdomain\fR \fB\fId\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+将域名 \fId\fR 附加到本地主机名以用于验证目的。例如，如果 \fBgethostname()\fR 返回了名称 \fBporsche\fR，但完全限定域名是 \fBporsche.Quotron.COM\fR，则您可以指定 \fBdomain Quotron.COM\fR。指定了此配置时，在向对等方证明自己的身份时，\fBpppd\fR 将使用名称 \fBporsche.Quotron.COM\fR 访问密钥文件中的密钥并使用该名称作为缺省名称。此选项为特权选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBendpoint\fR \fB\fIendpoint-value\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置端点鉴别符（通常用于 RFC 1990 多链路 PPP 操作）。\fIendpoint-value\fR 由一个分类标识符和一个依赖于分类的值组成。分类标识符是 "null"、"local"、"IP"、"MAC"、"magic"、"phone" 之一或者是一个十进制整数。如果提供依赖于分类的值，需要使用一个冒号 (“:”) 或句点 (“.”) 将该值与标识符隔开。该值可以是一个适用于分类 "IP" 的标准点分十进制 IP 地址，或者是一个适用于分类 "MAC" 的以冒号或点分隔的十六进制以太网地址（必须具有 6 个数字），或者是以十六进制指定的一串任意字节（在字节之间可以使用冒号或点作为分隔符）。虽然此选项可用，但本实现不支持多链路。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfcs\fR \fB\fIfcs-type\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+为对等方发送的数据设置所需的 FCS 类型。\fIfcs-type\fR 是由 \fBcrc16\fR、\fBcrc32\fR、\fBnull\fR 或整数构成的以逗号分隔的列表。缺省情况下，未指定 FCS Alternatives 选项，并且将使用依赖于介质的 FCS 类型。如果指定了此选项并且对等方发送了一个 LCP Configure-Nak，则只会使用所列出的选项。如果没有类型是共有的，则从下一个 LCP Configure-Request 起将忽略 FCS Alternatives 选项以恢复到缺省值。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhide-password\fR\fR
+.ad
+.sp .6
+.RS 4n
+在记录 PAP 包的内容时，此选项将导致 \fBpppd\fR 从日志中排除口令字符串。这是缺省值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBholdoff\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+指定链路终止后在重新启动它之前要等待多少秒。只有使用了 \fBpersist\fR 或 \fBdemand\fR 选项时，此选项才有效。如果链路是因为闲置而终止的，则推迟时间不适用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBident\fR \fB\fIstring\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置 LCP 标识字符串。缺省值是与 \fB--version\fR 选项所显示的版本字符串类似的一个版本字符串。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBidle\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+指定如果链路闲置了 \fIn\fR 秒，则 \fBpppd\fR 必须断开连接。如果没有正在发送或接收数据包（即 IP 包），则链路是闲置的。不要在未指定 \fBdemand\fR 选项的情况下将此选项与 \fBpersist\fR 选项一起使用。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipcp-accept-local\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定了此选项时，\fBpppd\fR 将接受对等方提供的本地 IP 地址，即使在某个选项中指定了本地 IP 地址。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipcp-accept-remote\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定了此选项时，\fBpppd\fR 将接受对等方提供的远程 IP 地址，即使在某个选项中指定了远程 IP 地址。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipcp-max-configure\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将 IPCP Configure-Request 传输最大数目设置为 \fIn\fR（缺省值为 10）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipcp-max-failure\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将在改为发送 Configure-Reject 之前发送的 IPCP Configure-NAK 的最大数目设置为 \fIn\fR（缺省值为 10）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipcp-max-terminate\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将 IPCP terminate-request 传输最大数目设置为 \fIn\fR（缺省值为 3）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipcp-restart\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将 IPCP 重新启动间隔（重新传输超时）设置为 \fIn\fR 秒（缺省值为 3）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipparam\fR \fB\fIstring\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+向 ip-up 和 ip-down 脚本提供一个额外的参数。指定了此选项时，提供的 \fIstring\fR 将被用作这些脚本的第六个参数。请参见“脚本”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv6\fR \fB\fI<local_interface_identifier>\fR,\fI<remote_interface_identifier>\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+设置本地和/或远程 64 位接口标识符。两者都可以省略。标识符必须以 IPv6 地址的标准 ASCII 表示法指定（例如：\fB::dead:beef\fR）。如果指定了 \fBipv6cp-use-ipaddr\fR 选项，则会从各自的 IPv4 地址派生本地和远程标识符（请参见上文）。可以使用 \fBipv6cp-use-persistent\fR 选项代替 \fBipv6 <local>,<remote>\fR 选项。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv6cp-accept-local\fR \fR
+.ad
+.sp .6
+.RS 4n
+接受对等方针对本地链路标识符提供的接口标识符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv6cp-max-configure\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将 IPv6CP Configure-Request 传输最大数目设置为 \fIn\fR（缺省值为 10）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv6cp-max-failure\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将在改为发送 Configure-Reject 之前发送的 IPv6CP Configure-NAK 的最大数目设置为 \fIn\fR（缺省值为 10）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv6cp-max-terminate\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将 IPv6CP terminate-request 传输最大数目设置为 \fIn\fR（缺省值为 3）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv6cp-restart\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将 IPv6CP 重新启动间隔（重新传输超时）设置为 \fIn\fR 秒（缺省值为 3）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv6cp-use-ipaddr\fR \fR
+.ad
+.sp .6
+.RS 4n
+如果未指定本地或远程 IPv6 地址，则会使用已配置的对应 IPv4 地址作为缺省的接口标识符。（此选项使用所配置的地址，而不是协商的地址。如果未指定本地 IPv6 标识符，请不要将它与 \fBipcp-accept-local\fR 一起使用；如果未指定远程 IPv6 标识符，请不要将它与 \fBipcp-accept-remote\fR 一起使用。）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipv6cp-use-persistent\fR \fR
+.ad
+.sp .6
+.RS 4n
+为链路本地地址使用唯一可用的持久值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkdebug\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+在内核级 PPP 驱动程序中启用调试代码。参数 \fIn\fR 是以下值的和：\fB1\fR 启用一般调试消息，\fB 2\fR 请求输出接收到的包的内容，以及\fB4\fR 请求输出传送的包的内容。内核输出的消息将由 \fBsyslogd\fR(1M) 记录到在 \fB/etc/syslog.conf\fR 配置文件中指定的一个文件中。不要使用 \fBkdebug\fR 选项来调试失败的链路。请改用 \fBdebug\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlcp-echo-failure\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+如果指定了此选项，如果发送了 \fIn\fR 个 LCP Echo-Request 但没有收到有效的 LCP Echo-Reply，则 \fBpppd\fR 会假定对等方已关闭。如果发生此情况，则 \fBpppd\fR 会终止连接。此选项要求 \fBlcp-echo-interval\fR 参数为非零值。在没有硬件调制解调器控制线路可用的情况下，此选项使得 \fBpppd\fR 能够在物理连接断开后（例如，当调制解调器挂起时）终止。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlcp-echo-interval\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+如果指定了此选项，则 \fBpppd\fR 每 \fIn\fR 秒向对等方发送一个 LCP Echo-Request 帧。通常，对等方通过发送 Echo-Reply 来响应 Echo-Request。此选项可以与 \fBlcp-echo-failure\fR 选项一起使用来检测对等方是否不再处于连接状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlcp-max-configure\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将 LCP Configure-Request 传输最大数目设置为 \fIn\fR（缺省值为 10）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlcp-max-failure\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将在开始发送 Configure-Reject 之前发送的 LCP Configure-NAK 的最大数目设置为 \fIn\fR（缺省值为 10）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlcp-max-terminate\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将 LCP Terminate-Request 传输最大数目设置为 \fIn\fR（缺省值为 3）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlcp-restart\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将 LCP 重新启动间隔（重新传输超时）设置为 \fIn\fR 秒（缺省值为 3）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlinkname\fR \fB\fIname\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+将链路的逻辑名称设置为 \fIname\fR。\fBpppd\fR 在包含其进程 ID 的 \fB/var/run\fR 中创建一个名为 \fBppp-\fR\fIname\fR\fB .pid\fR 的文件。这在确定哪个 \fBpppd\fR 实例负责给定对等方系统的链路时非常有用。这是一个特权选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlocal\fR \fR
+.ad
+.sp .6
+.RS 4n
+不使用调制解调器控制线路。指定了此选项时，\fBpppd\fR 将忽略来自调制解调器的 CD（Carrier Detect，载体检测）信号的状态，并且不会更改 DTR（Data Terminal Ready，数据终端就绪）信号的状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlogfd\fR \fB\fIn\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+将日志消息发送到文件描述符 \fIn\fR。\fBpppd\fR 将日志消息发送到（至少）一个文件或文件描述符（并将日志消息发送到系统日志），因此，此选项和 \fBlogfile\fR 选项是互斥的。缺省情况下，\fBpppd\fR 将日志消息发送到 \fBstdout\fR（文件描述符 1），除非串行端口在 stdout 上处于打开状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlogfile\fR \fB\fIfilename\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将日志消息附加到文件 \fIfilename\fR（并将日志消息发送到系统日志）。文件将以调用 \fBpppd\fR 的用户的特权在附加模式下打开。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlogin\fR \fR
+.ad
+.sp .6
+.RS 4n
+使用系统口令数据库通过 PAP 来验证对等方，并将用户记录在系统 \fBwtmp\fR 文件中。注意，对等方必须在 \fB/etc/ppp/pap-secrets\fR 文件中有一个对应的条目，并且系统口令数据库允许访问。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmaxconnect\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+在连接可用于网络通信 \fIn\fR 秒后（也就是说，在第一个网络控制协议启动 \fIn\fR 秒后）终止连接。在第一个 NCP 启动时发送一条 LCP Time-Remaining 消息，然后在剩余 5 分钟、2 分钟和 0.5 分钟时再次发送。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmaxfail\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+在连续 \fIn\fR 次连接尝试失败后终止。值为 0 表示无限制。缺省值为 10。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmodem\fR \fR
+.ad
+.sp .6
+.RS 4n
+使用调制解调器控制线路。此选项为缺省选项。使用此选项时，\fBpppd\fR 将等待来自调制解调器的 CD（Carrier Detect，载波检测）信号（在打开串行设备时声明，除非指定了一个连接脚本），并且在连接终止时和执行连接脚本之前将暂时丢弃 DTR（Data Terminal Ready，数据终端就绪）信号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBms-dns\fR \fB\fI<addr>\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+如果 \fBpppd\fR 充当 Microsoft Windows 客户机的服务器，则此选项允许 \fBpppd\fR 为客户机提供一个或两个 DNS（Domain Name Server，域名服务器）地址。此选项的第一个实例指定主 DNS 地址；第二个实例（如果给定）指定辅助 DNS 地址。如果第一个实例指定了解析为多个 IP 地址的名称，则将使用前两个地址。（在某些较旧版本的 \fBpppd\fR 中，此选项是通过名称 \fBdns-addr\fR 提供的。）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBms-lanman\fR \fR
+.ad
+.sp .6
+.RS 4n
+如果 \fBpppd\fR 作为客户机连接到 Microsoft 服务器并使用 MS-CHAPv1 进行验证，则此选项将选择 LAN Manager 口令样式而非 Microsoft NT。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBms-wins\fR \fB\fI<addr>\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+如果 \fBpppd\fR 充当 Microsoft Windows 或 Samba 客户机的服务器，则此选项允许 \fBpppd\fR 为客户机提供一个或两个 WINS（Windows Internet Name Services，Windows Internet 名称服务）服务器地址。此选项的第一个实例指定主 WINS 地址；第二个实例（如果给定）指定辅助 WINS 地址。与使用 \fBms-dns\fR 时一样，如果指定的名称解析为多个 IP 地址，则将取前两个地址分别用作主地址和辅助地址。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR \fB\fIname\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+将用于验证用途的本地系统的名称设置为 \fIname\fR。这是一个特权选项。指定了此选项时，\fBpppd\fR 将使用密钥文件中第二个字段包含 \fIname\fR 的行来查找在验证对等方时要使用的密钥。此外，除非通过 \fBuser\fR 选项覆盖，否则 \fIname\fR 将被用作在对本地系统进行验证时发送到对等方的名称。（请注意，\fBpppd\fR 不会将域名附加到 \fIname\fR。）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBno-accm-test\fR \fR
+.ad
+.sp .6
+.RS 4n
+禁止使用 LCP Echo-Request 消息进行 \fBasyncmap\fR (ACCM) 检查。如果在异步线路上使用了 \fBlcp-echo-failure\fR，则 \fBpppd\fR 将在前 \fIn\fR 个 LCP Echo-Request 消息中包括所有控制字符。如果 \fBasyncmap\fR 未正确设置，则链路将断开，而不是在随机出现故障的情况下继续运行。此选项禁用该功能。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoaccomp\fR \fR
+.ad
+.sp .6
+.RS 4n
+在两个方向（发送和接收）都禁用 HDLC 地址/控制压缩。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoauth\fR \fR
+.ad
+.sp .6
+.RS 4n
+不要求对等方证明自己的身份。此选项为特权选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnobsdcomp\fR \fR
+.ad
+.sp .6
+.RS 4n
+禁用 BSD-Compress 压缩；\fBpppd\fR 将不请求或同意使用 BSD-Compress 模式压缩数据包。如果指定了 \fBnoccp\fR，则此选项不是必需的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoccp\fR \fR
+.ad
+.sp .6
+.RS 4n
+禁用 CCP（Compression Control Protocol，压缩控制协议）协商。只有当对等方有问题或者因为来自 \fBpppd\fR 的 CCP 协商请求而困惑时，才需要此选项。如果禁用了 CCP，则不需要单独禁用 BSD 和 deflate 压缩。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnocrtscts\fR \fR
+.ad
+.sp .6
+.RS 4n
+在串行端口上禁用硬件流量控制（即 RTS/CTS）。如果未指定 \fBcrtscts\fR、\fBnocrtscts\fR、\fBcdtrcts\fR 或 \fBnocdtrcts\fR 选项，则串行端口的硬件流量控制设置将保留不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnocdtrcts\fR \fR
+.ad
+.sp .6
+.RS 4n
+此选项等效于 \fBnocrtscts\fR。这两个选项都将禁用两种形式的硬件流量控制。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnodefaultroute\fR \fR
+.ad
+.sp .6
+.RS 4n
+禁用 \fBdefaultroute\fR 选项。通过在 \fB/etc/ppp/options\fR 文件中放置此选项，您可以阻止非 root 用户通过 \fBpppd\fR 创建缺省路由。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnodeflate\fR \fR
+.ad
+.sp .6
+.RS 4n
+禁用 deflate 压缩；\fBpppd\fR 将不请求或同意使用 deflate 模式压缩数据包。如果指定了 \fBnoccp\fR，则此选项不是必需的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnodeflatedraft\fR \fR
+.ad
+.sp .6
+.RS 4n
+不使用 Internet 草案（未正确分配）算法编号进行 deflate 压缩。如果指定了 \fBnoccp\fR，则此选项不是必需的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnodetach\fR \fR
+.ad
+.sp .6
+.RS 4n
+不从控制终端分离。不使用此选项时，如果指定了不同于标准输入上的终端的串行设备，则 \fBpppd\fR 将执行派生以成为后台进程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoendpoint\fR \fR
+.ad
+.sp .6
+.RS 4n
+不发送或接受多链路端点鉴别符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoident\fR \fR
+.ad
+.sp .6
+.RS 4n
+禁用 LCP 标识。LCP 标识消息将不会被发送到对等方，但是会记录接收到的消息。（指定此选项两次可完全禁用 LCP 标识。在这种情况下，\fBpppd\fR 将发送 LCP Code-Reject 来响应所接收到的 LCP 标识消息。）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoip\fR \fR
+.ad
+.sp .6
+.RS 4n
+禁用 IPCP 协商和 IP 通信。只有当对等方有问题或者因为来自 \fBpppd\fR 的 IPCP 协商请求而困惑时，才应当使用此选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoipv6\fR \fR
+.ad
+.sp .6
+.RS 4n
+禁用 IPv6CP 协商和 IPv6 通信。缺省情况下不会启用 IPv6。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoipdefault\fR \fR
+.ad
+.sp .6
+.RS 4n
+禁用未指定本地 IP 地址时的缺省行为，即通过主机名确定本地 IP 地址（如果可行）。指定了此选项时，对等方在 IPCP 协商期间必须提供本地 IP 地址（除非在命令行上或选项文件中显式指定了该地址）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnolog\fR \fR
+.ad
+.sp .6
+.RS 4n
+不将日志消息发送到文件或文件描述符。此选项取消 \fBlogfd\fR 和 \fBlogfile\fR 选项，\fBnologfd\fR 用作此选项的别名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnomagic\fR \fR
+.ad
+.sp .6
+.RS 4n
+禁用魔数协商。指定了此选项时，\fBpppd\fR 无法检测到环回线路。只有对等方有问题时才应使用此选项。不要使用此选项来解决 “Serial line is looped back” 错误消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnopam\fR \fR
+.ad
+.sp .6
+.RS 4n
+此特权选项禁用可插拔验证模块。如果指定了此选项，\fBpppd\fR 将恢复到标准验证机制。缺省行为是不使用 PAM。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnopcomp\fR \fR
+.ad
+.sp .6
+.RS 4n
+在接收和传送方向禁用协议字段压缩协商。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnopersist\fR \fR
+.ad
+.sp .6
+.RS 4n
+在连接建立和终止后即退出。这是缺省行为，除非指定了 \fBpersist\fR 或 \fBdemand\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoplink\fR \fR
+.ad
+.sp .6
+.RS 4n
+导致 \fBpppd\fR 使用 I_LINK 而非 I_PLINK。这是缺省值。当使用 I_LINK 时，系统会清除已终止的接口（即使使用 SIGKILL 也是如此）但不允许 \fBifconfig\fR(1M) 动态取消激活 PPP 流或者插入或删除模块。如果需要 \fBifconfig\fR(1M) modinsert、modremove 或 unplumb 支持，请使用 \fBplink\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnopredictor1\fR \fR
+.ad
+.sp .6
+.RS 4n
+不接受或同意 Predictor-1 压缩。（接受此选项是为了实现兼容性。实现不支持 Predictor-1 压缩。）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoproxyarp\fR \fR
+.ad
+.sp .6
+.RS 4n
+禁用 \fBproxyarp\fR 选项。如果您希望阻止用户通过 \fBpppd\fR 创建代理地址转换协议条目，请将此选项放置到 \fB/etc/ppp/options\fR 文件中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnotty\fR \fR
+.ad
+.sp .6
+.RS 4n
+通常，\fBpppd\fR 需要一个终端设备。指定了此选项时，\fBpppd\fR 将向自己分配一个伪 tty 主/从设备对并使用从设备作为其终端设备。\fBpppd\fR 将创建一个子进程来充当字符分流在伪 tty 主设备与其标准输入和输出之间传输字符。这样，\fBpppd\fR 将传送其标准输出上的字符并接收其标准输入中的字符，即使标准输出和输入不是终端设备。此选项增大了当通过 ppp 接口传输数据时的延迟和 CPU 开销，因为所发送和接收的所有字符都必须通过字符分流进程。如果使用了此选项，可能无法指定显式设备名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnovj\fR \fR
+.ad
+.sp .6
+.RS 4n
+在传送和接收方向都禁用 Van Jacobson 样式的 TCP/IP 标头压缩。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnovjccomp\fR \fR
+.ad
+.sp .6
+.RS 4n
+在 Van Jacobson 样式的 TCP/IP 标头压缩中禁用 connection-ID 压缩。指定了此选项时，\fBpppd\fR 不会忽略来自 Van Jacobson 已压缩 TCP/IP 标头的 connection-ID 字节，也不会要求对等方这样做。如果指定了 \fBnovj\fR，则此选项不是必需的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpam\fR \fR
+.ad
+.sp .6
+.RS 4n
+此特权选项启用 PAM。如果指定了此选项，当使用 \fBlogin\fR 选项和 PAP 验证时，\fBpppd\fR 使用 \fBpam\fR(3PAM) 框架通过服务名 "ppp" 进行用户验证。缺省行为是不使用 PAM。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpapcrypt\fR \fR
+.ad
+.sp .6
+.RS 4n
+指示 \fBpppd\fR 不应当接受在加密之前与来自 \fB/etc/ppp/pap-secrets\fR 文件的密钥相同的口令。如果 \fBpap-secrets\fR 文件中的密钥是 \fBcrypt\fR(3C) 格式的，请使用此选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpap-max-authreq\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将 PAP authenticate-request 传输最大数目设置为 \fIn\fR（缺省值为 10）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpap-restart\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将 PAP 重新启动间隔（重新传输超时）设置为 \fIn\fR 秒（缺省值为 3）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpap-timeout\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将 \fBpppd\fR 等待对等方向 PAP 证明自己身份的最大时间设置为 \fIn\fR 秒（0= 无限制）。缺省值是 30 秒。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpassword\fR \fB\fIstring\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+用于向对等方证明身份的口令字符串。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpersist\fR \fR
+.ad
+.sp .6
+.RS 4n
+在连接终止后不退出，而是尝试重新打开连接。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBplink\fR \fR
+.ad
+.sp .6
+.RS 4n
+导致 \fBpppd\fR 使用 I_PLINK 而非 I_LINK。缺省情况下将使用 I_LINK，这将清除已终止的接口（即使使用 SIGKILL 也是如此）但不允许 \fBifconfig\fR(1M) 动态取消激活 PPP 流或者插入或删除模块。如果需要 \fBifconfig\fR(1M) modinsert/modremove/ 支持，请使用此选项。另请参见 \fBplumbed\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBplugin\fR \fB\fIfilename\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将共享库目标文件 \fIfilename\fR 装入为插件。这是一个特权选项。除非 filename 指定了一个显式路径，否则将依次搜索 \fB/etc/ppp/plugins\fR 和 \fB/usr/lib/inet/ppp\fR 来查找要装入的目标文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBplumbed\fR \fR
+.ad
+.sp .6
+.RS 4n
+此选项指示 \fBpppd\fR 应当查找某个已激活的接口并为会话使用该接口。如果其他情况下未指定 IPv4 地址或 IPv6 接口 ID 或链路 MTU，则会从所选的接口复制它们。此模式模仿了较旧的 \fBaspppd\fR 实现的某些功能，并且在 \fBpppd\fR 与使用 \fBifconfig\fR(1M) 的外部应用程序一起使用时可能比较有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpppmux\fR \fB\fItimer\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+启用 PPP 多路复用选项协商并将传输多路复用超时设置为 \fItimer\fR 微秒。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprivgroup\fR \fB\fIgroup-name\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+允许 \fIgroup-name\fR 组的成员使用特权选项。这是一个特权选项。因为不能保证 \fIgroup-name\fR 的成员无法自己使用 \fBpppd\fR 成为 root，因此应当慎用此选项。可以认为它等效于将 \fIgroup-name\fR 的成员放置在 \fBroot\fR 或 \fBsys\fR 组中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBproxyarp\fR \fR
+.ad
+.sp .6
+.RS 4n
+在系统的地址解析协议 (Address Resolution Protocol, ARP) 表中添加一个条目，用于指定对等方的 IP 地址和此系统的以太网地址。使用此选项时，在其他系统看来，对等方好像位于本地以太网上。PPP 链路上的远程地址必须位于分配给某个以太网接口的子网中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpty\fR \fB \fIscript\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定将命令脚本 \fIscript\fR 而非特定的终端设备用于串行通信。\fBpppd\fR 为自己分配一个伪 tty 主/从设备对并使用从设备作为其终端设备。\fIscript\fR 在子进程中运行，并使用伪 tty 主设备作为其标准输入和输出。如果使用了此选项，可能无法指定显式设备名称。（注意：如果 \fBrecord\fR 选项与 \fBpty\fR 选项一起使用，则子进程在其标准输入和输出上将具有管道。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreceive-all\fR \fR
+.ad
+.sp .6
+.RS 4n
+指定了此选项时，\fBpppd\fR 将接受来自对等方的所有控制字符，包括在接收 \fBasyncmap\fR 中标出的那些控制字符。未指定此选项时，\fBpppd\fR 将根据《\fIRFC 1662\fR》中的指定丢弃那些字符。只有当对等方有问题时（像回拨实现经常存在的那样），才应当使用此选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrecord\fR \fB\fIfilename\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+指示 \fBpppd\fR 将发送和接收的所有字符记录到名为 \fIfilename\fR 的文件。\fIfilename\fR 将使用用户的用户 ID 和权限以附加模式打开。因为此选项使用伪 tty 和一个进程在伪 tty 与真实的串行设备之间传输字符，所以它增大了通过 PPP 接口传输数据时的延迟和 CPU 开销。字符以某种带标记的格式随时间戳一起存储，可以使用 \fBpppdump\fR(1M) 程序以可阅读的形式显示这些信息。在调试 \fBpppd\fR 的内核部分（尤其是 CCP 压缩算法）并且不用于调试链路配置问题时，通常使用此选项。请参见 \fBdebug\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBremotename\fR \fB\fIname\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+将用于验证用途的远程系统的假定名称设置为 \fIname\fR。Microsoft WindowsNT 在其 CHAP 质询消息中不提供系统名称，此选项经常用来解决此问题。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrefuse-chap\fR \fR
+.ad
+.sp .6
+.RS 4n
+指定了此选项时，\fBpppd\fR 将不同意使用标准质询握手身份验证协议 (Challenge Handshake Authentication Protocol, CHAP) 向对等方证明自己的身份。（MS-CHAP 不受影响。）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrefuse-mschap\fR \fR
+.ad
+.sp .6
+.RS 4n
+不同意使用 MS-CHAPv1 验证对等方。如果指定了此选项，则来自对等方的 MS-CHAPv1 验证请求将被使用 LCP Configure-Nak 拒绝。该选项不禁用任何其他形式的 CHAP。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrefuse-mschapv2\fR \fR
+.ad
+.sp .6
+.RS 4n
+不同意使用 MS-CHAPv2 验证对等方。如果指定了此选项，则它请求使用 LCP Configure-Nak 拒绝来自对等方的 MS-CHAPv2 验证请求。该选项不禁用任何其他形式的 CHAP。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrefuse-pap\fR \fR
+.ad
+.sp .6
+.RS 4n
+指定了此选项时，\fBpppd\fR 将不同意使用口令验证协议 (Password Authentication Protocol, PAP) 向对等方证明自己的身份。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrequire-chap\fR \fR
+.ad
+.sp .6
+.RS 4n
+请求对等方使用标准 CHAP 验证来证明自己的身份。MS-CHAP 不受影响。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrequire-mschap\fR \fR
+.ad
+.sp .6
+.RS 4n
+请求对等方使用 MS-CHAPv1 验证来证明自己的身份。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrequire-mschapv2\fR \fR
+.ad
+.sp .6
+.RS 4n
+请求对等方使用 MS-CHAPv2 验证来证明自己的身份。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrequire-pap\fR \fR
+.ad
+.sp .6
+.RS 4n
+请求对等方使用 PAP 验证来证明自己的身份。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshow-password\fR \fR
+.ad
+.sp .6
+.RS 4n
+在记录 PAP 包的内容时，此选项将导致 \fBpppd\fR 在日志消息中显示口令字符串。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsilent\fR \fR
+.ad
+.sp .6
+.RS 4n
+指定了此选项时，在从对等方接收到有效的 LCP 包之前，\fBpppd\fR 不会传输 LCP 包来启动连接。这像早期版本的 \fBpppd\fR 使用的 “passive” 选项并且保留用以实现兼容性，但是首选使用当前的 \fBpassive\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsmall-accm-test\fR \fR
+.ad
+.sp .6
+.RS 4n
+在检查 \fBasyncmap\fR (ACCM) 设置时，缺省情况下 \fBpppd\fR 使用所有的 256 个可能值。请参见 \fBno-accm-test\fR。此选项对测试进行限制，以便仅测试受标准 ACCM 协商影响的 32 个值。此选项仅对非常慢的链路有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsocket\fR \fB\fIhost\fR:\fIport\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+使用 TCP 连接到给定主机和端口并通过此连接运行 PPP。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsync\fR \fR
+.ad
+.sp .6
+.RS 4n
+使用同步的 HDLC 串行编码而非异步的。由指定了此选项的 \fBpppd\fR 使用的设备必须支持同步。当前支持 \fBzs\fR、\fBse\fR 和 \fBhsi\fR 驱动程序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunit\fR \fB\fIn\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+在可能的情况下将 PPP 接口单元号设置为 \fIn\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBupdetach\fR \fR
+.ad
+.sp .6
+.RS 4n
+指定了此选项时，\fBpppd\fR 在建立 PPP 连接后将从其控制终端分离。指定了此选项时，由连接脚本（通常为 \fBchat\fR(1M)）发送到 \fBstderr\fR 的消息和因调试选项产生的调试消息将被定向到 \fBpppd\fR 的标准输出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBusehostname\fR \fR
+.ad
+.sp .6
+.RS 4n
+强制将附加有域名的主机名（如果已给定）用作用于验证用途的本地系统的名称。这将覆盖 \fBname\fR 选项。因为 \fBname\fR 选项是特权选项，所以通常不需要此选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBusepeerdns\fR \fR
+.ad
+.sp .6
+.RS 4n
+向对等方请求最多两个 DNS 服务器地址。对等方提供的地址（如果有）将被传递到环境变量 DNS1 和 DNS2 中的 \fB/etc/ppp/ip-up\fR 脚本。此外，\fBpppd\fR 将创建一个 \fB/etc/ppp/resolv.conf\fR 文件，其中包含的一个或两个名称服务器行包含由对等方提供的地址。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuser\fR \fB\fIname\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+将用于向对等方证明本地系统身份的名称设置为 \fIname\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvj-max-slots\fR \fB\fIn\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+将要由 Van Jacobson TCP/IP 标头压缩和解压缩代码使用的连接槽数设置为 \fIn\fR，这必须介于 2 与 16 之间（包含）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBwelcome\fR \fB\fIscript\fR\fR \fR
+.ad
+.sp .6
+.RS 4n
+在启动 PPP 协商之前、连接脚本完成之后（如果有）运行由 \fIscript\fR 指定的可执行文件或 shell 命令。来自特权源的此选项的值无法由非特权用户覆盖。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBxonxoff\fR \fR
+.ad
+.sp .6
+.RS 4n
+使用软件流量控制（即 XON/XOFF）来控制串行端口上的数据流。
+.RE
+
+.SS "已过时选项"
+.sp
+.LP
+以下选项已过时：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB+ua\fR \fB\fIname\fR\fR\fR
+.ad
+.RS 14n
+.rt  
+从 \fIname\fR 文件读取 PAP 用户名和口令。此文件必须包含两个用于名称和口令的行。当对等方请求 PAP 验证时，名称和口令将被发送到对等方。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB+ipv6\fR \fR
+.ad
+.RS 14n
+.rt  
+启用 IPv6 和 IPv6CP 而不指定接口标识符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB--version\fR \fR
+.ad
+.RS 14n
+.rt  
+显示版本号并退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB--help\fR \fR
+.ad
+.RS 14n
+.rt  
+显示简短帮助消息并退出。
+.RE
+
+.SH 扩展描述
+.sp
+.LP
+以下各节讨论了 \fBpppd\fR 的其他功能：
+.SS "安全性"
+.sp
+.LP
+\fBpppd\fR 使得系统管理员可以向合法用户提供对服务器计算机的 PPP 访问，而不需要担心危害服务器或它所在的网络的安全。访问控制是通过以下方式提供的：基于对等方通过验证的身份（如果有）限制对等方可以使用的 IP 地址，并通过选项中的限制来限制非特权用户可以使用的 IP 地址。可能会破坏配置安全性的选项是特权选项。仅当特权选项位于处于系统管理员控制下的文件中或者当 \fBpppd\fR 是由 root 运行的时，才能接受特权选项。
+.sp
+.LP
+缺省情况下，只有系统还没有到某个给定 IP 地址的路由时，\fBpppd\fR 才允许未经验证的对等方使用该 IP 地址。例如，与更广的 Internet 具有永久连接的系统通常具有一个缺省路由，这意味着所有对等方必须证明自己的身份才能建立连接。在这样的系统上，\fBauth\fR 选项是缺省选项。相反，具有包含与 Internet 的唯一连接的 PPP 链路可能不会拥有缺省路由，因此对等方实际上可以在不证明自己身份的情况下使用任何 IP 地址。
+.sp
+.LP
+对安全性敏感的选项是特权选项并且不能由运行 \fBpppd\fR（在命令行上、在用户的 \fB$HOME/.ppprc\fR 文件中，或者在使用 \fBfile\fR 选项读取的选项文件中）的非特权用户访问。特权选项可以用在 \fB/etc/ppp/options\fR 文件中或者用在使用 \fBcall\fR 选项读取的选项文件中。如果 \fBpppd\fR 是由 root 用户运行的，则可以不受限制地使用特权选项。如果 \fB/etc/ppp/options\fR 文件不存在，则只有 root 可以调用 \fBpppd\fR。必须创建 \fB/etc/ppp/options\fR 文件（但可以是空的）才允许普通的非 root 用户访问 \fBpppd\fR。
+.sp
+.LP
+在打开设备时，\fBpppd\fR 将使用调用方用户的用户 ID 或 root UID（即 0），具体取决于设备名称是由用户还是由系统管理员指定的。如果设备名称来自特权源，即，\fB/etc/ppp/options\fR 或使用 \fBcall\fR 选项读取的选项文件，则 \fBpppd\fR 在打开设备时将使用完全 root 特权。因此，通过在 \fB/etc/ppp/peers\fR 中创建一个相应的文件，系统管理员可以允许用户通过他们在通常情况下没有权限的设备建立 PPP 连接。否则，\fBpppd\fR 在打开设备时将使用调用方用户的真实 UID。
+.SS "验证"
+.sp
+.LP
+在验证过程中，一个对等方通过向另一个对等方发送其名称和某些密钥信息来让另一个对等方相信其身份。在验证过程中，第一个对等方成为“客户机”，第二个对等方成为“服务器”。验证名称可以（但不是必须）对应于对等方的 Internet 主机名。
+.sp
+.LP
+\fBpppd\fR 支持四个验证协议：口令验证协议 (Password Authentication Protocol, PAP) 和三种形式的质询握手验证协议 (Challenge Handshake Authentication Protocol, CHAP)。在 PAP 协议中，客户机向服务器发送其名称和明文口令来证明自己的身份。在 CHAP 中，服务器通过向客户机发送一个质询来启动验证质询，客户机必须以其名称和从共享密钥和质询派生的一个散列值进行响应。
+.sp
+.LP
+PPP 协议是对称的，这意味着每个对等方可能都必须向对方证明自己的身份。每次交换可以使用不同的验证协议和名称。
+.sp
+.LP
+缺省情况下，如果对方要求证明，则 \fBpppd\fR 将证明自己的身份，并且不会要求对等方证明自己的身份。不过，如果 \fBpppd\fR 没有可以证明自己的密钥，则它不会通过特定的协议证明自己的身份。
+.sp
+.LP
+\fBpppd\fR 将验证密钥存储在 \fB/etc/ppp/pap-secrets\fR（对于 PAP）和 \fB/etc/ppp/chap-secrets\fR（对于 CHAP）文件中。这两个文件使用相同的格式。\fBpppd\fR 使用密钥文件来向其他系统证明自己的身份以及验证其他系统的身份。
+.sp
+.LP
+密钥文件每行包含一个密钥。密钥特定于客户机和服务器的特定组合，并且只能由该客户机用来向该服务器证明自己的身份。密钥文件中的每行至少包含三个字段，这些字段依次包含客户机名称、服务器名称和密钥。通常，这三个字段后跟客户机用来连接到服务器的 IP 地址。
+.sp
+.LP
+密钥文件将被解析为词，并且分别向客户机名称字段、服务器名称字段以及密钥字段分配一个词。词内的嵌入空格或其他特殊字符必须括在引号中或者进行转义。所有三个字段都区分大小写。
+.sp
+.LP
+以符号 (“@”) 开头的密钥后跟包含该密钥的文件的文件名。以星号 (*) 作为客户机或服务器名称将匹配任何名称。在选择匹配项时，\fBpppd\fR 将选择具有最少的通配符的那一个。行上随后的词将被 \fBpppd\fR 解释为该客户机的可接受 IP 地址。如果 IP 地址出现在仅包含三个词的行中或者出现在其第一个词以连字符 (“-”) 开头的行中，则不允许这些地址。要允许任何地址，请使用 "*"。以叹号 (”!”) 开头的地址指示指定的地址不可接受。地址后可以跟有 "/" 和一个数字 \fIn\fR 来指示整个子网（在最重要的 \fIn\fR 个位中具有相同值的所有地址）。在这种形式中，根据所使用的 ppp 网络接口单元号，地址后可以跟有一个加号 ("+") 来指示子网中的一个地址是允许的。在这种情况下，地址的主机部件被设置为单元号加一。
+.sp
+.LP
+在验证对等方时，\fBpppd\fR 会选择密钥文件中第一个字段中包含其对等方名称且第二个字段中包含本地系统名称的条目中的密钥。本地系统名称缺省为主机名，如果使用了 \fBdomain\fR 选项，则附加有域名。可以通过 \fBname\fR 选项来覆盖缺省设置，除非使用了 \fBusehostname\fR 选项。
+.sp
+.LP
+在向对等方证明自己的身份时，\fBpppd\fR 首先确定它将用来向对等方证明自己的名称。此名称是通过 \fBuser\fR 选项指定的。如果未使用 \fBuser\fR 选项，则名称缺省为本地系统的主机名称。然后，\fBpppd\fR 将通过搜索第一个字段中包含该本地系统名称且第二个字段中包含对等方名称的条目来在密钥文件中选择密钥。如果使用标准 CHAP 验证，则 \fBpppd\fR 会知道对等方的名称，因为对等方将在质询包中发送其名称。不过，如果使用了 MS-CHAP 或 PAP，则 \fBpppd\fR 必须根据用户指定的选项来确定对等方的名称。用户可以通过 \fBremotename\fR 选项直接指定对等方的名称。否则，如果通过名称而不是以数字形式指定了远程 IP 地址，则该名称将被用作对等方的名称。如果该名称失败，则 \fBpppd\fR 将使用空字符串作为对等方的名称。 
+.sp
+.LP
+在通过 PAP 验证对等方时，会将所提供的口令与密钥文件中的数据进行比较。如果口令与密钥不匹配，则会使用 \fBcrypt()\fR 对口令进行加密，然后再次与密钥进行比较。如果提供了 \fBpapcrypt\fR 选项，为了实现更好的安全性，将省略第一次未加密的比较，因此条目必须是加密的 \fBcrypt\fR(3C) 形式。
+.sp
+.LP
+如果指定了 \fBlogin\fR 选项，则还会根据系统口令数据库来检查用户名和口令。这使得您可以设置 \fBpap-secrets\fR 文件以便仅为特定用户启用 PPP 访问，并限制可供用户使用的 IP 地址集。通常，当使用了 \fBlogin\fR 选项时，\fB/etc/ppp/pap-secrets\fR 中的密钥将是 ""，这与对等方提供的任何口令都匹配。这导致不需要在两个位置具有相同的密钥。当使用了 \fBlogin\fR 时，\fBpam\fR 选项将通过 \fBpam\fR(3PAM) 启用访问控制。
+.sp
+.LP
+必须完成验证，IPCP（或其他网络协议）才能启动。如果要求对等方证明自己的身份且对等方失败，则 \fBpppd\fR 将关闭 LCP 并终止链路。如果经过 IPCP 协商后要使用远程主机的不可接受 IP 地址，则 IPCP 将关闭。只有 IPCP 处于打开状态时才会发送或接收 IP 包。
+.sp
+.LP
+要允许无法证明自己身份的主机进行连接并使用某个受限的 IP 地址集，请在 \fBpap-secrets\fR 文件中添加一行以针对客户机名称和密钥指定空字符串。
+.sp
+.LP
+通过将选项放置在密钥条目的末尾并以两个短划线 (––) 分隔各个选项，可以为给定的对等方指定更多的 \fBpppd\fR 选项。例如：
+.sp
+.in +2
+.nf
+peername servername secret ip-address -- novj
+.fi
+.in -2
+
+.SS "路由"
+.sp
+.LP
+在 IPCP 协商完成后，\fBpppd\fR 会将 PPP 接口的本地和远程 IP 地址告诉内核，并且会创建一个通向链路的远程端的主机路由以便对等方可以交换 IP 包。要与其他计算机进行通信，通常需要进一步修改路由表和/或地址解析协议 (Address Resolution Protocol, ARP) 表。大多数情况下，使用 \fBdefaultroute\fR 和/或 \fBproxyarp\fR 选项足以完成此修改，但可能需要进一步干预。如果需要进一步干预，请使用 \fB/etc/ppp/ip-up\fR 脚本或某个路由协议守护进程。
+.sp
+.LP
+要添加通过远程主机的缺省路由，请使用 \fBdefaultroute\fR 选项。此选项通常用于“客户机”系统（即，使用 PPP 链路访问一般 Internet 的终端节点）。
+.sp
+.LP
+在某些情况下需要使用代理地址转换协议（例如，在连接到 LAN 的服务器主机上）才允许其他主机与远程主机进行通信。\fBproxyarp\fR 指示 \fBpppd\fR 在与远程主机相同的子网上查找网络接口。也就是支持广播和 ARP 的不属于点对点或回送接口且当前正在运行的接口。如果找到了这样的接口，则 \fBpppd\fR 将创建一个永久的已发布 ARP 条目，使其包含远程主机的 IP 地址和网络接口的硬件地址。
+.sp
+.LP
+当使用 \fBdemand\fR 选项时，应该已经在 IPCP 启动时设置了接口 IP 地址。如果 \fBpppd\fR 无法协商使用它用来配置接口的同一地址，则它会将接口 IP 地址设置为协商得到的地址。这可能会中断现有的连接。建议不要将按需拨号与执行动态 IP 地址分配的对等方一起使用。
+.SS "脚本"
+.sp
+.LP
+\fBpppd\fR 在处理期间的各个阶段会调用用来执行特定于站点的辅助处理的脚本。这些脚本可以是 shell 脚本，也可以是可执行程序。\fBpppd\fR 不会等待脚本完成。这些脚本将以 \fBroot\fR 的身份运行（实际和有效用户 ID 都设置为 0），因此它们可以更新路由表、运行特权守护进程或执行其他任务。请确保这些脚本的内容不会危害您的系统的安全。\fBpppd\fR 在运行脚本时会将标准输入、输出和错误重定向到 \fB/dev/null\fR，并且除了某些提供链路信息的环境变量外，它使用的基本上是一个空环境。\fBpppd\fR 环境变量包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDEVICE\fR \fR
+.ad
+.RS 15n
+.rt  
+串行 tty 设备的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBIFNAME\fR \fR
+.ad
+.RS 15n
+.rt  
+网络接口的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBIPLOCAL\fR \fR
+.ad
+.RS 15n
+.rt  
+链路的本地端的 IP 地址。只有 IPCP 已启动时才会设置此项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBIPREMOTE\fR \fR
+.ad
+.RS 15n
+.rt  
+链路的远程端的 IP 地址。只有 IPCP 已启动时才会设置此项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPEERNAME\fR \fR
+.ad
+.RS 15n
+.rt  
+对等方的经过验证的名称。只有对等方证明了自己的身份时才会设置此项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSPEED\fR \fR
+.ad
+.RS 15n
+.rt  
+tty 设备的波特率。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBORIG_UID\fR \fR
+.ad
+.RS 15n
+.rt  
+调用了 \fBpppd\fR 的用户的实际用户 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPPPLOGNAME\fR \fR
+.ad
+.RS 15n
+.rt  
+调用了 \fBpppd\fR 的实际用户 ID 的用户名。始终会设置此项。
+.RE
+
+.sp
+.LP
+\fBpppd\fR 还会为 ip-down 和 auth-down 脚本设置以下变量：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCONNECT_TIME\fR \fR
+.ad
+.RS 17n
+.rt  
+从 PPP 协商启动到连接终止之间的秒数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBBYTES_SENT\fR \fR
+.ad
+.RS 17n
+.rt  
+连接期间在串行端口级别发送的字节数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBBYTES_RCVD\fR \fR
+.ad
+.RS 17n
+.rt  
+连接期间在串行端口级别接收的字节数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLINKNAME\fR \fR
+.ad
+.RS 17n
+.rt  
+通过 \fBlinkname\fR 选项设置的链路逻辑名称。
+.RE
+
+.sp
+.LP
+如果它们存在，则 \fBpppd\fR 会调用以下脚本。如果它们不存在，也不会发生错误。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ppp/auth-up\fR \fR
+.ad
+.RS 23n
+.rt  
+在远程系统成功证明自己的身份后执行的程序或脚本。它是使用以下五个命令行参数执行的：\fBinterface-name peer-name user-name tty-device speed\fR。请注意，如果对等方不证明自己的身份（例如，当使用了 \fBnoauth\fR 选项时），则此脚本不会执行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ppp/auth-down\fR \fR
+.ad
+.RS 23n
+.rt  
+如果之前执行了 \fB/etc/ppp/auth-up\fR，当链路发生故障时执行的程序或脚本。它是使用与 \fB/etc/ppp/auth-up\fR 相同的参数以相同的方式执行的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ppp/ip-up\fR \fR
+.ad
+.RS 21n
+.rt  
+当链路可用于发送和接收 IP 包（也就是说，IPCP 已启动）时执行的程序或脚本。它是使用以下六个命令行参数执行的：\fBinterface-name tty-device speed local-IP-address remote-IP-address ipparam\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ppp/ip-down\fR \fR
+.ad
+.RS 21n
+.rt  
+当链路不再可用于发送和接收 IP 包时执行的程序或脚本。此脚本可用来撤消 \fB/etc/ppp/ip-up\fR 脚本的效果。它是使用与 \fBip-up\fR 脚本相同的参数以相同的方式调用的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ppp/ipv6-up\fR \fR
+.ad
+.RS 21n
+.rt  
+类似于 \fB/etc/ppp/ip-up\fR，但它是当链路可用于发送和接收 IPv6 包时执行的。它是使用以下六个命令行参数执行的：\fBinterface-name tty-device speed local-link-local-address remote-link-local-address ipparam\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ppp/ipv6-down\fR \fR
+.ad
+.RS 23n
+.rt  
+类似于 \fB/etc/ppp/ip-down\fR，但它是当 IPv6 包不再能够在链路上传输时执行的。它是使用与 ipv6-up 脚本相同的参数执行的。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR使用 \fBauth\fR 选项
+.sp
+.LP
+下列示例假定 \fB/etc/ppp/options\fR 文件包含 \fBauth\fR 选项。
+
+.sp
+.LP
+\fBpppd\fR 通常用来拨出到 ISP。当 \fB/etc/ppp/peers/isp\fR 文件被设置为包含类似以下内容的行时，可以使用 “\fBpppd call isp\fR” 命令执行此操作： 
+
+.sp
+.in +2
+.nf
+cua/a 19200 crtscts connect '/usr/bin/chat -f /etc/ppp/chat-isp' noauth
+.fi
+.in -2
+
+.sp
+.LP
+对于此示例，\fBchat\fR(1M) 用来拨打 ISP 的调制解调器并处理任何必需的登录序列。\fB/etc/ppp/chat-isp\fR 文件由 \fBchat\fR 使用并且可以包含以下内容：
+
+.sp
+.in +2
+.nf
+ABORT "NO CARRIER" 
+ABORT "NO DIALTONE" 
+ABORT "ERROR" 
+ABORT "NO ANSWER" 
+ABORT "BUSY" 
+ABORT "Username/Password Incorrect" 
+"" "at" 
+OK "at&f&d2&c1" 
+OK "atdt2468135" 
+"name:" "^Umyuserid" 
+"word:" "\eqmypassword" 
+"ispts" "\eq^Uppp" 
+"~-^Uppp-~"
+.fi
+.in -2
+
+.sp
+.LP
+有关 \fBchat\fR 脚本的详细信息，请参见 \fBchat\fR(1M) 手册页。
+
+.LP
+\fB示例 2 \fR将 \fBpppd\fR 与 \fBproxyarp\fR 一起使用
+.sp
+.LP
+\fBpppd\fR 还可以为用户提供拨入 ppp 服务。如果用户已经有登录帐户，则设置 ppp 服务的最简单方式是让用户登录到其帐户并按下例所示运行 \fBpppd\fR：
+
+.sp
+.in +2
+.nf
+example% \fBpppd proxyarp\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR向用户提供对 PPP 工具的访问权限
+.sp
+.LP
+要向用户提供对 PPP 工具的访问权限，请为用户的计算机分配一个 IP 地址，并在 \fB/etc/ppp/pap-secrets\fR 或 \fB/etc/ppp/chap-secrets\fR 中创建一个条目。这将使用户的计算机可以证明自己的身份。例如，要使使用计算机 "joespc" 的用户 “Joe” 能够拨入到计算机 "server" 并使用 IP 地址 “joespc.my.net,”，请在 \fB/etc/ppp/pap-secrets\fR 或 \fB/etc/ppp/chap-secrets\fR 文件中添加以下条目：
+
+.sp
+.in +2
+.nf
+\fBjoespc	server	"joe's secret"	joespc.my.net\fR 
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+另外，您还可以创建另一个用户名，例如 “ppp"，其登录 shell 是 \fB/usr/bin/pppd\fR，其起始目录是 \fB/etc/ppp\fR。如果您以此方式运行 \fBpppd\fR，请在 \fB/etc/ppp/.ppprc\fR 文件中添加选项。
+
+.sp
+.LP
+如果您的串行连接是复杂的，则使用 \fBasyncmap a0000\fR 对诸如 XON (^Q) 和 XOFF (^S) 之类的控制字符进行转义可能比较有用。如果路径包括一个 telnet，请对 ^] 进行转义 (\fBasyncmap 200a0000\fR)。如果路径包括一个 \fBrlogin\fR 命令，请将 \fBescape ff\fR 选项添加到选项中，因为 \fBrlogin\fR 会从流中删除窗口大小更改序列 [后跟任意 8 个字节的 0xff、0xff、0x73、0x73]。
+
+.SH 退出状态
+.sp
+.LP
+\fBpppd\fR 退出状态会指出错误或链路终止的原因。退出状态值有：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR \fR
+.ad
+.RS 7n
+.rt  
+根据对等方的请求，\fBpppd\fR 已经分离，或者连接已经成功建立和终止。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR \fR
+.ad
+.RS 7n
+.rt  
+发生了一个即时的致命错误。例如，某个基本的系统调用失败。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR \fR
+.ad
+.RS 7n
+.rt  
+在给定的选项中检测到错误。例如，使用了两个互斥的选项，或者缺少 \fB/etc/ppp/options\fR 并且用户不是 root。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR \fR
+.ad
+.RS 7n
+.rt  
+\fBpppd\fR 不是 \fBsetuid-root\fR 并且调用方用户不是 root。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR \fR
+.ad
+.RS 7n
+.rt  
+内核不支持 PPP。例如，未包括或者无法装入 PPP 内核驱动程序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB5\fR \fR
+.ad
+.RS 7n
+.rt  
+\fBpppd\fR 因为收到 SIGINT、SIGTERM 或 SIGHUP 信号而终止。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB6\fR \fR
+.ad
+.RS 7n
+.rt  
+串行端口无法锁定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB7\fR \fR
+.ad
+.RS 7n
+.rt  
+串行端口无法打开。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB8\fR \fR
+.ad
+.RS 7n
+.rt  
+连接脚本失败并且返回了非零退出状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB9\fR \fR
+.ad
+.RS 7n
+.rt  
+作为 \fBpty\fR 选项的参数指定的命令无法运行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB10\fR \fR
+.ad
+.RS 7n
+.rt  
+PPP 协商失败，因为没有网络协议能够运行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB11\fR \fR
+.ad
+.RS 7n
+.rt  
+对等方系统失败或者拒绝证明自己的身份。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB12\fR \fR
+.ad
+.RS 7n
+.rt  
+链路已成功建立，但是因为闲置而被终止。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB13\fR \fR
+.ad
+.RS 7n
+.rt  
+链路已成功建立，但是因为达到了连接时间限制而被终止。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB14\fR \fR
+.ad
+.RS 7n
+.rt  
+已协商进行回呼并且很快应当就会有传入的呼叫。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB15\fR \fR
+.ad
+.RS 7n
+.rt  
+链路已终止，因为对等方没有响应回显请求。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB16\fR \fR
+.ad
+.RS 7n
+.rt  
+链路已经因调制解调器挂起而终止。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB17\fR \fR
+.ad
+.RS 7n
+.rt  
+PPP 协商失败，因为检测到了串行回送。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB18\fR \fR
+.ad
+.RS 7n
+.rt  
+init 脚本失败，因为返回了非零退出状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB19\fR \fR
+.ad
+.RS 7n
+.rt  
+向对等方证明自己的身份失败。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/run/sppp\fIn\fR\fR\fB\&.pid\fR \fR
+.ad
+.RS 29n
+.rt  
+PPP 接口单元 \fIn\fR 上的 \fBpppd\fR 进程的进程 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/run/ppp-\fIname\fR\fR\fB\&.pid\fR \fR
+.ad
+.RS 29n
+.rt  
+用于逻辑链路名称的 \fBpppd\fR 进程的进程 ID（请参见 \fBlinkname\fR 选项）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ppp/pap-secrets\fR \fR
+.ad
+.RS 29n
+.rt  
+用于 PAP 验证的用户名、口令和 IP 地址。此文件应当归 root 所有并且不可供其他任何用户读取或写入，否则，\fBpppd\fR 将记录一个警告。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ppp/chap-secrets\fR \fR
+.ad
+.RS 29n
+.rt  
+用于所有形式的 CHAP 验证的名称、密钥和 IP 地址。\fB/etc/ppp/pap-secrets\fR 文件应当归 \fBroot\fR 所有并且不可供其他任何用户读取或写入，否则，\fBpppd\fR 将记录一个警告。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ppp/options\fR \fR
+.ad
+.RS 29n
+.rt  
+\fBpppd\fR 的系统缺省选项，在读取用户缺省选项或命令行选项之前读取。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.ppprc\fR \fR
+.ad
+.RS 29n
+.rt  
+用户缺省选项，在读取 \fB/etc/ppp/options.\fIttyname\fR\fR 之前读取。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ppp/options.\fIttyname\fR\fR \fR
+.ad
+.RS 29n
+.rt  
+针对所使用的串行端口的系统缺省选项，在 \fB$HOME/.ppprc\fR 之后读取。此文件名的 \fIttyname\fR 部分是通过从端口名称（如果已提供）中去掉开头的 \fB/dev/\fR 而形成的，并且任何斜杠（如果有）都将被转换为点。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/ppp/peers\fR \fR
+.ad
+.RS 29n
+.rt  
+存放可能包含特权选项的选项文件的目录（即使 \fBpppd\fR 是由 \fBroot\fR 之外的其他用户调用时也是如此）。系统管理员可以在此目录中创建选项文件来允许非特权用户在不要求对等方证明自己身份的情况下进行拨出，但是只能拨出到特定的可信对等方。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/network/ppp
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBchat\fR(1M)、\fBifconfig\fR(1M)、\fBcrypt\fR(3C)、\fBpam\fR(3PAM)、\fBattributes\fR(5)
+.sp
+.LP
+由 Haskin, D. 和 Allen, E. 合著的《\fIRFC 2472 –IP Version 6 Over PPP\fR》。Network Working Group 出版。1998 年 12 月。
+.sp
+.LP
+由 Jacobson, V. 编著的《\fIRFC 1144, Compressing TCP/IP Headers for Low-Speed Serial Links\fR》。Network Working Group 出版。1990 年 2 月 
+.sp
+.LP
+由 Lloyd, B. 和 Simpson, W. 合著的《\fIRFC 1334, PPP Authentication Protocols\fR》。Network Working Group 出版。1992 年 10 月。
+.sp
+.LP
+由 McGregor, G. 编著的《\fIRFC 1332, The PPP Internet Protocol Control Protocol (IPCP)\fR》。Network Working Group 出版。1992 年 5 月。
+.sp
+.LP
+由 Rivest, R. 编著的《\fIRFC 1321, The MD5 Message-Digest Algorithm\fR》。Network Working Group 出版。1992 年 4 月
+.sp
+.LP
+由 Simpson, W. 编著的《\fIRFC 1661, The Point-to-Point Protocol (PPP)\fR》。Network Working Group 出版。1994 年 7 月。
+.sp
+.LP
+由 Simpson, W. 编著的《\fIRFC 1662, HDLC-like Framing\fR》。Network Working Group 出版。1994 年 7 月。
+.SH 附注
+.sp
+.LP
+以下信号会影响 \fBpppd\fR 的行为：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSIGINT、SIGTERM\fR \fR
+.ad
+.RS 21n
+.rt  
+终止链路，恢复串行设备设置，然后退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSIGHUP\fR \fR
+.ad
+.RS 21n
+.rt  
+终止链路，恢复串行设备设置，然后关闭串行设备。如果指定了 \fBpersist\fR 或 \fBdemand\fR 选项，则 \fBpppd\fR 在推迟期过后将尝试重新打开串行设备并启动另一个连接。否则，\fBpppd\fR 将退出。如果在推迟期内收到 \fBSIGHUP\fR 信号，则此信号会导致 \fBpppd\fR 立即结束推迟期。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSIGUSR1\fR \fR
+.ad
+.RS 21n
+.rt  
+切换 \fBdebug\fR 选项的状态并将链路状态信息输出到日志中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSIGUSR2\fR \fR
+.ad
+.RS 21n
+.rt  
+导致 \fBpppd\fR 重新就压缩进行协商。在因为某个致命的解压缩错误而禁用压缩后，这可用来重新启用压缩。（致命的解压缩错误通常表明实现中存在问题。） 
+.RE
+
+.SH 诊断
+.sp
+.LP
+将使用 \fBLOG_DAEMON\fR 工具发送消息到系统日志守护进程。要查看错误和调试消息，请编辑 \fB/etc/syslog.conf\fR 文件来将消息定向到想要使用的输出设备或文件，或者使用 \fBupdetach\fR 或 \fBlogfile\fR 选项。
+.sp
+.LP
+\fBdebug\fR 选项将导致发送或接收的所有 LCP、PAP、CHAP 或 IPCP 控制包的内容被记录。如果 PPP 协商未成功或者验证失败，则这非常有用。 
+.sp
+.LP
+还可以通过发送 \fBSIGUSR1\fR 信号（它充当 \fBpppd\fR 进程的切换开关）来启用或禁用调试。

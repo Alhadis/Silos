@@ -1,0 +1,82 @@
+'\" te
+.\" Copyright (c) 2012, 2014, Oracle and/or its affiliates. All rights reserved.
+.TH datasets 5 "27 Feb 2014" "SunOS 5.11" "Standards, Environments, and Macros"
+.SH NAME
+datasets \- Oracle Solaris ZFS dataset organization
+.SH DESCRIPTION
+.sp
+.LP
+Oracle Solaris is installed to a hierarchical set of ZFS datasets with well-defined names. The ZFS datasets, composed of both file systems and volumes, are stored on a bootable ZFS  storage pool in the global zone. Snapshots are also ZFS datasets, but will not be discussed here.
+.sp
+.LP
+The datasets are created automatically by one of the installation tools: the automated installer, the text installer, or the GUI  installer. For non-global zones, the datasets are created by the zone brand during the zone installation and might differ from the hierarchy described here, which applies to the \fBsolaris\fR(5) brand and the global zone.
+.SS "rpool Dataset"
+.sp
+.LP
+\fBrpool\fR is the default name of the top-level dataset in the bootable ZFS storage pool and is mounted at \fB/rpool\fR. Bootable ZFS storage pools have certain restrictions over normal ZFS storage pools. These restrictions are discussed in the "Oracle Solaris Administration: ZFS File Systems" section of the Oracle Solaris 11 Information Library.
+.sp
+.LP
+Administrators can create datasets anywhere beneath the top-level dataset, but those created within the '\fBROOT/be-<name>\fR' dataset are treated specially by \fBbeadm\fR(1M) and are discussed later.
+.SS "ROOT Dataset"
+.sp
+.LP
+This is a container dataset which is not mounted by Solaris during operation. It collects sets of related datasets, each set forming a ZFS Boot Environment (BE). A BE is created on installation. Additional BEs are created by \fBpkg\fR(1) and can be modified, created, or destroyed by \fBbeadm\fR.
+.sp
+.LP
+In the global zone, the ROOT dataset must be stored within a bootable  ZFS  storage  pool, called '\fBrpool\fR' by default. For non-global zones, the ROOT dataset is stored in a dataset with the leaf name '\fBrpool\fR' beneath the zonepath of each zone.
+.sp
+.LP
+The list below shows the datasets that are created beneath the ROOT dataset. This list uses the default storage pool name.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrpool/ROOT/solaris\fR\fR
+.ad
+.sp .6
+.RS 4n
+This is the default dataset that is created for the first boot environment installed on  the  system. It contains the root file system and is mounted on '/'.
+.sp
+The name of the leaf component of this dataset corresponds to the name of the BE that is associated with it. Any datasets created by the administrator as children of the '\fBROOT/<be-name>\fR' dataset will be associated with that BE, and will be created, cloned, destroyed and have snapshots taken of them as part of the BE by \fBbeadm\fR. New datasets created beneath '\fBROOT/<be-name>\fR' should have the zfs property '\fBcanmount=noauto\fR' set so that the datasets are mounted by \fBbeadm\fR when appropriate.
+.sp
+All packaged content that is part of the image in a boot environment must fully reside within the datasets belonging to the boot environment.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrpool/ROOT/solaris/var\fR\fR
+.ad
+.sp .6
+.RS 4n
+This is a dataset associated with each boot environment that contains the \fB/var\fR file system for the BE.
+.RE
+
+.SS "Dump Dataset"
+.sp
+.LP
+\fBrpool/dump\fR is a ZFS volume created during installation and is used as the default dump device for the system crash dump facility. This dataset is shared across all BEs. The crash dump facility can be managed with \fBdumpadm\fR(1M) and the dump device can be resized using \fBzfs\fR(1M). The \fBrpool/dump\fR dataset is not present on non-global zones. Other devices can be used instead of \fBrpool/dump\fR.
+.SS "Swap Dataset"
+.sp
+.LP
+\fBrpool/swap\fR is a ZFS zvol created during installation and is used as the default swap area for the system. This dataset is shared across all BEs. Use \fBswap\fR(1M) to add or remove swap volumes. Use \fBzfs\fR to resize swap volumes. The \fBrpool/swap\fR dataset is not present on non-global zones. Other swap volumes can be used instead, as well as \fBrpool/swap\fR.
+.SS "\fBrpool/VARSHARE\fR"
+.sp
+.LP
+\fBrpool/VARSHARE\fR is a dataset created on installation or upgrade, and is not part of any one BE. Instead, it is shared across all BEs and is mounted automatically by that BE during boot. It contains unpackaged content from \fB/var\fR. For example, audit information is stored in \fB/var/audit\fR, core files are stored in \fB/var/cores\fR, saved crash dumps are stored in \fB/var/crash\fR, and system mail is stored in \fB/var/mail\fR.
+.sp
+.LP
+\fBrpool/VARSHARE\fR is reserved for use by Oracle Solaris. Creating datasets beneath \fBrpool/VARSHARE\fR is not supported.
+.SS "\fBrpool/VARSHARE/zones\fR"
+.sp
+.LP
+\fBrpool/VARSHARE/zones\fR is a dataset associated with each boot environment which is mounted at \fB/system/zones\fR and is the default parent of zonepath datasets.
+.SS "\fBrpool/export/home\fR"
+.sp
+.LP
+\fBrpool/export/home\fR is a dataset created on installation which can be used for user home directories. It is the default location for user home directories if the -d option is not passed to \fBuseradd\fR(1M) to specify a different directory. If the user home directory does not already exist and the parent directory is the mount point of a ZFS dataset (for example,  \fBrpool/export/home\fR), then a child of that dataset will be created and mounted at the specified location. These datasets are shared across all BEs.
+.SH SEE ALSO
+.sp
+.LP
+\fBbeadm\fR(1M), \fBdumpadm\fR(1M), \fBswap\fR(1M), \fBuseradd\fR(1M), \fBzfs\fR(1M), \fBzoneadm\fR(1M), \fBzpool\fR(1M), \fBbrands\fR(5), \fBfilesystem\fR(5), \fBpkg\fR(5), \fBsolaris\fR(5)

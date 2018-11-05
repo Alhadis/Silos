@@ -1,0 +1,207 @@
+'\" te
+.\" Copyright (c) 2012, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH suri 5 "2015 年 3 月 9 日" "SunOS 5.11" "标准、环境和宏"
+.SH 名称
+suri \- 存储 URI
+.SH 描述
+.sp
+.LP
+存储 URI 用于唯一标识不同节点间的存储对象。
+.sp
+.LP
+支持以下存储 URI：
+.SS "设备 URI"
+.sp
+.in +2
+.nf
+dev:<local-path-under-/dev>
+dev:///<path-with-dev>
+dev:<absolute-path-with-dev>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+示例：
+.sp
+.in +2
+.nf
+dev:dsk/c0t0d0s0
+dev:///dev/dsk/c0t0d0s0
+dev:/dev/dsk/c0t0d0s0
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+设备 URI 用于以现有设备的形式指定对象。设备 URI 的所有形式在功能上都是等同的。通常，首选使用不具有授权部分而具有隐含 “\fB/dev/\fR” 前缀的 “\fBdev:dsk\fR” 格式。该路径必须是 \fB/dev\fR 名称空间中的一个设备。
+.sp
+.LP
+该设备路径中的各个组成部分只能包含 POSIX.1-2008 可移植文件名字符集中的字符：0-9a-zA-Z._-。
+.SS "逻辑单元 URI"
+.sp
+.in +2
+.nf
+lu:luname.naa.<ID>
+lu:luname.eui.<ID>
+lu:initiator.naa.<ID>,target.naa.<ID>,luname.naa.<ID>
+lu:initiator.naa.<ID>,target.naa.<ID>,luname.eui.<ID>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+示例：
+.sp
+.in +2
+.nf
+lu:luname.naa.5000c5000288fa25
+lu:luname.eui.0021280001cf80f6
+lu:initiator.naa.2100001d38089fb0,target.naa.2100001d38089fb0,luname.naa.5000c5000288fa25
+lu:initiator.naa.2100001d38089fb0,target.naa.2100001d38089fb0,luname.eui.0021280001cf80f6
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+逻辑单元 URI 用于指定通过光纤通道或串行连接 SCSI 连接的逻辑单元。在仅具有 luname 的 URI 格式中，ID 用于描述逻辑单元名称。在 initiator,target,luname 格式中，initiator 用于指定启动器端口，target 用于指定目标端口，这两者共同指定逻辑单元的路径，该逻辑单元的名称必须与该 URI 在仅具有 luname 的格式中的 luname 部分匹配。
+.sp
+.LP
+ID 采用 SCSI-3 VPD 页面 (0x83) 逻辑单元名称来表示，该名称的格式为十六进制数字（64/128 位）。ID 不区分大小写。仅支持基于 NAA 或 EUI-64 标识符的逻辑单元名称。有关标识符格式的信息，请参见“附注”部分。
+.sp
+.LP
+通常，建议将仅具有 luname 的 URI 与多路径结合使用。如果采用仅具有 luname 的 URI 而禁用了多路径，则会为指定的逻辑单元选择一个随机路径。要避免分配此随机路径，可以使用 initiator,target,luname URI 格式为逻辑单元选择一个特定路径。如果采用 initiator,target,luname URI 格式并启用了多路径，则多路径框架可控制用于访问该逻辑单元的路径，而该 URI 仅用于标识该单元，而不是访问路径。
+.sp
+.LP
+如果启动器和/或目标 ID 不匹配，但根据逻辑单元名称找到该逻辑单元，则会通过备用路径访问该单元。
+.SS "iSCSI URI"
+.sp
+.in +2
+.nf
+iscsi:///luname.naa.<ID>
+iscsi:///luname.eui.<ID>
+iscsi://<host>[:<port>]/luname.naa.<ID>
+iscsi://<host>[:<port>]/luname.eui.<ID>
+iscsi:///target.<IQN>,lun.<LUN>
+iscsi://<host>[:<port>]/target.<IQN>,lun.<LUN>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+IQN 代表 iSCSI Qualified Name（iSCSI 限定名），采用 \fBiqn\fR.\fBYYYY-MM\fR.<\fBorg-naming-auth\fR>[:<\fBstring-defined-by-org\fR>] 格式。RFC 3721 文档《Internet Small Computer Systems Interface (iSCSI) Naming and Discovery》中定义了 IQN 格式并通过示例对其进行了详细阐述。建议 <\fBstring-defined-by-org\fR> 为通用唯一标识符 (Universally Unique Identifier, UUID)。 
+.sp
+.LP
+请注意，如果从启动器、目标和 LUN 到逻辑单元名称的映射配置为独立于启动器，则使用目标、LUN 格式的 iSCSI URI 将只在主机之间可传输。
+.sp
+.LP
+示例：
+.sp
+.in +2
+.nf
+iscsi:///luname.eui.0021280001cf80f6
+iscsi:///luname.naa.600144f03d70c80000004ea57da10001
+iscsi://[::1]/luname.naa.600144f03d70c80000004ea57da10001
+iscsi://127.0.0.1/luname.naa.600144f03d70c80000004ea57da10001
+iscsi://127.0.0.1:3260/luname.naa.600144f03d70c80000004ea57da10001
+iscsi://hostname:3620/luname.eui.0021280001cf80f6
+iscsi://hostname:3260/luname.naa.600144f03d70c80000004ea57da10001
+
+iscsi://127.0.0.1/target.iqn.com.sun:02:d0f2d311-f703,lun.0
+iscsi://127.0.0.1:3620/target.iqn.com.sun:02:d0f2d311-f703,lun.3
+iscsi:///target.iqn.com.sun:02:d0f2d311-f703,lun.6
+iscsi://[::1]/target.iqn.com.sun:02:d0f2d311-f703,lun.2
+iscsi://hostname:3620/target.iqn.com.sun:4db41b76-e3d7-cd2f-bf2d-9abef784d76c,lun.0
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+iSCSI URI 可根据可通过 iSCSI 协议访问的逻辑单元编号指定对象。可选 \fBhostname\fR[:<\fBport\fR>] 授权部分用于提供使用者设置发送目标搜索地址所需的信息。IPv6 地址必须括在方括号中。
+.sp
+.LP
+ID 的格式在“逻辑单元 URI”部分进行了说明。有关基于 NAA 和 EUI-64 的标识符格式的信息，请参见“附注”部分。
+.SS "NFS URI"
+.sp
+.in +2
+.nf
+nfs://<user>:<group>@<host>[:<port>]/<nfs-share-path>/<file>
+.fi
+.in -2
+
+.sp
+.LP
+示例：
+.sp
+.in +2
+.nf
+nfs://admin:staff@host/export/test/nfs_file 
+nfs://admin:staff@host:1000/export/test/nfs_file
+.fi
+.in -2
+
+.sp
+.LP
+NFS URI 基于在给定的 NFS 文件中创建的 \fBlofi\fR 设备指定一个对象。将使用基于用户和组派生的凭证来访问 NFS 文件。可以通过 \fBusername\fR 或 \fBuserid\fR 指定用户和组。可以将主机指定为 IPv4 地址、IPv6 地址或主机名。IPv6 地址必须括在方括号中。
+.SS "文件 URI"
+.sp
+.in +2
+.nf
+file://<user>:<group>@<host>/<file-path>
+.fi
+.in -2
+
+.sp
+.LP
+示例：
+.sp
+.in +2
+.nf
+file://admin:staff@/filepath 
+file://admin:staff@localhost/filepath
+.fi
+.in -2
+
+.sp
+.LP
+文件 URI 基于在给定的本地文件中创建的 \fBlofi\fR 设备指定一个对象。将使用基于用户和组派生的凭证来访问该文件。可以通过 \fBusername\fR 或 \fBuserid\fR 指定用户和组。不需要指定主机，但如果指定，必须指定为 \fBlocalhost\fR。
+.SS "获取 URI"
+.sp
+.LP
+要通过手动生成 URI 来避免错误，建议使用 \fBsuriadm\fR(1M) 子命令 \fBlookup-uri\fR 根据现有系统设备路径来生成 URI。此类设备路径必须通过其他方式进行标识。对于光纤通道设备，可以使用 \fBfcadm\fR(1M)。对于串行连接 SCSI 设备，可以使用 \fBsasinfo\fR(1M)。对于 iSCSI 设备，可以使用 \fBiscsiadm\fR(1M)。
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/library/storage/suri
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBfcadm\fR(1M)、\fBiscsiadm\fR(1M)、\fBsasinfo\fR(1M)、\fBsuriadm\fR(1M)、\fBattributes\fR(5)
+.sp
+.LP
+《Small Computer System Interface-3》(SCSI-3)
+.SH 附注
+.sp
+.LP
+NAA 代表 Name Address Authority（名称地址授权机构），它是标识符中的一个字段，用于指定该标识符的格式和长度。NAA 标识符格式在《SCSI Primary Commands - 3》规范的 "7.6.3.6 NAA identifier format" 部分进行了定义。WWN（World Wide Name，全局名称）标识符采用 NAA 标识符格式。EUI-64 代表 64 位扩展唯一标识符，其格式由 IEEE 进行了定义。

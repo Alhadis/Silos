@@ -1,0 +1,201 @@
+'\" te
+.\" Copyright (c) 2013, Oracle and/or its affiliates. All rights reserved.
+.TH ars 5 "10 May 2012" "SunOS 5.11" "Standards, Environments, and Macros"
+.SH NAME
+ars \- receive Solaris audit logs from a remote server
+.SH SYNOPSIS
+.LP
+.nf
+/usr/sbin/auditd
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+Audit Remote Server (ARS) is the counterpart of the \fBaudit_remote\fR(5) plugin. Data sent by the plugin can be captured, processed, and stored by the server according to the its configuration.
+.sp
+.LP
+ARS is delivered as a disabled Solaris audit component. It is necessary to configure ARS before it can be used to process a remote audit trail. ARS configuration is twofold:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+the underlying security mechanisms used for secure audit data transport has to be configured (see \fBaudit_remote\fR(5));
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+the audit remote subsystem has to be configured.
+.RE
+.sp
+.LP
+To observe and configure the ARS, use the \fBauditconfig\fR(1M) \fB-setremote\fR and \fB-getremote\fR options. The configuration is divided between the configuration of \fIserver\fR and \fIgroup\fR. The \fIserver\fR configuration allows for changing common ARS parameters, while the \fIgroup\fR keyword allows configuration of connection groups, the sets of hosts sharing the same local storage parameters.
+.SS "Server configuration attributes"
+.sp
+.ne 2
+.mk
+.na
+\fB\fIlisten_address\fR\fR
+.ad
+.sp .6
+.RS 4n
+The address the server listens on. An empty \fIlisten_address\fR attribute defaults to listen on all local addresses.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIlisten_port\fR\fR
+.ad
+.sp .6
+.RS 4n
+The local listening port; 0 defaults to 16162, the port associated with the "solaris-audit" Internet service name. See \fBservices\fR(4).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIlogin_grace_time\fR\fR
+.ad
+.sp .6
+.RS 4n
+The server disconnects after login grace time (in seconds) if the connection has not been successfully established; 0 defaults to no limit.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fImax_startups\fR\fR
+.ad
+.sp .6
+.RS 4n
+The number of concurrent unauthenticated connections to the server at which the server starts refusing new connections. The value might be specified in \fIbegin\fR:\fIrate\fR:\fIfull\fR format to allow random early drop mode, for example 10:30:60, meaning that ARS would refuse connection attempts with a probability of \fIrate\fR/100 (30% in our example) if there are currently 10 (from the \fIstart\fR field) unauthenticated connections. The probability increases linearly and all connection attempts are refused if the number of unauthenticated connections reaches \fIfull\fR (60 in our example).
+.RE
+
+.SS "Group configuration attributes"
+.sp
+.LP
+The \fIbinfile_dir\fR, \fIbinfile_fsize\fR, and \fIbinfile_minfree\fR attributes follow the respective \fIp_\fR* attributes defined in \fBaudit_binfile\fR(5). Brief descriptions follow.
+.sp
+.ne 2
+.mk
+.na
+\fB\fIbinfile_dir\fR\fR
+.ad
+.sp .6
+.RS 4n
+The directory for storing per host audit data.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIbinfile_fsize\fR\fR
+.ad
+.sp .6
+.RS 4n
+The maximum size of each of the stored audit trail files; 0 defaults to no limit.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIbinfile_minfree\fR\fR
+.ad
+.sp .6
+.RS 4n
+The minimum free space on file system with \fIbinfile_dir\fR before the \fBaudit_binfile\fR informs the administrator via \fBaudit_warn\fR(1M); 0 defaults to no limit.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIhosts\fR\fR
+.ad
+.sp .6
+.RS 4n
+The hosts in the given connection group allowed to send audit data to server. A comma is a delimiter in case of multiple host entries. If \fIhosts\fR is empty, such connection group is called a wild card connection group. If a new connection cannot be classified to any other (non-wild card) connection group and there is an active wild card connection group configured, the new connection is classified to that connection group. Only one active wild card connection group can be configured.
+.RE
+
+.sp
+.LP
+For comprehensive configuration description and examples, see the section on Auditing in \fISecuring Systems and Attached Devices in Oracle Solaris 11.3\fR. 
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRAudit Remote Server configuration
+.sp
+.LP
+The following example describes steps to configure audit remote server to listen on specific address. One wild card and one non-wild card connection group will be created. The non-wild card connection group configuration will address remote audit data from \fBtic.cz.example.com\fR and \fBtac.us.example.com\fR, the trail will be stored in \fB/var/audit/remote\fR.
+
+.sp
+.in +2
+.nf
+# Print the current audit remote server configuration.
+# Both server and connection groups (if any) is displayed.
+auditconfig -getremote
+
+# Set address the audit remote server will listen on.
+auditconfig -setremote server "listen_address=192.168.0.1"
+
+# Create two connection groups. Note that by default the
+# connection group is created with no hosts specified
+# (wild card connection group).
+auditconfig -setremote group create clockhouse
+auditconfig -setremote group create sink
+
+# Add hosts to the connection group (convert the wild card
+# connection group no non-wild card one). Set the storage
+# directory and activate the connection group.
+auditconfig -setremote group active clockhouse \e
+    "hosts=tic.cz.example.com,tac.us.example.com,
+    binfile_dir=/var/audit/remote"
+
+# Activate the wild card connection group.
+auditconfig -setremote group active sink
+
+# Verify the audit remote server configuration.
+auditconfig -getremote
+
+# Start or refresh the audit service.
+audit -s
+.fi
+.in -2
+.sp
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/core-os
+_
+Interface StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBaudit\fR(1M), \fBauditconfig\fR(1M), \fBauditd\fR(1M), \fBaudit_warn\fR(1M), \fBservices\fR(4), \fBattributes\fR(5), \fBaudit_binfile\fR(5), \fBsmf\fR(5)
+.sp
+.LP
+See the section on Auditing in \fIManaging Auditing in Oracle Solaris 11.3\fR.
+.SH NOTES
+.sp
+.LP
+The audit service FMRI is \fBsvc:/system/auditd:default\fR.

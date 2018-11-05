@@ -1,0 +1,168 @@
+'\" te
+.\" Copyright (c) 2004, 2013, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright (c) 1983 Regents of the University of California.All rights reserved.The Berkeley software License Agreement specifies the terms and conditions for redistribution.
+.TH savecore 1M "2011 年 12 月 6 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+savecore \- 保存操作系统的故障转储
+.SH 用法概要
+.LP
+.nf
+\fB/usr/bin/savecore\fR [\fB-Lvd\fR] [\fB-f\fR \fIdumpfile\fR] [\fIdirectory\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBsavecore\fR 实用程序保存内核的故障转储（假定生成了一个故障转储），并向关机日志写入重新引导消息。在每次系统引导时 \fBdumpadm\fR 服务会调用该实用程序。
+.sp
+.LP
+可以通过 \fBdumpadm\fR(1M) 将 \fBsavecore\fR 配置为将故障转储数据保存为压缩格式或未压缩的格式。对于压缩格式，\fBsavecore\fR 将故障转储数据保存在文件 \fB\fIdirectory\fR/vmdump.\fIN\fR\fR 中，其中路径名中的 \fIN\fR 将由一个数字替换，每次在 \fIdirectory\fR 中运行 \fBsavecore\fR 时该数字都会递增 1。压缩文件可以使用 \fB-f\fR \fIdumpfile\fR 选项在单独的步骤中进行解压缩。对于未压缩的格式，\fBsavecore\fR 将故障转储数据保存在文件 \fB\fIdirectory \fR/vmcore.\fIN\fR\fR 中，而将内核的名称列表保存在 \fB\fIdirectory\fR/unix.\fIN\fR\fR 中。
+.sp
+.LP
+在对 \fBvmcore-*.N\fR 文件执行提取时，会对远程系统中的 \fBvmdump-*.N\fR 文件进行完整性验证。也可以在不执行提取的情况下使用 \fB-V\fR 选项单独执行该操作。如果验证失败，\fBsavecore\fR 会将文件标记为不完整。
+.sp
+.LP
+在写出故障转储之前，\fBsavecore\fR 会从文件 \fIdirectory\fR\fB/minfree\fR 中读取一个数字。这是包含 \fIdirectory\fR 的文件系统上必须保留的空闲空间的最小千字节数。如果在保存故障转储后，包含 \fIdirectory\fR 的文件系统的空闲空间会小于 \fBminfree\fR 中指定的千字节数，则不会保存故障转储。如果 \fBminfree\fR 文件不存在，则 \fBsavecore\fR 会假定 \fBminfree\fR 值为 1 兆字节。
+.sp
+.LP
+\fBsavecore\fR 实用程序还使用工具 \fBLOG_AUTH\fR 记录重新引导消息（请参见 \fBsyslog\fR(3C)）。如果系统是因为发生紧急情况而崩溃的，\fBsavecore\fR 还会记录紧急情况字符串。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+忽略转储标头有效标志。强制 \fBsavecore\fR 保存故障转储，即使转储设备中存储的标头信息指示已保存该转储时也是如此。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIdumpfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+从指定的文件而不是从系统的当前转储设备保存故障转储。如果指定了 \fB\fIdirectory\fR/vmdump.\fIN\fR\fR，则将文件解压缩到 \fBvmcore.\fIN\fR\fR 和 \fBunix.\fIN\fR\fR，其中 \fIN\fR 与压缩后的名称中的数字相同。
+.sp
+如果已通过 \fBdd\fR(1M) 命令将转储设备中存储的信息复制到盘上文件，此选项也会十分有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR\fR
+.ad
+.sp .6
+.RS 4n
+保存实时运行的 Solaris 系统的故障转储，但不以任何方式实际重新引导或更改系统。此选项可强制 \fBsavecore\fR 将系统的实时快照保存到转储设备，然后立即检索数据并将其写入指定目录中一组新的故障转储文件。只有在使用 \fBdumpadm\fR(1M) 将系统配置为使用专用转储设备后，才能执行实时系统故障转储。
+.sp
+\fBsavecore\fR \fB-L\fR 不会暂停系统，因此在保存转储时内存的内容会继续发生更改。这意味着实时故障转储不是完全自我一致的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+详细模式。显示来自 \fBsavecore\fR 的详细错误消息。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdirectory\fR\fR
+.ad
+.sp .6
+.RS 4n
+将故障转储文件保存到指定目录。如果未指定 \fIdirectory\fR，则 \fBsavecore\fR 会将故障转储文件保存到缺省的 \fBsavecore\fR \fIdirectory\fR（通过 \fBdumpadm\fR(1M) 进行配置）。
+.RE
+
+.SH 文件
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fIdirectory\fR\fB/vmcore.\fR\fIN\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fIdirectory\fR\fB/unix.\fR\fIN\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fIdirectory\fR\fB/bounds\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fIdirectory\fR\fB/minfree\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/var/crash/`uname -n`\fR（缺省故障转储目录）
+.RE
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBadb\fR(1)、\fBmdb\fR(1)、\fBsvcs\fR(1)、\fBdd\fR(1M)、\fBdumpadm\fR(1M)、\fBsvcadm\fR(1M)、\fBsyslog\fR(3C)、\fBattributes\fR(5)、\fBsmf\fR(5)
+.SH 附注
+.sp
+.LP
+系统故障转储服务由服务管理工具 \fBsmf\fR(5) 管理，其服务标识符为：
+.sp
+.in +2
+.nf
+svc:/system/dumpadm:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以使用 \fBsvcadm\fR(1M) 来对此服务执行管理操作（如启用、禁用或请求重新启动）。可以使用 \fBsvcs\fR(1) 命令来查询服务的状态。
+.sp
+.LP
+如果转储设备也用作交换设备，则必须在引导后立即运行 \fBsavecore\fR，以免包含故障转储的交换空间被当前运行的程序覆盖。
+.sp
+.LP
+\fBsavecore\fR 创建文件时，会附加后缀 \fB\&.partial\fR。文件完成后，会进行重命名，去掉此后缀。如果发现转储目录中的文件带有此后缀，则意味着 \fBsavecore\fR 仍处于忙碌状态或者在完全写入文件之前被中断。如果是前一种情况，请使用 \fBps\fR(1) 查找正在运行的 \fBsavecore\fR 进程的 PID，然后等待该进程完成。如果是后一种情况，请删除未完成文件，然后运行 \fBsavecore\fR \fB-d\fR 以重新创建该文件。

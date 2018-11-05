@@ -1,0 +1,587 @@
+'\" te
+.\" Copyright (c) 2012, 2015, Oracle and/or its affiliates.All rights reserved
+.TH suriadm 1M "2015 年 4 月 7 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+suriadm \- ストレージ URI に基づいたストレージオブジェクトの管理
+.SH 形式
+.LP
+.nf
+\fB/usr/sbin/suriadm\fR \fIcommand\fR [\fIoptions\fR] [\fIoperands\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/suriadm\fR parse [\fB-H\fR] [\fB-o\fR <\fIp\fR>,<\fIp\fR>,...] <\fIURI\fR>
+\fB/usr/sbin/suriadm\fR normalize <\fIURI\fR>
+/usr/sbin/suriadm map [-H] [-o <\fIp\fR>,<\fIp\fR>,...] [-p <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>
+/usr/sbin/suriadm lookup-mapping [-H] [-o <\fIp\fR>,<\fIp\fR>,...] [-p <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>
+/usr/sbin/suriadm unmap [-p <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>
+/usr/sbin/suriadm create [-H] [-o <\fIp\fR>,<\fIp\fR>,...] [-p <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>
+/usr/sbin/suriadm destroy [-p <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>
+/usr/sbin/suriadm lookup-uri [-t <\fIuri-type\fR>] <\fIdevice-path\fR>
+/usr/sbin/suriadm lookup-uri [-t <\fIuri-type\fR>] 
+    -p \fBmapped-dev\fR=<\fIdevice-path\fR>
+/usr/sbin/suriadm lookup-uri [-t <\fIuri-type\fR>] -p \fBluname\fR=<\fIluname\fR>
+/usr/sbin/suriadm lookup-uri [-t <\fIuri-type\fR>] -p \fBtarget\fR=<\fItarget\fR> 
+    -p \fBlun\fR=<\fILUN\fR>
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBsuriadm\fR コマンド行管理ツールを使用すると、システムユーザーはストレージ URI を介してストレージオブジェクトを管理できます。このコマンドでは、解析、マップ、マップ解除、マッピング状態のクエリー、およびストレージ URI の検索を行えます。
+.SS "サポートされているストレージ URI"
+.sp
+.LP
+サポートされているストレージ URI は、\fBsuri\fR(5) のマニュアルページに定義されています。
+.SH サブコマンド
+.sp
+.LP
+サポートされているサブコマンドは次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBparse\fR [\fB-H\fR] [\fB-o\fR \fIp\fR,\fIp\fR,...] \fIURI\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された URI を解析し、デフォルトのプロパティーリストを表示します。\fB-H\fR を使用すると、ヘッダーが出力から省略されます。\fB-o\fR を使用すると、提供されたリストからのプロパティーのみが表示されます。\fB-o\fR オプションは、別のコマンドによってさらに処理されることを意図された、プロパティー値がタブで区切られている 1 行の出力を意味します。
+.sp
+\fB-o\fR オプションに対して使用できるプロパティー名は、\fIcreate-size\fR、\fIcreate-supported\fR、\fIgroup\fR、\fIfile-permissions\fR、\fIhostname\fR、\fIinitiator\fR、\fIluname\fR、\fIlun\fR、\fImapped-dev\fR、\fImapped-devs\fR、\fImount-options\fR、\fImountpoint\fR、\fImountpoint-prefix\fR、\fIpath\fR、\fIport\fR、\fItarget\fR、\fIteardown-supported\fR、\fIuri\fR、\fIuri-type\fR、および \fIuser\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnormalize\fR \fIURI\fR\fR
+.ad
+.sp .6
+.RS 4n
+URI タイプの正規化指定に基づいて、ストレージ URI 文字列の解析および正規化を行います。正規化された URI を表示します。オプションは受け入れません。
+.sp
+iSCSI または論理ユニットの URI の場合、このサブコマンドは URI のすべての英字を小文字に変換します。
+.sp
+また、iSCSI URI の場合、このサブコマンドは URI のデフォルトの iSCSI ポート「3260」も削除します。
+.sp
+デバイス URI タイプの場合、URI タイプ名の後ろにあるすべての先頭のスラッシュ、およびパスコンポーネントの先頭にある「\fB/dev\fR」(ある場合) を削除します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmap\fR [\fB-H\fR] [\fB-o\fR p,p,...] [\fB-p\fR <\fIprop\fR>=<\fIvalue\fR>] \fIURI\fR\fR
+.ad
+.sp .6
+.RS 4n
+ストレージ URI を解析し、必要に応じて、指定された URI に対応するすべてのデバイスをインスタンス化するようにストレージサブシステムを構成して、デバイスパスを表示します。デバイスがすでにインスタンス化されている場合、マップ操作ではデバイスパスの検索のみを行います。
+.sp
+iSCSI URI の場合、このサブコマンドはホスト名が解決される \fBsend-targets\fR 発見アドレスを追加します (URI 権限セクションが存在する場合)。
+.sp
+論理ユニットおよび \fBdev\fR URI タイプの場合、このサブコマンドはシステム構成には影響しません。オプション \fB-H\fR および \fB-o\fR の意味は、\fBparse\fR サブコマンドの場合と同じです。プロパティー \fBmapped-devs\fR は指定された URI に対応するすべてのデバイスパスを表示し、プロパティー \fBmapped-dev\fR は \fBmapped-devs\fR の最初のデバイスパスのみを表示します。
+.sp
+\fB-p\fR オプションに対して使用できる入力プロパティー名は、\fBcreate-size\fR、\fBfile-permissions\fR、\fBmount-options\fR、\fBmountpoint-prefix\fR、\fBmapped-dev\fR、\fBtarget\fR、\fBlun\fR、および \fBluname\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlookup-mapping\fR [\fB-H\fR] [\fB-o\fR <\fIp\fR>,<\fIp\fR>,...]\fR
+.ad
+.br
+.na
+\fB[\fB-p\fR <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>\fR
+.ad
+.sp .6
+.RS 4n
+URI を解析し、ストレージ URI と、ローカルシステムデバイスパスによって表されるオブジェクトの間の既存のマッピングを検索します。デフォルトのプロパティーリストが表示されます。オプション \fB-H\fR および \fB-o\fR の意味は、\fBparse\fR サブコマンドの場合と同じです。オプション \fB-p\fR の意味は、\fBmap\fR サブコマンドの場合と同じです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate\fR [\fB-H\fR] [\fB-o\fR <\fIp\fR>,<\fIp\fR>,...] [\fB-p\fR <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>\fR
+.ad
+.sp .6
+.RS 4n
+ストレージ URI のバッキングストアを作成してから、それをマッピングします。オプション \fB-p\fR の意味は、\fBmap\fR サブコマンドの場合と同じです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdestroy\fR [\fB-p\fR <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>\fR
+.ad
+.sp .6
+.RS 4n
+ストレージ URI をマップ解除してから、バッキングストアを破棄します。オプション \fB-p\fR の意味は、\fBmap\fR サブコマンドの場合と同じです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunmap\fR [\fB-p\fR <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>\fR
+.ad
+.sp .6
+.RS 4n
+おそらく以前にマップされたオブジェクトを解析し、マップ解除します。オプション \fB-p\fR の意味は、\fBmap\fR サブコマンドの場合と同じです。
+.sp
+iSCSI URI の場合、このサブコマンドは URI 権限セクションからのホスト名が解決される発見アドレス (存在する場合) を削除します。
+.sp
+論理ユニットおよび \fBdev\fR URI タイプの場合、このサブコマンドはシステム構成には影響しません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlookup-uri\fR [\fB-t\fR \fIuri-type\fR] \fIdevice-path\fR\fR
+.ad
+.br
+.na
+\fB\fBlookup-uri\fR [\fB-t\fR \fIuri-type\fR] \fB-p\fR \fImapped-dev\fR=<\fIdevice-path\fR>\fR
+.ad
+.sp .6
+.RS 4n
+ローカルシステムデバイスパスに基づいて URI を検索および表示します。\fB-t\fR に指定できる URI タイプは、\fBdev\fR、\fBlu\fR、および \fBiscsi\fR です。\fB-t\fR オプションが指定されていない場合、出力はいずれかの URI タイプのデバイスパスに一致するすべての URI で構成されます。プロパティーオプション「\fB-p\fR」の使用はオプションです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlookup-uri\fR [\fB-t\fR \fIuri-type\fR] \fB-p\fR \fIluname\fR=<\fIluname\fR>\fR
+.ad
+.sp .6
+.RS 4n
+論理ユニット名に基づいて LU および iSCSI の URI を検索および表示します。\fB-t\fR に指定できる URI タイプは、\fBlu\fR および \fBiscsi\fR です。\fB-t\fR オプションを指定しない場合、出力は指定された論理ユニット名と一致する論理ユニットを識別するすべての URI で構成されます。
+.sp
+論理ユニット名に暗黙的な ID タイプがない (IQN ベースの名前など) 場合、ID タイプを明示的に指定する必要があります。「使用例」を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlookup-uri\fR [\fB-t\fR \fIuri-type\fR] \fB-p\fR \fItarget\fR=<\fItarget\fR> \fB-p\fR \fBlun\fR=<\fILUN\fR>\fR
+.ad
+.sp .6
+.RS 4n
+ターゲットポートおよび LUN に基づいて URI を検索および表示します。\fB-t\fR に指定できる URI タイプは、\fBlu\fR および \fBiscsi\fR です。\fB-t\fR オプションを指定しない場合、出力は指定されたターゲットおよび LUN と一致する論理ユニットを識別するすべての URI で構成されます。通常は、\fB-t\fR オプションを指定しなくても、1 つの URI タイプのみが出力に示されます。
+.sp
+ターゲットは、識別子タイプおよび識別子をピリオドで区切った文字列で構成されている必要があります。サポートされる ID タイプは「\fBnaa\fR」および「\fBiqn\fR」です。ファイバチャネルのターゲットポートは常に NAA ベースの名前であり、iSCSI のターゲットポートは常に IQN ベースの名前です。「使用例」を参照してください。
+.sp
+LUN は 10 進数です。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRURI を解析し、プロパティーを表示する
+.sp
+.LP
+次のコマンドでは、iSCSI URI を解析し、デフォルトのプロパティーリストを表示します。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm parse iscsi://10.0.0.1:3260/luname.naa.0123456789abcdef\fR
+PROPERTY           VALUE
+uri-type           iscsi
+hostname           10.0.0.1
+port               3260
+luname             naa.0123456789abcdef
+target             -
+lun                -
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm parse iscsi://10.0.0.1:3260/target.iqn.1990-12.com.sun\ 
+:cng-002,lun.3\fR 
+PROPERTY           VALUE 
+uri-type           iscsi 
+hostname           10.0.0.1 
+port               3260 
+luname             - 
+target            iqn.1990-12.com.sun:cng-002 
+lun               3
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRiSCSI URI をマップし、デバイス名を表示する
+.sp
+.LP
+次のコマンドは iSCSI URI をマップし、マップされたローカルシステムデバイス名を表示します。このコマンドにより、\fBsend-targets\fR 発見アドレス (まだ存在しない場合) が自動的に追加されることになります。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm map iscsi://127.0.0.1/luname.naa.\e\fR
+\fB600144F0F4977D4000004F7EC8F00001\fR
+PROPERTY        VALUE
+mapped-devs      /dev/dsk/c0t600144F0F4977D4000004F7EC8F00001d0s2
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fRデバイスが複数のパスからアクセス可能である場合に、iSCSI URI をマップし、デバイス名を表示する。
+.sp
+.LP
+URI に対応するデバイスパスが複数存在する場合、次のコマンドはすべてのデバイス名を表示します。
+
+.sp
+.in +2
+.nf
+$\fBsuriadm map iscsi://localhost/luname.naa.\e\fR
+\fB600144F0F42B0A00000053BC37270001\fR
+PROPERTY        VALUE
+mapped-devs     /dev/dsk/c6t46d0
+                /dev/dsk/c6t45d0
+                /dev/dsk/c6t48d0
+                /dev/dsk/c6t47d0
+                /dev/dsk/c6t49d0
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fRマッピングを検索する
+.sp
+.LP
+次のコマンドでは、既存の iSCSI マッピングを検索します。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-mapping iscsi://127.0.0.1/\e\fR
+\fBluname.naa.600144F0F4977D4000004F7EC8F00001\fR
+PROPERTY        VALUE
+mapped-devs      /dev/dsk/c0t600144F0F4977D4000004F7EC8F00001d0s2
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 5 \fR論理ユニット URI を解析する
+.sp
+.LP
+次のコマンドでは、initiator/target/\fBluname\fR 論理ユニット URI を解析します。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm parse lu:initiator.naa.2101001b32ae7ab5,\e\fR
+\fBtarget.naa.2100001d38089fb0,luname.naa.500000e012942880\fR
+PROPERTY        VALUE
+uri-type        lu
+luname          naa.500000e012942880
+initiator       naa.2101001b32ae7ab5
+target          naa.2100001d38089fb0
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 6 \fR論理ユニット URI をマップし、URI を検索する
+.sp
+.LP
+次のコマンドシーケンスでは、論理ユニット URI をマップしてから、見つかったデバイス名に基づいて一致する論理ユニット URI を検索します。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm map lu:luname.naa.5000c5000288fa25\fR
+PROPERTY        VALUE
+mapped-path     /dev/dsk/c7t26d0s2
+
+$ \fBsuriadm lookup-uri -t lu /dev/dsk/c7t26d0s2\fR
+lu:luname.naa.5000c5000288fa25
+lu:initiator.naa.500605b000ae7010,target.naa.\e
+5001636000019c11,naa.5000c5000288fa25
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 7 \fR一致する URI を検索する
+.sp
+.LP
+次のコマンドでは、URI タイプを指定せずに、特定のデバイス名に一致するすべての URI を検索します。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri /dev/dsk/c7t26d0s2\fR
+lu:luname.naa.5000c5000288fa25
+lu:initiator.naa.500605b000ae7010,target.naa.5001636000019c11,\e
+luname.naa.5000c5000288fa25
+dev:dsk/c7t26d0s2
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 8 \fRURI を解析し、選択されたプロパティーを表示する
+.sp
+.LP
+次のコマンドでは、URI を解析し、選択されたプロパティーのみをすべて同じ行にタブで区切って、ヘッダーなしで表示します。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm map -Ho uri-type,luname,mapped-path \e\fR
+\fBlu:luname.naa.5000c5000288fa25\fR
+lu      naa.5000c5000288fa25    /dev/dsk/c7t26d0s2
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 9 \fR論理ユニット URI を検索する
+.sp
+.LP
+次のコマンドでは、複数のパスを介してアクセス可能なデバイスの論理ユニット URI を検索します。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri -t lu /dev/dsk/c11t2000001D38089FB0d0\fR
+lu:luname.naa.2000001d38089fb0
+lu:initiator.naa.2101001b32ae7ab5,target.naa.2100001d38089fb0,luname.\e
+naa.2000001d38089fb0
+lu:initiator.naa.2100001b328e7ab5,target.naa.2200001d38089fb0,luname.\e
+naa.2000001d38089fb0
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 10 \fR不正な URI の解析を試みる
+.sp
+.LP
+次のコマンドでは、構文的に正しくない URI の解析を試みます。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm parse lu:luname.naa.0123456789\fR
+Failed to parse URI "lu:luname.naa.0123456789": \fIGUID\fR part
+in "luname.naa.\fIGUID\fR" not 16 or 32 character hexadecimal
+number: "0123456789"
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 11 \fRアクセスできない LU を使って LU URI のマップを試みる
+.sp
+.LP
+次のコマンドでは、システムからアクセスできない論理ユニット名を使って LU URI のマップを試みます。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm map lu:luname.naa.0123456789abcdef\fR
+Failed to map URI "lu:luname.naa.0123456789abcdef": No such
+logical unit "naa.0123456789abcdef" found
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 12 \fR存在しないデバイスパスの URI を検索する
+.sp
+.LP
+次のコマンドでは、存在しないデバイスパスの URI の検索を試みます。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri /dev/dsk/nonexistent\fR
+Failed to map "/dev/dsk/nonexistent" to URI: No such device:
+"/dev/dsk/nonexistent"
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 13 \fR\fBdev\fR URI の検索
+.sp
+.LP
+次のコマンドシーケンスは、\fBdev\fR URI が、スライスを指定するディスクパス名を受け入れる唯一の URI タイプであることを示しています。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri -t dev /dev/dsk/c0t500000E012942880d0s0\fR
+dev:dsk/c0t500000E012942880d0s0
+
+$ \fBsuriadm lookup-uri -t iscsi \e\fR
+  \fB/dev/dsk/c0t600144F03E0A0C0000004FAB3B660001d0s0\fR
+Failed to look up "iscsi" URI for device: \e
+  "/dev/dsk/c0t600144F03E0A0C0000004FAB3B660001d0s0": \e
+  Device path with slice does not represent entire disk
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 14 \fRURI の正規化
+.sp
+.LP
+次のコマンドは iSCSI URI を正規化します。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm normalize iscsi://10.0.0.1:3260/luname.naa.0123456789ABCDEF 
+        iscsi://10.0.0.1/luname.naa.0123456789abcdef\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次の呼び出しは dev URI を正規化します。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm normalize dev:/dev/dsk/c0t0d0 dev:dsk/c0t0d0\fR
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm normalize dev:///dev/dsk/c0t0d0 dev:dsk/c0t0d0\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 15 \fRターゲットおよび LUN に基づく URI の取得
+.sp
+.LP
+次のコマンドは、ターゲットおよび LUN に基づいて URI を取得する方法を示しています。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri -p target=naa.2100001d38089fb0 -p lun=0\fR
+lu:luname.naa.500000e012942880 
+lu:initiator.naa.2101001b32ae7ab5,target.naa.2100001d38089fb0,luname.naa.50000 
+0e012942880
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri -p lun=0 -p\fR
+target=iqn.1986-03.com.sun:02:9548ddf8-dc44-63a1-b773-e7ac335a760f 
+iscsi://10.0.0.1/luname.naa.600144f0a5320b470000527d66740009 
+iscsi://10.0.0.1/target.iqn.1986-03.com.sun:02:9548ddf8-dc44-63a1-b773-e7ac335 
+a760f,lun.0
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 16 \fR論理ユニット名に基づく LU URI の取得
+.sp
+.LP
+次のコマンドは、論理ユニット名に基づいて LU URI を取得する方法を示しています。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri -t lu -p luname=naa.5000cca012b66e90\fR
+lu:luname.naa.5000cca012b66e90
+lu:initiator.naa.5080020000fafcf8,target.naa.5000cca012b66e91,luname.naa.5000c
+ca012b66e90
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 17 \fR\fBmap\fR に入力プロパティーを設定する
+.sp
+.LP
+次のコマンドは、\fBmap\fR に入力プロパティーを設定する方法を示します。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm map -p create-size=2G file://user1:group2@/export/file1\fR
+.fi
+.in -2
+.sp
+
+.SH 終了ステータス
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+コマンドが成功しました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB>\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+コマンドが失敗しました。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/library/storage/suri
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBstmsboot\fR(1M), \fBsvcadm\fR(1M), \fBattributes\fR(5), \fBsuri\fR(5), \fBscsi_vhci\fR(7D), \fBlibsuri\fR(3LIB)
+.sp
+.LP
+『\fISmall Computer System Interface-3\fR (SCSI-3)』
+.SH 注意事項
+.sp
+.LP
+iSCSI URI が使用されるときは、解析操作が行われる場合を除いて、\fBsvc:/network/iscsi/initiator\fR サービスを有効にする必要があります。このサービスが無効になっているときに iSCSI URI が処理されると、iSCSI イニシエータサービスが自動で一時的に有効になります。このサービスを \fBsuriadm\fR コマンドで無効にすることはできません。

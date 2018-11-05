@@ -1,0 +1,295 @@
+'\" te
+.\"  Copyright (c) 2009, 2012, Oracle and/or its affiliates. All rights reserved.
+.TH audit_remote 5 "2012 年 5 月 10 日" "SunOS 5.11" "標準、環境、マクロ"
+.SH 名前
+audit_remote \- リモートサーバーへの Solaris 監査ログの送信
+.SH 形式
+.LP
+.nf
+\fB/usr/lib/security/audit_remote.so\fR
+.fi
+
+.SH 機能説明
+.sp
+.LP
+Solaris 監査の \fBaudit_remote\fR プラグインモジュール (\fB/usr/lib/security/audit_remote.so\fR) は、\fBauditconfig\fR(1M) で構成されたとおりに、バイナリ形式の監査レコード (\fBaudit.log\fR(4)) を監査サーバーに送信します。
+.sp
+.LP
+\fBaudit_remote\fR プラグインが \fBauditconfig\fR によってアクティブとして構成されている場合は、\fBauditd\fR(1M) によってロードされます。プラグイン関連のすべての構成パラメータを変更するには、\fBauditconfig\fR \fB-setplugin\fR オプションを使用します。
+.sp
+.LP
+\fBaudit_remote\fR で送信されるバイナリ形式の監査レコードを受信するように、\fBauditconfig\fR を使用して Solaris 監査サービスデーモンの監査リモートサービス (\fBars\fR(5)) が構成されている場合があります。
+.SS "オブジェクト属性"
+.sp
+.LP
+次の属性は、\fBaudit_remote\fR プラグインの構成を指定します:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp_hosts\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+\fIhost1\fR[:[\fIport1\fR][:\fImech1\fR]][,\fIhost2\fR[:[\fIport2\fR][:\fImech2\fR]],... \e
+    \fIhostn\fR[:[\fIportn\fR][:\fImechn\fR]]]
+.fi
+.in -2
+.sp
+
+監査ホストおよびサーバーのリストです。監査レコードは、最初に到達可能なホストに送信されます。ホストに到達できない場合や、データの送信中にタイムアウトが発生した場合は、リスト内の次のホストが試されます。すべてのホストへの接続に失敗した場合は、リストの先頭から再試行されます。 
+.sp
+\fBp_hosts\fR エントリの \fIhost\fR 部分は、\fBgetipnodebyname\fR(3SOCKET) に受け入れられる任意の形式で指定できます。
+.sp
+\fBp_hosts\fR エントリの \fIport\fR 部分は、監査サーバー接続を開始するためにアクセスされるホスト上のポートです。指定しない場合は、\fBsolaris-audit\fR サービスに割り当てられたポート番号になります。\fBgetservbyname\fR(3XNET) を参照してください。
+.sp
+\fBp_host\fR エントリの \fBmech\fR 部分は GSS-API メカニズム名 (\fBmech\fR(4)) です。指定しない場合は、ローカルホストのデフォルトメカニズムが使用されます。推奨されるメカニズムは \fBkerberos_v5\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp_retries\fR\fR
+.ad
+.sp .6
+.RS 4n
+サーバーに接続してデータを送信する再試行の回数です。 
+.sp
+デフォルト値は \fB3\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp_timeout\fR\fR
+.ad
+.sp .6
+.RS 4n
+接続およびデータ送信がタイムアウトになるまでの秒数です。 
+.sp
+デフォルト値は \fB5\fR 秒です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBqsize\fR\fR
+.ad
+.sp .6
+.RS 4n
+未処理の監査レコードが保持される最大数です。
+.sp
+デフォルト値は、カーネルキュー制御の高位境界値です。\fBauditconfig\fR(1M) を参照してください。
+.RE
+
+.sp
+.LP
+0 に設定した場合、デフォルト値はカーネルキュー制御の高位境界値になります。\fBauditconfig\fR(1M) を参照してください。
+.SS "GSS SESSION"
+.sp
+.LP
+\fBaudit_remote plugin\fR は、構成された監査サーバーを GSS-API (\fBlibgss\fR(3LIB)) を使用して認証する TCP クライアントです。Binary Solaris Audit レコードは、\fBgss_wrap\fR(3GSS) でメッセージトークンが生成されるたびに、完全性と機密性が保護された状態で送信されます。
+.sp
+.LP
+このプラグインは、適切なセキュリティーメカニズム (\fBmech\fR(4)) を使用して、監査サーバー (\fIhost:port:mech\fR) への TCP 接続を開始し、GSS のセキュリティーコンテキスト (\fBgss_init_sec_context\fR(3GSS)) を確立します。 
+.sp
+.LP
+ポートが指定されなかった場合は、TCP ポート番号を取得するためにサービス名 \fBsolaris-audit\fR が検索されます。メカニズムが指定されなかった場合は、\fBGSS_C_NO_OID\fR が \fBgss_init_sec_context\fR(3GSS) の \fBmech_type\fR パラメータとして使用されるため、ベースとなる \fBGSS-API\fR ではローカルのデフォルトメカニズムが使用されます。 
+.sp
+.LP
+\fBgss_init_sec_context\fR(3GSS) では、イニシエータの資格ハンドルとして \fBGSS_C_NO_CREDENTIAL\fR が使用され、\fBaudit@<host_fqdn>\fR 形式のターゲット名が使用されます。サーバーは \fBgss_accept_sec_context\fR(3GSS) を使用して、コンテキストの確立を完了することが想定されています。 
+.sp
+.LP
+セキュリティーコンテキストが確立されると、クライアント (\fBaudit_remote\fR) は \fBgss_wrap\fR(3GSS) を呼び出し、転送済みのペイロードと監査レコードとの機密性を保ちます。サーバーは \fBgss_unwrap\fR(3GSS) を使用して、受信されたデータのラップを解除し、\fBgss_get_mic\fR(3GSS) を使用して、あとでメッセージ取得の肯定応答としてプラグインに返信される MIC (Message Integrity Code) を取得することが想定されています。
+.sp
+.LP
+たとえば、\fBkerberos_v5\fR メカニズムがクライアント上の \fBGSS_API\fR メカニズムとして構成され、どちらの側もこのメカニズムを使用することに同意している場合は、クライアント側が \fBaudit/<host_fqdn>@<REALM>\fR 主体のセッションキーを Kerberos KDC/TGS から非対話形式で取得できる必要があります。同時に、監査サーバーアプリケーションを実行しているアイデンティティーは、\fBkeytab\fR ファイル (\fBkrb5.conf\fR(4)) に格納された \fBaudit/<host_fqdn>@<REALM>\fR 主体に関連付けられた長期間のキーでセッションキーを復号化できる必要があります。
+.sp
+.LP
+\fBaudit_remote\fR プラグインは、\fBp_hosts\fR リスト内の 1 番目のサーバーへの接続を開始します。接続に失敗した場合、または \fBp_timeout\fR 秒以内に監査レコードの送信が応答しない場合は、\fBp_retries\fR 回の試行後に、プラグインは次のサーバーへの接続を試みます。最後のサーバーへの接続に失敗すると、プラグインはリストの最初のホストへの接続を再度試します。サーバーへの接続の試行が失敗するたびに、\fBaudit_warn\fR(1M) が実行されるか、プラグインオプション \fBaudit_remote.so retry <count> <error>\fR が付いたタイムアウトを送信します。<error> は接続 \fB<host:port> <the network error>\fR です。\fBEPROTO\fR ネットワークエラーは、クライアントプラグインがプロトコルバージョンのハンドシェイクに成功しなかったことを示します。
+.SS "プロトコルの説明"
+.sp
+.LP
+すべてのプロトコルメッセージの先頭には、4 オクテットのサイズのデータが付加されています。このサイズは、ネットワークバイト順です。
+.sp
+.LP
+このプロトコルではバージョンのネゴシエーションで始まり、\fBGSS-API\fR セキュリティーコンテキストトークンの交換が続きます。エラー発生時には、接続が閉じられます (オプションで出力トークンが送信されます)。
+.sp
+.LP
+バージョンのネゴシエーションは、サポートされるバージョンをコンマ (\fB,\fR) で区切ったリストのオクテット配列を送信するプラグインを使用して、平文で実行されます。現在のバージョン番号は文字 \fB01\fR です。受信側は受け入れたバージョンで応答することが想定されています (現在の場合は文字 \fB01\fR)。不一致はエラーとみなされ、接続が閉じられます。
+.sp
+.LP
+プラグインで送信されるバージョンのオクテット配列と受信側で受け入れられるバージョン文字を互いに連結すると、GSS セキュリティーコンテキスト確立のチャネルバインディングのアプリケーションデータフィールドが形成されます。
+.sp
+.in +2
+.nf
+<plugin version characters> || <server accepted version characters>
+"||" represents concatenation
+.fi
+.in -2
+
+.sp
+.LP
+以降のトークンには、ネットワークバイトオーダーで並んだ 64 ビットのシーケンス番号と単一の監査レコード (\fBaudit.log\fR(4)) が含まれます。クライアントは機密性保護ラップ (64 ビットのシーケンス番号 || 監査レコード) を使用します。
+.sp
+.LP
+サーバーは、受信した 64 ビットのシーケンス番号、ラップされていない 64 ビットのシーケンス番号が付いた MIC トークン、および監査レコードによって、受領したことを肯定応答します (その後、データ損失の対応をします)。クライアント側の MIC 検証によって、監査レコードは解放できるが、再転送のために保存できないことが肯定応答されます。 
+.sp
+.in +2
+.nf
+64 bit sequence number || mic (64 bit sequence number || audit record)
+.fi
+.in -2
+
+.sp
+.LP
+セキュアなリモート監査クライアントとサーバー間の通信フロー:
+.sp
+.in +2
+.nf
+1) Client <--> Server - TCP handshake
+
+2) Client <--> Server - protocol version negotiation:
+   a) Client  --> Server - send data size - uint32_t value (2)
+   b) Client  --> Server - send clear text message of the versions
+                           supported comma separated, e.g.,
+                           "01,02,03" for versions 1 and 2 and 3.
+                           The only version supported at present is
+                           "01"
+   c) Client <--  Server - send data size - uint32_t value (2)
+   d) Client <--  Server - send clear text version selected
+                           ("01")
+   :no version match; close connection; try next host
+
+3) Security context initiation:
+   a) Client - Construct channel bindings:
+         initiator address type (GSS_C_AF_NULLADDR)
+         acceptor address type (GSS_C_AF_NULLADDR)
+         application data value (4 octets  "0101")
+   b) Client  --> Server - send token (data) size - uint32_t value
+   c) Client  --> Server - GSS-API per-context token
+   d) Client <--  Server - send token (data) size
+   e) Client <--  Server - GSS-API per-context token
+      :repeat a-e until security context is initialized; if unsuccessful,
+      close connection; try next host
+
+4) Client - transmit thread, when audit record to be sent:
+   a) Client  --> Server - send data size
+   b) Client  --> Server - GSS-API per-message token
+                  wrap (sequence number || audit record)
+      :repeat a-b while less than max (qsize) outstanding records
+
+ 5) Client - receive thread:
+    a) Client <--  Server - receive data size - uint32_t value
+    b) Client <--  Server - receive sequence number - uint64_t value
+    c) Client <--  Server - receive MIC
+    d) Client             - MIC verification - OK
+    e) Client             - remove particular audit record
+                            pointed by the sequence number from the
+                            retransmit buffer
+  :repeat a-e, on error close connection; try next host;
+   retransmit unacknowledged audit records
+
+6) Server - receive thread:
+    a) Client  --> Server - receive data size
+    b) Client  --> Server - GSS-API receive, uwrap, store
+                   per-message token
+
+7) Server - transmit thread:
+    a) Server - MIC generation - message integrity code
+                    mic (sequence number || audit record)
+    b) Client <--  Server - send data size
+    c) Client < -- Server - send sequence number
+    d) Client <--  Server - send MIC
+.fi
+.in -2
+
+.SH 使用例
+.LP
+\fB例 1 \fR\fBaudit_remote.so\fR のロードとリモート監査サーバーの指定
+.sp
+.LP
+次の指令では、\fBaudit_remote.so\fR がロードされ、監査レコードが送信されるリモート監査サーバーが指定されます。\fBkerberos_v5\fR セキュリティーメカニズムは、サーバーとの通信時に使用されるように定義されています。
+
+.sp
+.in +2
+.nf
+auditconfig -setplugin audit_remote active \e
+    "p_timeout=90;p_retries=2;
+     p_hosts=eggplant.eng.sun.com::kerberos_v5,
+     purple.ebay.sun.com:4592:kerberos_v5"
+.fi
+.in -2
+
+.LP
+\fB例 2 \fRデフォルトのセキュリティーメカニズムの使用法の構成
+.sp
+.LP
+次の例では、デフォルトのセキュリティーメカニズムの使用法の構成を示します。構成されたサーバーのいずれかのデフォルトポートの使用法も示します:
+
+.sp
+.in +2
+.nf
+auditconfig -setplugin audit_remote active \e
+    "p_timeout=10;p_retries=2;
+     p_hosts=jedger.eng.sun.com, jbadams.ebay.sun.com:4592"
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fR内部プラグインのキューサイズの設定
+.sp
+.LP
+特定の状況 (たとえば、サーバーとクライアント間の通信回線が低速になることに加えて、監査データトラフィック量が増加したり、バーストしたりする状況) では、\fBaudit_remote\fR プラグインによってキューに入れられた未処理の監査レコードの数が、構成された最大数に到達する可能性があります。次の例では、キューサイズのパラメータを設定する方法を示します。
+
+.sp
+.in +2
+.nf
+auditconfig -setplugin audit_remote "" 1000
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、\fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+MT レベルMT-安全
+_
+インタフェースの安定性下記を参照。
+.TE
+
+.sp
+.LP
+プラグイン構成パラメータは「確実」です。クライアント/サーバープロトコル (バージョン \fB"01"\fR) は「契約済みプロジェクト非公開」です。監査レコードの形式と内容の安定性については、\fBaudit.log\fR(4) を参照してください。
+.SH 関連項目
+.sp
+.LP
+\fBauditd\fR(1M)、\fBauditconfig\fR(1M)、\fBaudit_warn\fR(1M)、\fBgetipnodebyname\fR(3SOCKET)、\fBgetservbyname\fR(3XNET)、\fBgss_accept_sec_context\fR(3GSS)、\fBgss_get_mic\fR(3GSS)、\fBgss_init_sec_context\fR(3GSS)、\fBgss_wrap\fR(3GSS)、\fBgss_unwrap\fR(3GSS)、\fBlibgss\fR(3LIB)、\fBlibsocket\fR(3LIB)、\fBaudit.log\fR(4)、\fBkrb5.conf\fR(4)、\fBmech\fR(4)、\fBars\fR(5)、\fBattributes\fR(5)、\fBkerberos\fR(5)、\fBtcp\fR(7P)
+.sp
+.LP
+\fI『Managing Auditing in Oracle Solaris 11.3 』\fR
+.SH 注意事項
+.sp
+.LP
+\fBaudit_remote\fR は、GSS-API (\fBlibgss\fR(3LIB)) を使用して、リモート監査サービスに対する認証を行います。Kerberos などの \fBgss\fR 実装メカニズムで提供されるデフォルトの gss 資格情報が使用されます。 
+.sp
+.LP
+IANA で割り当てられた \fBsolaris-audit\fR サービスポートは \fB16162\fR です。

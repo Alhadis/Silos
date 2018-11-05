@@ -1,0 +1,213 @@
+'\" te
+.\" Copyright (c) 1998, 2012, Oracle and/or its affiliates.All rights reserved.
+.TH lockd 1M "2012 年 2 月 7 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+lockd \- ネットワークロックデーモン
+.SH 形式
+.LP
+.nf
+\fB/usr/lib/nfs/lockd\fR [\fB-g\fR \fIgraceperiod\fR] [\fB-l\fR \fIlisten_min_backlog\fR] 
+     [\fB-t\fR \fItimeout\fR] [\fInthreads\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBlockd\fR ユーティリティーは、NFS ロックマネージャーの一部であり、NFSv2 および NFSv3 の NFS ファイルに対するレコードロック操作をサポートしています。\fBfcntl\fR(2) および \fBlockf\fR(3C) を参照してください。ロックマネージャーには、次の 2 つの機能があります。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+NFS マウントされたファイルシステムの \fBfcntl\fR(2) ロックリクエストを NFS サーバー上のロックマネージャーに転送します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+NFS クライアントマシンで動作しているロックマネージャーから転送されたリクエストに応答して、ローカルファイルのロック操作を生成します。
+.RE
+.sp
+.LP
+\fBlockd\fR が強制終了されたり、オペレーティングシステムがリブートしたりすると、これらのロックリクエストに関してロックマネージャーが保持している状態情報が失われる可能性があります。この情報の一部は、次のように修復できます。サーバーのロックマネージャーは、再起動したあと、クライアント側のすべてのロックマネージャーが再生リクエストを送信するための猶予期間の間だけ待機します。一方、クライアント側のロックマネージャーは、ステータスモニターデーモン \fBstatd\fR(1M) から再起動の通知を受け、以前に許可されたロックリクエストを即座に再送信します。ロックデーモンが、以前に許可されたロックをサーバー側でセキュリティー保護できない場合は、\fBSIGLOST\fR がプロセスに送信されます。
+.sp
+.LP
+管理者は、root としてログインし、\fBsharectl\fR(1M) コマンドを使用することで、\fBlockd\fR の起動パラメータに変更を加えることができます。
+.SS "SMF による管理"
+.sp
+.LP
+\fBlockd\fR サービスは、サービス管理機能 \fBsmf\fR(5) によって、次のサービス識別子の下で管理されます。
+.sp
+.in +2
+.nf
+svc:/network/nfs/nlockmgr
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有効化、無効化、または再起動要求など、このサービスに関する管理操作は、\fBsvcadm\fR(1M) を使用して実行できます。サービスステータスを照会するには、\fBsvcs\fR(1) コマンドを使用します。
+.sp
+.LP
+無効になっている場合は、\fBapplication/auto_enable\fR プロパティーが \fBfalse\fR に設定されていないかぎり、\fBmount_nfs\fR(1M)、\fBshare_nfs\fR(1M)、および \fBautomountd\fR(1M) を使用することで有効になります。
+.sp
+.LP
+\fBsharectl\fR(1M) コマンドは、\fBlockd\fR の SMF 起動パラメータを操作するために使用されます。現在サポートされているパラメータは次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlockd_listen_backlog\fR=\fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+接続型トランスポートを介した \fBlockd\fR の接続キューの長さを設定します。デフォルトは \fB32\fR で、これが最小の値です。\fB-l\fR オプションと同等です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlockd_servers\fR=\fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+同時に実行される \fBlockd\fR リクエストの最大数。デフォルトは \fB1024\fR です。\fInthreads\fR オペランドと同等です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlockd_retransmit_timeout\fR=\fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBlockd\fR が再試行するまでの再送タイムアウト (秒)。デフォルトは \fB5\fR です。\fB-t\fR オプションと同等です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgrace_period\fR=\fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+サーバーのリブート後にすべてのクライアント (NLM と NFSv4 の両方) がロックを再生する必要がある猶予期間 (秒)。このパラメータは NFSv4 のリース間隔も制御します。デフォルトは \fB90\fR です。\fB-g\fR オプションと同等です。
+.RE
+
+.sp
+.LP
+後述の「使用例」を参照してください。\fB\fR
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR \fIgraceperiod\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBgrace_period\fR の方が推奨されます。サーバーのリブート後にすべてのクライアント (\fBNLM\fR と \fB NFSv4\fR の両方) がロックを再生する必要がある秒数を指定します。これは \fBNFSv4\fR のリース間隔も制御します。このオプションは、前述の \fBgrace_period\fR プロパティーと同等です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIlisten_min_backlog\fR\fR
+.ad
+.sp .6
+.RS 4n
+リスナーのバックログ (\fIlisten_min_backlog\fR) を指定します。\fIlisten_min_backlog\fR は、新しい接続リクエストがドロップされるようになるまでに、キューに入れられ、処理されるのを待機している接続リクエストの数です。前述の \fBlockd_listen_backlog\fR プロパティーと同等です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fItimeout\fR\fR
+.ad
+.sp .6
+.RS 4n
+ロックリクエストをリモートサーバーに再転送するまでに待機する秒数を指定します。デフォルト値は 5 秒です。前述の \fBlockd_retransmit_timeout\fR プロパティーと同等です。
+.RE
+
+.SH オペランド
+.sp
+.ne 2
+.mk
+.na
+\fB\fInthreads\fR\fR
+.ad
+.sp .6
+.RS 4n
+サーバーが処理できる並行スレッドの最大数を指定します。この並行性を実現するため、カーネル内で必要に応じて \fInthreads\fR スレッドまで作成されます。\fInthreads\fR は、このサーバーに予想される負荷に基づいて設定します。\fInthreads\fR が指定されていない場合、並行スレッドの最大数はデフォルトで 1024 になります。前述の \fBlockd_servers\fR プロパティーと同等です。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fR\fBlockd\fR プロパティーの設定
+.sp
+.LP
+次のコマンドでは、\fBlockd_listen_backlog\fR を新しい値に設定します。
+
+.sp
+.in +2
+.nf
+# \fBsharectl set -p lockd_listen_backlog=40 nfs\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBlockd_listen_backlog\fR およびほかの \fBlockd\fR プロパティーについては、下記の「\fB注意事項\fR」で説明されています。
+
+.LP
+\fB例 2 \fR\fBlockd\fR プロパティー値の取得
+.sp
+.LP
+次のコマンドでは、\fBlockd_listen_backlog\fR プロパティーの値を取得します。
+
+.sp
+.in +2
+.nf
+% \fBsharectl get -p lockd_listen_backlog nfs\fR
+lockd_listen_backlog=40
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/file-system/nfs
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBsvcs\fR(1)、\fBautomountd\fR(1M)、\fBclear_locks\fR(1M)、\fBmount_nfs\fR(1M)、\fBshare\fR(1M)、\fBshare_nfs\fR(1M)、\fBsharectl\fR(1M)、\fBstatd\fR(1M)、\fBsvcadm\fR(1M)、\fBfcntl\fR(2)、\fBlockf\fR(3C)、\fBattributes\fR(5)、\fBsmf\fR(5)
+.SH 注意事項
+.sp
+.LP
+NFSv4 では、\fBlockd\fR デーモンが動作している必要はありません。
+.sp
+.LP
+Solaris の将来のリリースでは、\fBlockd\fR デーモンが存在しなくなる可能性があります。

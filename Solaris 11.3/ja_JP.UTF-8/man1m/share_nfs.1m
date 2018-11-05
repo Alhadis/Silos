@@ -1,0 +1,674 @@
+'\" te
+.\" Copyright (c) 2003, 2014, Oracle and/or its affiliates.All rights reserved.
+.TH share_nfs 1M "2014 年 1 月 2 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+share_nfs \- NFS 共有をリモートシステムによるマウントに使用可能にする
+.SH 形式
+.LP
+.nf
+\fBshare\fR \fB-F\fR nfs [-a [\fB-o\fR \fIspecific_options\fR] [\fB-d\fR \fIdescription\fR]
+     \fIpathname\fR [\fIsharename\fR] | [-A]]
+.fi
+
+.LP
+.nf
+\fBzfs set\fR share.nfs=on | off \fIfilesystem|share\fR
+.fi
+
+.LP
+.nf
+\fBzfs share\fR -o share.nfs=on | off \fIspecific_options\fR
+     \fIfilesystem|filesystem%share\fR
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBshare\fR ユーティリティーは、NFS 共有を定義して公開します。これにより、リモートシステムによるマウントに使用可能なローカルファイルシステムが作成されます。このユーティリティーは、\fBnfsd\fR(1M) および \fBmountd\fR(1M) デーモンがまだ実行されていない場合、これらのデーモンを起動します。
+.sp
+.LP
+ZFS ファイルシステム共有を作成して公開するために \fBshare\fR コマンドを使用できますが、これはレガシー操作と見なされます。\fBshare.nfs\fR プロパティーの設定または \fBzfs share\fR コマンドを使用して、NFS 共有を作成して公開する方法については、\fBzfs\fR(1M) を参照してください。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR \fBnfs\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBNFS\fR ファイル共有プロトコルを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+定義されているすべての共有を公開します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIspecific_options\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIspecific_options\fR を、NFS プロトコルによって解釈されるキーワードと属性値表明のコンマ区切りリストで指定します。特定のオプションによってデフォルトアクセスがオーバーライドされないかぎり、デフォルトでは、共有はすべてのクライアントに読み取り/書き込みアクセス権で公開されます。\fIspecific_options\fR には、次の任意の組み合わせを指定できます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaclok\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBNFS\fR サーバーが \fBNFS\fR Version 2 クライアントに対するアクセス制御を実行できるようにします。サーバー上で \fBaclok\fR が設定されている場合は、すべてのクライアントに最大のアクセス権が与えられます。たとえば、\fBaclok\fR が設定されていると、だれかが読み取り権を持っている場合、すべてのユーザーに読み取り権が与えられます。\fBaclok\fR が設定されていない場合は、すべてのクライアントに最小アクセス権が与えられます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBanon=\fR\fIuid\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIuid\fR を、認識されていないユーザーの実効ユーザー \fBID\fR として設定します。デフォルトでは、認識されていないユーザーには実効ユーザー \fBID\fR \fBUID_NOBODY\fR が与えられます。\fIuid\fR が \fB-1\fR に設定されている場合は、アクセスが拒否されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcharset\fR\fR
+.ad
+.sp .6
+.RS 4n
+すべてのクライアントが指定された文字セット (次の説明にあるリストを参照) を使用していると見なされ、ファイル名とパス名がサーバーの UTF-8 に変換されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcharset\fR=\fIaccess_list\fR\fR
+.ad
+.sp .6
+.RS 4n
+ここで、\fIcharset\fR は \fBeuc-cn\fR、\fBeuc-jp\fR、\fBeuc-jpms\fR、\fBeuc-kr\fR、\fBeuc-tw\fR、\fBiso8859-1\fR、\fBiso8859-2\fR、\fBiso8859-5\fR、\fBiso8859-6\fR、\fBiso8859-7\fR、\fBiso8859-8\fR、\fBiso8859-9\fR、\fBiso8859-13\fR、\fBiso8859-15\fR、\fBkoi8-r\fR のいずれかです。
+.sp
+これらのプロパティーのいずれかの \fIaccess_list\fR に一致するクライアントがその文字セットを使用していると見なされ、ファイル名とパス名がサーバーの UTF-8 に変換されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBindex=\fR\fBfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+ディレクトリが \fBNFS URL\fR によって参照されるときに、このファイルを含むディレクトリの一覧ではなく \fBfile\fR をロードします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlog[=\fItag\fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたファイルシステムに対する \fBNFS\fR サーバーのロギングを有効にします。省略可能なタグによって、関連するログファイルの場所が指定されます。\fItag\fR は、\fB/etc/nfs/nfslog.conf\fR で定義されます。\fItag\fR が指定されていない場合は、\fB/etc/nfs/nfslog.conf\fR 内の\fBグローバルな\fR \fItag\fR に関連付けられたデフォルト値が使用されます。NFS サーバーのロギングのサポートは、NFS Version 2 および Version 3 要求でのみ使用できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoaclfab\fR\fR
+.ad
+.sp .6
+.RS 4n
+NFS サーバーが NFS クライアントに加工された ACL を返さないことを許可します。NFS サーバーのデフォルトの動作では ACL を加工します。\fBnoaclfab\fR が設定されている場合、NFS サーバーは ACL を加工しません。基礎となるファイルシステムで POSIX ドラフト ACL がサポートされていない場合は、これが適切な選択になります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnone\fR\fR
+.ad
+.sp .6
+.RS 4n
+すべてのクライアントがアクセスを禁止されます。\fBro\fR または \fBrw\fR オプションは \fBnone\fR をオーバーライドできます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnone=\fR\fIaccess_list\fR\fR
+.ad
+.sp .6
+.RS 4n
+アクセスリストに一致するすべてのクライアントがアクセスを禁止されます。アクセスリストがアスタリスク (\fB*\fR) である場合は例外です。この場合、\fBro\fR または \fBrw\fR は \fBnone\fR をオーバーライドできます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnosub\fR\fR
+.ad
+.sp .6
+.RS 4n
+クライアントが共有ディレクトリのサブディレクトリをマウントできないようにします。たとえば、サーバー \fIfooey\fR 上で \fBnosub\fR オプションを使用して \fB/export\fR が共有されている場合、\fBNFS\fR クライアントは次を実行できません。
+.sp
+.in +2
+.nf
+mount -F nfs fooey:/export/home/mnt
+.fi
+.in -2
+.sp
+
+NFS Version 4 では \fBMOUNT\fR プロトコルが使用されません。\fBnosub\fR オプションは、NFS Version 2 および Version 3 要求にのみ適用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnosuid\fR\fR
+.ad
+.sp .6
+.RS 4n
+デフォルトでは、クライアントは、setuid または setgid モードが有効になっている共有ファイルシステム上でのファイルの作成を許可されます。\fBnosuid\fR を指定すると、サーバーファイルシステムは、setuid または setgid モードビットを有効にしようとするすべての試みを暗黙のうちに無視します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpublic\fR\fR
+.ad
+.sp .6
+.RS 4n
+公開ファイルハンドルの場所を \fBroot\fR (\fB/\fR) から Web\fBNFS\fR に対応したブラウザやクライアントのエクスポートされたディレクトリに移動します。このオプションによって Web\fBNFS\fR サービスが有効になるわけではありません。Web\fBNFS\fR は常に有効です。このオプションを使用できるのは、サーバーあたり 1 つのファイルシステムだけです。ほかのすべてのオプション (\fB-ro=list\fR および \fB-rw=list\fR オプションを含む) を \fBpublic\fR オプションとともに含めることができます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBro\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有は、すべてのクライアントに読み取り専用アクセス権で公開されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBro=\fR\fIaccess_list\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有は、\fIaccess_list\fR に示されているクライアントに読み取り専用アクセス権で公開されます。指定されたクライアントに対する \fBrw\fR サブオプションをオーバーライドします。下の \fIaccess_list\fR を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBroot\fR\fR
+.ad
+.sp .6
+.RS 4n
+すべてのホストの root ユーザーにルートアクセスが許可されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBroot=\fR\fIaccess_list\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIaccess_list\fR で指定されたホストの root ユーザーだけにルートアクセスが許可されます。下の \fIaccess_list\fR を参照してください。デフォルトでは、どのホストでもルートアクセスが許可されないため、root ユーザーは匿名ユーザー \fBID\fR にマップされます (上で説明した \fBanon=\fR\fIuid\fR オプションを参照)。共有されるファイルシステムが UNIX 認証 (\fBAUTH_SYS\fR) を使用している場合は、ネットグループを使用できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBroot_mapping=\fIuid\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+ルートアクセスが許可されているクライアントについて、ルート UID を指定されたユーザー ID にマップします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrw\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有は、すべてのクライアントに読み取り/書き込みアクセス権で公開されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrw=\fR\fIaccess_list\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有は、\fIaccess_list\fR に示されているクライアントに読み取り/書き込みアクセス権で公開されます。指定されたクライアントに対する \fBro\fR サブオプションをオーバーライドします。下の \fIaccess_list\fR を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsec=\fR\fImode\fR[\fB:\fR\fImode\fR]. . .\fR
+.ad
+.sp .6
+.RS 4n
+指定された 1 つ以上のセキュリティーモードを使用して共有を公開します。\fBsec=\fR\fImode\fR オプションの \fImode\fR は、そのクライアント上でサポートされているノード名である必要があります。\fBsec=\fR オプションが指定されていない場合に使用されるデフォルトのセキュリティーモードは \fBAUTH_SYS\fR です。コマンド行で複数の \fBsec=\fR オプションを指定できますが、各モードを 1 回しか指定できません。セキュリティーモードは、\fBnfssec\fR(5) で定義されます。
+.sp
+各 \fBsec=\fR オプションは、別の \fBsec=\fR オプションの前に指定される以降のすべての \fBwindow=、rw、ro、rw=、ro=\fR、および \fBroot=\fR オプションに適用されるモードを指定します。追加のモードとしてより多くの \fBwindow=\fR、\fBrw\fR、\fBro\fR、\fBrw=\fR、\fBro=\fR、および \fBroot=\fR オプションを指定できるように、\fBsec=\fR が追加されるたびにセキュリティーモードのコンテキストがリセットされます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsec=\fR\fInone\fR\fR
+.ad
+.sp .6
+.RS 4n
+クライアントが \fBAUTH_NONE\fR を使用しているときにオプション \fBsec=\fR\fInone\fR が指定された場合、またはクライアントがファイルシステムの共有に使用されているものとは異なるセキュリティーモードを使用している場合、各 \fBNFS\fR 要求の資格は認証されていないとして処理されます。認証されていない要求の処理方法については、\fBanon=\fR\fIuid\fR オプションを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsecure\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションは非推奨になり、\fBsec=\fR\fIdh\fR オプションが推奨されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBwindow=\fR\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有が \fBsec=\fR\fIdh\fR で公開される場合は、\fBNFS\fR サーバーによって許可される (認証ヘッダー内の) \fBRPC\fR 要求の資格の最大有効期間 (秒単位) を設定します。許可される期間より長い有効期間を持つ資格が到着した場合、\fBNFS\fR サーバーはその要求を拒否します。デフォルト値は 30000 秒 (8.3 時間) です。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdescription\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有されるファイルシステムを説明したコメントを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.sp .6
+.RS 4n
+定義されているすべての共有を表示します。
+.RE
+
+.SS "\fIaccess_list\fR"
+.sp
+.LP
+\fIaccess_list\fR 引数は、すべてのホストを表す文字列「\fB*\fR」か、または各コンポーネントに次の要素を任意の数含めることができるコロンで区切られたリストのどちらかです。
+.sp
+.ne 2
+.mk
+.na
+\fBホスト名\fR
+.ad
+.sp .6
+.RS 4n
+ホストの名前。\fBnsswitch\fR の \fBhosts\fR エントリに \fBDNS\fR または \fBLDAP\fR のネーミングが構成されているサーバーでは、ホスト名はすべて、完全修飾 \fBDNS\fR または \fBLDAP\fR 名として表される必要があります。指定されたホスト名はこのホストの正規名である必要があり、かつ NFS クライアントの受信 IP アドレスの逆検索で返されるホスト名に一致している必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBネットグループ\fR
+.ad
+.sp .6
+.RS 4n
+ネットグループには複数のホスト名が含まれています。\fBnsswitch\fR の \fBhosts\fR エントリに \fBDNS\fR または \fBLDAP\fR のネーミングが構成されているサーバーでは、ネットグループ内のホスト名はすべて、完全修飾 \fBDNS\fR または \fBLDAP\fR 名として表される必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBドメイン名接尾辞\fR
+.ad
+.sp .6
+.RS 4n
+ドメインメンバーシップを使用するには、サーバーは \fBDNS\fR または \fBLDAP\fR を使用して、ホスト名を \fBIP\fR アドレスに解決する必要があります。つまり、\fBDNS\fR と \fBLDAP\fR だけがホストの完全なドメイン名を返すため、\fB/etc/nsswitch.conf\fR 内の \fBhosts\fR エントリでは \fBnis\fR の前に \fBdns\fR または \fBldap\fR を指定する必要があります。\fBNIS\fR などのほかのネームサービスは、\fBIP\fR アドレスのホスト名へのマッピング時にドメイン情報を返さないため、サーバー上のホスト名の解決には使用できません。たとえば、 
+.sp
+.in +2
+.nf
+NIS   172.16.45.9 --> "myhost"
+.fi
+.in -2
+.sp
+
+および:
+.sp
+.in +2
+.nf
+DNS or LDAP   172.16.45.9 --> 
+     "myhost.mydomain.mycompany.com"
+.fi
+.in -2
+.sp
+
+ドメイン名接尾辞は、接頭辞として付けられたドットによってホスト名やネットグループと区別されます。たとえば、
+.sp
+\fBrw=.mydomain.mycompany.com\fR
+.sp
+1 つのドットを使用すると、接尾辞のないホスト名に一致させることができます。たとえば、
+.sp
+\fBrw=.\fR
+.sp
+は \fBmydomain\fR に一致しますが、\fBmydomain.mycompany.com\fR には一致しません。この機能を使用すると、\fBDN\fR や \fBLDAP\fR ではなく、\fBNIS\fR を使用して解決されたホストに一致させることができます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBネットワーク\fR
+.ad
+.sp .6
+.RS 4n
+ネットワークまたはサブネットコンポーネントの前にアットマーク記号 (\fB@\fR) が付けられます。名前、IPv4 または IPv6 アドレスを指定できます。名前の場合は、getnetbyname(3C) によってアドレスに変換されます。たとえば、
+.sp
+\fB=@mynet\fR
+.sp
+は次と同等です。
+.sp
+\fB=@172.16\fR または \fB=@172.16.0.0\fR
+.sp
+IPv4 アドレスの場合、ネットワーク接頭辞は、アドレスの下位部分にある 0 番目のオクテットから上位のオクテットまでから決定されたオクテット型のネットマスクを前提にしています (1 つの IP アドレスを指定する場合。下を参照)。ネットワーク接頭辞がバイト型でない場合、この構文では、スラッシュ (\fB/\fR) の区切り記号のあとにマスク長を明示的に指定できます。たとえば、
+.sp
+\fB=@theothernet/17\fR または \fB=@172.16.132/22\fR
+.sp
+ここで、マスクは、対応する IP アドレス内の左端の隣接する上位ビットの数です。
+.sp
+IPv6 アドレスの場合、アドレスは角括弧で囲む必要があります。そうしないと、IPv6 の最初のコロンがアドレス間の区切り文字と解釈されることがあります。ネットワークマスクの長さは、スラッシュ (/) 区切り文字の後に明示的に指定されます。たとえば、
+.sp
+.in +2
+.nf
+=@[fe80::/10]
+.fi
+.in -2
+.sp
+
+ここで、マスクは、対応する IP ネットワークアドレス内の左端の隣接する上位ビットの数です。
+.sp
+個々の IP アドレスを指定する場合は、上で説明したのと同じ \fB@\fR 表記をネットマスクの指定なしで使用します。例: 
+.sp
+.in +2
+.nf
+=@172.16.132.14
+.fi
+.in -2
+.sp
+
+複数の個々の IP アドレスは、たとえば、次のように指定されます。
+.sp
+.in +2
+.nf
+root=@172.16.132.20:@[fe80::209:3dff:fe00:c074]
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.LP
+接頭辞として付けられたマイナス記号 (\fB-\fR) は、\fIaccess_list\fR のそのコンポーネントへのアクセスを拒否します。このリストは、アクセスを許可または拒否する一致が見つかるまで、またはリストの最後に達するまで順番に検索されます。たとえば、ホスト \fBterra\fR が \fBengineering\fR ネットグループに含まれている場合、
+.sp
+.in +2
+.nf
+rw=-terra:engineering
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+では \fBterra\fR へのアクセスが拒否されますが、
+.sp
+.in +2
+.nf
+rw=engineering:-terra
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+では \fBterra\fR へのアクセスが許可されます。
+.SH オペランド
+.sp
+.LP
+次のオペランドがサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIpathname\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有されるファイルシステムのパス名。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRNFS 共有の定義および公開
+.sp
+.LP
+次の例は、レガシーの \fBshare\fR コマンドを使用して、\fB/export/manuals\fR ファイルシステム共有を定義して公開する方法を示しています。
+
+.sp
+.in +2
+.nf
+# \fBshare -F NFS /export/manuals\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次の例では、\fBzfs set\fR コマンドを使用して ZFS ファイルシステムを共有する方法を示しています。
+
+.sp
+.in +2
+.nf
+# \fBzfs set share.nfs=on tank/data\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次の例では、\fBshare.nfs.public\fR オプションを使用して、名前付き NFS 共有 \fBtank/public%pubshare\fR を作成する方法を示しています。このプロパティーは継承可能でないため、ZFS ファイルシステム \fBtank/public\fR には設定しません。
+
+.sp
+.in +2
+.nf
+# \fBzfs create -o mountpoint=/pub tank/public\fR
+# \fBzfs share -o share.nfs=on -o share.nfs.public=on tank/public%pubshare\fR
+.fi
+.in -2
+.sp
+
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+正常終了。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB>\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+エラーが発生した。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/dfs/fstypes\fR\fR
+.ad
+.sp .6
+.RS 4n
+システムタイプのリスト (デフォルトでは \fBNFS\fR)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/dfs/sharetab\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有ファイルシステムのシステムレコード
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/nfs/nfslogtab\fR\fR
+.ad
+.sp .6
+.RS 4n
+ログに記録されたファイルシステムのシステムレコード
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/nfs/nfslog.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+ロギング構成ファイル
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件service/file-system/nfs
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBmount\fR(1M), \fBmountd\fR(1M), \fBnfsd\fR(1M), \fBnfslogd\fR(1M), \fBshare\fR(1M), \fBunshare\fR(1M), \fBzfs_share\fR(1M), \fBgetnetbyname\fR(3SOCKET), \fBnfslog.conf\fR(4), \fBnetgroup\fR(4), \fBattributes\fR(5), \fBnfssec\fR(5)
+.SH 注意事項
+.sp
+.LP
+\fBshare\fR コマンドを使用した NFS 共有の作成および公開は、その共有が解除されるまで永続的です。NFS 共有の公開は、次の SMF サービスによって管理されます。
+.sp
+.in +2
+.nf
+$ svcs | grep share
+online         Mar_07   svc:/network/shares:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+共有されているファイルシステムが有効なパス名へのシンボリックリンクである場合は、正規パス (シンボリックリンクがたどるパス) が共有されます。たとえば、\fB/export/foo\fR が \fB/export/bar\fR へのシンボリックリンクである場合は (\fB/export/foo ->\fR \fB/export/bar\fR)、次の \fBshare\fR コマンドを実行すると、共有パス名として (\fB/export/foo\fR ではなく) \fB/export/bar\fR が生成されます。
+.sp
+.in +2
+.nf
+# \fBshare\fR \fB-F\fR \fBnfs /export/foo\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBserver:/export/foo\fR の \fBNFS\fR マウントによって、\fBserver:/export/bar\fR が実際にマウントされます。
+.sp
+.LP
+\fBmountd\fR(1M) プロセスを使用すると、シンボリックリンクを含むパス名を処理できます。これにより、それ自体は \fBshare_nfs\fR で明示的に共有されていないパスの処理が可能になります。たとえば、\fB/export/foo\fR が、明確に共有されている \fB/export/bar\fR を参照するシンボリックリンクであるとします。クライアントが \fB/export/foo\fR をマウントすると、\fBmountd\fR 処理はそのシンボリックリンクをたどって \fB/export/bar\fR で応答します。NFS Version 4 プロトコルでは \fBmountd\fR 処理が使用されず、クライアントによる \fB/export/foo\fR の使用は NFS Version 2 および Version 3 のように機能しないため、クライアントが \fB/export/foo\fR をマウントしようとするとエラーが表示されます。

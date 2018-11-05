@@ -1,0 +1,271 @@
+'\" t
+.\"     Title: dlmgr
+.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\"      Date: 08/20/2015
+.\"    Manual: RAD Module Definitions
+.\"    Source: SunOS 5.11
+.\"  Language: English
+.\"
+.TH "DLMGR" "3rad" "08/20/2015" "SunOS 5.11" "RAD Module Definitions"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+dlmgr
+.SH "SYNOPSIS"
+.SS "interface Datalink"
+.sp
+.nf
+.fi
+.sp
+.nf
+setProperty(string\ \&properties,
+.
+\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&\ \&integer\ \&flags);
+.fi
+.sp
+.nf
+Property[]\ \&getProperty(string\ \&properties);
+.fi
+.sp
+.nf
+StatValue\ \&getStat(StatType\ \&stattype);
+.fi
+.SH "DESCRIPTION"
+.PP
+\fBapi com\&.oracle\&.solaris\&.rad\&.dlmgr\fR
+.PP
+The following are sample python clients which illustrate some simple interactions with the module\&.
+.PP
+\fBExample\ \&1.\ \&Get priority property from net1\fR
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+import rad\&.client as radcli
+import rad\&.connect as radcon
+import rad\&.bindings\&.com\&.oracle\&.solaris\&.rad\&.dlmgr_1 as dlmgr
+
+with radcon\&.connect_unix() as rc:
+    pat = radcli\&.ADRGlobPattern({"name" : "net1"})
+    net1 = rc\&.get_object(dlmgr\&.Datalink(), pat)
+    priority = net1\&.getProperty("priority")
+        
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+\fBExample\ \&2.\ \&Set maxbw property on net2\fR
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+import rad\&.client as radcli
+import rad\&.connect as radcon
+import rad\&.bindings\&.com\&.oracle\&.solaris\&.rad\&.dlmgr_1 as dlmgr
+
+with radcon\&.connect_unix() as rc:
+    pat = radcli\&.ADRGlobPattern({"name" : "net2"})
+    net2 = rc\&.get_object(dlmgr\&.Datalink(), pat)
+    net2\&.setProperty("maxbw=200", 1)
+        
+.fi
+.if n \{\
+.RE
+.\}
+.SH "INTERFACES"
+.SS "interface Datalink"
+.PP
+.PP
+The
+Datalink
+interface is an administrative API tha can be used to adminster datalinks\&.
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBDatalink Methods\fR
+.RS 4
+.PP
+\fBsetProperty\fR(\fBstring\fR\ \&\fIproperties\fR, \fBinteger\fR\ \&\fIflags\fR)
+.RS 4
+.PP
+set the values of list of datalink properites specified
+.PP
+Set the values of the list of datalink properties specified\&. If one of the properties or values are invalid, none of the properties will be set\&.
+.PP
+\fBArguments:\fR
+.PP
+\fIproperties\fR
+\(em comma separated list of name\-value pairs of properties and the values to which they are to be set (e\&.g\&., maxbw=200,priority=high)
+.PP
+\fIflags\fR
+\(em option flags for setting datalink properties 0x00000001 \- set temporary property on active system 0x00000002 \- set property to persist across reboot
+.PP
+\fBError:\fR
+.PP
+\fBDatalinkError\fR
+.RE
+.PP
+\fBProperty\fR\fB[]\fR
+\fBgetProperty\fR(\fBstring\fR\ \&\fIproperties\fR)
+.RS 4
+.PP
+Get the information of datalink properites
+.PP
+Get the permission and the current, default and possible values of the list of datalink properties specified\&.
+.PP
+\fBArguments:\fR
+.PP
+\fIproperties\fR
+\(em comma separated list of of properties whose values are to be retrieved\&.
+.PP
+\fBResult:\fR
+.PP
+\fBProperty\fR\fB[]\fR
+.PP
+\fBError:\fR
+.PP
+\fBDatalinkError\fR
+.RE
+.PP
+\fBStatValue\fR
+\fBgetStat\fR(\fBStatType\fR\ \&\fIstattype\fR)
+.RS 4
+.PP
+get the stats
+.PP
+\fBArguments:\fR
+.PP
+\fIstattype\fR
+\(em the type of stat to get
+.PP
+\fBResult:\fR
+.PP
+\fBStatValue\fR
+(\fInullable\fR)
+.PP
+\fBError:\fR
+.PP
+\fBDatalinkError\fR
+.RE
+.RE
+.SH "ENUMERATED TYPES"
+.PP
+\fBenum Permission\fR
+\(em permission of properties
+.RS 4
+.PP
+READ
+(1) \(em read permission
+.PP
+WRITE
+(2) \(em write permission
+.PP
+READWRITE
+(3) \(em read and write permission
+.PP
+UNKNOWN
+(4) \(em permission unknown
+.RE
+.PP
+\fBenum StatType\fR
+\(em type of stat
+.RS 4
+.PP
+LINK
+(0) \(em link stat
+.RE
+.SH "STRUCTURE TYPES"
+.PP
+\fBstruct DatalinkError\fR
+.RS 4
+.PP
+\fBFields:\fR
+.PP
+\fBinteger\fR\ \&\fIerr\fR
+\(em dladm_status_t error codes as defined in libdladm\&.h\&.
+.PP
+\fBstring\fR\ \&\fIerrmsg\fR
+\(em human readable error message corresponding to error code above\&.
+.RE
+.PP
+\fBstruct Property\fR
+.RS 4
+.PP
+A datalink property\&.
+.RE
+.RS 4
+.PP
+\fBFields:\fR
+.PP
+\fBstring\fR\ \&\fIpropname\fR
+\(em The name of the datalink property
+.PP
+\fBPermission\fR\ \&\fIperm\fR
+\(em permission to read/wirte the property
+.PP
+\fBstring\fR\ \&\fIcurrent\fR
+(\fInullable\fR) \(em The current value of the property\&.
+.PP
+\fBstring\fR\ \&\fIeffective\fR
+(\fInullable\fR) \(em The effective value of the property\&.
+.PP
+\fBstring\fR\ \&\fIpersistent\fR
+(\fInullable\fR) \(em The persistent value of the property\&.
+.PP
+\fBstring\fR\ \&\fIdefvalue\fR
+(\fInullable\fR) \(em The default value of the property\&.
+.PP
+\fBstring\fR\ \&\fIpossible\fR
+(\fInullable\fR) \(em A comma\-separated list of the value the property can have\&. If the values span a numeric range, min\-max may shown as shorthand\&.
+.RE
+.PP
+\fBstruct LinkStat\fR
+.RS 4
+.PP
+\fBFields:\fR
+.PP
+\fBulong\fR\ \&\fIipackets\fR
+.PP
+\fBulong\fR\ \&\fIrbytes\fR
+.PP
+\fBulong\fR\ \&\fIidrops\fR
+.PP
+\fBulong\fR\ \&\fIidropbytes\fR
+.PP
+\fBulong\fR\ \&\fIobytes\fR
+.PP
+\fBulong\fR\ \&\fIopackets\fR
+.PP
+\fBulong\fR\ \&\fIodrops\fR
+.PP
+\fBulong\fR\ \&\fIodropbytes\fR
+.RE
+.PP
+\fBstruct StatValue\fR
+.RS 4
+.PP
+\fBFields:\fR
+.PP
+\fBStatType\fR\ \&\fIdiscriminant\fR
+.PP
+\fBLinkStat\fR\ \&\fIlinkstat\fR
+(\fInullable\fR)
+.RE
+.PP
+\fBVersion:\fR
+(1\&.0)

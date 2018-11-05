@@ -1,0 +1,311 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 2007, 2014, Oracle and/or its affiliates.All rights reserved.
+.TH gprof 1 "2014 年 4 月 23 日" "SunOS 5.11" "用户命令"
+.SH 名称
+gprof \- 显示调用图配置文件数据
+.SH 用法概要
+.LP
+.nf
+\fBgprof\fR [\fB-abcCDlsz\fR] [\fB-e\fR \fIfunction-name\fR] [\fB-E\fR \fIfunction-name\fR] 
+     [\fB-f\fR \fIfunction-name\fR] [\fB-F\fR \fIfunction-name\fR] 
+     [\fIimage-file\fR [\fIprofile-file\fR...]] 
+     [\fB-n\fR \fInumber of functions\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBgprof\fR 实用程序会生成程序的执行配置文件。有效的已调用例程会并入每个调用者的配置文件中。配置文件数据取自使用 \fBcc\fR(1) 的 \fB-xpg\fR 选项编译的程序所创建的、或使用其他编译器的 \fB-pg\fR 选项所创建的、或通过为共享目标文件设置 \fBLD_PROFILE\fR 环境变量所创建的调用图配置文件文件。请参见 \fBld.so.1\fR(1)。这些编译器选项同样链接进行了编译以供分析的库例程版本。可执行映像文件 \fIimage-file\fR（缺省情况下为 \fBa.out\fR）中的符号表已读取并与调用图配置文件 \fIprofile-file\fR（缺省情况下为 \fBgmon.out\fR）关联。
+.sp
+.LP
+首先，每个例程的执行时间会沿调用图的边缘传播。将会对周期进行搜索，且周期中的调用会分享周期时间。第一个列表显示了根据函数所代表时间（包括其调用图子孙的时间）排序的函数。每个函数条目下会显示其（直接）调用图子项以及其时间传播到此函数的方式。函数上的类似显示说明了函数的时间及其子孙的时间传播到其（直接）调用图父项的方式。
+.sp
+.LP
+同时显示了周期（周期及其条目为一个整体），也提供了周期成员列表及其时间构成和周期的调用计数。
+.sp
+.LP
+接下来提供了平面配置文件，与 \fBprof\fR(1) 所提供的类似。此列表提供了程序中每个函数的总执行时间和调用计数，以递减时间排序。最后提供了一个索引，显示了函数名称和调用图配置文件索引编号之间的对应关系。
+.sp
+.LP
+可通过 \fBMARK\fR 宏将单个函数拆分为子函数进行分析。请参见 \fBprof\fR(5)。
+.sp
+.LP
+请注意量化错误。虽然显示了抽样粒度，但这是最理想情况下的统计。假设每次执行函数的时间可通过函数的总时间除以函数被调用的次数来表示。因此沿调用图 arc 传播到该函数父项的时间直接与 arc 遍历的次数成正比。
+.sp
+.LP
+分析的程序必须调用 \fBexit\fR(2) 或为保存在 \fBgmon.out\fR 文件中的分析信息正常返回。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁止输出静态声明函数。如果给出了此选项，则关于静态函数（如时间样本、对其他函数的调用和来自其他函数的调用）的所有相关信息都属于在 \fB a.out\fR 文件中静态函数前装入的函数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.sp .6
+.RS 4n
+简要。禁止配置文件中每个字段的说明。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用可检查目标文件文本空间的试探性操作来搜索程序的静态调用图。仅静态父项或子项通过调用计数 0 来指定。请注意，对于动态链接的可执行文件，不会检查链接的共享目标文件的文本段。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR\fR
+.ad
+.sp .6
+.RS 4n
+取消改编 C++ 符号名称后再将其输出出来。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR\fR
+.ad
+.sp .6
+.RS 4n
+生成一个配置文件 \fBgmon.sum\fR，可表示所有指定配置文件中配置文件信息的差异。此摘要配置文件可能提供给 \fBgprof\fR 的后续执行（同样使用 \fB-D\fR）以在 \fBa.out\fR 文件多次运行间总结配置文件数据。另请参见 \fB-s\fR 选项。
+.sp
+例如，假设函数 A 在配置文件 \fBgmon.sum\fR 中调用函数 B \fBn\fR 次，在配置文件 \fBgmon.out\fR 中调用函数 B \fBm\fR 次。使用 \fB-D\fR 可创建一个新 \fBgmon.sum\fR 文件，该文件会将从 A 到 B 的调用数量显示为 \fBn-m\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fIfunction-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁止为例程 \fIfunction-name\fR 及其所有子孙输出图配置文件条目（除非它们拥有其他未被禁止的祖先）。可能提供一个以上的 \fB-e\fR 选项。每个 \fB-e\fR 选项可能仅提供一个 \fIfunction-name\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-E\fR\fIfunction-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁止为例程 \fIfunction-name\fR（及其子孙）将图配置文件条目输出为以下的 \fB-e\fR，在 \fIfunction-name\fR（及其子孙）中花费的时间也不会包含在计算的总时间和时间百分比中。可能提供一个以上的 \fB-E\fR 选项。例如： 
+.sp
+\fB-E\fR \fImcount\fR \fB-E\fR \fImcleanup\fR
+.sp
+是缺省值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fIfunction-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅为例程 \fIfunction-name\fR 及其子孙列显图配置文件条目。可能提供一个以上的 \fB-f\fR 选项。每个 \fB-f\fR 选项可能仅提供一个 \fIfunction-name\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fIfunction-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅为例程 \fIfunction-name\fR 及其子孙列显图配置文件条目（如下方的 \fB-f\fR），同样，且仅将列显的例程时间用于计算的总时间和百分比。可能提供一个以上的 \fB-F\fR 选项。每个 \fB-F\fR 选项可能仅提供一个 \fIfunction-name\fR。\fB-F\fR 选项优先于 \fB-E\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁止为所有局部符号报告图配置文件条目。该选项等同于将指定可执行映像的所有局部符号置于 \fB-E\fR 排除列表上。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+将平面配置文件和图配置文件列表的大小限制在头 \fBn\fR 个违例函数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.sp .6
+.RS 4n
+生成一个配置文件 \fBgmon.sum\fR，可表示所有指定配置文件中配置文件信息的总和。此摘要配置文件可能提供给 \fBgprof\fR 的后续执行（同样使用 \fB-s\fR）以在 \fBa.out\fR 文件多次运行间累积配置文件数据。另请参见 \fB-D\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示使用为零的例程（由调用计数和累积的时间表示）。该选项可与 \fB-c\fR 选项结合使用，以搜索从未被调用的例程。请注意，动态链接的可执行文件的使用受限，因为 \fB-c\fR 选项不会检查共享目标文件文本空间。
+.RE
+
+.SH 环境变量
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPROFDIR\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果此环境变量包含一个值，那么请将该目录中的分析输出置于名为 \fIpid\fR\fB\&.\fR \fIprogramname\fR 的文件中。\fIpid\fR 是进程 \fBID\fR 且 \fIprogramname\fR 是正在进行分析的程序的名称，由从调用程序的 \fBargv[0]\fR 中删除任意路径前缀所确定。如果变量包含空值，则不会生成分析输出。否则，分析输出将置于文件 \fBgmon.out\fR 中。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fBa.out\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含名称列表的可执行文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgmon.out\fR\fR
+.ad
+.sp .6
+.RS 4n
+动态调用图和配置文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgmon.sum\fR\fR
+.ad
+.sp .6
+.RS 4n
+汇总的动态调用图和配置文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$PROFDIR/\fR\fIpid\fR\fB\&.\fR\fIprogramname\fR\fR
+.ad
+.sp .6
+.RS 4n
+
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性developer/base-developer-utilities
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBcc\fR(1)、\fBld.so.1\fR(1)、\fBprof\fR(1)、\fBexit\fR(2)、\fBpcsample\fR(2)、\fBprofil\fR(2)、\fBmalloc\fR(3C)、\fBmalloc\fR(3MALLOC)、\fBmonitor\fR(3C)、\fBattributes\fR(5)、\fBprof\fR(5)
+.sp
+.LP
+Graham、S.L.、Kessler、P.B.、McKusick 和 M.K.合著的《\fIgprof: A Call Graph Execution Profiler Proceedings of the SIGPLAN '82 Symposium on Compiler Construction\fR》，\fBSIGPLAN\fR 声明，第 17 卷，第 6 号，第 120-126 页，1982 年 6 月出版。
+.sp
+.LP
+\fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR
+.SH 附注
+.sp
+.LP
+如果已经删除了可执行映像，且该映像没有 \fB\&.symtab\fR 符号表，那么 \fBgprof\fR 会读取全局动态符号表 \fB\&.dynsym\fR 和 \fB\&.SUNW_ldynsym\fR（如果存在）。动态符号表中的符号是 \fB\&.symtab\fR 中找到的符号的子集。\fB\&.dynsym\fR 符号表包含运行时链接程序所使用的全局符号。\fB\&.SUNW_ldynsym\fR 使用本地函数符号扩充了 \fB\&.dynsym\fR 中的信息。如果找到 \fB\&.dynsym\fR 而没有找到 \fB\&.SUNW_ldynsym\fR，则只有全局符号信息可用。如果没有本地符号，则行为如 \fB-a\fR 选项所述。
+.sp
+.LP
+当编译程序进行分析时，\fBLD_LIBRARY_PATH\fR 不得包含 \fB/usr/lib\fR 作为组件。如果 \fBLD_LIBRARY_PATH\fR 包含 \fB/usr/lib\fR，则程序将无法正确链接至 \fB/usr/lib/libp\fR 中系统库的分析版本。
+.sp
+.LP
+因为与其他进程的共享缓存所产生的不同高速缓存命中率，连续相同的运行所报告的次数可能不同。即使程序看上去是使用计算机的唯一方，隐藏后台或异步进程也可能干扰数据。在少数情况下，启动程序计数器记录的时钟周期可能使用程序中的循环\fB计数\fR，这将严重扭曲计量数值。但调用计数始终可精确记录。
+.sp
+.LP
+仅调用 \fBexit\fR 的程序或从 \fBmain\fR 返回的程序能保证生成配置文件，除非对 \fBmonitor\fR 的最终调用可显式编码。
+.sp
+.LP
+\fBmcount()\fR、\fB_mcount()\fR、\fBmoncontrol()\fR、\fB_moncontrol()\fR、\fBmonitor()\fR 和 \fB_monitor()\fR 等函数可能出现在 \fBgprof\fR 报告中。这些函数是分析实现的一部分，所以会考虑一定数量的运行时开销。因为这些函数不会出现在未分析的应用程序中，所以评估应用程序性能时，会忽略这些函数的累积时间和调用计数。
+.SS "64 位分析"
+.sp
+.LP
+64 位分析可自由用于动态链接的可执行文件，且如果编译目标文件进行分析，则可为共享目标文件收集分析信息。解释配置文件输出时必须小心，因为来自不同共享目标文件的符号可能拥有相同名称。如果在配置文件输出时发生重名现象，则可通过符号索引列表中符号名称之前的模块 ID 前缀来为符号确定相应模块。
+.sp
+.LP
+使用 \fB-s\fR 或 \fB-D\fR 选项来总结多个配置文件时必须小心，不要将 32 位配置文件与 64 位配置文件混用。
+.SS "32 位分析"
+.sp
+.LP
+32 位分析可用于动态链接的可执行文件，但必须谨慎。在 32 位分析中，不能使用 \fBgprof\fR 来分析共享目标文件。因此，执行分析的动态链接程序时，只会抽样映像的\fB主要\fR部分。这意味着在\fB主要\fR目标文件之外花费的所有时间，即针对共享目标文件所花费的时间，都不会包括在配置文件摘要中；针对程序报告的总时间可能少于程序使用的总时间。
+.sp
+.LP
+因为不会考虑在共享目标文件上所花费的时间，所以在使用 \fBgprof\fR 分析程序时，应该尽可能少地使用共享目标文件。如果需要，程序应该链接到库的分析版本（如果没有分析版本，则链接到标准归档版本）而不是共享目标文件，以获取关于库函数的配置文件信息。分析库版本可能由系统在 \fB/usr/lib/libp\fR 目录中提供。请参阅编译器驱动程序文档获取分析信息。
+.sp
+.LP
+需要考虑极端情况。与共享 C 库动态链接的分析程序在某些 \fBlibc\fR 例程中会花费 100 个时间单位，如 \fBmalloc()\fR。假设 \fBmalloc()\fR 仅从例程 \fBB\fR 中被调用，且 \fBB\fR 仅消耗 1 个时间单位。进一步假设例程 \fBA\fR 消耗 10 个时间单位，超过映像\fB主要\fR（分析）部分中的任何其他例程。在此情况下，\fBgprof\fR 将推断，大部分时间花费在 \fBA\fR 中，几乎没有在 \fBB\fR 中花费时间。基于此，几乎不可能得出，可通过查看例程 \fBB\fR 而不是例程 \fBA\fR 来获取最大提升。以上情况中分析器的值严重退化；解决方案是尽可能多地使用归档进行分析。
+.SH 已知问题
+.sp
+.LP
+自己没有分析的父项将拥有传播到自身的分析子项的时间，但它们看上去是在调用图列表中自发调用的，且不会进一步传播它们的时间。与此类似，信号捕捉器即使经过分析，看上去也是自发调用的（尽管原因更加复杂）。任何信号捕捉器的分析子项都应该正确传播其时间，除非信号捕捉器是在执行分析例程期间调用的，在此情况下，所有时间都会丢失。

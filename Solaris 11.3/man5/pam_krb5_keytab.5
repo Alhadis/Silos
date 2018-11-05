@@ -1,0 +1,140 @@
+'\" te
+.\" Copyright (c) 2004, 2000, Oracle and/or its affiliates. All rights reserved.
+.TH pam_krb5_keytab 5 "9 July 2013" "SunOS 5.11" "Standards, Environments, and Macros"
+.SH NAME
+pam_krb5_keytab \- set credential PAM module with authentication through the Kerberos key table file
+.SH SYNOPSIS
+.LP
+.nf
+\fB/usr/lib/security/pam_krb5_keytab.so.1\fR
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBpam_krb5_keytab\fR module attempts to obtain initial credentials through the system's Kerberos key table file. The  initial credentials can subsequently be used to obtain credentials for itself on behalf of \fBPAM_USER\fR, through Services for User to Self (S4U2Self) by stacking \fBpam_gss_s4u\fR(5) after this module. In turn, these credentials can be used to obtain service tickets for other services on behalf of the user through Services for User to Proxy (S4U2Proxy).
+.SS "Kerberos Set Credential Module"
+.sp
+.LP
+The Kerberos key table set credential module provides the set credential function for \fBpam_sm_setcred()\fR. The credentials are set from an initial authentication using system's keys that were stored previously when the system had been previously provisioned for Kerberos.
+.sp
+.LP
+The following options can be passed to the Kerberos set credential module:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdebug\fR\fR
+.ad
+.RS 10n
+.rt  
+Provides \fBsyslog\fR(3C) debugging information at \fBLOG_DEBUG\fR level.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnowarn\fR\fR
+.ad
+.RS 10n
+.rt  
+Turns off warning messages.
+.RE
+
+.SS "Kerberos Authentication Module"
+.sp
+.LP
+The Kerberos key table authentication module provides the authentication function for \fBpam_sm_authenticate()\fR. The function returns \fBPAM_IGNORE\fR.
+.SH ERRORS
+.sp
+.LP
+The following error codes are returned for \fBpam_sm_setcred()\fR:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPAM_CRED_UNAVAIL\fR\fR
+.ad
+.RS 20n
+.rt  
+The system's key table file does not exist or the system's principal was not found in the key table file.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPAM_SUCCESS\fR\fR
+.ad
+.RS 20n
+.rt  
+Successfully initialized credentials for the system's principal.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPAM_SYSTEM_ERR\fR\fR
+.ad
+.RS 20n
+.rt  
+System error.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPAM_USER_UNKNOWN\fR\fR
+.ad
+.RS 20n
+.rt  
+The system's principal was not found in the Kerberos database.
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRSet Credential for Initial Authentication Optionally Through Kerberos Key Table File
+.sp
+.LP
+The following is an excerpt of a sample \fB/etc/pam.d/cron\fR file:
+
+.sp
+.in +2
+.nf
+auth definitive  pam_user_policy.so.1
+auth required    pam_dhkeys.so.1
+auth required    pam_unix_auth.so.1
+auth required    pam_unix_cred.so.1
+auth requisite   pam_krb5_keytab.so.1
+auth optional    pam_gss_s4u.so.1
+.fi
+.in -2
+
+.sp
+.LP
+Given that set credentials uses the same stack as authenticate, the above will provision Kerberos credentials through the successful authentication of the keys found in the system's key table file via \fBpam_krb5_keytab\fR(5). Subsequently, these credentials will be used to obtain S4U credentials for \fBPAM_USER\fR.
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for a description of the following attribute:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Interface StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBkinit\fR(1), \fBlibpam\fR(3LIB), \fBpam\fR(3PAM), \fBpam_sm\fR(3PAM), \fBpam_sm_setcred\fR(3PAM), \fBpam_sm_authenticate\fR(3PAM), \fBsyslog\fR(3C), \fBkrb5.conf\fR(4), \fBpam.conf\fR(4), \fBattributes\fR(5), \fBkerberos\fR(5), \fBkrb5envvar\fR(5), \fBpam_krb5\fR(5), \fBpam_gss_s4u\fR(5)

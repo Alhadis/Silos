@@ -1,0 +1,274 @@
+'\" te
+.\" Copyright (c) 2008, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH audit_syslog 5 "2015 年 3 月 19 日" "SunOS 5.11" "标准、环境和宏"
+.SH 名称
+audit_syslog \- 提供从 Solaris 审计数据到系统日志消息的实时转换
+.SH 用法概要
+.LP
+.nf
+\fB/usr/lib/security/audit_syslog.so\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+用于 Solaris 审计的 \fBaudit_syslog\fR 插件模块 \fB/usr/lib/security/audit_syslog.so\fR 提供 Solaris 审计数据到系统日志格式（文本）数据的实时转换，并按照 \fBsyslog.conf\fR(4) 中的配置将数据发送到系统日志守护进程。该插件的路径通过 \fBauditconfig\fR(1M) 实用程序来指定。
+.sp
+.LP
+如果通过 \fBauditconfig\fR 将 \fBplugin\fR 配置为活动状态，则会将消息写入到 \fBsyslog\fR。使用 \fBauditconfig\fR \fB-setplugin\fR 选项可以更改所有与插件相关的配置参数。将使用工具代码 \fBLOG_AUDIT\fR（\fBsyslog.conf\fR(4) 中的 \fBaudit\fR）和严重性 \fBLOG_NOTICE\fR 生成系统日志消息。\fBsyslog\fR 审计消息包含从用于二进制审计日志的标记中选择的数据。（请参见 \fBaudit.log\fR(4)。）与所有 \fBsyslog\fR 消息一样，\fBsyslog\fR 文件中的每一行都包括两部分，即 \fBsyslog\fR 头和消息。
+.sp
+.LP
+系统日志头包含生成消息的日期和时间，从中发送消息的主机名，指示消息是由审计守护进程生成的 \fBauditd\fR，\fBsyslogd\fR 在内部使用的 ID 字段以及指示 \fBsyslog\fR 工具和严重性值的 \fBaudit.notice\fR。\fBsyslog\fR 标以字符 \fB]\fR 结尾，即一个结束方括号和一个空格。
+.sp
+.LP
+消息部分以头标记中的事件类型开头。仅当所有后续数据包含在原始审计记录中且 1024 字节的最大长度 \fBsyslog\fR 行中有空间时，才会显示这些数据。在以下示例中，反斜杠 (\fB\\fR) 指示继续；实际 \fBsyslog\fR 消息包含在一行中：
+.sp
+.in +2
+.nf
+Oct 31 11:38:08 smothers auditd: [ID 917521 audit.notice] chdir(2) ok\e
+session 401 by joeuser as root:other from myultra obj /export/home
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+在上述示例中，\fBchdir(2)\fR 是事件类型。此字段后是如下所述的其他数据。如果这些数据未包含在源审计记录中，将省略这些数据。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBok\fR 或 \fBfailed\fR\fR
+.ad
+.RS 21n
+.rt  
+来自 return 或 exit 标记。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsession \fI<#>\fR\fR\fR
+.ad
+.RS 21n
+.rt  
+\fI<#>\fR 是 subject 标记中的会话 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBby \fI<name>\fR\fR\fR
+.ad
+.RS 21n
+.rt  
+\fI<name>\fR 是 subject 标记中的审计 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBas \fI<name>\fR:\fI<group>\fR\fR\fR
+.ad
+.RS 21n
+.rt  
+\fI<name>\fR 和 \fI<group>\fR 分别是 subject 标记中的是有效用户 ID 和有效组 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin\fR \fI<zone name>\fR\fR
+.ad
+.RS 21n
+.rt  
+区域名称。仅在设置 \fBzonename\fR 审计策略时才会生成此字段。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfrom \fI<terminal>\fR\fR\fR
+.ad
+.RS 21n
+.rt  
+\fI<terminal>\fR 是 subject 标记中的文本计算机地址。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBobj \fI<path>\fR\fR\fR
+.ad
+.RS 21n
+.rt  
+\fI<path>\fR 是来自路径标记的路径。根据换行需要，可以从左侧截断路径。使用前导省略号 (\fB\&...\fR) 来指示截断。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBproc_uid \fI<owner>\fR\fR\fR
+.ad
+.RS 21n
+.rt  
+\fI<owner>\fR 是进程所有者的有效用户 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBproc_auid \fI<owner>\fR\fR\fR
+.ad
+.RS 21n
+.rt  
+\fI<owner>\fR 是进程所有者的审计 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBargv \fI<arguments>\fR\fR\fR
+.ad
+.RS 21n
+.rt  
+列出 \fBexec_args\fR 标记中的 \fBexecv\fR(2) 系统调用参数。
+.sp
+根据换行需要，可以从右端截断参数。通过以省略号 (...) 结尾来指示截断。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBarge \fI<arguments>\fR\fR\fR
+.ad
+.RS 21n
+.rt  
+列出 \fBexec_env\fR 标记中的 \fBexecv\fR(2) 系统调用环境参数。
+.sp
+根据换行需要，可以从右端截断参数。通过以省略号 (...) 结尾来指示截断。
+.RE
+
+.sp
+.LP
+以下是示例 \fBsyslog\fR 消息：
+.sp
+.in +2
+.nf
+Nov  4  8:27:07 smothers auditd: [ID 175219 audit.notice] 
+\esystem booted
+
+Nov  4  9:28:17 smothers auditd: [ID 752191 audit.notice] \e
+login - rlogin ok session 401 by joeuser as joeuser:staff from myultra
+
+Nov  4 10:29:27 smothers auditd: [ID 521917 audit.notice] \e
+access(2) ok session 255 by janeuser as janeuser:staff from  \e
+129.146.89.30 obj /etc/passwd
+.fi
+.in -2
+.sp
+
+.SH 对象属性
+.sp
+.LP
+\fBp_flag\fR 属性用于进一步过滤要发送到 \fBsyslog\fR 守护进程的审计数据，该守护进程超出了通过 \fBflags\fR 和 \fBnaflags\fR（请参见\fBauditconfig\fR(1M)）以及通过 \fBuser_attr\fR(4) 的用户特定行指定的类范围。该参数是一个逗号分隔列表；每一项表示一个审计类（请参见 \fBaudit_class\fR(4)）并使用 \fBaudit_flags\fR(5) 中所述的语法进行指定。缺省设置（空 \fBp_flags\fR）表示将不生成任何审计记录。
+.SH 示例
+.LP
+\fB示例 1 \fR\fBplugin\fR 行的一种用法：
+.sp
+.LP
+在下面所示的规范中，\fBplugin\fR（与设置 \fBflags\fR 和 \fBnaflags\fR 结合使用）用于允许 \fBlo\fR 的类记录，但仅失败时才允许 \fBam\fR 的类记录。省略 \fBfm\fR 类记录会导致不输出任何 \fBfm\fR 类记录。\fBpc\fR 参数没有任何效果，因为您无法向通过 \fBflags\fR 和 \fBnaflags\fR 以及由 \fBuser_attr\fR(4) 定义的那些标志添加类。您只能删除它们。
+
+.sp
+.in +2
+.nf
+auditconfig -setflags lo,am,fm
+auditconfig -setnaflags lo
+auditconfig -setplugin audit_syslog active "p_flags=lo,-am,pc"
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR\fBall\fR 的用法：
+.sp
+.LP
+在下面所示的规范中，一种例外情况是，\fBall\fR 允许通过 \fBflags\fR 和 \fBnaflags\fR（以及 \fBuser_attr\fR(4)）定义的所有标志。该例外情况是 \fBam\fR 元类，它等同于 \fBss,as,ua\fR，后者修改为可输出所有 \fBua\fR 事件但仅限 \fBss\fR 和 \fBas\fR 的失败事件。
+
+.sp
+.in +2
+.nf
+auditconfig -setflags lo,am
+auditconfig -setnaflags lo
+auditconfig -setplugin audit_syslog active "p_flags=all,^+ss,^+as"
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+在此示例中，\fBss\fR 或 \fBas\fR 类（可能有多个类包含这两个类）中的一些成功审计事件可能仍会显示在 \fBsyslog\fR 输出中。
+
+.SH 属性
+.sp
+.LP
+有关以下属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型\fB\fR属性值\fB\fR
+_
+MT 级别MT-Safe（MT 安全）
+_
+接口稳定性请参见下文。
+.TE
+
+.sp
+.LP
+消息格式和消息内容是 "Uncommitted"（未确定）。配置参数是 "Committed"（已确定）。
+.SH 另请参见
+.sp
+.LP
+\fBauditconfig\fR(1M)、\fBauditd\fR(1M)、\fBaudit_class\fR(4)、\fBsyslog.conf\fR(4)、\fBuser_attr\fR(4)、\fBattributes\fR(5)、\fBaudit_flags\fR(5)
+.sp
+.LP
+\fI《Managing Auditing in Oracle Solaris 11.3》\fR
+.SH 附注
+.sp
+.LP
+激活 \fBaudit_syslog\fR \fBplugin\fR 要求 \fB/etc/syslog.conf\fR 配置为将工具 \fBaudit\fR 和严重性 \fBnotice\fR 或更高级别的 \fBsyslog\fR 消息存储在适用于 Solaris 审计记录的文件中。\fBsyslog.conf\fR 中此类行的一个示例为：
+.sp
+.in +2
+.nf
+audit.notice                /var/audit/audit.log
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBsyslog\fR 中的消息将通过 UDP 发送到远程 \fBsyslog\fR 服务器，这种方式并不能保证送达或确保按正确顺序收到消息。
+.sp
+.LP
+如果使用为 \fBplugin\fR 行指定的参数导致未预选任何类，则将通过 \fBsyslog\fR 警报以及 \fBLOG_DAEMON\fR 工具代码报告错误。
+.sp
+.LP
+\fBaudit_syslog\fR(5) 未取代 \fBaudit_binfile\fR(5) 或 \fBaudit_remote\fR(5)。\fBsyslog\fR 消息中包括有限的标记集。可以使用审计迹文件 (\fBaudit.log\fR(4)) 获取完整的审计记录。
+.sp
+.LP
+\fBsyslog\fR 头中的时间字段由 \fBsyslog\fR(3C) 生成，仅与二进制审计日志中给定的时间近似。通常，时间字段显示同一整秒，或者最多相差几秒。

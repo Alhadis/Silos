@@ -1,0 +1,216 @@
+'\" te
+.\" Copyright (c) 1989, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1989 AT&T
+.TH dispadmin 1M "2011 年 3 月 2 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+dispadmin \- 进程调度程序管理
+.SH 用法概要
+.LP
+.nf
+\fBdispadmin\fR \fB-l\fR
+.fi
+
+.LP
+.nf
+\fBdispadmin\fR \fB-c\fR \fIclass\fR {\fB-g\fR [\fB-r\fR \fIres\fR] | \fB-s\fR \fIfile\fR}
+.fi
+
+.LP
+.nf
+\fBdispadmin\fR \fB-d\fR [\fIclass\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBdispadmin\fR 命令可在系统运行时显示或更改进程调度程序参数。
+.sp
+.LP
+\fBdispadmin\fR 对 \fIfile\fR 中提供的值执行有限的检查，仅验证它们是否处于所需的边界内。但是，检查不尝试分析新值对于系统性能的影响。不适当的值可能会对系统性能造成负面影响。（请参见\fI《Managing System Information, Processes, and Performance in Oracle Solaris 11.3》\fR。）
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIclass\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定要显示或更改其参数的类。有效的 \fIclass\fR 值如下：对于实时类为 \fBRT\fR、对于分时类为 \fBTS\fR、对于交互类为 \fBIA\fR、对于公平份额类为 \fBFSS\fR、对于固定优先级类为 FX。分时类和交互类共享相同的调度程序，因此更改其中一个类的调度参数也将更改另一个类的参数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR [\fIclass\fR]\fR
+.ad
+.sp .6
+.RS 4n
+设置或显示在重新引导时启动 \fBsvc:/system/scheduler:default\fR 时要使用的缺省调度类的名称。如果未指定类名称，则显示当前缺省调度类的名称和说明。如果指定了类名称并且该名称为有效的调度类名称，那么将其保存在 \fBdispadmin\fR 的专用配置文件 \fB/etc/dispadmin.conf\fR 中。只有超级用户可以设置缺省调度类。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR\fR
+.ad
+.sp .6
+.RS 4n
+获取指定类的参数并将其写入标准输出。实时类的参数在 \fBrt_dptbl\fR(4) 中进行了介绍。分时类和交互类的参数在 \fBts_dptbl\fR(4) 中进行了介绍。公平份额类的参数在 \fBFSS\fR(7) 中进行了介绍。固定优先级类的参数在 \fBfx_dptbl\fR(4) 中进行了介绍。
+.sp
+\fB-g\fR 和 \fB-s\fR 选项互斥：您不能在覆盖表的同时检索表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+列出系统中当前配置的调度程序类。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIres\fR\fR
+.ad
+.sp .6
+.RS 4n
+当使用 \fB-g\fR 选项时，您还可以使用 \fB-r\fR 选项指定用于输出时间量程值的精度。如果未指定精度，那么时间量程值以毫秒为单位。如果指定 \fIres\fR，其必须是介于 1 和 1000000000（包括 1 和 1000000000）之间的正整数，使用的精度是 \fIres\fR 的倒数（单位为秒）。例如，\fIres\fR 值为 10 时会生成以十分之一秒表示的时间量程值；\fIres\fR 值为 1000000 时会生成以微秒表示的时间量程值。如果时间量程不能以指定精度表示为整数，则将其舍入到指定精度的下一个整数倍数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fIfile\fR 中的值设置指定类的调度程序参数。这些值会覆盖内存中的当前值－它们将成为控制指定类中进程调度的参数。\fIfile\fR 中的值必须采用 \fB-g\fR 选项输出的格式。此外，这些值描述的表必须与所覆盖的表大小相同（具有相同的优先级数）。需要具有超级用户特权才能使用 \fB-s\fR 选项。
+.sp
+以系统时钟周期，而不是恒定时间单位，指定调度类的时间量程值。时间量程值以内核的 \fBhz\fR 变量值为基础。如果将内核变量 \fBhires_tick\fR 设置为 \fB1\fR 以实现较高精度的时钟行为，那么实际时间量程将按照 \fB10\fR 的数量级减少。
+.sp
+\fB-g\fR 和 \fB-s\fR 选项互斥：您不能在覆盖表的同时检索表。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR检索实时类的当前调度程序参数
+.sp
+.LP
+以下命令可从内核内存中检索实时类的当前调度程序参数，并将其写入标准输出。时间量程值以微秒为单位。
+
+.sp
+.in +2
+.nf
+dispadmin \fB-c\fR RT \fB-g\fR \fB-r\fR 1000000
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR覆盖实时类的当前调度程序参数
+.sp
+.LP
+以下命令可使用 \fBrt.config\fR 中指定的值覆盖实时类的当前调度程序参数。
+
+.sp
+.in +2
+.nf
+dispadmin \fB-c\fR RT \fB-s\fR rt.config
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR检索分时类的当前调度程序参数
+.sp
+.LP
+以下命令可从内核内存中检索分时类的当前调度程序参数，并将其写入标准输出。时间量程值以纳秒为单位。
+
+.sp
+.in +2
+.nf
+dispadmin \fB-c\fR TS \fB-g\fR \fB-r\fR 1000000000
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR覆盖分时类的当前调度程序参数
+.sp
+.LP
+以下命令可使用 \fBts.config\fR 中指定的值覆盖分时类的当前调度程序参数。
+
+.sp
+.in +2
+.nf
+dispadmin \fB-c\fR TS \fB-s\fR ts.config
+.fi
+.in -2
+.sp
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/dispadmin.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-s\fR 选项参数的可能位置。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBpriocntl\fR(1)、\fBsvcs\fR(1)、\fBsvcadm\fR(1M)、\fBpriocntl\fR(2)、\fBfx_dptbl\fR(4)、\fBrt_dptbl\fR(4)、\fBts_dptbl\fR(4)、\fBattributes\fR(5)、\fBsmf\fR(5)、\fBFSS\fR(7)
+.sp
+.LP
+\fIIntroduction to Oracle Solaris 11.3                 Administration\fR \fI《Oracle Solaris 11.2 Programming Interfaces Guide》\fR
+.SH 诊断
+.sp
+.LP
+如果因缺少所需的权限或指定输入文件出现问题而无法覆盖当前调度程序参数，那么 \fBdispadmin\fR 将输出相应的诊断消息。
+.SH 附注
+.sp
+.LP
+缺省调度类设置工具由服务管理工具 \fBsmf\fR(5) 管理，其服务标识符为：
+.sp
+.in +2
+.nf
+svc:/system/scheduler:default
+.fi
+.in -2
+
+.sp
+.LP
+可以使用 \fBsvcadm\fR(1M) 来对此服务执行管理操作（如启用、禁用或请求重新启动）。请注意，在服务运行期间禁用服务不会改变任何事情。可以使用 \fBsvcs\fR(1) 命令来查询服务的状态。

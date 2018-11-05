@@ -1,0 +1,425 @@
+'\" te
+.\" Copyright (c) 2011, 2014, Oracle and/or its affiliates. All rights       reserved.
+.TH dc_manifest 4 "11 Mar 2014" "SunOS 5.11" "File Formats"
+.SH NAME
+dc_manifest \- Distribution constructor manifest file format
+.SH SYNOPSIS
+.LP
+.nf
+/usr/share/install/dc.dtd.1
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The distribution constructor (DC) can be used to build Oracle Solaris installation images.
+.sp
+.LP
+DC XML manifest files are used as input to the distribution constructor. These manifests define the image that the distribution constructor builds. You can use different manifests to build different kinds of images. See the "Files" section for a list of template manifests that are available.
+.sp
+.LP
+Use the \fBdistro_const\fR command to build images, referencing a manifest file in the command. If you want to customize the image specifications, copy a manifest file, customize the copy, and use the copy as input for the \fBdistro_const\fR command when you build the image.
+.sp
+.LP
+At a minimum, you need to edit the target element in the manifest to specify the location of the build area where the image can be constructed. And, you need to edit the software name element to specify the publisher and repository location that contain the packages needed to build the image.
+.SH MANIFEST SECTIONS
+.sp
+.LP
+The manifests include the following primary elements.
+.LP
+Note - 
+.sp
+.RS 2
+The default elements and attributes provided below vary depending on which manifest is used.
+.RE
+.SS "Image Name and Proxy Section"
+.sp
+.LP
+This element provides the default name, Oracle_Solaris_Text_X86, for the image that you plan to build. You can use this name, or provide a unique name for your image. 
+.sp
+.LP
+If you intend to perform a series of builds of an image and retain the incremental images, change the \fBadd_timestamp\fR attribute value to \fBtrue\fR to automatically append a time stamp to the name for each image.
+.sp
+.LP
+If you need to specify an HTTP proxy, use the version of the \fBdistro\fR element that includes the \fBhttp_proxy\fR attribute, and enter the proxy location as shown in the following example:
+.sp
+.in +2
+.nf
+<distro name="Oracle_Solaris_Text_SPARC" add_timestamp="false"
+    http_proxy="http://example.com">
+.fi
+.in -2
+
+.SS "Boot Menu Modifications Section"
+.sp
+.LP
+This element specifies boot menu modifications to be applied to the image.
+.sp
+.LP
+In the following example, a specialized boot menu with the title \fBmyentry\fR will be applied to the image. The \fBtimeout\fR attribute specifies time before the default boot entry is automatically activated.
+.sp
+.in +2
+.nf
+<boot_mods title="myentry" timeout="5">
+.fi
+.in -2
+
+.sp
+.LP
+You can add individual boot menu entries by adding a new \fBboot_entry\fR element for each new entry. Entries are added sequentially to the boot menu in the order based on the \fBinsert_at\fR attribute value of \fBstart\fR or \fBend\fR for each boot entry.
+.LP
+Note - 
+.sp
+.RS 2
+Add new entries before any \fBassistive_tech=magnifier\fR entry.
+.LP
+See the following \fBboot_mods\fR element in the \fBdc_livecd.xml\fR sample manifest:
+.RE
+.sp
+.in +2
+.nf
+<boot_mods>
+  <boot_entry>
+    <title_suffix>with magnifier</title_suffix>
+    <kernel_args>-B assistive_tech=magnifier</kernel_args>
+  </boot_entry>
+    <title_suffix>with screen reader</title_suffix>
+    <kernel_args>-B assistive_tech=reader</kernel_args>
+  </boot_entry>
+</boot_mods>
+.fi
+.in -2
+
+.sp
+.LP
+Since a title sub-element is not included in this example, the default is used. The default title is the first line of \fB/etc/release\fR.
+.sp
+.LP
+The \fBtitle_suffix\fR is a required sub-element, a text string to be appended to the entry title. An optional \fBkernel_args\fR sub-element passes kernel arguments to the boot loader.
+.sp
+.LP
+Optional attributes for the \fBboot_entry\fR element include:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdefault_entry\fR\fR
+.ad
+.RS 17n
+.rt  
+Set this attribute to "true" to make this boot entry the default. If more than one entry is set to "true", the last entry defined as such will override preceding entries.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinsert_at\fR\fR
+.ad
+.RS 17n
+.rt  
+Set value to "start" or "end" to indicate insertion point relative to other boot entries.
+.RE
+
+.SS "Installation Target Section"
+.sp
+.LP
+This element defines the ZFS build dataset to be used for the build. This dataset is the area where the image will be created. The \fBfilesystem\fR name should not include the \fBzpool\fR name.
+.sp
+.in +2
+.nf
+<target>
+  <logical>
+    <zpool name="rpool" action="use_existing">
+      <filesystem name="dc/text" action="preserve"/>
+    </zpool>
+  </logical>
+</target>
+.fi
+.in -2
+
+.SS "Software Source Section: Transfer IPS Packages"
+.sp
+.LP
+This section specifies where the distribution constructor can get packages to download and use to build the image.
+.sp
+.LP
+Image Packaging System (IPS) publishers provide packages in one or more package repositories.
+.sp
+.LP
+In the \fBsource\fR element in this section, edit the publisher name and origin name to specify which publisher to use and where the package repository is located. Multiple publishers can be listed. When the distribution constructor attempts to locate packages to install, publishers are searched in the order in which they are listed in the \fBsource\fR element. Use the \fBmirror\fR sub-element to specify a mirror repository location. See the \fBpkg\fR(5) man page for information about IPS publishers and repositories.
+.sp
+.LP
+Use the \fBcmd_options\fR sub-element of the \fBpublisher\fR element to specify an options string to be passed to the \fBpkg\fR(1) \fBset-publisher\fR command to be run on the \fBpublisher\fR. This element can be used to set properties, attributes, or other options on the \fBpublisher\fR. See the \fBpkg\fR(1) man page for more information about the \fBset-publisher\fR subcommand. Note that not all options are applicable to be set on publishers in the context of distribution construction.
+.sp
+.LP
+See the \fBpkg\fR(5) man page for information about IPS publishers and repositories.
+.sp
+.in +2
+.nf
+<source>
+  <publisher name="solaris">
+    <origin name="http://pkg.oracle.com/solaris/release"/>
+  </publisher>
+  <publisher name="internal">
+    <origin name="http://example.com/"></origin>
+    <mirror name="mirror1.example.com"></mirror>
+    <mirror name="mirror2.example.com"></mirror>
+    <cmd_options>--non-sticky</cmd_options>
+    <cmd_options>--set-property signature-policy=ignore</cmd_options>
+  </publisher>
+</source>
+.fi
+.in -2
+
+.LP
+Note - 
+.sp
+.RS 2
+This element also includes a destination tag which specifies the data mount point to be used during the build of the image. Changing the destination attribute is not recommended.
+.RE
+.SS "Software Packages Section: Install"
+.sp
+.LP
+This \fBsoftware_data\fR element with the install attribute lists the set of packages to be installed in order to build a particular type of image, depending on which manifest you are using. For example, the \fBdc_text_x86.xml\fR manifest lists the packages needed to build a text install image.
+.sp
+.LP
+Each \fBname\fR element lists one package name.
+.sp
+.in +2
+.nf
+<software_data action="install" type="IPS">
+  <name>pkg:/entire@latest</name>
+  <name>pkg:/group/system/solaris-large-server</name>
+  <name>pkg:/system/install/text-install</name>
+  <name>pkg:/system/install/media/internal</name>
+</software_data>
+.fi
+.in -2
+
+.sp
+.LP
+If you have packages that you want to add to the image, append the package names by adding a \fBname\fR element for each package.
+.sp
+.LP
+By default, the most current package version available in the specified repository is installed. If another version is required, include the version portion of the package FMRI as shown in the following example:
+.sp
+.in +2
+.nf
+<name>pkg:/entire@0.5.11-0.165</name>
+.fi
+.in -2
+
+.sp
+.LP
+Use the following command to check which versions are available.
+.sp
+.in +2
+.nf
+$ \fBpkg list -af entire\fR
+.fi
+.in -2
+.sp
+
+.LP
+Note - 
+.sp
+.RS 2
+Do not remove the installation of the packaged named \fBentire\fR. The packaged named \fBentire\fR is an incorporation used to manage multiple packages.
+.RE
+.SS "Software Packages Section: Uninstall"
+.sp
+.LP
+The \fBsoftware_data\fR element with the \fBuninstall\fR attribute can be used to uninstall an individual package.
+.sp
+.in +2
+.nf
+<software_data action="uninstall" type="IPS">
+  <name>pkg:/editor/nano</name>
+</software_data>
+.fi
+.in -2
+
+.SS "Software Source Section: Set IPS Attributes"
+.sp
+.LP
+This element affects a system after that system has been installed with the image created using the distribution constructor.
+.sp
+.LP
+In the \fBsource\fR element, use the publisher name and optional mirror name to specify where the installed system can access additional packages to download and install. Use the optional \fBcmd_options\fR sub-element to specify options strings to be passed to the \fBpkg\fR(1) \fBset-publisher\fR command to be run on the \fBpublisher\fR.
+.sp
+.in +2
+.nf
+<source>
+  <publisher name="solaris">
+    <origin name="http://pkg.oracle.com/solaris/release/"/>
+  </publisher>
+</source>
+.fi
+.in -2
+
+.SS "Software Section: Boot Archive"
+.sp
+.LP
+The \fBsoftware\fR element with \fBname\fR attribute \fBba-init\fR lists the files and directories to be installed or uninstalled in the boot archive for the image that is built. See the comments in the manifest file for information.
+.LP
+Caution - 
+.sp
+.RS 2
+Modifying the boot archive contents could render the system unbootable.
+.RE
+.SS "Execution and Checkpoint Section"
+.sp
+.LP
+The \fBexecution\fR element in the manifest lists a series of checkpoints that are executed during the image construction process. Checkpoints are executed in the order in which they are listed in this section. The default checkpoints needed to build the default installation image are included in each manifest.
+.sp
+.LP
+Each \fBcheckpoint\fR element includes the \fBmod-path\fR attribute, which specifies where the checkpoint script is located.
+.sp
+.LP
+Use the \fBdistro_const\fR command options to control pausing and restarting the build process at particular checkpoints.
+.sp
+.LP
+Some of the checkpoint sub-elements include arguments with default values provided. See the manifest comments for details.
+.sp
+.LP
+If you create a custom script to be used during the building of an image, you must add a checkpoint element pointing to the script location. See the following example about how to add a new checkpoint element to point to a custom script. A user creates a custom script, \fB/tmp/myscript.sh\fR, to run in the build process after the default \fBtransfer-ips-checkpoint\fR. To point to the new script, add the following element to the manifest after the \fBtransfer-ips-install\fR checkpoint.
+.sp
+.in +2
+.nf
+<checkpoint name="custom1"
+  desc="my new script"
+  mod_path="solaris_install/distro_const/checkpoints/custom_script"
+  checkpoint_class="CustomScript">
+  <args>/tmp/myscript.sh {PKG_IMAGE_PATH}/\fIfilearg\fR \fIarg2\fR</args>
+</checkpoint>
+.fi
+.in -2
+
+.sp
+.LP
+Where \fIfilearg\fR and \fIarg2\fR are arguments the script takes, and \fIfilearg\fR is the name of a file in \fB$PKG_IMAGE_PATH\fR. See the "Environment Variables" section below for a description of \fBPKG_IMAGE_PATH\fR.
+.LP
+Note - 
+.sp
+.RS 2
+Multiple custom checkpoints can be specified in a DC manifest. Each checkpoint must have a unique name.
+.RE
+.SS "Configuration Section"
+.sp
+.LP
+The \fBconfiguration\fR element in the manifest lists SMF service profiles that are applied to the media during the image construction process. These SMF services specify which services will be running, or not running, on the booted media. The profiles are applied in the order in which they are specified in this element.
+.sp
+.LP
+This element would rarely be modified.
+.SH ENVIRONMENT VARIABLES
+.sp
+.LP
+The following environment variables are used only with custom checkpoint scripts. See the example in "Execution and Checkpoint Section" above.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPKG_IMAGE_PATH\fR\fR
+.ad
+.sp .6
+.RS 4n
+Replaced by \fBdistro_const\fR during execution with \fB\fIZFS_dataset\fR/build_data/pkg_image\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBBOOT_ARCHIVE\fR\fR
+.ad
+.sp .6
+.RS 4n
+Replaced by \fBdistro_const\fR during execution with \fB\fIZFS_dataset\fR/build_data/boot_archive\fR.
+.RE
+
+.SH FILES
+.sp
+.LP
+The following manifest files can be used to build various Oracle Solaris images. These manifests are included in the \fBdistribution-constructor\fR package.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/distro_const/dc_livecd.xml\fR\fR
+.ad
+.sp .6
+.RS 4n
+To build x86 Oracle Solaris Live DVD images.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/distro_const/dc_ai_x86.xml\fR\fR
+.ad
+.sp .6
+.RS 4n
+To build x86 automated installation images.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/distro_const/dc_ai_sparc.xml\fR\fR
+.ad
+.sp .6
+.RS 4n
+To build SPARC automated installation images.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/distro_const/dc_text_x86.xml\fR\fR
+.ad
+.sp .6
+.RS 4n
+To build x86 text installation images.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/distro_const/dc_text_sparc.xml\fR\fR
+.ad
+.sp .6
+.RS 4n
+To build SPARC text installation images.
+.RE
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availability\fBinstall/distribution-constructor\fR
+_
+Interface StabilityUncommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBdistro_const\fR(1M), \fBpkg\fR(1)
+.sp
+.LP
+\fICreating a Custom Oracle Solaris 11 Installation Image\fR

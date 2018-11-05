@@ -1,0 +1,260 @@
+'\" te
+.\"  Copyright 1989 AT&T All Rights Reserved
+.\" Copyright (c) 1998, 2011, Oracle and/or its affiliates.All rights reserved.
+.TH automountd 1M "2010 年 8 月 23 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+automountd \- autofs マウント/アンマウントデーモン
+.SH 形式
+.LP
+.nf
+\fBautomountd\fR [\fB-Tvn\fR] [\fB-D\fR \fIname=value\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBautomountd\fR は、\fBautofs\fR ファイルシステムからのファイルシステムのマウントおよびアンマウントリクエストに応答する \fBRPC\fR サーバーです。それは、ローカルファイルまたはネームサービスマップを使用して、マウントされるファイルシステムを見つけます。これらのマップについては、\fBautomount\fR(1M) コマンドで説明されています。
+.sp
+.LP
+\fBautomount\fR がローカルまたは分散された automount マップのどちらかに重要なエントリを見つけ、そのデーモンがまだ実行されていない場合、\fBautomount\fR(1M) によって \fBautomountd\fR デーモンが自動的に呼び出されます。\fBautomountd \fR は、\fBsvc:/network/nfs/nlockmgr\fR サービス (\fBlockd\fR(1M)) および \fB svc:/network/nfs/status\fR サービス (\fBstatd\fR(1M)) を有効にします (NFS マウントを行う必要がある場合)。
+.SS "SMF による管理"
+.sp
+.LP
+\fBautomountd\fR サービスは、サービス管理機能 \fBsmf\fR(5) によって、次のサービス識別子の下で管理されます。
+.sp
+.in +2
+.nf
+svc:/system/filesystem/autofs
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有効化、無効化、または再起動要求など、このサービスに関する管理操作は、\fBsvcadm\fR(1M) を使用して実行できます。サービスのステータスは、\fBsvcs\fR(1) を使って問い合わせることができます。無効になっている場合は、\fBapplication/auto_enable\fR プロパティーが \fBfalse\fR に設定されていないかぎり、\fBautomount\fR(1M) により有効になります。
+.sp
+.LP
+\fBautomountd\fR のパラメータの値は SMF に格納され、\fBsharectl\fR(1M) を使用して操作されます。サポートされているパラメータを次に示します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBautomountd_verbose\fR=\fBTRUE\fR | \fB FALSE\fR\fR
+.ad
+.sp .6
+.RS 4n
+冗長モード。ステータスメッセージを次に記録します。
+.sp
+.in +2
+.nf
+/var/svc/log/system-filesystem-autofs:default.log
+.fi
+.in -2
+.sp
+
+\fBsmf\fR(5) を参照してください。デフォルト値は \fBFALSE\fR です。\fB-v\fR オプションと同等です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnobrowse\fR=\fBON\fR | \fB OFF\fR\fR
+.ad
+.sp .6
+.RS 4n
+すべての \fBautofs\fR マウントポイントのブラウズをオンまたはオフにします。デフォルト値は \fBOFF\fR です。\fB-n\fR オプションと同等です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtrace\fR=\fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+各 RPC 呼び出しを展開し、それを次に記録します。
+.sp
+.in +2
+.nf
+/var/svc/log/system-filesystem-autofs:default.log
+.fi
+.in -2
+.sp
+
+\fBsmf\fR(5) を参照してください。デフォルト値の \fB0\fR は、そのようなトレースをオフにします。\fB1\fR から始めて、値が大きくなるごとに、トレース出力の詳細レベルが高くなります。このプロパティーは \fB-T\fR オプションと同等です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBenvironment\fR=\fIname\fR=\fI value\fR\fR
+.ad
+.sp .6
+.RS 4n
+環境変数。複数の \fIname\fR=\fIvalue\fR ペアをコンマ区切りで指定できます。1 つの名前に複数の値が存在する場合は、二重のスラッシュを使ってそれを示します。「\fB使用例\fR」を参照してください。提供されている環境変数設定はありません。このプロパティーは \fB-D\fR オプションと同等です。
+.RE
+
+.sp
+.LP
+上記のパラメータはすべて、\fBsharectl\fR(1M) コマンドを使って変更できます。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR \fIname=value\fR\fR
+.ad
+.RS 17n
+.rt  
+指定された \fBautomount\fR マップ置換変数に \fIvalue\fR を割り当てます。マスターマップ \fBauto_master\fR 内の変数の置換に、これらの割り当てを使用することはできません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 17n
+.rt  
+すべての \fBautofs\fR マウントポイントのブラウズをオフにします。このオプションは、ローカルホストでの \fB-browse\fR \fBautofs\fR マップオプションをオーバーライドします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fR
+.ad
+.RS 17n
+.rt  
+トレース。各 \fBRPC\fR 呼び出しを展開し、それを標準出力に表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 17n
+.rt  
+冗長。ステータスメッセージをコンソールに記録します。
+.RE
+
+.SH 使用法
+.sp
+.LP
+2G バイト (2^31 バイト) 以上のファイルを検出したときの \fBautomountd\fR の動作については、\fBlargefile\fR(5) を参照してください。
+.SH 使用例
+.LP
+\fB例 1 \fR冗長モードの設定
+.sp
+.LP
+次のコマンドでは、詳細モードをオンにして、上記の「SMF による管理」に指定されている場所にステータスメッセージを記録します。この例と以降の例で指定されているプロパティーについては、そのセクションを参照してください。
+
+.sp
+.in +2
+.nf
+# \fBsharectl set -p automountd_verbose=true autofs\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRマウントポイントのブラウズをオンにする
+.sp
+.LP
+次のコマンドは、すべての \fBautofs\fR マウントポイントのブラウズをオンにします。
+
+.sp
+.in +2
+.nf
+# \fBsharectl set -p nobrowse=off autofs\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fR環境変数の指定および表示
+.sp
+.LP
+次のコマンドは、\fBDAY\fR という環境変数の値を設定および表示します。
+
+.sp
+.in +2
+.nf
+# \fBsharectl set -p environment=DAY=TUES autofs\fR
+% \fBsharectl get -p environment autofs\fR
+environment=DAY=TUES
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次のコマンドは、1 つの環境変数に対して複数のパラメータを設定します。そのあとのコマンドは結果を表示します。
+
+.sp
+.in +2
+.nf
+# \fBsharectl set -p environment=DAY=TUES,TIME=NOON autofs\fR
+% \fBsharectl get -p environment autofs\fR
+environment=DAY=TUES,TIME=NOON
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次のコマンドは、1 つの環境変数に割り当てられている名前に対して複数の値を設定します。そのあとのコマンドは結果を表示します。
+
+.sp
+.in +2
+.nf
+# \fBsharectl set -p environment=DAY=MON\e\e,TUE,TIME=NOON autofs\fR
+% \fBsharectl get -p environment autofs\fR
+environment=DAY=MON\e,TUE,TIME=NOON
+.fi
+.in -2
+.sp
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/auto_master\fR\fR
+.ad
+.RS 20n
+.rt  
+automounter 用のマスターマップ。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBsvcs\fR(1)、\fBautomount\fR(1M)、\fBsharectl\fR(1M)、\fBsvcadm\fR(1M)、\fBattributes\fR(5)、\fBlargefile\fR(5)、\fBsmf\fR(5)

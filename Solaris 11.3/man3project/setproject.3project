@@ -1,0 +1,615 @@
+'\" te
+.\" Copyright (c) 2007, 2015, Oracle and/or its affiliates. All rights reserved.
+.TH setproject 3PROJECT "2 Jun 2015" "SunOS 5.11" "Project Database Access Library Functions"
+.SH NAME
+setproject \- associate a user process with a project
+.SH SYNOPSIS
+.LP
+.nf
+cc [ flag ... ] file... -lproject [ library ... ]
+        #include <project.h>
+ 
+       int setproject(const char *project_byname, const char *user,
+             uint_t flags);
+ 
+       int setproject_byname(const char *proj_byname, uint_t flags,
+            char **msgs);
+ 
+       int setproject_byname_pid(const char *proj_byname, pid_t pid,
+            uint_t flags, char **msgs);
+
+       int project_update_byname(const char * project_byname, uint_t flags); 
+
+       void project_msgs_free(char *);
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBsetproject()\fR function provides a simplified method for the association of a user process with a project and its various attributes, as stored in the \fBproject\fR(4) name service database. These attributes include resource controls, physical memory cap, resource pool binding, and multi-cpu binding (MCB). Unknown and third party attributes are are ignored by all \fBsetproject()\fR functions.
+.sp
+.LP
+All \fBsetproject()\fR functions require \fBPRIV_PROC_TASKID\fR. Whenever a process joins a project, a new task is created. See \fBsettaskid\fR(2).
+.sp
+.LP
+If the project's attributes include \fBproject.pool\fR, \fBPRIV_SYS_RES_CONFIG\fR or \fBPRIV_SYS_BIND\fR is also required.
+.sp
+.LP
+If the target process is not owned by the same user as the calling process, \fBPRIV_PROC_OWNER\fR is also required.
+.sp
+.LP
+The privilege effective and limit set must be a superset of the effective and limit set of the target pid respectively. For \fBproject_update_byname()\fR, this requirement applies to every process running in the target project.
+.sp
+.LP
+See \fBprivileges\fR(5) for detailed descriptions of each privilege.
+.sp
+.LP
+All \fBsetproject()\fR functions will cause a process to join the target project, and the project's attributes to be applied to the target process. \fBsetproject_byname_pid()\fR operates on a target pid. \fBsetproject()\fR and \fBsetproject_byname()\fR operate on the caller.
+.sp
+.LP
+\fBproject_update_byname()\fR operates an all processes currently running in a project. These functions provide a means of updating running processes after modifying a project's attributes.
+.sp
+.LP
+The \fBsetproject()\fR function verifies that user is a valid member of the specified project, as determined by \fBinproj()\fR. If user is a name of the superuser (user with UID equal to 0), the \fBsetproject()\fR function skips the \fBinproj()\fR check described above and allows the superuser to join any project.
+.sp
+.LP
+For backwards compatibility, the \fBsetproject()\fR function always implies the use of flags: \fBPROJ_FORCE_NEWTASK\fR and \fBPROJ_BIND_DEFAULT\fR
+.sp
+.LP
+\fBsetproject_byname()\fR and \fBsetproject_byname_pid()\fR do not have a \fIuser\fR parameter. It is the responsibility of the caller to verify that the user of the target process is a member of the target project.
+.sp
+.LP
+If the msgs parameter is not NULL, it will be set to a localized string containing any warning or error messages related to the operation. If the string contains more than one message, they will be delimited by the \fB\&'\n'\fR character. The last message will not have a \fB\&'\n'\fR before the terminating \fB\&'\0'\fR.
+.sp
+.LP
+The \fImsg\fR parameter may be set on success or failure, and should be freed with \fBproject_msgs_free()\fR. If no messages are returned and the \fImsg\fR parameter is non-NULL, it will be set to a NULL pointer. \fBproject_msgs_free()\fR also accepts a NULL pointer.
+.SH FLAGS
+.sp
+.LP
+The following flags are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTASK_NORMAL\fR and \fBTASK_FINAL\fR:\fR
+.ad
+.sp .6
+.RS 4n
+These flags behave as documented by \fBsettaskid\fR(2). Only \fBsetproject()\fR supports these flags. All tasks created by the remaining functions are always \fBTASK_NORMAL\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPROJ_FORCE_NEWTASK\fR:\fR
+.ad
+.sp .6
+.RS 4n
+Create a new task, even if the target process is already a member of the target project.
+.sp
+This flag is implied when using \fBsetproject()\fR for compatibility. The other \fBsetproject()\fR functions only create new task when the target process is not already a member of the target project, unless this flag is specified.
+.sp
+This flag is not valid for \fBproject_update_byname()\fR, as this function only operates on processes already in the target project, and there is no need to create any new tasks.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPROJ_BIND_DEFAULT_POOL\fR\fR
+.ad
+.sp .6
+.RS 4n
+If the target project does not have a \fBproject.pool\fR attribute, treat as if the target project has the attribute \fBproject.pool=pool_default\fR set.
+.sp
+For example, if some of the processes in a project were manually bound to a pool or pset using \fBpoolbind\fR(1M) or \fBpsrset\fR(1M), these processes would be bound to the default pool if this flag is specified. If this flag is not specified, these processes would retain their existing binding.
+.RE
+
+.SH PROJECT ATTRIBUTES
+.sp
+.LP
+Resource controls process, task, and project resource controls can be specified as project attributes.
+.sp
+.LP
+For all \fBsetproject()\fR functions:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+For process resource controls, any unspecified resource controls remain unchanged for the process.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+For task resource controls, any unspecified resource controls are inherited from the current task of the target process if a new task is created.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+For project resource controls, Any unspecified resource controls are set to the default values for that project resource control.
+.RE
+.sp
+.LP
+For all \fBproject_update()\fR functions, only the \fBproject.*\fR resource controls specified for each project are updated. The \fBproject.*\fR and \fBtask.*\fR resource controls of running processes and tasks are not updated.
+.sp
+.LP
+See the USAGE section below for a description of how to specify resource control attributes.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrcap.max-rss\fR\fR
+.ad
+.sp .6
+.RS 4n
+This attribute is used by the rcap service to set a physical memory cap for the project. See \fBrcapd\fR(1M).
+.sp
+The format is the number of megabytes or gigabytes.
+.sp
+.in +2
+.nf
+project.max-rss=500M
+project.max-rss=1G
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBproject.pool\fR\fR
+.ad
+.sp .6
+.RS 4n
+This attribute specified a resource pool binding for the project. If no pool binding is specified, the target process or processes remain bound to the pool that they were bound to prior.
+.sp
+The pool should be in the running pools configuration, and listed by the ouput of the \fBpooladm\fR command. 
+.sp
+The format is:
+.sp
+.in +2
+.nf
+project.pool=mypoolname
+.fi
+.in -2
+.sp
+
+If the \fBPROJ_BOUND_DEFAULT_POOL\fR flag is specified, the project is treated as if \fBproject.pool\fR is explicit set to \fBpool_default\fR if it does not have a \fBproject.pool\fR attribute. 
+.sp
+If the resource pools package is not installed, the \fBproject.pool\fR attribute is ignored and a warning is written to \fBstderr\fR. 
+.sp
+If a \fBproject.pool\fR attribute is specified for a project defined inside a non-global zone, it is ignored and a warning is written to \fBstderr\fR. 
+.sp
+If in the global zone, and \fBproject.pool\fR is set to pool which does not exist the behavior is governed by the vale of pool property \fBsystem.project-fallback-to-default\fR.
+.sp
+.in +2
+.nf
+true (default value):
+          A warning will returned via msg and the target process or
+          processes will be bound to the default pool for the global
+          zone.
+
+false
+         setproject will fail.
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBproject.mcb.cpus\fR, \fBproject.mcb.cores\fR, \fBproject.mcb.sockets\fR, \fBproject.mcb.pgs\fR, \fBproject.mcb.lgroups\fR, \fBproject.mcb.flags\fR\fR
+.ad
+.sp .6
+.RS 4n
+These properties configure the project to bind to a set of cpus, cores, sockets, processor groups, or lgroups. Only one of these attributes can be specified for a given project. This attribute uses a multi-cpu binding (MCB) to bind target processes to the specific cpus.
+.sp
+These attributes take id list strings as described by the \fBresource-management\fR(5) manpage. 
+.sp
+The string \fB"none"\fR is also valid, meaning to clear all mcb bindings. For example:
+.sp
+.in +2
+.nf
+project.mcb.cpus=0-7,16-23
+project.mcb.cores=0-7
+project.mcb.sockets=0,3
+project.mcb.cpus=none
+.fi
+.in -2
+.sp
+
+The individual ids can be cpu, core, or socket ids as outputted by the \fBpsrinfo\fR(1M) with the \fB-t\fR option. \fBpg\fR ids can be those outputted by the \fBpginfo\fR and \fBlgrpinfo\fR commands. Processor Group 0 is invalid. 
+.sp
+The \fBproject.mcb.flags\fR property can be set to either "strong" or "weak". If not set, "strong" is implied.
+.sp
+The \fBproject.mcb\fR property depends on the \fBproject.pool\fR property. At least one of the MCB target cpus must be in the project's pool or all \fBsetproject()\fR functions will fail. 
+.sp
+Cpus which do not exist, are not in the project's pool, or are not in the \fBon-line\fR or \fBno-intr\fR state will generate warning messages. 
+.sp
+If the \fBproject.pool\fR propety is not set, then it is assummed to be the default pool for the target zone. Any target process bound to other pool psets or psrset psets will be bound to the default pool of the zone so that the project's MCB binding can be applied successfully.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtask.final\fR\fR
+.ad
+.sp .6
+.RS 4n
+The final attribute is used to finalize the task created by \fBsetproject()\fR. See \fBsettaskid\fR(2). All further attempts to create new tasks, such as using \fBsetproject()\fR, \fBnewtask()\fR, and \fBsu\fR, will fail. 
+.sp
+It has no value and is specified by name only. The format is:
+.sp
+.in +2
+.nf
+task.final
+.fi
+.in -2
+.sp
+
+.RE
+
+.SH RETURN VALUES
+.sp
+.LP
+Upon successful completion, \fBsetproject()\fR returns 0.
+.SH ERRORS
+.sp
+.LP
+\fBsetproject_byname()\fR and \fBsetproject_byname_pid()\fR return the task id of the calling or target process on success.
+.sp
+.LP
+\fBproject_update_byname()\fR returns 0 on success.
+.sp
+.LP
+The following return values define different errors. Receiving a latter return value implies that operations related to the prior return value succeeded. For example, receiving \fBSETPROJECT_ERR_MCB\fR implies that any task creation and pool binding to be done by the called function has succeeded.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSETPROJ_ERR_TASK\fR\fR
+.ad
+.RS 20n
+.rt  
+Task creation failed, or problem with setting project attributes for specific error:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBENOMEM\fR\fR
+.ad
+.RS 10n
+.rt  
+Not enough Memory.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEINVAL\fR\fR
+.ad
+.RS 10n
+.rt  
+Invalid flag, username, pid, or project id.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBESRCH\fR\fR
+.ad
+.RS 10n
+.rt  
+project with name does not exist.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEPERM\fR\fR
+.ad
+.RS 10n
+.rt  
+user name and pid does not exist.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEAGAIN\fR\fR
+.ad
+.RS 10n
+.rt  
+Pools facility not installed. Unable to read system information. Try again.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEINTR\fR\fR
+.ad
+.RS 10n
+.rt  
+Signal received, interrupted.
+.RE
+
+.RE
+
+.sp
+.LP
+Also see errnos defined for \fBsettaskid\fR(2).
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSETPROJECT_ERR_POOL\fR\fR
+.ad
+.RS 23n
+.rt  
+.sp
+.ne 2
+.mk
+.na
+\fB\fBENOMEM\fR\fR
+.ad
+.RS 10n
+.rt  
+Not enough Memory.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBESRCH\fR\fR
+.ad
+.RS 10n
+.rt  
+pid does not exist.
+.RE
+
+.RE
+
+.sp
+.LP
+Error set by \fBlibpool\fR(3LIB). See errors described by \fBpool_set_binding\fR(3POOL).
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSETPROJECT_ERR_MCB\fR\fR
+.ad
+.RS 22n
+.rt  
+.sp
+.ne 2
+.mk
+.na
+\fB\fBENOMEM\fR\fR
+.ad
+.RS 10n
+.rt  
+Not enough Memory.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBESRCH\fR\fR
+.ad
+.RS 10n
+.rt  
+pid does not exist.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEINVAL\fR\fR
+.ad
+.RS 10n
+.rt  
+No cpus in the target list exist, are in the project's pool, and are in the online or \fBno-intr\fR state. If the project does not define a pool, then the default pool of the zone is assummed.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEPERM\fR\fR
+.ad
+.RS 10n
+.rt  
+The \fB{PRIV_PROC_OWNER}\fR privilege is not asserted in the effective set of the calling process and its real or effective user ID does not match the real or effective user ID of one of the target process.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSETPROJ_ERR_RCTL\fR\fR
+.ad
+.RS 20n
+.rt  
+.sp
+.ne 2
+.mk
+.na
+\fB\fBENOMEM\fR\fR
+.ad
+.RS 10n
+.rt  
+Not enough Memory.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBESRCH\fR\fR
+.ad
+.RS 10n
+.rt  
+pid does not exist.
+.RE
+
+See errors defined by \fBsetrctl\fR(2).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPOSITIVE INTEGER\fR\fR
+.ad
+.RS 20n
+.rt  
+The \fBsetproject()\fR function can return a positive integer. In this case, the integer represents the project attribute that caused the failure. The first attribute would return 1, the second attribute 2, etc. All functions that take a \fImsgs\fR parameter return a descriptive using this parameter rather than returning positive integers. 
+.sp
+If the failed attribute is an \fBrctl\fR, see the errors defined by \fBsetrctl\fR(2).
+.RE
+
+.SH USAGE
+.sp
+.LP
+The \fBsetproject()\fR function recognizes a name-structured value pair for the attributes in the \fBproject\fR(4) database with the following format:
+.sp
+.in +2
+.nf
+entity.control=(\fIprivilege\fR,\fIvalue\fR,\fIaction\fR,\fIaction\fR,\&.\|.\|.),\&.\|.\|.
+.fi
+.in -2
+
+.sp
+.LP
+where \fIprivilege\fR is one of \fBBASIC\fR or \fBPRIVILEGED\fR, \fIvalue\fR is a numeric value with optional units, and \fIaction\fR is one of \fBnone\fR, \fBdeny\fR, and \fBsignal\fR=\fIsignum\fR or \fBsignal\fR=\fISIGNAME\fR. For instance, to set a series of progressively more assertive control values on a project's per-process CPU time, specify
+.sp
+.in +2
+.nf
+process.max-cpu-time=(PRIVILEGED,1000s,signal=SIGXRES), \e
+(PRIVILEGED,1250, signal=SIGTERM),(PRIVILEGED,1500,
+     signal=SIGKILL)
+.fi
+.in -2
+
+.sp
+.LP
+To prevent a task from exceeding a total of 128 LWPs, specify a resource control with
+.sp
+.in +2
+.nf
+task.max-lwps=(PRIVILEGED,128,deny)
+.fi
+.in -2
+
+.sp
+.LP
+Specifying a resource control name with no values causes all resource control values for that name to be cleared on the given project, leaving only the system resource control value on the specified resource control name.
+.sp
+.LP
+For example, to remove all resource control values on shared memory, specify:
+.sp
+.in +2
+.nf
+project.max-shm-memory
+.fi
+.in -2
+
+.sp
+.LP
+All further attempts to create new tasks, such as using \fBnewtask\fR(1) and \fBsu\fR(1M), will fail.
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRSet a running process to run in a specified project
+.sp
+.LP
+This example explains the process to set a running process to run in a specified project as defined in \fBproject\fR(4). This causes the process with pid 1001 to join project \fB"myproject"\fR.
+
+.sp
+.in +2
+.nf
+#include <project.h>
+int main()
+{
+        (void) setproject_byname_pid("myproject", 1001, 0, NULL);
+}
+.fi
+.in -2
+
+.LP
+\fBExample 2 \fRUpdate all processes running in project \fB"myproject"\fR
+.sp
+.LP
+This example explains the process to update all processes running in project \fB"myproject"\fR to have the attributes currently set in \fBproject\fR(4). Print any error or warning messages.
+
+.sp
+.in +2
+.nf
+#include <project.h>
+int main()
+{
+        (void) project_update_byname("myproject", &msgs);
+        if (msgs) {
+                   printf("%s\n", msgs);
+                   project_msgs_free(msgs);
+                }
+}
+.fi
+.in -2
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Interface StabilitySee below
+_
+MT-LevelMT-Safe
+.TE
+
+.sp
+.LP
+The following gives the interface stability for the \fBsetproject()\fR functions:
+.sp
+.in +2
+.nf
+setproject()                    Committed
+setproject_byname()             Volatile
+setproject_byname_pid()         Volatile
+project_update_byname()         Volatile
+.fi
+.in -2
+.sp
+
+.SH SEE ALSO
+.sp
+.LP
+\fBpooladm\fR(1M), \fBsetrctl\fR(2), \fBsettaskid\fR(2), \fBlibproject\fR(3LIB), \fBpool_error\fR(3POOL), \fBpool_set_binding\fR(3POOL), \fBpasswd\fR(4), \fBproject\fR(4), \fBattributes\fR(5), \fBprivileges\fR(5)

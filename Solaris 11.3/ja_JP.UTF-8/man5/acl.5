@@ -1,0 +1,824 @@
+'\" te
+.\" Copyright (c) 2008, 2011, Oracle and/or its affiliates. All rights reserved.
+.TH acl 5 "2011 年 6 月 16 日" "SunOS 5.11" "標準、環境、マクロ"
+.SH 名前
+acl \- アクセス制御リスト
+.SH 機能説明
+.sp
+.LP
+アクセス制御リスト (ACL) は、ファイルおよびディレクトリへのアクセスを付与および拒否する随意アクセス制御メカニズムです。2 つの異なる ACL モデルが Solaris リリース (POSIX ドラフト ACL および NFSv4 ACL) でサポートされます。 
+.sp
+.LP
+古い POSIX ドラフトモデルは、UFS ファイルシステムでサポートされます。このモデルは、標準化されなかった削除済みの ACL POSIX 仕様に基づいています。これは、その後 POSIX 委員会によって削除されました。 
+.sp
+.LP
+他のモデルは、NFSv4 タスクグループの標準に基づいており、Internet Engineering Task Force (IETF) から承認済みの標準です。ZFS ファイルシステムは NFSv4 モデルを使用し、POSIX ドラフトモデルより豊富なセマンティクスときめ細かなアクセス権機能を備えています。 
+.SS "\fBPOSIX\fR ドラフト \fBACL\fR"
+.sp
+.LP
+POSIX ドラフト ACL は、Solaris リリースで基本 UNIX ファイルアクセス権に代替のセキュリティーメカニズムを提供します。目的は、ファイルおよびディレクトリへのアクセスをさらに制限すること、または特定のユーザーにアクセス権を拡張することです。ACL を使用して、標準の所有者とグループのアクセス権、およびファイルのモードのその他のクラスビットを変更できます。ACL は、ファイルへの追加のユーザーおよびグループアクセスを付与できます。ディレクトリは、\fBデフォルト\fR ACL という特殊な種類の ACL を持つことができます。これは、ディレクトリの子孫によって継承される ACL エントリを定義します。POSIX ドラフト ACL には、\fBマスク\fRという ACL エントリがあります。マスクは、追加のユーザーとグループエントリに付与できる最大のアクセス権を定義します。\fBchmod\fR(1) または \fBchmod\fR(2) によってファイルが作成されるか、そのモードが変更されるたびに、マスクが再計算されます。これは、\fBchmod\fR(2) に渡されるモードで定義されたグループアクセス権になるよう再計算されます。
+.sp
+.LP
+POSIX ドラフト ACL モデルは、従来の UNIX アクセス権の標準の \fBrwx\fR モデルを使用します。
+.sp
+.LP
+ACL は次のように表されます: 
+.sp
+.in +2
+.nf
+\fIacl_entry\fR[,\fIacl_entry\fR]...
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+それぞれの \fIacl_entry\fR には ACL エントリが 1 つ含まれています。ACL エントリは、2 つまたは 3 つのコロン区切り (\fB:\fR) フィールドで表されます。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fIuser\fR:[\fIuid\fR]:\fIperms\fR\fR
+.ad
+.RS 21n
+.rt  
+\fIuid\fR がブランクの場合、ファイル所有者を表します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIgroup\fR:[\fIgid\fR]:\fIperms\fR\fR
+.ad
+.RS 21n
+.rt  
+\fIgid\fR がブランクの場合、所有するグループを表します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIother\fR:\fIperms\fR\fR
+.ad
+.RS 21n
+.rt  
+ファイルのその他のクラスを表します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fImask\fR:\fIperms\fR\fR
+.ad
+.RS 21n
+.rt  
+付与する \fBMAX\fR アクセス権を定義します。
+.RE
+
+.sp
+.LP
+たとえば、ユーザー \fBjoe\fR に読み取り/書き込みアクセス権を付与するには、次のように ACL エントリを指定します:
+.sp
+.in +2
+.nf
+user:joe:rw-
+.fi
+.in -2
+.sp
+
+.SS "\fBNFS\fRv4 \fBACL\fR"
+.sp
+.LP
+NFSv4 ACL モデルは、大まかに Windows NT ACL モデルに基づいています。NFSv4 ACL は、POSIX ドラフト ACL より大幅に豊富な ACL モデルを提供します。 
+.sp
+.LP
+NFSv4 と POSIX ドラフト ACL の主な違いは次のとおりです:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+NFSv4 ACL は、\fBrwx\fR モデルよりきめ細かなアクセス権を提供します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+NFSv4 ACL では、\fBALLOW\fR と \fBDENY\fR の両方をエントリが可能です。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+NFSv4 ACL には、豊富な継承セマンティクスセットが用意されています。POSIX ACL には継承も用意されていますが、NFSv4 モデルを使用すると次の継承機能を制御できます:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+継承がファイルとディレクトリの両方にカスケードするか、ファイルまたはディレクトリのみにカスケードするか。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ディレクトリの場合、継承がディレクトリ自体に適用されるのか、1 つのレベルのサブディレクトリのみに適用されるのか、ディレクトリのすべてのサブディレクトリにカスケードされるのかを指定できます。
+.RE
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+NFSv4 ACL には、システムの監査トレールに接続するためのメカニズムが用意されています。現在、Solaris ではこのメカニズムはサポートされていません。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+NFSv4 ACL を使用すると、管理者は ACL エントリが検査される順序を指定できます。POSIX ドラフト ACL では、ファイルシステムは、ACL エントリを適切に定義された厳格なアクセスチェック順序に並べ替えます。
+.RE
+.sp
+.LP
+POSIX ドラフト ACL セマンティクスは、NFSv4 ACL を使用して実現できます。ただし、一部の NFSv4 ACL のみを同等の POSIX ドラフト ACL に変換できます。
+.sp
+.LP
+アクセス権を指定する際には、異なる 3 つの \fBchmod\fR ACL 形式を使用できます。 冗長、コンパクト、定位置です。冗長形式では、単語を使ってアクセス権を指定し、複数のアクセス権はスラッシュ (\fB/\fR) 文字で区切ります。コンパクト形式ではアクセス権文字を使用し、定位置形式ではアクセス権文字またはハイフン (\fB-\fR) を使用してアクセス権がないことを示します。
+.sp
+.LP
+冗長モード用のアクセス権とコンパクトモードおよび定位置モード用の短縮形について、次に説明します。短縮形は括弧内に示しています。
+.sp
+.ne 2
+.mk
+.na
+\fBread_data (\fBr\fR)\fR
+.ad
+.RS 24n
+.rt  
+ファイルのデータを読み取るアクセス権
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBlist_directory (\fBr\fR)\fR
+.ad
+.RS 24n
+.rt  
+ディレクトリの内容を表示するためのアクセス権。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBwrite_data (\fBw\fR)\fR
+.ad
+.RS 24n
+.rt  
+ファイルのオフセット範囲内の任意の場所にある、ファイルのデータを変更するアクセス権。これには、ファイルを拡張または任意のオフセットに書き込む能力が含まれます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBadd_file (\fBw\fR)\fR
+.ad
+.RS 24n
+.rt  
+ディレクトリに新しいファイルを追加するためのアクセス権。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBappend_data (\fBp\fR)\fR
+.ad
+.RS 24n
+.rt  
+ファイルのデータを変更する能力。ただし、変更できるのは EOF 以降のみです。現在、この権限はサポートされていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBadd_subdirectory (\fBp\fR)\fR
+.ad
+.RS 24n
+.rt  
+ディレクトリにサブディレクトリを作成する権限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBread_xattr (\fBR\fR)\fR
+.ad
+.RS 24n
+.rt  
+ファイルの拡張属性を読み取ったり拡張属性ディレクトリの検索を実行したりする能力。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBwrite_xattr (\fBW\fR)\fR
+.ad
+.RS 24n
+.rt  
+拡張属性を作成したり拡張属性ディレクトリに書き込んだりする能力。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBexecute (\fBx\fR)\fR
+.ad
+.RS 24n
+.rt  
+ファイルを実行する権限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBread_attributes (\fBa\fR)\fR
+.ad
+.RS 24n
+.rt  
+ファイルの基本属性 (ACL 以外) を読み取る機能。基本属性は、stat レベル属性であるとみなされます。このアクセスマスクビットを許可することは、エンティティが \fBls\fR(1) および \fBstat\fR(2) を実行できることを意味します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBwrite_attributes (\fBA\fR)\fR
+.ad
+.RS 24n
+.rt  
+ファイルまたはディレクトリに関連付けられた時間を任意の値に変更するためのアクセス権。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdelete (\fBd\fR)\fR
+.ad
+.RS 24n
+.rt  
+ファイルを削除するアクセス権。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdelete_child (\fBD\fR)\fR
+.ad
+.RS 24n
+.rt  
+ディレクトリ内のファイルを削除する権限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBread_acl (\fBc\fR)\fR
+.ad
+.RS 24n
+.rt  
+ACL を読み取るアクセス権。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBwrite_acl (\fBC\fR)\fR
+.ad
+.RS 24n
+.rt  
+ACL を書き込むアクセス権、または \fBchmod\fR(1) または \fBsetfacl\fR(1) を実行する能力。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBwrite_owner (\fBo\fR)\fR
+.ad
+.RS 24n
+.rt  
+所有者を変更するアクセス権、または \fBchown\fR(1) または \fBchgrp\fR(1) を実行する能力。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBsynchronize (\fBs\fR)\fR
+.ad
+.RS 24n
+.rt  
+同期読み取り権と書き込み権を使ってサーバー上のファイルにローカルアクセスするアクセス権。現在、この権限はサポートされていません。
+.RE
+
+.sp
+.LP
+次の継承フラグが NFSv4 でサポートされます:
+.sp
+.ne 2
+.mk
+.na
+\fBfile_inherit (\fBf\fR)\fR
+.ad
+.RS 26n
+.rt  
+ディレクトリ内で新しく作成したすべてのファイルに継承します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdir_inherit (\fBd\fR)\fR
+.ad
+.RS 26n
+.rt  
+ディレクトリ内で新しく作成したすべてのディレクトリに継承します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBinherit_only (\fBi\fR)\fR
+.ad
+.RS 26n
+.rt  
+ディレクトリに入れますが、そのディレクトリ自体には適用せず、新しく作成されたファイルとディレクトリのみに適用します。このフラグでは、継承する内容を示すために file_inherit と dir_inherit の両方またはどちらかが必要です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBno_propagate (\fBn\fR)\fR
+.ad
+.RS 26n
+.rt  
+ディレクトリに入れて、ツリーの 1 レベルのみ ACL エントリを継承すべきであることを示します。このフラグでは、継承する内容を示すために file_inherit と dir_inherit の両方またはどちらかが必要です。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBsuccessful_access (\fBS)\fR)\fR
+.ad
+.RS 26n
+.rt  
+正常にアクセスしたときに、アラームまたは監査記録を開始するかどうかを指定します。監査/アラーム ACE タイプと同時に使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBfailed_access (\fBF\fR)\fR
+.ad
+.RS 26n
+.rt  
+アクセスに失敗したときに、アラームまたは監査記録を開始するかどうかを指定します。監査/アラーム ACE タイプと同時に使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBinherited (\fBI\fR)\fR
+.ad
+.RS 26n
+.rt  
+ACE が継承されました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-\fR\fR
+.ad
+.RS 26n
+.rt  
+アクセス権は付与されていません。
+.RE
+
+.sp
+.LP
+NFSv4 ACL は次の構文を使用して表されます:
+.sp
+.in +2
+.nf
+\fIacl_entry\fR[,\fIacl_entry\fR]...
+
+    owner@:<perms>[:inheritance flags]:<allow|deny>
+    group@:<perms>[:inheritance flags]:<allow|deny>
+    everyone@:<perms>[:inheritance flags]:<allow|deny>
+    user:<username>[:inheritance flags]:<allow|deny>
+    group:<groupname>[:inheritance flags]:<allow|deny>
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fBowner@\fR
+.ad
+.RS 10n
+.rt  
+ファイル所有者
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBgroup@\fR
+.ad
+.RS 10n
+.rt  
+グループ所有者
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBuser\fR
+.ad
+.RS 10n
+.rt  
+特定のユーザーのアクセス権
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBgroup\fR
+.ad
+.RS 10n
+.rt  
+特定のグループのアクセス権
+.RE
+
+.sp
+.LP
+アクセス権と継承フラグは \fB/\fR 文字で区切られます。
+.sp
+.LP
+ACL の指定例: 
+.sp
+.in +2
+.nf
+user:fred:read_data/write_data/read_attributes:file_inherit:allow 
+owner@:read_data:allow,group@:read_data:allow,user:tom:read_data:deny
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+コンパクト ACL 形式では、14 個の一意の文字を使ってアクセス権を指定します。
+.sp
+.LP
+定位置 ACL 形式では、\fBls -V\fR の形式に似た定位置引数として、アクセス権を指定します。ハイフン (\fB-\fR) は、その位置のアクセス権が許可されていないことを示しますが、このハイフンは省略可能であり、指定する必要があるのは必須文字だけです。 
+.sp
+.LP
+前述の文字は、定位置表記で指定する順番に並んでいます。 
+.sp
+.LP
+これらの文字を使用して、次のような方法でアクセス権を指定できます。 
+.sp
+.in +2
+.nf
+user:fred:rw------R------:file_inherit:allow
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+または、\fB-\fR を削除して詰めることができます。 
+.sp
+.in +2
+.nf
+user:fred:rwR:file_inherit:allow
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+継承フラグは、次のようにコンパクトな方法で指定することもできます:
+.sp
+.in +2
+.nf
+user:fred:rwR:f:allow
+user:fred:rwR:f------:allow
+.fi
+.in -2
+.sp
+
+.SS "シェルレベルの Solaris \fBAPI\fR"
+.sp
+.LP
+Solaris コマンドインタフェースでは、ACL の操作がサポートされます。次の Solaris ユーティリティーが両方の ACL モデルに対応します:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchmod\fR\fR
+.ad
+.RS 12n
+.rt  
+\fBchmod\fR ユーティリティーは、ACL の設定と削除を行うことができるように拡張されました。これは、ACL の操作をサポートする symbolic-mode 引数を拡張することで可能になります。詳細は、\fBchmod\fR(1) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcompress\fR\fR
+.ad
+.RS 12n
+.rt  
+ファイルを圧縮すると、元のファイルに関連付けられた ACL は、圧縮済みのファイルとともに保持されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcp\fR\fR
+.ad
+.RS 12n
+.rt  
+デフォルトでは、\fB-p\fR オプションを指定しない限り、\fBcp\fR は ACL を無視します。\fB-p\fR を指定すると、所有者とグループ ID、アクセス権モード、変更時間とアクセス時間、ACL、および拡張属性 (該当する場合) が保持されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcpio\fR\fR
+.ad
+.RS 12n
+.rt  
+\fB-P\fR オプションを指定すると、ACL が保持されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfind\fR\fR
+.ad
+.RS 12n
+.rt  
+\fB-acl\fR フラグを指定すると、ACL が設定されたファイルが検索されます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBls\fR\fR
+.ad
+.RS 12n
+.rt  
+デフォルトでは、\fBls\fR は ACL 情報を表示しません。\fB-v\fR オプションを指定すると、ファイルの ACL が表示されます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmv\fR\fR
+.ad
+.RS 12n
+.rt  
+ファイルを移動すると、すべての属性が名前変更されたファイルとともに移動されます。ファイルシステムの境界の間でファイルを移動すると、ACL が複製されます。ACL 情報を複製できない場合、移動は失敗し、ソースファイルは削除されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpack\fR\fR
+.ad
+.RS 12n
+.rt  
+ファイルをパックすると、元のファイルに関連付けられた ACL は、パック済みのファイルとともに保持されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrcp\fR\fR
+.ad
+.RS 12n
+.rt  
+\fBrcp\fR は、コピーをサポートするために拡張されました。リモートホストで ACL がサポートされるときのみ、ファイルの ACL が保持されます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtar\fR\fR
+.ad
+.RS 12n
+.rt  
+\fB-p\fR オプションを指定すると、ACL が保持されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunpack\fR\fR
+.ad
+.RS 12n
+.rt  
+ACL のあるファイルをアンパックすると、アンパック済みのファイルでは ACL 情報が保持されます。
+.RE
+
+.SS "アプリケーションレベルの \fBAPI\fR"
+.sp
+.LP
+プログラムレベルでファイルシステム ACL にアクセスするために必要なプライマリインタフェースは、\fBacl_get()\fR 関数と \fBacl_set()\fR 関数です。これらの関数は、POSIX ドラフト ACL と NFSv4 ACL の両方をサポートします。
+.SS "ファイルの \fBACL\fR を取得する"
+.sp
+.in +2
+.nf
+int acl_get(const char *path, int flag, acl_t **aclp);
+int facl_get(int fd, int flag, acl_t **aclp);
+.fi
+.in -2
+
+.sp
+.LP
+\fBacl_get\fR(3SEC) および \fBfacl_get\fR(3SEC) 関数は、パスによって名前が付けられるか、開いているファイル記述子 fd によって名前が参照されるファイルで ACL を取得します。フラグ引数は、簡易 ACL を取得すべきかどうかを指定します。フラグ引数が \fBACL_NO_TRIVIAL\fR の場合、簡易ではない ACL のみが取得されます。ACL は \fBaclp\fR 引数で返されます。 
+.SS "\fBACL\fR 構造を解放する"
+.sp
+.in +2
+.nf
+void acl_free(acl_t *aclp)s;
+.fi
+.in -2
+
+.sp
+.LP
+\fBacl_free()\fR 関数は、引数 \fBaclp;\fR で割り当てられたメモリを解放します。
+.SS "ファイルで \fBACL\fR を設定する"
+.sp
+.in +2
+.nf
+int acl_set(const char *path, acl_t *aclp);
+int facl_set(int fd, acl_t *aclp);
+.fi
+.in -2
+
+.sp
+.LP
+パスによって名前が付けられるか、開いているファイル記述子 \fBfd\fR によって名前が参照されるファイルで ACL を設定するには、\fBacl_set\fR(3SEC) および \fBfacl_get\fR(3SEC) 関数が使用されます。\fBaclp\fR 引数は、設定する ACL を指定します。ターゲットファイルシステムで NFSv4 ACL がサポートされるとき、\fBacl_set\fR(3SEC) は、POSIX ドラフト ACL を NFSv4 ACL に変換します。POSIX ドラフト ACL でサポートされるファイルシステムで NFSv4 ACL を設定しようとすると、変換は実行されません。
+.SS "\fBACL\fR の簡易性を判定する"
+.sp
+.in +2
+.nf
+int acl_trivial(const char *path);
+.fi
+.in -2
+
+.sp
+.LP
+\fBacl_trivial()\fR 関数は、ファイルに簡易 ACL があるかどうかを判定するために使用されます。ACL が簡易かどうかは、ACL のタイプに基づきます。POSIX ドラフト ACL は、\fBMIN_ACL_ENTRIES\fR より大きい場合は簡易ではありません。NFSv4/ZFS スタイル ACL は、\fBowner@\fR、\fBgroup@\fR、および \fBeveryone@\fR より大きいエントリを持つか、継承フラグが設定されているか、POSIX アクセス制御の要件を満たす方法で順序付けられていない場合は簡易ではありません。
+.SS "ファイルから \fBACL\fR をすべて削除する"
+.sp
+.in +2
+.nf
+int acl_strip(const char *path, uid_t uid, gid_t gid, mode_t mode);
+.fi
+.in -2
+
+.sp
+.LP
+\fBacl_strip()\fR 関数は、ファイルからすべての ACL を削除し、引数モードで渡される内容に基づいて簡易 ACL と置き換えます。ACL の置き換え後に、ファイルの所有者とグループは、uid および gid パラメータで指定された値に設定されます。
+.SS "外部表現間で \fBACL\fR を変換する"
+.sp
+.in +2
+.nf
+int acl_fromtext(const char *path, acl_t **aclp);
+char *acl_totext(acl_t *aclp, int flags);
+.fi
+.in -2
+
+.sp
+.LP
+\fBacl_text()\fR 関数は、aclp が指し示す内部 ACL 表現を外部表現に変換します。外部表現の詳細は、「\fB説明\fR」を参照してください。
+.sp
+.LP
+\fBacl_fromtext()\fR 関数は、外部表現を内部表現に変換します。外部表現の詳細は、「\fB説明\fR」を参照してください。
+.SH 使用例
+.sp
+.LP
+次の例は、API を使用して ACL で基本操作を実行する方法を示しています。
+.LP
+\fB例 1 \fRACL を取得および設定する
+.sp
+.LP
+ACL を取得して、別のファイルで設定するには、次を使用します:
+
+.sp
+.in +2
+.nf
+error = acl_get("file", ACL_NO_TRIVIAL, &aclp);
+
+if (error == 0 && aclp != NULL) {
+error = acl_set("file2", aclp)
+acl_free(aclp);
+}
+\&...
+.fi
+.in -2
+
+.LP
+\fB例 2 \fR任意の ACL を取得および設定する
+.sp
+.LP
+簡易 ACL を含む任意の ACL を取得して、別のファイルで設定するには、次を使用します:
+
+.sp
+.in +2
+.nf
+error = acl_get("file3", 0, &aclp);
+if (error == 0) {
+error = acl_set("file4", aclp)
+acl_free(aclp);
+}
+\&...
+.fi
+.in -2
+
+.LP
+\fB例 3 \fRファイルに簡易 ACL があるかどうかを判定する
+.sp
+.LP
+ファイルに簡易 ACL があるかどうかを判定するには、次を使用します:
+
+.sp
+.in +2
+.nf
+istrivial = acl_trivial("file")
+
+if (istrivial == 0)
+printf("file %s has a trivial ACL\en", file);
+else
+printf("file %s has a NON-trivial ACL\en", file);
+\&...
+.fi
+.in -2
+
+.LP
+\fB例 4 \fRファイルから ACL をすべて削除する
+.sp
+.LP
+ファイルからすべての ACL を削除して、新しいモード、所有者、およびグループを設定するには、次を使用します: 
+
+.sp
+.in +2
+.nf
+error = acl_strip("file", 10, 100, 0644);
+\&...
+.fi
+.in -2
+
+.SH 関連項目
+.sp
+.LP
+\fBchgrp\fR(1), \fBchmod\fR(1), \fBchown\fR(1), \fBcp\fR(1), \fBcpio\fR(1), \fBfind\fR(1), \fBls\fR(1), \fBmv\fR(1), \fBtar\fR(1), \fBsetfacl\fR(1), \fBchmod\fR(2), \fBacl\fR(2),\fBstat\fR(2),\fBacl_get\fR(3SEC), \fBaclsort\fR(3SEC), \fBacl_fromtext\fR(3SEC), \fBacl_free\fR(3SEC), \fBacl_strip\fR(3SEC), \fBacl_trivial\fR(3SEC)

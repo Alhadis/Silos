@@ -1,0 +1,311 @@
+'\" te
+.\" Copyright (c) 2009, 2011, Oracle and/or its affiliates.All rights reserved.
+.TH update_drv 1M "2009 年 2 月 10 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+update_drv \- 修改设备驱动程序属性
+.SH 用法概要
+.LP
+.nf
+\fBupdate_drv\fR [\fB-f\fR | \fB-v\fR] [\fB-n\fR] \fIdriver_module\fR
+.fi
+
+.LP
+.nf
+\fBupdate_drv\fR [\fB-b\fR \fIbasedir\fR] [\fB-f\fR | \fB-v\fR] [\fB-n\fR] \fB-a\fR [\fB-m\fR '\fIpermission\fR'] 
+     [\fB-i\fR '\fIidentify-name\fR'] [\fB-P\fR '\fIprivilege\fR'] [\fB-p\fR '\fIpolicy\fR'] \fIdriver_module\fR
+.fi
+
+.LP
+.nf
+\fBupdate_drv\fR [\fB-b\fR \fIbasedir\fR] [\fB-f\fR | \fB-v\fR] [\fB-n\fR] \fB-d\fR [\fB-m\fR '\fIpermission\fR'] 
+     [\fB-i\fR '\fIidentify-name\fR'] [\fB-P\fR '\fIprivilege\fR'] [\fB-p\fR '\fIpolicy\fR'] \fIdriver_module\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBupdate_drv\fR 命令可以将对已安装的设备驱动程序所做的属性更改通知系统。该命令可用于重新读取 \fBdriver.conf\fR(4) 文件，或者用于添加、修改或删除驱动程序的次要节点权限或别名。
+.sp
+.LP
+不带选项时，\fBupdate_drv\fR 将重新加载 \fBdriver.conf\fR 文件。 
+.sp
+.LP
+成功更新别名后，驱动程序绑定将在重新配置引导时或热插拔设备时生效。
+.sp
+.LP
+成功更新权限后，仅使用修改后的文件权限集创建新的驱动程序次要节点。现有的驱动程序次要节点不会被修改。 
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+添加 \fIpermission\fR、\fIaliases\fR、\fIprivilege\fR 或 \fIpolicy\fR 条目。
+.sp
+指定 \fB-a\fR 选项时，可以添加或更新权限条目（使用 \fB-m\fR 选项）、驱动程序的别名条目（使用 \fB-i\fR 选项）、设备特权（使用 \fB-P\fR 选项）或者设备策略（使用 \fB-p\fR 选项）。如果遇到了匹配的次要节点权限（具有相同的驱动程序名称和次要节点），则将其替换。如果遇到了匹配的别名条目（具有不同的驱动程序名称和相同的别名），则报告错误。
+.sp
+\fB-a\fR 和 \fB-d\fR 选项相互排斥。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR \fIbasedir\fR\fR
+.ad
+.sp .6
+.RS 4n
+在根目录为 basedir 的系统上安装或修改驱动程序，而不是在执行 \fBupdate_drv\fR 的系统上安装。
+.LP
+注 - 
+.sp
+.RS 2
+不得使用 \fB-b\fR 选项引用任何非全局区域的根文件系统。否则，可能会损坏全局区域的文件系统，危及全局区域的安全性，或者损坏非全局区域的文件系统。请参见 \fBzones\fR(5)。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除 \fIpermission\fR、\fIaliases\fR、\fIprivilege\fR 或 \fIpolicy\fR 条目。
+.sp
+指定 \fB-m\fR \fIpermission\fR、\fB-i\fR \fIidentify-name\fR、\fB-P\fR \fIprivilege\fR 或 \fB-p\fR \fIpolicy\fR 选项时需要使用 \fB-d\fR 选项。
+.sp
+\fB-d\fR 和 \fB-a\fR 选项互斥。 
+.sp
+如果该条目不存在，\fBupdate_drv\fR 将返回错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+强制系统重新读取 \fBdriver.conf\fR 文件（即使无法卸载驱动程序模块时也是如此）。有关详细信息，请参见“附注”部分\fB\fR。
+.sp
+如果\fB没有\fR此选项，则当删除驱动程序的别名时，\fBupdate_drv\fR 将更新下一次引导的绑定文件，但是，当仍存在一个或多个引用该驱动程序别名绑定的设备时，将返回错误。\fB使用\fR \fB-f\fR 选项时，\fBupdate_drv\fR 在仍存在此类设备时不返回错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR '\fIidentify-name\fR'\fR
+.ad
+.sp .6
+.RS 4n
+以空格分隔的驱动程序别名列表。如果未指定 \fB-a\fR 或 \fB-d\fR 选项，则将忽略此选项。\fIidentify-name\fR 字符串是必需的。如果需要删除所有别名，推荐使用 \fBrem_drv\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR '\fIpermission\fR'\fR
+.ad
+.sp .6
+.RS 4n
+为设备驱动程序的设备节点指定一个以空格分隔的文件系统权限列表。如果未指定 \fB-a\fR 或 \fB-d\fR 选项，则将忽略此选项。permission 字符串是必需的。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+不要尝试装入和附加 \fIdevice_driver\fR，只需为该驱动程序修改系统配置文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR '\fIpolicy\fR'\fR
+.ad
+.sp .6
+.RS 4n
+对于 \fB-a\fR 选项，policy 是一个以空格分隔的完整设备策略列表。对于 \fB-d\fR 选项，policy 是一个以空格分隔的次要设备规范列表。次要设备规范与 \fB/etc/security/device_policy\fR 中的条目完全匹配，即，不执行通配符匹配。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR '\fIprivilege\fR'\fR
+.ad
+.sp .6
+.RS 4n
+对于 \fB-a\fR 选项，privilege 是一个以逗号分隔的附加驱动程序特权列表。对于 \fB-d\fR 选项，privilege 是单项特权。在 \fB/etc/security/extra_privs\fR 文件中添加或删除特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+详细模式。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR添加或修改现有的次要权限条目
+.sp
+.LP
+以下命令添加或修改 \fBclone\fR 驱动程序的现有次要权限条目：
+
+.sp
+.in +2
+.nf
+example# update_drv -a -m 'llc1 777 joe staff' clone
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR删除所有次要权限条目
+.sp
+.LP
+以下命令删除 \fBusbprn\fR 驱动程序、USB 打印机驱动程序的所有次要权限条目：
+
+.sp
+.in +2
+.nf
+example# update_drv -d -m '* 0666 root sys' usbprn
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR添加驱动程序别名条目
+.sp
+.LP
+以下命令添加标识字符串为 \fBusb459,20\fR 的 \fBugen\fR 驱动程序的驱动程序别名条目：
+
+.sp
+.in +2
+.nf
+example# update_drv -a -i '"usb459,20"' ugen
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR重新读取 \fBohci\fR 驱动程序的 \fBdriver.conf\fR 文件
+.sp
+.LP
+以下命令重新读取 \fBdriver.conf\fR(4) 文件。
+
+.sp
+.in +2
+.nf
+ example# update_drv ohci
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR需要定制特权以打开 TCP 套接字
+.sp
+.LP
+以下命令需要定制特权以打开 TCP 套接字：
+
+.sp
+.in +2
+.nf
+example#   update_drv -a -P net_tcp -p \e
+     'write_priv_set=net_tcp read_priv_set=net_tcp' tcp
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR建立一个面向路径的别名
+.sp
+.LP
+以下命令建立一个面向路径的别名以强制将特定的驱动程序 \fBqlt\fR 用于特定的设备路径：
+
+.sp
+.in +2
+.nf
+example#   update_drv -a -i '"/pci@8,600000/SUNW,qlc@4"' qlt
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功完成。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB>\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+出现错误。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBadd_drv\fR(1M)、\fBmodunload\fR(1M)、\fBrem_drv\fR(1M)、\fBdriver.conf\fR(4)、\fBattributes\fR(5)、\fBprivileges\fR(5)
+.SH 附注
+.sp
+.LP
+如果未指定 \fB-a\fR 或 \fB-d\fR 选项，\fBupdate_drv\fR 将不会重新读取 \fBdriver.conf\fR 文件。
+.sp
+.LP
+强制更新 \fBdriver.conf\fR 文件将重新加载 \fBdriver.conf\fR 文件，但不重新加载驱动程序二进制模块。在这种情况下，无法分离的设备将引用旧 \fBdriver.conf\fR 文件中的驱动程序全局属性，而剩余的驱动程序实例将引用新的 \fBdriver.conf\fR 文件中的全局属性。
+.sp
+.LP
+可以添加一个别名，从而更改正在由不同驱动程序管理的设备的驱动程序绑定。使用 \fB-a\fR 选项强制更新时，将尝试绑定到新的驱动程序；如果无法绑定，则报告错误。如果指定了 \fB-m\fR、\fB-i\fR、\fB-P\fR 或 \fB-p\fR 选项中的多个选项，则强制标志将尝试修改别名或权限。即使其他操作失败，也会执行此操作；反之亦然。

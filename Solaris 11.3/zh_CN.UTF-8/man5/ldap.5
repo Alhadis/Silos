@@ -1,0 +1,263 @@
+'\" te
+.\" Copyright (c) 1990, Regents of the University of Michigan.All Rights Reserved.
+.\" Portions Copyright (c) 2006, 2012, Oracle and/or its affiliates. All rights reserved.
+.TH ldap 5 "2012 年 5 月 22 日" "SunOS 5.11" "用户命令"
+.SH 名称
+ldap \- LDAP 用作命名系统信息库
+.SH 描述
+.sp
+.LP
+LDAP 是指 Lightweight Directory Access Protocol（轻量目录访问协议），是访问目录服务器的一项行业标准。通过使用 \fBldapclient\fR(1M) 初始化客户机并在名称服务切换文件 \fB/etc/nsswitch.conf\fR 中使用关键字 \fBldap\fR，Oracle Solaris 客户机可以从 LDAP 服务器获得命名信息。用户名、主机名和口令之类的信息存储在 LDAP 服务器上的目录信息树或 \fBDIT\fR 中。\fBDIT\fR 包含由属性构成的条目。每个属性都具有一个类型以及一个或多个值。
+.sp
+.LP
+Oracle Solaris LDAP 客户机使用 LDAP v3 协议来访问 LDAP 服务器的命名信息。LDAP 服务器必须支持 \fIRFC2307bis（草稿）\fR中定义的对象类和属性，用于将命名服务模型映射到 LDAP。作为使用 \fIRFC2307bis（草稿）\fR中定义的模式的一种替代方法，可配置系统使用其他模式集并且配置模式映射功能以在二者之间映射。有关更多详细信息，请参阅\fI《Working With Oracle Solaris 11.3 Directory and         Naming Services: LDAP》\fR。
+.sp
+.LP
+\fBldapclient\fR(1M) 实用程序可通过设置相应目录、文件以及配置信息将 Oracle Solaris 计算机变为 LDAP 客户机。LDAP 客户机在本地高速缓存文件中高速缓存这些配置信息。可通过 \fBldap_cachemgr\fR(1M) 守护进程访问这些配置信息。此守护进程还会从 LDAP 服务器刷新配置文件中的信息，从而提高性能和安全性。\fBldap_cachemgr\fR 必须一直运行，才能使命名服务正常运行。
+.sp
+.LP
+存在两种类型的配置信息：通过配置文件获得的信息以及根据客户机配置的信息。配置文件包含有关客户机如何访问目录的所有信息。代理用户的凭证信息将根据客户机进行配置并且不会通过配置文件下载。
+.sp
+.LP
+配置文件包含服务器特定的参数，并且所有客户机都需要这些参数以找出所需 LDAP 域的服务器。例如，这些信息可以是服务器的 IP 地址以及搜索基标识名 (Distinguished Name, DN)。配置文件会在客户机初始化期间根据缺省配置文件在客户机上进行配置，并且在过期时由 \fBldap_cachemgr\fR 守护进程定期更新。
+.sp
+.LP
+客户机配置文件可存储在 LDAP 服务器上并可由 \fBldapclient\fR 实用程序用于初始化 LDAP 客户机。使用客户机配置文件是配置客户机的最简单方法。请参见 \fBldapclient\fR(1M)。
+.sp
+.LP
+凭证信息包括由客户机使用的客户机特定参数。这些信息可以是客户机的绑定标识名（LDAP“登录”名称）以及口令。如果这些参数是必需的，将通过 \fBldapclient\fR(1M) 在初始化期间进行手动定义。
+.sp
+.LP
+命名信息存储在 LDAP 服务器上的容器中。容器是包含命名服务信息的 DIT 中的非叶条目。容器与 NIS 中的映射类似。NIS 数据库与 LDAP 中的容器之间的缺省映射如下所示。可使用 \fBserviceSearchDescriptors\fR 覆盖这些容器的位置及名称。有关更多信息，请参见 \fBldapclient\fR(1M)。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(1.83i) |cw(1.83i) |cw(1.83i) 
+lw(1.83i) |lw(1.83i) |lw(1.83i) 
+.
+数据库对象类容器
+_
+passwdposixAccountou=people,dc=... 
+shadowAccount
+_
+groupposixGroupou=Group,dc=...
+_
+servicesipServiceou=Services,dc=...
+_
+protocolsipProtocolou=Protocols,dc=...
+_
+rpconcRpcou=Rpc,dc=...
+_
+hostsipHostou=Hosts,dc=...
+ipnodesipHostou=Hosts,dc=...
+_
+ethersieee802Deviceou=Ethers,dc=...
+_
+bootparamsbootableDeviceou=Ethers,dc=...
+_
+networksipNetworkou=Networks,dc=...
+netmasksipNetwork ou=Networks,dc=... 
+_
+netgroupnisNetgroupou=Netgroup,dc=...
+_
+aliasesmailGroupou=Aliases,dc=...
+_
+publickeynisKeyObject 
+_
+genericnisObjectnisMapName=...,dc=...
+_
+printersprinterServiceou=Printers,dc=... 
+_
+auth_attrSolarisAuthAttrou=SolarisAuthAttr,dc=...
+_
+prof_attrSolarisProfAttrou=SolarisProfAttr,dc=...
+_
+exec_attrSolarisExecAttrou=SolarisProfAttr,dc=...
+_
+user_attrSolarisUserAttrou=people,dc=...
+.TE
+
+.sp
+.LP
+客户机的安全模型由要使用的凭证级别、验证方法以及要使用的 PAM 模块共同定义。凭证级别定义客户机应使用何种凭证来验证目录服务器，而验证方法则定义所选择的方法。可使用多个值设置这两项。Oracle Solaris LDAP 支持将以下值用于凭证级别：
+.br
+.in +2
+\fBanonymous\fR
+.in -2
+.br
+.in +2
+\fBproxy\fR
+.in -2
+.br
+.in +2
+\fBself\fR
+.in -2
+.sp
+.LP
+Oracle Solaris LDAP 支持将以下值用于验证方法：
+.br
+.in +2
+\fBnone\fR
+.in -2
+.br
+.in +2
+\fBsimple\fR
+.in -2
+.br
+.in +2
+\fBsasl/CRAM-MD5\fR
+.in -2
+.br
+.in +2
+\fBsasl/DIGEST-MD5\fR
+.in -2
+.br
+.in +2
+\fBsasl/GSSAPI\fR
+.in -2
+.br
+.in +2
+\fBtls:simple\fR
+.in -2
+.br
+.in +2
+\fBtls:sasl/CRAM-MD5\fR
+.in -2
+.br
+.in +2
+\fBtls:sasl/DIGEST-MD5\fR
+.in -2
+.sp
+.LP
+当凭证级别配置为 \fBself\fR 时，必须配置 DNS 且验证方法必须为 \fBsasl/GSSAPI\fR。\fB/etc/nsswitch.conf\fR 中的 \fBhosts\fR 和 \fBipnodes\fR 必须配置为使用 DNS，例如 \fBhosts: dns files\fR 和 \fBipnodes: dns files\fR。 
+.sp
+.LP
+\fBsasl/GSSAPI\fR 自动使用 \fBGSSAPI\fR 保密性和完整性选项（如果目录服务器上已配置这些选项）。
+.sp
+.LP
+\fBself\fR 凭证级别允许以下类型的查找：根据用户的命名服务查找，或者连接到目录服务器时使用用户的 \fBGSSAPI\fR 凭证的查找。当前此模型中支持的唯一 \fBGSSAPI\fR 机制是 Kerberos V5。在使用此凭证级别之前必须配置 Kerberos。有关详细信息，请参见 \fBkerberos\fR(5)。
+.sp
+.LP
+访问控制可提供更多保护，允许服务器授予某些容器或条目的访问权。访问控制由 LDAP 服务器中定义和存储的访问控制列表 (Access Control List, ACL) 指定。LDAP 服务器上的访问控制列表在 SunOne Directory Server 上称为访问控制指令 (Access Control Instruction, ACI)。每一个 ACL 或 ACI 均指定一或多个目录对象，例如特定容器中的 \fBcn\fR 属性，要授予或拒绝其访问权的一或多个客户机，以及决定客户机如何处理对象的一或多项访问权。客户机可以是用户或应用程序。例如，访问权可以指定为读写。有关使用 LDAP 作为命名系统信息库时 ACL 和 ACI 的限制，请参阅\fI《Working With Oracle Solaris 11.3 Directory and         Naming Services: LDAP》\fR。
+.sp
+.LP
+\fB/etc\fR 目录中提供了名为 \fBnsswitch.ldap\fR 的一个示例 \fBnsswitch.conf\fR(4) 文件。\fBldapclient\fR(1M) 实用程序会将此文件复制到 \fB/etc/nsswitch.conf\fR。此文件将 LDAP 用作 \fBnsswitch.conf\fR 文件中不同数据库的系统信息库。
+.sp
+.LP
+下面列出了与 LDAP 有关的用户命令：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBidsconfig\fR(1M)\fR
+.ad
+.RS 18n
+.rt  
+使 SunOne Directory Server 可以支持 Solaris LDAP 客户机。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBldapaddent\fR(1M)\fR
+.ad
+.RS 18n
+.rt  
+从相应的 \fB/etc\fR 文件创建 LDAP 条目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBldapclient\fR(1M)\fR
+.ad
+.RS 18n
+.rt  
+初始化 LDAP 客户机，或生成要存储在目录中的配置文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBldaplist\fR(1)\fR
+.ad
+.RS 18n
+.rt  
+列出 LDAP 命名空间的内容。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/ldap/ldap_client_cred\fR\fR
+.ad
+.br
+.na
+\fB\fB/var/ldap/ldap_client_file\fR\fR
+.ad
+.RS 30n
+.rt  
+包含客户端的 LDAP 配置的文件。不要手动修改这些文件。其内容不保证是用户可读的。使用 \fBldapclient\fR(1M) 可以更新这些文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/nsswitch.conf\fR\fR
+.ad
+.RS 30n
+.rt  
+用于名称服务转换的配置文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/nsswitch.ldap\fR\fR
+.ad
+.RS 30n
+.rt  
+使用 LDAP 和文件配置的名称服务转换的样例配置文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/pam.conf\fR\fR
+.ad
+.RS 30n
+.rt  
+PAM 框架配置文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/pam.d/\fIservice\fR\fR\fR
+.ad
+.RS 30n
+.rt  
+替代 PAM 框架配置文件。
+.RE
+
+.SH 另请参见
+.sp
+.LP
+\fBldaplist\fR(1)、\fBidsconfig\fR(1M)、\fBldap_cachemgr\fR(1M)、\fBldapaddent\fR(1M)、\fBldapclient\fR(1M)、\fBnsswitch.conf\fR(4)、\fBpam.conf\fR(4)、\fBkerberos\fR(5)\fBpam_authtok_check\fR(5)、\fBpam_authtok_get\fR(5)、\fBpam_authtok_store\fR(5)、\fBpam_dhkeys\fR(5)、\fBpam_ldap\fR(5)、\fBpam_passwd_auth\fR(5)、\fBpam_unix_account\fR(5)、\fBpam_unix_auth\fR(5)、\fBpam_unix_session\fR(5)
+.sp
+.LP
+\fI《Working With Oracle Solaris 11.3 Directory and         Naming Services: DNS and NIS》\fR
+.sp
+.LP
+\fI《Working With Oracle Solaris 11.3 Directory and         Naming Services: LDAP》\fR

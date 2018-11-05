@@ -1,0 +1,144 @@
+'\" te
+.\" Copyright (c) 2009, 2013, Oracle and/or its affiliates.All rights reserved.
+.TH nfsref 1M "2013 年 11 月 21 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+nfsref \- NFS 引用实用程序
+.SH 用法概要
+.LP
+.nf
+\fBnfsref\fR [\fB-t\fR \fIsvc_type\fR] add \fIpath\fR \fIlocation\fR [location ...]
+.fi
+
+.LP
+.nf
+\fBnfsref\fR [\fB-t\fR \fIsvc_type\fR] remove \fIpath\fR
+.fi
+
+.LP
+.nf
+\fBnfsref\fR [\fB-t\fR \fIsvc_type\fR] lookup \fIpath\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBnfsref\fR 命令管理 NFS 版本 4 引用，这些引用为服务器端指针，用于将客户机重定向到文件系统的实际位置。引用以重解析点为基础（请参见 \fBreparsed\fR(1M) 和 \fBlibreparse\fR(3LIB)）。所有该用法概要形式的路径参数都是指重解析点符号链接的路径。此命令当前实现了两个服务类型：\fBnfs-basic\fR（是缺省值）和 \fBnfs-fedfs\fR。\fBnfs-basic\fR 引用将位置信息嵌入到重解析点内，而 \fBnfs-fedfs\fR 引用将用来查找位置信息的信息嵌入到 LDAP 中（请参见\fBfedfs\fR(5)）。
+.sp
+.LP
+第一种形式的命令 \fBnfsref add\fR 可创建指向指定位置的引用。如果不存在重解析点，将会创建一个。如果存在重解析点，将添加 NFS 服务数据或替换现有 NFS 服务数据。每个位置都具有 \fB\fIhost \fR:/\fIpath\fR\fR 格式。路径可包含空格，且空格必须进行转义以确保正确进行 shell 解析。
+.sp
+.LP
+第二种形式的命令 \fBnfsref remove\fR 可删除 NFS 引用。它将从指定的重解析点删除 NFS 服务数据，如果不存在其他类型的服务数据，它将删除重解析点。
+.sp
+.LP
+第三种形式的命令 \fBnfsref lookup\fR 可显示指定的 NFS 引用所指向的位置。
+.sp
+.LP
+必须始终使用具有根标识名和可用的匹配口令的 LDAP 简单验证来创建 FedFS 引用。必须在 \fBnsdbparams\fR 中存储 LDAP 服务器的根 DN；口令可以存储在 \fBnsdbparams\fR 中，也可以由管理员在系统提示时输入口令。缺省 LDAP 主机和端口将是通过 \fBnsdbparams\fR 设置的那些，除非它们被 \fBFEDFS_NSDB_HOST\fR 和 \fBFEDFS_NSDB_PORT\fR 环境变量覆盖。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fIsvc_type\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定服务类型。当前，只有 \fBnfs-basic\fR 和 \fBnfs-fedfs\fR 受支持。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR添加 NFS 引用
+.sp
+.LP
+以下命令将在服务器路径 \fB/pool/home/bob\fR 中创建 NFS 引用，以指向资源 \fBhomeserver:/homepool/bob\fR。
+
+.sp
+.in +2
+.nf
+# \fBnfsref add /pool/home/bob homeserver:/homepool/bob\fR
+Created reparse point /pool/home/bob
+
+# \fBnfsref lookup /pool/home/bob\fR
+/pool/home/bob points to: homeserver:/homepool/bob
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR删除 NFS 引用
+.sp
+.LP
+以下命令将在服务器路径 \fB/pool/home/bob\fR 中删除 NFS 引用。
+
+.sp
+.in +2
+.nf
+# \fBnfsref remove /pool/home/bob\fR
+Removed svc_type 'nfs-basic' from /pool/home/bob
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.sp .6
+.RS 4n
+出现错误。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/reparsed/*.so.1\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBreparsed\fR 的每服务插件。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性service/file-system/nfs
+_
+接口稳定性Consolidation Private（整合专用）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBreparsed\fR(1M)、\fBlibreparse\fR(3LIB)、\fBattributes\fR(5)、\fBfedfs\fR(5)

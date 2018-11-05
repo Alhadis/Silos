@@ -1,0 +1,443 @@
+'\" te
+.\"  Copyright (c) 2005, 2011, Oracle and/or its affiliates. All rights reserved.
+.TH driver.conf 4 "13 Jul 2011" "SunOS 5.11" "File Formats"
+.SH NAME
+driver.conf \- driver configuration files
+.SH SYNOPSIS
+.LP
+.nf
+\fBdriver.conf\fR
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+Driver configuration files provide values for device properties. The values override values provided by the devices themselves. Most modern devices provide enough property values to make a driver configuration file unnecessary.
+.sp
+.LP
+The system associates a driver with its configuration file by name. For example, a driver in \fB/usr/kernel/drv\fR called \fBwombat\fR has the driver configuration file \fBwombat.conf\fR, also stored in \fB/usr/kernel/drv\fR, associated with it. On systems capable of support 64-bit drivers, the driver configuration file should be placed in the directory in which the 32-bit driver is (or would be) located, even if only a 64-bit version is provided. For example, a 64-bit driver stored in \fB/usr/kernel/drv/sparcv9\fR stores its driver configuration file in \fB/usr/kernel/drv\fR.
+.sp
+.LP
+The value of the \fBname\fR property is the node name. In a \fBdriver.conf\fR file, where the generic node name and \fBcompatible\fR property associated with a self-identifying devices are typically not used, the node name must be a binding name. The binding name is the name chosen by the system to bind a driver to the device. The binding name is either an alias associated with the driver established by \fBadd_drv\fR(1M) or the driver name itself.
+.sp
+.LP
+The syntax of a single entry in a driver configuration file takes one of three forms:
+.sp
+.in +2
+.nf
+\fBname\fR="\fInode name\fR" \fBparent\fR="\fIparent name\fR" [\fIproperty-name=value\fR ...]\fB;\fR
+.fi
+.in -2
+
+.sp
+.LP
+In this form, the parent name can be either the binding name of the parent nexus driver or a specific full pathname, beginning with a slash (\fB/\fR) character, identifying a specific instance of a parent bus. If a binding name is used then all parent nodes bound to that driver match. A generic name (for example, \fBpci\fR) is not a valid binding name even though it can appear in the full pathname of all intended parents.
+.sp
+.LP
+Alternatively, the parent can be specified by the type of interface it presents to its children.
+.sp
+.in +2
+.nf
+\fBname\fR="\fInode name\fR" \fBclass\fR="\fIclass name\fR" [\fIproperty-name=value\fR ...]\fB;\fR
+.fi
+.in -2
+
+.sp
+.LP
+For example, the driver for the \fBSCSI\fR host adapter can have different names on different platforms, but the target drivers can use class \fBscsi\fR to insulate themselves from these differences.
+.sp
+.LP
+Entries of either form above correspond to a device information (\fBdevinfo\fR) node in the kernel device tree. Each node has a \fIname\fR which is usually the name of the driver, and a \fIparent\fR name which is the name of the parent \fBdevinfo\fR node to which it will be connected. Any number of name-value pairs can be specified to create properties on the prototype \fBdevinfo\fR node. These properties can be retrieved using the DDI property interfaces (for example, \fBddi_prop_get_int\fR(9F) and \fBddi_prop_lookup\fR(9F)). The prototype \fBdevinfo\fR node specification must be terminated with a semicolon (\fB;\fR).
+.sp
+.LP
+The third form of an entry is simply a list of properties.
+.sp
+.in +2
+.nf
+[\fIproperty-name=value\fR ...]\fB;\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+A property created in this way is treated as global to the driver. It can be overridden by a property with the same name on a particular \fBdevinfo\fR node, either by creating one explicitly on the prototype node in the driver.conf file or by the driver.
+.sp
+.LP
+Items are separated by any number of newlines, \fBSPACE\fR or \fBTAB\fR characters.
+.sp
+.LP
+The configuration file can contain several entries to specify different device configurations and parent nodes. The system can call the driver for each possible prototype \fBdevinfo\fR node, and it is generally the responsibility of the drivers \fBprobe\fR(9E) routine to determine if the hardware described by the prototype \fBdevinfo\fR node is really present.
+.sp
+.LP
+Property names must not violate the naming conventions for Open Boot PROM properties or for IEEE 1275 names. In particular, property names should contain only printable characters, and should not contain at-sign (\fB@\fR), slash (\fB/\fR), backslash (\fB\e\fR), colon (\fB:\fR), or square brackets (\fB[]\fR). Property values can be decimal integers or strings delimited by double quotes (\fB"\fR). Hexadecimal integers can be constructed by prefixing the digits with \fB0x\fR.
+.sp
+.LP
+A comma separated list of integers can be used to construct properties whose value is an integer array. The value of such properties can be retrieved inside the driver using \fBddi_prop_lookup_int_array\fR(9F).
+.sp
+.LP
+Comments are specified by placing a \fB#\fR character at the beginning of the comment string, the comment string extends for the rest of the line.
+.sp
+.LP
+In addition to the vendor \fBdriver.conf\fR files provided by the system and driver providers in \fB/kernel\fR and \fB/platform\fR, user-administered \fBdriver.conf\fR files may be added in \fB/etc/driver/drv\fR. Files in \fB/etc/driver/drv\fR are available for local customizations to supplement the vendor driver configuration. 
+.sp
+.LP
+The format of an \fB/etc/driver/drv\fR \fBdriver.conf\fR file is identical to that of a vendor \fBdriver.conf\fR file. 
+.sp
+.LP
+For each driver, the vendor and admin \fBdriver.conf\fR files are merged together and made available to the driver and system, as a merged set of device specifications with per-device properties and a global set of properties visible to every device instance bound to this driver.
+.sp
+.LP
+These merged per-device and global properties are visible to an instance of the driver via the ddi_prop_lookup(9F) and related interfaces automatically, with no intervention by the driver required. 
+.sp
+.LP
+A driver that does provide configurable options by way of \fBdriver.conf\fR should keep this property merge behavior in mind.  Inverting the meaning of an option from one release to the next could cause problems for users that may have configured a system with the previous interpretation of that option. 
+.sp
+.LP
+A driver which has converted its configurable options from one revision to another may find it useful to convert older option configurations to the new supported set.  The system maintains two separate property lists providing the default vendor properties and the admin customizations.
+.sp
+.LP
+Each property originally derived from the vendor \fBdriver.conf\fR file and then merged with an updated value will be entered both the vendor and admin property lists.  Each list may be searched via ddi_prop_lookup(9F) as either the \fBDDI_PROP_VENDOR\fR or \fBDDI_PROP_ADMIN\fR, respectively.  The property on the vendor list records the property's original value, while the property on the admin list provides the customization. 
+.sp
+.LP
+There is no property entry on the vendor list for a property derived solely from the admin \fBdriver.conf\fR.  Such properties have entries on the admin list only, providing the admin-specified value. 
+.SS "Supplementing the Vendor Driver Configuration"
+.sp
+.LP
+First, it is important to understand the format of a driver.conf entry.  Each entry can be one of two types, specifying either a device information (devinfo) node as a parent specification or a set of properties globally available to all device instances bound to this driver.
+.sp
+.LP
+An entry defining a device info node must specify the node's parent as either the binding name of the parent nexus driver, a pathname or by the class of interface presented to its children.  Other properties on the parent specification define qualifiers required to correctly identify the specific device, and depend upon the parent driver or class of interface.  An example of such a device qualifier property is 'target', used by SCSI hba adapters to identifier a specific device on its bus.  Such qualifiers must be retained unchanged so that the system will continue to properly enumerate that device instance. 
+.sp
+.LP
+To modify one or more property values on such a parent specification, the targeted parent specification in the vendor \fBdriver.conf\fR must be duplicated in the admin \fBdriver.conf\fR, preserving each device qualifying property.  Then the admin entry can be customized, supplementing it with additional or modified configurable options. 
+.sp
+.LP
+Parent specifications in the admin \fBdriver.conf\fR that do not correspond to a match in the vendor \fBdriver.conf\fR file are added to the list of device information nodes available to be potentially enumerated by the system for that driver. 
+.sp
+.LP
+The second type of \fBdriver.conf\fR entry defines global properties for that driver.  The admin \fBdriver.conf\fR file can both update existing properties in the vendor \fBdriver.conf\fR file with new values, and provide new global property name-value pairs available to all device instances bound to that driver.
+.SS "Considerations for Driver Writers"
+.sp
+.LP
+The process of upgrading a Solaris system from one release to another involving delivering new versions of drivers including that driver's vendor \fBdriver.conf\fR.  It is desired that a system's earlier configuration should continue to work as before, with the new drivers and vendor \fBdriver.conf\fR files together with the admin customized \fBdriver.conf\fR files. 
+.sp
+.LP
+For a driver to work well under this model, each driver needs to be properly designed to present a disciplined set of configurable options.  It would be best to carefully define a driver's options with this in mind and to fully describe the model presented in the driver's documentation or man page. 
+.sp
+.LP
+If a driver makes a change in its configuration options that would invalidate or supersede the admin settings, the driver should make the effort to discover the admin settings via the prior options and honor them. 
+.sp
+.LP
+For example, let's say a driver supports a timeout configuration in units of seconds.  A new version of the driver now supports a finer timeout granularity in units of milliseconds.  The new property should be named so it can be distinguished from the first.  The driver can then look up the earlier property on the admin list and if found, continue to honor it.
+.sp
+.in +2
+.nf
+/*
+ * Has the timeout been locally configured using the
+ * prior option of timeout in units of seconds?
+ */
+if (ddi_prop_lookup_int(DDI_DEV_T_ANY, dip,
+    DDI_PROP_ADMIN, "timeout",) ==
+    DDI_PROP_SUCCESS) {
+        if (n != 1) {
+                 ddi_prop_free(ivalues);
+                 return (EINVAL);
+         }
+         /* yes - convert our working timeout accordingly */
+         dip->ms_timeout = 1000 * ivalues[0];
+         /* record the new parameter setting for confirmation */
+         (void) ddi_prop_update_int(DDI_DEV_T_NONE,
+             dip, "ms-timeout", dip->ms_timeout);
+         ddi_prop_free(ivalues);
+}
+.fi
+.in -2
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRUsing a Configuration File for a PCI Bus Frame Buffer
+.sp
+.LP
+The following is an example of a configuration file called \fBACME,simple.conf\fR for a \fBPCI\fR bus frame buffer called \fBACME,simple\fR.
+
+.sp
+.in +2
+.nf
+#
+# Copyright (c) 1993, by ACME Fictitious Devices, Inc.
+#
+#ident  "@(#)ACME,simple.conf   1.3     1999/09/09"
+
+name="ACME,simple" class="pci" unit-address="3,1"
+        debug-mode=12;
+.fi
+.in -2
+
+.sp
+.LP
+This example creates a prototype \fBdevinfo\fR node called \fBACME,simple\fR under all parent nodes of class \fBpci\fR. The node has device and function numbers of 3 and 1, respectively; the property \fBdebug-mode\fR is provided for all instances of the driver.
+
+.LP
+\fBExample 2 \fRUsing a Configuration File for a Pseudo Device Driver
+.sp
+.LP
+The following is an example of a configuration file called \fBACME,example.conf\fR for a pseudo device driver called \fBACME,example\fR.
+
+.sp
+.in +2
+.nf
+#
+# Copyright (c) 1993, ACME Fictitious Devices, Inc.
+#
+#ident  "@(#)ACME,example.conf  1.2   93/09/09"
+name="ACME,example" parent="pseudo" instance=0
+    debug-level=1;
+
+name="ACME,example" parent="pseudo" instance=1;
+
+whizzy-mode="on";
+debug-level=3;
+.fi
+.in -2
+
+.sp
+.LP
+This creates two \fBdevinfo\fR nodes called \fBACME,example\fR which attaches below the \fBpseudo\fR node in the kernel device tree. The \fBinstance\fR property is only interpreted by the \fBpseudo\fR node, see \fBpseudo\fR(4) for further details. A property called \fBdebug-level\fR is created on the first \fBdevinfo\fR node which has the value 1. The \fBexample\fR driver is able to fetch the value of this property using \fBddi_prop_get_int\fR(9F).
+
+.sp
+.LP
+Two global driver properties are created, \fBwhizzy-mode\fR (which has the string value \fB"on"\fR) and \fBdebug-level\fR (which has the value 3). If the driver looks up the property \fBwhizzy-mode\fR on either node, it retrieves the value of the global \fBwhizzy-mode\fR property (\fB"on"\fR). If the driver looks up the \fBdebug-level\fR property on the first node, it retrieves the value of the \fBdebug-level\fR property on that node (1). Looking up the same property on the second node retrieves the value of the global \fBdebug-level\fR property (3).
+
+.LP
+\fBExample 3 \fRModifying a Driver Global Property
+.sp
+.LP
+The \fBbge.conf\fR provides default values for the receive and \fBxmit\fR rings.
+
+.sp
+.in +2
+.nf
+#
+# The properties below represents the number of receive and send ring used.
+# For BCM5705, BCM5782, etc, there are only 1 receive ring and 1 send ring.
+# Otherwise, there can be up to 16 receive rings and 4 send rings.
+#
+bge-rx-rings            = 16;
+bge-tx-rings            = 1;
+.fi
+.in -2
+
+.sp
+.LP
+To customize the \fBbge-tx-rings\fR value, place a \fBbge.conf\fR file in \fB/etc/driver/drv\fR with the following line:
+
+.sp
+.in +2
+.nf
+bge-tx-rings            = 2;
+.fi
+.in -2
+
+.sp
+.LP
+When the \fBbge\fR driver is next loaded, the updated value can be observed with \fBprtconf\fR:
+
+.sp
+.in +2
+.nf
+pci108e,534d (pci14e4,16a7), instance #0
+    System software properties:
+      name='bge-known-subsystems' type=int items=16
+      name='bge-rx-rings' type=int items=1
+            value=00000010
+      name='bge-tx-rings' type=int items=1
+            value=00000002
+.fi
+.in -2
+
+.sp
+.LP
+Additionally, \fBprtconf -u\fR can be used to display both the original default and the updated \fBbge-tx-rings\fR property values:
+
+.sp
+.in +2
+.nf
+Admin global properties:
+    name='bge-tx-rings' type=int items=1
+         value=00000002
+Vendor global properties:
+    name='bge-tx-rings' type=int items=1
+              value=00000001
+.fi
+.in -2
+
+.LP
+\fBExample 4 \fRModifying configurable values on a specific device
+.sp
+.LP
+To modify the configurable parameter \fB\&'retries'\fR on an \fBsd\fR device at target \fB0\fR, lun \fB0\fR and \fB\&'queue-max'\fR on the device target \fB1\fR, lun \fB0\fR, place an \fBsd.conf\fR file in \fB/etc/driver/drv\fR with the following lines: 
+
+.sp
+.in +2
+.nf
+name="sd" class="scsi" target=0 lun=0 retries=4;
+name="sd" class="scsi" target=1 lun=0 queue-max=16;
+.fi
+.in -2
+
+.sp
+.LP
+The updated values can be observed with \fBprtconf\fR:
+
+.sp
+.in +2
+.nf
+sd, instance #1
+    System properties:
+       name='lun' type=int items=1
+          value=00000000
+       name='target' type=int items=1
+          value=00000000
+       name='class' type=string items=1
+          value='scsi'
+       name='retries' type=int items=1
+          value=00000004
+       name='ddi-devid-registrant' type=int items=1
+          value=00000001
+
+sd, instance #2
+    System properties:
+       name='lun' type=int items=1
+          value=00000000
+       name='target' type=int items=1
+          value=00000001
+       name='class' type=string items=1
+          value='scsi'
+       name='queue-max' type=int items=1
+          value=00000010
+       name='ddi-devid-registrant' type=int items=1
+          value=00000001
+.fi
+.in -2
+
+.sp
+.LP
+With \fBprtconf -u\fR, the admin property values are displayed. The vendor property list in this case contains no properties as the vendor \fBdriver.conf\fR contained no specification for such properties.
+
+.sp
+.in +2
+.nf
+sd, instance #1
+    Admin properties:
+        name='retries' type=int items=1
+            value=00000004
+
+sd, instance #2
+    Admin properties:
+        name='queue-max' type=int items=1
+            value=00000010
+.fi
+.in -2
+
+.LP
+\fBExample 5 \fRAdding a New Device Instance
+.sp
+.LP
+For purposes of illustration, suppose that the vendor \fBsd.conf\fR contains only the following parent specification:
+
+.sp
+.in +2
+.nf
+name="sd" class="scsi" target=0 lun=0 max-retries=4;
+.fi
+.in -2
+
+.sp
+.LP
+and that it is desired to also support a \fBtarget=1\fR device instance.  Further suppose that \fBtarget=0\fR should be configured with the \fBmax-retries\fR parameter set to \fB10\fR and queueing set to \fB32\fR, and that \fBtarget=1\fR with max-retries to \fB10\fR and queueing to \fB64\fR.  Place the following lines in the \fBsd.conf\fR file in \fB/etc/driver/drv\fR:
+
+.sp
+.in +2
+.nf
+name="sd" class="scsi" target=0 lun=0 max-retries=8 queue=32;
+name="sd" class="scsi" target=1 lun=0 max-retries=10 queue=64;
+.fi
+.in -2
+
+.sp
+.LP
+These changes can be observed with \fBprtconf\fR.  For target \fB0\fR, the vendor list contains the vendor setting for the number of retries and the updated value in the admin list.  There was no specification for this target as delivered, so the vendor list for target 1 is empty and all specified parameters from the admin list are displayed. 
+
+.sp
+.in +2
+.nf
+sd, instance #1
+    System properties:
+       name='max-retries' type=int items=1
+          value=00000008
+       name='lun' type=int items=1
+          value=00000000
+       name='target' type=int items=1
+          value=00000000
+       name='class' type=string items=1
+          value='scsi'
+       name='queue' type=int items=1
+          value=00000020
+       name='ddi-devid-registrant' type=int items=1
+          value=00000001
+     Admin properties:
+        name='queue' type=int items=1
+          value=00000020
+        name='max-retries' type=int items=1
+          value=00000008
+     Vendor properties:
+        name='max-retries' type=int items=1
+          value=00000004
+
+sd, instance #2 (driver not attached)
+     System properties:
+         name='queue' type=int items=1
+           value=00000040
+         name='max-retries' type=int items=1
+           value=0000000a
+         name='lun' type=int items=1
+           value=00000000
+         name='target' type=int items=1
+           value=00000001
+         name='class' type=string items=1
+           value='scsi'
+         name='ddi-devid-registrant' type=int items=1
+           value=00000001
+      Admin properties:
+         name='queue' type=int items=1
+           value=00000040
+         name='max-retries' type=int items=1
+           value=0000000a
+         name='lun' type=int items=1
+           value=00000000
+         name='target' type=int items=1
+           value=00000001
+         name='class' type=string items=1
+            value='scsi'
+.fi
+.in -2
+
+.SH SEE ALSO
+.sp
+.LP
+\fBadd_drv\fR(1M), \fBdriver\fR(4), \fBpci\fR(4), \fBpseudo\fR(4),  \fBscsi\fR(4), \fBprobe\fR(9E), \fBddi_getlongprop\fR(9F), \fBddi_getprop\fR(9F), \fBddi_getproplen\fR(9F), \fBddi_prop_get_int\fR(9F), \fBddi_prop_lookup\fR(9F), \fBddi_prop_op\fR(9F)
+.sp
+.LP
+\fIWriting Device Drivers for Oracle Solaris 11.2\fR
+.SH WARNINGS
+.sp
+.LP
+To avoid namespace collisions between multiple driver vendors, it is strongly recommended that the \fIname\fR property of the driver should begin with a vendor-unique string. A reasonably compact and unique choice is the vendor over-the-counter stock symbol.
+.SH NOTES
+.sp
+.LP
+The \fBupdate_drv\fR(1M) command should be used to prompt the kernel to reread \fBdriver.conf\fR files. Using \fBmodunload\fR(1M) to update \fBdriver.conf\fR continues to work in release 9 of the Solaris operating environment, but the behavior will change in a future release.
+.sp
+.LP
+It is not currently possible to either remove or undefine a property, or to remove a parent specification, defined in a vendor \fBdriver.conf\fR file with an addition to an \fB/etc/driver/drv driver.conf\fR file.

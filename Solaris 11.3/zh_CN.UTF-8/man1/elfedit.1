@@ -1,0 +1,967 @@
+'\" te
+.\" Copyright (c) 2008, 2014, Oracle and/or its affiliates.All rights reserved.
+.TH elfedit 1 "2014 年 4 月 23 日" "SunOS 5.11" "用户命令"
+.SH 名称
+elfedit \- 检查或编辑 ELF 文件
+.SH 用法概要
+.LP
+.nf
+\fBelfedit\fR [\fB-adr\fR] [\fB-e\fR \fIcmd\fR] [\fB-L\fR \fIpath\fR]
+     [\fB-o\fR \fBdefault\fR | \fBsimple\fR | \fBnum\fR] [\fIinfile\fR] [\fIoutfile\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBelfedit\fR 是一个用于检查或修改现有 ELF 目标文件内容的工具。可以访问目标文件中包含的大多数 ELF 数据，这些数据包括 ELF 头、节头表、程序头表、动态节、硬件和软件功能、字符串表和符号表。
+.SS "语法"
+.sp
+.LP
+\fBelfedit\fR 可以处理来自命令行（\fB-e\fR 选项）或标准输入的命令。如果标准输入是一个终端，\fBelfedit\fR 可提供终端编辑功能以及涵盖大量命令的命令补齐功能。ELF 对特殊整数值和位掩码使用许多标准符号名称。\fBelfedit\fR 可识别此类名称的最有可能的完整形式。在输入 \fBelfedit\fR 命令时，您可以随时按 TAB 键，令 \fBelfedit\fR 显示用法消息以及当前光标处文本的任意已知完整形式。
+.sp
+.LP
+\fBelfedit\fR 功能以模块形式组织。每个模块提供一组命令，这些命令针对相关功能。通过使用冒号 (\fB:\fR) 分隔符将模块和命令名称组合到一起（中间无空格）来指定命令。例如，\fBdyn:runpath\fR 指的是由 \fBdyn\fR 模块提供的 \fBrunpath\fR 命令。模块名称必须是唯一的。给定模块中的命令名称在该模块中必须唯一，但可在多个模块中使用相同的命令名称。
+.sp
+.LP
+某些模块将模块内的某个命令指定为该模块的缺省命令。用户只需指定模块名称，就可运行此命令。大多数 \fBelfedit\fR 模块均提供一个名为 dump 的命令，它针对模块涵盖的 ELF 文件部分生成的信息与 \fBelfdump\fR 实用程序所显示的信息相同。通常，模块会将 dump 指定为其缺省命令。
+.sp
+.LP
+用于执行 \fBelfedit\fR 命令的语法在设计上采用类似 UNIX 命令行实用程序的语法，这样任何会使用 UNIX 命令行实用程序的人都可以方便地使用 elfedit 命令。该语法由空格分隔的标记组成。第一个标记是命令名称。选项（即以连字符 (\fB-\fR) 开头的参数）跟在命令后面。纯参数（操作数）跟在选项后面。一个给定的命令可以有 \fB0\fR 个或多个选项和操作数，但是如果它们同时存在，选项始终位于纯参数前面。可使用特殊选项 \fB--\fR（两个连字符）来限定选项的结尾。如果遇到此选项，其余所有参数均被视为纯参数，即使它们以 \fB-\fR 开头。
+.sp
+.LP
+\fBelfedit\fR 标记中的字符的解释取决于所用的引用格式：
+.sp
+.ne 2
+.mk
+.na
+\fB非引用\fR
+.ad
+.sp .6
+.RS 4n
+单引号 (') 或双引号 (“) 外面的反斜杠 (\) 充当转义符。\fBelfedit\fR 发现反斜杠字符时会将其忽略，并按字面意思处理反斜杠后面的字符（即使它后面的字符为反斜杠）。此功能可用于在命令的字符串参数中插入一个空白字符，从而无需将一个字符串分为两个单独的标记。同样，它可用于插入一个引号或反斜杠作为文本字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB单引号\fR
+.ad
+.sp .6
+.RS 4n
+在单引号 (') 中，空白字符不用于分隔标记，且会被解释为标记内部的文本字符。双引号 (“) 和反斜杠 (\) 字符会被解释为文本字符，无特殊意义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB双引号\fR
+.ad
+.sp .6
+.RS 4n
+在双引号 (“) 中，空白字符不用于分隔标记。单引号字符会被解释为文本，不具有引用功能。反斜杠 (\) 是一个转义字符，在字符串文本中，其作用与 C 编程语言中反斜杠的作用类似：
+.sp
+.ne 2
+.mk
+.na
+\fB\a\fR
+.ad
+.RS 8n
+.rt  
+警报（响铃）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\b\fR
+.ad
+.RS 8n
+.rt  
+退格
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\f\fR
+.ad
+.RS 8n
+.rt  
+换页符
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\n\fR
+.ad
+.RS 8n
+.rt  
+换行符
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\r\fR
+.ad
+.RS 8n
+.rt  
+回车
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\t\fR
+.ad
+.RS 8n
+.rt  
+水平制表符
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\v\fR
+.ad
+.RS 8n
+.rt  
+垂直制表符
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\\\fR
+.ad
+.RS 8n
+.rt  
+反斜杠
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\'\fR
+.ad
+.RS 8n
+.rt  
+单引号
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\”\fR
+.ad
+.RS 8n
+.rt  
+双引号
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\\fBooo\fR\fR
+.ad
+.RS 8n
+.rt  
+一个八进制常数，其中 \fBooo\fR 是一到三个八进制数字 (0...7)
+.RE
+
+在反斜杠后面跟有任何其他字符，均会出错。
+.RE
+
+.sp
+.LP
+核心命令均属于一个名为 \fBsys\fR 的内部模块。所有其他模块均打包为可动态装入的可共享目标文件。当执行需要某个模块的命令时或者当执行 \fBsys:load\fR 命令时，\fBelfedit\fR 会按需装入模块。由于 sys 模块特殊的内置状态，而且其命令使用频繁，所以 \fB elfedit\fR 命令允许在不加 \fBsys:\fR 前缀的情况下指定 \fBsys\fR 模块中的命令，例如，使用 \fBload\fR 而非 \fBsys:load\fR。要访问任何其他模块中的命令，必须采用 \fImodule\fR\fB:\fR\fIcmd\fR 完整格式指定。
+.sp
+.LP
+\fBelfedit\fR 随以下标准模块一起提供：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcap\fR\fR
+.ad
+.RS 11n
+.rt  
+功能节
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdyn\fR\fR
+.ad
+.RS 11n
+.rt  
+动态节
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBehdr\fR\fR
+.ad
+.RS 11n
+.rt  
+ELF 头
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreloc\fR\fR
+.ad
+.RS 11n
+.rt  
+重定位节
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBphdr\fR\fR
+.ad
+.RS 11n
+.rt  
+程序头数组
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshdr\fR\fR
+.ad
+.RS 11n
+.rt  
+节头数组
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstr\fR\fR
+.ad
+.RS 11n
+.rt  
+字符串表节
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsym\fR\fR
+.ad
+.RS 11n
+.rt  
+符号表节
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsyminfo\fR\fR
+.ad
+.RS 11n
+.rt  
+\fBSyminfo\fR 节
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsys\fR\fR
+.ad
+.RS 11n
+.rt  
+内置的核心 \fBelfedit\fR 命令
+.RE
+
+.SS "状态和命令文档"
+.sp
+.LP
+状态和命令文档
+.sp
+.LP
+状态 (\fBsys:status\fR) 命令显示有关当前 \fBelfedit\fR 会话的信息： 
+.RS +4
+.TP
+.ie t \(bu
+.el o
+输入和输出文件
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+选项设置
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+模块搜索路径
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+已装入的模块
+.RE
+.sp
+.LP
+每个 \fBelfedit\fR 模块均包含介绍每个命令的详细联机文档，文档格式类似于 UNIX 手册页。可使用 \fBhelp\fR (\fBsys:help\fR) 命令显示此信息。要了解有关 \fBelfedit\fR 的详细信息，请启动 \fBelfedit\fR 并使用不带有参数的 help 命令：
+.sp
+.in +2
+.nf
+% \fBelfedit\fR
+> help
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBelfedit\fR 将显示一条欢迎消息，其中包含有关 \fBelfedit\fR 的详细信息和有关如何使用帮助系统的信息。
+.sp
+.LP
+获取某个模块的摘要信息：
+.sp
+.in +2
+.nf
+> \fBhelp module\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+获取某个模块提供的某个特定命令的完整文档：
+.sp
+.in +2
+.nf
+> \fBhelp module:command\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以 \fBdyn\fR 模块和 \fBdyn:runpath\fR 命令为例：
+.sp
+.in +2
+.nf
+> \fBhelp dyn\fR
+> \fBhelp dyn:runpath\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+help (\fBsys:help\fR) 可用于获取 help 命令本身的帮助：
+.sp
+.in +2
+.nf
+> \fBhelp help\fR
+.fi
+.in -2
+.sp
+
+.SS "模块搜索路径"
+.sp
+.LP
+\fBelfedit\fR 模块是作为按需装入的可共享目标文件实现的。当需要某个模块时，\fBelfedit\fR 会搜索模块路径以便找到实现了该模块的可共享目标文件。路径是以冒号 (\fB:\fR) 字符分界的目录名称序列。除了标准字符，路径还可以包含以下任意标记：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%i\fR\fR
+.ad
+.RS 6n
+.rt  
+扩展到当前指令集体系结构 (instruction set architecture, ISA) 名称（\fBsparc\fR、\fBsparcv9\fR、\fBi386\fR、\fBamd64\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%I\fR\fR
+.ad
+.RS 6n
+.rt  
+扩展到 64 位 ISA。对于 64 位版本的 \fBelfedit\fR，此标记与 \fB%i\fR 相同，但对于 32 位版本，会扩展到空字符串。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%o\fR\fR
+.ad
+.RS 6n
+.rt  
+扩展到要修改的路径的旧值。要将目录附加到缺省路径之前或之后时，这非常有用。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%r\fR\fR
+.ad
+.RS 6n
+.rt  
+包含 \fBelfedit\fR 程序的文件系统树的根（假定 \fBelfedit\fR 安装在树中的 \fBusr/bin/elfedi\fRt）。在标准系统中，此标记就是标准系统根目录 (\fB/\fR)。在开发系统中（这种情况下，\fBelfedit\fR 副本可安装在任意位置），使用 \fB%r\fR 可确保使用匹配的模块集。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%%\fR\fR
+.ad
+.RS 6n
+.rt  
+扩展到单个 \fB%\fR 字符
+.RE
+
+.sp
+.LP
+\fBelfedit\fR 的缺省模块搜索路径为：
+.sp
+.in +2
+.nf
+%r/usr/lib/elfedit/%I
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+扩展标记，即：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/elfedit\fR\fR
+.ad
+.RS 28n
+.rt  
+32 位 \fBelfedit\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/elfedit/sparcv9\fR\fR
+.ad
+.RS 28n
+.rt  
+64 位 \fBelfedit\fR (\fBsparc\fR)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/elfedit/amd64\fR\fR
+.ad
+.RS 28n
+.rt  
+64 位 \fBelfedit\fR (\fBx86\fR)
+.RE
+
+.sp
+.LP
+通过设置 \fBELFEDIT_PATH\fR 环境变量或使用 \fB-L\fR 命令行选项可更改缺省搜素路径。如果同时指定这两项，\fB-L\fR 选项将取代环境变量。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用 \fBautoprint\fR 模式。启用 \fBautoprint\fR 后，\fBelfedit\fR 将输出修改 ELF 文件后所生成的修改值。此输出以当前输出样式显示，可使用 \fB-o\fR 选项更改此样式。缺省输出样式是 \fBelfdump\fR(1) 实用程序使用的样式。以交互方式使用 \fBelfedit\fR 时，\fBautoprint\fR 模式为缺省模式（当 \fBstdin\fR 和 \fBstdout\fR 为终端时）。因此，仅当在非交互式上下文中使用 \fBelfedit\fR 时，\fB-a\fR 选项才有意义。要在交互式会话中禁用 \fBautoprint\fR，请使用 \fBelfedit\fR 命令：
+.sp
+.in +2
+.nf
+> \fBset a off\fR
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果已设置，此选项可使 \fBelfedit\fR 发布信息性消息，说明其内部操作和要处理的 ELF 目标文件的详细信息。这在需要深入了解所执行的操作时非常有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fIcmd\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定一个编辑命令。可以指定多个 \fB-e\fR 选项。如果在命令行上指定了多个编辑命令，\fBelfedit\fR 将在批处理模式下运行。打开文件后，\fBelfedit\fR 按给定的顺序执行每个命令，然后保存修改的文件，最后 \fBelfedit\fR 退出。从 shell 脚本和 makefile 执行简单操作时，批处理模式非常有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置用于定位 \fBelfedit\fR 模块的缺省路径。本手册页的“\fB模块搜索路径\fR”部分介绍了各个模块。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fBdefault\fR | \fBsimple \fR | \fBnum\fR\fR
+.ad
+.sp .6
+.RS 4n
+用于显示 ELF 数据的样式。此选项用于确立会话的当前样式。可在 \fBelfedit\fR 会话中更改此样式，方法是使用 set (\fBsys:set\fR) 命令或向会话中执行的各个命令提供 \fB-o\fR 选项。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdefault\fR\fR
+.ad
+.RS 11n
+.rt  
+缺省样式是以适合用户查看的格式显示输出。此样式与 \fBelfdump\fR 实用程序使用的样式类似。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnum\fR\fR
+.ad
+.RS 11n
+.rt  
+整数值始终以整数格式显示。字符串显示为在内含的字符串表中定位所用的整数偏移量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsimple\fR\fR
+.ad
+.RS 11n
+.rt  
+显示 ELF 文件中的字符串时，仅显示字符串。如果可能，整数值显示为符号常量，否则以整数格式显示。不显示任何标题、头或其他补充输出。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+只读模式。输入文件以只读访问模式打开，编辑会话的结果不会保存。指定了 \fB-r\fR 时，\fBelfedit\fR 不允许使用 \fIoutfile\fR 参数。如果不打算修改文件，强烈建议使用只读模式。除了提供额外保护以防止意外修改外，该选项还允许检查用户没有写入权限的文件。 
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIinfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含要处理的 ELF 目标文件的输入文件。 
+.sp
+此文件可以为可执行文件 (\fBET_EXEC\fR)、共享目标文件 (\fBET_DYN\fR) 或可重定位目标文件 (\fBET_REL\fR)。不直接支持归档文件。要编辑归档中的目标文件，必须提取目标文件，编辑副本，然后将其重新插入到该归档文件。
+.sp
+如果未提供 \fIinfile\fR，\fBelfedit\fR 将在限定模式下运行，此模式仅允许执行 \fBsys:\fR 模块中的命令。此模式主要用于访问 help (\fBsys:help\fR) 命令提供的命令文档。
+.sp
+如果提供了 \fIinfile\fR，但未给定任何 \fIoutfile\fR，\fBelfedit\fR 将就地编辑文件并将结果写入同一文件，这会导致原始文件内容被覆盖。通常，不建议以此模式使用 \fBelfedit\fR，建议指定输出文件。生成的文件经过测试和验证后，可将其移动到原始文件所在的位置。
+.sp
+\fB-r\fR 选项可用于以只读访问模式打开 \fIinfile\fR。在检查不希望修改的现有文件时，此选项非常有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIoutfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+输出文件。如果同时提供了 \fIinfile\fR 和 \fIoutfile\fR，\fIinfile\fR 将以只读访问模式打开，修改的目标文件内容会写入到 \fIoutfile\fR 中。
+.RE
+
+.SH 用法
+.sp
+.LP
+如果系统支持，\fBelfedit\fR 可作为 64 位应用程序运行，这种情况下可处理大于或等于 2 GB（2^31 个字节）的文件。
+.sp
+.LP
+启动时，\fBelfedit\fR 使用 \fBlibelf\fR 打开输入文件并在内存中缓存其内容副本以供编辑。然后，elfedit 可执行一个或多个命令。随后，修改的目标文件写入输出文件（不一定如此），elfedit 退出，会话即结束。
+.sp
+.LP
+如果未提供 \fIinfile\fR，\fBelfedit\fR 将在限定模式下运行，此模式仅允许执行 \fBsys\fR 模块中的命令。此模式主要用于访问 help (\fBsys:help\fR) 命令提供的命令文档。
+.sp
+.LP
+如果指定了一个或多个 \fB-e\fR 选项，将按给定顺序执行提供的命令。\fBelfedit\fR 会紧跟在给定命令之后添加对 write (\fBsys:write\fR) 和 quit (\fBsys:qui\fRt) 的隐式调用，从而导致写入输出文件并退出 \fBelfedit\fR 进程。在 shell 脚本和 makefile 中使用此方式非常方便。
+.sp
+.LP
+如果未指定 \fB-e\fR 选项，\fBelfedit\fR 将从 \fBstdin\fR 中读取命令并按给定顺序执行它们。在此模式下运行时，调用者必须显式发出 write (\fBsys:write\fR) 和 quit (\fBsys:quit\fR) 命令才能保存其工作并退出。
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+发生了致命错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+指定的命令行选项无效。
+.RE
+
+.SH 示例
+.sp
+.LP
+在以下示例中，显示了将 \fBelfedit\fR 与 shell 提示符 (\fB%\fR) 和 \fBelfedit\fR 提示符 (\fB>\fR) 交互使用的情况。用户不应输入上述字符中的任何一个。
+.LP
+\fB示例 1 \fR更改可执行文件的 Runpath
+.sp
+.LP
+以下示例假定名为 \fBprog\fR 的可执行文件安装在一个 \fBbin\fR 目录下，该目录的相邻目录为保存可共享目标文件的 \fBlib\fR 目录。以下命令将该可执行文件的 \fBrunpath\fR 设置为 \fBlib\fR 目录：
+
+.sp
+.in +2
+.nf
+% \fBelfedit -e 'dyn:runpath $ORIGIN/../lib'\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+需要对 \fB-e\fR 选项的参数使用单引号，以确保 shell 将整个命令作为一个参数传递给 \fBelfedit\fR。
+
+.sp
+.LP
+另外，可在非批处理模式下使用 \fBelfedit\fR 执行相同的操作。 
+
+.sp
+.in +2
+.nf
+% \fBelfedit prog\fR
+> \fBdyn:runpath $ORIGIN/../lib\fR
+      index  tag         value
+       [30]  RUNPATH     0x3e6      $ORIGIN/../lib
+> \fBwrite\fR
+> \fBquit\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+仅当目标文件中存在 \fBpadding\fR 时，才能对元素（例如 \fBrunpath\fR）或所需的条目进行添加或修改。请参见\fB\fR“附注”部分。
+
+.LP
+\fB示例 2 \fR删除硬件功能位
+.sp
+.LP
+需要满足可选硬件支持才能运行的目标文件均构建有功能节，此节包含的位掩码指定了这些目标文件所需的功能。运行时链接程序 (\fBld.so.1\fR) 根据运行系统的属性检查此掩码，以确定当前系统是否可运行给定目标文件。如果系统未提供程序需要的功能，则会阻止这些程序运行。
+
+.sp
+.LP
+该检查可防止未显式检查其所需硬件支持的不完善程序发生莫名奇妙的崩溃。但是，对于编写了在运行时显式检查系统功能的程序，该检查可能会有不利影响。此类程序可能有在满足硬件支持时使用的优化代码，同时也提供了在硬件支持满足不了时可运行的通用后备版本（尽管运行速度比较慢）。在这种情况下，硬件兼容性掩码会阻止此类程序在早期的硬件上运行。此时，从掩码中删除相关位可允许程序运行。 
+
+.sp
+.LP
+以下示例从使用 SSE3 CPU 扩展的 x86 二进制文件中删除 \fBAV_386_SSE\fR3 硬件功能。这样就将验证能否使用 SSE3 的职责从运行时链接程序转移到程序自身：
+
+.sp
+.in +2
+.nf
+% \fBelfedit -e 'cap:hw1 -and -cmp sse3' prog\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR从目标文件中读取信息
+.sp
+.LP
+\fBelfedit\fR 可用于从目标文件中提取特定目标信息。以下 shell 命令读取文件 \fB/usr/bin/ls\fR 中包含的节头数：
+
+.sp
+.in +2
+.nf
+% \fBSHNUM=`elfedit -r -onum -e 'ehdr:e_shnum' /usr/bin/ls`\fR
+% \fBecho $SHNUM\fR
+29
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+您可能会得到不同的值，具体取决于您使用的 Solaris 版本和计算机类型。\fB-r\fR 选项会使文件以只读方式打开，允许具有普通访问权限的用户打开文件并防止重要的系统可执行文件意外损坏。使用 \fBnum\fR 输出样式是为了仅获取所需的值，而无任何多余的文本。
+
+.sp
+.LP
+同样，以下示例从 C 运行时库提取 \fBunlink\fR 符号的符号类型： 
+
+.sp
+.in +2
+.nf
+% \fBTYPE=`elfedit -r -osimple -e 'sym:st_type unlink' \e
+      /lib/libc.so`\fR
+% \fBecho $TYPE\fR
+STT_FUNC
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR指定可执行文件的 ASLR 设置
+.sp
+.LP
+可执行文件的缺省地址空间布局随机化 (Address Space Layout Randomization, ASLR) 行为是使用 \fBDT_SUNW_ASLR\fR 动态节条目指定的。以下演示了如何对指定程序启用或禁用 ASLR。
+
+.sp
+.in +2
+.nf
+% \fBelfedit prog\fR
+> \fBdyn:sunw_aslr enable\fR
+      index  tag         value
+       [40]  SUNW_ASLR   0x2           ENABLE
+> \fBdyn:sunw_aslr disable\fR
+      index  tag         value
+      [40]   SUNW_ASLR   0x1           DISABLE
+.fi
+.in -2
+.sp
+
+.SH 环境变量
+.sp
+.ne 2
+.mk
+.na
+\fB\fBELFEDIT_PATH\fR\fR
+.ad
+.sp .6
+.RS 4n
+更改缺省模块搜索路径。本手册页的“\fB模块搜索路径\fR”部分讨论了模块搜索路径。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLD_NOEXEC_64\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁止自动执行 64 位 \fBelfedit\fR。缺省情况下，如果系统具有 64 位功能，则会运行 64 位版本的 \fBelfedit\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPAGER\fR\fR
+.ad
+.sp .6
+.RS 4n
+以交互方式将输出从 \fBelfedit\fR 传送到屏幕。如果未设置，将使用 \fBmore\fR。请参见 \fBmore\fR(1)。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/elfedit\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBelfedit\fR 模块的缺省目录，这些模块会按需装入供编辑命令使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB~/.teclarc\fR\fR
+.ad
+.sp .6
+.RS 4n
+用于命令行编辑的 \fBtecla\fR 个人定制文件。请参见 \fBtecla\fR(5)。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/linker
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBdump\fR(1)、\fBelfdump\fR(1)、\fBld.so.1\fR(1)、\fBmore\fR(1)、\fBnm\fR(1)、\fBpvs\fR(1)、\fBsxadm\fR(1M)、\fBelf\fR(3ELF)、\fBlibelf\fR(3LIB)、\fBtecla\fR(5)、\fBattributes\fR(5)
+.sp
+.LP
+\fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR
+.SH 警告
+.sp
+.LP
+\fBelfedit\fR 是一个专用于测试和开发 ELF 系统的工具。通过该工具，用户几乎可检查和更改目标文件中的每一部分 ELF 元数据。对于会产生无效或不可用 ELF 文件的编辑操作，该工具也会执行，不会做出提醒。用户应当了解 ELF 格式并知晓应遵守的规则和约定。使用 \fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fROracle Solaris 11.3 链接程序和库指南\fB》\fR中获取帮助。
+.sp
+.LP
+\fBelfedit\fR 允许用户更改目标文件中的 ELF 元数据，但用户无法了解或更改实际程序的代码。因此，以不符合文件实际内容的方式设置 ELF 属性（例如类型、大小、对齐方式等）可能会生成一个损坏的且不可用的输出目标文件。此类更改在测试链接程序组件时可能很有用，但在其他情况下应避免此类更改。
+.sp
+.LP
+较高级别的操作（例如，使用 \fBdyn:runpath\fR 命令更改目标文件的 \fBrunpath\fR）是安全的，在执行时不存在本节中叙述的此类风险。
+.SH 附注
+.sp
+.LP
+并非 \fBelfedit\fR 支持的每个 ELF 操作都可在每个 ELF 目标文件上成功执行。\fBelfedit\fR 受文件中现有的节制约。
+.sp
+.LP
+特别需要指出的是，\fBelfedit\fR 可能无法修改给定目标文件的 \fBrunpath\fR。要修改 \fBrunpath\fR，必须满足以下条件：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+动态字符串表中必须存在所需的字符串，或者，此节中必须有足够的预留空间可供添加新字符串使用。如果您的目标文件有一个字符串表预留区域，则 \fB\&.dynamic DT_SUNW_STRPAD\fR 元素的值表示该区域的大小。以下 \fBelfedit\fR 命令可用于检查此大小：
+.sp
+.in +2
+.nf
+% \fBelfedit -r -e 'dyn:tag DT_SUNW_STRPAD' file\fR
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+动态节必须已有一个 \fBrunpath\fR 元素，或者，必须存在可向其插入一个 runpath 元素的未使用的动态插槽。测试是否存在一个 \fBrunpath\fR：
+.sp
+.in +2
+.nf
+% \fBelfedit -r -e 'dyn:runpath' file\fR
+.fi
+.in -2
+.sp
+
+动态节使用一个类型为 \fBDT_NULL\fR 的元素终止在该节中找到的数组。终止 \fBDT_NULL\fR 无法更改，但是如果存在多个此元素，\fBelfedit\fR 可将其中一个转换为 \fBrunpath\fR 元素。测试是否有额外的动态插槽：
+.sp
+.in +2
+.nf
+% \fBelfedit -r -e 'dyn:tag DT_NULL' file\fR
+.fi
+.in -2
+.sp
+
+.RE
+.sp
+.LP
+早期的目标文件不具备完成此类操作所需的额外空间。Solaris Express Community Edition 发行版中引入了执行此类操作所需的空间。
+.sp
+.LP
+如果操作失败，使用 \fB-d\fR (debug) 选项输出的详细信息可帮助揭示失败原因。
+.sp
+.LP
+\fBelfedit\fR 模块遵循一个约定，根据该约定，直接操作 ELF 结构中的某个字段的命令与该字段的名称相同，但实现较高级别概念的命令不使用此命名方式。例如，用于操作 ELF 头中的 \fBe_flags\fR 字段的命令名为 \fBehdr:e_flags\fR。因此，您通常可以通过确定模块并查找具有相应字段名称的命令来查找修改 ELF 字段的命令。

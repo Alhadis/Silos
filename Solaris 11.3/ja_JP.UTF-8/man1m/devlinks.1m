@@ -1,0 +1,284 @@
+'\" te
+.\" Copyright (c) 2002, 2011, Oracle and/or its affiliates. All rights reserved.
+.TH devlinks 1M "2002 年 7 月 15 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+devlinks \- 各種デバイスや擬似デバイス用の /dev エントリの追加
+.SH 形式
+.LP
+.nf
+\fB/usr/sbin/devlinks\fR [\fB-d\fR] [\fB-r\fR \fIrootdir\fR] [\fB-t\fR \fItable-file\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBdevfsadm\fR(1M) が \fB/dev\fR と \fB/devices\fR 用の優先コマンドとなったため、\fBdevlinks\fR の代わりに使用するようにしてください。
+.sp
+.LP
+\fBdevlinks\fR は、\fB/dev\fR ディレクトリツリーから \fB/devices\fR ディレクトリツリーの下の実際のブロックおよび文字特殊デバイスノードへのシンボリックリンクを作成します。リンクは、\fItable-file\fR (デフォルトでは \fB/etc/devlink.tab\fR) にある指定に従って作成されます。
+.sp
+.LP
+\fBdevlinks\fR はシステムが再構成ブートされるたびに呼び出され、\fBdrvconfig\fR(1M) の実行後にのみ実行できます。
+.sp
+.LP
+\fItable-file\fR (通常は \fB/etc/devlink.tab\fR) は、レコードごとに 1 行の ASCII ファイルです。コメント行が許可されており、ハッシュ文字 (「\fB#\fR」) が最初の文字として含まれている必要があります。各エントリには少なくとも 2 つのフィールドが含まれている必要がありますが、3 つのフィールドを含めることができます。フィールドは単一 TAB 文字で区切られます。
+.sp
+.LP
+フィールドは次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdevfs-spec\fR\fR
+.ad
+.RS 18n
+.rt  
+devinfo ノードへのリンクを作成するための指定。この指定は 1 つ以上のキーワード - 値ペアから構成され、キーワードと値は等号 (「\fB=\fR」) で区切られ、キーワード - 値ペアは互いにセミコロンで区切られます。
+.sp
+使用できるキーワードは次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fItype\fR\fR
+.ad
+.RS 12n
+.rt  
+devinfo デバイスタイプ。使用できる値は \fBddi_create_minor_node\fR(9F) で指定されています
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIname\fR\fR
+.ad
+.RS 12n
+.rt  
+ノードの名前。これは、\fB/devices\fR ツリーエントリ名の、最初の「\fB@\fR」または「\fB:\fR」文字の前にある部分です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIaddr\fR[\fIn\fR]\fR
+.ad
+.RS 12n
+.rt  
+ノード名のアドレス部分。これは、ノード名の「\fB@\fR」文字と「\fB:\fR」文字の間にある部分です。ノード名にはアドレス部分がない場合があり、多くの擬似デバイスノードがその例です。\fIaddr\fR のあとが数字の場合は、アドレスフィールドのコンマ区切りのサブフィールドに対応します。\fIaddr1\fR は最初のサブフィールドに一致し、\fIaddr2\fR は 2 番目に一致し、以下同様です。\fIaddr0\fR は \fIaddr\fR と同じで、フィールド全体に一致します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIminor\fR[\fIn\fR]\fR
+.ad
+.RS 12n
+.rt  
+ノード名のマイナー部分 - 名前の「\fB:\fR」のあとの部分。上の \fIaddr\fR と同じく、\fIminor\fR キーワードのあとの数字は、一致するサブフィールドを指定します。
+.RE
+
+これら 4 つの指定のうち、\fItype\fR 指定だけは常に存在している必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIname\fR\fR
+.ad
+.RS 18n
+.rt  
+devinfo ノードに対応する \fB/dev\fR リンクの指定。\fBdevlinks\fR はこのフィールドによって、検出した \fB/devices\fR ノードに一致する \fB/dev\fR 名を判別できます。このフィールドの指定には、\fB/devices\fR 名の一部を \fB/dev\fR 名に含めたり\fI\fR、ノード名の作成時にカウンタを使用したりできるように、エスケープシーケンスを使用します。名前の作成時にカウンタを使用する場合は、カウンタより前にある名前部分は完全に指定されている必要があり、\fB/dev/\fR サブディレクトリ内で一致するすべての名前 (カウンタを含む) は、同じデバイスのサブデバイスとみなされます。これは、それらがすべて \fB/devices/\fR ツリーの下の同じディレクトリ (\fBname\fR および \fBaddress\fR) を指すはずであることを意味します。
+.sp
+使用可能なエスケープシーケンスは次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\D\fR\fR
+.ad
+.RS 7n
+.rt  
+対応する devinfo ノード名の \fBdevice-name\fR (名前) 部分に置換されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\A\fR\fIn\fR\fR
+.ad
+.RS 7n
+.rt  
+対応する devinfo ノード名の \fBaddress\fR コンポーネントの \fIn\fR 番目のコンポーネントに置換されます。サブコンポーネントはコンマで区切られ、サブコンポーネント \fB0\fR は \fBaddress\fR コンポーネントの全体です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\M\fR\fIn\fR\fR
+.ad
+.RS 7n
+.rt  
+対応する devinfo ノード名の \fBminor\fR コンポーネントの \fIn\fR 番目のサブコンポーネントに置換されます。サブコンポーネントはコンマで区切られ、サブコンポーネント \fB0\fR は \fBminor\fR コンポーネント全体です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\N\fR\fIn\fR\fR
+.ad
+.RS 7n
+.rt  
+\fIn\fR から始まる「カウンタ」の値に置換されます。各 dev-spec に使用できるカウンタは 1 つだけで、カウンタ値には既存のリンク名と衝突しない最小限の値が選択されます。
+.sp
+dev-spec では、\fBcounter\fR シーケンスのあとに数字を続けてはいけません (明示的に、または別のエスケープシーケンス展開の結果として)。これが発生した場合、既存の \fB/dev\fR 名を正確に解析できなくなるため、既存のリンクをそれらのカウンタエントリに正しく一致させることができなくなります。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIextra-dev-link\fR\fR
+.ad
+.RS 18n
+.rt  
+最初の \fB/dev\fR リンク (フィールド 2 で指定) を指す追加 \fB/dev\fR リンクの指定 (オプション)。このフィールドには、(\fIdev-spec\fR フィールドで説明した) \fBcounter\fR エスケープシーケンスを含めることができますが、ほかのエスケープシーケンスは含めることができません。これによって、特定の \fB/dev\fR 名のエイリアスを指定できます。
+.RE
+
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.RS 17n
+.rt  
+デバッグモード - 検出されたすべての \fBdevinfo\fR ノードを出力し、どのようなリンクが作成される予定かを示しますが、何も行いません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIrootdir\fR\fR
+.ad
+.RS 17n
+.rt  
+デバイスノードやリンクが作成される \fB/dev\fR および \fB/devices\fR ディレクトリのルートとして、\fIrootdir\fR を使用します。ルートディレクトリを変更しても \fB/etc/devlink.tab\fR デフォルトテーブルの場所は変更されず、\fB-t\fR オプションに指定されたファイル名にルートディレクトリは適用されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fItable-file\fR\fR
+.ad
+.RS 17n
+.rt  
+作成する必要のあるリンクを指定するために \fBdevlinks\fR によって使用されるテーブルファイルを設定します。このオプションを指定しない場合は \fB/etc/devlink.tab\fR が使用されます。このオプションを使用することで、\fBdevlinks\fR で作成したいリンクタイプだけをコマンドファイル内に指定して \fBdevlinks\fR に渡すことができるため、特定の作業だけを実行するように \fBdevlinks\fR に指示できます。
+.RE
+
+.SH エラー
+.sp
+.LP
+\fBdevlinks\fR は \fItable-file\fR の行にエラーを検出すると、標準出力に警告メッセージを出力し、エラールールに指定されたアクションを実行せずに \fItable-file\fR 内の次の行に進みます。
+.sp
+.LP
+ファイルシステム関連の理由によりリンクを作成できない場合は、エラーメッセージを出力し、現在のルールで続行します。
+.sp
+.LP
+必要なデータを読み取れない場合は、エラーメッセージを出力し、次の \fItable-file\fR 行に進みます。
+.SH 使用例
+.LP
+\fB例 1 \fR\fB/etc/devlink.tab\fR フィールドを使用する
+.sp
+.LP
+\fB/etc/devlink.tab\fR フィールドの例を示します。
+
+.sp
+.in +2
+.nf
+type=pseudo;name=win	win\eM0
+type=ddi_display	framebuffer/\eM0	fb\eN0
+.fi
+.in -2
+
+.sp
+.LP
+最初の例では、タイプが \fBpseudo\fR、名前コンポーネントが \fBwin\fR のすべてのデバイスが \fB/dev/win\fR\fIx\fR (\fIx\fR は \fIdevinfo-name\fR のマイナーコンポーネント) にリンクされることを示します (\fBwin\fR ドライバの場合は常に単一の数字)。
+
+.sp
+.LP
+2 番目の例では、タイプ \fBddi_display\fR のすべての devinfo ノードが、\fB/dev/framebuffer\fR ディレクトリの下のエントリ (名前が \fB/devices\fR 名のマイナーコンポーネント全体と同じもの) にリンクされることを示します。さらに、\fB/dev/fb\fR\fIn\fR から \fB/dev/framebuffer\fR の下のエントリを指し示す追加リンクが作成されます。このエントリでは、名前の末尾でカウンタが使用されます。
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/dev\fR\fR
+.ad
+.RS 20n
+.rt  
+一般用途の各種デバイスのエントリ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/devices\fR\fR
+.ad
+.RS 20n
+.rt  
+デバイスノード
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/devlink.tab\fR\fR
+.ad
+.RS 20n
+.rt  
+デフォルトルールファイル
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBdevfsadm\fR(1M), \fBattributes\fR(5), \fBdevfs\fR(7FS), \fBddi_create_minor_node\fR(9F)
+.SH 使用上の留意点
+.sp
+.LP
+互いに矛盾するリンク指定や決して一致しない指定を構築することは、非常に簡単です。プログラムはこうした状態をチェックしません。

@@ -1,0 +1,120 @@
+'\" te
+.\" Copyright (c) 2009, 2011, Oracle and/or its affiliates.All rights reserved.
+.TH if_mpadm 1M "2009 年 1 月 5 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+if_mpadm \- 管理 IP 多路径组中的接口
+.SH 用法概要
+.LP
+.nf
+\fBif_mpadm\fR \fB-d\fR | \fB-r\fR \fIifname\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBif_mpadm\fR 实用程序可管理 IP 多路径 (IP Multipathing, IPMP) 组中的 IP 接口。目前，管理限于使 IP 接口脱机和撤消之前的脱机操作。
+.sp
+.LP
+当某 IP 接口脱机后，流经该 IP 接口的所有 IP 数据通信都将移到 IPMP 组中的其他 IP 接口。此外，在该 IP 接口上托管的所有 \fBUP\fR IP 地址也将停用，从而会导致 \fBin.mpathd\fR(1M) 停止在该 IP 接口上进行基于探测器的故障检测。因此，脱机 IP 接口将不再用于任何传入或传出 IP 通信。只能使 IPMP 组中的 IP 接口脱机。如果该 IP 接口是 IPMP 组中最后一个正常工作的接口，则脱机操作将失败。
+.sp
+.LP
+撤消脱机操作后，在该 IP 接口上托管的所有 IP 地址都将处于 \fBUP\fR 状态，并且供 \fBin.mpathd\fR 用于进行基于探测器的故障检测。此外，如果该 IP 地址处于活动状态（请参见 \fBin.mpathd\fR(1M)），则它将重新用于发送和接收 IPMP 组的 IP 数据通信。请注意，并非所有脱机操作都可以撤消。例如，\fBin.mpathd\fR 可能已使某 IP 地址脱机，因为其硬件地址在 IPMP 组中不是唯一的。\fBipmpstat\fR 实用程序可以用于确定某 IP 接口的脱机原因，识别组中的哪些 IP 接口正用于传入和传出 IP 通信等等；请参见 \fBipmpstat\fR(1M)。
+.SH 选项
+.sp
+.LP
+\fBif_mpadm\fR 实用程序支持下列选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIifname\fR\fR
+.ad
+.RS 13n
+.rt  
+使通过 \fIifname\fR 指定的 IP 接口脱机。如果 \fIifname\fR 不属于某 IPMP 组或者脱机会导致该 IPMP 组丢失网络连接，则操作将失败。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIifname\fR\fR
+.ad
+.RS 13n
+.rt  
+撤消以前使通过 \fIifname\fR 指定的 IP 地址脱机的操作。如果 \fIifname\fR 未脱机，操作将失败。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR使 IP 接口脱机
+.sp
+.LP
+以下命令可以使 IP 接口 \fBunder0\fR 脱机，从而会导致通过该接口发送和接收的所有 IP 数据包将由组中的其他 IP 接口处理。
+
+.sp
+.in +2
+.nf
+example% \fBif_mpadm -d under0\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR撤消之前的脱机操作
+.sp
+.LP
+使用以下命令可以撤消上述示例中的操作：
+
+.sp
+.in +2
+.nf
+example% \fBif_mpdadm -r under0\fR
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Uncommitted（未确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBifconfig\fR(1M)、\fBin.mpathd\fR(1M)、\fBipmpstat\fR(1M)、\fBattributes\fR(5)
+.SH 诊断
+.sp
+.LP
+无法脱机：在其 IPMP 组中不存在任何其他正常工作的接口。
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+此消息表示使该 IP 接口脱机会导致 IPMP 组失去网络连接。
+.RE
+
+.sp
+.LP
+无法脱机：非物理接口或者不属于 IPMP 组
+.RS +4
+\fB描述：\fR
+.sp
+.LP
+这表示该 IP 接口不是 IPMP 组中的底层接口，因此无法使其脱机。
+.RE
+

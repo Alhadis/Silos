@@ -1,0 +1,72 @@
+'\" te
+.\" Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
+.TH in.dlmpd 1M "18 December 2012" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+in.dlmpd \- DLMP aggregation probing daemon
+.SH SYNOPSIS
+.LP
+.nf
+\fB/usr/lib/inet/in.dlmpd\fR
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBin.dlmpd\fR daemon performs probe-based failure and repair detection for DLMP mode aggregations.
+.sp
+.LP
+By default, the probe-based failure and repair detection for all DLMP aggregations is enabled. It can be disabled per-aggregation by setting the "probe-enabled" link property of the aggregation to "false". In that case, the health of the underlying ports in the specific aggregation will be solely relying on the link state of the port.
+.sp
+.LP
+Even with the probe-based failure detection enabled, probe-based failure and repair detection will not start until administrator configuring the "probe-ip" link property for the aggregation. This link property configures the list of the source IP addresses and the optional target IP addresses. IP addresses from this list, if configured (as plumbed primary or as VNICs), will be used by \fBin.dlmpd\fR for ICMP probing.  Both IPv4 and IPv6 are supported. However, note that \fBin.dlmpd\fR will ignore IPv6 addresses that are not link-local.
+.sp
+.LP
+Within a DLMP aggregation, each source IP address matching the "probe-ip" configuration is associated with an underlying port, through which the inbound as well as outbound traffic (including the ICMP probes and their acks) of the source IP address is sent/received. The \fBin.dlmpd\fR daemon periodically sends out unicast ICMP packets directed at the configured targets; or if no targets are configured, \fBin.dlmpd\fR discovers the targets first by sending out ICMP multicast packets with the given source IP address. By monitoring the acknowledgement or the loss of the ICMP acks, the \fBin.dlmpd\fR daemon is able to determine the health of the port the source IP address is associated with.  The port will be claimed as "ICMP failed" if all the targets for that particular port become unreachable. The port will be marked as "ICMP active" if at least one of the targets is reachable from that port through ICMP probes.
+.sp
+.LP
+Depends on how the "probe-ip" link property is configured and how the configured source IP addresses are associated among the aggregation ports, there may be ports that are not associated with any configured "probe-ip" source IP address.
+.sp
+.LP
+The health of those ports is determined by a different probe mechanism: transitive probes. The \fBin.dlmpd\fR daemon will periodically send/receive proprietary layer-2 probes between the "ICMP active" ports and the ports that are not doing ICMP probing. If a port is able to reach any "ICMP active" port, it is claimed to be on the same "island" as the "ICMP active" port and is considered to be active as well. This is called as "L2 active".
+.sp
+.LP
+A port is claimed to be "failed" if it is neither "ICMP active" nor "L2 active"; it is claimed to be "active" (or recovered) if it is either "ICMP active" or "L2 active". 
+.sp
+.LP
+When all the underlying ports are in the "failed" state, a single underlying port will be designated as "ICMP prober" in a round-robin manner by the \fBin.dlmpd\fR daemon to detect potential recovery. All the ICMP probes will be sent through this port only. The transitive probing will continue as before. Once the "ICMP prober" detects an ICMP probe success, that port becomes "active", together with all the other ports in its island.
+.SS "SMF Management"
+.sp
+.LP
+The \fBin.dlmpd\fR daemon  service is managed by the service management facility, \fBsmf\fR(5), under the service identifier: 
+.sp
+.in +2
+.nf
+svc:/network/dlmp:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Administrative actions on this service, such as enabling, disabling, or requesting restart, can be performed using \fBsvcadm\fR(1M).
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/core-os
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBdladm\fR(1M), \fBdlstat\fR(1M), \fBsvcadm\fR(1M), \fBattributes\fR(5), \fBsmf\fR(5), \fBicmp\fR(7P), \fBicmp6\fR(7P)

@@ -1,0 +1,523 @@
+'\" te
+.\" Copyright (c) 2008, 2013, Oracle and/or its affiliates.All rights reserved.
+.TH ldaplist 1 "2013 年 11 月 19 日" "SunOS 5.11" "用户命令"
+.SH 名称
+ldaplist \- 使用所配置的配置文件从 LDAP 目录搜索并列出命名信息
+.SH 用法概要
+.LP
+.nf
+\fB/usr/bin/ldaplist\fR [\fB-dlv\fR] [\fB-h\fR \fILDAP_server\fR[\fB:\fR\fIserverPort\fR] [\fB-M\fR \fIdomainName\fR] 
+   [\fB-N\fR \fIprofileName\fR] [\fB-a\fR \fIauthenticationMethod\fR] [\fB-P\fR \fIcertifPath\fR] 
+   [\fB-D\fR \fIbindDN\fR] [\fB-w\fR \fIbindPassword\fR] [\fB-j\fR \fIpasswdFile\fR]]
+   [\fIdatabase\fR [\fIkey\fR]...]
+.fi
+
+.LP
+.nf
+\fB/usr/bin/ldaplist\fR \fB-g\fR
+.fi
+
+.LP
+.nf
+\fB/usr/bin/ldaplist\fR \fB-h\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+如果指定了 \fB-h\fR \fILDAP_server\fR\fB[:\fR\fIserverPort\fR\fB]\fR 选项，则 \fBldaplist\fR 将建立到该选项指定的服务器的连接，来获取 \fB-N\fR 选项指定的 \fIDUAProfile\fR。然后，\fBldaplist\fR 从由所获得的配置描述的目录列出信息。
+.sp
+.LP
+缺省情况下（如果未指定 \fB-h\fR \fILDAP_server\fR\fB[:\fR\fIserverPort\fR\fB]\fR 选项），该实用程序将从 LDAP 目录服务搜索并列出命名信息，该目录服务是在客户端初始化阶段在 \fBldapclient\fR(1M) 生成的 LDAP 配置文件中定义的。要以缺省模式使用该实用程序，必须预先设置 Oracle Solaris LDAP 客户端。 
+.sp
+.LP
+database 是一个容器名称或一个数据库名称，如 \fBnsswitch.conf\fR(4) 中所定义。容器是包含命名服务信息的目录信息树 (Directory Information Tree, DIT) 中的非叶条目。容器名称是容器相对于 \fBdefaultSearchBase\fR 的 LDAP 相对标识名 (Relative Distinguished Name, RDN)，如配置文件中所定义。例如，对于名为 \fBou=people\fR 的容器，数据库名称是在 \fBnsswitch.conf\fR 中指定的数据库。该数据库映射到一个容器，例如，\fBpasswd\fR 映射到 \fBou=people\fR。如果指定了一个无效的数据库，则它将映射到一个通用容器，例如 \fBnisMapName=name\fR。
+.sp
+.LP
+key 是要在数据库中搜索的属性值。可以指定要在同一数据库中搜索的多个 key。可以通过两种方式中的任一方式来指定 key：\fIattribute\fR=\fIvalue\fR 或 \fIvalue\fR。在第一种情况下，\fBldaplist\fR 将搜索 key 传递到服务器。在后一种情况下，将根据指定数据库的方式分配属性。如果 database 是一个容器名称，则会使用 “\fBcn\fR” 属性类型。如果 database 是如在 \fBnsswitch.conf\fR 中定义的一个有效数据库名称，则会使用预定义的属性类型（请参见下表）。如果 database 是一个无效的数据库名称，则 \fBcn\fR 将用作属性类型。
+.sp
+.LP
+\fBldaplist\fR 实用程序依赖于在 \fIRFC 2307bis\fR（当前为 IETF 草稿）中定义的模式。LDAP 服务器上存储的数据必须基于该模式来存储，除非配置文件包含模式映射定义。有关模式映射的更多信息，请参见 \fBldapclient\fR(1M)。下表列出了当没有在 key 中定义时，将使用的从数据库名称到容器的缺省映射、LDAP 对象类以及属性类型。
+.sp
+.in +2
+.nf
+Database     Object Class     Attribute Type    Container
+
+aliases      mailGroup        cn                ou=Aliases
+automount    nisObject        cn                automountMapName=auto_*
+bootparams   bootableDevice   cn                ou=Ethers
+ethers       ieee802Device    cn                ou=Ethers
+group        posixgroup       cn                ou=Group
+hosts        ipHost           cn                ou=Hosts
+ipnodes      ipHost           cn                ou=Hosts
+netgroup     ipNetgroup       cn                ou=Netgroup
+netmasks     ipNetwork        ipnetworknumber   ou=Networks
+networks     ipNetwork        ipnetworknumber   ou=Networks
+passwd       posixAccount     uid               ou=People
+protocols    ipProtocol       cn                ou=Protocols
+publickey    nisKeyObject     uidnumber         ou=People
+                              cn                ou=Hosts
+rpc          oncRpc           cn                ou=Rpc
+services     ipService        cn                ou=Services
+printers     printerService   printer-uri       ou=printers
+auth_attr    SolarisAuthAttr  cn                ou=SolarisAuthAttr
+prof_attr    SolarisProfAttr  cn                ou=SolarisProfAttr
+exec_attr    SolarisExecAttr  cn                ou=SolarisProfAttr
+user_attr    SolarisUserAttr  uid               ou=People
+projects     SolarisProject   SolarisProjectID  ou=projects
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下数据库只有当系统配置有 Trusted Extensions 时才可用：
+.sp
+.in +2
+.nf
+tnrhtp      ipTnetTemplate   ipTnetTemplateName ou=ipTnet
+tnrhdb      ipTnetHost       ipTnetNumber       ou=ipTnet
+.fi
+.in -2
+.sp
+
+.RS +4
+.TP
+.ie t \(bu
+.el o
+对于 \fBautomount\fR 数据库 \fBauto_*\fR，在容器列中会呈现 \fBauto_home\fR、\fBauto_direct\fR 等等。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+对于 \fBpublickey\fR 数据库，如果 key 以数字开头，则它将被解释为一个 uid 编号。如果 key 以非数字开头，则它将被解释为一个主机名。
+.RE
+.sp
+.LP
+\fBldaplist\fR 实用程序支持通过在 key 中使用通配符 “\fB*\fR” 执行子字符串搜索。例如，“\fBmy*\fR” 将匹配以 “\fBmy\fR” 开头的任何字符串。在某些 shell 环境中，包含通配符的 key 可能需要括在引号中。
+.sp
+.LP
+如果没有指定 key，则当前搜索 \fBbaseDN\fR 中的所有容器都将列出。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fIauthenticationMethod\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定验证方法。缺省值是配置文件中配置的值。支持的验证方法包括：
+.sp
+.in +2
+.nf
+simple
+sasl/CRAM-MD5
+sasl/DIGEST-MD5
+tls:simple
+tls:sasl/CRAM-MD5
+tls:sasl/DIGEST-MD5
+.fi
+.in -2
+.sp
+
+选择 \fBsimple\fR 将导致口令以明文形式在网络中发送。强烈建议不要使用该方法。 
+.sp
+此外，如果客户端配置有不使用验证的配置文件，也就是说，如果 \fIcredentialLevel\fR 属性设置为 \fBanonymous\fR 或者 \fIauthenticationMethod\fR 设置为 \fBnone\fR，则用户必须使用此选项来提供验证方法。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+列出指定数据库的属性而不是条目。缺省情况下会列出条目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR \fIbindDN\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定对所请求的数据库具有读取权限的条目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR\fR
+.ad
+.sp .6
+.RS 4n
+列出数据库映射。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.sp .6
+.RS 4n
+列出数据库映射。
+.sp
+此选项已过时。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR \fILDAP_server[:serverPort]\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定从中读取条目的 LDAP 服务器的地址（或名称）和端口。系统会使用 \fBnsswitch.conf\fR 文件中指定的当前命名服务。端口的缺省值为 \fB389\fR，除非在验证方法中指定了 TLS。在这种情况下，缺省 LDAP 服务器端口号为 \fB636\fR。
+.sp
+用于指定 IPv6 的地址和端口号的格式如下：
+.sp
+.in +2
+.nf
+[\fIipv6_addr\fR]:\fIport\fR
+.fi
+.in -2
+.sp
+
+要为 IPv4 指定地址和端口号，请使用以下格式：
+.sp
+.in +2
+.nf
+\fIipv4_addr\fR:\fIport\fR
+.fi
+.in -2
+.sp
+
+如果指定了主机名，请使用以下格式：
+.sp
+.in +2
+.nf
+\fIhost_name\fR:\fIport\fR
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-j\fR \fIpasswdFile\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定一个文件，该文件包含绑定 DN 的口令或包含 SSL 客户端密钥数据库的口令。要保护口令，请在脚本中使用此选项，并将口令存放在安全文件中。 
+.sp
+此选项与 \fB-w\fR 选项互斥。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+列出与搜索条件匹配的每个条目的所有属性。缺省情况下，\fBldaplist\fR 仅列出所找到的条目的标识名。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR \fIdomainName\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定由指定服务器提供服务的域名称。如果未指定此选项，则使用缺省域名称。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR \fIprofileName\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 DUAProfile 名称。系统假定具有此名称的配置文件存在于由 \fB-H\fR 选项指定的服务器上。缺省值为 default。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIcertifPath\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定通向证书数据库位置的证书路径。该值为安全数据库文件所在的路径。该值用于 TLS 支持，TLS 支持在 \fIauthenticationMethod\fR 和 \fIserviceAuthenticationMethod\fR 属性中指定。缺省值为 \fB/var/ldap\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-w\fR \fIbindPassword\fR\fR
+.ad
+.sp .6
+.RS 4n
+要用于验证 \fIbindDN\fR 的口令。如果缺少此参数，则命令会提示输入口令。LDAP 不支持空口令。 
+.sp
+当使用 \fB-w\fR \fIbind_password\fR 指定用于验证的口令时，系统的其他用户可以通过 \fBps\fR 命令在脚本文件中或者在 shell 历史记录中看到口令。 
+.sp
+如果提供 \fB-\fR 值作为口令，则命令会提示输入口令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置详细模式。\fBldaplist\fR 实用程序还输出用来搜索条目的过滤器。过滤器的前缀为 “\fB+++\fR”。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR列出主机数据库中的所有条目
+.sp
+.LP
+以下示例列出 \fBhosts\fR 数据库中的所有条目： 
+
+.sp
+.in +2
+.nf
+example% \fBldaplist hosts\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR列出非标准数据库 \fBou=new\fR 中的所有条目
+.sp
+.LP
+以下示例列出非标准数据库中的所有条目：
+
+.sp
+.in +2
+.nf
+example% \fBldaplist ou=new\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR在 \fBpasswd\fR 数据库中查找 \fBuser1\fR
+.sp
+.LP
+以下示例在 \fBpasswd\fR 数据库中查找 \fBuser1\fR：
+
+.sp
+.in +2
+.nf
+example% \fBldaplist passwd user1\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR在 \fBservices\fR 数据库中查找服务端口为 \fB4045\fR 的条目
+.sp
+.LP
+以下示例在 \fBservices\fR 数据库中查找服务端口为 \fB4045\fR 的条目：
+
+.sp
+.in +2
+.nf
+example% \fBldaplist services ipServicePort=4045\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR在 \fBpasswd\fR 数据库中查找用户名以 \fBnew\fR 开头的所有用户
+.sp
+.LP
+以下示例在 \fBpasswd\fR 数据库中查找用户名以 \fBnew\fR 开头的所有用户：
+
+.sp
+.in +2
+.nf
+example% \fBldaplist passwd 'new*'\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR列出 \fBhosts\fR 数据库的属性
+.sp
+.LP
+以下示例列出 \fBhosts\fR 数据库的属性：
+
+.sp
+.in +2
+.nf
+example% \fBldaplist -d hosts\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR在 \fBpasswd\fR 数据库中查找 \fBuser1\fR
+.sp
+.LP
+以下示例在 \fBpasswd\fR 数据库中查找 \fBuser1\fR。显式指定了一个 LDAP 服务器。
+
+.sp
+.in +2
+.nf
+example% \fBldaplist -H 10.10.10.10:3890 \e 
+            -M another.domain.name -N special_duaprofile \e
+            -D "cn=directory manager" -w secret \e
+            user1\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 8 \fR列出用户的所有属性
+.sp
+.LP
+以下示例列出了 \fBuser1\fR 的 \fBpasswd\fR、\fBshadow\fR 和 \fBuser_attr\fR 属性。使用 \fBSolarisAttrKeyValue\fR 属性列出未限定的 \fBuser_attr\fR 条目。使用 \fBSolarisUserAttrEntry\fR 属性将限定的条目列在单独行上。
+
+.sp
+.in +2
+.nf
+example% ldaplist -l passwd user1
+        dn: uid=u14,ou=users,dc=system,dc=com
+        objectClass: posixAccount
+		objectClass: shadowAccount
+		objectClass: account
+		objectClass: top
+		objectClass: SolarisUserAttr
+		objectClass: SolarisQualifiedUserAttr
+		cn: user1
+		uidnumber: 317
+		gidnumber: 10
+		homedirectory: /export/home/user1
+		loginshell: /usr/bin/bash
+		uid: user1
+		userPassword: {crypt}UP
+		shadowInactive: 365
+		shadowExpire: 24472
+		shadowFlag: 0
+		SolarisUserType: normal
+		SolarisAttrKeyValue: profiles=Basic Solaris User
+		SolarisUserAttrEntry: leonardo:::profiles=System Administrator
+	    SolarisUserAttrEntry: @mynetgroup:::\
+		      profiles=Network Administrator;roles=admin
+    
+  
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+成功匹配了某些条目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+成功搜索了表但没有找到匹配项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+出现错误。输出了错误消息。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/ldap/ldap_client_file\fR\fR
+.ad
+.br
+.na
+\fB\fB/var/ldap/ldap_client_cred\fR\fR
+.ad
+.RS 30n
+.rt  
+包含客户端的 LDAP 配置的文件。不要手动修改这些文件。其内容不保证是用户可读的。要更新这些文件，请使用 \fBldapclient\fR(1M)
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/network/nis
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBldapadd\fR(1)、\fBldapdelete\fR(1)、\fBldapmodify\fR(1)、\fBldapmodrdn\fR(1)、\fBldapsearch\fR(1)、\fBidsconfig\fR(1M)、\fBldap_cachemgr\fR(1M)、\fBldapaddent\fR(1M)、\fBldapclient\fR(1M)、\fBresolv.conf\fR(4)、\fBattributes\fR(5)、\fBldap\fR(5)
+.SH 附注
+.sp
+.LP
+\fIRFC 2307bis\fR 是一个处于草稿阶段的 IETF 信息文档，定义了将 \fBLDAP\fR 用作命名服务的方法。 
+.sp
+.LP
+当前，\fBlibldap.so.5\fR 不支持 StartTLS，因此所提供的端口号指的是在打开 TLS 期间使用的端口，而不是用作 StartTLS 序列的一部分的端口。例如，\fB-h foo:1000 -a tls:simple\fR 指的是在主机 \fBfoo\fR 上的原始 TLS 打开端口 1000，而不是在不安全端口 1000 上打开的 StartTLS 序列。如果端口 1000 是不安全的，则不会建立连接。

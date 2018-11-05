@@ -1,0 +1,206 @@
+'\" te
+.\" Copyright (c) 2010, 2011, Oracle and/or its affiliates. All rights reserved.
+.TH datadm 1M "2011 年 12 月 21 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+datadm \- DAT 静的レジストリファイルの保守
+.SH 形式
+.LP
+.nf
+\fB/usr/bin/datadm\fR [\fB-v\fR] [\fB-u\fR] [\fB-a\fR service_provider.conf] 
+     [\fB-r\fR service_provider.conf]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBdatadm\fR ユーティリティーは、DAT 静的レジストリファイル \fBdat.conf\fR(4) を保守します。
+.sp
+.LP
+uDAPL サービスプロバイダはこの管理構成プログラムを使用して、\fBdat.conf\fR ファイルに対して自分自身を追加したり削除したりできます。
+.sp
+.LP
+サービスプロバイダがサポートするインタフェースアダプタを、インストール後のシステムに追加したり削除したりできます。\fBdatadm\fR を使用して、システムの現在の状態を反映するために \fBdat.conf\fR ファイルを更新できます。現在インストールされているすべてのサービスプロバイダの新しいインタフェースアダプタセットが再生成されます。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fBservice_provider.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBservice_provider.conf\fR(4) ファイル内の各デバイスエントリをインタフェースアダプタ (uDAPL コンシューマから使用できる、外部ネットワークへのインタフェース) のリストとして列挙します。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fBservice_provider.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBservice_provider.conf\fR(4) ファイル内のデバイスエントリに対応するインタフェースアダプタのリストを削除します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+システムの現在の状態を反映するために、DAT 静的レジストリ内に現在リストされているサービスプロバイダ用の最新のインタフェースアダプタセットで \fBdat.conf\fR を更新します。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+DAT 静的レジストリファイル \fBdat.conf\fR を表示します。 
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRデバイスエントリを列挙する
+.sp
+.LP
+次の例では、\fBservice_provider.conf\fR(4) ファイル内のデバイスエントリを、\fBdat.conf\fR(4) ファイル内にインタフェースアダプタとして列挙します。 
+
+.sp
+.LP
+デバイス \fBhermon\fR をサポートするサービスプロバイダライブラリが \fBSUNW\fR にあることを想定しています。\fBservice_provider.conf\fR(4) ファイルがディレクトリ \fB/usr/share/dat/SUNWudaplt.conf\fR 内にインストールされていて、次のようにエントリが 1 つだけ含まれています。
+
+.sp
+.in +2
+.nf
+driver_name=hermon u1.2 nonthreadsafe default\e
+    udapl_tavor.so.1 SUNW.1.0 ""
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBhermon\fR は、2 つのポートを備えた InfiniBand ホストチャネルアダプタです。どちらの IB ポートも単一 IB パーティション \fB0x8001\fR 内にあります。IB パーティションが作成され、(\fBp8001.ibd0\fR、\fBp8001.ibd1\fR という名前で) 各ポートに plumb されている場合は、2 つの IB パーティションインスタンスになります。IB パーティションデータリンクの作成方法の詳細については、\fBdladm\fR(1M) を参照してください。
+
+.sp
+.in +2
+.nf
+# \fBdladm show-part\fR
+
+LINK           PKEY      OVER       STATE      FLAGS
+p8001.ibd0     8001      ibd0       unknown    ----
+p8001.ibd1     8001      ibd1       unknown    ----
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次のコマンドを実行すると:
+
+.sp
+.in +2
+.nf
+# \fBdatadm -a /usr/share/dat/SUNWudaplt.conf\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+2 つの新しいエントリ (まだ存在していない場合) が \fB/etc/dat/dat.conf\fR ファイルに追加されます。
+
+.sp
+.in +2
+.nf
+p8001.ibd0 u1.2 nonthreadsafe default udapl_tavor.so.1 SUNW.1.0 ""
+"driver_name=hermon"
+p8001.ibd1 u1.2 nonthreadsafe default udapl_tavor.so.1 SUNW.1.0 ""
+"driver_name=hermon"
+.fi
+.in -2
+
+.LP
+\fB例 2 \fRシステムの現在の状態を反映するために \fBdat.conf\fR を更新する
+.sp
+.LP
+新しい IB パーティション \fB0x8002\fR が上の例に追加され、ホストチャネルアダプタのポート 1 が使用されます。パーティションリンク名が \fBp8002.ibd0\fR として指定された新しい IB パーティションがポート 1/パーティション \fB0x8002\fR 上に作成されると、3 つ目の IB パーティションインスタンス \fBp8002.ibd0\fR になります。
+
+.sp
+.in +2
+.nf
+# \fBdladm show-part\fR
+LINK           PKEY      OVER       STATE      FLAGS
+p8001.ibd0     8001      ibd0       unknown    ----
+p8001.ibd1     8001      ibd1       unknown    ----
+p8002.ibd0     8000      ibd0       unknown    ----
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBdatadm -u\fR コマンドを実行すると、新しいエントリが追加された状態で \fB/etc/dat/dat.conf\fR ファイルが更新され、システムの現在の状態が反映されます。
+
+.sp
+.LP
+\fBdatadm -v\fR が、\fB/etc/dat/dat.conf\fR ファイル内に現在 3 つの新しいエントリがあることを示しています。
+
+.sp
+.in +2
+.nf
+p8001.ibd0 u1.2 nonthreadsafe default udapl_tavor.so.1 SUNW.1.0 ""
+"driver_name=hermon" 
+p8001.ibd1 u1.2 nonthreadsafe default udapl_tavor.so.1 SUNW.1.0 ""
+"driver_name=hermon"
+p8002.ibd0 u1.2 nonthreadsafe default udapl_tavor.so.1 SUNW.1.0 ""
+"driver_name=hermon"
+.fi
+.in -2
+.sp
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/dat/dat.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+DAT 静的レジストリファイル
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/io/infiniband/udapl
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBdladm\fR(1M), \fBpkgadd\fR(1M), \fBpkgrm\fR(1M), \fBlibdat\fR(3LIB), \fBdat.conf\fR(4), \fBservice_provider.conf\fR(4), \fBattributes\fR(5)

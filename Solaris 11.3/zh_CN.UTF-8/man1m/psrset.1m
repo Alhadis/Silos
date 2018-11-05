@@ -1,0 +1,505 @@
+'\" te
+.\" Copyright (c) 2008, 2011, Oracle and/or its affiliates.All rights reserved.
+.TH psrset 1M "2008 年 2 月 25 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+psrset \- 处理器集的创建和管理
+.SH 用法概要
+.LP
+.nf
+\fBpsrset\fR \fB-a\fR [\fB-F\fR] \fIprocessor_set_id\fR \fIprocessor_id\fR...
+.fi
+
+.LP
+.nf
+\fBpsrset\fR \fB-b\fR \fIprocessor_set_id\fR \fIpid\fR [\fI/lwpid\fR]...
+.fi
+
+.LP
+.nf
+\fBpsrset\fR \fB-c\fR [\fB-F\fR] [\fIprocessor_id\fR]...
+.fi
+
+.LP
+.nf
+\fBpsrset\fR \fB-d\fR \fIprocessor_set_id\fR...
+.fi
+
+.LP
+.nf
+\fBpsrset\fR \fB-e\fR \fIprocessor_set_id\fR \fIcommand\fR [\fIargument(s)\fR]
+.fi
+
+.LP
+.nf
+\fBpsrset\fR \fB-f\fR \fIprocessor_set_id\fR
+.fi
+
+.LP
+.nf
+\fBpsrset\fR [\fB-i\fR] [\fIprocessor_set_id\fR]...
+.fi
+
+.LP
+.nf
+\fBpsrset\fR \fB-n\fR \fIprocessor_set_id\fR
+.fi
+
+.LP
+.nf
+\fBpsrset\fR \fB-p\fR [\fIprocessor_id\fR]...
+.fi
+
+.LP
+.nf
+\fBpsrset\fR [\fB-q\fR] [\fIpid\fR [\fI/lwpid\fR]]...
+.fi
+
+.LP
+.nf
+\fBpsrset\fR \fB-Q\fR [\fIprocessor_set_id\fR]...
+.fi
+
+.LP
+.nf
+\fBpsrset\fR \fB-r\fR [\fB-F\fR] \fIprocessor_id\fR...
+.fi
+
+.LP
+.nf
+\fBpsrset\fR \fB-u\fR \fIpid\fR [\fI/lwpid\fR]...
+.fi
+
+.LP
+.nf
+\fBpsrset\fR \fB-U\fR [\fIprocessor_set_id\fR]...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBpsrset\fR 实用程序可控制处理器集的管理。处理器集允许将进程或 LWP 绑定到处理器组，而非单个处理器。分配给处理器集的处理器只能运行已绑定到该处理器集的 LWP。
+.sp
+.LP
+如果已启用池，不能使用此命令来修改处理器处置。通过资源池工具使用 \fBpooladm\fR(1M) 和 \fBpoolcfg\fR(1M) 来修改处理器集配置。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 6n
+.rt  
+将指定的处理器分配给指定的处理器集。通过附加 \fB-F\fR 选项，在更改处理器集之前，所有绑定到指定处理器的 LWP 都将取消绑定。
+.sp
+该选项仅限具有 \fBPRIV_SYS_RES_CONFIG\fR 特权的用户使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.RS 6n
+.rt  
+将指定进程的所有或部分 \fBLWP\fR 绑定到指定处理器集。
+.sp
+绑定到处理器集的 LWP 仅限于在该集中的处理器上运行。进程只能被绑定到非空处理器集，即已分配有处理器的处理器集。
+.sp
+绑定将被继承，因此由绑定 LWP 创建的新 LWP 和进程将会具有相同的绑定。将交互式 shell 绑定到处理器，例如，绑定 shell 执行的所有命令。
+.sp
+该选项仅限具有 \fBPRIV_SYS_RES_CONFIG\fR 特权的用户使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 6n
+.rt  
+创建新的处理器集并显示新处理器集 \fBID\fR。通过附加 \fB-F\fR 选项，在将绑定到指定处理器的所有 LWP 分配给正在创建的处理器集之前，将会取消绑定这些 LWP。
+.sp
+如果指定了处理器列表，还会尝试将这些处理器分配给处理器集。如果分配成功，在将 \fBLWP\fR 绑定到处理器集之前，这些处理器会一直空闲。该选项仅限具有 \fBPRIV_SYS_RES_CONFIG\fR 特权的用户使用。
+.sp
+在某个给定时间只有有限数量的处理器集可以处于活动状态（已创建且未销毁）。该限制始终大于系统中的处理器数量。如果当最大数量的处理器集已处于活动状态时使用了 \fB-c\fR 选项，命令将失败。
+.sp
+当 \fBLC_MESSAGES\fR 语言环境类别指定 “C” 语言环境时，以下格式用于 \fB-c\fR 选项输出的第一行。在其他语言环境中，字符串 \fBcreated\fR、\fBprocessor\fR 和 \fBset\fR 可以替换为与该语言环境对应的更合适的字符串。
+.sp
+.in +2
+.nf
+"created processor set %d\en" \fIprocessor set ID\fR
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.RS 6n
+.rt  
+删除指定的处理器集，释放与之关联的所有处理器和进程。
+.sp
+该选项仅限具有 \fBPRIV_SYS_RES_CONFIG\fR 特权的用户使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.RS 6n
+.rt  
+在指定处理器集中执行命令（带可选参数）。
+.sp
+命令进程和任意子进程仅由处理器集中的处理器执行。
+.sp
+该选项仅限具有 \fBPRIV_SYS_RES_CONFIG\fR 特权的用户使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.RS 6n
+.rt  
+为指定处理器集内的所有处理器禁用中断。请参见 \fBpsradm\fR(1M)。
+.sp
+如果集中的某些处理器无法禁用其中断，其他处理器仍禁用其中断，则命令会报告错误，并返回非零退出状态。
+.sp
+该选项仅限具有 \fBPRIV_SYS_RES_CONFIG\fR 特权的用户使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fR
+.ad
+.RS 6n
+.rt  
+通过对绑定到指定处理器的所有线程取消绑定，强制执行指定的处理器集操作。只有 \fB-a\fR 或 \fB-r\fR 选项能与该选项结合使用。建议管理员为 \fBpbind\fR(1M) 使用 \fB-Q\fR 选项，以找出此类操作会影响哪些线程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.RS 6n
+.rt  
+显示分配给每个指定处理器集的处理器列表。如果未指定任何参数，会显示所有处理器集以及分配给它们的处理器的列表。如果未为 \fBpsrset\fR 命令指定选项，这也是缺省操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 6n
+.rt  
+为指定处理器集内的所有处理器启用中断。请参见 \fBpsradm\fR(1M)。
+.sp
+该选项仅限具有 \fBPRIV_SYS_RES_CONFIG\fR 特权的用户使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 6n
+.rt  
+显示指定处理器列表的处理器集分配。如果未指定任何参数，会指定系统中所有处理器的处理器集分配。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR\fR
+.ad
+.RS 6n
+.rt  
+显示指定进程或所有进程的处理器集绑定。如果一个进程由具有不同绑定的多个 \fBLWP\fR 组成，且未显式指定 LWP，则只显示其中一个绑定 \fBLWP\fR 的绑定。部分 LWP 的绑定可以通过将 “/lwpids” 附加到进程 \fBID\fR 来显示。可以使用 “-” 和 “,” 分隔符选择多个 LWP。请参见“示例”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Q\fR\fR
+.ad
+.RS 6n
+.rt  
+显示绑定到指定处理器集列表的 LWP，或者具有处理器集绑定的所有 LWP。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.RS 6n
+.rt  
+从其当前的处理器集中删除处理器列表。删除的处理器将返回常规处理器池。
+.sp
+可以使用 \fB-F\fR 选项向处理器集分配或者从中删除使用 \fBpbind\fR(1M) 绑定了 \fBLWP\fR 的处理器。
+.sp
+该选项仅限具有 \fBPRIV_SYS_RES_CONFIG\fR 特权的用户使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.RS 6n
+.rt  
+删除指定进程部分或所有 \fBLWP\fR 的处理器集绑定，从而允许它们在未通过 \fBpbind\fR 绑定到单个处理器时在任何联机处理器上执行。
+.sp
+具有 \fBPRIV_SYS_RES_CONFIG\fR 特权的用户可以从任何活动的处理器集取消绑定任何进程或 LWP。其他用户可以从没有设置 \fBPSET_NOESCAPE\fR 属性的处理器集取消绑定进程和 LWP。此外，用户必须具有控制受影响进程的权限，用户的实际或有效用户 ID 必须与目标进程的实际或已保存用户 ID 匹配。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-U\fR\fR
+.ad
+.RS 6n
+.rt  
+删除绑定到指定处理器集列表的所有 LWP 的绑定、或者在未指定任何参数时绑定到任意处理器集的所有 LWP 的绑定。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIpid\fR\fR
+.ad
+.RS 20n
+.rt  
+指定 \fIpid\fR 作为进程 \fBID\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIlwpid\fR\fR
+.ad
+.RS 20n
+.rt  
+要控制或查询的指定进程的 LWP\fBID\fR 集。选择 LWP \fBID\fR 的语法如下：
+.sp
+.in +2
+.nf
+2,3,4-8       LWP IDs 2, 3, and 4 through 8
+-4            LWPs whose IDs are 4 or below
+4-            LWPs whose IDs are 4 or above
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIprocessor_id\fR\fR
+.ad
+.RS 20n
+.rt  
+将 \fIprocessor_id\fR 指定为单个处理器编号（例如，\fB3\fR）、由空格分隔的多个处理器编号（例如，\fB1 2 3\fR）或者处理器编号的范围（例如，\fB1-4\fR）。也可以组合使用范围和单个或多个 \fIprocessor_id\fR（例如，\fB1‐3 5 7‐8 9\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIprocessor_set_id\fR\fR
+.ad
+.RS 20n
+.rt  
+将 \fIprocessor_set_id\fR 指定为处理器集 \fBID\fR。
+.RE
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 9n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBnon-0\fR
+.ad
+.RS 9n
+.rt  
+出现错误。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBpbind\fR(1M)、\fBpooladm\fR(1M)、\fBpoolcfg\fR(1M)、\fBpsradm\fR(1M)、\fBpsrinfo\fR(1M)、\fBprocessor_bind\fR(2)、\fBprocessor_info\fR(2)、\fBpset_bind\fR(2)、\fBpset_create\fR(2)、\fBpset_info\fR(2)、\fBsysconf\fR(3C)、\fBlibpool\fR(3LIB)、\fBattributes\fR(5)、\fBprivileges\fR(5)
+.SH 诊断
+.sp
+.LP
+以下输出表示指定进程不存在或者已退出：
+.sp
+.in +2
+.nf
+psrset: cannot query pid 31: No such process
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下输出表示用户没有权限绑定该进程：
+.sp
+.in +2
+.nf
+psrset: cannot bind pid 31: Not owner
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下输出表示用户无权分配该处理器：
+.sp
+.in +2
+.nf
+psrset: cannot assign processor 4: Not owner
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下输出表示指定处理器未联机或指定处理器不存在：
+.sp
+.in +2
+.nf
+psrset: cannot assign processor 8: Invalid argument
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下输出表示指定进程中的一个 \fBLWP\fR 绑定到一个处理器，不能绑定到不包含该处理器的处理器集：
+.sp
+.in +2
+.nf
+psrset: cannot bind pid 67: Device busy
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下输出表示指定处理器不能添加到处理器集：这可能是由于将 \fBLWP\fR 绑定到该处理器，或者因为该处理器无法与该集中的其他处理器结合在同一处理器集中，或者因为该处理器是当前处理器集中的最后一个处理器：
+.sp
+.in +2
+.nf
+psrset: cannot assign processor 7: Device busy
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下输出表示指定处理器集不存在：
+.sp
+.in +2
+.nf
+psrset: cannot execute in processor set 8: Invalid argument
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下输出表示系统中所允许的最大数量的处理器集已处于活动状态：
+.sp
+.in +2
+.nf
+psrset: cannot create processor set: Not enough space
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下输出表示池工具处于活动状态。 
+.sp
+.in +2
+.nf
+psrset: cannot assign processor 7: Operation not supported
+psrset: cannot bind pid 31: Operation not supported
+psrset: cannot bind pid 31: Operation not supported 
+psrset: could not create processor set: Operation not supported
+psrset: could not remove processor set 1: Operation not supported
+psrset: cannot exec in processor set 1: Operation not supported
+psrset: cannot remove processor 7: Operation not supported
+psrset: cannot unbind pid 31: Operation not supported
+.fi
+.in -2
+.sp
+

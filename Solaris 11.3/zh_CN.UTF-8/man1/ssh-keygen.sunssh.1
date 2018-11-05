@@ -1,0 +1,414 @@
+'\" te
+.\" To view license terms, attribution, and copyright for OpenSSH, the default path is /var/sadm/pkg/SUNWsshdr/install/copyright.If the Solaris operating environment has been installed anywhere other than the default, modify the given path to access the file at the installed location.
+.\" Portions Copyright (c) 2009, 2015, Oracle and/or its affiliates. All rights reserved.
+.TH ssh-keygen 1 "2015 年 3 月 6 日" "SunOS 5.11" "用户命令"
+.SH 名称
+ssh-keygen \- 生成验证密钥
+.SH 用法概要
+.LP
+.nf
+\fBssh-keygen\fR [\fB-q\fR] [\fB-b\fR \fIbits\fR ] \fB-t\fR \fItype\fR [\fB-N\fR \fInew_passphrase\fR] 
+     [\fB-C\fR \fIcomment\fR] [\fB-f\fR \fIoutput_keyfile\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-p\fR [\fB-P\fR \fIold_passphrase\fR] [\fB-N\fR \fInew_passphrase\fR] 
+     [\fB-f\fR \fIkeyfile\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-i\fR [\fB-f\fR \fIinput_keyfile\fR | \fIPKCS#11-URI\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-e\fR [\fB-f\fR \fIinput_keyfile\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-y\fR [\fB-f\fR \fIinput_keyfile\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-c\fR [\fB-P\fR \fIpassphrase\fR] [\fB-C\fR \fIcomment\fR] [\fB-f\fR \fIkeyfile\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-l\fR [\fB-f\fR \fIinput_keyfile\fR | \fIPKCS#11-URI\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-B\fR [\fB-f\fR \fIinput_keyfile\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-F\fR \fIhostname\fR [\fB-f\fR \fIknown_hosts_file\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-H\fR [\fB-f\fR \fIknown_hosts_file\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-R\fR \fIhostname\fR [\fB-f\fR \fIknown_hosts_file\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBssh-keygen\fR 实用程序用于为 \fBssh\fR(1) 生成、管理和转换验证密钥。\fBssh-keygen\fR 可以创建供 SSH 协议版本 1 使用的 RSA 密钥，以及供 SSH 协议版本 2 使用的 RSA 或 DSA 密钥。生成的密钥类型使用 \fB-t\fR 选项指定。\fBssh-keygen\fR 还可以生成指纹或从指定为 PKCS#11 URI 的 X.509v3 证书转换公钥。
+.sp
+.LP
+通常，希望将 \fBSSH\fR 与 \fBRSA\fR 或 \fBDSA\fR 验证结合使用的每个用户应运行一次此实用程序，以便在 \fB$HOME/.ssh/identity\fR、\fB$HOME/.ssh/id_dsa\fR 或 \fB$HOME/.ssh/id_rsa\fR 中创建验证密钥。系统管理员还可以使用此实用程序生成主机密钥。
+.sp
+.LP
+通常，此程序会生成密钥并要求提供一个存储私钥的文件。公钥存储在附加了 "\fB\&.pub\fR" 扩展名的同名文件中。该程序还要求提供口令短语。口令短语可以为空，表示没有口令短语（主机密钥必须具有空口令短语），也可以为任意长度的字符串。好的口令短语长度在 10-30 个字符，不是简单的句子或其他容易猜到的句子，由大写字母、小写字母、数字和非字母数字字符组合而成。（普通英文句子中的每个字只有 1-2 位的熵，提供的口令短语非常差。）如果设置口令短语，则长度必须至少为 4 个字符。
+.sp
+.LP
+之后可以使用 \fB-p\fR 选项更改口令短语。
+.sp
+.LP
+无法恢复丢失的口令短语。如果丢失或忘记口令短语，您必须生成一个新密钥并将相应的公钥复制到其他计算机。
+.sp
+.LP
+对于 \fBRSA\fR，密钥文件中还包含一个注释字段，该字段只是为了便于用户识别密钥。\fIcomment\fR 字段可以说明密钥的用途或提供任何有用信息。创建密钥时，注释将初始化为 "\fBuser@host\fR"，但可以使用 \fB-c\fR 选项进行更改。
+.sp
+.LP
+密钥生成后，可以使用下面的详细说明了解应将密钥放在何处，以便激活密钥。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR \fIbits\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定要创建的密钥的位数。最小位数为 512 位。通常，2048 位足以满足安全需要。密钥大小超过该值并不会提高安全性，反而会降低速度。缺省值为 2048 位。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-B\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示指定的私钥或公钥文件的 bubblebabble 摘要。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.sp .6
+.RS 4n
+请求更改私钥和公钥文件中的注释。该程序会提示您提供包含私钥的文件、口令短语（如果密钥具有一个口令短语）以及新的注释。
+.sp
+此选项仅适用于 \fBrsa1\fR (\fBSSHv1\fR) 密钥。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR \fIcomment\fR\fR
+.ad
+.sp .6
+.RS 4n
+提供新注释。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项读取 OpenSSH 私钥或公钥文件并将密钥以 "SECSH" 公钥文件格式输出到 stdout。此选项允许导出密钥供其他一些 SSH 实现使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定密钥文件的文件名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fR
+.ad
+.sp .6
+.RS 4n
+在 \fBknown_hosts\fR 文件中搜索指定的 \fIhostname\fR，列出找到的任何匹配项。此选项可用于查找散列格式的主机名或地址，还可以与 \fB-H\fR 选项一起使用，以散列格式输出找到的密钥。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-H\fR\fR
+.ad
+.sp .6
+.RS 4n
+对 \fBknown_hosts\fR 文件执行散列计算。此选项使用散列形式替换指定文件内的所有主机名和地址。原始内容将移动到后缀为 \fB\&.old\fR 的文件中。这些散列值通常由 \fBssh\fR 和 \fBsshd\fR 使用，即使文件内容被公开，这些散列值也并不会透露可识别的信息。此选项不会修改现有的散列主机名，因此可以放心地用于同时包含散列名称和非散列名称的文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项以 SSH2 兼容格式读取未加密的私钥（或公钥）文件并将 OpenSSH 兼容的私钥（或公钥）输出到 stdout。\fBssh-keygen\fR 还可读取 “SECSH” 公钥文件格式。此选项允许从其他一些 SSH 实现中导入密钥。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示指定的私钥或公钥文件的指纹。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR \fInew_passphrase\fR\fR
+.ad
+.sp .6
+.RS 4n
+提供新口令短语。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+请求更改私钥文件的口令短语，而不创建新私钥。该程序会提示您提供包含私钥的文件、旧口令短语，并两次提示您输入新口令短语。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIpassphrase\fR\fR
+.ad
+.sp .6
+.RS 4n
+提供（旧）口令短语。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR\fR
+.ad
+.sp .6
+.RS 4n
+退出 \fBssh-keygen\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fItype\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定用于生成密钥的算法，其中 \fItype\fR 是 \fBrsa\fR、\fBdsa\fR 和 \fBrsa1\fR 中的一种。\fBrsa1\fR 类型仅用于 SSHv1 协议。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIhostname\fR\fR
+.ad
+.sp .6
+.RS 4n
+从 \fBknown_hosts\fR 文件中删除属于 \fIhostname\fR 的所有密钥。此选项可用于删除散列主机。请参见 \fB-H\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.sp .6
+.RS 4n
+已过时。已被 \fB-e\fR 选项取代。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-X\fR\fR
+.ad
+.sp .6
+.RS 4n
+已过时。已被 \fB-i\fR 选项取代。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-y\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项读取 OpenSSH 私钥格式文件并将 OpenSSH 公钥输出到 stdout。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-8\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 \fBssh-keygen\fR 生成 PKCS#8 格式的密钥。对于要生成的密钥，支持的类型为 \fBrsa\fR 或 \fBdsa\fR。
+.RE
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+出现错误。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.ssh/identity\fR\fR
+.ad
+.sp .6
+.RS 4n
+该文件包含用于 SSHv1 协议的 RSA 私钥。除了用户外，其他任何人均应无法读取此文件。生成密钥时可能会指定口令短语；该口令短语用于对此文件的私钥部分加密（使用 3DES）。\fBssh-keygen\fR 并不自动访问此文件，此文件是作为私钥的缺省文件提供的。尝试登录时，\fBsshd\fR(1M) 将读取该文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.ssh/identity.pub\fR\fR
+.ad
+.sp .6
+.RS 4n
+该文件包含用于 SSHv1 协议的 RSA 公钥。应在登录时要使用 \fBRSA\fR 验证的所有计算机的 \fB$HOME/.ssh/authorized_keys\fR 中添加该文件的内容。不需要将该文件的内容保密。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.ssh/id_dsa\fR\fR
+.ad
+.br
+.na
+\fB\fB$HOME/.ssh/id_rsa\fR\fR
+.ad
+.sp .6
+.RS 4n
+这两个文件分别包含用于 SSHv2 协议的 DSA 私钥或 RSA 私钥。除了用户外，其他任何人均应无法读取这些文件。生成密钥时可以指定密码短语；该密码短语用于使用 128 位 AES 对此文件的私有部分加密。\fBssh-keygen\fR 并不自动访问其中的任一文件，这两个文件是作为私钥的缺省文件提供的。尝试登录时，\fBsshd\fR(1M) 将读取其中的一个文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.ssh/id_dsa.pub\fR\fR
+.ad
+.br
+.na
+\fB\fB$HOME/.ssh/id_rsa.pub\fR\fR
+.ad
+.sp .6
+.RS 4n
+这些文件分别包含用于 SSHv2 协议的 DSA 公钥或 RSA 公钥。应在登录时要使用 DSA 或 RSA 验证的所有计算机的 \fB$HOME/.ssh/authorized_keys\fR 中分别添加这两个文件的内容。不需要将这些文件的内容保密。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性network/ssh/ssh-key
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBssh\fR(1)、\fBssh-add\fR(1)、\fBssh-agent\fR(1)、\fBsshd\fR(1M)、\fBattributes\fR(5) 

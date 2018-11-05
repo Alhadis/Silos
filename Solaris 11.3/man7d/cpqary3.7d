@@ -1,0 +1,156 @@
+'\" te
+.\" Copyright (c) 2009, Hewlett-Packard Development Company, L.P. All Rights Reserved.
+.\" Portions Copyright (c) 2010, 2012, Oracle and/or its affiliates. All rights reserved.
+.TH cpqary3 7D "30 Jan 2012" "SunOS 5.11" "Devices"
+.SH NAME
+cpqary3 \- provides disk and SCSI tape support for HP Smart Array controllers
+.SH DESCRIPTION
+.sp
+.LP
+The \fBcpqary3\fR module provides low-level interface routines between the common disk I/O subsystem and the HP SMART Array controllers. The \fBcpqary3\fR driver provides disk and SCSI tape support for the HP Smart Array controllers.
+.sp
+.LP
+Please refer to the \fIcpqary3 Release Notes\fR, for the supported HP Smart Array Controllers and Storage boxes.
+.sp
+.LP
+Each of the controller should be the sole initiator on a SCSI bus. Auto configuration code determines if the adapter is present at the Configured address and what types of devices are attached to it.
+.SS "Configuration"
+.sp
+.LP
+Use the Array Configuration Utility to configure the controllers. Each controller can support up to 32 logical volumes. In addition, each controller supports up to a maximum of 28 connected SCSI tape drives. With 1.90 and later versions of \fBcpqary3\fR driver, HP Smart Array SAS controllers, having Firmware Revision 5.10 or later, support 64 logical drives. This firmware also supports Dual Domian Multipath configurations.
+.sp
+.LP
+The driver attempts to initialize itself in accordance with the information found in the configuration file, \fB/kernel/drv/cpqary3.conf\fR.
+.SS "Driver Properties"
+.sp
+.LP
+The following properties can be specified in \fB/kernel/drv/cpqary3.conf\fR:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcpqary3-hbcheck-interval=\fIseconds\fR;\fR\fR
+.ad
+.sp .6
+.RS 4n
+The time in seconds between checks of the controller heartbeat. The default is \fB180\fR seconds. A value of \fB0\fR disables the heartbeat check. When a controller fault recovery method other than \fBnone\fR is used, reducing the heart beat check interval can reduce the time that it takes for the driver to detect a controller fault. The smallest recommended interval is \fB5\fR seconds.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcpqary3-hba-fault-recovery=\fImethod\fR;\fR\fR
+.ad
+.sp .6
+.RS 4n
+The controller fault recovery method to use. When the controller or firmware becomes unresponsive, the driver attempts to recover. The following recovery methods are available:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnone\fR\fR
+.ad
+.RS 14n
+.rt  
+The driver does not attempt recovery. This is the default. 
+.sp
+I/O requests pending at the controller at the time of the fault does not complete. Applications or other parts of the system that are waiting on this I/O can become unresponsive. Future I/O requests fail. This is the historical behavior of the driver. A reboot is required to recover user of the failed controller. This method \fBmust\fR be used for controllers with RAID5 or above logical volumes.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBquarantine\fR\fR
+.ad
+.RS 14n
+.rt  
+The driver attempts to quarantine the controller. If quarantine is successful, pending I/O requests are timed out. Applications or other parts of the system receive I/O errors. Future I/O requests to the controller continues to fail. Redundant controllers can be used with software RAID, such as ZFS, to provide fault tolerance. A reboot is required to recover full use of the failed controller. 
+.sp
+Do \fBnot\fR use this method with  controllers with RAID5 or above logical volumes. When using quarantine, HP recommends the use of a filesystem that can verify data integrity, such as ZFS. This method is only supported for P410 and P410i controllers,  and requires firmware version 5.00 or higher.
+.RE
+
+.RE
+
+.SH FILES
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/kernel/drv/cpqary3.conf\fR\fR
+.ad
+.RS 28n
+.rt  
+Configuration file for \fBCPQary3\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/kernel/drv/sd.conf\fR\fR
+.ad
+.RS 28n
+.rt  
+Configuration file for \fBsd\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/kernel/drv/st.conf\fR\fR
+.ad
+.RS 28n
+.rt  
+Configuration file for \fBst\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/dev/dsk\fR\fR
+.ad
+.RS 28n
+.rt  
+Block special file names for disk device
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/dev/rdsk\fR\fR
+.ad
+.RS 28n
+.rt  
+Character special file names for disk device
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/dev/rmt\fR\fR
+.ad
+.RS 28n
+.rt  
+Special file names for SCSI tape devices
+.RE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBdriver.conf\fR(4), \fBsd\fR(7D), \fBst\fR(7D)
+.sp
+.LP
+\fIcpqary3 Release Notes\fR
+.SH NOTES
+.sp
+.LP
+The Smart Array controllers supported by the current version of the \fBcpqary3\fR driver do not support \fBformat unit\fR SCSI command. Therefore, selecting the \fBformat\fR option under the \fBformat\fR utility main menu is not supported. In addition, the \fBrepair\fR option under \fBformat\fR utility main menu is not supported as this operation is not applicable to Logical volumes connected to the supported Smart Array controllers.
+.sp
+.LP
+The names of the block files can be found in \fB/dev/dsk\fR. The names of the raw files can be found in \fB/dev/rdsk\fR.

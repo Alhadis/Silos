@@ -1,0 +1,667 @@
+'\" te
+.\" Copyright (c) 2008, 2015, Oracle and/or its affiliates. All rights             reserved.
+.TH pbind 1M "20 May 2015" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+pbind \- control and query bindings of processes or LWPs
+.SH SYNOPSIS
+.LP
+.nf
+\fBpbind\fR \fB-b\fR [\fB-c\fR | \fBg\fR | \fBl\fR] [\fItarget_list\fR] [\fB-n\fR] [\fB-s\fR | \fBw\fR] [\fB-xft\fR] [\fB-i\fR \fIidtype\fR] [\fIidlist\fR]
+.fi
+
+.LP
+.nf
+\fBpbind\fR \fB-b\fR [\fB-c\fR | \fBg\fR | \fBl\fR] [\fItarget_list\fR] [\fB-n\fR] [\fB-s\fR | \fBw\fR] [\fB-xft\fR] [\fB-e\fR \fIcommand\fR [\fIargument(s)\fR]]
+.fi
+
+.LP
+.nf
+\fBpbind\fR [\fB-q\fR] [\fB-c\fR | \fBg\fR | \fBl\fR] [\fB-i\fR \fIidtype\fR] [\fIidlist\fR]
+.fi
+
+.LP
+.nf
+\fBpbind\fR \fB-u\fR [\fB-i\fR \fIidtype\fR] \fIidlist\fR
+.fi
+
+.LP
+.nf
+\fBpbind\fR \fB-Q\fR [\fB-c\fR | \fBg\fR | \fBl\fR] [\fItarget_list\fR]
+.fi
+
+.LP
+.nf
+\fBpbind\fR \fB-U\fR [\fB-c\fR | \fBg\fR | \fBl\fR] [\fItarget_list\fR]
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+\fBpbind\fR controls and queries bindings and affinities of processes and LWPs (lightweight processes) to CPU(s). This utility allows users to determine on which processor(s) one or more LWPs should be scheduled to run, whether such binding should be strongly or weakly enforced and how it should be inherited by child LWPs. \fBpbind\fR can also be used to execute a command with a specific binding.
+.sp
+.LP
+With strong affinity the target LWP(s) will only run on the specified processors, while weak affinity results in a best effort attempt at executing the LWP(s) on such CPUs. The binding determined by \fBpbind\fR is not exclusive, that is, the processor is free to execute other LWPs as well. This in turn means that bound threads can be prevented from running if other, higher priority LWPs are occupying the same processors.
+.sp
+.LP
+The target CPUs can be specified directly by their processor IDs or indirectly by their Processor Group (PG) or Locality Group (lgroup) ID. The user may also specify negative affinity, indicating that the specified CPUs should be avoided.
+.sp
+.LP
+When querying for bindings of specific LWPs, the user may request that the resulting set of CPUs be identified through their IDs, the Processor Groups or the Locality Groups that contain them. Similarly, when querying or removing all bindings of specific processors, the user may do so through their respective PG or lgroup IDs.
+.sp
+.LP
+By default, bindings are inherited across exec(2), fork(2), and thr_create(3C), but the user can request that inheritance be broken across one or more of such actions.
+.sp
+.LP
+It is important to note that the runtime behavior determined by \fBpbind\fR is subject to the continued online state of the specified CPUs and their affiliation to the same Processor Set as the target LWPs. If these underlying conditions change, a LWP will lose its affinity for a given CPU and will need to be reset once the conditions are restored.
+.sp
+.LP
+Superusers may bind or unbind any process or LWP, while other users can bind or unbind any process or LWP for which they have permission to signal, that is, any process that has the same effective user ID as the user.
+.SH OPTIONS
+.sp
+.LP
+The following options are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.sp .6
+.RS 4n
+This option, along with one or more identifiers indicates which CPU(s), Processor Group(s) or Locality Group(s) are the target(s) of the requested binding.
+.sp
+The valid target types and their corresponding interpretations are as follows:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 6n
+.rt  
+CPU, or Processor ID (the default). All the given CPUs must be present and online. Use the \fBpsrinfo\fR command to determine whether or not \fItarget_list\fR is present and on-line. See \fBpsrinfo\fR(1M) for more information.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR\fR
+.ad
+.RS 6n
+.rt  
+Processor Group ID. See \fBpginfo\fR(1M) for more information. Processor Group 0, which represents all cpus on the system or visible to the zone, is not a valid binding target.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 6n
+.rt  
+Locality Group ID. The specified lgroups must contain at least one online CPU for the operation to proceed. See lgrpinfo(1M) for details.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+Indicates that the given target processors should be avoided.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.sp .6
+.RS 4n
+Indicates that the binding is to be strongly enforced (default) and the specified LWPs should only execute on the given processors.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-w\fR\fR
+.ad
+.sp .6
+.RS 4n
+Indicates that the binding is to be weakly enforced, and the specified LWPs should preferably execute on the given processors but can run elsewhere if necessary.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBidtype\fR\fR
+.ad
+.sp .6
+.RS 4n
+This option, together with the \fBidlist\fR arguments specifies one or more processes or LWPs to which the binding will be applied. The interpretation of \fBidlist\fR depends on the value of \fBidtype\fR which, if ommitted defaults to pid.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBpid\fR[/\fBlwps\fR]\fR
+.ad
+.RS 17n
+.rt  
+\fBidlist\fR is a list of process IDs with each ID possibly followed by a forward slash (/) and a list of comma-separated LWP IDs. A range of LWP IDs can be indicated by a - separating start and end of the range.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBppid\fR\fR
+.ad
+.RS 17n
+.rt  
+\fBidlist\fR is a list of parent process IDs. The binding command applies to all processes whose parent process ID is in the list.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBpgid\fR\fR
+.ad
+.RS 17n
+.rt  
+\fBidlist\fR is a list of process group IDs. The binding command applies to all processes in the specified process groups. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBuid\fR\fR
+.ad
+.RS 17n
+.rt  
+\fBidlist\fR is a list of user IDs. The binding command applies to all processes with an effective user ID equal to an ID from the list.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBgid\fR\fR
+.ad
+.RS 17n
+.rt  
+\fBidlist\fR is a list of group IDs. The binding command applies to all processes with an effective group ID equal to an ID from the list.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBtaskid\fR\fR
+.ad
+.RS 17n
+.rt  
+\fBidlist\fR is a list of task IDs. The binding command applies to all processes in the specified tasks.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBprojid\fR\fR
+.ad
+.RS 17n
+.rt  
+\fBidlist\fR is a list of project IDs. The binding command applies to all processes with an effective project ID equal to an ID from the list.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fBzoneid\fR\fR
+.ad
+.RS 17n
+.rt  
+\fBidlist\fR is a list of zone IDs. The binding command applies to all processes with an effective zone ID equal to an ID from the list.
+.RE
+
+Note that The \fBP_MYID\fR identifier can be used in conjunction with any of the ID types above to indicate that the desired ID is that of the calling LWP for the given type (for example, \fBP_PID\fR and \fBP_MYID\fR result in the process identifier of the caller LWP). 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.sp .6
+.RS 4n
+Do not inherit affinities across exec(2).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+Do not inherit affinities across fork(2).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+Do not inherit affinities across thr_create(3C).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.sp .6
+.RS 4n
+Executes a command with the specified bindings. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR\fR
+.ad
+.sp .6
+.RS 4n
+Displays the CPU bindings of the specified processes or of all processes. If a process is composed of multiple LWPs which have different bindings and the LWPs are not explicitly specified, the bindings of only one of the bound LWPs will be displayed. The bindings of a subset of LWPs can be displayed by appending "/lwpids" to the process IDs. Multiple LWPs may be selected using "-" and "," delimiters.
+.sp
+Additionally, the [\fB-gl\fR] options may be included to request that the report include which Processor Groups or Locality Groups contain the CPUs to which the specified LWPs are bound. By default, the processor IDs are always displayed.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Q\fR\fR
+.ad
+.sp .6
+.RS 4n
+Displays the LWPs bound to the specified list of CPUs, Processor Groups or Locality Groups, or all LWPs with processor bindings. For processes composed of multiple LWPs, the bindings of individual LWPs will be displayed.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+Removes the bindings of all or a subset of the LWPs of the specified processes, allowing them to be executed on any online processor.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-U\fR\fR
+.ad
+.sp .6
+.RS 4n
+Removes the bindings of all LWPs bound to the specified list of processors, or to any processor if no argument is specified.
+.RE
+
+.SH RETURN VALUES
+.sp
+.LP
+\fBpbind\fR returns \fB0\fR upon successful completion. If an error occurs, a positive integer is returned indicating the resulting error number.
+.SH ERRORS
+.sp
+.LP
+The \fBpbind\fR command will fail if:
+.sp
+.ne 2
+.mk
+.na
+\fBESRCH\fR
+.ad
+.RS 10n
+.rt  
+None of the specified processes or LWPs exist.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBEINVAL\fR
+.ad
+.RS 10n
+.rt  
+The specified idtype or IDs do not exist, all of the target processors are offline, faulted, part of different processor sets or the given combination of options is invalid.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBEPERM\fR
+.ad
+.RS 10n
+.rt  
+The {\fBPRIV_PROC_OWNER\fR} privilege is not asserted in the effective set of the calling process and its real or effective user ID does not match the real or effective user ID of one of the LWPs being bound.
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fREquivalent ways of binding process 101048 to CPU 1
+.sp
+.in +2
+.nf
+# \fBpbind -b 1 101048\fR
+pbind(1M): pid 101048 strongly bound to processor(s) 1.
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBpbind -b -c 1 101048\fR
+pbind(1M): pid 101048 strongly bound to processor(s) 1.
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBpbind -b -c 1 -i pid 101048\fR
+pbind(1M): pid 101048 strongly bound to processor(s) 1.
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBpbind -b -c 1 -s -i pid 101048\fR
+pbind(1M): pid 101048 strongly bound to processor(s) 1.
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRRe-binding process 101048 to CPUs 0-3
+.sp
+.in +2
+.nf
+# \fBpbind -b -c 0-3 101048\fR
+pbind(1M): pid 101048 strongly bound to processor(s) 1.
+pbind(1M): pid 101048 strongly bound to processor(s) 0 1 2 3.
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRRe-binding process 101048 to the CPUs in Processor Group 1
+.sp
+.in +2
+.nf
+# \fBpbind -b -g 1 101048\fR
+pbind(1M): pid 101048 strongly bound to Processor Group(s) 1 2.
+pbind(1M): pid 101048 strongly bound to Processor Group(s) 1.
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 4 \fRRe-binding process 101048 to the CPUs in Locality Group 2
+.sp
+.in +2
+.nf
+# \fBpbind -b -l 2 101048\fR
+pbind(1M): pid 101048 strongly bound to Locality Group(s) 0 1.
+pbind(1M): pid 101048 strongly bound to Locality Group(s) 0 2.
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 5 \fRWeakly binding process 101048 to CPU 2
+.sp
+.in +2
+.nf
+# \fBpbind -b 2 -w 101048\fR
+pbind(1M): pid 101048 weakly bound to processor(s) 2.
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 6 \fRBinding process 101048 to all CPUs but CPU 1
+.sp
+.in +2
+.nf
+# \fBpbind -b 1 -n 101048\fR
+pbind(1M): pid 101048 strongly bound to processor(s) 0 2 3.
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 7 \fRWeakly binding process 101048 to all CPUs but the ones in Processor Group 1
+.sp
+.in +2
+.nf
+# \fBpbind -b -g 1 -n -w 101048\fR
+pbind(1M): pid 101048 strongly bound to Processor Group(s) 1 2.
+pbind(1M): pid 101048 weakly bound to Processor Group(s) 2
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 8 \fRQuerying bindings for process 101048 in terms of CPUs, Processor Groups and Locality Groups
+.sp
+.in +2
+.nf
+# \fBpbind -q 101048\fR
+pbind(1M): pid 101048 weakly bound to processor(s) 2 3.
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBpbind -q -g 101048\fR
+pbind(1M): pid 101048 weakly bound to Processor Group(s) 2.
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBpbind -q -l 101048\fR
+pbind(1M): pid 101048 weakly bound to Locality Group(s) 0 2.
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 9 \fRQuerying bindings for process 101048
+.sp
+.in +2
+.nf
+# \fBpbind -q -i pid 101048\fR
+pbind(1M): pid 101048 weakly bound to processor(s) 2 3.
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 10 \fRQuerying bindings for process 101048 in terms of Processor Groups
+.sp
+.in +2
+.nf
+# \fBpbind -q -g -i pid 101048\fR
+pbind(1M): pid 101048 weakly bound to Processor Group(s) 2.
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 11 \fRQuerying all bindings for CPU 2
+.sp
+.in +2
+.nf
+# \fBpbind -Q 2\fR
+pbind(1M): LWP 101048/1 weakly bound to processor(s) 2 3.
+pbind(1M): LWP 102122/1 weakly bound to processor(s) 2 3.
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 12 \fRUnbinding process 101048
+.sp
+.in +2
+.nf
+# \fBpbind -u 101048\fR
+pbind(1M): pid 101048 successfully unbound.
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 13 \fRUnbinding all processes from CPU 1
+.sp
+.in +2
+.nf
+# \fBpbind -U 1\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 14 \fRUnbinding all processes from Locality Group 2
+.sp
+.in +2
+.nf
+# \fBpbind -U -l 2\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 15 \fRExecuting ls(1) with a specific binding
+.sp
+.in +2
+.nf
+# \fBpbind -b -c 3 -e ls\fR
+file1  file2  file3  file4
+.fi
+.in -2
+.sp
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/core-os
+.TE
+
+.SH EXIT STATUS
+.sp
+.LP
+The following exit values are returned:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+Successful completion.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.sp .6
+.RS 4n
+An error occurred.
+.RE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBpsrinfo\fR(1M), \fBpsradm\fR(1M), \fBpsrset\fR(1M), \fBpginfo\fR(1M), \fBlgrpinfo\fR(1), \fBprocessor_info\fR(2), \fBprocessor_bind\fR(2), \fBpset_create\fR(2), \fBpset_assign\fR(2), \fBpset_bind\fR(2), \fBpset_destroy\fR(2), \fBexec\fR(2), \fBfork\fR(2), \fBthr_create\fR(3C), \fBprocset.h\fR(3HEAD), \fBattributes\fR(5), \fBprivileges\fR(5)
+.SH DIAGNOSTICS
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpbind: cannot query pid 31: No such process\fR\fR
+.ad
+.sp .6
+.RS 4n
+The process specified did not exist or has exited.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpbind: cannot bind pid 31: Not owner\fR\fR
+.ad
+.sp .6
+.RS 4n
+The user does not have permission to bind the process.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpbind: cannot bind pid 31: Invalid argument\fR\fR
+.ad
+.sp .6
+.RS 4n
+The specified processor is not on-line.
+.RE
+

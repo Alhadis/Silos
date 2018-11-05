@@ -1,0 +1,140 @@
+'\" te
+.\" Copyright (c) 2004, 2013, Oracle and/or its affiliates. All rights reserved.
+.TH pam_gss_s4u 5 "9 July 2012" "SunOS 5.11" "Standards, Environments, and Macros"
+.SH NAME
+pam_gss_s4u \- set credential PAM module for Services For Users (S4U)
+.SH SYNOPSIS
+.LP
+.nf
+\fB/usr/lib/security/pam_gss_s4u.so.1\fR
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBpam_gss_s4u\fR module attempts to obtain credentials on behalf of \fBPAM_USER\fR by using the Generic Security Services API (GSS-API) for the Services for User (S4U) protocol. This would be beneficial for non-login processes that require services secured by Kerberos, such as those executed from \fBcron\fR(1M) or \fBat\fR(1).
+.SS "GSS-API Set Credential Module"
+.sp
+.LP
+The GSS-API S4U module provides the set credential function for \fBpam_sm_setcred()\fR. The credentials can be set from initial authentication credentials using the host's keys by stacking the \fBpam_krb5_keytab\fR(5) module before \fBpam_gss_s4u\fR(5). Subsequently, these credentials can be used to obtain credentials for itself on behalf of a user, \fBS4U2Self\fR. The resulting credentials can be used to obtain a service ticket for a target service on behalf of the user, \fBS4U2Proxy\fR.
+.sp
+.LP
+The following options can be passed to the GSS-API set credential module:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdebug\fR\fR
+.ad
+.RS 10n
+.rt  
+Provides \fBsyslog\fR(3C) debugging information at \fBLOG_DEBUG\fR level.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnowarn\fR\fR
+.ad
+.RS 10n
+.rt  
+Turns off warning messages.
+.RE
+
+.SS "GSS-API Authentication Module"
+.sp
+.LP
+The Kerberos key table authentication module provides the authentication function for \fBpam_sm_authenticate()\fR. The function returns \fBPAM_IGNORE\fR.
+.SH ERRORS
+.sp
+.LP
+The following error codes are returned for \fBpam_sm_setcred()\fR:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPAM_CRED_UNAVAIL\fR\fR
+.ad
+.RS 20n
+.rt  
+The initial authentication credentials does not exist.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPAM_SUCCESS\fR\fR
+.ad
+.RS 20n
+.rt  
+Successfully obtained S4U credentials for the user associated with \fBPAM_USER\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPAM_SYSTEM_ERR\fR\fR
+.ad
+.RS 20n
+.rt  
+System error.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPAM_USER_UNKNOWN\fR\fR
+.ad
+.RS 20n
+.rt  
+The user associated with \fBPAM_USER\fR is not found in the database.
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRSet Credential for Initial Authentication Through Kerberos Key Table File Optionally Through S4U Requests
+.sp
+.LP
+The following is an excerpt of a sample \fB/etc/pam.d/cron\fR file:
+
+.sp
+.in +2
+.nf
+auth definitive   pam_user_policy.so.1
+auth required     pam_dhkeys.so.1
+auth required     pam_unix_auth.so.1
+auth required     pam_unix_cred.so.1
+auth requisite    pam_krb5_keytab.so.1
+auth optional     pam_gss_s4u.so.1
+.fi
+.in -2
+
+.sp
+.LP
+Given that set credentials uses the same stack as authenticate, the above will provision Kerberos credentials through the successful authentication of the keys found in the system's key table file via \fBpam_krb5_keytab\fR(5). Subsequently, these credentials will be used to obtain S4U credentials for \fBPAM_USER\fR.
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for a description of the following attribute:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Interface StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBkinit\fR(1), \fBlibpam\fR(3LIB), \fBpam\fR(3PAM), \fBpam_sm\fR(3PAM), \fBpam_sm_setcred\fR(3PAM), \fBpam_sm_authenticate\fR(3PAM), \fBsyslog\fR(3C), \fBkrb5.conf\fR(4), \fBpam.conf\fR(4), \fBattributes\fR(5), \fBkerberos\fR(5), \fBkrb5envvar\fR(5), \fBpam_krb5\fR(5), \fBpam_krb5_keytab\fR(5)

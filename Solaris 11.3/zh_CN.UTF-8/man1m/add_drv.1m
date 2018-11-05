@@ -1,0 +1,610 @@
+'\" te
+.\" Copyright (c) 2009, 2013, Oracle and/or its affiliates.All rights reserved.
+.TH add_drv 1M "2010 年 10 月 12 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+add_drv \- 将新设备驱动程序添加到系统
+.SH 用法概要
+.LP
+.nf
+\fBadd_drv\fR [\fB-b\fR \fIbasedir\fR] [\fB-c\fR \fIclass_name\fR] 
+     [\fB-i\fR '\fIidentify_name\fR...'] [\fB-m\fR '\fIpermission\fR','...'] 
+     [\fB-p\fR '\fIpolicy\fR'] [\fB-P\fR \fIprivilege\fR] [\fB-n\fR] [\fB-f\fR] [\fB-u\fR] [\fB-v\fR] \fIdevice_driver\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBadd_drv\fR 命令用于通知系统新安装的设备驱动程序。
+.sp
+.LP
+系统上的每个设备都有关联的名称。此名称由设备的 \fBname\fR 属性表示。同样，设备可能还有关联的驱动程序名称列表。此列表由设备的 \fBcompatible\fR 属性表示。
+.sp
+.LP
+系统通过检查每个设备上 \fBname\fR 属性和 \fBcompatible\fR 属性（如果存在）的内容来确定添加的驱动程序将管理哪些设备。如果 \fBname\fR 属性中的值与添加的驱动程序不匹配，则会按顺序尝试 \fBcompatible\fR 属性中的每个条目，直到找到匹配项或者尝试完 \fBcompatible\fR 属性中的所有条目为止。
+.sp
+.LP
+在某些情况下，添加新驱动程序可能需要重新配置引导。请参见\fB\fR“附注”部分。
+.sp
+.LP
+如果别名包含数字，可能需要引起来（使用双引号）。请参见\fB\fR“示例”部分。
+.SS "\fB/etc/minor_perm\fR 文件"
+.sp
+.LP
+\fBadd_drv\fR 和 \fBupdate_drv\fR(1M) 读取 \fB/etc/minor_perm\fR 文件以获取权限信息。指定的权限应用于连接绑定到驱动程序的设备时创建的匹配次要节点。可以通过 \fBchmod\fR(1) 手动更改次要节点的权限。对于此类节点，将应用指定的权限，以覆盖通过 \fBadd_drv\fR 或 \fBupdate_drv\fR(1M) 指定的缺省权限。
+.sp
+.LP
+\fB/etc/minor_perm\fR 文件的格式如下：
+.sp
+.in +2
+.nf
+\fIname\fR\fB:\fR\fIminor_name permissions owner group\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fIminor_name\fR 可以是次要节点的实际名称，也可以包含表示多个次要节点的 shell 元字符（请参见 \fBsh\fR(1)）。
+.sp
+.LP
+例如：
+.sp
+.in +2
+.nf
+sd:* 0640 root sys
+zs:[a-z],cu 0600 uucp uucp
+mm:kmem 0640 root bin
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+第一行将 \fBsd\fR 节点导出的所有设备设置为 \fB0640\fR 权限、由 \fBroot\fR 所有，属于组 \fBsys\fR。在第二行中，由 \fBzs\fR 驱动程序导出的 \fBa,cu\fR \fB和\fR \fBz,cu\fR 等设备设置为 \fB0600\fR 权限，由 \fBuucp\fR 所有，属于组 \fBuucp\fR。在第三行中，由 \fBmm\fR 驱动程序导出的 \fBkmem\fR 设备设置为 \fB0640\fR 权限，由 \fBroot\fR 所有，属于组 \fBbin\fR。
+.SS "从\fB安装后\fR脚本运行 \fBadd_drv\fR"
+.sp
+.LP
+在软件包的安装后脚本上下文中运行 \fBadd_drv\fR 时，您必须考虑软件包将添加到系统映像还是正在运行的系统。如果软件包将安装到系统映像，则 \fBBASEDIR\fR 变量引用映像的基目录。在这种情况下，应该通过 \fB-b\fR \fB$BASEDIR\fR 调用 \fBadd_drv\fR。这将导致 \fBadd_drv\fR 仅更新映像的系统文件；需要重新引导系统或客户机才能使驱动程序正常运行。
+.sp
+.LP
+如果软件包将安装到正在运行的系统本身上，则与上面的情况一样，需要更新系统文件。然而，无需重新引导即可通知正在运行的内核存在新驱动程序。为完成此操作，安装后脚本必须在不使用 \fB-b\fR 选项的情况下调用 \fBadd_drv \fR。相应地，调用 \fBadd_drv\fR 的\fB安装后\fR脚本应按如下方式编写：
+.sp
+.in +2
+.nf
+if [ "${BASEDIR:=/}" = "/" ]
+then
+        ADD_DRV="add_drv"
+else
+        ADD_DRV="add_drv -b ${BASEDIR}"
+fi
+$ADD_DRV [<options>] \fI<driver>\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\&...或者：
+.sp
+.in +2
+.nf
+if [ "${BASEDIR:=/}" != "/" ]
+then
+         BASEDIR_OPT="-b $BASEDIR"
+fi
+         add_drv $BASEDIR_OPT [<options>] \fI<driver>\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fB-b\fR 选项在下面进行说明。
+.SH 选项
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR \fIbasedir\fR\fR
+.ad
+.sp .6
+.RS 4n
+将驱动程序安装到根目录为 \fIbasedir\fR 的系统上，而不是安装到执行 \fBadd_drv\fR 的系统上。软件包不安装到执行 \fBpkgadd\fR 命令的系统上时，通常在软件包安装后脚本中使用此选项。使用 \fIbasedir\fR 作为其根目录的系统必须重新引导才能完成驱动程序安装。
+.LP
+注 - 
+.sp
+.RS 2
+不得使用 \fB-b\fR 选项引用任何非全局区域的根文件系统。否则，可能会损坏全局区域的文件系统，危及全局区域的安全性，或者损坏非全局区域的文件系统。请参见 \fBzones\fR(5)。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIclass_name\fR\fR
+.ad
+.sp .6
+.RS 4n
+由添加到系统的驱动程序导出类 \fIclass_name\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+通常，如果需要重新配置引导才能完成驱动程序在系统中的配置，\fBadd_drv\fR 将不会添加驱动程序。强制标志强制 \fBadd_drv\fR 添加驱动程序，即使需要重新配置引导也是如此。请参见 \fB- v\fR 标志。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fB\&'\fR\fIidentify_name\fR\fB\&'\fR\fR
+.ad
+.sp .6
+.RS 4n
+驱动程序 \fIdevice_driver\fR 的别名的空格分隔列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fB\&'\fR\fIpermission\fR\fB\&'\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定由系统代表 \fIdevice_driver\fR 创建的设备节点的文件系统权限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+不尝试装入并连接 \fIdevice_driver\fR，仅修改 \fIdevice_driver\fR 的系统配置文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR '\fIpolicy\fR\fB\&'\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定其他设备安全策略。 
+.sp
+设备安全策略由空格分隔的多个令牌组成：
+.sp
+.in +2
+.nf
+{\fIminorspec\fR {token=value}+}+
+.fi
+.in -2
+.sp
+
+\fIminorspec\fR 是次要设备的简单通配符模式。单个 \fB*\fR 匹配所有次要设备。仅允许在模式中使用一个 \fB*\fR。
+.sp
+按以下顺序匹配模式： 
+.RS +4
+.TP
+.ie t \(bu
+.el o
+无通配符的条目
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+有通配符的条目，首先处理最长的通配符
+.RE
+定义了以下令牌：\fBread_priv_set\fR 和 \fBwrite_priv_set\fR。\fBread_priv_set\fR 定义打开设备进行读取时需要在调用进程的有效特权集合中声明的特权。\fBwrite_priv_set\fR 定义打开设备进行写入时需要在调用进程的有效特权集合中声明的特权。请参见 \fBprivileges\fR(5)。 
+.sp
+定义了以下令牌：\fBread_priv_set\fR、\fBwrite_priv_set\fR 和 \fBtpd_member\fR。\fBread_priv_set\fR 定义打开设备进行读取时需要在调用进程的有效集合中声明的特权。\fBwrite_priv_set\fR 定义打开设备进行写入时需要在调用进程的有效集合中声明的特权。\fBtpd_member\fR 仅用于不可变全局区域。\fBtpd_member\fR 设置为 'true' 的设备在不可变全局区域中是只读的。在 \fBwrite_priv_set=ALL\fR 的设备上缺省启用此设置。请参见 \fBprivileges\fR(5)。
+.sp
+缺失的次要规范被解释为 \fB*\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR '\fIprivilege\fR\fB\&'\fR\fI\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定驱动程序使用的其他特权，使用逗号分隔。您还可以使用设备策略中的特定特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+将驱动程序添加到系统，使其处于非活动状态以便稍后使用 \fBdevfsadm\fR(1M) \fB-u\fR 进行配置。\fB-u\fR 的行为与 \fB-n\fR 不同，因为 \fB-n\fR 仅更新系统文件，需要重新引导才能连接驱动程序。通过 \fB-u\fR 添加的驱动程序可以通过运行 \fBdevfsadm\fR \fB-u\fR 来连接，无需重新引导。驱动程序编写人员应通过驱动程序的行为来验证驱动程序。有关其他注意事项，请参见\fB\fR“附注”。\fB-u\fR 选项不能与 \fB-n\fR 或 \fB-b\fR 一起使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+详细标志导致 \fBadd_drv\fR 提供有关在系统中配置驱动程序是成功还是失败的其他信息。请参见\fB\fR“示例”部分。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR将 SUNW 示例驱动程序添加到系统
+.sp
+.LP
+以下示例将别名为 \fBSUNW,alias\fR 的 \fBSUNW,example\fR 驱动程序添加到 32 位系统。本例假定驱动程序已复制到 \fB/usr/kernel/drv\fR。
+
+.sp
+.in +2
+.nf
+example# add_drv \fB-m\fR '* 0666 bin bin','a 0644 root sys' \e
+      \fB-p\fR 'a write_priv_set=sys_config  * write_priv_set=none' \e
+      \fB-i\fR 'SUNW,alias' SUNW,example
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+系统为 \fBSUNW,example\fR 驱动程序创建的每个次要节点将具有 \fB0666\fR 权限，由用户 \fBbin\fR 所有，属于 \fBbin\fR 组，但次要设备 \fBa\fR 除外，此设备由 \fB root\fR 所有，属于 \fBsys\fR 组，具有权限 \fB0644\fR。根据指定的设备策略，无需其他特权即可打开所有次要节点，但次要设备 \fBa\fR 除外，在打开设备进行写入时该设备需要 \fBsys_config\fR 特权。
+
+.LP
+\fB示例 2 \fR将驱动程序添加到客户机 \fB/export/root/sun1\fR
+.sp
+.LP
+以下示例将驱动程序添加到客户机 \fB/export/root/sun1\fR。驱动程序在客户机 \fBsun1\fR 重新引导时安装和装入。此第二个示例与第一个示例具有相同的结果，但无磁盘客户机 \fBsun1\fR 发生了改变，该客户机必须重新引导才能安装驱动程序。
+
+.sp
+.in +2
+.nf
+example# add_drv \fB-m\fR '* 0666 bin bin','a 0644 root sys' \e
+        \fB-i\fR 'SUNW,alias' -b /export/root/sun1 \e
+	SUNW,example
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+请参见上文 \fB-b\fR 选项说明中的“注意”部分，其中指明了有关将此选项与 Solaris 区域功能一起使用的警告。
+
+.LP
+\fB示例 3 \fR为已由现有驱动程序管理的设备添加驱动程序
+.sp
+.LP
+以下示例说明了为已由现有驱动程序管理的设备添加新驱动程序的情况。请考虑当前由驱动程序 \fBdumb_framebuffer\fR 管理的某个设备。此设备的 \fBname\fR 和 \fBcompatible\fR 属性如下所示：
+
+.sp
+.in +2
+.nf
+name="display"
+compatible="whizzy_framebuffer", "dumb_framebuffer"
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果使用 \fBadd_drv\fR 添加 \fBwhizzy_framebuffer\fR 驱动程序，则将生成以下内容。
+
+.sp
+.in +2
+.nf
+example# add_drv whizzy_framebuffer
+Error: Could not install driver (whizzy_framebuffer)
+Device managed by another driver.
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果指定了 \fB-v\fR 标志，则将生成以下内容。
+
+.sp
+.in +2
+.nf
+example# add_drv -v whizzy_framebuffer
+Error: Could not install driver (whizzy_framebuffer)
+Device managed by another driver.
+Driver installation failed because the following
+entries in /devices would be affected:
+
+        /devices/iommu@f,e0000000/sbus@f,e0001000/display[:*]
+        (Device currently managed by driver "dumb_framebuffer")
+
+The following entries in /dev would be affected:
+
+        /dev/fbs/dumb_framebuffer0
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果指定了 \fB-v\fR 和 \fB-f\fR 标志，则将添加驱动程序并生成以下内容。
+
+.sp
+.in +2
+.nf
+example# add_drv -vf whizzy_framebuffer
+A reconfiguration boot must be performed to complete the
+installation of this driver.
+
+The following entries in /devices will be affected:
+
+        /devices/iommu@f,e0000000/sbus@f,e0001000/display[:*]
+        (Device currently managed by driver "dumb_framebuffer"
+
+The following entries in /dev will be affected:
+
+        /dev/fbs/dumb_framebuffer0
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+上面的示例当前仅与导出通用设备名称的设备相关。
+
+.LP
+\fB示例 4 \fR指定驱动程序别名时使用双引号
+.sp
+.LP
+以下示例显示了如何在指定包含数字的驱动程序别名时使用双引号。
+
+.sp
+.in +2
+.nf
+example# add_drv -i '"pci10c5,25"' smc
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.LP
+\fBadd_drv\fR 在成功时返回 \fB0\fR，在失败时返回 \fB1\fR。
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/kernel/drv\fR\fR
+.ad
+.sp .6
+.RS 4n
+32 位引导设备驱动程序
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/kernel/drv/sparcv9\fR\fR
+.ad
+.sp .6
+.RS 4n
+64 位 SPARC 引导设备驱动程序
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/kernel/drv/amd64\fR\fR
+.ad
+.sp .6
+.RS 4n
+64位 x86 引导设备驱动程序
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/kernel/drv\fR\fR
+.ad
+.sp .6
+.RS 4n
+可能会在平台之间共享的其他 32 位驱动程序
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/kernel/drv/sparcv9\fR\fR
+.ad
+.sp .6
+.RS 4n
+可能会在平台之间共享的其他 64 位 SPARC 驱动程序
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/kernel/drv/amd64\fR\fR
+.ad
+.sp .6
+.RS 4n
+可能会在平台之间共享的其他 64 位 x86 驱动程序
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/platform/`uname\fR \fB-i`/kernel/drv\fR\fR
+.ad
+.sp .6
+.RS 4n
+32 位依赖平台的驱动程序
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/platform/`uname\fR \fB-i`/kernel/drv/sparcv9\fR\fR
+.ad
+.sp .6
+.RS 4n
+64 位依赖 SPARC 平台的驱动程序
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/platform/`uname\fR \fB-i`/kernel/drv/amd64\fR\fR
+.ad
+.sp .6
+.RS 4n
+64 位依赖 x86 平台的驱动程序
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/driver_aliases\fR\fR
+.ad
+.sp .6
+.RS 4n
+驱动程序别名文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/driver_classes\fR\fR
+.ad
+.sp .6
+.RS 4n
+驱动程序类文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/minor_perm\fR\fR
+.ad
+.sp .6
+.RS 4n
+次要节点权限
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/name_to_major\fR\fR
+.ad
+.sp .6
+.RS 4n
+主编号绑定
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/security/device_policy\fR\fR
+.ad
+.sp .6
+.RS 4n
+设备策略
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/security/extra_privs\fR\fR
+.ad
+.sp .6
+.RS 4n
+设备特权
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBboot\fR(1M)、\fBchmod\fR(1)、\fBdevfsadm\fR(1M)、\fBkernel\fR(1M)、\fBmodinfo\fR(1M)、\fBrem_drv\fR(1M)、\fBupdate_drv\fR(1M)、\fBdriver.conf\fR(4)、\fBsystem\fR(4)、\fBattributes\fR(5)、\fBprivileges\fR(5)、\fBtpd\fR(5)、\fBdevfs\fR(7FS)、\fBddi_create_minor_node\fR(9F)
+.sp
+.LP
+\fI《Writing Device Drivers for Oracle Solaris 11.2》\fR
+.SH 附注
+.sp
+.LP
+可以为已由其他驱动程序管理的设备添加驱动程序，这种情况下添加的驱动程序在设备 \fBcompatible\fR 列表中将显示在当前驱动程序之前。在此类情况下，需要重新配置引导（请参见 \fBboot\fR(1M) 和 \fBkernel\fR(1M)）。重新配置引导之后，\fB/dev\fR 中的设备链接和对这些文件的引用可能不再有效（请参见 \fB-v\fR 标志）。如果需要重新配置引导才能完成驱动程序安装，\fBadd_drv\fR 将失败，除非指定了 \fB-f\fR 选项。请参见\fB\fR“示例”部分中的\fB示例\fR \fB3\fR。
+.sp
+.LP
+引入设备策略后，一些驱动程序更改了其次要权限并建立了设备策略。典型网络驱动程序应使用以下设备策略：
+.sp
+.in +2
+.nf
+add_drv -p 'read_priv_set=net_rawaccess\e
+   write_priv_set=net_rawaccess' -m '* 666 root sys'\e
+   mynet
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+该文档不涉及 API。\fB/etc/minor_perm\fR、\fB/etc/name_to_major\fR、\fB/etc/driver_classes\fR 和 \fB/devices\fR 在未来的发行版中可能不存在，或者具有不同的内容或解释。此通知的存在并不表示没有此通知的任何其他文档涉及 API。
+.sp
+.LP
+\fB/etc/minor_perm\fR 只能由 \fBadd_drv\fR(1M)、\fBrem_drv\fR(1M) 或 \fBupdate_drv\fR(1M) 更新。
+.sp
+.LP
+对于当前版本的 \fBadd_drv\fR，在命令行中使用时通过双引号指定别名是可选的。然而，在软件包脚本中使用 \fBadd_drv\fR 时，您应继续使用双引号指定别名。
+.sp
+.LP
+一些驱动程序不能直接在系统中添加和配置，只能在系统引导时配置。此限制的原因包括但不限于：驱动程序依赖于引导初期所执行的配置，或者依赖于在添加驱动程序的同时安装或更新了某个内核组件。此类驱动程序只能使用 \fB-n\fR 标志添加到系统，因此仅在系统重新引导时才装入和配置驱动程序，从而保证在环境中可以正确配置驱动程序。
+.SH 已知问题
+.sp
+.LP
+\fBadd_drv\fR 的早期版本接受对 \fIdevice_driver\fR 使用路径名。现在不再支持此功能，这样做将导致失败。

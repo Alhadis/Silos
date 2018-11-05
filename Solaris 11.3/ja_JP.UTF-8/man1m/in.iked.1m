@@ -1,0 +1,444 @@
+'\" te
+.\" Copyright (c) 2009, 2014, Oracle and/or its affiliates.All rights reserved.
+.TH in.iked 1M "2014 年 2 月 13 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+in.iked \- インターネット鍵交換 (IKE) のデーモン
+.SH 形式
+.LP
+.nf
+\fB/usr/lib/inet/in.iked\fR [\fB-d\fR] [\fB-f\fR \fIfilename\fR] [\fB-p\fR \fIlevel\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/inet/in.iked\fR \fB-c\fR [\fB-f\fR \fIfilename\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBin.iked\fR は、インターネット鍵交換 (\fBIKE\fR) プロトコルを使用して IPsec の自動鍵管理を実行します。 
+.sp
+.LP
+\fBin.iked\fR には次が実装されています。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+事前共有鍵、\fBDSS\fR 署名、\fBRSA\fR 署名、\fBRSA\fR 暗号化のいずれかによる \fBIKE\fR 認証。 
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB768\fR、\fB1024\fR、\fB1536\fR、\fB2048\fR、\fB3072\fR、\fB4096\fR ビットの公開鍵係数、または \fB256\fR、\fB384\fR、\fB521\fR ビットの楕円曲線係数のいずれかを使用した Diffie-Hellman 鍵の派生。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+暗号として \fBAES\fR、\fBDES\fR、Blowfish、または \fB3DES\fR を使用し、ハッシュとして \fBHMAC-MD5\fR または \fBHMAC-SHA-1\fR を使用した認証保護。\fBin.iked\fR での暗号化は、\fBIKE\fR 認証および鍵交換に限定されています。IPsec 保護の選択については、\fBipsecesp\fR(7P) を参照してください。
+.RE
+.sp
+.LP
+\fBin.iked\fR は、次の \fBsmf\fR(5) サービスによって管理されています。
+.sp
+.in +2
+.nf
+svc:/network/ipsec/ike
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+このサービスは、サービスを有効にする前に構成ファイルを作成する必要があるため、無効になっています。このファイルの形式については、\fBike.config\fR(4) を参照してください。
+.sp
+.LP
+\fBsmf\fR(5) サービスの管理については、「サービス管理機能」を参照してください。
+.sp
+.LP
+\fBin.iked\fR は、\fBPF_KEY\fR ソケットを使用して、ネットワークから着信する \fBIKE\fR 要求とアウトバウンドトラフィックの要求を待機します。\fBpf_key\fR(7P) を参照してください。 
+.sp
+.LP
+\fBin.iked\fR には、IKE の管理と診断に使用する \fBikeadm\fR(1M) と \fBikecert\fR(1M) という 2 つのサポートプログラムがあります。
+.sp
+.LP
+\fBikeadm\fR(1M) コマンドは、\fB/etc/inet/ike/config\fR ファイルを \fBrule\fR として読み取り、door インタフェースを使用して実行中の \fBin.iked\fR デーモンに構成情報を渡すことができます。
+.sp
+.in +2
+.nf
+example# \fBikeadm read rule /etc/inet/ike/config\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBin.iked\fR デーモンを管理するために提供されている \fBike\fR \fBsmf\fR(5) サービスをリフレッシュすると、\fBin.iked\fR デーモンに \fBSIGHUP\fR シグナルが送信され、デーモンが \fB/etc/inet/ike/config\fR を (再度) 読み取って証明書データベースを再読み込みします。
+.sp
+.LP
+前の 2 つのコマンドには、実行中の IKE デーモンが最新の構成で更新されるという同じ効果があります。\fBin.iked\fR デーモンの管理の詳細は、「サービス管理機能」を参照してください。
+.sp
+.LP
+Trusted Extensions が有効になっている場合 (\fBlabeld\fR(1M) を参照) は、大域ゾーンで \fBin.iked\fR を使用して、ラベル付きセキュリティーアソシエーションのネゴシエーションを行うことができます。ラベル付きシステムで \fBin.iked\fR を使用する場合は、\fBtnzonecfg\fR ファイルで UDP ポート 500 および 4500 を大域ゾーンのマルチレベルポートとして構成する必要があります (『\fISolaris Trusted Extensions リファレンスマニュアル\fR』に含まれている \fBtnzonecfg(4)\fR を参照)。ラベルを認識するように \fBin.iked\fR を構成する方法の詳細は、\fBike.config\fR(4) を参照してください。
+.SS "サービス管理機能"
+.sp
+.LP
+IKE デーモン (\fBin.iked\fR) は、サービス管理機能 \fBsmf\fR(5) によって管理されます。次の一連のサービスは、IPsec のコンポーネントを管理します。
+.sp
+.in +2
+.nf
+svc:/network/ipsec/ipsecalgs   (See ipsecalgs(1M))
+svc:/network/ipsec/policy      (See ipsecconf(1M))
+svc:/network/ipsec/manual-key  (See ipseckey(1M))
+svc:/network/ipsec/ike         (see ike.config(4))
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+前述のマニュアルページで説明されているように、manual-key および \fBike\fR サービスは、システム管理者が各サービスの構成ファイルを作成する必要があるため、\fBdisabled\fR になっています。
+.sp
+.LP
+正しい管理手順としては、各サービスの構成ファイルを作成してから、\fBsvcadm\fR(1M) を使用して各サービスを有効にします。
+.sp
+.LP
+\fBike\fR サービスは、\fBipsecalgs\fR および \fBpolicy\fR サービスに対して依存関係があります。これらのサービスは、\fBike\fR サービスより前に有効にすべきです。そうしないと、\fBike\fR サービスは保守モードに移行します。
+.sp
+.LP
+構成を変更する必要がある場合は、構成ファイルを編集してから、次のようにしてサービスをリフレッシュします。
+.sp
+.in +2
+.nf
+example# \fBsvcadm refresh ike\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBike\fR サービスには次のプロパティーが定義されています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/admin_privilege\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBikeadm\fR(1M) の呼び出しによって実行中の \fBin.iked\fR を変更または監視できるレベルを定義します。このプロパティーに設定可能な値は \fB-p\fR オプションと同じです。「\fBオプション\fR」の \fB-p\fR の説明を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/config_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用する構成ファイルを定義します。デフォルト値は \fB/etc/inet/ike/config\fR です。このファイルの形式については、\fBike.config\fR(4) を参照してください。このプロパティーには \fB-f\fR フラグと同じ効果があります。「\fBオプション\fR」の \fB-f\fR の説明を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/debug_level\fR\fR
+.ad
+.sp .6
+.RS 4n
+後述の \fBdebug_logfile\fR ファイルに書き込まれるデバッグ出力の量を定義します。これに対するデフォルト値は \fBop\fR または \fBoperator\fR です。このプロパティーは、構成ファイルの再読み取りなどのイベントに関する情報の記録を制御します。\fBdebug_level\fR に設定可能な値は、\fBikeadm\fR(1M) のマニュアルページに一覧表示されています。値 \fBall\fR は \fB-d\fR フラグと同等です。「\fBオプション\fR」の \fB-d\fR の説明を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/debug_logfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+デバッグ出力の書き込み先を定義します。ここに書き込まれるメッセージは、\fBin.iked\fR 内のデバッグコードに由来します。起動時のエラーメッセージは、\fBsmf\fR(5) フレームワークによって記録され、サービス固有のログファイルに記録されます。\fBlogfile\fR プロパティーを調べるには、次のいずれかのコマンドを使用します。
+.sp
+.in +2
+.nf
+example# \fBsvcs -l ike\fR
+example# \fBsvcprop ike\fR
+example# \fBsvccfg -s ike listprop\fR
+.fi
+.in -2
+.sp
+
+これらのログファイルのプロパティーの値は異なる場合があり、その場合は両方のファイルでエラーを検査すべきです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/ignore_errors\fR\fR
+.ad
+.sp .6
+.RS 4n
+構成ファイルに構文エラーがあった場合に \fBin.iked\fR の動作を制御するブール値。デフォルト値は \fBfalse\fR で、構成が無効だった場合は \fBin.iked\fR が保守モードに移行します。
+.sp
+この値を \fBtrue\fR に設定すると、IKE サービスはオンライン状態のままになりますが、正常に動作させるには、管理者が \fBikeadm\fR(1M) を使用して実行中のデーモンを構成する必要があります。このオプションは以前のリリースとの互換性のために提供されています。
+.RE
+
+.sp
+.LP
+これらのプロパティーは、次の承認を割り当てられたユーザーが \fBsvccfg\fR(1M) を使用して変更できます。
+.sp
+.in +2
+.nf
+solaris.smf.value.ipsec
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+PKCS#11 トークンオブジェクトをロック解除またはロックするには、\fBikeadm\fR トークンのログインと \fBikeadm\fR トークンのログアウトをそれぞれ使用します。これらの PKCS#11 トークンオブジェクトに格納された秘密鍵材料の可用性は、\fBikeadm dump certcache\fR を使用して監視できます。次の承認によって、ユーザーは PKCS#11 トークンオブジェクトのログインまたはログアウトができます。
+.sp
+.in +2
+.nf
+solaris.network.ipsec.ike.token.login
+solaris.network.ipsec.ike.token.logout
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBauths\fR(1)、\fBikeadm\fR(1M)、\fBuser_attr\fR(4)、\fBrbac\fR(5) を参照してください。
+.sp
+.LP
+新しいプロパティー値を有効にするには、\fBsvcadm\fR(1M) を使用してサービスをリフレッシュする必要があります。変更不可能な一般プロパティーは、\fBsvcprop\fR(1) コマンドを使用して表示できます。
+.sp
+.in +2
+.nf
+# \fBsvccfg -s ipsec/ike setprop config/config_file = \e
+/new/config_file\fR
+# \fBsvcadm refresh ike\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有効化、無効化、リフレッシュ、再起動要求など、このサービスに対する管理操作は、\fBsvcadm\fR(1M) を使用して実行できます。次に示す承認を割り当てられたユーザーは、これらの操作を実行できます。
+.sp
+.in +2
+.nf
+solaris.smf.manage.ipsec
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+サービスステータスを照会するには、\fBsvcs\fR(1) コマンドを使用します。
+.sp
+.LP
+\fBin.iked\fR デーモンは、\fBsmf\fR(5) の管理下で実行されるように設計されています。\fBin.iked\fR コマンドはコマンド行から実行できますが、これは推奨されていません。\fBin.iked\fR をコマンド行から実行する場合は、最初に \fBike\fR \fBsmf\fR(5) サービスを無効にすべきです。\fBsvcadm\fR(1M) を参照してください。
+.SS "場所プロファイルとの相互作用"
+.sp
+.LP
+IKE の構成およびアクティブ化は、場所プロファイルで管理されます (場所プロファイルの詳細は、\fBnetcfg\fR(1M) を参照してください)。これらのプロファイルは、固定 (つまり、ネットワーク構成は従来の方法で管理される) とリアクティブ (つまり、ネットワーク構成は自動的に管理され、プロファイルに指定されたポリシールールに従ってネットワーク環境の変更に反応する) のいずれかです。
+.sp
+.LP
+固定の場所 (現在は、DefaultFixed 場所の 1 つのみ) がアクティブな場合は、場所を無効にしたときに SMF リポジトリへの変更がその場所に適用され、場所を再度有効にしたときに復元されます。
+.sp
+.LP
+リアクティブな場所がアクティブのときは、変更は SMF リポジトリに直接適用すべきではありません。これらの変更は場所プロファイルに保持されないため、場所が無効にされるか、\fBsvc:/network/physical:default\fR および \fBsvc:/network/location:default\fR によって管理されるシステムのネットワーク構成がリフレッシュまたは再起動された場合に失われます。代わりに、変更は、\fBnetcfg\fR(1M) コマンドを使用して場所自体に適用すべきです。これによって、変更は場所プロファイルリポジトリに保存され、SMF リポジトリにも適用されます (現在アクティブな場所に対して変更が行われた場合)。
+.sp
+.LP
+IKE 構成ルールを含むファイルの名前は、場所プロファイルの \fB ike-config-file\fR プロパティーに格納されます。このプロパティーが値セットを持つ場合、指定されたルールファイルが適用されて、\fBsvc:/network/ipsec/ike\fR が有効になります。このプロパティーが設定されない場合、サービスは無効になります。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 15n
+.rt  
+構成ファイルの構文を検査します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.RS 15n
+.rt  
+デバッグモードを使用します。プロセスが制御端末に接続されたままになり、大量のデバッグ出力が生成されます。このオプションは推奨されていません。詳細は、「サービス管理機能」を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfilename\fR\fR
+.ad
+.RS 15n
+.rt  
+\fB/etc/inet/ike/config\fR の代わりに \fIfilename\fR を使用します。このファイルの形式については、\fBike.config\fR(4) を参照してください。このオプションは推奨されていません。詳細は、「サービス管理機能」を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIlevel\fR\fR
+.ad
+.RS 15n
+.rt  
+特権レベル (\fIlevel\fR) を指定します。このオプションは、\fBikeadm\fR(1M) の呼び出しによって実行中の \fBin.iked\fR に関してどの程度を変更または監視できるかを設定します。 
+.sp
+有効な \fIlevel\fR は次のとおりです。 
+.sp
+.ne 2
+.mk
+.na
+\fB0\fR
+.ad
+.RS 5n
+.rt  
+ベースレベル
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB1\fR
+.ad
+.RS 5n
+.rt  
+事前共有鍵情報へのアクセス
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB2\fR
+.ad
+.RS 5n
+.rt  
+キーイング材料へのアクセス
+.RE
+
+\fB-p\fR が指定されなかった場合、\fIlevel\fR はデフォルトの \fB0\fR に設定されます。
+.sp
+このオプションは推奨されていません。詳細は、「サービス管理機能」を参照してください。
+.RE
+
+.SH セキュリティ
+.sp
+.LP
+このプログラムのイメージには、機密性の高い秘密鍵情報が含まれています。実行中の \fBin.iked\fR デーモンのコアダンプやシステムダンプには機密性の高い鍵情報が含まれているため、これらのファイルには注意してください。\fBin.iked\fR によって生成されるコアファイルを制限するには、\fBcoreadm\fR(1M) コマンドを使用します。
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ike/config\fR\fR
+.ad
+.sp .6
+.RS 4n
+デフォルトの構成ファイル
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/secret/ike.privatekeys/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+秘密鍵。秘密鍵に対応する同じファイル名の公開鍵証明書が \fB/etc/inet/ike/publickeys/\fR に存在する必要があります。\fB\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ike/publickeys/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+公開鍵証明書。名前については、対応する秘密鍵の名前との関連だけが重要です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ike/crls/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+公開鍵証明書失効リスト。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/secret/ike.preshared\fR\fR
+.ad
+.sp .6
+.RS 4n
+フェーズ 1 認証の \fBIKE\fR 事前共有シークレット。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBsvcs\fR(1), \fBcoreadm\fR(1M), \fBikeadm\fR(1M), \fBikecert\fR(1M), \fBlabeld\fR(1M), \fBnetcfg\fR(1M), \fBsvccfg\fR(1M), \fBsvcadm\fR(1M), \fBike.config\fR(4), \fBattributes\fR(5), \fBsmf\fR(5), \fBipsecesp\fR(7P), \fBpf_key\fR(7P)
+.sp
+.LP
+『\fISolaris Trusted Extensions リファレンスマニュアル\fR』に含まれている \fBtnzonecfg(4)\fR を参照してください。
+.sp
+.LP
+Dan Harkins および Dave Carrel 著、『\fIRFC 2409, Internet Key Exchange (IKE)\fR』、Network Working Group 発行、1998 年 11 月
+.sp
+.LP
+Maughan、Douglas、Schertler, M.、Schneider, M.、Turner, J. 著、『\fIRFC 2408, Internet Security Association and Key Management Protocol (ISAKMP)\fR』、Network Working Group 発行、1998 年 11 月
+.sp
+.LP
+Piper、Derrell 著、『\fIRFC 2407, The Internet IP Security Domain of Interpretation for ISAKMP\fR』、Network Working Group 発行、1998 年 11 月
+.sp
+.LP
+Fu, D.、Solinos, J. 著、『\fIRFC 4753, ECP Groups for IKE and IKEv2\fR』、Network Working Group 発行、2007 年 1 月
+.sp
+.LP
+Lepinski, M.、Kent, S. 著、『\fIRFC 5114, Additional Diffie-Hellman Groups for Use with IETF Standards\fR』、Network Working Group 発行、2008 年 1 月

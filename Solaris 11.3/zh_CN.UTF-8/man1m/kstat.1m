@@ -1,0 +1,380 @@
+'\" te
+.\" Copyright (c) 2000, 2011, Oracle and/or its affiliates.All rights reserved.
+.TH kstat 1M "2009 年 3 月 23 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+kstat \- 显示内核统计信息
+.SH 用法概要
+.LP
+.nf
+\fBkstat\fR [\fB-lpq\fR] [\fB-T\fR u | d ] [\fB-c\fR \fIclass\fR] [\fB-m\fR \fImodule\fR] 
+     [\fB-i\fR \fIinstance\fR] [\fB-n\fR \fIname\fR] [\fB-s\fR \fIstatistic\fR] 
+     [interval [count]]
+.fi
+
+.LP
+.nf
+\fBkstat\fR [\fB-lpq\fR] [\fB-T\fR u | d ] [\fB-c\fR \fIclass\fR] 
+     [\fImodule\fR:\fIinstance\fR:\fIname\fR:\fIstatistic\fR]... 
+     [interval [count]]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBkstat\fR 实用程序用于检查系统中的可用内核统计信息（或 kstat），并报告与命令行上指定的条件匹配的统计信息。列显每条匹配的统计信息时，将会同时列显其模块、实例和名称字段以及实际值。
+.sp
+.LP
+内核统计信息可以通过各种内核子系统（例如驱动程序或可装入的模块）进行发布；每个 kstat 都有一个用于指示其发布者的模块字段。由于每个模块都可能具有要报告其统计信息的可计数实体（例如与 \fBsd\fR(7D) 驱动程序关联的多个磁盘），因此 kstat 还具有一个为每个实体的统计信息编制索引的实例字段；kstat 实例从零开始编号。最后，为 kstat 指定了一个在其模块内唯一的名称。
+.sp
+.LP
+每个 kstat 都可能是一种特殊的 kstat 类型、名称-值对数组或原始数据。在名称-值情况下，每个报告值都会被指定一个称为统计信息的标签。\fBkstat\fR 会为已知的原始 kstat 和特殊 kstat 的每个值指定统计信息标签；因此，所有已发布的值都可以引用为 \fImodule\fR:\fIinstance\fR:\fIname\fR:\fIstatistic\fR。
+.sp
+.LP
+如果在没有任何模块操作数或选项的情况下进行调用，kstat 将会与系统中定义的所有统计信息匹配。下面提供了示例调用。自系统引导以来，所有时间均显示为小数秒。
+.SH 选项
+.sp
+.LP
+以下选项指定的测试执行逻辑 AND 运算，将选择所有匹配的 kstat。必须用合适的引号将包含 shell 元字符的正则表达式引起来，以免被 shell 调用。
+.sp
+.LP
+可以将 \fB-c\fR、\fB-i\fR、\fB-m\fR、\fB-n\fR 和 \fB-s\fR 选项的参数指定为 shell glob 模式，也可以指定为用 '/' 字符括起来的 Perl 正则表达式。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIclass\fR\fR
+.ad
+.RS 16n
+.rt  
+仅显示与指定的类匹配的 kstat。\fIclass\fR 为内核定义的用于对 kstat 的“类型”进行分类的字符串。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fIinstance\fR\fR
+.ad
+.RS 16n
+.rt  
+仅显示与指定的实例匹配的 kstat。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 16n
+.rt  
+列出匹配的 kstat 名称，而不显示值。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fImodule\fR\fR
+.ad
+.RS 16n
+.rt  
+仅显示与指定的模块匹配的 kstat。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR \fIname\fR\fR
+.ad
+.RS 16n
+.rt  
+仅显示与指定的名称匹配的 kstat。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 16n
+.rt  
+以可解析的格式显示输出。本文档中的所有示例输出都是以此格式提供的。如果未指定此选项，\fBkstat\fR 将会以用户可读的表格式生成输出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR\fR
+.ad
+.RS 16n
+.rt  
+不显示输出，而返回与给定条件匹配的项目的相应退出状态。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIstatistic\fR\fR
+.ad
+.RS 16n
+.rt  
+仅显示与指定的统计信息匹配的 kstat。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR d | u\fR
+.ad
+.RS 16n
+.rt  
+以 \fBdate\fR(1) 格式 (\fBd\fR) 或以 \fBtime\fR(2) (\fBu\fR) 返回的值的字母数字表示形式，在每个统计信息块之前显示一个时间戳。 
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fImodule\fR:\fIinstance\fR:\fIname\fR:\fIstatistic\fR\fR
+.ad
+.sp .6
+.RS 4n
+按照以上所述指定模块、实例、名称和统计信息的备用方法。每个模块、实例、名称或统计信息说明符都可以为 shell glob 模式，也可以为用 '/' 字符括起来的 Perl 正则表达式。可以在一个操作数内使用两种说明符类型。将说明符保留为空等效于对该说明符使用 '*' glob 模式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIinterval\fR\fR
+.ad
+.sp .6
+.RS 4n
+两次报告之前间隔的秒数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcount\fR\fR
+.ad
+.sp .6
+.RS 4n
+要列显的报告数。
+.RE
+
+.SH 示例
+.sp
+.LP
+在以下示例中，块中的所有命令行都会生成相同的输出，如紧邻命令行的下方所示。当然，确切的统计信息和值将视计算机而异。
+.LP
+\fB示例 1 \fR使用 \fBkstat\fR 命令
+.sp
+.in +2
+.nf
+example$ \fBkstat -p -m unix -i 0 -n system_misc -s 'avenrun*'\fR
+example$ \fBkstat -p -s 'avenrun*'\fR
+example$ \fBkstat -p 'unix:0:system_misc:avenrun*'\fR
+example$ \fBkstat -p ':::avenrun*'\fR
+example$ \fBkstat -p ':::/^avenrun_\ed+min$/'\fR
+
+unix:0:system_misc:avenrun_15min        3
+unix:0:system_misc:avenrun_1min 4
+unix:0:system_misc:avenrun_5min 2
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR使用 \fBkstat\fR 命令
+.sp
+.in +2
+.nf
+example$ \fBkstat -p -m cpu_stat -s 'intr*'\fR
+example$ \fBkstat -p cpu_stat:::/^intr/\fR
+
+cpu_stat:0:cpu_stat0:intr       29682330
+cpu_stat:0:cpu_stat0:intrblk    87
+cpu_stat:0:cpu_stat0:intrthread 15054222
+cpu_stat:1:cpu_stat1:intr       426073
+cpu_stat:1:cpu_stat1:intrblk    51
+cpu_stat:1:cpu_stat1:intrthread 289668
+cpu_stat:2:cpu_stat2:intr       134160
+cpu_stat:2:cpu_stat2:intrblk    0
+cpu_stat:2:cpu_stat2:intrthread 131
+cpu_stat:3:cpu_stat3:intr       196566
+cpu_stat:3:cpu_stat3:intrblk    30
+cpu_stat:3:cpu_stat3:intrthread 59626
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR使用 \fBkstat\fR 命令
+.sp
+.in +2
+.nf
+example$ \fBkstat -p :::state ':::avenrun*'\fR
+example$ \fBkstat -p :::state :::/^avenrun/\fR
+ 
+cpu_info:0:cpu_info0:state      on-line
+cpu_info:1:cpu_info1:state      on-line
+cpu_info:2:cpu_info2:state      on-line
+cpu_info:3:cpu_info3:state      on-line
+unix:0:system_misc:avenrun_15min        4
+unix:0:system_misc:avenrun_1min 10
+unix:0:system_misc:avenrun_5min 3
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR使用 \fBkstat\fR 命令
+.sp
+.in +2
+.nf
+example$ \fBkstat -p 'unix:0:system_misc:avenrun*' 1 3\fR
+unix:0:system_misc:avenrun_15min        15
+unix:0:system_misc:avenrun_1min 11
+unix:0:system_misc:avenrun_5min 21
+ 
+unix:0:system_misc:avenrun_15min        15
+unix:0:system_misc:avenrun_1min 11
+unix:0:system_misc:avenrun_5min 21
+ 
+unix:0:system_misc:avenrun_15min        15
+unix:0:system_misc:avenrun_1min 11
+unix:0:system_misc:avenrun_5min 21
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR使用 \fBkstat\fR 命令
+.sp
+.in +2
+.nf
+example$ \fBkstat -p -T d 'unix:0:system_misc:avenrun*' 5 2\fR
+Thu Jul 22 19:39:50 1999
+unix:0:system_misc:avenrun_15min        12
+unix:0:system_misc:avenrun_1min 0
+unix:0:system_misc:avenrun_5min 11
+ 
+Thu Jul 22 19:39:55 1999
+unix:0:system_misc:avenrun_15min        12
+unix:0:system_misc:avenrun_1min 0
+unix:0:system_misc:avenrun_5min 11
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR使用 \fBkstat\fR 命令
+.sp
+.in +2
+.nf
+example$ \fBkstat -p -T u 'unix:0:system_misc:avenrun*'\fR
+932668656
+unix:0:system_misc:avenrun_15min        14
+unix:0:system_misc:avenrun_1min 5
+unix:0:system_misc:avenrun_5min 18
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+有一条或多条统计信息匹配。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+无统计信息匹配。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+指定的命令行选项无效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.RS 5n
+.rt  
+发生了致命错误。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/dev/kstat\fR\fR
+.ad
+.RS 14n
+.rt  
+内核统计信息驱动程序
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBdate\fR(1)、\fBsh\fR(1)、\fBtime\fR(2)、\fBgmatch\fR(3GEN)、\fBkstat\fR(3KSTAT)、\fBattributes\fR(5)、\fBkstat\fR(7D)、\fBsd\fR(7D)、\fBkstat\fR(9S)
+.SH 附注
+.sp
+.LP
+如果模式参数包含也为 shell 元字符的 glob 或 Perl RE 元字符，则必须用相应的 shell 引号将模式引起来。

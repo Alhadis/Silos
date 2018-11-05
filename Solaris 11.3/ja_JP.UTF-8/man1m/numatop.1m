@@ -1,0 +1,630 @@
+'\" te
+.\" Copyright (c) 2013, Oracle and/or its affiliates. All rights reserved.
+.TH numatop 1M "2013 年 6 月 24 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+numatop \- メモリーアクセス近傍性の特徴付けと分析を行うためのツール
+.SH 形式
+.LP
+.nf
+\fBnumatop\fR [\fB-s\fR \fIsampling_precision\fR]
+        [\fB-l\fR \fIlog_level\fR] [\fB-f\fR \fIlog_file\fR] [\fB-d\fR \fIdump_file\fR] [\fB-h\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+最新のシステムでは、マルチプロセッシングに非ユニフォームメモリーアクセス (NUMA) 設計が使用されます。NUMA システムでは、メモリーの一部を特定のプロセッサに近づけ、その他の部分を遠ざけるような方法でメモリーとプロセッサを構成します。プロセッサは、遠いメモリーより近いメモリーに高速にアクセスできます。したがって NUMA マシンでは、プロセッサとメモリーの間の待機時間がメモリーの部分によって大幅に異なります。
+.sp
+.LP
+\fBnumatop\fR は、NUMA システム上で実行されているプロセスおよびスレッドの実行時メモリー近傍性の特徴付けと分析を行うための観察ツールです。ユーザーがプロセスおよびスレッドの NUMA 動作を特徴付け、NUMA に関連するパフォーマンスボトルネックの存在箇所を特定するのに役立ちます。このツールの用途:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+すべての実行中プロセスおよびスレッドの近傍性を特徴付け、システムでもっとも近傍性が低いプロセスおよびスレッドを特定します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+「ホットな」メモリー領域を特定し、メモリーアクセスの平均待機時間を報告し、アクセスされたメモリーが割り当てられている場所を示します。「ホットな」メモリー領域は、プロセス/スレッドのアクセスがもっとも頻繁な領域です。\fBnumatop\fR には、メモリーアクセスの何パーセントが各メモリー領域に帰属するかを示す \fBACCESS%\fR というメトリックが用意されています。
+.LP
+注 - 
+.sp
+.RS 2
+\fBnumatop\fR は、待機時間が定義済みのしきい値より長いメモリーアクセスのみを記録します。
+.RE
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+プロセス/スレッドが特定のカウンタイベント (リモートメモリーアクセス (RMA)、ローカルメモリーアクセス (LMA)、リタイア命令 (IR)、CPU サイクル (CYCLE) など) を生成した場合に、呼び出しチェーンを示します。呼び出しチェーンは、ユーザーがイベントを生成したソースコードを特定するのに役立ちます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+メモリーおよび CPU 使用率に関するノード単位の統計情報を示します。ノードは、すべてのバイトが各 CPU から同じ距離にあるメモリーの領域です。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ユーザーにわかりやすいインタフェースを使用して、あるメトリック (デフォルトでは CPU 使用率) でソートしたプロセス/スレッドのリストを表示します。いちばん上のプロセスは CPU 使用率がシステム内で最大であり、いちばん下のプロセスは CPU 使用率が最小です。ユーザーは、ホットキーを使用して RMA、LMA、RMA/LMA、命令あたりの CPU サイクル (CPI)、CPU 使用率 (CPU%) などのメトリックで出力を再ソートすることもできます。
+.RE
+.sp
+.LP
+\fBnumatop\fR は、プロセスとスレッドの NUMA アクティビティーを定期的に追跡して分析し、有用なメトリックを表示する GUI ツールです。ユーザーは、上/下キーを使用して上下にスクロールすることで、現在のウィンドウ内を移動できます。また、ウィンドウの下部に表示されるいくつかのホットキーを使用して、ウィンドウを切り替えたり、ツールの実行状態を変更したりできます。たとえば、ホットキー \fBR\fR は現在のウィンドウ内のデータをリフレッシュします。
+.sp
+.LP
+このツールは、Intel Westmere-EX および Sandy Bridge-EP プラットフォームをサポートしています。
+.sp
+.LP
+\fBnumatop\fR によって表示される各種の表示ウィンドウとデータ項目の詳細な説明を次に示します。
+.sp
+.ne 2
+.mk
+.na
+\fBWIN1 - プロセスとスレッドのモニタリング\fR
+.ad
+.sp .6
+.RS 4n
+すべてのプロセスの近傍性の特徴を取得します。これは、起動時に最初に表示されるウィンドウであり、numatop のホームウィンドウです。このウィンドウには、プロセスのリストが表示されます。いちばん上のプロセスは CPU 使用率 (CPU%) がシステムで最大であり、いちばん下のプロセスは CPU% が最小です。一般に、メモリーを大量に使用するプロセスは CPU も大量に使用するため、WIN1 に表示されるプロセスはデフォルトで CPU% でソートされます。ユーザーはホットキー \fB1\fR、\fB2\fR、\fB3\fR、\fB4\fR、または \fB5\fR を使用して、それぞれ \fBRMA、LMA、RMA/LMA、CPI\fR、または \fBCPU%\fR で出力を再ソートできます。
+.sp
+.in +2
+.nf
+[KEY METRICS]: 
+RMA(K): number of Remote Memory Access (unit is 1000).
+RMA(K) = RMA / 1000
+LMA(K): number of Local Memory Access (unit is 1000).
+LMA(K) = LMA / 1000
+RMA/LMA: ratio of RMA / LMA.
+CPI: CPU cycles per instruction.
+CPU%: System CPU utilization (busy time across all CPUs).
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': WIN1 refresh.
+\&'R': Refresh to show the latest data.
+\&'I': Show the normalized data.
+\&'N': Show the per-node statistics
+<Enter>: Switch to WIN3 for the selected process.
+\&'1': Sort by 'RMA'.
+\&'2': Sort by 'LMA'.
+\&'3': Sort by 'RMA/LMA'.
+\&'4': Sort by 'CPI'.
+\&'5': Sort by 'CPU%'
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN2 - プロセスとスレッドのモニタリング (正規化)\fR
+.ad
+.sp .6
+.RS 4n
+すべてのプロセスの正規化された近傍性の特徴を取得します。
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+RPI(K): RMA normalized by 1000 instructions.
+RPI(K) = RMA / (IR / 1000);
+LPI(K): LMA normalized by 1000 instructions.
+LPI(K) = LMA / (IR / 1000);
+Other metrics remain the same.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+\&'N': Show the per-node statistics.
+<Enter>: Switch to WIN3 for the selected process.
+\&'1': Sort by 'RPI'.
+\&'2': Sort by 'LPI'.
+\&'3': Sort by 'RMA/LMA'.
+\&'4': Sort by 'CPI'.
+\&'5': Sort by 'CPU%'
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN3 - プロセスのモニタリング\fR
+.ad
+.sp .6
+.RS 4n
+指定されたプロセスのノードアフィニティーに関する近傍性の特徴を取得します。
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+NODE: the node ID.
+	CPU%: per-node CPU utilization.
+	Other metrics remain the same.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+	'N': Show the per-node statistics.
+\&'L': Show the latency information.
+	'C': Show the call-chain.
+	<Enter>: Switch to WIN4 for the specified process.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN4 - すべてのスレッドのモニタリング\fR
+.ad
+.sp .6
+.RS 4n
+指定されたプロセスに含まれるすべてのスレッドの近傍性の特徴を取得します。
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+CPU%: per-CPU CPU utilization
+	Other metrics remain the same.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+	'N': Show the per-node statistics.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN5 - スレッドのモニタリング\fR
+.ad
+.sp .6
+.RS 4n
+指定されたスレッドのノードアフィニティーに関する近傍性の特徴を取得します。
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+CPU%: per-CPU CPU utilization.
+	Other metrics remain the same.
+        
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+\&'N': Show the per-node statistics.
+\&'L': Show the latency information.
+\&'C': Show the call-chain.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN6 - メモリー領域のモニタリング\fR
+.ad
+.sp .6
+.RS 4n
+指定されたプロセス/スレッドの関連するアクセス待機時間とともに、メモリー領域の使用状況を取得します。
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+ADDR: starting address of the memory area.
+SIZE: size of memory area (K/M/G bytes)
+ACCESS%: percentage of memory accesses are to this memory area.
+LAT(ns): the average latency (nanosecond) of memory accesses.
+DESC: description of memory area (from /proc/<pid>/maps).
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+\&'D': Show the memory access node distribution.
+\&'M': Recalculate the address mapping.
+	<Enter>: Show break down the memory area into physical memory on node.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN7 - メモリーアクセスのノード分布の概要\fR
+.ad
+.sp .6
+.RS 4n
+プロセス/スレッドから各ノードに対して発生したメモリーアクセスの割合を取得します。
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+NODE: the node ID.
+	ACCESS%: percentage of memory accesses are to this node.
+	LAT(ns): the average latency (nanoseconds) of memory accesses
+         to this node.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+\&'M': Recalculate the address mapping.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN8 - メモリー領域をノード上の物理メモリーに分解する\fR
+.ad
+.sp .6
+.RS 4n
+プロセス/スレッドの関連するアクセス待機時間とともに、メモリー領域をノード上の物理マッピングに分解します。
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+NODE: the node ID.
+	Other metrics remain the same.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+\&'M': Recalculate the address mapping.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN9 - プロセス/スレッドが指定されたイベントを生成した場合の呼び出しチェーン\fR
+.ad
+.sp .6
+.RS 4n
+プロセスが RMA、LMA、CYCLE、または IR を生成した場合の呼び出しチェーンを表示します。
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+Call-chain list: a list of call-chains.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+	'1': Show the call-chain for RMA
+	'2': Show the call-chain for LMA
+	'3': Show the call-chain for CYCLE
+	'4': Show the call-chain for IR
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN10 - ノードの概要\fR
+.ad
+.sp .6
+.RS 4n
+このシステムのノード単位の基本的な統計情報を表示します。
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+LG: node id of this node.
+MEM.ALL: total physical memory in this node.
+	MEM.FREE: free physical memory in this node.
+	CPU%: per-node CPU utilization
+	Other metrics remain the same
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window (WIN).
+\&'R': Refresh to show the latest data.
+	<Enter>: Show the information of the specified node.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN11 - ノードの情報\fR
+.ad
+.sp .6
+.RS 4n
+指定されたノードのメモリー使用状況と CPU 使用率を表示します。
+.sp
+.in +2
+.nf
+CPU: array of logical CPUs which belong to this node.
+	CPU%: per-node CPU utilization
+	Other metrics remain the same.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+.fi
+.in -2
+
+.RE
+
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIsampling_precision\fR\fR
+.ad
+.RS 25n
+.rt  
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnormal\fR\fR
+.ad
+.RS 10n
+.rt  
+精度とオーバーヘッドのバランスを調整します (デフォルト)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhigh\fR\fR
+.ad
+.RS 10n
+.rt  
+高いサンプリング精度 (高いオーバーヘッド)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlow\fR\fR
+.ad
+.RS 10n
+.rt  
+低いサンプリング精度 (高負荷のシステムに適する)
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIlog_level\fR\fR
+.ad
+.RS 25n
+.rt  
+ログファイルのログ記録レベルを指定します。有効な値:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+None (デフォルト)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+Unknown (予約済み)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+All
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIlog_file\fR\fR
+.ad
+.RS 25n
+.rt  
+出力を書き込むログファイルを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdump_file\fR\fR
+.ad
+.RS 25n
+.rt  
+画面データが書き込まれるダンプファイルを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.RS 25n
+.rt  
+コマンドの使用方法を表示します。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRデフォルト動作での \fBnumatop\fR の起動
+.sp
+.LP
+次のコマンドは、サポートされているオプションのデフォルト値でこのツールを起動します。
+
+.sp
+.in +2
+.nf
+# \fBnumatop\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fR高いサンプリング精度での \fBnumatop\fR の起動
+.sp
+.LP
+次のコマンドは、高いサンプリング精度でこのツールを起動します。
+
+.sp
+.in +2
+.nf
+# \fBnumatop -s high\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fRログファイルの指定
+.sp
+.LP
+次のコマンドは、ログファイルを \fB/tmp/numatop.log\fR に設定し、すべての警告メッセージをそのファイルにダンプします。
+
+.sp
+.in +2
+.nf
+# \fBnumatop -l 2 -o /tmp/numatop.log\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fRダンプファイルの指定
+.sp
+.LP
+次のコマンドは、ダンプファイルを \fB/tmp/dump.log\fR に設定し、すべての画面データをそのファイルにダンプします。 
+
+.sp
+.in +2
+.nf
+# \fBnumatop -d /tmp/dump.log\fR
+.fi
+.in -2
+.sp
+
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB0\fR
+.ad
+.RS 19n
+.rt  
+正常終了。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBその他の値\fR
+.ad
+.RS 19n
+.rt  
+エラーが発生した。
+.RE
+
+.SH 使用法
+.sp
+.LP
+\fBnumatop\fR を実行するには、root 特権が必要です。
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+アーキテクチャーx86
+_
+使用条件diagnostic/numatop
+_
+インタフェースの安定性確実
+.TE
+

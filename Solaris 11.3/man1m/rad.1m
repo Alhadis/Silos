@@ -1,0 +1,632 @@
+'\" te
+.\" Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved
+.TH rad 1M "11 May 2012" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+rad \- remote administration daemon
+.SH SYNOPSIS
+.LP
+.nf
+\fB/usr/lib/rad\fR [\fB-d\fR] [\fB-s\fR] [\fB-S\fR \fIfmri\fR]
+     [\fB-M\fR \fImodule\fR [ \fB-M\fR \fImodule\fR ]...]
+     [\fB-m\fR \fImoduledir\fR [ \fB-m\fR \fImoduledir\fR ]...]
+     [\fB-t\fR \fItranspec\fR [ \fB-t\fR \fItranspec\fR ]...]
+     [\fB-e\fR \fItimeout\fR]
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+\fBrad\fR is a facility that securely exposes programmatic system administrative and monitoring interfaces to consumers in a variety of high-level languages.
+.sp
+.LP
+\fBrad\fR can be used in the following ways:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+As a service:
+.sp
+When run as a service, \fBrad\fR authenticates connections using \fBgetpeerucred\fR(3C) or \fBpam\fR(3PAM). When used in this way, consumed APIs are run as the authenticated user. This mode of operation is provided with both local consumers looking to isolate execution of their privileged operations and remote consumers in mind.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+As an unprivileged program:
+.sp
+When run as an unprivileged program, \fBrad\fR serves solely as a bridge between its clients and the administrative APIs it publishes. When used in this way, any interfaces consumed will be run with the rights held by the \fBrad\fR process.
+.RE
+.sp
+.LP
+\fBrad\fR is modular. The APIs published by \fBrad\fR are delivered as shared objects, as are the protocols it understands and the transports it can communicate over. Multiple instances of \fBrad\fR can run simultaneously, each functioning independently of the others, providing different services to different consumers, and listening for different types of connections on different ports or interfaces. \fBrad\fR obtains its configuration from its command-line options, from \fBsmf\fR(5), or from a combination of the two.
+.SH OPTIONS
+.sp
+.LP
+The following options are available for use on the command line:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+Emit verbose debugging output.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fItimeout\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specify a connection timeout in seconds. The default value is 180 seconds.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fImoduledir\fR\fR
+.ad
+.sp .6
+.RS 4n
+Add \fImoduledir\fR to the list of directories to scan and load modules from. The \fB-m\fR option can be used multiple times to add multiple module directories.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR \fImodule\fR\fR
+.ad
+.sp .6
+.RS 4n
+Add \fImodule\fR to the list of modules to load. \fImodule\fR should be an absolute pathname or a pathname relative to the current working directory. Modules loaded with \fB-M\fR take precedence over modules found using \fB-m\fR. The \fB-M\fR option can be used multiple times to add multiple modules.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fItranspec\fR\fR
+.ad
+.sp .6
+.RS 4n
+Instantiate a transport specified by transport specification \fItranspec\fR. A transport specification has the following format:
+.sp
+.in +2
+.nf
+transport[:\fIoption\fR[=\fIvalue\fR][,\fIoption2\fR[=\fIvalue2\fR]]...]
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.sp .6
+.RS 4n
+Behave as an \fBsvc.startd\fR(1M) start method. This option has the following effects:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+If the \fB-S\fR option is not specified, \fBrad\fR will read its configuration from the service identified by \fBscf_myname()\fR (see \fBscf_handle_create\fR(3SCF)).
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBrad\fR will use \fBsmf_method\fR(5)-compatible exit statuses.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBrad\fR will daemonize, returning success only once it is ready to handle requests.
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR \fIfmri\fR\fR
+.ad
+.sp .6
+.RS 4n
+Read configuration from the SMF service instance specified by fmri. When the \fB-s\fR option is not specified, configured transports are not read from the service to avoid endpoint conflicts with a running service.
+.sp
+Module directories specified on the command line are searched before module directories configured in SMF, permitting command line configuration to override SMF configuration.
+.RE
+
+.SH SMF CONFIGURATION
+.sp
+.LP
+When \fBrad\fR reads its configuration from smf(5), it reads general configuration from a property group called \fBconfig\fR of type \fBapplication\fR, and reads configuration for each of an arbitrary number of transports from a series of properties groups of type \fBxport_\fR\fIXYZ\fR where \fIXYZ\fR is replaced with the name of the transport type. Multiple instances of a particular transport type can be configured by creating multiple property groups of the corresponding type. The names of the property groups used to configure transports are not important.
+.sp
+.LP
+The \fBconfig\fR property group contains the following properties:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmoduledir\fR\fR
+.ad
+.sp .6
+.RS 4n
+A list of astrings. The directories to scan and load modules from.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmodules\fR\fR
+.ad
+.sp .6
+.RS 4n
+A list of astrings. The file names of specific modules to load.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdebug\fR\fR
+.ad
+.sp .6
+.RS 4n
+A boolean. If true, \fBrad\fR will emit verbose debugging output. Defaults to \fBfalse\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtimeout\fR\fR
+.ad
+.sp .6
+.RS 4n
+An integer. The maximum time in seconds to wait for an individual response from the client while authenticating. Defaults to \fB180\fR.
+.RE
+
+.SS "Service Instances"
+.sp
+.LP
+Two instances of the \fBsvc:/system/rad\fR SMF service are configured to run \fB/usr/lib/rad/rad\fR:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/system/rad:local\fR\fR
+.ad
+.sp .6
+.RS 4n
+Configures \fBrad\fR to use the \fBunix\fR transport, with \fBAF_UNIX\fR sockets at:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/system/volatile/rad/radsocket\fR, for \fBgetpeerucred\fR(3C)-authenticated connections, and...
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/system/volatile/rad/radsocket-unauth\fR, for \fBpam\fR(3PAM)-authenticated connections.
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc:/system/rad:remote\fR\fR
+.ad
+.sp .6
+.RS 4n
+Configures \fBrad\fR to use the \fBtls\fR transport.
+.RE
+
+.sp
+.LP
+Each service is configured with the following directories in its \fImoduledir\fR setting:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/rad/module\fR\fR
+.ad
+.sp .6
+.RS 4n
+content-specific modules
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/rad/transport\fR\fR
+.ad
+.sp .6
+.RS 4n
+transport modules
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/rad/protocol\fR\fR
+.ad
+.sp .6
+.RS 4n
+protocol modules
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/rad/site-modules\fR\fR
+.ad
+.sp .6
+.RS 4n
+site-specific modules
+.RE
+
+.SH TRANSPORTS
+.sp
+.LP
+Support for different transport types is delivered in module form. Modules for the following transports are supplied with the system: pipes (\fBpipe\fR), TCP sockets (\fBtcp\fR), TLS sockets (\fBtls\fR), and Unix-domain sockets (\fBunix\fR). Each transport type has a unique set of configuration properties. The options for an instance of a transport type are configured either by defining properties in an SMF property group or by supplying sub-options to a \fB-t\fR command-line option.
+.sp
+.LP
+The \fBpipe\fR transport reads from and writes to a specific file descriptor, as is needed when a process wishes to communicate with a child \fBrad\fR process using a pipe. The pipe transport has the following options:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBproto\fR\fR
+.ad
+.sp .6
+.RS 4n
+An astring. The protocol to use with this transport instance. Defaults to \fBrad\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfd\fR\fR
+.ad
+.sp .6
+.RS 4n
+An integer. The file descriptor to read from/write to.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexit\fR\fR
+.ad
+.sp .6
+.RS 4n
+A boolean. If true, \fBrad\fR will exit when communication over the pipe ends. Defaults to \fBfalse\fR.
+.RE
+
+.sp
+.LP
+The \fBtcp\fR transport listens for clear-text connections on a TCP socket. The \fBtcp\fR transport has the following options:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBproto\fR\fR
+.ad
+.sp .6
+.RS 4n
+An astring. The protocol to use with this transport instance. Defaults to \fBrad\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBport\fR\fR
+.ad
+.sp .6
+.RS 4n
+An integer. The port to listen on for connections.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlocalonly\fR\fR
+.ad
+.sp .6
+.RS 4n
+A boolean. If true, \fBrad\fR will only listen for connections from the local machine. Defaults to \fBtrue\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpam_service\fR\fR
+.ad
+.sp .6
+.RS 4n
+An astring. The \fBpam\fR(3PAM) service name to use when authenticating. Defaults to \fBrad-tcp\fR. See the "Authenticating with PAM" section below.
+.RE
+
+.sp
+.LP
+The \fBtls\fR transport listens for TLS connections on a TCP socket. The \fBtls\fR transport has the following options:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBproto\fR\fR
+.ad
+.sp .6
+.RS 4n
+An astring. The protocol to use with this transport instance. Defaults to \fBrad\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBport\fR\fR
+.ad
+.sp .6
+.RS 4n
+An integer. The port to listen on for connections.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlocalonly\fR\fR
+.ad
+.sp .6
+.RS 4n
+A boolean. If true, \fBrad\fR will only listen for connections from the local machine. Defaults to \fBtrue\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcertificate\fR\fR
+.ad
+.sp .6
+.RS 4n
+An astring. The location of the PEM-formatted x509 certificate to use.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprivatekey\fR\fR
+.ad
+.sp .6
+.RS 4n
+An astring. The location of the PEM-formatted private key to use.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgenerate\fR\fR
+.ad
+.sp .6
+.RS 4n
+A boolean. If true, and if the specified certificate and \fBprivatekey\fR do not exist, rad will generate a new certificate and private key using \fBopenssl\fR(5). Defaults to \fBfalse\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpam_service\fR\fR
+.ad
+.sp .6
+.RS 4n
+An astring. The \fBpam\fR(3PAM) service name to use when authenticating. Defaults to \fBrad-tls\fR. See the "Authenticating with PAM" section below.
+.RE
+
+.sp
+.LP
+The \fBunix\fR transport listens for connections on an \fBAF_UNIX\fR socket. The \fBunix\fR transport has the following options:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBproto\fR\fR
+.ad
+.sp .6
+.RS 4n
+An astring. The protocol to use with this transport instance. Defaults to \fBrad\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+An astring. The path to listen on.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpeercred\fR\fR
+.ad
+.sp .6
+.RS 4n
+A boolean. If true, \fBrad\fR will attempt to automatically authenticate connections using \fBgetpeerucred\fR(3C). Defaults to \fBtrue\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpam_service\fR\fR
+.ad
+.sp .6
+.RS 4n
+n astring. The \fBpam\fR(3PAM) service name to use when authenticating. Defaults to \fBrad-unix\fR. See the "Authenticating with PAM" section below.
+.RE
+
+.SH AUTHENTICATING WITH PAM
+.sp
+.LP
+When \fBrad\fR is run as a service, and \fBgetpeerucred\fR(3C) is not applicable to the transport being used, \fBpam\fR(3PAM) is used to authenticate connections. The PAM service name used is dependent on the transport:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrad-tls\fR\fR
+.ad
+.sp .6
+.RS 4n
+when connecting by means of the \fBtls\fR transport
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrad-tcp\fR\fR
+.ad
+.sp .6
+.RS 4n
+when connecting by means of the \fBtcp\fR transport
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrad-unix\fR\fR
+.ad
+.sp .6
+.RS 4n
+when connecting by means of the \fBunix\fR transport (and \fBpeercred\fR is \fBfalse\fR)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrad\fR\fR
+.ad
+.sp .6
+.RS 4n
+when connecting by means of any other transport
+.RE
+
+.sp
+.LP
+In rare cases, administrators may need to override the PAM service name used on a per-transport basis. For example, two \fBrad\fR TLS transports serving a single \fBrad\fR instance, with one listening on a local (more trusted) network and the other on a remote (less trusted) network, could require different PAM configurations.
+.sp
+.LP
+In such cases, administrators can specify the name of the PAM service to use as a transport configuration property (see the "Transports" section above).
+.sp
+.LP
+As with all PAM services, PAM will for look for entries corresponding to the PAM service for \fBrad\fR in \fB/etc/pam.conf\fR first and then \fB/etc/pam.d/\fR\fIservice\fR. If no entries are found PAM will look in \fB/etc/pam.conf\fR for entries corresponding to the "other" service. If no "other" entries are found PAM will finally look for entries in \fB/etc/pam.d/other\fR.
+.SH FILES
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/rad/cert.pem\fR\fR
+.ad
+.sp .6
+.RS 4n
+The location where the remote \fBrad\fR instance (\fBsvc:/system/rad:remote\fR) stores its certificate. This file is readable by all users.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/rad/key.pem\fR\fR
+.ad
+.sp .6
+.RS 4n
+The location where the remote \fBrad\fR instance (\fBsvc:/system/rad:remote\fR) stores its private key.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/system/volatile/rad/radsocket\fR\fR
+.ad
+.sp .6
+.RS 4n
+The \fBAF_UNIX\fR socket where the local \fBrad\fR instance (\fBsvc:/system/rad:local\fR) accepts connections that are implicitly authenticated with \fBgetpeerucred\fR(3C).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/system/volatile/rad/radsocket-unauth\fR\fR
+.ad
+.sp .6
+.RS 4n
+The \fBAF_UNIX\fR socket where the local \fBrad\fR instance (\fBsvc:/system/rad:local\fR) accepts connections that must explicitly authenticate using \fBpam\fR(3PAM).
+.RE
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/management/rad
+_
+Interface StabilityPrivate
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBradadrgen\fR(1), \fBsvc.startd\fR(1M), \fBpipe\fR(2), \fBgetpeerucred\fR(3C), \fBpam\fR(3PAM), \fBscf_handle_create\fR(3SCF), \fBattributes\fR(5), \fBopenssl\fR(5), \fBsmf\fR(5), \fBsmf_method\fR(5)
+.SH NOTES
+.sp
+.LP
+Two instances of \fBrad\fR are delivered by the system. \fBsvc:/system/rad:local\fR listens to \fBAF_UNIX\fR connections at the paths \fB/system/volatile/rad/radsocket\fR and \fB/system/volatile/rad/radsocket-unauth\fR, and is enabled by default. The former \fBAF_UNIX\fR socket will automatically authenticate the connecting process using \fBgetpeerucred\fR(3C), while the latter requires the connecting process to explicitly authenticate. \fBsvc:/system/rad:remote\fR listens to TLS connections on the port 12302, requires all clients to explicitly authenticate, and is disabled by default.
+.sp
+.LP
+Other system components, including some desktop administrative user interfaces, rely on the local instance of \fBrad\fR (\fBsvc:/system/rad:local\fR).

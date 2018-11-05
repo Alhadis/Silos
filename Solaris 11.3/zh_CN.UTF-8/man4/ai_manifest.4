@@ -1,0 +1,2800 @@
+'\" te
+.\" Copyright (c) 2008, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH ai_manifest 4 "2014 年 3 月 25 日" "SunOS 5.11" "文件格式"
+.SH 名称
+ai_manifest \- 自动化安装清单文件格式
+.SH 用法概要
+.LP
+.nf
+/usr/share/install/ai.dtd.1
+.fi
+
+.SH 描述
+.sp
+.LP
+自动化安装程序 (Automated Installer, AI) 为 Oracle Solaris 提供可定制的无人参与安装机制，并使用基于 XML 的文件格式作为安装参数的说明。此安装参数文件称为 AI 清单。可以通过各种方式（如磁盘布局和要在系统上安装的软件）定制安装。
+.sp
+.LP
+AI 清单具有以下部分：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+自动化安装设置。指定在安装期间使用的设置。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+磁盘布局。指定安装的磁盘布局。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+软件。指定要安装的软件包。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+引导配置（仅限 x86）。指定如何配置 GRUB 引导菜单。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+其他配置。指定要在系统上安装的其他配置组件。
+.RE
+.sp
+.LP
+下面将更详细地介绍这些部分。
+.sp
+.LP
+要创建新的 AI 清单，请使用模板副本或来自相关安装服务映像的缺省清单。例如，如果安装服务映像位于 \fIimagepath\fR，则以下文件可用：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fIimagepath\fR/auto_install/manifest/default.xml\fR\fR
+.ad
+.sp .6
+.RS 4n
+此安装服务的原始缺省 AI 清单。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fIimagepath\fR/auto_install/manifest/ai_manifest.xml\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含示例定制的带注释 AI 清单样例。
+.RE
+
+.sp
+.LP
+可以使用 \fBinstalladm export\fR 命令检索安装服务中已存在的任何清单的副本。
+.sp
+.LP
+AI 清单还用于安装非全局区域（使用 \fBzoneadm install\fR 命令）。可以将 AI 清单文件传递给此命令以定制区域安装。在 AI 清单指定的内容中，只有一部分适用于安装非全局区域。下面的各部分中对这些指定内容进行了说明。
+.sp
+.LP
+服务管理工具 (Service Management Facility, SMF) 配置文件对 AI 清单进行了补充。这些配置文件指定已安装系统的系统配置，如主机名、联网以及 root 用户和初始用户的帐户设置。
+.sp
+.LP
+有关安装服务、AI 清单和配置文件的更多信息，请参见 \fBinstalladm\fR(1M) 手册页和Part\ III, \fI"Installing Using an Install Server,"\fR in \fI《Installing Oracle Solaris 11.3 Systems》\fR。有关配置文件格式的信息，请参见 \fBsmf\fR(5)。
+.SH 自动化安装设置
+.sp
+.LP
+\fBai_instance\fR 元素具有以下属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.sp .6
+.RS 4n
+此清单实例的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhttp_proxy\fR\fR
+.ad
+.sp .6
+.RS 4n
+在安装期间用于访问远程文件的 HTTP 代理。例如，映像包管理系统 (Image Packaging System, IPS) 软件包系统信息库中的软件包即是在安装期间访问的远程文件。\fBhttp_proxy\fR 的值是 HTTP URI，如 \fBhttp://myproxy.mycompany.com:8080/\fR。
+.sp
+在安装非全局区域时此属性不适用；如果提供了此属性，它将被忽略。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauto_reboot\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定在安装后是否自动重新引导的标志。\fBauto_reboot\fR 的缺省值为 \fBfalse\fR。当 \fBauto_reboot\fR 为 \fBfalse\fR 时，安装将等待手动干预以重新引导。
+.sp
+当 \fBauto_reboot\fR 为 \fBtrue\fR 时，如果安装成功，则计算机将自动重新引导到新安装的引导环境。
+.sp
+在安装非全局区域时此属性不适用；如果提供了此属性，它将被忽略。
+.RE
+
+.sp
+.LP
+以下示例演示如何使用 \fBai_instance\fR 元素：
+.sp
+.in +2
+.nf
+<auto_install>
+  <ai_instance name='default' auto_reboot='true'
+    http_proxy='http://myproxy.mycompany.com:8080/'>
+  <!-- target and software sections -->
+  </ai_instance>
+</auto_install>
+.fi
+.in -2
+
+.SH 磁盘布局
+.sp
+.LP
+AI 支持各种磁盘指定方式，从完全自动化选择安装目标到对磁盘布局的细粒度控制。
+.sp
+.LP
+\fBtarget\fR 元素指定磁盘布局。未指定 \fBtarget\fR 元素时缺省磁盘布局具有以下特征：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+一个磁盘全部用于安装 Oracle Solaris OS。此磁盘通常为引导磁盘或第一个磁盘。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+对于具有 GPT 感知固件的 x86 和 SPARC，将会分配 GPT 分区，该分区使用所有磁盘内容。请参见 \fBzpool\fR(1M) 手册页中 \fBzpool create\fR 命令的 \fB-B\fR 选项。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+对于不支持使用 GPT 的 SPARC 系统，将创建一个分片 0，其大小为整个磁盘。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+还会创建一个根池，该根池使用整个分片 0 或整个 GPT 分区。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果空间可用，则会在根池中创建交换卷和转储卷。
+.RE
+.sp
+.LP
+\fBtarget\fR 元素具有以下结构：
+.sp
+.in +2
+.nf
+<!-- zero or one target element -->
+<target>
+  <!-- zero or more disk elements -->
+  <disk ...>
+    <!-- One of the following elements:
+             disk_name
+             disk_prop
+             disk_keyword
+             iscsi
+         Zero or more of the following elements:
+             gpt_partition
+             partition
+             slice
+         gpt_partition can have zero or one size element.
+         partition can have zero or one size element
+             followed by zero or more slice elements.
+         slice can have zero or one size element.
+    -->
+  </disk>
+  <!-- zero or one logical element -->
+  <logical ...>
+    <!-- zero or more zpool elements -->
+    <zpool ...>
+      <!-- zero or more vdev elements -->
+      <vdev ...>
+      </vdev>
+      <!-- zero or more filesystem elements
+           with zero or one options element
+      -->
+      <filesystem>
+        <options>
+          <option .../>
+        </options>
+      <!-- zero or more zvol elements
+           with zero or one options element
+           and one size element
+      -->
+      <zvol ...>
+        <options>
+          <option .../>
+        </options>
+        <size val="..."/>
+      </zvol>
+      <!-- zero or one pool_options element
+           with one or more option elements
+      -->
+      <pool_options>
+        <option .../>
+      </pool_options>
+      <!-- zero or one dataset_options element
+           with one or more option elements
+      -->
+      <dataset_options>
+        <option .../>
+      </dataset_options>
+      <!-- zero or one be element
+           with zero or one options elements
+      -->
+      <be>
+        <options>
+          <option .../>
+        </options>
+      </be>
+    </zpool>
+  </logical>
+</target>
+.fi
+.in -2
+
+.sp
+.LP
+通过 \fBtarget\fR 元素的子元素可以指定磁盘和逻辑布局。
+.sp
+.LP
+在安装非全局区域时，磁盘的指定不适用；如果指定了磁盘，它们将被忽略。
+.sp
+.LP
+有些磁盘布局元素具有 size 子元素。\fBsize\fR 元素具有以下格式：
+.sp
+.in +2
+.nf
+<size val="\fIsize\fR" start_sector="\fIstart_sector\fR"/>
+.fi
+.in -2
+
+.sp
+.LP
+\fIstart_sector\fR 值是一个数值，用于指定新分区或分片的所需开始扇区。如果省略了 \fIstart_sector\fR 属性，则安装程序将搜索第一个足以包含指定 \fIsize\fR 的位置。
+.sp
+.LP
+\fIsize\fR 的值是具有以下后缀之一的数值：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBs\fR 或 \fBsec\fR：扇区
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBb\fR：字节
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBk\fR 或 \fBkb\fR：千字节 (2^10)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBm\fR 或 \fBmb\fR：兆字节 (2^20)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBg\fR 或 \fBgb\fR：千兆字节 (2^30)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBt\fR 或 \fBtb\fR：兆兆字节 (2^40)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBp\fR 或 \fBpb\fR：千兆兆字节 (2^50)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBe\fR 或 \fBeb\fR：艾字节 (2^60)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBz\fR 或 \fBzb\fR：泽字节 (2^70)
+.RE
+.sp
+.LP
+此部分的其余内容详细介绍了 \fBdisk\fR 和 \fBlogical\fR 元素。
+.SS "安装位置"
+.sp
+.LP
+如果在客户机上未指定安装 Oracle Solaris OS 的位置，则 AI 将选择该客户机的缺省位置。
+.sp
+.LP
+缺省的安装位置是每个客户机上找到的首个符合大小要求的磁盘。如果磁盘大小大于或等于所需的大小，那么安装程序将选择该磁盘作为安装位置。如果磁盘大小小于所需的大小，安装程序将检查下一磁盘。如果没有找到符合大小要求的磁盘，自动化安装在该客户机上将失败。\fB/system/volatile/install_log\fR 中的安装日志显示了该系统的磁盘选择过程的详细信息。
+.sp
+.LP
+\fBtarget\fR 部分的 \fBdisk\fR 部分指定安装位置。
+.sp
+.LP
+在安装非全局区域时，磁盘的指定不适用；如果指定了磁盘，它们将被忽略。
+.sp
+.LP
+可以使用以下类型的选择条件之一来选择磁盘：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+第 1 组：确定性条件，如磁盘名称或 IP 地址。使用下文“目标设备名称”中所述的 \fB<disk_name>\fR 子元素，或者使用下文“ISCSI 目标设备”中所述的 \fB<iscsi>\fR 子元素。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+第 2 组：非确定性条件，如磁盘大小或供应商。使用下文“目标设备属性”中所述的 \fB<disk_prop>\fR 子元素。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+第 3 组：关键字条件，如 \fBboot_disk\fR 关键字。使用下文“目标设备关键字”中所述的 \fB<disk_keyword>\fR 子元素。
+.RE
+.sp
+.LP
+只能从以上三组之一指定条件。如果使用第 2 组选择条件，则可以指定多个条件。例如，可以同时指定大小和供应商。如果使用第 1 组选择条件，则只能指定那些条件之一。
+.SS "目标设备名称"
+.sp
+.LP
+使用 \fBdisk_name\fR 元素可指定非 iSCSI 设备的目标设备名称。\fBdisk_name\fR 元素具有以下属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBname\fR 属性指定目标设备的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname_type\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBname_type\fR 属性指定目标设备名称的类型。\fBname_type\fR 属性可以具有以下值之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBctd\fR：控制器目标磁盘名称\fR
+.ad
+.sp .6
+.RS 4n
+这是 CTD 名称，例如 \fBc0t0d0\fR 或 \fBc0t2000002037CD9F72d0\fR。运行 \fBformat\fR(1M) 命令时，通常会看到此类型的名称。
+.sp
+.in +2
+.nf
+<disk_name name="c0t0d0" name_type="ctd"/>
+.fi
+.in -2
+
+如果省略 \fBname_type\fR 属性，则这是缺省的目标设备名称类型。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvolid\fR：卷标识符\fR
+.ad
+.sp .6
+.RS 4n
+这是卷标识符，可以通过 \fBformat \fR(1M) 命令进行设置。
+.sp
+.in +2
+.nf
+<disk_name name="MY_BOOT_DISK" name_type="volid"/>
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdevpath\fR：设备路径\fR
+.ad
+.sp .6
+.RS 4n
+这是相对于 \fB/devices\fR 目录的设备路径。
+.sp
+.in +2
+.nf
+<disk_name
+  name="/pci@0,0/pci10de,375@f/pci108e,286@0/disk@0,0"
+  name_type="devpath"/>
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdevid\fR：设备标识符\fR
+.ad
+.sp .6
+.RS 4n
+这是设备标识符，可在带有 \fB-iEn\fR 选项的 \fBiostat\fR(1M) 命令的输出的 "Device Id" 中找到。
+.sp
+.in +2
+.nf
+<disk_name
+  name="id1,sd@TSun_____STK_RAID_INT____F0F0F0"
+  name_type="devid"/>
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreceptacle\fR：插口标识符\fR
+.ad
+.sp .6
+.RS 4n
+这是 CRO（Chassis, Receptacle, Occupant，机箱、插口和插卡）配置中的插口值，可在带 \fB-ocR\fR 选项的 \fBdiskinfo\fR(1M) 命令的输出中找到。
+.sp
+.in +2
+.nf
+<disk_name name="SYS/HDDO" name_type="receptacle"/>
+.fi
+.in -2
+
+.RE
+
+.RE
+
+.SS "ISCSI 目标设备"
+.sp
+.LP
+使用 \fBiscsi\fR 元素可将 iSCSI 磁盘指定为安装目标。\fBiscsi\fR 元素具有以下属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsource\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsource\fR 属性指定 iSCSI 配置数据的源。\fBsource\fR 属性可以具有以下值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmanifest\fR\fR
+.ad
+.sp .6
+.RS 4n
+此值是指此 AI 清单。如果没有为 \fBsource\fR 属性指定值，则这是缺省值。
+.sp
+省略 \fBsource\fR 属性或者 \fBsource\fR 属性的值为 \fBmanifest\fR 时，必须指定 \fBtarget_lun\fR 和 \fBtarget_ip\fR 属性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdhcp\fR\fR
+.ad
+.sp .6
+.RS 4n
+此值是指通过在 DHCP \fBrootpath\fR 参数中指定 iSCSI 信息获取该信息时使用 DHCP。
+.sp
+当 \fBsource\fR 属性的值为 \fBdhcp\fR 时，不要指定任何其他 \fBiscsi\fR 属性。
+.sp
+.in +2
+.nf
+<iscsi source="dhcp"/>
+.fi
+.in -2
+
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtarget_ip\fR\fR
+.ad
+.sp .6
+.RS 4n
+此属性的值是 iSCSI 目标的 IP 地址。位于此 IP 地址的目标必须处于联机状态，并且可以从此系统进行访问。此属性是必需的。
+.sp
+.in +2
+.nf
+<iscsi target_lun="0" target_ip="192.168.1.34"/>
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtarget_lun\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果 iSCSI 目标提供了多个 LUN，则通过为 \fBtarget_lun\fR 指定一个整数值来指定要使用哪个 LUN。LUN 编号从 0 开始。要指定第一个 LUN，请将 \fBtarget_lun\fR 值指定为 0。
+.sp
+如果仅提供了一个 LUN，则可以省略此属性。如果 iSCSI 目标提供了多个 LUN，则需要此属性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtarget_name\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBtarget_name\fR 属性指定 iSCSI 目标的 iSCSI 限定名 (iSCSI Qualified Name, IQN) 或扩展唯一标识符 (Extended Unique Identifier, EUI)，如以下示例所示：
+.sp
+.in +2
+.nf
+iqn.1986-03.com.sun:02:a4a694bc-6de2-ee50-8979-e25ba29acb86
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtarget_port\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果未指定，则使用 \fBtarget_port\fR 的缺省值 3260（iSCSI 标准端口）。通过此属性可以指定替代端口号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinitiator_name\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBinitiator_name\fR 属性指定 iSCSI 启动器的 IQN 或 EUI。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBCHAP 验证\fR
+.ad
+.sp .6
+.RS 4n
+以下两个属性提供 CHAP（Challenge-Handshake Authentication Protocol，质询握手验证协议）验证：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchap_name\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBchap_name\fR 属性指定用于验证的 CHAP 用户名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchap_password\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBchap_password\fR 属性指定用于验证的 CHAP 口令。
+.RE
+
+SPARC 客户机可以在 Open Boot PROM (\fBok\fR) 提示符下选择设置 \fBchap-user\fR 和 \fB chap-password\fR。有关更多信息，请参见 \fBboot\fR(1M) 手册页中的“iSCSI 引导”。
+.RE
+
+.sp
+.LP
+\fBiscsi\fR 元素没有 \fBaction\fR 属性。AI 使用 iSCSI 设备，但不直接对其进行操作。
+.sp
+.LP
+如果未提供 \fBtarget_name\fR 属性，则 AI 在 \fBsendtargets\fR 模式下使用 \fBiscsiadm\fR(1M)。
+.sp
+.LP
+如果提供了 \fBtarget_name\fR 属性，则 AI 使用静态搜索。
+.sp
+.LP
+如果给定此信息，则可以安装 iSCSI 设备。
+.sp
+.LP
+由于 iSCSI 设备的网络接口早期已在客户机引导过程中配置，因此对于此次安装，您无需在任何系统配置文件中为此接口配置 \fBnetwork/install\fR 服务。
+.SS "目标设备属性"
+.sp
+.LP
+使用 \fBdisk_prop\fR 元素可指定目标设备的属性。可以指定多个属性。AI 将尝试基于提供的条件来查找最佳匹配。
+.sp
+.LP
+使用 \fBdisk_prop\fR 元素的属性可指定目标属性。\fBdisk_prop\fR 元素具有以下属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdev_type\fR：设备类型\fR
+.ad
+.sp .6
+.RS 4n
+目标磁盘的类型。可能的值包括 SCSI、ATA 和 USB。此值不区分大小写。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdev_vendor\fR：设备供应商\fR
+.ad
+.sp .6
+.RS 4n
+由 \fBformat\fR(1M) 命令的 \fBinquiry\fR 菜单选项显示的供应商。
+.sp
+.in +2
+.nf
+<disk_prop dev_vendor="Sun"/>
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdev_chassis\fR：设备机箱\fR
+.ad
+.sp .6
+.RS 4n
+CRO（Chassis, Receptacle, Occupant，机箱、插口、插卡）配置中的机箱值，可在带有 \fB-ocA\fR 选项的 \fBcroinfo\fR(1M) 命令的输出中找到。
+.sp
+.in +2
+.nf
+<disk_prop dev_chassis="SYS"/>
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdev_size\fR：设备大小\fR
+.ad
+.sp .6
+.RS 4n
+磁盘的最小大小。其值为带有大小单位的数值。
+.sp
+.in +2
+.nf
+<disk_prop dev_size="100gb"/>
+.fi
+.in -2
+
+.RE
+
+.sp
+.LP
+\fBdisk_prop\fR 元素允许同时指定多个属性，以便进一步约束磁盘搜索。以下示例将磁盘选择限制为大小至少为 100 GB 的 Hitachi 驱动器。
+.sp
+.in +2
+.nf
+<disk_prop dev_vendor="HITACHI" dev_size="100gb"/>
+.fi
+.in -2
+
+.SS "目标设备关键字"
+.sp
+.LP
+可以使用 \fBdisk_keyword\fR 元素将系统的引导磁盘指定为目标磁盘。
+.sp
+.in +2
+.nf
+<disk_keyword key="boot_disk"/>
+.fi
+.in -2
+
+.sp
+.LP
+\fBkey\fR 属性唯一支持的值是 \fBboot_disk\fR。
+.SS "整个磁盘、分区和分片"
+.sp
+.LP
+对磁盘进行布局的最简单方法是，通过将 \fBwhole_disk\fR 属性设置为 \fBtrue\fR 将整个磁盘用于安装。
+.sp
+.LP
+对于更复杂的磁盘布局，可以指定分区（仅限 x86 系统）和分片。
+.sp
+.LP
+\fBdisk\fR 元素具有以下属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBwhole_disk\fR\fR
+.ad
+.sp .6
+.RS 4n
+此属性的缺省值为 \fBfalse\fR。当 \fBwhole_disk\fR 为 \fBfalse\fR 时，必须定义分区或分片。除非通过为分区或分片的 \fBaction\fR 属性指定 \fBdelete\fR 值来删除任何现有的分区或分片，否则将保留它们。
+.sp
+当 \fBwhole_disk\fR 为 \fBtrue\fR 时，将删除所有的现有分区或分片。
+.sp
+以下示例指定将整个磁盘用于安装：
+.sp
+.in +2
+.nf
+<disk whole_disk="true">
+  <disk_name name="c0t0d0" name_type="ctd"/>
+</disk>
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin_zpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBin_zpool\fR 属性将此磁盘链接到在 AI 清单的 \fBlogical\fR 部分中定义的 ZFS 池。\fBin_zpool\fR 属性的值必须与对应 \fBzpool\fR 元素的 \fBname\fR 属性的值匹配。
+.sp
+如果在此处指定了 \fBin_zpool\fR 属性，则不要为任何从属分区或分片指定 \fBin_zpool\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin_vdev\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBin_vdev\fR 属性将此磁盘链接到在 AI 清单的 \fBlogical\fR 部分中定义的虚拟设备。\fBin_vdev\fR 属性的值必须与对应 \fBvdev\fR 元素的 \fBname\fR 属性的值匹配。
+.sp
+如果在此处指定了 \fBin_vdev\fR 属性，则不要为任何从属分区或分片指定 \fBin_vdev\fR。
+.RE
+
+.SS "GPT 分区"
+.sp
+.LP
+GUID 分区表分区是首选的 x86 和 SPARC 分区方法。GPT 分区可供 ZFS 直接使用，而不需要分片。\fBgpt_partition\fR 元素具有以下属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBname\fR 属性是 GPT 分区编号。Oracle Solaris 中的有效值是 0-7。
+.sp
+\fBname\fR 属性是必需的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaction\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBaction\fR 属性可以具有以下值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是分区的缺省操作。\fBcreate\fR 操作通知安装程序创建具有指定名称的分区。如果已存在同名分区，则首先删除该现有分区。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBdelete\fR 操作通知安装程序删除指定的分区。如果指定的分区不存在，则跳过 \fBdelete\fR 操作，并输出一条警告消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpreserve\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpreserve\fR 操作通知安装程序使指定的分区保持不变。如果在同一磁盘上的其他位置安装了其他操作系统，则通常使用此操作。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpart_type\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpart_type\fR 属性指定 GUID 分区类型。值可以是支持的 GUID 别名（如 \fBsolaris \fR）或明确的 GUID 十六进制字符串值。
+.sp
+\fBpart_type\fR 属性是必需的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin_zpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBin_zpool\fR 属性将此分区链接到在 AI 清单的 \fBlogical\fR 部分中定义的 ZFS 池。\fBin_zpool\fR 属性的值必须与对应 \fBzpool\fR 元素的 \fBname\fR 属性的值匹配。
+.sp
+如果指定了 \fBin_zpool\fR 属性，则不要为关联的 \fBdisk\fR 元素或任何从属的 \fBslice\fR 元素指定 \fBin_zpool\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin_vdev\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBin_vdev\fR 属性将此分区链接到在 AI 清单的 \fBlogical\fR 部分中定义的虚拟设备。\fBin_vdev\fR 属性的值必须与对应 \fBvdev\fR 元素的 \fBname\fR 属性的值匹配。
+.sp
+如果指定了 \fBin_vdev\fR 属性，则不要为关联的 \fBdisk\fR 元素或任何从属的 \fBslice\fR 元素指定 \fBin_vdev\fR。
+.RE
+
+.sp
+.LP
+GPT 分区可以使用 \fBsize\fR 子元素指定分区的大小。有关如何使用 \fBsize\fR 元素的详细信息，请参见“磁盘布局”部分的开头。如果指定了分区的大小，\fBsize\fR 子元素必须优先于 \fBpartition\fR 元素中的任何 \fBslice\fR 子元素。
+.SS "传统分区"
+.sp
+.LP
+只能在安装到 x86 系统时指定传统 \fBfdisk\fR 分区。如果为 SPARC 系统指定了 \fBfdisk\fR 分区，则安装会失败。\fBpartition\fR 元素用于 \fBfdisk\fR 分区。\fBpartition\fR 元素具有以下属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBname\fR 属性是 \fBfdisk\fR 分区编号。值 1、2、3 和 4 为主要分区。如果主要分区之一为扩展分区，则可以为逻辑分区指定值 5 到 32。
+.sp
+除非指定的 \fBaction\fR 为 \fBuse_existing_solaris2\fR，否则 \fBname\fR 属性是必需的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaction\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBaction\fR 属性可以具有以下值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是分区的缺省操作。\fBcreate\fR 操作通知安装程序创建具有指定名称的分区。如果已存在同名分区，则首先删除该现有分区。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBdelete\fR 操作通知安装程序删除指定的分区。如果指定的分区不存在，则跳过 \fBdelete\fR 操作，并输出一条警告消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpreserve\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpreserve\fR 操作通知安装程序使指定的分区保持不变。如果在同一磁盘上的其他位置安装了其他操作系统，则通常使用此操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuse_existing_solaris2\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBuse_existing_solaris2\fR 操作通知安装程序使用现有的 Solaris2 分区。安装程序将搜索现有的 Solaris2 分区。
+.sp
+指定了 \fBuse_existing_solaris2\fR 时，会忽略 \fBname\fR 和 \fBpart_type\fR 属性。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpart_type\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpart_type\fR 是 \fBfdisk\fR 分区类型。缺省值为 191，这是 Solaris2 分区的分区类型。有关可能的分区类型的更多信息，请参见 \fBfdisk\fR(1M) 手册页。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin_zpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBin_zpool\fR 属性将此分区链接到在 AI 清单的 \fBlogical\fR 部分中定义的 ZFS 池。\fBin_zpool\fR 属性的值必须与对应 \fBzpool\fR 元素的 \fBname\fR 属性的值匹配。
+.sp
+如果指定了 \fBin_zpool\fR 属性，则不要为关联的 \fBdisk\fR 元素或任何从属的 \fBslice\fR 元素指定 \fBin_zpool\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin_vdev\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBin_vdev\fR 属性将此分区链接到在 AI 清单的 \fBlogical\fR 部分中定义的虚拟设备。\fBin_vdev\fR 属性的值必须与对应 \fBvdev\fR 元素的 \fBname\fR 属性的值匹配。
+.sp
+如果指定了 \fBin_vdev\fR 属性，则不要为关联的 \fBdisk\fR 元素或任何从属的 \fBslice\fR 元素指定 \fBin_vdev\fR。
+.RE
+
+.sp
+.LP
+分区可以具有 \fBsize\fR 子元素以指定分区的大小。有关如何使用 \fBsize\fR 元素的详细信息，请参见“磁盘布局”部分的开头。如果指定了分区的大小，\fBsize\fR 子元素必须优先于 \fBpartition\fR 元素中的任何 \fBslice\fR 子元素。
+.sp
+.LP
+以下示例使用缺省属性值创建一个 10 GB Solaris2 分区：
+.sp
+.in +2
+.nf
+<disk>
+  <disk_name name="c0t0d0" name_type="ctd"/>
+  <partition name="1">
+    <size val="10gb"/>
+  </partition>
+</disk>
+.fi
+.in -2
+
+.sp
+.LP
+如果未指定大小，则使用父元素的大小。
+.sp
+.LP
+\fBpreserve\fR、\fBdelete\fR 和 \fBuse_existing_solaris2\fR 操作不需要指定 \fBsize\fR。
+.SS "分片"
+.sp
+.LP
+对于 x86 系统，分片必须包含在分区定义内。
+.sp
+.LP
+\fBslice\fR 元素具有以下属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBname\fR 属性是分片编号。其值可以为 0 到 7。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaction\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBaction\fR 属性可以具有以下值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是分片的缺省操作。\fBcreate\fR 操作通知安装程序创建具有指定名称的分片。如果已存在同名分片，则首先删除该现有分片。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBdelete\fR 操作通知安装程序删除指定的分片。如果指定的分片不存在，则跳过 \fBdelete\fR 操作，并输出一条警告消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpreserve\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpreserve\fR 操作通知安装程序使指定的分片保持不变。当存在来自以前安装的数据时，通常使用此操作。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuse_existing\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBuse_existing\fR 操作通知安装程序使用现有的分片维（起始扇区和大小）。这不同于 \fBpreserve\fR 操作，因为此操作可作为 \fBzpool\fR 的一部分使用，这会销毁该分片上的所有现有数据。
+.sp
+就像 \fBcreate\fR 操作一样，如果分片是现有 \fBzpool\fR 的一部分，则必须将强制选项设置为 \fBtrue\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBis_swap\fR\fR
+.ad
+.sp .6
+.RS 4n
+此属性的缺省值为 \fBfalse\fR。当 \fBis_swap\fR 为 \fBfalse\fR 时，安装程序将在根池中创建一个交换卷。
+.sp
+当 \fBis_swap\fR 为 \fBtrue\fR 时，指定的分片将用作交换设备。当 \fBis_swap\fR 为 \fBtrue\fR 时，不要使用 \fBin_zpool\fR 或 \fBin_vdev\fR 属性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBforce\fR\fR
+.ad
+.sp .6
+.RS 4n
+此属性的缺省值为 \fBfalse\fR。
+.sp
+当 \fBforce\fR 为 \fBtrue\fR 时，安装程序将忽略可能已在使用中的任何现有分片（例如，在现有的 ZFS 存储池中使用的分片），并继续对指定的分片执行指定的操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin_zpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBin_zpool\fR 属性将此分片链接到在 AI 清单的 \fBlogical\fR 部分中定义的 ZFS 池。\fBin_zpool\fR 属性的值必须与对应 \fBzpool\fR 元素的 \fBname\fR 属性的值匹配。
+.sp
+如果指定了 \fBin_zpool\fR 属性，则不要为关联的 \fBpartition\fR 或 \fBdisk\fR 元素指定 \fBin_zpool\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin_vdev\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBin_vdev\fR 属性将此分片链接到在 AI 清单的 \fBlogical\fR 部分中定义的虚拟设备。\fBin_vdev\fR 属性的值必须与对应 \fBvdev\fR 元素的 \fBname\fR 属性的值匹配。
+.sp
+如果指定了 \fBin_vdev\fR 属性，则不要为关联的 \fBpartition\fR 或 \fBdisk\fR 元素指定 \fBin_vdev\fR。
+.RE
+
+.sp
+.LP
+分片可以具有 \fBsize\fR 子元素以指定分片的大小。有关如何使用 \fBsize\fR 元素的详细信息，请参见“磁盘布局”部分的开头。如果未指定大小，则使用父元素的大小。
+.sp
+.LP
+以下示例为 SPARC 系统创建一个 20 GB 分片（使用缺省属性值）和一个 4 GB 交换分片：
+.sp
+.in +2
+.nf
+<disk>
+  <disk_name name="c0t0d0" name_type="ctd"/>
+  <slice name="0">
+    <size val="20gb"/>
+  </slice>
+  <slice name="1" is_swap="true">
+    <size val="4gb"/>
+  </slice>
+</disk>
+.fi
+.in -2
+
+.sp
+.LP
+以下示例是用于 x86 系统的相同示例：
+.sp
+.in +2
+.nf
+<disk>
+  <disk_name name="c0t0d0" name_type="ctd"/>
+  <partition name="1">
+    <slice name="0">
+      <size val="20gb"/>
+    </slice>
+    <slice name="1" is_swap="true">
+      <size val="4gb"/>
+    </slice>
+  </partition>
+</disk>
+.fi
+.in -2
+
+.SS "交换和转储"
+.sp
+.LP
+通过将 \fBslice\fR 元素的 \fBis_swap\fR 属性设置为 \fBtrue\fR，可以显式定义交换分片，如上面的“分片”所示。
+.sp
+.LP
+通过将 \fBzvol\fR 元素的 \fBuse\fR 属性设置为 \fBswap\fR 或 \fBdump\fR，可以将池中的卷显式定义为交换卷或转储卷，如下面的“ZFS 卷”所示。
+.sp
+.LP
+缺省情况下，如果空间可用，则自动创建交换卷和转储卷。
+.sp
+.LP
+在内存较低的系统上，交换分片可能比交换卷更可取，因为卷会导致少量内存开销。
+.sp
+.LP
+如果要显式指定交换或转储但不希望自动创建交换卷或转储卷，请将 \fBlogical\fR 元素的以下属性设置为 \fBtrue\fR：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoswap\fR\fR
+.ad
+.sp .6
+.RS 4n
+此属性的缺省值为 \fBfalse\fR。当 \fBnoswap\fR 为 \fBfalse\fR 时，如果空间允许，则安装程序将在根池中自动创建交换卷。
+.sp
+当 \fBnoswap\fR 为 \fBtrue\fR 时，不会自动创建交换卷。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnodump\fR\fR
+.ad
+.sp .6
+.RS 4n
+此属性的缺省值为 \fBfalse\fR。当 \fBnodump\fR 为 \fBfalse\fR 时，如果空间允许，则安装程序将在根池中自动创建转储卷。
+.sp
+当 \fBnodump\fR 为 \fBtrue\fR 时，不会自动创建转储卷。
+.RE
+
+.SS "ZFS 存储池"
+.sp
+.LP
+使用 \fBtarget\fR 部分的 \fBlogical\fR 部分可指定任意数目的 ZFS 存储池。
+.sp
+.LP
+通过使用 \fBlogical\fR 元素的 \fBzpool\fR 子元素，可以定义多个池。只有其中的一个池可以是根池。如果定义多个根池，则安装会失败。
+.sp
+.LP
+如果 \fBzpool\fR 元素定义了一个根池，而在 AI 清单中未指定目标磁盘、分区或分片（GPT 或 \fBfdisk\fR），则安装程序将按照上面的“安装位置”中所述选择一个目标。此选择将自动指定给根池。
+.sp
+.LP
+如果在 AI 清单中指定了目标磁盘、分区（GPT 或 \fBfdisk\fR）或分片，则 \fBzpool\fR 必须与其中至少一个磁盘、分区（GPT 或 \fBfdisk\fR）或分片关联。要建立此关联，请使用 \fBdisk\fR 元素、\fBgpt_partition\fR 元素、\fBpartition\fR 元素或 \fBslice\fR 元素的 \fBin_zpool\fR 属性。
+.sp
+.LP
+如果根池与无法由固件引导的目标设备（例如基于 IPoIB 的 iSCSI 磁盘）相关联，则需要单独的引导池。如果未定义引导池，则安装程序将自动定义引导池。如果引导池不与任何目标磁盘关联，安装程序将检查系统是否具有任何专用引导池设备并为引导池自动选择这些设备，使用镜像冗余配置这些设备。如果系统不包含任何专用引导池设备，则必须在清单中定义引导池设备。
+.sp
+.LP
+\fBzpool\fR 元素具有以下属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是新池的名称。此值必须是可以传递给 \fBzpool create\fR 命令的名称。
+.sp
+此名称可以用作 \fBdisk\fR、\fBgpt_partition\fR、\fBpartition\fR 或 \fBslice\fR 元素的 \fBin_zpool\fR 属性的值，以将该磁盘、GPT 分区、\fBfdisk\fR 分区或分片定义为 \fBzpool\fR 中的成员设备。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaction\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBaction\fR 属性可以具有以下值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是 \fBzpool\fR 的缺省操作。\fBcreate\fR 操作通知安装程序创建具有指定名称的池。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBdelete\fR 操作通知安装程序删除指定的池。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpreserve\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpreserve\fR 操作通知安装程序使指定的池保持不变。只能为非根池指定此操作。
+.sp
+.LP
+在以下情况下，\fBaction\fR 属性的值必须为 \fBpreserve\fR：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+任何从属 \fBfilesystem\fR 的 \fBaction\fR 属性值为 \fBpreserve\fR。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+任何从属 \fBzvol\fR 的 \fBaction\fR 属性值为 \fBpreserve\fR。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+任何从属 \fBzvol\fR 的 \fBaction\fR 属性值为 \fBuse_existing\fR。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuse_existing\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBuse_existing\fR 操作通知安装程序安装到现有的根池。将保留任何现有的卷或文件系统（数据集）。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBis_root\fR\fR
+.ad
+.sp .6
+.RS 4n
+此属性的缺省值为 \fBfalse\fR。当 \fBis_root\fR 为 \fBtrue\fR 时，将在指定的池中创建根池并在此池中创建新引导环境。
+.sp
+当 \fBis_root\fR 为 \fBfalse\fR 且 \fBis_boot\fR 为 \fBfalse\fR 时，将定义一个数据池。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBis_boot\fR
+.ad
+.sp .6
+.RS 4n
+此属性的缺省值为 \fBfalse\fR。当 \fBis_boot\fR 为 \fBtrue\fR 时，将在指定的池中创建引导池。引导池可能没有定义任何子项子元素并且将忽略 \fBmountpoint\fR 属性，因为引导池由系统管理并且未保持挂载状态。
+.sp
+当 \fBis_boot\fR 为 \fBfalse\fR 且 \fBis_root\fR 为 \fBfalse\fR 时，将定义一个数据池。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmountpoint\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBmountpoint\fR 属性指定池的顶层文件系统的挂载点。缺省挂载点为  \fB/\fIpoolname\fR\fR。挂载点必须是绝对路径。
+.RE
+
+.sp
+.LP
+要对新池设置 ZFS 属性，请使用 \fBpool_options\fR 元素。同样，要对自动创建的 ZFS 数据集设置 ZFS 属性，请使用 \fBdataset_options\fR 元素。\fBpool_options\fR 和 \fBdataset_options\fR 元素都具有 \fBoption\fR 子元素。每个 \fBoption\fR 元素都具有 \fBname\fR 属性和 \fBvalue\fR 属性。使用这些名称/值对设置的属性所受的限制与 \fBzpool\fR(1M) 命令强制实施的限制相同。以下示例显示如何设置这些属性：
+.sp
+.in +2
+.nf
+<logical>
+  <zpool name="rpool" is_root="true">
+    <pool_options>
+      <option name="listsnaps" value="on"/>
+      <option name="delegation" value="off"/>
+    </pool_options>
+    <dataset_options>
+      <option name="atime" value="on"/>
+      <option name="compression" value="on"/>
+    </dataset_options>
+  </zpool>
+</logical>
+.fi
+.in -2
+
+.sp
+.LP
+可以为池定义任意数目的虚拟设备冗余组（\fBvdev\fR 元素）、ZFS 数据集（\fBfilesystem\fR 元素）或 ZFS 卷（\fBzvol\fR 元素）。可以为池指定引导环境（\fBbe\fR 元素）。以下部分介绍 \fBvdev\fR、\fBfilesystem\fR、\fBzvol\fR 和 \fBbe\fR 元素。
+.SS "虚拟设备冗余组"
+.sp
+.LP
+使用 \fBvdev\fR 元素可定义 \fBzpool\fR 的大小或结构。可以指定多个 \fBvdev\fR 元素，每个元素具有不同的冗余类型。
+.sp
+.LP
+如果 \fBzpool\fR 包含多个 \fBvdev\fR 元素，则必须在使用 \fBin_zpool\fR 属性定义的任何 \fBdisk\fR、\fBgpt_partition\fR、\fBpartition\fR 元素或 \fBslice\fR 元素上使用 \fBin_vdev\fR 属性。
+.sp
+.LP
+如果 \fBvdev\fR 名称在整个 AI 清单中是唯一的，则可以在磁盘、GPT 分区、\fBfdisk\fR 分区或分片上省略 \fBin_zpool\fR 属性。
+.sp
+.LP
+如果 \fBzpool\fR 仅包含一个 \fBvdev\fR 元素，则可以在 \fBdisk\fR、\fBgpt_partition\fR、\fBpartition\fR 或 \fBslice\fR 上省略 \fBin_vdev\fR 属性。
+.sp
+.LP
+\fBvdev\fR 元素具有以下属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是新 \fBvdev\fR 的名称。
+.sp
+此名称应该用作 \fBdisk\fR、\fBgpt_partition\fR、\fBpartition\fR 或 \fBslice\fR 元素的 \fBin_vdev\fR 属性的值，以将该磁盘、分区（GPT 或 \fBfdisk\fR）或分片定义为 \fBvdev\fR 中的成员设备
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBredundancy\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBredundancy\fR 属性可以具有以下值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmirror\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是缺省值。如果 \fBredundancy\fR 为 \fBmirror\fR 或者未指定，则将包含的所有设备视为彼此的镜像。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBraidz\fR、\fBraidz1\fR、\fBraidz2\fR、\fBraidz3\fR\fR
+.ad
+.sp .6
+.RS 4n
+组中具有这些值之一的设备用于定义 RAIDZ 分组。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBspare\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果发生故障，则将此组中的设备视为热备件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcache\fR\fR
+.ad
+.sp .6
+.RS 4n
+此组中的设备为池提供缓存。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlog\fR、\fBlogmirror\fR\fR
+.ad
+.sp .6
+.RS 4n
+此组中的设备用于日志记录。如果指定了 \fBlogmirror\fR，则设备为镜像。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnone\fR\fR
+.ad
+.sp .6
+.RS 4n
+当 \fBredundancy\fR 为 \fBnone\fR 时，不定义冗余。如果此组中包括多个设备，则条带化这些设备。
+.RE
+
+可以将根池定义为仅具有以下配置之一：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBredundancy\fR 类型为 \fBnone\fR，包括一个设备。此配置不支持使用多个设备。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBredundancy\fR 类型为 \fBmirror\fR，包括多个设备。
+.RE
+.RE
+
+.sp
+.LP
+要将设备添加到 \fBvdev\fR，请使用 \fBdisk\fR、\fBgpt_partition\fR、\fBpartition\fR 或 \fBslice\fR 元素的 \fBin_zpool\fR 和 \fBin_vdev\fR 属性。以下示例指定一个名为 \fBrpool\fR 的根池，在两个磁盘上进行镜像：
+.sp
+.in +2
+.nf
+<disk whole_disk="true" in_zpool="rpool" in_vdev="mirrored">
+  <disk_name name="c0t0d0" name_type="ctd"/>
+</disk>
+<disk whole_disk="true" in_zpool="rpool" in_vdev="mirrored">
+  <disk_name name="c1t0d0" name_type="ctd"/>
+</disk>
+<logical>
+  <zpool name="rpool" is_root="true">
+    <vdev name="mirrored" redundancy="mirror"/>
+  </zpool>
+</logical>
+.fi
+.in -2
+
+.sp
+.LP
+如果 \fBin_zpool\fR 或 \fBin_vdev\fR 属性引用的池或虚拟设备是明确的，则可以省略其中一个属性。
+.SS "文件系统（数据集）"
+.sp
+.LP
+使用 \fBfilesystem\fR 元素可定义 ZFS 池内的 ZFS 文件系统或数据集。
+.sp
+.LP
+\fBfilesystem\fR 元素具有以下属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是新 \fBfilesystem\fR（相对于 \fBzpool\fR）的名称。例如，如果在名为 \fBrpool\fR 的 \fBzpool\fR 中将 \fBfilesystem\fR 命名为 \fBexport\fR，则 ZFS 数据集名称为 \fBrpool/export\fR。
+.sp
+如果 \fBfilesystem\fR 的 \fBin_be\fR 属性设置为 \fBtrue\fR，则此名称相对于引导环境的根数据集。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaction\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBaction\fR 属性可以具有以下值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是 \fBfilesystem\fR 的缺省操作。\fBcreate\fR 操作通知安装程序创建具有指定名称的文件系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBdelete\fR 操作通知安装程序删除指定的文件系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpreserve\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpreserve\fR 操作通知安装程序使指定的文件系统保持不变。如果为 \fBfilesystem\fR 指定了 \fBpreserve\fR，则应该为关联的 \fBzpool\fR 指定 \fBpreserve\fR。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmountpoint\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBmountpoint\fR 属性指定新文件系统的挂载点。如果未指定挂载点，则文件系统从其父级继承挂载点。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin_be\fR\fR
+.ad
+.sp .6
+.RS 4n
+此属性的缺省值为 \fBfalse\fR。当 \fBin_be\fR 为 \fBfalse\fR 时，将在所有引导环境之间共享新的数据集。
+.sp
+当 \fBin_be\fR 为 \fBtrue\fR 时，将在每个引导环境中创建此新数据集的单独副本。如果 \fBin_be\fR 为 \fBtrue\fR，则 \fBname\fR 属性值相对于引导环境的根数据集。
+.RE
+
+.sp
+.LP
+使用 \fBoptions\fR 子元素可对 \fBfilesystem\fR 设置 ZFS 数据集属性。可以设置任何可编辑的 ZFS 文件系统属性。对 \fBfilesystem\fR 使用 \fBoptions\fR 元素与对 \fBzpool\fR 使用 \fBdataset_options\fR 元素类似，如以下示例所示：
+.sp
+.in +2
+.nf
+<logical>
+  <zpool name="rpool" is_root="true">
+    <filesystem name="export">
+      <options>
+        <option name="compression" value="off"/>
+        <option name="dedup" value="on"/>
+      </options>
+    </filesystem>
+  </zpool>
+</logical>
+.fi
+.in -2
+
+.sp
+.LP
+子 \fBfilesystem\fR 会继承对父 \fBfilesystem\fR 设置的任何属性，除非以不同方式显式设置该属性。这是 ZFS 文件系统的缺省行为。
+.SS "ZFS 卷"
+.sp
+.LP
+使用 \fBzvol\fR 元素可定义 ZFS 池内的 ZFS 卷。\fBzvol\fR 通常用于交换或转储设备，但是它可以具有其他用途。
+.sp
+.LP
+\fBzvol\fR 元素具有以下属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是新 ZFS 卷的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaction\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBaction\fR 属性可以具有以下值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是 \fBzvol\fR 的缺省操作。\fBcreate\fR 操作通知安装程序创建具有指定名称的 ZFS 卷。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBdelete\fR 操作通知安装程序删除指定的卷。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpreserve\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpreserve\fR 操作通知安装程序使指定的 \fBzvol\fR 保持不变。如果为 \fBzvol\fR 指定了 \fBpreserve\fR，则应该为关联的 \fBzpool\fR 指定 \fBpreserve\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuse_existing\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果为交换或转储设备指定了此值，则会重用现有的卷。如果为 \fBzvol\fR 指定了 \fBuse_existing\fR，则应该为关联的 \fBzpool\fR 指定 \fBpreserve\fR。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuse\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBuse\fR 属性可以具有以下值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnone\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是缺省值。当 \fBuse\fR 为 \fBnone\fR 时，在安装期间将创建 \fBzvol\fR 但不使用它。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBswap\fR\fR
+.ad
+.sp .6
+.RS 4n
+当 \fBuse\fR 为 \fBswap\fR 时，将创建 \fBzvol\fR 并将其用作交换设备。在安装期间 \fBzvol\fR 也用作交换设备。\fBzvol\fR 元素的 \fBsize\fR 子元素可以具有 \fBmax\fR 值。如果指定了 \fBmax\fR 关键字，卷大小将为创建卷的池的空闲空间的 90%。一个池中只有一个卷可以指定 \fBmax\fR 大小。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdump\fR\fR
+.ad
+.sp .6
+.RS 4n
+当 \fBuse\fR 为 \fBdump\fR 时，将创建 \fBzvol\fR 并将其用作转储设备。在安装期间 \fBzvol\fR 也用作转储设备。
+.RE
+
+.RE
+
+.sp
+.LP
+使用 \fBsize\fR 子元素指定卷大小。有关如何使用 \fBsize\fR 元素的详细信息，请参见“磁盘布局”部分的开头。如果指定了卷的大小，\fBsize\fR 子元素必须跟在 \fBzvol\fR 元素中的任何 \fBoptions\fR 子元素之后，如下例所示：
+.sp
+.LP
+使用 \fBoptions\fR 子元素可对 \fBzvol\fR 设置 ZFS 卷选项。对 \fBzvol\fR 使用 \fBoptions\fR 元素与对 \fBzpool\fR 使用 \fBdataset_options\fR 元素类似，如以下示例所示：
+.sp
+.in +2
+.nf
+<logical>
+  <zpool name="rpool" is_root="true">
+    <zvol name="swap">
+      <options>
+        <option name="compression" value="off"/>
+      <options>
+      <size val="8gb"/>
+    </zvol>
+  </zpool>
+</logical>
+.fi
+.in -2
+
+.SS "引导环境"
+.sp
+.LP
+使用 \fBbe\fR 元素可指定在安装期间创建引导环境的方式。
+.sp
+.LP
+\fBbe\fR 元素具有一个属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.RS 8n
+.rt  
+这是由安装程序创建的新引导环境的名称。如果未指定 \fBbe\fR 元素，则此引导环境的缺省名称是 \fBsolaris\fR。
+.RE
+
+.sp
+.LP
+安装程序利用由引导环境子系统提供的自动命名功能。在安装到现有的目标区域中时（例如，在安装区域时），具有由 \fBbe\fR 元素 \fBname\fR 属性指定的名称的引导环境可能已存在。如果指定的引导环境名称已存在，则此名称将用作生成新名称的基础。例如，如果未指定 \fBbe\fR，且名为 \fBsolaris\fR 的引导环境已存在，则将新的引导环境命名为 \fBsolaris-\fIn\fR\fR，其中 \fIn\fR 是构成尚不存在的引导环境名称的、按计数顺序的第一个整数。
+.sp
+.LP
+引导环境将被创建为 ZFS 数据集，并且可以对其设置 ZFS 属性。使用 \fBoptions\fR 子元素可对引导环境设置 ZFS 属性，如以下示例所示：
+.sp
+.in +2
+.nf
+<logical>
+  <zpool name="rpool" is_root="true">
+    <be name="installed_be">
+      <options>
+        <option name="compression" value="on"/>
+        <option name="dedup" value="on"/>
+      <options>
+    </be>
+  </zpool>
+</logical>
+.fi
+.in -2
+
+.SH 软件
+.sp
+.LP
+\fBsoftware\fR 元素指定要安装的软件。\fBsoftware\fR 部分指定以下信息：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+软件源的类型
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+源的位置
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+要安装或卸载的软件包的名称
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+要安装的可选软件组件
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+映像属性
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+访问 IPS 系统信息库或统一归档文件所需的 SSL 密钥和证书
+.RE
+.sp
+.LP
+\fBsoftware\fR 元素具有以下属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.RS 8n
+.rt  
+这是 \fBsoftware\fR 实例的名称。此名称在此 AI 清单中的所有 \fBsoftware\fR 实例之间必须唯一。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtype\fR\fR
+.ad
+.RS 8n
+.rt  
+这是软件源的类型。
+.sp
+.LP
+\fBtype\fR 属性可以具有以下值之一。如果未指定 \fBtype\fR，则缺省值为 \fBIPS\fR。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBIPS\fR：IPS 软件包系统信息库
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBP5I\fR：IPS 软件包文件
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBSVR4\fR：SVR4 软件包
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBCPIO\fR：\fBcpio\fR 归档文件
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBARCHIVE\fR：统一归档文件
+.RE
+.RE
+
+.sp
+.LP
+\fBsoftware\fR 元素具有以下结构：
+.sp
+.in +2
+.nf
+<!-- one or more software elements -->
+<software>
+  <!-- zero or one destination element
+       Only used when type is IPS or P5I.
+  -->
+  <destination>
+    <!-- image properties and
+         optional software components
+    -->
+  </destination>
+  <!-- zero or one source element -->
+  <source>
+    <!-- one or more publisher, dir or file elements
+         IPS, P5I, and SVR4 types:
+             one or more publisher/origin elements
+         CPIO types: one or more dir elements
+				ARCHIVE types: one file element
+        -->
+  </source>
+  <!-- zero or more software_data elements
+       At least one software_data element must have
+           an action of install.
+       P5I type: zero software_data elements
+  -->
+  <software_data>
+    <!-- one or more name elements 
+				ARCHIVE type: one name element-->
+    <name>...</name>
+  </software_data>
+</software>
+.fi
+.in -2
+
+.SS "IPS 安装"
+.sp
+.LP
+如果未指定 \fBtype\fR 属性，则缺省安装类型为 \fBIPS\fR。
+.sp
+.LP
+使用 \fBsource\fR 元素可指定要用于安装软件包的发布者。在 \fBpublisher\fR 元素中，\fBname\fR 属性是必需的，并且至少需要有一个 \fBorigin\fR 子元素。每个 \fBpublisher\fR 可以有多个源和镜像、一个 \fBcredentials\fR 子元素和多个 \fBcmd_options\fR 子元素。
+.sp
+.LP
+可以在一个 \fBsource\fR 元素中指定多个发布者。在发布者中搜索要安装的 IPS 软件包的顺序以及在已安装系统中设置发布者的顺序与在 AI 清单中定义发布者的顺序相同。
+.sp
+.LP
+使用 \fBpublisher\fR 元素的 \fBcmd_options\fR 子元素可以指定要传递到将在 \fBpublisher\fR 上运行的 \fBpkg\fR(1) \fBset-publisher\fR 命令的 options 字符串。此元素可用于在 \fBpublisher\fR 上设置特性、属性或其他选项。有关 \fBset-publisher\fR 子命令的更多信息，请参见 \fBpkg\fR(1) 手册页。请注意，在安装环境中，并非所有选项都可以在发布者上设置。
+.sp
+.LP
+以下示例指定的 \fBpublisher\fR 有两个 \fBcmd_options\fR，用于在 \fBpublisher\fR 上设置非粘性属性以及将发布者的签名策略属性设置为忽略：
+.sp
+.in +2
+.nf
+<software type="IPS">
+           <source>
+               <publisher name="solaris">
+                   <origin name="http://pkg.oracle.com/solaris/release"/>
+                   <mirror name="http://localpkg.mycompany.com/solaris"/>
+               </publisher>
+               <publisher name="internal-software">
+                   <origin name="http://internalsoft.mycompany.com/"/>
+                   <cmd_options>--non-sticky</cmd_options>
+                   <cmd_options>--set-property signature-policy=ignore</cmd_options>
+               </publisher>
+           </source>
+       </software>
+.fi
+.in -2
+
+.sp
+.LP
+安装非全局区域时，系统信息库由该区域使用。在 AI 清单中指定的任何发布者将按它们在 AI 清单中出现的顺序添加，在系统信息库提供的发布者之后。有关系统信息库的更多信息，请参见 \fBpkg\fR(1) 和 \fBpkg.sysrepo\fR(1M) 手册页。
+.sp
+.LP
+以下示例指定多个发布者，其中一个发布者具有镜像以及源：
+.sp
+.in +2
+.nf
+<software type="IPS">
+  <source>
+    <publisher name="solaris">
+      <origin name="http://pkg.oracle.com/solaris/release"/>
+      <mirror name="http://localpkg.mycompany.com/solaris"/>
+    </publisher>
+    <publisher name="internal-software">
+      <origin name="http://internalsoft.mycompany.com/"/>
+    </publisher>
+  </source>
+</software>
+.fi
+.in -2
+
+.sp
+.LP
+使用 \fBsoftware_data\fR 元素可指定要安装、拒绝、避免、包括或卸载的软件包。\fBsoftware_data\fR 元素的 \fBaction\fR 属性可以具有以下值之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstall\fR\fR
+.ad
+.sp .6
+.RS 4n
+安装在 \fBname\fR 子元素中指定的 IPS 软件包。如果未指定 \fBaction\fR 属性，这将是缺省值。必须至少一个 \fBsoftware_data\fR 元素的 \fBaction\fR 为 \fBinstall\fR。
+.sp
+缺省情况下，将安装指定源提供的且与映像中其他软件包兼容的最新版指定软件包。要安装软件包的其他版本，请在软件包 FMRI 中使用版本字符串。例如，\fBpkg:/mypkg@0.5.11-0.175.0.0.0.2.1\fR 比 \fBpkg:/mypkg\fR 更精确。如果指定的版本与映像中的其他软件包不兼容，安装会失败。如果指定的版本不在任何指定源中，安装会失败。使用关键字 \fBlatest\fR（例如，\fBpkg:/mypkg@latest\fR）可安装指定源中与映像中的其他软件包兼容的最新版本。
+.sp
+\fBname\fR 子元素中指定的软件包可能会安装其他未显式指定的软件包。如果这些软件包中有您不想安装的软件包，您可以在 \fBreject\fR 子元素中指定不想安装的软件包的名称。
+.sp
+\fBreject\fR 子元素仅应用于出现该 \fBreject\fR 子元素的 \fBinstall\fR 部分。如果在一个 \fBinstall\fR 部分中将某个软件包作为 \fBreject\fR 子元素的值，但该软件包仅在另一个 \fBinstall\fR 部分中安装，则将安装该软件包而不会拒绝它。
+.sp
+作为组依赖性目标的被拒绝软件包将放置在避免列表中。请参见下文的 \fBavoid\fR 操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBavoid\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fBname\fR 子元素中的 IPS 软件包添加到避免列表中。
+.sp
+如果避免列表上的软件包是组依赖性目标，则不会安装这些软件包。
+.sp
+如果避免列表上的软件包是 require 依赖性的目标，则会安装这些软件包。如果删除了该 require 依赖性（例如，卸载了包含 require 依赖性的软件包），则会卸载避免安装的软件包。
+.sp
+只能避免安装当前尚未安装的软件包。因此，\fBavoid\fR 部分必须位于对要避免安装的软件包有依赖性的软件包的 \fBinstall\fR 部分之前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunavoid\fR\fR
+.ad
+.sp .6
+.RS 4n
+从避免列表中删除在 \fBname\fR 子元素中指定的 IPS 软件包。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuninstall\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除在 \fBname\fR 子元素中指定的 IPS 软件包。作为组依赖性目标的卸载软件包将放置在避免列表中。请参见上面的 \fBavoid\fR 操作。
+.RE
+
+.sp
+.LP
+安装过程中创建的所有避免列表将在安装后的映像中继续存在。
+.sp
+.LP
+以下示例说明了在类型为 IPS 的 \fBsoftware\fR 部分中如何使用具有不同 \fBaction\fR 值的 \fBsoftware_data\fR 部分：
+.sp
+.in +2
+.nf
+<software_data action="avoid">
+  <name>pkg:/to/avoid</name>
+</software_data>
+<software_data action="install">
+  <name>pkg:/to/install</name>
+  <reject>pkg:/to/reject</reject>
+</software_data>
+<software_data action="uninstall">
+  <name>pkg:/unwanted/pkg</name>
+</software_data>
+.fi
+.in -2
+
+.SS "P5I 安装"
+.sp
+.LP
+\fB\&.p5i\fR 文件是描述 IPS 发布者、软件包，还可能描述镜像的文件。
+.sp
+.LP
+要指定将处理的一个或多个 \fB\&.p5i\fR 文件，请将这些文件作为 \fBpublisher\fR 元素中的源提供，如以下示例所示：
+.sp
+.in +2
+.nf
+<software type="P5I">
+  <source>
+    <publisher>
+      <origin name="/somewhere/image1.p5i"/>
+      <origin name="/somewhere/image2.p5i"/>
+    </publisher>
+  </source>
+</software>
+.fi
+.in -2
+
+.sp
+.LP
+如果此 AI 清单也没有 IPS 类型的软件部分，请确保 \fB\&.p5i\fR 文件指定了源。
+.sp
+.LP
+P5I 安装不支持指定要安装的软件包。因此，在 \fBP5I\fR 类型的 \fBsoftware\fR 元素中不支持 \fBsoftware_data\fR 元素。
+.SS "SVR4 安装"
+.sp
+.LP
+对于 SVR4 传输，必须使用文件目录路径或 FILE URI 指定一个包含 SVR4 软件包子目录的目录或 SVR4 软件包数据流文件。也可以使用 HTTP URI 指定 SVR4 软件包数据流文件。 
+.sp
+.in +2
+.nf
+<software type="SVR4">
+  <source>
+    <publisher>
+      <origin name="/somedir"/>
+    </publisher>
+  </source>
+</software>
+.fi
+.in -2
+
+.sp
+.LP
+\fBsoftware_data\fR 元素用于指定要执行的操作。\fBaction\fR 属性可以具有以下两个值之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstall\fR\fR
+.ad
+.sp .6
+.RS 4n
+将文件从源复制到新的引导环境。如果未指定 \fBaction\fR 属性，这将是缺省值。必须至少一个 \fBsoftware_data\fR 元素的 action 为 install。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuninstall\fR\fR
+.ad
+.sp .6
+.RS 4n
+从新的引导环境中删除文件。
+.RE
+
+.sp
+.LP
+对于其中的每个操作，可以在 \fBname\fR 元素中指定一个或多个软件包，如以下示例所示：
+.sp
+.in +2
+.nf
+<software type="SVR4">
+  <source>
+    <publisher>
+      <origin name="/somedir"/>
+    </publisher>
+  </source>
+  <software_data> <!-- defaults to install action -->
+    <name>ORGpackage1</name>
+    <name>ORGpackage2</name>
+  </software_data>
+  <software_data action="uninstall">
+    <name>ORGpackage8</name>
+  </software_data>
+</software>
+.fi
+.in -2
+
+.SS "CPIO 安装"
+.sp
+.LP
+对于 CPIO 传输，必须指定源目录。在安装期间目标目录被设置为新引导环境的挂载点。
+.sp
+.in +2
+.nf
+<software type="CPIO">
+  <source>
+    <dir path="/somedir"/>
+  </source>
+</software>
+.fi
+.in -2
+
+.sp
+.LP
+\fBsoftware_data\fR 元素用于指定要执行的操作。\fBaction\fR 属性可以具有以下值之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstall\fR\fR
+.ad
+.sp .6
+.RS 4n
+将文件从源复制到新的引导环境。如果未指定 \fBaction\fR 属性，这将是缺省值。必须至少一个 \fBsoftware_data\fR 元素的 action 为 install。
+.sp
+使用 \fBname\fR 元素可指定要复制的文件或目录。在 \fBname\fR 元素中指定的路径相对于源。
+.sp
+.in +2
+.nf
+<software_data>
+  <!-- defaults to install action -->
+  <name>path/relative/to/source</name>
+  <name>another/path/relative/to/source</name>
+</software_data>
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuninstall\fR\fR
+.ad
+.sp .6
+.RS 4n
+从新的引导环境中删除文件。
+.sp
+使用 \fBname\fR 元素可指定要删除的文件或目录。在 \fBname\fR 元素中指定的路径相对于目标。
+.sp
+.in +2
+.nf
+<software_data action="uninstall">
+  <name>path/relative/to/destination</name>
+</software_data>
+.fi
+.in -2
+
+.RE
+
+.SS "ARCHIVE 安装"
+.sp
+.LP
+对于 ARCHIVE 传输，必须指定源文件 URI。URI 值可以为指定的 HTTP、HTTPS 或 FILE URI。
+.sp
+.in +2
+.nf
+<software type="ARCHIVE">
+<source>
+ <file uri="http://mycompany.com/myarchive.ua"/>
+</source>
+</software>
+.fi
+.in -2
+
+.sp
+.LP
+\fBsoftware_data\fR 元素用于指定要执行的操作。操作的 \fBattribname\fR 元素值必须为统一归档文件中所包含的任一可部署系统的名称。每个可部署系统名称匹配一个非全局区域或全局区域名称。
+.sp
+.in +2
+.nf
+<software_data action="install">
+	  <name>myzonename</name>
+</software_data>
+.fi
+.in -2
+
+.sp
+.LP
+恢复统一归档文件只能用于系统恢复，不允许从恢复统一归档文件中选择可部署系统。
+.sp
+.LP
+对于恢复统一归档文件，名称元素值必须为 \fB*\fR。
+.sp
+.in +2
+.nf
+<software_data action="install">
+		<name>*</name>
+</software_data>
+.fi
+.in -2
+
+.SS "可选软件组件和映像属性"
+.sp
+.LP
+使用 \fBdestination\fR 元素和 \fBimage\fR 子元素可指定以下信息：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+要安装的可选软件组件
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+映像属性
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+SSL 密钥和证书
+.RE
+.sp
+.LP
+\fBdestination\fR 部分仅适用于 IPS 和 P5I 安装类型。\fBdestination\fR 元素只能具有一个 \fBimage\fR 子元素。
+.SS "SSL 密钥和证书"
+.sp
+.LP
+使用 \fBimage\fR 元素的属性可指定使用客户机 SSL 验证的发布者所需的 SSL 密钥和证书。此处指定的密钥和证书适用于在此 AI 清单中定义的第一个发布者。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBssl_key\fR\fR
+.ad
+.sp .6
+.RS 4n
+此属性映射到以下 \fBpkg\fR 命令：
+.sp
+.in +2
+.nf
+pkg set-publisher -k \fIssl_key\fR
+.fi
+.in -2
+
+\fBssl_key\fR 属性的值为 \fIssl_key\fR。有关 \fBpkg set-publisher\fR 命令的更多信息，请参见 \fBpkg\fR(1) 手册页。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBssl_cert\fR\fR
+.ad
+.sp .6
+.RS 4n
+此属性映射到以下 \fBpkg\fR 命令：
+.sp
+.in +2
+.nf
+pkg set-publisher -c \fIssl_cert\fR
+.fi
+.in -2
+
+\fBssl_cert\fR 属性的值为 \fIssl_cert\fR。
+.RE
+
+.SS "可选软件组件"
+.sp
+.LP
+使用 \fBimage\fR 元素的 \fBfacet\fR 子元素可指定要安装的可选软件组件。侧面不是单独的软件包，而是任何给定软件包（如语言环境）、文档和开发文件（如包含调试信息的文件）的可选组件。例如，可通过指定仅要安装一种或两种语言来节省空间。有关 IPS 侧面的更多信息，请参见 \fBpkg\fR(1) 手册页。
+.sp
+.LP
+\fBfacet\fR 元素具有一个布尔型 \fBset\fR 属性和一个为 IPS 侧面名称的值。
+.sp
+.in +2
+.nf
+<facet set="true|false">\fIfacet_name\fR</facet>
+.fi
+.in -2
+
+.sp
+.LP
+以下示例指定仅应安装软件包的德语和英语侧面。该示例首先指定不应安装任何语言环境，然后指定应该安装德语和英语语言环境。
+.sp
+.in +2
+.nf
+<destination>
+  <image>
+    <!-- de-select all locales -->
+    <facet set="false">facet.locale.*</facet>
+    <!-- specify specific locales to install -->
+    <!-- install German and English only -->
+    <facet set="true">facet.locale.de</facet>
+    <facet set="true">facet.locale.de_DE</facet>
+    <facet set="true">facet.locale.en</facet>
+    <facet set="true">facet.locale.en_US</facet>
+  </image>
+</destination>
+.fi
+.in -2
+
+.SS "映像属性"
+.sp
+.LP
+使用 \fBimage\fR 元素的 \fBproperty\fR 子元素，可以为此安装创建的新映像指定 IPS 映像属性。
+.sp
+.LP
+\fBproperty\fR 元素具有一个布尔型 \fBval\fR 属性和一个为属性名称的值。
+.sp
+.in +2
+.nf
+<property val="true|false">\fIproperty_name\fR</property>
+.fi
+.in -2
+
+.sp
+.LP
+有关可以设置哪些属性的信息，请参见 \fBpkg\fR(1) 手册页的“映像属性”部分。
+.SH 引导配置（仅限 X86）
+.sp
+.LP
+可以使用 AI 清单修改在已安装的系统上配置 GRUB 引导菜单的方式。
+.sp
+.LP
+此部分不适用于区域安装，在安装非全局区域时将被忽略。
+.sp
+.LP
+使用 \fBboot_mods\fR 元素和 \fBboot_entry\fR 子元素可修改 GRUB 引导菜单。
+.sp
+.LP
+\fBboot_mods\fR 元素具有以下属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtitle\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBtitle\fR 属性的值是由此 \fBboot_mods\fR 元素的 \fBboot_entry\fR 子元素指定的引导条目的基本标题。此属性值将覆盖从 \fB/etc/release\fR 的第一行或安装介质自动生成的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtimeout\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBtimeout\fR 属性的值是选择此 \fBboot_mods\fR 元素的缺省 \fBboot_entry\fR 之前等待的秒数。
+.RE
+
+.sp
+.LP
+在 SPARC 系统上只能设置 \fBtitle\fR 属性。对于 SPARC 系统，将忽略此部分中的所有其他设置。
+.sp
+.LP
+使用 \fBboot_entry\fR 子元素可将一个或多个菜单项添加到引导菜单。这些菜单项是对安装程序自动生成的任何菜单项的补充。如果出现了 \fBboot_entry\fR 中的菜单项，则不会出现活动 BE 中的缺省菜单项。
+.sp
+.LP
+\fBboot_entry\fR 元素具有以下属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdefault_entry\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果将此布尔值设置为 \fBtrue\fR，则此菜单项是引导时选定的缺省选项。此属性的缺省值为 \fBfalse\fR。
+.sp
+如果多个 \fBboot_entry\fR 元素已将 \fBdefault_entry\fR 设置为 \fBtrue\fR，则最后一个此类条目是引导时选定的缺省选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinsert_at\fR\fR
+.ad
+.sp .6
+.RS 4n
+可以将此属性设置为以下两个值之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBend\fR\fR
+.ad
+.RS 9n
+.rt  
+将条目放置在生成的引导菜单的结尾。这是缺省放置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstart\fR\fR
+.ad
+.RS 9n
+.rt  
+将条目放置在生成的引导菜单的开头。
+.RE
+
+.RE
+
+.sp
+.LP
+然后由以下子元素定义 \fBboot_entry\fR 菜单项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtitle_suffix\fR\fR
+.ad
+.sp .6
+.RS 4n
+此元素是必需的。此元素定义要添加到在 \fBboot_mods\fR 元素中指定的标题结尾的文本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkernel_args\fR\fR
+.ad
+.sp .6
+.RS 4n
+此元素是可选的。此元素是由引导装载程序传递到内核的一串值。
+.RE
+
+.sp
+.LP
+以下示例指定一个名为 "Boot Testing Default Boot Entry"（引导测试缺省引导项）的引导菜单项，该项是菜单上的最后一项，在 20 秒后将自动选定该项：
+.sp
+.in +2
+.nf
+<boot_mods title="Boot Testing" timeout="20">
+  <boot_entry default_entry="true">
+    <title_suffix>Default Boot Entry</title_suffix>
+  </boot_entry>
+</boot_mods>
+.fi
+.in -2
+
+.SH 其他配置
+.sp
+.LP
+\fBconfiguration\fR 元素支持非全局区域配置。在安装全局区域系统时，会使用在 AI 清单中指定的区域配置在安装全局区域后将非全局区域安装到系统上。
+.sp
+.LP
+\fBconfiguration\fR 元素具有以下属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtype\fR\fR
+.ad
+.RS 10n
+.rt  
+要安装的配置的类型。AI 支持的唯一类型为 \fBzone\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.RS 10n
+.rt  
+为配置提供的名称。此名称在 AI 清单中的所有配置元素之间必须唯一。对于 \fBzone\fR 类型的配置，此名称还用作区域的 \fBzonename\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsource\fR\fR
+.ad
+.RS 10n
+.rt  
+AI 从中下载此配置元素的配置文件的位置。值可以为指定的 HTTP 或 FILE URI。对于 \fBzone\fR 类型的配置，此值应该指向从 \fBzonecfg export\fR 命令生成的区域配置文件。
+.RE
+
+.sp
+.LP
+指定以下内容可在安装客户机上安装 \fBzone1\fR：
+.sp
+.in +2
+.nf
+<configuration type="zone" name="zone1"
+  source="http://myserver.com/configs/zone1/config"/>
+.fi
+.in -2
+
+.sp
+.LP
+指定以下等效内容将在安装客户机上安装 \fBzone1\fR，但是会使用包含名为 \fBmyzone\fR 的归档区域配置的统一归档文件：
+.sp
+.in +2
+.nf
+<configuration type="zone" name="zone1"
+source="archive:myzone"
+archive="http://myserver.com/archives/mysystem.uar"/>
+.fi
+.in -2
+
+.sp
+.LP
+有关配置和安装区域的更多信息，请参见Chapter 12, \fI"Installing and Configuring Zones,"\fR in \fI《Installing Oracle Solaris 11.3 Systems》\fR。
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/auto_install/manifest/default.xml \fR\fR
+.ad
+.sp .6
+.RS 4n
+指定缺省的系统安装，不进行定制。在系统上提供的此 AI 清单仅供参考。要创建新的 AI 清单，请从相关的安装服务映像使用此文件的副本。有关从安装服务复制此文件的信息，请参见“说明”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/auto_install/manifest/zone_default.xml \fR\fR
+.ad
+.sp .6
+.RS 4n
+缺省区域安装，不进行定制。此文件由 \fBzoneadm install\fR 命令用作缺省清单以安装非全局区域。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/auto_install/manifest/ai_manifest.xml \fR\fR
+.ad
+.sp .6
+.RS 4n
+模板 AI 清单，已注释掉详细信息。此文件提供可以执行的一些定制的示例。在系统上提供的此文件仅供参考。要创建新的 AI 清单，请从相关的安装服务映像使用此文件的副本。有关从安装服务复制此文件的信息，请参见“说明”部分。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(1.38i) |cw(4.13i) 
+lw(1.38i) |lw(4.13i) 
+.
+属性类型属性值
+_
+可用性T{
+\fBsystem/install/auto-install/auto-install-common\fR
+T}
+_
+接口稳定性Uncommitted（未确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBpkg\fR(1)、\fBbeadm\fR(1M)、\fBboot\fR(1M)、\fBcroinfo\fR(1M)、\fBfdisk\fR(1M)、\fBformat\fR(1M)、\fBinstalladm\fR(1M)、\fBiostat\fR(1M)、\fBiscsiadm\fR(1M)、\fBpkg.sysrepo\fR(1M)、\fBprtconf\fR(1M)、\fBzfs\fR(1M)、\fBzoneadm\fR(1M)、\fBzonecfg\fR(1M)、\fBzpool\fR(1M)、\fBgrub\fR(5)、\fBsmf\fR(5)
+.sp
+.LP
+Part\ III, \fI"Installing Using an Install Server,"\fR in \fI《Installing Oracle Solaris 11.3 Systems》\fR
+.SH 附注
+.sp
+.LP
+如果指定在 SPARC 系统上的双路 FC 磁盘上安装 Oracle Solaris OS，安装将失败并显示以下错误：
+.sp
+.in +2
+.nf
+17:22:08    Error occurred during execution of 'target-selection' checkpoint.
+17:22:08    100% None
+17:22:09    Failed Checkpoints:
+17:22:09
+17:22:09    target-selection
+17:22:09
+17:22:09    Checkpoint execution error:
+17:22:09
+17:22:09    Unable to locate the disk '[devpath='/pci@0,600000/pci@0/pci@8/pci@0,1/SUNW,emlxs@1,1/fp@0,0/ssd@w20350080e517b4da,6']' on the system.
+17:22:09
+17:22:09    Automated Installation Failed.  See install log at /system/volatile/install_log
+Automated Installation failed
+Please refer to the /system/volatile/install_log file for details
+.fi
+.in -2
+
+.sp
+.LP
+此问题的解决方法是断开其中一条 SAS JBOD 双路电缆。
+.sp
+.LP
+如果要执行安装的系统上有多个磁盘存在用户指定的 \fBname_type\fR 属性 (\fBvol-id\fR 和 \fBvolid\fR)，则不能保证将会选择哪个磁盘。例如，如果用户将 \fBvolname\fR \fBai-disk\fR 分配给了系统上的两个磁盘，并将 \fBname_type\fR 指定为 \fBvolid\fR，则不能保证将会选择哪个磁盘。
+.sp
+.LP
+在以下示例中，\fBformat\fR 命令显示有两个磁盘的 \fBvolid\fR 为 \fBai-disk\fR。
+.sp
+.in +2
+.nf
+# \fBformat\fR
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+Searching for disks...done
+
+AVAILABLE DISK SELECTIONS:
+       0. c1t0d0 <SUN72G cyl 14087 alt 2 hd 24 sec 424>
+          /pci@780/pci@0/pci@9/scsi@0/sd@0,0
+       1. c1t1d0 <SUN72G cyl 14087 alt 2 hd 24 sec 424>  ai-disk
+          /pci@780/pci@0/pci@9/scsi@0/sd@1,0
+       2. c1t2d0 <HITACHI-H101473SCSUN72G-SA23-68.37GB>
+          /pci@780/pci@0/pci@9/scsi@0/sd@2,0
+       3. c1t3d0 <HITACHI-H101473SCSUN72G-SA23-68.37GB>  ai-disk
+          /pci@780/pci@0/pci@9/scsi@0/sd@3,0
+Specify disk (enter its number):
+.fi
+.in -2
+
+.sp
+.LP
+例如，如果清单尝试通过 \fBname_type\fR \fBai-disk\fR 选择磁盘，则 AI 安装程序将不知道要使用哪个磁盘，并会任意选择一个。
+.sp
+.in +2
+.nf
+<target>
+<disk>
+<disk_name name="ai-disk" name_type="volid"/>
+\&...
+</target>
+.fi
+.in -2
+
+.sp
+.LP
+不能保证选择 \fBformat\fR 列出的第一个 \fBvolid\fR 标为 \fBai-disk\fR 的磁盘。
+.sp
+.LP
+如果 \fBname_type\fR 设置为 \fBwwn\fR，并且在清单中指定的设备从 RAID 系统派生，则也会发生这种情况。在这种情形下，从 RAID 系统导出的所有设备的 WWN 可能不是唯一的。
+.sp
+.LP
+在清单中使用 \fBname_type\fR 时，必须使用在要安装的所有设备中都唯一的名称。

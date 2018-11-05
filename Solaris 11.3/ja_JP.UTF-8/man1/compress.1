@@ -1,0 +1,379 @@
+'\" te
+.\" Copyright 1989 AT&T 
+.\" Copyright (c) 2008 Sun Microsystems, Inc. All Rights Reserved
+.\" Portions Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\"  Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation. In the following statement, the phrase "this text" refers to portions of the system documentation. Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group. In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.opengroup.org/unix/online.html. This notice shall appear on any product containing this material.
+.TH compress 1 "2008 年 3 月 13 日" "SunOS 5.11" "ユーザーコマンド"
+.SH 名前
+compress, uncompress, zcat \- ファイルの圧縮または圧縮解除、あるいは展開されたファイルの表示
+.SH 形式
+.LP
+.nf
+\fBcompress\fR [\fB-fv/\fR] [\fB-b\fR \fIbits\fR] [\fIfile\fR]...
+.fi
+
+.LP
+.nf
+\fBcompress\fR \fB-c\fR [\fB-fv\fR] [\fB-b\fR \fIbits\fR] [\fIfile\fR]
+.fi
+
+.LP
+.nf
+\fBuncompress\fR [\fB-fv\fR] [\fB-c | -/\fR] [\fIfile\fR]...
+.fi
+
+.LP
+.nf
+\fBzcat\fR [\fIfile\fR]...
+.fi
+
+.SH 機能説明
+.SS "compress"
+.sp
+.LP
+\fBcompress\fR ユーティリティーは、adaptive Lempel-Ziv コーディングを使用して、指定されたファイルのサイズを小さくしようとします。出力が標準出力である場合を除き、各ファイルは拡張子 \fB\&.Z\fR のファイルに置き換えられます。同じ所有権モードが保たれ、時間、更新時間、ACL、および拡張属性が変更されます。また、compress ユーティリティーは、\fIfile\fR\fB\&.z\fR の所有者およびグループに file の所有者およびグループを設定しようとしますが、それが実行できなくても失敗にはなりません。ファイルのパス名に \fB\&.Z\fR を付加してパス名が \fB1023\fR バイトを超えると、コマンドが失敗します。ファイルを指定しない場合は、標準入力が圧縮されて標準出力に出力されます。
+.sp
+.LP
+圧縮される量は、入力のサイズ、コード当たりの \fIbits\fR、および共通の部分文字列の分布によって異なります。通常、ソースコード、英語などのテキストは 50 - 60% 削減されます。通常、圧縮は Huffman コーディング (\fBpack\fR(1) で使用されています) よりも効果があり、短い時間で処理できます。圧縮中に指定された \fIbits\fR パラメータは、マジック番号とともに圧縮ファイル内でエンコードされ、ランダムデータの圧縮解除または圧縮データの再圧縮を以降に実行できないようにします。
+.SS "uncompress"
+.sp
+.LP
+\fBuncompress\fR ユーティリティーは、\fBcompress\fR ユーティリティーを使用して圧縮されたファイルを元の状態に復元します。ファイルを指定しない場合は、標準入力が圧縮解除されて標準出力に出力されます。
+.sp
+.LP
+このユーティリティーは \fBcompress\fR によって生成されたすべてのファイルの圧縮解除をサポートしています。ほかのシステムの \fBcompress\fR によって生成されたファイルの場合、\fBuncompress\fR は 9 ビットから 16 ビットの圧縮 (\fB-b\fR を参照) をサポートしています。
+.SS "zcat"
+.sp
+.LP
+\fBzcat\fR ユーティリティーは、\fBcompress\fR を使用して圧縮されたファイルの圧縮解除された形式を標準出力に書き込みます。これは \fBuncompress\fR\fB-c\fR と同等です。入力ファイルは影響を受けません。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR \fIbits\fR\fR
+.ad
+.RS 11n
+.rt  
+共通の部分文字列コードの上限 (ビット単位) を設定します。\fIbits\fR は 9 から 16 (16 がデフォルト) である必要があります。ビット数を小さくすると、圧縮率が小さいより大きなファイルが生成されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 11n
+.rt  
+標準出力に書き込みます。ファイルは変更されず、\fB\&.Z\fR ファイルは作成されません。\fBzcat\fR の動作は `\fBuncompress\fR \fB-c\fR' の動作と同じです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.RS 11n
+.rt  
+圧縮時に、ファイルのサイズが実際には減らなくても、または対応する \fIfile\fR\fB\&.Z\fR ファイルがすでに存在していても、\fIfile\fR の圧縮を強制的に実行します。 
+.sp
+\fB-f\fR オプションが指定されておらず、プロセスがバックグラウンドで実行されていない場合は、既存のファイルを上書きするかどうかを確認するプロンプトが表示されます。応答が肯定である場合、既存のファイルは上書きされます。圧縮解除時には、ファイルの上書きのプロンプトは表示されません。\fB-f\fR オプションが指定されておらず、プロセスがバックグラウンドで実行されていない場合は、既存のファイルを上書きするかどうかを確認するプロンプトが表示されます。標準入力が端末ではなく \fB-f\fR が指定されていない場合は、診断メッセージを標準エラー出力に書き込み、\fB0\fR より大きいステータスで終了します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 11n
+.rt  
+冗長。各ファイルの縮小率または増加率に関するメッセージを標準エラー出力に書き込みます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-/\fR\fR
+.ad
+.RS 11n
+.rt  
+圧縮時または圧縮解除時に、ソースファイルに関連付けられている拡張システム属性をターゲットファイルにコピーし、ソースファイルの拡張属性に関連付けられている拡張システム属性をターゲットファイルに関連付けられている対応する拡張属性にコピーします。拡張システム属性をコピーできない場合は、元のファイルが保持されて、診断が標準エラー出力に書き込まれ、最終的な終了ステータスがゼロ以外になります。\fB\fR\fB\fR
+.RE
+
+.SH オペランド
+.sp
+.LP
+次のオペランドを指定できます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfile\fR\fR
+.ad
+.RS 8n
+.rt  
+\fBcompress\fR によって圧縮されるファイル、\fBuncompress\fR によって圧縮解除されるファイル、または圧縮解除された形式が \fBzcat\fR によって標準出力に書き込まれるファイルのパス名。\fIfile\fR が \fB-\fR であるか、\fIfile\fR を指定しない場合は、標準入力が使用されます。
+.RE
+
+.SH 使用法
+.sp
+.LP
+2G バイト (2^31 バイト) 以上のファイルを処理する場合の \fBcompress\fR、\fBuncompress\fR、および \fBzcat\fR の動作については、\fBlargefile\fR(5) を参照してください。
+.SH 環境
+.sp
+.LP
+\fBcompress\fR、\fBuncompress\fR、および \fBzcat\fR の実行に影響する環境変数 (\fBLANG\fR、\fBLC_ALL\fR、\fBLC_COLLATE\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR、および \fBNLSPATH\fR) については、\fBenviron\fR(5) を参照してください。 
+.sp
+.LP
+肯定応答は、ユーザーのロケールの \fBLC_MESSAGES\fR カテゴリの \fByesexpr\fR キーワードで定義されている拡張正規表現を使用して処理されます。\fBLC_COLLATE\fR カテゴリに指定されているロケールは、\fByesexpr\fR に定義されている式に使用される範囲、同等クラス、および複数文字照合要素の動作を定義します。\fBLC_CTYPE\fR に指定されているロケールは、テキストデータのバイト列を文字として解釈するロケールや、\fByesexpr\fR に定義されている式に使用される文字クラスの動作を定義します。\fBlocale\fR(5) を参照してください。
+.SH 終了ステータス
+.sp
+.LP
+次のエラー値が返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+正常終了。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 6n
+.rt  
+エラーが発生した。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 6n
+.rt  
+サイズが大きくなる可能性があるため (および \fB-f\fR オプションが指定されていないため)、1 つ以上のファイルが圧縮されませんでした。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>2\fR\fR
+.ad
+.RS 6n
+.rt  
+エラーが発生した。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+CSI有効
+_
+インタフェースの安定性確実
+_
+標準T{
+\fBstandards\fR(5) を参照してください。
+T}
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBln\fR(1)、\fBpack\fR(1)、\fBfgetattr\fR(3C)、\fBfsetattr\fR(3C)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBlargefile\fR(5)、\fBlocale\fR(5)、\fBstandards\fR(5)
+.SH 診断
+.sp
+.ne 2
+.mk
+.na
+\fB使用法: \fBcompress [-fv/] [-b\fR \fIbits\fR] [\fIfile\fR . . . ]\fR
+.ad
+.br
+.na
+\fB\fBcompress c [-fv] [-b\fR \fIbits\fR] [\fIfile\fR . . . ]\fR
+.ad
+.sp .6
+.RS 4n
+コマンド行に無効なオプションが指定されました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB使用法: \fBuncompress [-fv] [-c | -/] [\fR\fIfile\fR\fB]...\fR\fR
+.ad
+.sp .6
+.RS 4n
+コマンド行に無効なオプションが指定されました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB最大ビット数が指定されていません\fR
+.ad
+.sp .6
+.RS 4n
+\fB-b\fR の後には最大ビット数を指定する必要があります。または、最大ビット数が無効であるか、数値ではありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfile\fR: 圧縮された形式ではありません\fR
+.ad
+.sp .6
+.RS 4n
+\fBuncompress\fR に指定されたファイルは圧縮されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfile\fR: \fIxx\fR ビットで圧縮されています、\fIyy\fR ビットで処理してください\fR
+.ad
+.sp .6
+.RS 4n
+\fBfile\fR は、このマシンの圧縮コードより大きい \fIbits\fR を処理できるプログラムで圧縮されています。より小さい \fIbits\fR でファイルを再圧縮してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfile\fR: すでに接尾辞 .Z がついています -- 変更されませんでした\fR
+.ad
+.sp .6
+.RS 4n
+ファイルはすでに圧縮されていると想定されます。ファイル名を変更して再試行してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfile\fR: すでに存在しています。上書きしますか (y または n) ?\fR
+.ad
+.sp .6
+.RS 4n
+出力ファイルを置き換える場合は \fBy\fR、置き換えない場合は \fBn\fR で応答します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBuncompress: 入力が壊れています\fR
+.ad
+.sp .6
+.RS 4n
+\fBSIGSEGV\fR 違反が検出されました。通常、これは入力ファイルが壊れていることを意味します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBCompression:\fIxx.xx\fR\fB%\fR\fR
+.ad
+.sp .6
+.RS 4n
+入力が圧縮によって縮小された割合。(\fB-v\fR を指定した場合のみ。)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB– – 通常ファイルではありません: 変更されていません。\fR
+.ad
+.sp .6
+.RS 4n
+入力ファイルが通常ファイルではない (ディレクトリなど) 場合は変更されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB– – はほかに \fIxx\fR 個のリンクを持っています: 変更されていません\fR
+.ad
+.sp .6
+.RS 4n
+入力ファイルにリンクがあり、変更されていません。詳細は、\fBln\fR(1) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB– – ファイルは変更されていません\fR
+.ad
+.sp .6
+.RS 4n
+圧縮しても縮小されません。入力は圧縮されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB– – ファイル名が長すぎて .Z に追加できません\fR
+.ad
+.sp .6
+.RS 4n
+接尾辞 \fB\&.Z\fR を付加するには、パス名が長すぎます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB– –拡張された属性を保存できません、ファイルは変更されていません\fR
+.ad
+.sp .6
+.RS 4n
+拡張システム属性をコピーできませんでした。
+.RE
+
+.SH 注意事項
+.sp
+.LP
+圧縮ファイルは、大きなメモリーを持つマシン間では互換性がありますが、小さい処理データ領域 (64K バイト以下) を持つアーキテクチャーへのファイル転送には \fB-b\fR 12 を使用してください。
+.sp
+.LP
+\fBcompress\fR は接尾辞 \fB\&.Z\fR の有無についてより柔軟であるべきです。

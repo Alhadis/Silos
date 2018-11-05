@@ -1,0 +1,3856 @@
+'\" te
+.\" Copyright (c) 2004, 2015, Oracle and/or its affiliates. All rights
+.\"                         reserved.
+.TH zonecfg 1M "14 Jul 2015" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+zonecfg \- set up zone configuration
+.SH SYNOPSIS
+.LP
+.nf
+\fBzonecfg\fR \fB-z\fR \fIzonename\fR [-r]
+.fi
+
+.LP
+.nf
+\fBzonecfg\fR \fB-z\fR \fIzonename\fR [-r] \fIsubcommand\fR
+.fi
+
+.LP
+.nf
+\fBzonecfg\fR \fB-z\fR \fIzonename\fR [-r]  \fB-f\fR \fIcommand_file\fR
+.fi
+
+.LP
+.nf
+\fBzonecfg\fR help
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBzonecfg\fR utility creates, modifies, and lists the configuration of a zone. The creation and modification functions are only available to authorized users and require that the process is executed with an effective user ID of root. Otherwise it runs in read-only mode.
+.sp
+.LP
+A zone's configuration consists of a number of resources and properties.
+.sp
+.LP
+To simplify the user interface, \fBzonecfg\fR uses the concept of a scope. The default scope is global.
+.sp
+.LP
+The following synopsis of the \fBzonecfg\fR command is for non-interactive usage: 
+.sp
+.in +2
+.nf
+zonecfg \fB-z\fR \fIzonename subcommand\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The \fBzonecfg\fR utility can run in two edit modes:
+.sp
+.ne 2
+.mk
+.na
+\fBdefault\fR
+.ad
+.RS 11n
+.rt  
+Allows to create, modify and list the persistent zone configuration stored on the stable storage. Parameters changed through \fBzonecfg\fR in the default mode do not affect a running zone. The zone must be reconfigured using \fBzoneadm\fR(1M) \fBapply\fR subcommand or rebooted for the changes to take effect.
+.sp
+The authorization \fBsolaris.zone.config/zonename\fR is required to allow changes in the persistent configuration.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBlive\fR
+.ad
+.RS 11n
+.rt  
+Allows to retrieve, modify and list the live configuration of a running zone. Parameters changed through \fBzonecfg\fR in the live mode take effect immediately after they are commited and remain active until the next zone reboot. The live mode is available only for a running zone and requires the authorization \fBsolaris.zone.liveconfig/zonename\fR.
+.sp
+See the respective brand manual page for details on resources supported by the live zone reconfiguration.
+.RE
+
+.sp
+.LP
+In addition to creating and modifying a zone, the \fBzonecfg\fR utility can also be used to persistently specify the resource management settings for the global zone or to configure the global zone as an immutable global zone by specifying a file-mac-profile in combination with settings for\fBfs-allowed\fR, dataset, and devices..
+.sp
+.LP
+In the following text, "rctl" is used as an abbreviation for "resource control". See \fBresource-controls \fR(5).
+.sp
+.LP
+Every zone is configured with an associated brand. The brand determines the user-level environment used within the zone, as well as various behaviors for the zone when it is installed, boots, or is shutdown. Once a zone has been installed the brand cannot be changed. The default brand is determined by the installed distribution in the global zone. Some brands do not support all of the \fBzonecfg\fR properties and resources. See the brand-specific man page for more details on each brand. For an overview of brands, see the \fBbrands\fR(5) man page.
+.SS "Resources"
+.sp
+.LP
+The following resource types are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBattr\fR\fR
+.ad
+.sp .6
+.RS 4n
+Generic attribute.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcapped-cpu\fR\fR
+.ad
+.sp .6
+.RS 4n
+Limits for CPU usage.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcapped-memory\fR\fR
+.ad
+.sp .6
+.RS 4n
+Limits for physical, swap, and locked memory.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdataset\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBZFS\fR dataset.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdedicated-cpu\fR\fR
+.ad
+.sp .6
+.RS 4n
+Subset of the system's processors dedicated to this zone while it is running.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdevice\fR\fR
+.ad
+.sp .6
+.RS 4n
+Device.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfs\fR\fR
+.ad
+.sp .6
+.RS 4n
+file-system
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBib-vhca\fR\fR
+.ad
+.sp .6
+.RS 4n
+Virtual InfiniBand device.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBport\fR\fR
+.ad
+.sp .6
+.RS 4n
+Port for virtual InfiniBand device. Port resource is only valid in \fBib-vhca\fR resource scope.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkeysource\fR\fR
+.ad
+.sp .6
+.RS 4n
+Encryption key
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnet\fR\fR
+.ad
+.sp .6
+.RS 4n
+Network interface.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBanet\fR\fR
+.ad
+.sp .6
+.RS 4n
+Automatic network interface.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmac\fR\fR
+.ad
+.sp .6
+.RS 4n
+Extra mac-address configured for a zone. The mac resource is only valid within an \fBanet\fR resource.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBadmin\fR\fR
+.ad
+.sp .6
+.RS 4n
+Delegated administrator.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrctl\fR\fR
+.ad
+.sp .6
+.RS 4n
+Resource control.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsuspend\fR\fR
+.ad
+.sp .6
+.RS 4n
+Suspend image
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrootzpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+Dedicated ZFS zpool for zone installation.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvirtual-cpu\fR\fR
+.ad
+.sp .6
+.RS 4n
+Virtual CPUs configured for the zone.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+ZFS zpool delegated to the zone.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnpiv\fR\fR
+.ad
+.sp .6
+.RS 4n
+Fibre Channel NPIV port.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBverified-boot\fR\fR
+.ad
+.sp .6
+.RS 4n
+Verified Boot settings for the zone.
+.RE
+
+.sp
+.LP
+Multi-instance resources have an identifier which uniquely identifies each instance of a resource. The identifier is a number displayed next to the resource for every instance of all multi-instance resources, in the output of \fBinfo\fR subcommand. The identifiers are automatically generated and are not user modifiable, they are consistent only across a \fBzonecfg\fR session.
+.SS "Sparse and Whole Root Non-Global Zones"
+.sp
+.LP
+Previous releases of Solaris offered the notion of \fBsparse root zones\fR. This functionality was intimately associated with the SVr4 packaging system and intended to save disk space and reduce administrative effort.
+.sp
+.LP
+The new packaging system, IPS, provides more flexibility when choosing which packages to install in a zone. This, along with advances in file system technology (notable among which is ZFS \fBdeduplication\fR), means that it was most sensible to remove sparse root zones. The benefits of sparse root zones are provided for all zones by means of the combination of IPS packaging and file system advances.
+.SS "Properties"
+.sp
+.LP
+Each resource type has one or more properties. There are also some global properties, that is, properties of the configuration as a whole, rather than of some particular resource.
+.sp
+.LP
+The following properties are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBzonename\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBzonepath\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBautoboot\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBautoshutdown\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBglobal-time\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBbootargs\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBpool\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBlimitpriv\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBbrand\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBcpu-shares\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBhostid\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBmax-lwps\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBmax-msg-ids\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBmax-processes\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBmax-sem-ids\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBmax-shm-ids\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBmax-shm-memory\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBscheduling-class\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBfs-allowed\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+file-mac-profile
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBtenant\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB(global)\fR
+.ad
+.sp .6
+.RS 4n
+\fBcpu-arch\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfs\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBdir\fR, \fBspecial\fR, \fBraw\fR, \fBtype\fR, \fBoptions\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnet\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBaddress\fR, \fBallowed-address\fR, \fBconfigure-allowed-address\fR, \fBphysical\fR, \fBdefrouter\fR, \fBid\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBanet\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBlinkname\fR, \fBlower-link\fR, \fBallowed-address\fR, \fBauto-mac-address\fR, \fBconfigure-allowed-address\fR, \fBdefrouter\fR, \fBmac-address\fR, \fBmac-slot\fR, \fBmac-prefix\fR, \fBmtu\fR, \fBmaxbw\fR, \fBbwshare\fR, \fBpriority\fR, \fBvlan-id\fR, \fBvsi-typeid\fR, \fBvsi-vers\fR, \fBvsi-mgrid\fR, \fBrxfanout\fR, \fBrxrings\fR, \fBtxrings\fR, \fBlink-protection\fR, \fBallowed-dhcp-cids\fR, \fBpkey\fR, \fBlinkmode\fR, \fBetsbw-lcl\fR, \fBcos\fR, \fBid\fR, \fBevs\fR, \fBvport\fR, \fBiov\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmac\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBauto-mac-address\fR, \fBmac-address\fR, \fBmac-prefix\fR, \fBid\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdevice\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBmatch\fR, \fBallow-partition\fR, \fBallow-raw-io\fR, \fBid\fR, \fBstorage\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBib-vhca\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBover-hca\fR, \fBid\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBport\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpkey\fR, \fBid\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrctl\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBname\fR, \fBvalue\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBattr\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBname\fR, \fBtype\fR, \fBvalue\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdataset\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBname\fR, \fBalias\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdedicated-cpu\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBncpus\fR, \fBimportance\fR
+.sp
+\fBcpus\fR, \fBcores\fR, \fBsockets\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvirtual-cpu\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBncpus\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcapped-memory\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBphysical\fR, \fBswap\fR, \fBlocked\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcapped-cpu\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBncpus\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBadmin\fR\fR
+.ad
+.sp .6
+.RS 4n
+user, auths
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrootzpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+storage
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+storage, name
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnpiv\fR\fR
+.ad
+.sp .6
+.RS 4n
+virtual-port-wwn, over-hba
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBverified-boot\fR\fR
+.ad
+.sp .6
+.RS 4n
+policy, cert
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhostkey\fR\fR
+.ad
+.sp .6
+.RS 4n
+raw
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsuspend\fR\fR
+.ad
+.sp .6
+.RS 4n
+path, storage
+.RE
+
+.sp
+.LP
+As for the property values that are paired with these names, they are either a string or a list of strings. The type allowed is property specific. Single values can be optionally enclosed within quotation marks.
+.sp
+.LP
+Lists have the syntax:
+.sp
+.in +2
+.nf
+[<\fIvalue\fR>,...]
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+where each <\fIvalue\fR> is a string property. A list of a single value is equivalent to specifying that value without the list syntax. That is, "foo" is equivalent to "[foo]". A list can be empty (denoted by "[]").
+.sp
+.LP
+The property types are described as follows:
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBzonename\fR\fR
+.ad
+.sp .6
+.RS 4n
+The name of the zone.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBzonepath\fR\fR
+.ad
+.sp .6
+.RS 4n
+Path to zone's file system. The default value of \fBzonepath\fR is \fB/system/zones/%{\fIzonename\fR}\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBglobal-time\fR\fR
+.ad
+.sp .6
+.RS 4n
+Boolean indicating that a zone can change global/system-wide time (if true) or can change the zone-specific time (if false).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBautoboot\fR\fR
+.ad
+.sp .6
+.RS 4n
+Boolean indicating that a zone should be booted automatically at system boot. Note that if the zones service is disabled, the zone will not autoboot, regardless of the setting of this property. You enable the zones service with a \fBsvcadm\fR command, such as:
+.sp
+.in +2
+.nf
+# \fBsvcadm enable svc:/system/zones:default\fR
+.fi
+.in -2
+.sp
+
+Replace \fBenable\fR with \fBdisable\fR to disable the zones service. See \fBsvcadm\fR(1M).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBautoshutdown\fR\fR
+.ad
+.sp .6
+.RS 4n
+Action to take for this zone on clean shutdown of the global zone. Can be "shutdown" (a clean zone shutdown; the default); "halt"; or "suspend". 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBbootargs\fR\fR
+.ad
+.sp .6
+.RS 4n
+Arguments (options) to be passed to the zone bootup, unless options are supplied to the "\fBzoneadm boot\fR" command, in which case those take precedence. The valid arguments are described in \fBzoneadm\fR(1M).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+Name of the resource pool that this zone must be bound to when booted. This property is incompatible with the \fBdedicated-cpu\fR resource.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBlimitpriv\fR\fR
+.ad
+.sp .6
+.RS 4n
+The maximum set of privileges any process in this zone can obtain. The property should consist of a comma-separated privilege set specification as described in \fBpriv_str_to_set\fR(3C). Privileges can be excluded from the resulting set by preceding their names with a dash (-) or an exclamation point (!). The special privilege string "zone" is not supported in this context. If the special string "default" occurs as the first token in the property, it expands into a safe set of privileges that preserve the resource and security isolation described in \fBzones\fR(5). A missing or empty property is equivalent to this same set of safe privileges.
+.sp
+The system administrator must take extreme care when configuring privileges for a zone. Some privileges cannot be excluded through this mechanism as they are required in order to boot a zone. In addition, there are certain privileges which cannot be given to a zone as doing so would allow processes inside a zone to unduly affect processes in other zones. \fBzoneadm\fR(1M) indicates when an invalid privilege has been added or removed from a zone's privilege set when an attempt is made to either "boot" or "ready" the zone.
+.sp
+See \fBprivileges\fR(5) for a description of privileges. The command "\fBppriv -l\fR" (see \fBppriv\fR(1)) produces a list of all Solaris privileges. You can specify privileges as they are displayed by \fBppriv\fR. In \fBprivileges\fR(5), privileges are listed in the form PRIV_\fIprivilege_name\fR. For example, the privilege \fIsys_time\fR, as you would specify it in this property, is listed in \fBprivileges\fR(5) as \fBPRIV_SYS_TIME\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBbrand\fR\fR
+.ad
+.sp .6
+.RS 4n
+The zone's brand type.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBip-type\fR\fR
+.ad
+.sp .6
+.RS 4n
+A zone can either have its own exclusive instance of IP (the default) or share the IP instance with the global zone. In the default zone template, \fBSYSdefault\fR, \fBip-type\fR is set to \fBexclusive\fR. In the also-supplied \fBSYSdefault-shared-ip\fR template, \fBip-type\fR is set to shared.
+.sp
+This property takes the values \fBexclusive\fR and \fBshared\fR.
+.sp
+The shared-IP feature might be removed in a future release. We strongly recommend using exclusive-IP. Once this feature is removed, zones configured to use this feature will no longer boot.
+.sp
+To continue using your zones, please convert any zones which have ip-type set to \fBshared\fR to have ip-type set to \fBexclusive\fR. In most cases this will involve replacing \fBzonecfg\fR(1M) "net" resources with "anet" resources. If you have shared IP zones that are using interfaces which are part of a global zone IPMP group, then you should switch to using DLMP aggregations. In the global zone create a DLMP aggregation on old IPMP interfaces and then then create a \fBzonecfg\fR(1M) "anet" resource where the lower-link points to the DLMP aggregation. Limited shared-IP support will be retained for certain multilevel server Trusted Extensions configurations.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBhostid\fR\fR
+.ad
+.sp .6
+.RS 4n
+A zone can emulate a 32-bit host identifier to ease system consolidation. A zone's \fBhostid\fR property is empty by default, meaning that the zone does not emulate a host identifier. Zone host identifiers must be hexadecimal values between 0 and FFFFFFFE. A \fB0x\fR or \fB0X\fR prefix is optional. Both uppercase and lowercase hexadecimal digits are acceptable.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBfs-allowed\fR\fR
+.ad
+.sp .6
+.RS 4n
+A comma-separated list of additional file systems that can be mounted within the zone; for example, \fBufs,pcfs\fR. By default, only \fBhsfs\fR(7FS) and network file systems can be mounted.
+.sp
+This property does not apply to file systems mounted into the zone by means of \fBadd fs\fR or \fBadd dataset\fR.
+.LP
+Caution - 
+.sp
+.RS 2
+Allowing filesystem mounts other than the default might allow the zone administrator to compromise the system with a bogus filesystem image and is not supported.
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBfile-mac-profile\fR\fR
+.ad
+.sp .6
+.RS 4n
+Define which parts of the filesystem are exempted from the read-only policy, that is, which parts of the filesystem the zone is allowed to write to.
+.sp
+There are currently five supported values for this property: \fBnone\fR, \fBstrict\fR, \fBdynamic-zones\fR, \fBfixed-configuration\fR, and \fBflexible-configuration\fR.
+.sp
+\fBnone\fR makes the zone exactly the same as a normal, r/w zone. \fBstrict\fR allows no exceptions to the read-only policy. \fBfixed-configuration\fR allows the zone to write to files in and below \fB/var\fR, except directories containing configuration files:
+.sp
+.in +2
+.nf
+/var/ld
+/var/lib/postrun
+/var/pkg
+/var/spool/cron,
+/var/spool/postrun
+/var/svc/manifest
+/var/svc/profiles
+.fi
+.in -2
+.sp
+
+\fBdynamic-zones\fR is equal to \fBfixed-configuration\fR but allows creating and destroying non-global zones and kernel zones. This profile is only valid for global zones, including the global zone of a kernel zone.
+.sp
+\fBflexible-configuration\fR is equal to \fBdynamic-zones\fR, but allows writing to files in \fB/etc\fR in addition.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBtenant\fR\fR
+.ad
+.sp .6
+.RS 4n
+.LP
+Note - 
+.sp
+.RS 2
+To use this property and anet resource's \fBevs\fR and \fBvport\fR property, install Elastic Virtual Switch (EVS) IPS packages and configure the EVS controller as described in \fBevsadm\fR(1M) manpage and \fIManaging Network Virtualization and Network Resources in Oracle Solaris 11.3\fR. 
+.RE
+Defines the name of the tenant that owns the EVS to which a VNIC anet will be connected to. See \fBevsadm\fR(1M).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBcpu-arch\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specify the migration class configured for a solaris-kz brand zone. For now, this only works on SPARC platform and is not supported on x86 platform. The possible values of this property are: 
+.sp
+.ne 2
+.mk
+.na
+\fBgeneric\fR
+.ad
+.RS 20n
+.rt  
+kernel zone can perform a CPU-type independent migration, but not to a system older than T4.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBmigration-class1\fR
+.ad
+.RS 20n
+.rt  
+kernel zone can perform cross-CPU type migration between SPARC T4, SPARC T5, SPARC M5, and SPARC M6.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBsparc64-class1\fR
+.ad
+.RS 20n
+.rt  
+kernel zone can perform cross-CPU type migration between Fujitsu M10 and M10+.
+.RE
+
+If no value is set, the the kernel zone's CPU migration class is the same as the host. It can migrate between CPU types that is compatible of host CPU class.
+.sp
+Note that the kernel zone's CPU migration class cannot exceed the limit of host's CPU class.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfs\fR: dir, special, raw, type, options\fR
+.ad
+.sp .6
+.RS 4n
+Values needed to determine how, where, and so forth to mount file systems. See \fBmount\fR(1M), \fBmount\fR(2), \fBfsck\fR(1M), and \fBvfstab\fR(4).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnet\fR: address, allowed-address, configure-allowed-address, physical, defrouter, id\fR
+.ad
+.sp .6
+.RS 4n
+The \fBnet\fR resource represents the assignment of a physical network resource to a zone. The resource must exist in the global zone prior to the assignment.
+.sp
+The network address and physical interface name of the network interface. The network address is one of:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+a valid IPv4 address, optionally followed by "\fB/\fR" and a prefix length;
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+a valid IPv6 address, which must be followed by "\fB/\fR" and a prefix length;
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+a host name which resolves to an IPv4 address.
+.RE
+Note that host names that resolve to IPv6 addresses are not supported.
+.sp
+The physical interface name is the network interface name.
+.sp
+The value for the optional default router is specified similarly to the network address except that it must not be followed by a \fB/\fR (slash) and a network prefix length. To enable correct use of the \fBdefrouter\fR functionality, the zones that use the property must be on a different subnet from the subnet on which the global zone resides. Also, each zone (or set of zones) that uses a different \fBdefrouter\fR setting must be on a different subnet.
+.sp
+The id value is a positive integer used to identify the network interface; see \fBsolaris-kz\fR(5). 
+.sp
+A zone can be configured to be either exclusive-IP or shared-IP. For a shared-IP zone, you must set both the physical and address properties; setting the default router is optional. The interface specified in the physical property must be plumbed in the global zone prior to booting the non-global zone. However, if the interface is not used by the global zone, it should be configured \fBdown\fR in the global zone, and the default router for the interface should be specified here. The \fBallowed-address\fR property cannot be set for a shared-IP zone.
+.sp
+For an exclusive-IP zone, the \fBphysical\fR property must be set and the \fBaddress\fR property must not be set. Optionally, the set of IP addresses that the exclusive-IP zone can use might be constrained by specifying the \fBallowed-address\fR property. If \fBallowed-address\fR has not been specified, then the exclusive-IP zone can use any IP address on the associated \fBphysical\fR interface for the net resource. Otherwise, when \fBallowed-address\fR is specified, the exclusive-IP zone cannot use IP addresses that are not in the \fBallowed-address\fR list for the \fBphysical\fR address. If \fBconfigure-allowed-address\fR is set to \fBtrue\fR, the addresses specified by \fBallowed-address\fR are automatically configured on the interface each time the zone boots. When it is set to \fBfalse\fR, the \fBallowed-address\fR will not be configured on zone boot. By default, \fBconfigure-allowed-address\fR is set to \fBtrue\fR when an \fBallowed-address\fR is specified. In addition, when the \fBallowed-address\fR list has been populated, the \fBdefrouter\fR property can also be optionally specified. However, if the \fBdefrouter\fR value is specified and \fBconfigure-allowed-address\fR is set to \fBfalse\fR, the \fBdefrouter\fR value will be ignored and an appropriate warning message will be shown. The interface specified for the \fBphysical\fR property must not be in use in the global zone. If an \fBallowed-address\fR and default router are specified by means of \fBzonecfg\fR, these will be applied to the interface when it is enabled by means of \fBipadm\fR(1M) in the non-global, exclusive-IP zone, typically during zone boot. The non-global exclusive-IP zone will not be able to apply any other addresses to that interface, nor will it be able to transmit packets with a different source address for the specified IP version. A default router set up by means of \fBzonecfg\fR cannot be persistently deleted from within the non-global exclusive-IP zone using the \fB-p\fR flag with \fBroute\fR(1M).
+.sp
+Note that a single datalink cannot be shared among multiple exclusive-IP zones.
+.sp
+Assigning an IPoIB VNIC to a solaris-kz brand zone is not currently supported.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBanet\fR: linkname, lower-link, allowed-address, auto-mac-address, configure-allowed-address, defrouter, mac-address, mac-slot, mac-prefix, mtu, maxbw, bwshare, priority, vlan-id, vsi-typeid, vsi-vers, vsi-mgrid, rxfanout, rxrings, txrings, link-protection, allowed-dhcp-cids, pkey, linkmode, etsbw-lcl, cos, id, evs, vport, lro, mac, iov\fR
+.ad
+.sp .6
+.RS 4n
+The \fBanet\fR resource represents the automatic creation of a network resource for an exclusive-IP zone. When \fBzonecfg\fR creates a zone using the default \fBSYSdefault\fR template, an \fBanet\fR resource with the following properties is automatically included in the zone configuration:
+.sp
+.in +2
+.nf
+linkname=net0
+lower-link=auto
+mac-address=default
+link-protection=mac-nospoof
+.fi
+.in -2
+.sp
+
+When such a zone boots, a temporary VNIC or IPoIB datalink is automatically created for the zone. The VNIC or the IPoIB datalink is deleted when the zone halts.
+.LP
+Note - 
+.sp
+.RS 2
+To use EVS and VPort install Elastic Virtual Switch (EVS) IPS packages, and then configure EVS controller as described in the \fBevsadm\fR(1M) manpage and \fIManaging Network Virtualization and Network Resources in Oracle Solaris 11.3\fR. 
+.RE
+An EVS is a virtual switch that spans one or more servers (physical machines). It represents an isolated L2 segment, and provides network connectivity between the zones whose VNIC anets are connected to it. A VPort is uniquely identified by 3-tuple <tenant, evs, vport>, so a zone's configuration should include this information if a VNIC anet need to be connected to an EVS.
+.LP
+Note - 
+.sp
+.RS 2
+For a VNIC anet connecting to an EVS, only allowed anet property is \fBlinkname\fR, as it acquires other properties from the VPort.
+.RE
+The supported properties are described below. All these properties are optional. Only the global zone is allowed to modify the automatically created VNIC or IPoIB datalink or its properties. If a property set in \fBzonecfg\fR cannot be assigned to the VNIC or IPoIB datalink at its creation time, the zone will fail to boot.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlinkname\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specify a name for the automatically created VNIC or IPoIB datalink. By default, this property will be automatically set to the first available name (for the zone) of the form \fBnet\fR\fIN\fR, where \fIN\fR is a non-negative integer. For example: \fBnet0\fR, \fBnet1\fR, and so on. The \fBinfo\fR subcommand displays the automatically selected \fBlinkname\fR.
+.sp
+Multiple zones, including the global zone, can have links with the same name at the same time.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBevs\fR
+.ad
+.br
+.na
+\fBvport\fR
+.ad
+.sp .6
+.RS 4n
+If EVS is specified and optionally a VPort is specified, then VNIC anet will be created by connecting to that EVS at that VPort. If the global tenant property is specified, then EVS will be searched in that tenant's namespace.
+.sp
+If VPort is specified, then the SLA properties (\fBmaxbw\fR, \fBcos\fR, and \fBpriority\fR), IP address, and default router MAC address of the VPort will be inherited by the VNIC. If VPort is not specified, then EVS controller will generate a system VPort, (it will have IP address, MAC address, and EVS' default SLA properties) and then the VNIC will be connected to this system VPort.
+.sp
+The IP address anti-spoof will be enabled on the VNIC, by setting the \fBallowed-ips\fR VNIC property to that of the VPort's IP address. VPort's IP address will be automatically configured on the interface each time the zone boots. The default router IP address associated with the VPort is also automatically configured in the zone. 
+.sp
+See the \fBevsadm\fR(1M) manpage for more information on EVS and VPorts.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlower-link\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specify the link over which the VNIC or IPoIB will be created. This property has a default value of \fBauto\fR for Ethernet links. If \fBpkey\fR is specified, \fBlower-link\fR must be specified with a valid IPoIB \fBphys\fR class datalink. The administrator may explicitly specify a value upon adding an \fBanet\fR resource. The link can be any link accepted as an argument to \fBdladm create-vnic\fR's \fB-l\fR option or to \fBdladm create-part\fR's \fB-l\fR option (see \fBdladm\fR(1M)). If this property is set to a \fBlinkname\fR (other than \fBauto\fR) and that link does not exist, then the zone will fail to boot. When set to \fBauto\fR, the \fBzoneadmd\fR(1M) daemon will automatically choose the link over which the VNIC will be created each time the zone boots. All IPoIB datalinks will will be skipped when selecting the default \fBlower-link\fR for creating the VNIC automatically during boot. A link will be chosen using the following heuristic:
+.RS +4
+.TP
+1.
+A link aggregation that has a link state of \fBup\fR.
+.RE
+.RS +4
+.TP
+2.
+Of the physical Ethernet links, choose the link with the following:
+.RS +4
+.TP
+a.
+Link state of \fBup\fR
+.RE
+.RS +4
+.TP
+b.
+Maximum number of available VFs (only if \fBiov=auto/on\fR)
+.RE
+.RS +4
+.TP
+c.
+Maximum number of free \fBmac-slots\fR
+.RE
+.RS +4
+.TP
+d.
+The one with the alphabetically smallest name
+.RE
+.RE
+.RS +4
+.TP
+3.
+If none is \fBup\fR, the datalink named \fBnet0\fR is used if it exists.
+.RE
+If none of the above can be satisfied, the zone will fail to boot.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBallowed-address\fR\fR
+.ad
+.sp .6
+.RS 4n
+See the description of the \fBallowed-address\fR property for exclusive-IP zones in the \fBnet\fR resource.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauto-mac-address\fR\fR
+.ad
+.sp .6
+.RS 4n
+Holds the list of the randomly generated MAC addresses when the \fBmac-address\fR property (see below) is set to \fBrandom\fR or \fBauto\fR, so that the zone reacquires the same addresses on a persistent basis. To reset the randomly generated addresses, an administrator needs to clear this property.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbwshare\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specify the bandwidth share for the VNIC. See \fBbwshare\fR property in \fBdladm\fR(1M). This property is currently supported only on certain NICs.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfigure-allowed-address\fR\fR
+.ad
+.sp .6
+.RS 4n
+See the description of the \fBconfigure-allowed-address\fR property for exclusive-IP zones in the \fBnet\fR resource.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcos\fR\fR
+.ad
+.sp .6
+.RS 4n
+The 802.1p priority associated with the datalink. See \fBdladm\fR(1M) for details on this property.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdefrouter\fR\fR
+.ad
+.sp .6
+.RS 4n
+See the description of the \fBdefrouter\fR property for exclusive-IP zones in the \fBnet\fR resource.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBetsbw-lcl\fR\fR
+.ad
+.sp .6
+.RS 4n
+Indicates the ETS bandwidth on the TX side. See \fBdladm\fR(1M) for details on this property.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmac-address\fR\fR
+.ad
+.sp .6
+.RS 4n
+Set the VNIC's list of MAC addresses based on the specified values or keywords. If an element of the list is not a keyword, it is interpreted as a unicast MAC address. This property is not supported on IPoIB datalinks. The supported keywords are:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBfactory\fR: Assign a factory MAC address to the VNIC. When a factory MAC address is requested, the \fBmac-slot\fR property can be used to specify the MAC address slot identifier. Otherwise, the next available factory MAC address will be used.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBrandom\fR: Assign a random MAC address to the VNIC. Use the \fBmac-prefix\fR property to specify a prefix. Otherwise, a default prefix consisting of a valid IEEE OUI with the local bit set will be used.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBauto\fR: Try to assign random \fBmac-address\fR first if possible, if NIC supports it, else try to assign a factory \fBmac-address\fR. This is the default value.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBdefault\fR: Use a platform specific assignment strategy. In most cases this attempts to allocate a random address (see 'random' above). If the current platform is an Oracle Solaris kernel zone, a factory MAC address will be assigned (see 'factory' above).
+.RE
+If any random MAC addresses are selected, then the addresses generated will be preserved across zone boots and zone detach/attach. This will allow zones to retain their DHCP leases by maintaining stable client IDs, and otherwise take advantage of other benefits of having stable MAC addresses.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmac-prefix\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specify the list of MAC address prefixes to use if random MAC address allocation is requested. Otherwise this property is ignored. This property is not valid over IPoIB datalinks.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmac-slot\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specify the list of MAC address slot identifiers used if factory MAC addresses are requested. Otherwise this property is ignored. This property is not valid over IPoIB datalinks.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmtu\fR\fR
+.ad
+.sp .6
+.RS 4n
+The maximum transmission unit of the VNIC in bytes. See \fBmtu\fR property in \fBdladm\fR(1M).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmaxbw\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specify the full duplex bandwidth for the VNIC. See \fBmaxbw\fR property in \fBdladm\fR(1M). By default, the VNIC will use the \fBmaxbw\fR set on the \fBlower-link\fR and if none is set then there is no bandwidth limit.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpriority\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specify the relative priority for the VNIC. See the \fBpriority\fR property in \fBdladm\fR(1M) for supported values and default.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlro\fR\fR
+.ad
+.sp .6
+.RS 4n
+Large receive offload. Valid values are off, on or auto. The value auto is set to inherit the lower link's lro disposition. This property is valid only for Ethernet links. See the description in \fBdladm\fR(1M).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvlan-id\fR\fR
+.ad
+.sp .6
+.RS 4n
+Enable VLAN or PVLAN tagging for this VNIC and specify a id for the VLAN tag. There is no default value which means if this property is not set then the VNIC does not participate in any VLAN. This property is not supported on IPoIB datalinks. See the \fBdladm\fR(1M) for supported VLAN ID format.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvsi-typeid\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specify the VSI Type ID associated with a VNIC. See description in \fBdladm\fR(1M).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvsi-vers\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specify the VSI Version associated with a VNIC. See description in \fBdladm\fR(1M).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvsi-mgrid\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specify the VSI Manager ID associated with a VNIC. See description in \fBdladm\fR(1M).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrxfanout\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specify the number of receive-side fanout threads. See description in \fBdladm\fR(1M).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrxrings\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specify the receive rings for the VNIC. See \fBrxrings\fR property in \fBdladm\fR(1M) for supported values and default.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtxrings\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specify the transmit rings for the VNIC. See \fBtxrings\fR property in \fBdladm\fR(1M) for supported values and default.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlink-protection\fR\fR
+.ad
+.sp .6
+.RS 4n
+Enables one or more types of link protection using comma-separated values. See the \fBprotection\fR property in \fBdladm\fR(1M) for supported values. It has a default value of \fBmac-nospoof\fR.
+.sp
+Note that adding \fBip-nospoof\fR to this property will have no effect unless \fBallowed-address\fR is also set. Setting \fBallowed-address\fR will implicitly add \fBip-nospoof\fR to the set of \fBlink-protection\fR, and clearing \fBallowed-address\fR will remove it.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBallowed-dhcp-cids\fR\fR
+.ad
+.sp .6
+.RS 4n
+Setting this property will enable \fBdhcp-nospoof\fR on the VNIC. See \fBdladm\fR(1M) for details.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkey\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the InfiniBand Partition key value in hexadecimal. \fBpkey\fR is always treated as hexadecimal, whether it has the \fB0x\fR prefix or not. This property is only valid for IPoIB datalinks.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlinkmode\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the link transport service type on an IB partition datalink. The default value is \fBcm\fR. This property is valid only for IPoIB datalinks. Valid values are:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcm\fR\fR
+.ad
+.sp .6
+.RS 4n
+Connected Mode. This mode uses a default MTU of 65520 and supports a maximum MTU of 65535 bytes. If Connected Mode is not available for a remote node, Unreliable Datagram mode will automatically be used instead.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBud\fR\fR
+.ad
+.sp .6
+.RS 4n
+Unreliable Datagram Mode. This mode uses a default MTU of 2044 and supports a maximum MTU of 4092 bytes.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBiov\fR\fR
+.ad
+.sp .6
+.RS 4n
+Setting this property allows a \fBsolaris-kz\fR brand zone to make use of SR-IOV VFs for network devices. The possible values of this property are:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBauto\fR: Use a VF if one is available, if not, fallback to using a paravirtual device.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBon\fR: Must use a VF. If a VF is not available, creation of anet fails.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBoff\fR: Do not use a VF (the default).
+.RE
+If this property is auto/on and lower-link is not specified, the lower link selection logic will take this into consideration in addition to other criteria (see lower-link property for details). 
+.sp
+Here are the limitations of this property:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+It can only be used with the \fBsolaris-kz\fR brand zone.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+It is incompatible with all anet properties except for lower-link, id, mac-address, mac-prefix, mac-slot.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBzoneadm\fR migrate/suspend will fail if this property is set to auto/on.
+.RE
+.RE
+
+.RE
+
+The id value is a positive integer used to identify the network interface; see \fBsolaris-kz\fR(5). 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmac\fR: auto-mac-address, mac-address, mac-prefix, id\fR
+.ad
+.sp .6
+.RS 4n
+The mac resource is used to add extra mac-addresses to the \fBanet\fR resource, the primary mac address is given by the \fBanet:mac-address\fR property.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauto-mac-address\fR\fR
+.ad
+.RS 20n
+.rt  
+Holds the list of the randomly generated MAC addresses when the \fBmac-address\fR property (see below) is set to random or auto, so that the zone re-acquires the same addresses on a persistent basis. To reset the randomly generated addresses, an administrator needs to clear this property.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmac-address\fR\fR
+.ad
+.RS 20n
+.rt  
+Sets the VNIC's list of MAC addresses based on the specified values or keywords. If an element of the list is not a keyword, it is interpreted as a uni-cast MAC address. This property is not supported on IPoIB datalinks. The supported keywords are:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfactory\fR:\fR
+.ad
+.RS 12n
+.rt  
+Assigns a factory MAC address to the VNIC. When a factory MAC address is requested, the \fBmac-slot\fR property can be used to specify the MAC address slot identifier. Otherwise, the next available factory MAC address will be used.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrandom\fR:\fR
+.ad
+.RS 12n
+.rt  
+Assigns a random MAC address to the VNIC. Use the \fBmac-prefix\fR property to specify a prefix. Otherwise, a default prefix consisting of a valid IEEE OUI with the local bit set will be used.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauto\fR:\fR
+.ad
+.RS 12n
+.rt  
+Assigns random mac-address, if NIC supports it, else it tries to assign a \fBfactory mac-address\fR. This is the default value.
+.RE
+
+If any random MAC addresses are selected, then the addresses generated will be preserved across zone boots and zone detach/attach. This will allow zones to retain their DHCP leases by maintaining stable client IDs, and otherwise take advantage of other benefits of having stable MAC addresses.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmac-prefix\fR\fR
+.ad
+.RS 20n
+.rt  
+Specifies the list of MAC address prefixes to use if random MAC address allocation is requested. Otherwise, this property is ignored. This property is not valid over IPoIB datalinks.
+.sp
+The \fBid\fR value is a positive integer used to identify a resource uniquely.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBib-vhca\fR: over-hca, id, port\fR
+.ad
+.sp .6
+.RS 4n
+An \fBib-vhca\fR resource represents the automatic creation of a virtual Infiniband HCA device for a kernel zone. When such a zone boots, a temporary VHCA is created. It is destroyed when the zone halts.
+.sp
+The supported properties are described below. All these properties are optional. Only the host system's global zone is allowed to modify the automatically VHCAs. If a property set in \fBzonecfg\fR cannot be assigned to the VHCA at its creation time, the zone will fail to boot.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBover-hca\fR\fR
+.ad
+.RS 12n
+.rt  
+Sets the physical InfiniBand device to use for configuration of the virtual InfiniBand device. The device name is as listed in the \fBibadm\fR command. For more information, see \fBibadm\fR(1M) man page.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBid\fR\fR
+.ad
+.RS 12n
+.rt  
+Uniquely identifies the \fBib-vhca\fR resource.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBport\fR: pkey, id\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkey\fR\fR
+.ad
+.RS 8n
+.rt  
+Specifies the InfiniBand Partition key value. The pkey value can either be a keyword or a comma seperated list of hexadecimal values. The \fB0x\fR prefix should not be used for specifying the hexadecimal value. The keyword allowed for pkey is:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauto\fR\fR
+.ad
+.RS 8n
+.rt  
+Assigns an automatically generated pkey value based on \fBover-hca\fR value specified. This is the default value.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBid\fR\fR
+.ad
+.RS 8n
+.rt  
+\fBId\fR is used to uniquely identify the port resource. Each \fBid\fR corresponds to the physical port number.
+.RE
+
+The GUID assigned to each port on zone boot can be obtained by inspecting the Live Configuration of the running zone.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdevice\fR: match, allow-partition, allow-raw-io, id\fR
+.ad
+.sp .6
+.RS 4n
+Device name to match. This can be a glob pattern to match or an absolute pathname. Note that device resources and aliased datasets can have namespace conflicts in \fB/dev/zvol\fR. See \fBdev\fR(7FS).
+.sp
+Alternatively, the storage property can be set to a storage URI (see \fBsuri\fR(5)). In this case, the SURI is mapped when the zone boots, and the matching device nodes are available inside the zone. The SURI is unmapped when the zone halts. In this case, allow-partition is automatically set to true.
+.sp
+Both \fBallow-partition\fR and \fBallow-raw-io\fR can be set to \fBtrue\fR or \fBfalse\fR, and default to \fBfalse\fR. See \fBNOTES\fR.
+.LP
+Note - 
+.sp
+.RS 2
+In general, adding devices to a zone can compromise the security of the system; see \fBNOTES\fR.
+.RE
+The id value is a positive integer used to identify the virtual block device; see \fBsolaris-kz\fR(5). 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrctl\fR: name, value\fR
+.ad
+.sp .6
+.RS 4n
+The name and \fIpriv\fR/\fIlimit\fR/\fIaction\fR triple of a resource control. See \fBprctl\fR(1) and \fBrctladm\fR(1M). The preferred way to set rctl values is to use the global property name associated with a specific rctl.
+.sp
+Multiple rctl values may be given, and are of the form:
+.sp
+.in +2
+.nf
+(priv=<\fIvalue\fR>,limit=<\fIvalue\fR>,action=<\fIvalue\fR>)
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvirtual-cpus\fR: ncpus\fR
+.ad
+.sp .6
+.RS 4n
+Specify the number of virtual CPUs configured for a \fBsolaris-kz\fR brand zone. See \fBsolaris-kz\fR(5). 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBattr\fR: name, type, value\fR
+.ad
+.sp .6
+.RS 4n
+The name, type and value of a generic attribute. The \fBtype\fR must be one of \fBint\fR, \fBuint\fR, \fBboolean\fR or \fBstring\fR, and the value must be of that type. \fBuint\fR means unsigned, that is, a non-negative integer.
+.sp
+The "name" property of an "attr" resource is syntactically restricted in a fashion similar but not identical to zone names: it must begin with an alphanumeric, and can contain alphanumerics plus the hyphen (-), underscore (_), and dot (.) characters. Attribute names beginning with "zone" are reserved for use by the system. Finally, the \fBautoboot\fR and \fBglobal-time\fR global property must have a value of "true" or "false".
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdataset\fR: name, alias\fR
+.ad
+.sp .6
+.RS 4n
+The name of a \fBZFS\fR dataset to be accessed from within the zone. See \fBzfs\fR(1M). Each dataset is aliased such that it appears as a virtual ZFS pool in the zone. The alias is the name of this virtual pool. See \fBzpool\fR(1M) for name restrictions that apply to ZFS pool names and as a result also apply to dataset alias values. The alias \fBrpool\fR is reserved from the zone's rpool dataset. Note that aliased datasets and device resources can have namespace conflicts in \fB/dev/zvol\fR. See \fBdev\fR(7FS).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBcpu-shares\fR\fR
+.ad
+.sp .6
+.RS 4n
+The number of Fair Share Scheduler (FSS) shares to allocate to this zone. This property is incompatible with the \fBdedicated-cpu\fR resource. This property is the preferred way to set the \fBzone.cpu-shares\fR rctl.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBmax-lwps\fR\fR
+.ad
+.sp .6
+.RS 4n
+The maximum number of LWPs simultaneously available to this zone. This property is the preferred way to set the \fBzone.max-lwps\fR rctl.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBmax-msg-ids\fR\fR
+.ad
+.sp .6
+.RS 4n
+The maximum number of message queue IDs allowed for this zone. This property is the preferred way to set the \fBzone.max-msg-ids\fR rctl.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBmax-processes\fR\fR
+.ad
+.sp .6
+.RS 4n
+The maximum number of process table slots simultaneously available to this zone. This property is the preferred way to set the \fBzone.max-processes\fR rctl. Setting this property will implicitly set the value of the \fBmax-lwps\fR property to 10 times the number of process slots unless the \fBmax-lwps\fR property has been set explicitly.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBmax-sem-ids\fR\fR
+.ad
+.sp .6
+.RS 4n
+The maximum number of semaphore IDs allowed for this zone. This property is the preferred way to set the \fBzone.max-sem-ids\fR rctl.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBmax-shm-ids\fR\fR
+.ad
+.sp .6
+.RS 4n
+The maximum number of shared memory IDs allowed for this zone. This property is the preferred way to set the \fBzone.max-shm-ids\fR rctl.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBmax-shm-memory\fR\fR
+.ad
+.sp .6
+.RS 4n
+The maximum amount of shared memory allowed for this zone. This property is the preferred way to set the \fBzone.max-shm-memory\fR rctl. A scale (K, M, G, T) can be applied to the value for this number (for example, 1M is one megabyte).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBglobal: \fBscheduling-class\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the scheduling class used for processes running in a zone. When this property is not specified, the scheduling class is established as follows:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+If the \fBcpu-shares\fR property or equivalent rctl is set, the scheduling class FSS is used.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+If neither \fBcpu-shares\fR nor the equivalent rctl is set and the zone's pool property references a pool that has a default scheduling class, that class is used.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Under any other conditions, the system default scheduling class is used.
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdedicated-cpu\fR: cpus, cores, sockets ncpus, importance\fR
+.ad
+.sp .6
+.RS 4n
+This resource will create a pool and processor set for exclusive use by the zone when it boots. These processors are not available for use by other zones or the global zone while the zone is running. See the \fBpoolcfg\fR(1M) and \fBpooladm\fR(1M) man pages for more information on pools.
+.sp
+The cpus to dedicate can be specifically chosen, or automatically chosen:
+.sp
+.ne 2
+.mk
+.na
+\fBChoosing specific cpu resources\fR
+.ad
+.sp .6
+.RS 4n
+Set one of \fBcpus\fR, \fBcores\fR, or \fBsockets\fR to a list of cpu, core or socket ids. Use \fBpsrinfo -t\fR and \fBpooladm\fR to see which cpus, cores and/or sockets are available.
+.sp
+If any of the specified resources are assigned to another zone or pool, the zone will fail to boot. This includes subsets of the assigned resources. For example, if an assigned socket has a core assigned elsewhere.
+.sp
+If any of the specified cpu resources do not exist or are faulted or offline, a warning will be displayed when the zone boots. The zone will receive all of the specified cpu resources that are online.
+.sp
+If a cpu resource is partially online, such as a core with some cpus faulted, the zone will receive the remaining online cpus from the core, and a warning will be displayed.
+.sp
+If none of the specified cpu resources are online, the zone will fail to boot.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBAutomatically chosen cpus resources\fR
+.ad
+.sp .6
+.RS 4n
+This can vary on each boot or live zone reconfiguration of the zone.
+.sp
+Set \fBncpus\fR to an integer range or scalar value. A range is expressed using a \fB-\fR, such as 1-4 to represent one to four processors. If a range is specified, the quantity of cpus dedicated to the zone may change while the zone is running.
+.sp
+Optionally set "importance" to configure the pool.importance value of the resource pool associated with the dedicated cpus. The "importance" value is an integer value. Pools with higher importance are favored for cpu allocation when ranges are used. See the\fBlibpool\fR(3LIB) manpage for a description of importance based allocation.
+.sp
+If there are not sufficient available online cpus to satisfy the minimum or integer value set, the zone will fail to boot or live reconfigure.
+.sp
+When automatic cpus are configured the specific cpus, dedicated to the zone can change while it is running. For example, if a cpu resource in use by an automatic running zone is assigned elsewhere, the cpu resource will be replaced with another available cpu resource. The quantity of cpu resources dedicated to a running automatic cpu zone can also change within the constraints the range specified.
+.sp
+\fBsolaris-kz\fR branded zones cannot change cpus while running. They do not support a range value for ncpus. Cpu resources in use by running solaris-kz branded zones cannot be assigned elsewhere, even if they are chosen automatically. Due to this, it is recommended that zones using specific cpus should be be booted before solaris-kz branded zones using automatic cpus.
+.RE
+
+This resource is incompatible with both the \fBpool\fR and \fBcpu-shares\fR properties. Only a single instance of this resource can be added to the zone.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcapped-memory\fR: physical, swap, locked\fR
+.ad
+.sp .6
+.RS 4n
+The caps on the memory that can be used by this zone. A scale (K, M, G, T) can be applied to the value for each of these numbers (for example, 1M is one megabyte). Each of these properties is optional but at least one property must be set when adding this resource. Only a single instance of this resource can be added to the zone. The \fBphysical\fR property sets the \fBmax-rss\fR for this zone. This will be enforced by \fBrcapd\fR(1M) running in the global zone. The \fBswap\fR property is the preferred way to set the \fBzone.max-swap\fR rctl. The \fBlocked\fR property is the preferred way to set the \fBzone.max-locked-memory\fR rctl.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcapped-cpu\fR: ncpus\fR
+.ad
+.sp .6
+.RS 4n
+Sets a limit on the amount of CPU time that can be used by a zone. The unit used translates to the percentage of a single CPU that can be used by all user threads in a zone, expressed as a fraction (for example, \fB\&.75\fR) or a mixed number (whole number and fraction, for example, \fB1.25\fR). An \fBncpu\fR value of \fB1\fR means 100% of a CPU, a value of \fB1.25\fR means 125%, \fB\&.75\fR mean 75%, and so forth. When projects within a capped zone have their own caps, the minimum value takes precedence.
+.sp
+The \fBcapped-cpu\fR property is an alias for \fBzone.cpu-cap\fR resource control and is related to the \fBzone.cpu-cap\fR resource control. See \fBresource-controls \fR(5).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBadmin\fR: user, auths\fR
+.ad
+.sp .6
+.RS 4n
+Delegates zone administrative authorizations to the specified user or role. The user must correspond to a valid local account. The allowed values for auths are:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlogin\fR\fR
+.ad
+.sp .6
+.RS 4n
+Allows authenticated use of \fBzlogin\fR(1) into this zone.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmanage\fR\fR
+.ad
+.sp .6
+.RS 4n
+Allows normal management of the configured zone.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcopyfrom\fR\fR
+.ad
+.sp .6
+.RS 4n
+Allows the use of the specified zone as a source from which to clone a new zone.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig\fR\fR
+.ad
+.sp .6
+.RS 4n
+Allows to modify the persistent configuration of the zone.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBliveconfig\fR\fR
+.ad
+.sp .6
+.RS 4n
+Allows to inspect and to modify the live configuration of the running zone.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrootzpool\fR: storage\fR
+.ad
+.sp .6
+.RS 4n
+Defines one or more storage resources to be used exclusively for a dedicated \fBzpool\fR containing the zone installation. The allowed values for storage are defined in \fBsuri\fR(5).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzpool\fR: storage, name\fR
+.ad
+.sp .6
+.RS 4n
+Defines one or more storage resources to be used exclusively for a \fBzpool\fR delegated to the zone. The allowed values for storage are defined in \fBsuri\fR(5). The allowed values for name are defined in \fBzpool\fR(1M). The name \fBrpool\fR is not permitted.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnpiv\fR: virtual-port-wwn, over-hba\fR
+.ad
+.sp .6
+.RS 4n
+Sets an unique 64bit port world wide name to an npiv with virtual-port-wwn, which is optional and will be set with an automatically generated wwn. users can still override this generated wwn.
+.sp
+Property \fBover-hba\fR is optional as well and it could be an empty string, which means physical HBA ports are chosen in a round-robin policy to spread them across the available ports. If this property is set the value for \fBover-hba\fR must be an unsigned integer leading by 'c' for one physical NPIV capable FC HBA controller as shown under \fB/dev/cfg/c*\fR. Please refer to \fBcfgadm_fp\fR(1M) for more detailed information.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBverified-boot\fR: policy, cert\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpolicy\fR\fR
+.ad
+.RS 10n
+.rt  
+Controls ELF signature verification of bootloader and kernel modules in the zones guest. Values can be set to "none", "warning" and "enforce". "None" skips verification. "Warning" logs a message on verification failure. "Enforce" causes the module to not load on failure. By default, policy is set to "warning".
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcert\fR\fR
+.ad
+.RS 10n
+.rt  
+Adds customer-installed public key cert for third-party and self-signed software. These cert files are used for ELF signature verification in addition to the default Oracle cert. The cert path can be added using \fBfile:///\fR, \fBhttp://\fR or \fBhttps://\fR URL.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkeysource\fR: raw\fR
+.ad
+.sp .6
+.RS 4n
+Provides administrative access to the cryptographic key used for kernel zone suspend images and host data as described in \fBsolaris-kz\fR(5). The value of \fBraw\fR cannot be set directly, except with the \fBcommand_file\fR mode.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsuspend\fR: path, storage\fR
+.ad
+.sp .6
+.RS 4n
+Configures the location of a kernel zone's suspend image. Only one \fBsuspend\fR resource is allowed. If no \fBsuspend\fR resource is present, suspend and resume are not supported by the kernel zone. The \fBsuspend\fR resource allows either \fBpath\fR or \fBstorage\fR to be specified, and not both. If \fBpath\fR is specified, it is the full path to which the suspend file will be written and its parent directory must exist. If \fBstorage\fR is specified, it must be a device referenced by a storage URI as described in \fBsuri\fR(5).
+.RE
+
+.SS "Using Kernel Statistics to Monitor CPU Caps"
+.sp
+.LP
+Using the kernel statistics (\fBkstat\fR(3KSTAT)) module \fBcaps\fR, the system maintains information for all capped projects and zones. You can access this information by reading kernel statistics (\fBkstat\fR(3KSTAT)), specifying \fBcaps\fR as the \fBkstat\fR module name. The following command displays kernel statistics for all active CPU caps:
+.sp
+.in +2
+.nf
+# \fBkstat caps::'/cpucaps/'\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+A \fBkstat\fR(1M) command running in a zone displays only CPU caps relevant for that zone and for projects in that zone. See \fBEXAMPLES\fR.
+.sp
+.LP
+The following are cap-related arguments for use with \fBkstat\fR(1M):
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcaps\fR\fR
+.ad
+.sp .6
+.RS 4n
+The \fBkstat\fR module.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBproject_caps\fR or \fBzone_caps\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBkstat\fR class, for use with the \fBkstat\fR \fB-c\fR option.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcpucaps_project_\fR\fIid\fR or \fBcpucaps_zone_\fR\fIid\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBkstat\fR name, for use with the \fBkstat\fR \fB-n\fR option. \fIid\fR is the project or zone identifier.
+.RE
+
+.sp
+.LP
+The following fields are displayed in response to a \fBkstat\fR(1M) command requesting statistics for all CPU caps.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmodule\fR\fR
+.ad
+.sp .6
+.RS 4n
+In this usage of \fBkstat\fR, this field will have the value \fBcaps\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.sp .6
+.RS 4n
+As described above, \fBcpucaps_project_\fR\fIid\fR or \fBcpucaps_zone_\fR\fIid\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBabove_sec\fR\fR
+.ad
+.sp .6
+.RS 4n
+Total time, in seconds, spent above the cap.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbelow_sec\fR\fR
+.ad
+.sp .6
+.RS 4n
+Total time, in seconds, spent below the cap.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmaxusage\fR\fR
+.ad
+.sp .6
+.RS 4n
+Maximum observed CPU usage.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnwait\fR\fR
+.ad
+.sp .6
+.RS 4n
+Number of threads on cap wait queue.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBusage\fR\fR
+.ad
+.sp .6
+.RS 4n
+Current aggregated CPU usage for all threads belonging to a capped project or zone, in terms of a percentage of a single CPU.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+The cap value, in terms of a percentage of a single CPU.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzonename\fR\fR
+.ad
+.sp .6
+.RS 4n
+Name of the zone for which statistics are displayed.
+.RE
+
+.sp
+.LP
+See \fBEXAMPLES\fR for sample output from a \fBkstat\fR command.
+.SS "Configuration From Unified Archives"
+.sp
+.LP
+Unified Archives, created with \fBarchiveadm\fR(1M), provide a means for archiving Solaris instances. Each Unified Archive may contain data and metadata corresponding to one or more global and/or non-global zones. By default, \fBarchiveadm\fR(1M) generates an archive that is suitable for system or zone cloning. Optionally, \fBarchiveadm\fR(1M) may create an archive that is suitable for system recovery.
+.sp
+.LP
+If the \fBzonecfg create -a archive [\fIoptions\fR]\fR subcommand is used to configure a zone from an Unified Archive, archive creation options can affect the degree to which the archived configuration is preserved: when configuring from a clone archive, property values that are likely to cause problems if they are the same for multiple hosts will take on a default value. These properties are:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-\fR\fR
+.ad
+.RS 8n
+.rt  
+host id
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBanet\fR\fR
+.ad
+.RS 8n
+.rt  
+allowed-address
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBanet\fR\fR
+.ad
+.RS 8n
+.rt  
+mac-address
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnet\fR\fR
+.ad
+.RS 8n
+.rt  
+allowed-address
+.RE
+
+.sp
+.LP
+Additonally, if the archived zone name and the name of the zone being installed do not match, some properties will be automatically updated to reflect the new zone name:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzonepath\fR\fR
+.ad
+.RS 17n
+.rt  
+If the last element of the \fBzonepath\fR matches the archived zone name, the last element in the \fBzonepath\fR is replaced with the new zone name.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdataset/alias\fR\fR
+.ad
+.RS 17n
+.rt  
+For dataset resources, if the alias matches the archived zone name, the alias is replaced with the new zone name.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdataset/name\fR\fR
+.ad
+.RS 17n
+.rt  
+For dataset resources, if the last element of the name property matches the archived zone name, the last element in the name property is replaced with the new zone name.
+.RE
+
+.sp
+.LP
+Configuration from a Unified Archive does not prevent the use of subsequent commands to modify resources and property values as required.
+.SH OPTIONS
+.sp
+.LP
+The following options are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIcommand_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specify the name of \fBzonecfg\fR command file. \fIcommand_file\fR is a text file of \fBzonecfg\fR subcommands, one per line obtained from output of \fBexport\fR subcommand.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+Enables the live edit mode. Instructs \fBzonecfg\fR to edit the live configuration of a running zone instead of a persistent configuration from a stable storage. When used, \fBzonecfg\fR retrieves a snapshot of the current live zone configuration. The full set of \fBzonecfg\fR subcommands is supported in this mode. The live configuration takes effect immediately after it is commited and remains active until the next zone reboot. The live mode is only allowed for a running zone and requires the authorization \fBsolaris.zone.liveconfig/zonename\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fIzonename\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specify the name of a zone. Zone names are case sensitive. Zone names must begin with an alphanumeric character and can contain alphanumeric characters, the underscore (\fB_\fR) the hyphen (\fB-\fR), and the dot (\fB\&.\fR). The name \fBglobal\fR and all names beginning with \fBSYS\fR are reserved and cannot be used.
+.RE
+
+.SH TOKENS
+.sp
+.LP
+The following tokens are supported for use in certain properties:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%{zonename}\fR\fR
+.ad
+.RS 23n
+.rt  
+Evaluates to name of the zone.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%{id}\fR\fR
+.ad
+.RS 23n
+.rt  
+Evaluates to id property of a particular resource. This token is used within a resource scope which supports \fBid\fR property.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%{global-rootzpool}\fR\fR
+.ad
+.RS 23n
+.rt  
+Evaluates to global zone's rootzpool name.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%%\fR\fR
+.ad
+.RS 23n
+.rt  
+Evaluates to \fB%\fR.
+.RE
+
+.sp
+.in +2
+.nf
+  -----------------------------------------------------------------
+  |Resource  | Property | Supported Tokens                        |
+  |---------------------------------------------------------------|
+  |global    | zonepath | %{zonename}                             |
+  |---------------------------------------------------------------|
+  |dataset   | name     | %{zonename}                             |
+  |---------------------------------------------------------------|   
+  |device    | match    | %{zonename}, %{id}, %{global-rootzpool} |
+  |          | storage  | %{zonename}, %{id}, %{global-rootzpool} |
+  |---------------------------------------------------------------|
+  |fs        | raw      | %{zonename}                             |
+  |          | special  | %{zonename}                             |
+  |---------------------------------------------------------------|
+  |net       | physical | %{id}                                   |
+  |---------------------------------------------------------------|
+  |anet      | linkname | %{id}                                   |
+  |---------------------------------------------------------------|
+  |suspend   | storage  | %{zonename}, %{global-rootzpool}        |
+  |          | path     | %{zonename}                             |
+  |---------------------------------------------------------------|
+  |rootzpool | storage  | %{zonename}, %{global-rootzpool}        |
+  |---------------------------------------------------------------|
+  |zpool     | storage  | %{zonename}, %{global-rootzpool}        |
+  -----------------------------------------------------------------
+.fi
+.in -2
+.sp
+
+.SH SUBCOMMANDS
+.sp
+.LP
+You can use the \fBadd\fR and \fBselect\fR subcommands to select a specific resource, at which point the scope changes to that resource. The selected subcommand can only be applied on resources that have been already added to the zone configuration. Some resources, like \fBanet\fR, are added automatically. The \fBend\fR and \fBcancel\fR subcommands are used to complete the resource specification, at which time the scope is reverted back to global.
+.sp
+.LP
+\fBzonecfg\fR supports a semicolon-separated list of subcommands. For example:
+.sp
+.in +2
+.nf
+# \fBzonecfg -z myzone "add net; set physical=myvnic; end"\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Subcommands which can result in destructive actions or loss of work have an \fB-F\fR option to force the action. If input is from a terminal device, the user is prompted when appropriate if such a command is given without the \fB-F\fR option otherwise, if such a command is given without the \fB-F\fR option, the action is disallowed, with a diagnostic message written to standard error. 
+.sp
+.LP
+The following subcommands are supported: 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBadd\fR \fIresource-type\fR\fR
+.ad
+.br
+.na
+\fB\fBadd\fR \fIproperty-name property-value\fR (resource scope)\fR
+.ad
+.sp .6
+.RS 4n
+In the global scope or in a resource scope, begin the specification for a given resource type. The scope is changed to that resource type. 
+.sp
+In the resource scope, add a property of the given name with the given value. The syntax for property values varies with different property types. In general, it is a simple value or a list of simple values enclosed in square brackets, separated by commas (\fB[foo,bar,baz]\fR). See \fBPROPERTIES\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcancel\fR\fR
+.ad
+.sp .6
+.RS 4n
+End the resource specification and reset scope to global. Abandons any partially specified resources. \fBcancel\fR is only applicable in the resource scope.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBclear\fR \fIproperty-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+Clears the value for the property to a default value.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcommit\fR [\fB-n\fR] [\fB-q\fR]\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.ne 2
+.mk
+.na
+\fBDefault mode\fR
+.ad
+.RS 16n
+.rt  
+Commits the current configuration from memory to stable storage. The configuration must be committed to be used by \fBzoneadm\fR. Options \fB-n\fR and \fB-q\fR are not permitted in the default mode.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBLive mode\fR
+.ad
+.RS 16n
+.rt  
+Reconfigure the running zone to match the current in-memory live configuration and print out performed actions. Applied changes take effect immediately and remain active until to the next zone reboot. If the live configuration externally changes before the \fBcommit\fR subcommand is invoked, the operation returns an error. Such a case requires to reload the live configuration and reapply desired changes for the commit to succeed.
+.sp
+The following options are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 6n
+.rt  
+Runs the reconfiguration in a dry run mode that does not change the configuration of a running zone. The dry run mode acts the same way as the real reconfiguration but leaves the running zon intact. Use the dry run to review actions that would be performed by the real reconfiguration.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR\fR
+.ad
+.RS 6n
+.rt  
+Quiet mode. Suppresses all messages related to the zone reconfiguration.
+.RE
+
+.RE
+
+Until the in-memory configuration is committed you can remove changes with the \fBreload\fR subcommand. The commit operation is attempted automatically upon completion of a zonecfg session. Since a configuration must be correct to be committed, this operation automatically does a verify.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate [\fR\fB-F\fR\fB] [\fR \fB-a\fR \fIdirectory\fR |\fB-b\fR \fB|\fR \fB-t\fR \fItemplate\fR\fB]\fR\fR
+.ad
+.br
+.na
+\fB\fR
+.ad
+.br
+.na
+\fB\fBcreate\fR [\fB-F\fR] \fB-a\fR \fIarchive\fR [\fB-z\fR \fIarchived_zone\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-<cert|ca-cert|key>\fR=\fIpath\fR] \&...\fR
+.ad
+.sp .6
+.RS 4n
+Create an in-memory configuration for the specified zone. Use \fBcreate\fR to begin to configure a new zone. See \fBcommit\fR for saving this to stable storage. 
+.sp
+If you are overwriting an existing configuration, specify the \fB-F\fR option to force the action. Specify the \fB-t\fR \fItemplate\fR option to create a configuration identical to \fItemplate\fR, where \fItemplate\fR is the name of a configured zone.
+.sp
+\fBcreate\fR uses a default template of \fBSYSdefault\fR. The default template can be changed on a system-wide basis using the \fBdefault_template\fR SMF property of the \fBsvc:/system/zones:default\fR service. An administrator can override the default for this zone using \fB-t\fR (with a specific template) or \fB-b\fR (to use a blank template).
+.sp
+Use the \fB-a\fR \fIdirectory\fR option to facilitate configuring a detached zone on a new host. The \fIpath\fR parameter is the \fBzonepath\fR location of a detached zone that has been moved on to this new host. Once the detached zone is configured, it should be installed using the "\fBzoneadm attach\fR" command (see \fBzoneadm\fR(1M)). All validation of the new zone happens during the \fBattach\fR process, not during zone configuration.
+.sp
+Use the \fB-a\fR archive option to facilitate configuring a zone from a Unified Archive created with archiveadm(1M). The archive may be an absolute path or a file, http, or https URI. If the Unified Archive contains multiple zones, the \fB-z archived_zone\fR option must be used to specify which zone in the archive is to be used for configuration. If archive is accessed through an https URI, the \fB-x\fR option may be used to specify the location of a certificate, CA certificate, and/or key file. If specified, the \fBcert\fR, \fBcacert\fR, and \fBkey\fR must be in PEM format. See Configuration from Unified Archives, above for more details.
+.sp
+Use the \fB-b\fR option to create a blank configuration. Without arguments, \fBcreate\fR applies the Oracle Sun default settings.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete [\fR\fB-F\fR\fB]\fR\fR
+.ad
+.sp .6
+.RS 4n
+Delete the specified configuration from memory and stable storage. This action is instantaneous, no commit is necessary. A deleted configuration cannot be reverted. 
+.sp
+Specify the \fB-F\fR option to force the action.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBend\fR\fR
+.ad
+.sp .6
+.RS 4n
+End the resource specification. This subcommand is only applicable in the resource scope. \fBzonecfg\fR checks to make sure the current resource is completely specified. If so, it is added to the in-memory configuration (see \fBcommit\fR for saving this to stable storage) and the scope reverts to global or a previous resource scope. If the specification is incomplete, it issues an appropriate error message.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexport [\fR\fB-f\fR \fIoutput-file\fR\fB]\fR\fR
+.ad
+.sp .6
+.RS 4n
+Print configuration to standard output. Use the \fB-f\fR option to print the configuration to \fIoutput-file\fR. This option produces output in a form suitable for use in a command file.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhelp [usage] [\fIsubcommand\fR] [syntax] [\fR\fIcommand-name\fR\fB]\fR\fR
+.ad
+.sp .6
+.RS 4n
+Print general help or help about given topic.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinfo zonename | zonepath | autoboot | autoshutdown | brand |  pool  |  limitpriv | global-time\fR\fR
+.ad
+.br
+.na
+\fB\fBinfo\fR [\fB-i\fR | \fB-I\fR] [\fIresource-type\fR [\fIidentifier\fR |  [\fIproperty-name\fR=\fIproperty-value\fR]*]]\fR
+.ad
+.sp .6
+.RS 4n
+Display information about the current configuration. If \fIresource-type\fR is specified, it displays only information about resources of the relevant type. If any identifier or property name value pairs are specified, displays only information about resources meeting the given criteria. In the resource scope, \fBinfo\fR displays information about the resource which is currently being added or modified.
+.sp
+Tokens may be displayed when a specific property or resource type is requested in \fBzonecfg\fR interactive mode, as \fIproperty-name.template: template-value\fR. The evaulated output of this template value is given by \fBproperty-name: propperty-value\fR. See EXAMPLES.
+.sp
+The following options are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.RS 6n
+.rt  
+Always include identifiers
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR\fR
+.ad
+.RS 6n
+.rt  
+Never include identifiers
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBremove\fR \fIresource-type\fR [\fIidentifier\fR | {\fIproperty-name\fR=\fIproperty-value\fR}]\fR
+.ad
+.sp .6
+.RS 4n
+Remove the specified resource. If you have to remove only a single instance of the resource, you must specify either the \fIidentifier\fR or enough \fIproperty name-value\fR pairs for the resource to be uniquely identified. If no \fIidentifier\fR or \fIproperty name-value\fR pairs are specified, all instances will be removed. If there is more than one instance of a \fIresource-type\fR, a confirmation is required, unless you use the \fB-F\fR option.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBselect\fR \fIresource-type\fR {\fIidentifier\fR | {\fIproperty-name\fR=\fIproperty-value\fR}}\fR
+.ad
+.sp .6
+.RS 4n
+Select the resource of the given type which matches the identifier specified or the given \fIproperty-name\fR \fIproperty-value\fR pair criteria, for modification. The scope is changed to that resource type. The \fB{}\fR syntax indicates one or more of whatever is inside the curly braces. You must specify enough \fIproperty -name property-value pairs\fR for the resource to be uniquely identified.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset\fR \fIproperty-name\fR\fB=\fR\fIproperty\fR\fB-\fR\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+Set a given property name to the given value. Some properties (for example, \fBzonename\fR and \fBzonepath\fR) are global while others are resource-specific. This subcommand is applicable in both the global and resource scopes.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBverify\fR [\fB-v\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Verify the current configuration for correctness:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+All resources have all of their required properties specified.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+A \fBzonepath\fR is specified.
+.RE
+If the \fB-v\fR option is specified, warnings will be issued if there is a potential for devices specified in device resources to conflict with and hide ZFS volumes created within aliased datasets. See \fBdev\fR(7FS).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrevert\fR \fB[\fR\fB-F\fR\fB]\fR\fR
+.ad
+.sp .6
+.RS 4n
+Revert the configuration back to the last committed state. The \fB-F\fR option can be used to force the action.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreload\fR \fB[\fR\fB-F\fR\fB]\fR\fR
+.ad
+.sp .6
+.RS 4n
+Discard any uncommited changes and reload the configuration from a stable storage (default mode) or retrieve an up-to-date configuration of the running zone (live mode). The \fB-F\fR option can be used to force the action.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrevert\fR [\fB-F\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Revert the persistent configuration back to the last committed state. The \fB-F\fR option can be used to force the action. This subcommand is not allowed in the live mode.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexit [\fR\fB-F\fR\fB]\fR\fR
+.ad
+.sp .6
+.RS 4n
+Exit the \fBzonecfg\fR session. A commit is automatically attempted if needed. You can also use an \fBEOF\fR character to exit \fBzonecfg\fR. The \fB-F\fR option can be used to force the action. 
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRCreating the Environment for a New Zone
+.sp
+.LP
+In the following example, \fBzonecfg\fR creates the environment for a new zone. \fB/usr/local\fR is loopback mounted from the global zone into \fB/opt/local\fR. \fB/opt/sfw\fR is loopback mounted from the global zone, a VNIC over \fBnxge0\fR is added to the zone with three IP addresses, and a limit on the number of fair-share scheduler (FSS) CPU shares for a zone is set using the \fBrctl\fR resource type. The example also shows how to select a given resource for modification; in this case, by selecting the \fBanet\fR resource that is automatically created by \fBzonecfg\fR.
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z myzone3\fR
+my-zone3: No such zone configured
+Use 'create' to begin configuring a new zone.
+zonecfg:myzone3> \fBcreate\fR
+zonecfg:myzone3> \fBinfo zonepath\fR
+zonepath.template: /system/zones/%{zonename}
+zonepath: /system/zones/myzone3
+zonecfg:myzone3> \fBset autoboot=true\fR
+zonecfg:myzone3> \fBadd fs\fR
+zonecfg:myzone3:fs> \fBset dir=/opt/local\fR
+zonecfg:myzone3:fs> \fBset special=/usr/local\fR
+zonecfg:myzone3:fs> \fBset type=lofs\fR
+zonecfg:myzone3:fs> \fBadd options [ro,nodevices]\fR
+zonecfg:myzone3:fs> \fBend\fR
+zonecfg:myzone3> \fBadd fs\fR
+zonecfg:myzone3:fs> \fBset dir=/mnt\fR
+zonecfg:myzone3:fs> \fBset special=/dev/dsk/c0t0d0s7\fR
+zonecfg:myzone3:fs> \fBset raw=/dev/rdsk/c0t0d0s7\fR
+zonecfg:myzone3:fs> \fBset type=ufs\fR
+zonecfg:myzone3:fs> \fBend\fR
+zonecfg:myzone3> \fBadd fs\fR
+zonecfg:myzone3:fs> \fBset dir=/opt/sfw\fR
+zonecfg:myzone3:fs> \fBset special=/opt/sfw\fR
+zonecfg:myzone3:fs> \fBset type=lofs\fR
+zonecfg:myzone3:fs> \fBadd options [ro,nodevices]\fR
+zonecfg:myzone3:fs> \fBend\fR
+zonecfg:myzone3> \fBselect anet linkname=net0\fR
+zonecfg:myzone3:anet> \fBset lower-link=nxge0\fR
+zonecfg:myzone3:anet> \fBset allowed-address="192.168.0.1/24,192.168.1.2/\e\fR
+           \fB24,192.168.2.3/24"\fR
+zonecfg:myzone3:anet> \fBend\fR
+zonecfg:my-zone3> \fBset cpu-shares=5\fR
+zonecfg:my-zone3> \fBadd capped-memory\fR
+zonecfg:my-zone3:capped-memory> \fBset physical=50m\fR
+zonecfg:my-zone3:capped-memory> \fBset swap=100m\fR
+zonecfg:my-zone3:capped-memory> \fBend\fR
+zonecfg:myzone3> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRCreating an Exclusive-IP Zone
+.sp
+.LP
+The following example creates a zone that is assigned a VNIC named  \fBnet0\fR. The link over which the VNIC is created is automatically determined. The IP addresses and routing are configured inside the new zone using \fBipadm\fR(1M). 
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z excl\fR
+zonecfg:excl> \fBcreate\fR
+zonecfg:excl> \fBset zonepath=/export/zones/excl\fR
+zonecfg:excl> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRCreating a Shared-IP Zone
+.sp
+.LP
+The following example creates a zone that shares an IP stack with the global zone, and is assigned a single IP address and default router.
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z shared\fR
+zonecfg:shared> \fBcreate -b\fR
+zonecfg:shared> \fBset zonepath=/export/zones/shared\fR
+zonecfg:shared> \fBset ip-type=shared\fR
+zonecfg:shared> \fBadd net\fR
+zonecfg:shared:net> \fBset physical=nge0\fR
+zonecfg:shared:net> \fBset address=192.168.0.3/24\fR
+zonecfg:shared:net> \fBset defrouter=192.168.0.1\fR
+zonecfg:shared:net> \fBend\fR
+zonecfg:shared> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 4 \fRAssociating a Zone with a Resource Pool
+.sp
+.LP
+The following example shows how to associate an existing zone with an existing resource pool:
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z myzone\fR
+zonecfg:myzone> \fBset pool=mypool\fR
+zonecfg:myzone> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+For more information about resource pools, see \fBpooladm\fR(1M) and \fBpoolcfg\fR(1M).
+
+.LP
+\fBExample 5 \fRChanging the Name of a Zone
+.sp
+.LP
+Changing the \fBzonename\fR property is permitted only for zones in configured state. For zones in installed state, use the \fBzoneadm\fR(1M) \fBrename\fR subcommand. The following example shows how to change the name of an existing zone:
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z myzone\fR
+zonecfg:myzone> \fBset zonename=myzone2\fR
+zonecfg:myzone2> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 6 \fRChanging the Privilege Set of a Zone
+.sp
+.LP
+The following example shows how to change the set of privileges. An existing zone's processes will be limited to the next time the zone is booted. In this particular case, the privilege set will be the standard safe set of privileges that a zone normally has along with the privilege to use the profile and syscall providers of dtrace with some caveats:
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z myzone\fR
+zonecfg:myzone> \fBset limitpriv="default,dtrace_user"\fR
+zonecfg:myzone2> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 7 \fRChanging \fBglobal-time\fR property to set systime-wide time
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z myzone\fR
+zonecfg:myzone> \fBset global-time="true"\fR
+zonecfg:myzone2> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 8 \fRSetting the \fBzone.cpu-shares\fR Property for the Global Zone
+.sp
+.LP
+The following command sets the \fBzone.cpu-shares\fR property for the global zone:
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z global\fR
+zonecfg:global> \fBset cpu-shares=5\fR
+zonecfg:global> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 9 \fRUsing Pattern Matching
+.sp
+.LP
+The following commands illustrate \fBzonecfg\fR support for pattern matching. In the zone \fBflexlm\fR, enter:
+
+.sp
+.in +2
+.nf
+zonecfg:flexlm> \fBadd device\fR
+zonecfg:flexlm:device> \fBset match="/dev/cua/a00[2-5]"\fR
+zonecfg:flexlm:device> \fBend\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+In the global zone, enter:
+
+.sp
+.in +2
+.nf
+global# \fBls /dev/cua\fR
+a     a000  a001  a002  a003  a004  a005  a006  a007  b
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+In the zone \fBflexlm\fR, enter:
+
+.sp
+.in +2
+.nf
+flexlm# \fBls /dev/cua\fR
+a002  a003  a004  a005
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 10 \fRSetting a Cap for a Zone to Three CPUs
+.sp
+.LP
+The following sequence uses the \fBzonecfg\fR command to set the CPU cap for a zone to three CPUs.
+
+.sp
+.in +2
+.nf
+zonecfg:myzone> \fBadd capped-cpu\fR
+zonecfg:myzone>capped-cpu> \fBset ncpus=3\fR
+zonecfg:myzone>capped-cpu>capped-cpu> \fBend\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The preceding sequence, which uses the capped-cpu property, is equivalent to the following sequence, which makes use of the \fBzone.cpu-cap\fR resource control.
+
+.sp
+.in +2
+.nf
+zonecfg:myzone> \fBadd rctl\fR
+zonecfg:myzone:rctl> \fBset name=zone.cpu-cap\fR
+zonecfg:myzone:rctl> \fBadd value (priv=privileged,limit=300,action=none)\fR
+zonecfg:myzone:rctl> \fBend\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 11 \fRUsing \fBkstat\fR to Monitor CPU Caps
+.sp
+.LP
+The following command displays information about all CPU caps.
+
+.sp
+.in +2
+.nf
+# \fBkstat -n /cpucaps/\fR
+module: caps                            instance: 0     
+name:   cpucaps_project_0               class:    project_caps
+        above_sec                       0
+        below_sec                       2157
+        crtime                          821.048183159
+        maxusage                        2
+        nwait                           0
+        snaptime                        235885.637253027
+        usage                           0
+        value                           18446743151372347932
+        zonename                        global
+
+module: caps                            instance: 0     
+name:   cpucaps_project_1               class:    project_caps
+        above_sec                       0
+        below_sec                       0
+        crtime                          225339.192787265
+        maxusage                        5
+        nwait                           0
+        snaptime                        235885.637591677
+        usage                           5
+        value                           18446743151372347932
+        zonename                        global
+
+module: caps                            instance: 0     
+name:   cpucaps_project_201             class:    project_caps
+        above_sec                       0
+        below_sec                       235105
+        crtime                          780.37961782
+        maxusage                        100
+        nwait                           0
+        snaptime                        235885.637789687
+        usage                           43
+        value                           100
+        zonename                        global
+
+module: caps                            instance: 0     
+name:   cpucaps_project_202             class:    project_caps
+        above_sec                       0
+        below_sec                       235094
+        crtime                          791.72983782
+        maxusage                        100
+        nwait                           0
+        snaptime                        235885.637967512
+        usage                           48
+        value                           100
+        zonename                        global
+
+module: caps                            instance: 0     
+name:   cpucaps_project_203             class:    project_caps
+        above_sec                       0
+        below_sec                       235034
+        crtime                          852.104401481
+        maxusage                        75
+        nwait                           0
+        snaptime                        235885.638144304
+        usage                           47
+        value                           100
+        zonename                        global
+
+module: caps                            instance: 0     
+name:   cpucaps_project_86710           class:    project_caps
+        above_sec                       22
+        below_sec                       235166
+        crtime                          698.441717859
+        maxusage                        101
+        nwait                           0
+        snaptime                        235885.638319871
+        usage                           54
+        value                           100
+        zonename                        global
+
+module: caps                            instance: 0     
+name:   cpucaps_zone_0                  class:    zone_caps
+        above_sec                       100733
+        below_sec                       134332
+        crtime                          821.048177123
+        maxusage                        207
+        nwait                           2
+        snaptime                        235885.638497731
+        usage                           199
+        value                           200
+        zonename                        global
+
+module: caps                            instance: 1     
+name:   cpucaps_project_0               class:    project_caps
+        above_sec                       0
+        below_sec                       0
+        crtime                          225360.256448422
+        maxusage                        7
+        nwait                           0
+        snaptime                        235885.638714404
+        usage                           7
+        value                           18446743151372347932
+        zonename                        test_001
+
+module: caps                            instance: 1     
+name:   cpucaps_zone_1                  class:    zone_caps
+        above_sec                       2
+        below_sec                       10524
+        crtime                          225360.256440278
+        maxusage                        106
+        nwait                           0
+        snaptime                        235885.638896443
+        usage                           7
+        value                           100
+        zonename                        test_001
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 12 \fRDisplaying CPU Caps for a Specific Zone or Project
+.sp
+.LP
+Using the \fBkstat\fR \fB-c\fR and \fB-i\fR options, you can display CPU caps for a specific zone or project, as below. The first command produces a display for a specific project, the second for the same project within zone 1.
+
+.sp
+.in +2
+.nf
+# \fBkstat -c project_caps\fR
+
+# \fBkstat -c project_caps -i 1\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 13 \fRDelegating Zone Administrative Rights
+.sp
+.LP
+The following example shows how to assign administrative rights for the current zone to a role.
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z myzone\fR
+zonecfg:myzone> \fBadd admin\fR
+zonecfg:myzone:admin> \fBset user=zadmin\fR
+zonecfg:myzone:admin> \fBset auths=login,manage\fR
+zonecfg:myzone:admin> \fBend\fR
+zonecfg:myzone> \fBcommit\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The result of executing these commands would be an updated entry in the RBAC \fBuser_attr\fR(4) database, similar to the following:
+
+.sp
+.in +2
+.nf
+zadmin::::type=role;\e
+auths=solaris.zone.login/myzone,solaris.zone.manage/myzone;profiles=\e
+Zone Management
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 14 \fRCreating an Exclusive-IP Zone with Non-Default Properties
+.sp
+.LP
+The following example creates a zone with an automatically created VNIC over \fBmylink0\fR with the given MAC address, maximum bandwidth of 100 Mbps, high priority, dedicated hardware rings for RX side, no dedicated hardware rings for the TX side (that is, software-based) and with a VLAN id 2.
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z excl\fR
+excl: No such zone configured
+Use 'create' to begin configuring a new zone
+zonecfg:excl> \fBcreate -b\fR
+zonecfg:excl> \fBset zonepath=/export/zones/excl\fR
+zonecfg:excl> \fBadd anet\fR
+zonecfg:excl:anet> \fBset linkname=mynic0\fR
+zonecfg:excl:anet> \fBset lower-link=mylink0\fR
+zonecfg:excl:anet> \fBset mac-address=8:0:20:fe:4e:b8\fR
+zonecfg:excl:anet> \fBset maxbw=100M\fR
+zonecfg:excl:anet> \fBset priority=high\fR
+zonecfg:excl:anet> \fBset vlan-id=2\fR
+zonecfg:excl:anet> \fBset rxrings=hw\fR
+zonecfg:excl:anet> \fBset txrings=sw\fR
+zonecfg:excl:anet> \fBend\fR
+zonecfg:excl> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 15 \fRCreating a Read-Only Zone
+.sp
+.LP
+The following example creates a new zone that has its root filesystem protected against modifications by the zone. Files in \fB/var\fR are writable by virtue of the \fBfixed-configuration\fR profile that is applied.
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z rozone\fR
+rozone: No such zone configured
+Use 'create' to begin configuring a new zone
+zonecfg:rozone> \fBcreate\fR
+zonecfg:rozone> \fBset brand=solaris\fR
+zonecfg:rozone> \fBset zonepath=/export/zones/rozone\fR
+zonecfg:rozone> \fBset autoboot=true\fR
+zonecfg:rozone> \fBset file-mac-profile=fixed-configuration\fR
+zonecfg:rozone> \fBset ip-type=exclusive\fR
+zonecfg:rozone> \fBadd net\fR
+zonecfg:rozone:net> \fBset physical=vnic0\fR
+zonecfg:rozone:net> \fBend\fR
+zonecfg:rozone> exit
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 16 \fRCreating an Exclusive-IP Zone with an IB Partition
+.sp
+.LP
+The following example creates a zone with default properties. The zone will automatically create a IPoIB datalink when the zone boots and delete the datalink when the zone halts.
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z excl\fR
+excl: No such zone configured
+Use 'create' to begin configuring a new zone
+zonecfg:excl> \fBcreate\fR
+zonecfg:excl> \fBset zonepath=/export/zones/excl\fR
+zonecfg:excl> \fBset ip-type=exclusive\fR
+zonecfg:excl> \fBadd anet\fR
+zonecfg:excl> \fBset linkname=part0\fR
+zonecfg:excl> \fBset lower-link=net4\fR
+zonecfg:excl> \fBset pkey=ffff\fR
+zonecfg:excl:anet> \fBend\fR
+zonecfg:excl> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 17 \fRCreating a Zone Installed into a Dedicated Storage Resource and \fBzpool\fR
+.sp
+.LP
+The following example creates a new zone with a \fBzpool\fR resource comprised of one storage resource containing the entire zone installation. The \fBzpool\fR will be automatically created or a pre-created  \fBzpool\fR will be imported during zone installation. The name will be \fBzoss_rpool\fR.
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z zoss\fR
+zoss: No such zone configured
+Use 'create' to begin configuring a new zone
+zonecfg:zoss> \fBcreate\fR
+zonecfg:zoss> \fBset zonepath=/zoss\fR
+zonecfg:zoss> \fBadd rootzpool\fR
+zonecfg:zoss:rootzpool> \fBadd storage iscsi://127.0.0.1/luname.naa.6001\e
+44f03d70c80000004ea57da10001\fR
+zonecfg:zoss:rootzpool> \fBend\fR
+zonecfg:zoss> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 18 \fRCreating a Zone with a Delegated \fBzpool\fR Resource
+.sp
+.LP
+The following example creates a new zone with a \fBzpool\fR resource delegated to the zone comprised of two storage resources. The \fBzpool\fR will be automatically created or a pre-created \fBzpool\fR will be imported during zone installation. The name will be \fBzoss_mypool\fR. 
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z zoss\fR
+zoss: No such zone configured
+Use 'create' to begin configuring a new zone
+zonecfg:zoss> \fBcreate\fR
+zonecfg:zoss> \fBset zonepath=/zoss\fR
+zonecfg:zoss> \fBadd zpool\fR
+zonecfg:zoss:zpool> \fBset name=mypool\fR
+zonecfg:zoss:zpool> \fBadd storage dev:/dev/dsk/c0t1d0\fR
+zonecfg:zoss:zpool> \fBadd storage dev:/dev/dsk/c1t1d0\fR
+zonecfg:zoss:zpool> \fBend\fR
+zonecfg:zoss> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 19 \fRCreating a Zone with an npiv Resource
+.sp
+.LP
+The following example creates a new zone with two npiv resources delegated to the zone. The two npiv ports will be automatically created during zone installation.
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z vzone\fR
+vzone: No such zone configured
+Use 'create' to begin configuring a new zone
+zonecfg:vzone> create
+zonecfg:vzone> add npiv
+zonecfg:vzone:npiv> set virtual-port-wwn=2100000000000001
+zonecfg:vzone:npiv> set over-hba=c9
+zonecfg:vzone:npiv> end
+zonecfg:vzone> add npiv
+zonecfg:vzone:npiv> end
+zonecfg:vzone> exit
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 20 \fRInspecting the Live Configuration of the Running Zone
+.sp
+.LP
+The following example inspects the live configuration of the running zone.
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z myzone -r\fR
+zonecfg:myzone> info
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 21 \fRTemporarily adding a new \fBanet\fR to the Running Zone Without Rebooting the Zone
+.sp
+.LP
+The following example temporarily adds a new \fBanet\fR to the running zone without rebooting the zone.
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z myzone -r\fR
+zonecfg:myzone> add anet
+zonecfg:myzone> set linkname=anet1
+zonecfg:myzone> set lower-link=net1
+zonecfg:myzone> end
+zonecfg:myzone> commit
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 22 \fRCreating a Zone Configuration From a Unified Archive
+.sp
+.LP
+The following example creates a new zone configuration from a Unified Archive stored in \fB/export/archvies\fR. The archive contains only one zone, named \fBweb\fR with zonepath \fB/zones/web\fR. As is shown by the info subcommand, the zonepath was adjusted as described in the Configuration From Unified Archives section, above.
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z ex17\fR
+ex17: No such zone configured
+Use 'create' to begin configuring a new zone
+zonecfg:ex17> create -a /export/archives/web.uar
+zonecfg:ex17> info zonepath
+zonepath: /zones/web
+zonecfg:ex17> set zonepath=/zones/ex17
+zonecfg:ex17> exit
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Equivalently, this could be done in non-interactive mode:
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z ex17 "create -a /export/archives/web.uar; set zonepath=/zones/web"\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 23 \fRCreating a Zone Configuration From a Unified Archive on a Secure Web Server
+.sp
+.LP
+This example shows a non-interactive command that configures a zone from an archive on a secure web server. The \fB-z\fR option is used to specify that a specific archived zone is to be used as the configuration source. The certificate, CA certificate, and key were first transferred to this machine.
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z ex19 create \\fR
+    -a https://install.example.com/archives/combo.uar \
+    -z database \
+    -x cert=/root/install.pem \
+    -x cacert=/root/example.com.pem \
+    -x key=/root/sslkey.pem \; \
+    set zonepath=/zones/ex19
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 24 \fRCreating a Zone Configuration for \fBp2v\fR of a Global Zone
+.sp
+.LP
+This example shows the creation of a zone configuration from a Unified Archive using an archived global zone as the source. Note that the zone configuration found in the archive was generated with \fBzonep2vchk\fR(1M) and as such may include notes for further customization that is recommended.
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z ex20\fR
+ex20: No such zone configured
+Use 'create' to begin configuring a new zone
+set zonepath=/zones/ex20
+zonecfg:ex20> create -a /export/p2v.uar -z global
+zonecfg:ex20> info attr
+attr:
+                name: zonep2vchk-info
+                type: string
+                value: "p2v of host m4k"
+attr:
+                name: zonep2vchk-net-blue0
+                type: string
+                value: "original system had NIC blue0 with MAC
+                       address 0:8:20:9e:eb:8c and IP address
+                       10.147.23.12: consider anet
+                       (linkname=blue0
+                       mac-address=0:8:20:9e:eb:8c
+                       allowed-address=10.147.23.12)"
+attr:
+                name: zonep2vchk-num-cpus
+                type: string
+                value: "original system had 4 CPUs: consider
+                       capped-cpu (ncpus=4.0) or dedicated-cpu
+                       (ncpus=4)"
+attr:
+                name: zonep2vchk-physmem
+                type: string
+                value: "original system had 32 GB: consider
+                       capped-memory (physical=32G)"
+attr:
+                name: zonep2vchk-swap
+                type: string
+                value: "original system had 48 GB: consider
+                       capped-memory (swap=48G)"
+zonecfg:ex20> select anet linkname=blue0
+zonecfg:ex20:anet> set allowed-address=10.147.23.12
+zonecfg:ex20:anet> set configure-allowed-address=true
+zonecfg:ex20:anet> end
+zonecfg:ex20> add capped-memory
+zonecfg:ex20:capped-memory> set swap=48G
+zonecfg:ex20:capped-memory> end
+zonecfg:ex20> exit
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 25 \fRCreating a Zone That has an \fBanet\fR Resource That Connects to an Elastic Virtual Switch.
+.sp
+.LP
+The following example creates a zone that has a VNIC anet resource that connects to an EVS \fIevsa\fR and VPort \fIvport0\fR for tenant \fItenantA\fR.
+
+.sp
+.in +2
+.nf
+example# \fBzonecfg -z evszone\fR
+evszone: No such zone configured
+Use 'create' to begin configuring a new zone
+zonecfg:evszone> \fBcreate\fR
+zonecfg:evszone> \fBset zonepath=/export/zones/evszone\fR
+zonecfg:evszone> \fBset tenant=tenantA\fR
+zonecfg:evszone> \fBadd anet\fR
+zonecfg:evszone:net> \fBset evs=EVSA\fR
+zonecfg:evszone:net> \fBset vport=vport0\fR
+zonecfg:rozone:net> \fBend\fR
+zonecfg:rozone> \fBexit\fR
+example# \fBzoneadm -z evszone install\fR
+example# \fBzoneadm -z evszone boot\fR
+example# \fBdladm show-vnic -c\fR
+
+LINK           TENANT   EVS   VPORT   OVER  MACADDRESS        VIDS
+evszone/net0   tenantA  EVSA  vport0  net2  2:8:20:1a:c1:e4   0
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+When the zone boots, evszone/net0 VNIC anet will have the MAC address, IP address, and the SLA properties of the vport EVSA/vport0.
+
+.LP
+\fBExample 26 \fRChanging Verified Boot Settings
+.sp
+.in +2
+.nf
+# \fBzonecfg -z vbzone1\fR 
+zonecfg:vbzone1> add verified-boot 
+zonecfg:vbzone1:verified-boot> set policy=enforce 
+zonecfg:vbzone1:verified-boot> add cert file:///etc/certs/INTERNALSE 
+zonecfg:vbzone1:verified-boot> add cert 
+http://keyserv.hang10software.com/keydist/hang10se.pem 
+zonecfg:vbzone1:verified-boot> end 
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 27 \fRCopying a Zone Configuration to Another System for Zone Migration
+.sp
+.LP
+When migrating a zone from one global zone to another global zone, the zone configuration needs to migrate first. The \fBexport\fR subcommand exports all zone configuration such that it can be used with the \fBzonecfg\fR \fB-f\fR option on the new global zone with exact preservation. If a procedure like the one shown in this example is not used, kernel zones will not be able to access any suspend file or properly attach to the new global zone.
+
+.sp
+.in +2
+.nf
+global1# \fBzonecfg -z ex22 export -f /net/scratch/export/ex22.cfg\fR
+global2# \fBzonecfg -z ex22 -f /net/scratch/export/ex22.cfg\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 28 \fRUsing the anet iov Property for a Kernel Zone
+.sp
+.LP
+In this example, \fBkz1\fR is a kernel zone with a single anet
+
+.sp
+.in +2
+.nf
+\fB# zonecfg -z kz1\fR
+\fBzonecfg:kz1> select anet id=0\fR
+\fBzonecfg:kz1:anet> set iov=auto\fR
+\fBzonecfg:kz1:anet> end\fR
+\fBzonecfg:kz1>exit\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+If lower-link is not auto, the user must ensure that the lower-link has iov turned on before booting the kernel zone. If lower-link is auto, the user must ensure that global zone has at least one link with iov turned on.
+
+.sp
+.LP
+If iov is not on, it can be turned on by:
+
+.sp
+.in +2
+.nf
+\fB# dladm set-linkprop -p iov=on net1\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+If a VF is available, after booting the kernel zone, a VF should appear as a physical NIC device within the kernel zone:
+
+.sp
+.in +2
+.nf
+\fBkz1# dladm show-phys\fR
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+LINK      MEDIA        STATE      SPEED    DUPLEX    DEVICE
+net0      Ethernet     up         10000    full      ixgbevf0
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 29 \fRUsing an NFS SURI for a Device Property in a Kernel Zone
+.sp
+.in +2
+.nf
+# \fBzonecfg -z kz1\fR 
+zonecfg:kz1> add device 
+zonecfg:kz1> set 
+storage=nfs://user1:staff@testsys1/export/test/kz1_dev1 
+zonecfg:kz1> end 
+zonecfg:kz1>exit 
+.fi
+.in -2
+.sp
+
+.SH EXIT STATUS
+.sp
+.LP
+The following exit values are returned:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+Successful completion. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+An error occurred.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.sp .6
+.RS 4n
+Invalid usage.
+.RE
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/zones
+_
+Interface StabilityVolatile
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBppriv\fR(1), \fBprctl\fR(1), \fBlgrpinfo\fR(1), \fBzlogin\fR(1), \fBarchiveadm\fR(1M), \fBdladm\fR(1M), \fBformat\fR(1M), \fBipadm\fR(1M), \fBkstat\fR(1M), \fBmount\fR(1M), \fBpooladm\fR(1M), \fBpoolcfg\fR(1M), \fBpoold\fR(1M), \fBpsrinfo\fR(1M), \fBrcapd\fR(1M), \fBrctladm\fR(1M), \fBroute\fR(1M), \fBsuriadm\fR(1M), \fBsvcadm\fR(1M), \fBzfs\fR(1M), \fBzoneadm\fR(1M), \fBzonep2vchk\fR(1M), \fBzpool\fR(1M), \fBpriv_str_to_set\fR(3C), \fBkstat\fR(3KSTAT), \fBuser_attr\fR(4), \fBvfstab\fR(4), \fBattributes\fR(5), \fBbrands\fR(5), \fBfnmatch\fR(5), \fBmwac\fR(5), \fBprivileges\fR(5), \fBrbac\fR(5), \fBresource-controls \fR(5), \fBsolaris-kz\fR(5), \fBsuri\fR(5), \fBtpd\fR(5), \fBzones\fR(5), \fBdev\fR(7FS), \fBhsfs\fR(7FS), \fBzfs\fR(7FS), \fBuscsi\fR(7I), \fBevsadm\fR(1M)
+.sp
+.LP
+\fIResource Management and Oracle Solaris Zones Developer\&'s Guide\fR
+.SH NOTES
+.sp
+.LP
+All character data used by \fBzonecfg\fR must be in US-ASCII encoding.
+.sp
+.LP
+Adding a device to a zone, in general, can allow the zone to adversely affect the security and stability of the system, as not all devices have been audited for secure use inside a zone.
+.sp
+.LP
+Storage devices using the \fBsd\fR or \fBssd\fR target driver (this can be checked using \fBprtconf -D /dev/dsk/c2t40d3\fR, for example) can be safely delegated to a zone. This will allow a zone admin to label and partition such devices.
+.sp
+.LP
+In order to allow disk labelling by means of \fBformat\fR(1M), an entire disk/LUN should be delegated to a zone, and the \fBallow-partition\fR property set. For example:
+.sp
+.in +2
+.nf
+zonecfg:myzone> \fBadd device\fR
+zonecfg:myzone> \fBset match=/dev/*dsk/c2t40d3*\fR
+zonecfg:myzone> \fBset allow-partition=true\fR
+zonecfg:myzone> \fBend\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+While it is not recommended, it is also possible to delegate just a single slice (for example, \fBmatch=/dev/dsk/c2t40d3s0\fR) of a disk. In order for this to be safe, the \fBallow-partition\fR property must not be true, and the slice or partition must not overlap the disk header of disk labels (these are located within the first two or last two blocks of the partition or disk).
+.sp
+.LP
+Raw access to storage devices can be enabled by setting the \fBallow-raw-io\fR property to \fBtrue\fR. This is unsafe, as it allows raw SCSI commands (see \fBuscsi\fR(7I)) to be performed by zone processes.
+.sp
+.LP
+Inside a zone, device-in-use checking does not work, as the \fB/devices/\fR tree it relies upon is not present. A future project might address this limitation.
+.sp
+.LP
+The mount point for a \fBlofs\fR file system specified by an "\fBadd fs\fR" resource must not lie within any filesystem that is mounted by the zone. In particular, such mountpoints must not lie beneath \fB/var\fR and \fB/export\fR.

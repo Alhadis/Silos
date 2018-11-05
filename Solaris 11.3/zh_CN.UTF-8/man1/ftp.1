@@ -1,0 +1,1095 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 2006, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH ftp 1 "2015 年 5 月 19 日" "SunOS 5.11" "用户命令"
+.SH 名称
+ftp \- 文件传输程序
+.SH 用法概要
+.LP
+.nf
+\fBftp\fR [\fB-adfginpstvx\fR] [\fB-m\fR \fIGSS Mech\fR] [\fB-T\fR \fItimeout\fR] 
+     [\fIhostname\fR [\fIport\fR]]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBftp\fR 命令是 \fBInternet\fR 标准文件传输协议 (File Transfer Protocol, \fBFTP\fR) 的用户接口。\fBftp\fR 向/从远程网络站点传输文件。
+.sp
+.LP
+可在命令行中指定 \fBftp\fR 与之通信的主机及（可选）端口。如果指定，\fBftp\fR 将立即尝试建立与该主机上的 \fBFTP\fR 服务器的连接。否则，\fBftp\fR 会进入其命令解释程序并等待用户的指令。\fBftp\fR 等待用户的命令时，将显示 \fBftp>\fR 提示符。
+.SH 选项
+.sp
+.LP
+以下选项可在命令行中指定，也可指定给命令解释程序：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 14n
+.rt  
+\fB仅\fR使用 \fBGSSAPI\fR 验证。如果验证失败，此选项将关闭连接。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.RS 14n
+.rt  
+启用调试。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.RS 14n
+.rt  
+将本地安全凭证转发到远程服务器。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR\fR
+.ad
+.RS 14n
+.rt  
+禁用文件名 "globbing"（通配）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.RS 14n
+.rt  
+在传输多个文件时，关闭交互式提示。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.RS 14n
+.rt  
+指定要使用的 \fBGSS\fR-\fBAPI\fR 机制。缺省情况下，使用 kerberos_v5 机制。受支持的备选机制在 \fB/etc/gss/mech\fR 中定义（请参见\fBmech\fR(4)）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 14n
+.rt  
+初始连接时不尝试使用 “auto-login”（自动登录）功能。如果未禁用自动登录，\fBftp\fR 将在用户起始目录的 \fB\&.netrc\fR 文件中检查是否存在描述远程计算机上帐户的条目。如果不存在此条目，\fBftp\fR 将提示用户输入远程计算机上帐户的登录名（缺省值为本地计算机上的登录名），如有必要，还会提示用户输入用于登录的口令和帐户。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 14n
+.rt  
+启用被动模式数据传输。从连接过滤防火墙后面连接到远程主机时，此命令会很有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 14n
+.rt  
+跳过缺省情况下会在登录后发送给所有远程服务器的 \fBSYST\fR 命令。系统命令可自动启用二进制模式而不是协议缺省的 ASCII 模式。
+.sp
+因为一些较旧的服务器无法处理 \fBftp\fR 命令，所以提供此指令以便与这些服务器进行交互操作。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.RS 14n
+.rt  
+启用数据包跟踪功能（尚未实现）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fItimeout\fR\fR
+.ad
+.RS 14n
+.rt  
+启用全局连接计时器，以秒为单位进行指定（十进制）。对于控制连接，存在一个计时器，在向服务器发送任何内容时都会将其重置，在客户机提示用户输入时会将其禁用。另一个独立计时器用于监视传入或传出的数据连接。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 14n
+.rt  
+显示来自远程服务器的所有响应以及有关数据传输统计信息的报告。如果 \fBftp\fR 以交互方式运行（使用来自用户终端的输入），则缺省情况下会启用此选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.RS 14n
+.rt  
+尝试使用 \fBGSSAPI\fR 进行验证和加密。数据和命令通道保护将设置为 “\fBprivate\fR”。
+.RE
+
+.sp
+.LP
+以下命令可指定给命令解释程序：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!\fR\fR
+.ad
+.sp .6
+.RS 4n
+[ \fIcommand\fR ] 在本地计算机上将 \fIcommand\fR 作为 shell 命令运行。如果未提供 \fIcommand\fR，将调用一个交互式 shell。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$\fR \fImacro-name\fR [ \fIargs\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+执行使用 \fBmacdef\fR 命令定义的宏 \fImacro-name\fR。将未通配的参数传递给宏。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaccount\fR [ \fIpasswd\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+在成功完成登录后，向远程系统提供访问资源所需的补充口令。如果未包含参数，将提示用户以非回显输入模式输入帐户口令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBappend\fR \fIlocal-file\fR [ \fIremote-file\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+将本地文件附加到远程计算机上的文件中。如果未指定 \fIremote-file\fR，将使用本地文件名，会根据 \fBntrans\fR 或 \fBnmap\fR 设置而更改。文件传输使用 “representation type”（表示类型）、“file structure”（文件结构）和 “transfer mode”（传输模式）的当前设置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBascii\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 “representation type”（表示类型）设置为 “network \fBASCII\fR”（网络 ASCII）。这是缺省类型。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbell\fR\fR
+.ad
+.sp .6
+.RS 4n
+每个文件传输命令完成后响一声铃声。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbinary\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 "representation type"（表示类型）设置为 "image"（图像）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbye\fR\fR
+.ad
+.sp .6
+.RS 4n
+终止与远程服务器之间的 \fBFTP\fR 会话并退出 \fBftp\fR。\fBEOF\fR 也会终止会话并退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcase\fR\fR
+.ad
+.sp .6
+.RS 4n
+在运行 \fBmget\fR 命令期间，切换远程计算机文件名大小写映射。启用 \fBcase\fR（缺省为禁用）时，所有字母均大写的远程计算机文件名写入本地目录时均将字母映射为小写字母。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcd\fR \fIremote-directory\fR\fR
+.ad
+.sp .6
+.RS 4n
+将远程计算机上的工作目录更改为 \fIremote-directory\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcdup\fR\fR
+.ad
+.sp .6
+.RS 4n
+将远程计算机工作目录更改为当前远程计算机工作目录的父目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBclear\fR\fR
+.ad
+.sp .6
+.RS 4n
+将数据传输的保护级别设置为 “\fBclear\fR”。如果无成功执行的 \fBADAT\fR 命令，则此级别为缺省保护级别。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBclose\fR\fR
+.ad
+.sp .6
+.RS 4n
+终止与远程服务器之间的 \fBFTP\fR 会话并返回到命令解释程序。所有已定义的宏均将被删除。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcr\fR\fR
+.ad
+.sp .6
+.RS 4n
+检索 “network \fBASCII\fR”（网络 ASCII）类型的文件时，切换回车剥离设置。在传输 “network \fBASCII\fR”（网络 ASCII）类型的文件时，记录通过回车/\fB换行\fR序列来指示。启用 \fBcr\fR（缺省值）时，将从此序列中剥离回车符，以符合 UNIX 系统单一\fB换行\fR记录分隔符的要求。非 UNIX 系统远程主机上的记录可以包含单一\fB换行\fR符；在进行 “network \fBASCII\fR”（网络 ASCII）类型的传输时，仅当禁用\fB cr\fR 时，才可以将这些 \fB换行\fR符与记录分隔符区分开来。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete\fR \fIremote-file\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除远程计算机上的 \fIremote-file\fR 文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdebug\fR\fR
+.ad
+.sp .6
+.RS 4n
+切换调试模式。启用调试时，\fBftp\fR 会输出发送给远程计算机的每个命令，并在前面添加字符串 \fB–>\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdir\fR [ \fIremote-directory\fR [ \fIlocal-file\fR ]]\fR
+.ad
+.sp .6
+.RS 4n
+列显包含 \fIremote-directory\fR 目录中目录内容的列表，并将输出放置在 \fIlocal-file\fR 中（可选）。如果未指定目录，将使用远程计算机上的当前工作目录。如果未指定本地文件，或 \fIlocal-file\fR 为 \fB-\fR，会将输出发送到终端。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdisconnect\fR\fR
+.ad
+.sp .6
+.RS 4n
+与 \fBclose\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBform\fR [ \fIformat-name\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+将 “representation type”（表示类型）的回车控制格式子类型设置为 \fIformat-name\fR。唯一有效的 \fIformat-name\fR 是 \fBnon-print\fR，对应于缺省的 “non-print”（非输出）子类型。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBget\fR \fIremote-file\fR [ \fIlocal-file\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+检索 \fIremote-file\fR 并将其存储在本地计算机上。如果未指定本地文件名，则将以远程计算机上的文件名为其命名，会根据当前的 \fBcase\fR、\fBntrans\fR 和 \fBnmap\fR 设置而更改。传输文件时，使用 “representation type”（表示类型）、“file structure”（文件结构）和 “transfer mode”（输出模式）的当前设置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBglob\fR\fR
+.ad
+.sp .6
+.RS 4n
+对于 \fBmdelete\fR、\fBmget\fR 和 \fBmput\fR，切换文件名扩展或 “globbing”（通配）。如果关闭通配功能，将按字面取文件名。
+.sp
+\fBmput\fR 的通配行为与在 \fBsh\fR(1) 中类似。对于 \fBmdelete\fR 和 \fBmget\fR，远程计算机上的每个远程文件名将单独进行扩展，且不会合并列表。
+.sp
+目录名的扩展与普通文件名的扩展可能完全不同：确切的结果取决于远程操作系统和 \fBFTP\fR 服务器，并且可以使用 \fBmls\fR \fIremote-files \fR - 命令预览此结果。
+.sp
+\fBmget\fR 和 \fBmput\fR 并不用于传输整个文件目录子树。要执行此操作，可通过传输子树的 \fBtar\fR(1) 归档（“representation type”（表示类型）使用 “image”（图像），通过 \fBbinary\fR 命令来设置）来实现。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhash\fR\fR
+.ad
+.sp .6
+.RS 4n
+切换所传输的每个数据块的井号 (\fB#\fR) 输出。数据块的大小为 8192 个字节。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhelp\fR [ \fIcommand\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+列显有关 \fIcommand\fR 含义的提示性消息。如果未提供参数，\fBftp\fR 将输出已知命令的列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlcd\fR [ \fIdirectory\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+更改本地计算机上的工作目录。如果未指定 \fIdirectory\fR，将使用该用户的起始目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBls\fR [ \fB-al\fR | \fIremote-directory\fR [ \fIlocal-file\fR ]]\fR
+.ad
+.sp .6
+.RS 4n
+缺省情况下，输出远程计算机上目录内容的简要列表。可更改此缺省行为，使 \fBls\fR 与 \fBdir\fR 命令相同。通过将 \fB/etc/default/ftp\fR 中或环境中的 \fBFTP_LS_SENDS_NLST\fR 设置为 '\fBno\fR'，可实现此更改。有关详细信息，请参见 \fBftp\fR(4)。
+.sp
+\fB-a\fR 选项会列出所有条目，包括以句点 (\fB\&.\fR) 开头的条目（通常不会列出）。\fB-l\fR 选项将以长格式列出文件，给出每个文件的模式、链接数、所有者、组、大小（以字节为单位）和上次修改时间。如果文件是特殊文件，则大小字段将改为包含主设备号和从设备号，而不是大小。如果文件是符号链接，则输出的文件名后面会跟有 “\fB->\fR” 和所引用文件的路径名。
+.sp
+如果未指定 \fIremote-directory\fR，将使用当前工作目录。
+.sp
+如果未指定本地文件或者将 \fIlocal-file\fR 指定为 \fB-\fR，则会将输出发送到终端。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmacdef\fR \fImacro-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+定义一个宏。后续行将存储为宏 \fImacro-name\fR。空行（文件中的连续\fB换行\fR符或来自终端的回车符）将终止宏输入模式。宏的数量不能超过 16 个，且定义的所有宏中的总字符数不能超过 4096。在执行 \fBclose\fR 命令之前，将一直保留宏的定义。
+.sp
+宏处理程序将 \fB$\fR 和 \fB\\fR 解释为特殊字符。后跟一个（或多个）数字的 \fB$\fR 会替换为宏调用命令行中的相应参数。后跟 \fBi\fR 符号的 \fB$\fR 表示执行宏的宏处理程序要进行循环操作。在首次传递时，\fB$i\fR 会被替换为宏调用命令行中的第一个参数；在第二次传递时，它会被替换为第二个参数，以此类推。\fB\\fR 后跟任意字符会替换为该字符。使用 \fB\\fR 可防止对 \fB$\fR 进行特殊处理。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmdelete\fR \fIremote-files\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除远程计算机上的 \fIremote-files\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmdir\fR \fIremote-files local-file\fR\fR
+.ad
+.sp .6
+.RS 4n
+与 \fBdir\fR 类似，但可指定多个远程文件。如果启用交互式提示，\fBftp\fR 会提示用户确认最后一个参数确实是用于接收 \fBmdir\fR 输出的目标本地文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmget\fR \fIremote-files\fR\fR
+.ad
+.sp .6
+.RS 4n
+扩展远程计算机上的 \fIremote-files\fR，并针对由此生成的每个文件名各执行一次 \fBget\fR 操作。有关文件名扩展的详细信息，请参见 \fBglob\fR。生成的文件名将根据 \fBcase\fR、\fBntrans\fR 和 \fBnmap\fR 设置进行处理。文件将传输到本地工作目录（可使用 \fBlcd\fR \fIdirectory\fR 更改此目录）。可使用 \fB! mkdir\fR \fIdirectory\fR 创建新的本地目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmkdir\fR \fIdirectory-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+在远程计算机上创建目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmls\fR \fIremote-files local-file\fR\fR
+.ad
+.sp .6
+.RS 4n
+与 \fBls\fR(1) 类似，但可指定多个远程文件。如果启用交互式提示，\fBftp\fR 会提示用户确认最后一个参数确实是用于接收 \fBmls\fR 输出的目标本地文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmode\fR [ \fImode-name\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+将 “transfer mode”（传输模式）设置为 \fImode-name\fR。唯一有效的 \fImode-name\fR 是 \fBstream\fR，对应于缺省的 “stream”（流）模式。此实现仅支持 \fBstream\fR，因此要求指定此模式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmput\fR \fIlocal-files\fR\fR
+.ad
+.sp .6
+.RS 4n
+扩展本地文件列表中作为参数给出的通配符，并针对所生成列表中的每个文件各执行一次 \fBput\fR 操作。有关文件名扩展的详细信息，请参见 \fBglob\fR。生成的文件名将根据 \fBntrans\fR 和 \fBnmap\fR 设置进行处理。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnlist\fR [ \fB-al\fR | \fIremote-directory\fR [ \fIlocal-file\fR ]]\fR
+.ad
+.sp .6
+.RS 4n
+列显远程计算机上目录内容的简要列表，仅列出可通过 \fBget\fR 命令检索到的文件（除非使用了 \fB-a\fR 或 \fB-l\fR 选项）。如果未指定 \fIremote-directory\fR，将使用当前工作目录。
+.sp
+\fB-a\fR 选项会列出所有条目，包括以句点 (\fB\&.\fR) 开头的条目（通常不会列出）。\fB-l\fR 选项以长格式列出文件，具体方式与在 \fBls\fR 命令中使用时相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnmap\fR [ \fIinpattern outpattern\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+设置或取消设置文件名映射机制。如果未指定参数，将取消设置文件名映射机制。如果指定了参数，则在发出 \fBmput\fR 命令和 \fBput\fR 命令且未指定远程目标文件名时，映射远程文件名。如果指定了参数，则在发出 \fBmget\fR 命令和 \fBget\fR 命令且未指定本地目标文件名时，映射本地文件名。
+.sp
+在连接到使用不同文件命名约定或做法的非 UNIX 系统远程主机时，此命令会很有用。映射遵循 \fIinpattern\fR 和 \fIoutpattern\fR 所设置的模式。\fIinpattern\fR 是用于传入文件名的模板（已根据 \fBntrans\fR 和 \fBcase\fR 设置进行了处理）。可通过在 \fIinpattern\fR 中包含序列 \fB$1\fR、\fB$2\fR、. . . 、\fB$9\fR 来实现可变模板。使用 \fB\\fR 可防止对该 \fB$\fR 字符进行这种特殊处理。其他所有字符将按字面进行处理并用于确定 \fBnmap\fR \fIinpattern\fR 可变值。
+.sp
+例如，如果给出了 \fIinpattern\fR \fB$1.$2\fR 和远程文件名 \fBmydata.data\fR，则 \fB$1\fR 的值将为 \fBmydata\fR，\fB$2\fR 的值将为 \fBdata\fR。
+.sp
+\fIoutpattern\fR 用于确定生成的映射文件名。序列 \fB$1\fR、\fB$2\fR、. . . 、\fB$9\fR 会替换为从 \fIinpattern\fR 模板中生成的任何值。序列 \fB$0\fR 会替换为原始文件名。此外，如果 \fIseq1\fR 不是空字符串，序列 [\fI seq1 \fR,\fI seq2 \fR] 将替换为 \fIseq1\fR；否则，它会替换为 \fIseq2\fR。
+.sp
+例如，命令 \fBnmap $1.$2.$3 [$1,$2].[$2,file]\fR 将生成输入文件名 \fBmyfile.data\fR 和 \fBmyfile.data.old\fR 的输出文件名 \fBmyfile.data\fR，输入文件名 \fBmyfile\fR 的输出文件名为 \fBmyfile.file\fR，输入文件名 \fB\&.myfile\fR 的输出文件名为 \fBmyfile.myfile\fR。\fIoutpattern\fR 中可包含\fB空格\fR字符，例如 \fBnmap $1 | sed "s/ *$//" > $1\fR。使用 \fB\\fR 字符可防止对 \fB$\fR、\fB[\fR、\fB]\fR 和 \fB,\fR 等字符进行特殊处理。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBntrans\fR [ \fIinchars\fR [ \fIoutchars\fR ] ]\fR
+.ad
+.sp .6
+.RS 4n
+设置或取消设置文件名字符转换机制。如果未指定参数，将取消设置文件名字符转换机制。如果指定了参数，则在发出 \fBmput\fR 命令和 \fBput\fR 命令且未指定远程目标文件名时，转换远程文件名中的字符，在发出 \fBmget\fR 命令和 \fBget\fR 命令且未指定本地目标文件名时，转换本地文件名中的字符。
+.sp
+在连接到使用不同文件命名约定或做法的非 UNIX 系统远程主机时，此命令会很有用。文件名中与 \fIinchars\fR 中某个字符匹配的字符会替换为 \fIoutchars\fR 中的相应字符。如果 \fIinchars\fR 中的字符位置超出了 \fIoutchars\fR 的长度，将从文件名中删除该字符。
+.sp
+在 \fBftp\fR 下使用 \fBntrans\fR 命令时，只能转换 16 个字符。如果需要转换所有字母，请使用 \fBcase\fR（如上所述）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBopen\fR \fIhost\fR [ \fIport\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+建立与指定 \fIhost\fR \fBFTP\fR 服务器的连接。可以提供端口号（可选），如果提供，\fBftp\fR 将尝试通过该端口连接 \fBFTP\fR 服务器。如果启用了 \fIauto-login\fR 选项（缺省设置），\fBftp\fR 还将尝试自动将用户登录到 \fBFTP\fR 服务器。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpassive\fR\fR
+.ad
+.sp .6
+.RS 4n
+切换被动模式。启用被动模式后，ftp 客户机会发送 \fBPASV\fR 命令，请求 \fBFTP\fR 服务器打开用于数据连接的端口并返回该端口的地址。远程服务器会侦听该端口且客户机会连接到该端口。禁用被动模式后，ftp 客户机会向远程服务器发送 \fBPORT\fR 命令，为其指定要恢复连接的地址。如果与 ftp 客户机的连接是受控制连接（例如，位于防火墙后面），被动模式会很有用。当连接到支持 IPv6 的 \fBFTP\fR 服务器时，可以使用 \fBEPSV\fR 来替换 \fBPASV\fR，使用 \fBEPRT\fR 来替换 \fBPORT\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprivate\fR\fR
+.ad
+.sp .6
+.RS 4n
+将数据传输的保护级别设置为 “\fBprivate\fR”。通过加密来保护数据传输的保密性和完整性。如果无成功执行的 \fBADAT\fR 命令，则唯一可能的级别是 “clear”（清除）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprompt\fR\fR
+.ad
+.sp .6
+.RS 4n
+切换交互式提示。交互式提示在传输多个文件时出现，允许用户有选择性地检索或存储文件。缺省情况下，该提示处于启用状态。如果禁用该提示，任一 \fBmget\fR 或 \fBmput\fR 均将传输所有文件，且任一 \fBmdelete\fR 将删除所有文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprotect\fR \fIprotection-level\fR\fR
+.ad
+.sp .6
+.RS 4n
+将数据传输的保护级别设置为 \fIprotection-level\fR。有效保护级别包括：“\fBclear\fR”（不受保护的数据传输）、“\fBsafe\fR”（通过加密校验和来保护数据传输的完整性）和 “\fBprivate\fR”（通过加密来保护数据传输的保密性和完整性）。如果无成功执行的 \fBADAT\fR 命令，则唯一可能的级别是 “\fBclear\fR”（清除）。如果未指定级别，则输出当前级别。缺省的保护级别为 “\fBclear\fR”。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBproxy\fR \fIftp-command\fR\fR
+.ad
+.sp .6
+.RS 4n
+对辅助的控制连接执行 \fBFTP\fR 命令。通过此命令可同时连接两台远程 \fBFTP\fR 服务器，以便在这两台服务器之间传输文件。第一个 \fBproxy\fR 命令应为 \fBopen\fR，用于建立辅助控制连接。输入命令 \fBproxy\fR \fB?\fR 可查看可对辅助连接执行的其他 \fBFTP\fR 命令。
+.sp
+在以下命令的前面添加 \fBproxy\fR 后其行为会有所不同：在自动登录过程中，\fBopen\fR 将不定义新宏；\fBclose\fR 不会删除现有宏定义；\fBget\fR 和 \fBmget\fR 会将主控制连接中主机上的文件传输到辅助控制连接的主机上；\fBput\fR、\fBmputd\fR 和 \fBappend\fR 会将辅助控制连接主机上的文件传输到主控制连接的主机上。
+.sp
+第三方文件传输取决于辅助控制连接中的服务器对 \fBPASV\fR 命令的支持情况。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBput\fR \fIlocal-file\fR [ \fIremote-file\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+在远程计算机上存储本地文件。如果未指定 \fIremote-file\fR，则在命名远程文件时将使用本地文件名并会根据任一 \fBntrans\fR 或 \fBnmap\fR 设置进行处理。文件传输使用 “representation type”（表示类型）、“file structure”（文件结构）和 “transfer mode”（传输模式）的当前设置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpwd\fR\fR
+.ad
+.sp .6
+.RS 4n
+列显远程计算机上的当前工作目录名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBquit\fR\fR
+.ad
+.sp .6
+.RS 4n
+与 \fBbye\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBquote\fR \fIarg1 arg2\fR ...\fR
+.ad
+.sp .6
+.RS 4n
+将指定的参数逐个发送到远程 \fBFTP\fR 服务器。预期返回单个 \fBFTP\fR 回复代码。（使用 \fBremotehelp\fR 命令可显示有效参数列表。）
+.sp
+\fBquote\fR 只应由熟悉 FTP 协议的有经验用户使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrecv\fR \fIremote-file\fR [ \fIlocal-file\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+与 \fBget\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreget\fR \fIremote-file\fR [ \fIlocal-file\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+\fBreget\fR 命令类似于 \fBget\fR，但不同的是：如果 \fIlocal-file\fR 存在且小于 \fIremote-file\fR，则假定 \fIlocal-file\fR 是部分传输的 \fIremote-file\fR 副本，并从疑似故障点继续传输。通过比较容易断开连接的网络传输大型文件时，此命令会很有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBremotehelp\fR [ \fIcommand-name\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+请求远程 \fBFTP\fR 服务器的帮助。如果指定了 \fIcommand-name\fR，也会将其提供给服务器。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrename\fR \fIfrom to\fR\fR
+.ad
+.sp .6
+.RS 4n
+将远程计算机上的文件 \fIfrom\fR 重命名为 \fIto\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreset\fR\fR
+.ad
+.sp .6
+.RS 4n
+清除回复队列。此命令会与远程 \fBFTP\fR 服务器重新同步命令/回复序列。在远程服务器出现 \fBFTP\fR 协议违规行为后，必须进行重新同步。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrestart\fR [ \fImarker\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+重新启动指示的 marker 之后紧跟的 \fBget\fR 或 \fBput\fR。在 UNIX 系统上，\fImarker\fR 通常为文件的字节偏移量。如果后跟 \fBmget\fR，\fBrestart\fR 将应用于所执行的第一个 \fBget\fR。将 \fImarker\fR 指定为 \fB0\fR 可清除重新启动标记。如果未指定参数，将显示当前的重新启动状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrmdir\fR \fIdirectory-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除远程计算机上的目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrunique\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定是否使用唯一文件名在本地系统上存储文件。如果已存在与 \fBget\fR 或 \fBmget\fR 命令的目标本地文件名同名的文件，则在文件名后面附加 \fB\&.1\fR。如果生成的名称与其他现有文件匹配，则在原始文件名后面附加 \fB\&.2\fR。如果此过程一直持续到 \fB\&.99\fR，则会输出一条错误消息，并且不执行传输。将报告所生成的唯一文件名。\fBrunique\fR 不影响通过 shell 命令生成的本地文件。缺省值为 off。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsafe\fR\fR
+.ad
+.sp .6
+.RS 4n
+将数据传输的保护级别设置为 “\fBsafe\fR”。通过加密校验和保护数据传输的完整性。如果无成功执行的 \fBADAT\fR 命令，则唯一可能的级别是 “\fBclear\fR”（清除）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsend\fR \fIlocal-file\fR [ \fIremote-file\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+与 \fBput\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsendport\fR\fR
+.ad
+.sp .6
+.RS 4n
+切换 \fBPORT\fR 命令的使用。缺省情况下，\fBftp\fR 在为每个数据传输建立连接时将尝试使用 \fBPORT\fR 命令。使用 \fBPORT\fR 命令可防止在执行多个文件传输操作时出现延迟。如果 \fBPORT\fR 命令失败，\fBftp\fR 将使用缺省数据端口。禁用 \fBPORT\fR 命令后，将不再尝试对每个数据传输使用 \fBPORT\fR 命令。当连接到忽略了 \fBPORT\fR 命令而不正确地指示已接受该命令的某个 \fBFTP\fR 实现时，此选项会很有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsite\fR \fIarg1\fR [ \fIarg2\fR ] ...\fR
+.ad
+.sp .6
+.RS 4n
+将指定的参数作为 \fBSITE\fR 命令的参数逐个发送到远程 \fBFTP\fR 服务器。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstatus\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示 \fBftp\fR 的当前状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstruct\fR [ \fIstruct-name\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+将文件结构设置为 \fIstruct-name\fR。唯一有效的 \fIstruct-name\fR 是 \fBfile\fR，对应于缺省的 “file”（文件）结构。此实现仅支持 \fBfile\fR，因此要求指定此结构。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsunique\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定是否使用唯一文件名在远程计算机上存储文件。要成功完成，远程 \fBFTP\fR 服务器必须支持 \fBSTOU\fR 命令。远程服务器将报告唯一名称。缺省值为 off。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtcpwindow\fR [ \fIsize\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+设置用于数据连接的 \fBTCP\fR 窗口大小。如果指定大小为 \fB0\fR，将停止有关数据连接的 \fBTCP\fR 窗口大小的显式设置。如果未指定参数，将显示当前设置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtenex\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 “representation type”（表示类型）设置为需要与 \fBTENEX\fR 计算机通信的类型。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtrace\fR\fR
+.ad
+.sp .6
+.RS 4n
+切换数据包跟踪功能（尚未实现）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtype\fR [ \fItype-name\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+将 “representation type”（表示类型）设置为 \fItype-name\fR。有效的 \fItype-name\fR 包括：适用于 “network \fB ASCII\fR”（网络 ASCII）的 \fBascii\fR、适用于 “image”（图像）的 \fBbinary\fR 或 \fBimage\fR，以及适用于字节大小为 8 的 “local byte size”（本地字节大小）的 \fBtenex\fR（用于与 \fBTENEX\fR 计算机通信）。如果未指定类型，则输出当前类型。缺省类型为 “network \fBASCII\fR”（网络 ASCII）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuser\fR \fIuser-name\fR [ \fIpassword\fR [ \fIaccount\fR ]]\fR
+.ad
+.sp .6
+.RS 4n
+向远程 \fBFTP\fR 服务器证明自己的身份。如果未指定口令且服务器需要口令，则 \fBftp\fR 会提示用户输入口令（禁用本地回显功能后）。如果未指定帐户字段且 \fBFTP\fR 服务器需要帐户，则会提示用户输入帐户。如果指定了帐户字段，而远程服务器不要求使用帐户进行登录，则帐户命令会在完成登录序列之后转发到远程服务器。除非在调用 \fBftp\fR 时禁用了 “auto-login”（自动登录），否则，在与 \fBFTP\fR 服务器初始连接时会自动完成此过程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBverbose\fR\fR
+.ad
+.sp .6
+.RS 4n
+切换详细模式。在详细模式中，会向用户显示来自 \fBFTP\fR 服务器的所有响应。此外，如果启用了详细模式，则在文件传输完成时，会报告与传输效率相关的统计信息。缺省情况下，如果 \fBftp\fR 的命令来自终端，将启用详细模式，否则将禁用该模式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB?\fR [ \fIcommand\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+与 \fBhelp\fR 相同。
+.RE
+
+.sp
+.LP
+包含空格的命令参数可使用引号 (\fB"\fR) 引起来。
+.sp
+.LP
+如果未指定未表明为可选的任何命令参数，则 \fBftp\fR 会提示用户输入该参数。
+.SH 中止文件传输
+.sp
+.LP
+要中止文件传输，请使用终端中断键。发送传输将立即停止。接收传输可通过以下方法来停止：向远程服务器发送 \fBFTP\fR 协议 \fBABOR\fR 命令，并丢弃之后所接收的所有数据。此操作的实现速度取决于远程服务器对 \fBABOR\fR 处理的支持情况。如果远程服务器不支持 \fBABOR\fR 命令，则在远程服务器发送完所请求的文件之前，不会显示 \fBftp>\fR 提示符。
+.sp
+.LP
+在 \fBftp\fR 已完成所有本地处理并等待远程服务器的回复时，将忽略终端中断键序列。在此模式下，可能会因为上述 \fBABOR\fR 处理或远程服务器所产生的非预期行为（包括 ftp 协议违规）而导致较长的延迟。如果延迟是由非预期的远程服务器行为引起，则必须手动中止本地 \fBftp\fR 程序。
+.SH 文件命名约定
+.sp
+.LP
+指定为 \fBftp\fR 命令参数的本地文件将根据以下规则进行处理。
+.sp
+.ne 2
+.mk
+.na
+\fB1)\fR
+.ad
+.RS 6n
+.rt  
+如果将文件名指定为 \fB-\fR，将使用标准输入（进行读取）或标准输出（进行写入）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB2)\fR
+.ad
+.RS 6n
+.rt  
+如果文件名的第一个字符为 \fB|\fR，则该参数的其余字符将被解释为 shell 命令。然后 \fBftp\fR 将使用所提供的参数通过 \fBpopen\fR(3C) 派生一个 shell，并在该 shell 的标准输出/标准输入中读取/写入内容。如果 shell 命令包含空格字符，则必须用引号引住该参数；例如 \fB| ls\fR \fB- lt\fR。此机制特别有用的一个示例为：\fB"dir | more"\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB3)\fR
+.ad
+.RS 6n
+.rt  
+在上述检查全部失败的情况下，如果启用了通配功能，将根据 \fBsh\fR(1) 中使用的规则扩展本地文件名；请参见 \fBglob\fR 命令。如果 \fBftp\fR 命令期望一个单一本地文件（例如 \fBput\fR），则仅使用通配操作所生成的第一个文件名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB4)\fR
+.ad
+.RS 6n
+.rt  
+对于未指定本地文件名的 \fBmget\fR 命令和 \fBget\fR 命令，本地文件名为远程文件名，可能会根据 \fBcase\fR、\fBntrans\fR 或 \fBnmap\fR 设置而更改。如果启用了 \fBrunique\fR，则生成的文件名可能会不同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB5)\fR
+.ad
+.RS 6n
+.rt  
+对于未指定远程文件名的 \fBmput\fR 命令和 \fBput\fR 命令，远程文件名为本地文件名，可能会根据 \fBntrans\fR 或 \fBnmap\fR 设置而更改。如果启用了 \fBsunique\fR，则远程服务器可能会更改生成的文件名。
+.RE
+
+.SH 文件传输参数
+.sp
+.LP
+\fBFTP\fR 规范指定了可影响文件传输的许多参数。
+.sp
+.LP
+“representation type”（表示类型）可以为以下值之一：“network \fBASCII\fR”（网络 ASCII）、“\fBEBCDIC\fR”、“image”（图像）或具有指定字节大小的 “local byte size”（本地字节大小）（主要适用于 PDP-10 和 PDP-20）。“network \fBASCII\fR”（网络 ASCII）和 “\fBEBCDIC\fR” 类型具有进一步的子类型，用于指定是否要传递垂直格式控制（\fB换行\fR符、换页符等）（“non-print”（非输出）），以 \fBTELNET\fR 格式 (“\fBTELNET\fR format controls”) 格式提供，还是以 \fBASA\fR (\fBFORTRAN\fR) (“carriage control (\fBASA\fR)”) 格式提供。\fBftp\fR 支持 “network \fBASCII\fR”（网络 ASCII）（子类型只有 “non-print”（非输出））和 “image”（图像）类型，以及用于与 \fBTENEX\fR 计算机通信的字节大小为 8 的 “local byte size”（本地字节大小）。
+.sp
+.LP
+“file structure”（文件结构）可以为 \fBfile\fR（非记录结构）、\fBrecord\fR 或 \fBpage\fR 中的一种。\fBftp\fR 仅支持缺省值 \fBfile\fR。
+.sp
+.LP
+“transfer mode”（传输模式）可以为 \fBstream\fR、\fBblock\fR 或 \fBcompressed\fR 中的一种。\fBftp\fR 仅支持缺省值 \fBstream\fR。
+.SH 用法
+.sp
+.LP
+有关 \fBftp\fR 遇到大于或等于 2 GB（2^31 字节）文件时行为的说明，请参见 \fBlargefile\fR(5)。
+.sp
+.LP
+\fBftp\fR 命令支持 IPv6。请参见 \fBip6\fR(7P)。
+.SH 文件
+.sp
+.LP
+\fB~/.netrc\fR
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性network/ftp
+_
+CSIenabled（已启用）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBls\fR(1)、\fBrcp\fR(1)、\fBsh\fR(1)、\fBtar\fR(1)、\fBpopen\fR(3C)、\fBftp\fR(4)、\fBftpusers\fR(4)、\fBmech\fR(4)、\fBnetrc\fR(4)、\fBattributes\fR(5)、\fBlargefile\fR(5)、\fBip6\fR(7P)
+.sp
+.LP
+由 Allman, M.、Ostermann, S. 和 Metz, C. 编著的《\fIFTP Extensions for IPv6 and NATs\fR》(RFC 2428)。Internet Society 出版。1998 年 9 月。
+.sp
+.LP
+由 Lunt, S. J. 编著的《\fIFTP Security Extensions\fR》(RFC 2228)。Internet 草案。1993 年 11 月。
+.sp
+.LP
+由 Postel、Jon 和 Joyce Reynolds 编著的《\fIFile Transfer Protocol (FTP )\fR》(RFC 959)。Network Information Center（网络信息中心）出版。1985 年 10 月。
+.sp
+.LP
+由 Piscitello, D. 编著的《\fIFTP Operation Over Big Address Records (FOOBAR)\fR》(RFC 1639)。Network Working Group 出版。1994 年 6 月。
+.SH 附注
+.sp
+.LP
+远程 \fBFTP\fR 服务器显式拒绝（因为帐户列在 \fB/etc/ftpusers\fR 中）可导致登录失败。请参见 \fBftpusers\fR(4)。 
+.sp
+.LP
+许多命令的正确执行取决于远程服务器的正确行为。
+.sp
+.LP
+4.2 \fBBSD\fR 代码在处理 “representation type”（表示类型）为 “network \fBASCII\fR”（网络 ASCII）的传输时的回车处理错误已更正。此更正可能导致使用 “network \fBASCII\fR”（网络 ASCII）“representation type”（表示类型）向/从 4.2 \fBBSD\fR 服务器传输二进制文件时无法正确传输。可通过使用 “image”（图像）类型来避免此问题。

@@ -1,0 +1,999 @@
+'\" te
+.\" Copyright (c) 2007, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH bootadm 1M "2015 年 3 月 25 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+bootadm \- manage boot configuration
+.SH 形式
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR update-archive [\fB-v] [-f | -n\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR list-archive [\fB-vn\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR install-bootloader [\fB-Mfv\fR] [\fB-P\fR \fIpool\fR] [\fB-R\fR \fIpath\fR]
+     [\fIdevice1\fR ... \fIdeviceN\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm boot-pool\fR {
+     [{\fBadd|remove\fR} [\fB-P\fR \fIrpool\fR] <\fIdevice list\fR>] |
+     \fBlist\fR [\fB-P\fR \fIrpool\fR] |
+     \fBresync\fR [\fB-P\fR \fIrpool\fR] [\fB-vA\fR] [<\fIBE_list\fR>] |
+     \fBset\fR [\fB-P\fR \fIrpool\fR] <\fIparam\fR>=<\fIvalue\fR> ... }
+.fi
+
+.LP
+.nf
+x86 only
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR set-menu [\fB-P\fR \fIpool\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]
+     {\fIkey\fR=\fIvalue\fR [\fIkey\fR=\fIvalue\fR ...]}
+.fi
+
+.LP
+.nf
+/usr/sbin/bootadm set-menu-password [-P \fIpool\fR] [-R \fIaltroot\fR [-p \fIplatform\fR]]
+          [-f <\fIpath to file\fR>] | -s] | [-r] | [-l -t [-i \fIentry_number\fR] | -g]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR list-menu [\fB-P\fR \fIpool\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]
+     [[\fB-i\fR \fIentry_number\fR] | \fIentry_title\fR]
+.fi
+
+.LP
+.nf
+/usr/sbin/bootadm use-batch -f file
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR generate-menu [\fB-P\fR \fIpool\fR] [\fB-f\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR show-entry [-P \fIpool\fR] <\fIentry_name\fR> | -i <\fIindex\fR>
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR add-entry [\fB-P\fR \fIpool\fR] [\fB-i\fR \fIentry_number\fR] \fIentry_title\fR
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR change-entry [\fB-P\fR \fIpool\fR] {[\fIentry_title\fR[,\fIentry_title\fR...]
+| \fB-i\fR \fIentry_number\fR[,\fIentry_number\fR]...]} {\fIkey\fR=\fIvalue\fR [\fIkey\fR=\fIvalue\fR ...]
+| set-default }
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR remove-entry [\fB-P\fR \fIpool\fR] {[\fIentry_title\fR[,\fIentry_title\fR...]
+| \fB-i\fR \fIentry_number\fR[,\fIentry_number\fR]...]}
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBbootadm\fR コマンドは、ブートアーカイブのほか、x86 ブート環境、GRUB (GRand Unified Bootloader) メニューを管理します。x86 では、レガシー GRUB および GRUB2 の両方が (ただし同時ではない) サポートされます。
+.sp
+.LP
+\fBupdate–archive\fR オプションを使えば、ブートアーカイブの更新を、障害予防策として、あるいは復旧手順の一環として、実施できます。
+.sp
+.LP
+\fBset-menu\fR サブコマンドを使えば、GRUB メニュー内の自動ブートタイムアウトやデフォルトブートエントリを切り替えることができます。\fB\fR
+.sp
+.LP
+\fBset-menu-password\fR サブコマンドは、GRUB メニューを表示しないように保護するパスワードを設定します。設定するには、\fB-f\fR <\fIpath to file\fR> を使用します。\fB-s\fR を使用すると、パスワードの入力を 2 回求めます。\fB-r\fR はパスワードを削除します。\fB-l\fR はグローバルなメニューパスワードロックが設定されているかどうかを表示します。メニューエントリの \fBuserlisti\fR \fB-l\fR \fB-t\fR はメニューエントリのユーザーリストを解析可能な出力で表示します。\fB-l\fR \fB-t\fR \fB-i\fR <\fIentry number\fR> はそのエントリ番号リストのユーザーリストを解析可能な出力で表示します。\fB-l\fR \fB-t\fR \fB-g\fR はグローバルなメニューパスワードロックが設定されているかどうかを解析可能な出力で表示します。
+.sp
+.LP
+\fBlist-menu\fR サブコマンドは、現在の GRUB メニューエントリ、あるいはオプションでインデックスにより識別される特定のエントリの詳細 (\fB-i\fR を使用する場合) またはタイトル文字列 (\fB-i\fR を省略する場合) を表示します。
+.sp
+.LP
+\fBuse-batch\fR サブコマンドの \fB-f\fR <\fIfile\fR> は、指定されたファイル内の bootadm 命令を実行します。これは主に、マニフェストファイルからのインストール時にパスワードを設定する場合に役立ちます。
+.sp
+.LP
+\fBinstall-bootloader\fR サブコマンドは、システムブートローダーをインストールします。これは、x86 上の \fBinstallgrub\fR(1M) と SPARC 上の \fBinstallboot\fR(1M) の機能、および GRUB2 ブートローダーの x86 へのインストールのサポートに優先します。
+.sp
+.LP
+アクティブなブートプールが存在する場合、ブート可能データセットは保持されます。それぞれは 1 つのブート環境に対応し、ブート環境のブート可能な \fBアーティファクト\fR (boot_archive (x64 および SPARC プラットフォーム) および unix カーネル実行可能ファイル (x64 プラットフォームのみ) など) を格納しています。管理者は \fBboot-pool\fR サブコマンドを使用して、デバイスメンバーシップ (\fBadd/remove\fR サブコマンドを使用)、ブートアーティファクトの手動同期 (\fBresync\fR サブコマンドを使用)、ブートプール属性の設定 (\fBset\fR サブコマンドを使用) などのブートプールの側面を管理できます。
+.sp
+.LP
+\fBgenerate-menu\fR サブコマンドは、Solaris エントリ用の新しいメニュー構成ファイルの作成方法を提供します。ブートローダー構成ファイルがすでに存在する場合は、\fB-f\fR を指定して、このサブコマンドでこれらのファイルを強制的に上書きする必要があります。
+.sp
+.LP
+\fBshow-entry\fR、\fBadd-entry\fR、\fBchange-entry\fR、および \fBremove-entry\fR サブコマンドには、GRUB メニューからエントリを表示、追加、変更、または削除するオプションがあります。\fBchange-entry\fR には、エントリにセキュリティー保護を追加するオプションもあります。
+.sp
+.LP
+SPARC システムなどの OpenBoot PROM (OBP) ベースのマシンは GRUB を使用しないため、\fBbootadm\fR で管理できるブートメニューがないことに注意してください。
+.sp
+.LP
+あるプラットフォーム上で呼び出される \fBbootadm\fR を使用して、プラットフォームの種類が異なるディスクレスクライアントを管理できるように、\fBbootadm\fR コマンドは、管理対象のイメージでサポートされるオプションを動的に判断します。
+.SH サブコマンド
+.sp
+.LP
+\fIentry_title\fR の指定をサポートするサブコマンドの場合、\fIentry_title\fR は二重引用符または単一引用符で囲むことのできる文字列です。
+.sp
+.LP
+\fIentry_number\fR は、GRUB メニュー内のメニューエントリのインデックスを表す負でない整数です。
+.sp
+.LP
+\fBbootadm\fR コマンドのサブコマンドを、次に示します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBupdate-archive\fR [\fB-v] [-f | -n\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]\fR
+.ad
+.sp .6
+.RS 4n
+現在のブートアーカイブを必要に応じて更新します。SPARC と x86 の両方のプラットフォームに適用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlist-archive\fR [\fB-vn\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]\fR
+.ad
+.sp .6
+.RS 4n
+ブートアーカイブに含めるファイルとディレクトリを一覧表示します。SPARC と x86 の両方のプラットフォームに適用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset-menu\fR [\fB-vn\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]] {\fIkey\fR=\fIvalue\fR [\fIkey\fR=\fIvalue\fR]...} \fR
+.ad
+.sp .6
+.RS 4n
+GRUB メニューを維持管理します。スペースで区切った鍵 - 値ペアのリストを指定できます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIkey\fR=\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定可能な値は、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdefault\fR=\fIentry_number\fR\fR
+.ad
+.sp .6
+.RS 4n
+GRUB メニュー内のエントリ番号 (\fB0\fR、\fB1\fR、\fB2\fR 0、1、2 など) で、タイムアウト時にブートするオペレーティングシステムを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtimeout\fR=\fIseconds\fR\fR
+.ad
+.sp .6
+.RS 4n
+デフォルト項目番号で指定されたオペレーティングシステムがブートされるまでの秒数。値が \fB-1\fR の場合、自動ブートは無効になります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconsole\fR=\fIGRUB_console_type\fR\fR
+.ad
+.sp .6
+.RS 4n
+GRUB で使用するコンソールのタイプを設定します。
+.sp
+指定可能な値は、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\&'text'\fR\fR
+.ad
+.sp .6
+.RS 4n
+高解像度コンソールを選択します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\&'graphics'\fR\fR
+.ad
+.sp .6
+.RS 4n
+高解像度コンソールを選択し、これによりさらにグラフィカルブートが実行されます。BIOS コンソールリダイレクションが有効な場合は、コンソールの設定に \fBgraphics\fR を使用してはいけません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\&'serial'\fR\fR
+.ad
+.sp .6
+.RS 4n
+GRUB ブートローダー用のシリアルコンソール。シリアルパラメータ固有の設定については、次の \fBserial_params\fR を参照してください。
+.sp
+BIOS コンソールリダイレクションが有効な場合は、\fBconsole\fR の設定に \fB\&'serial'\fR を使用してはいけません。
+.sp
+シリアルコンソールによるブートでシステムをインストールする場合、そのシリアルコンソールが Solaris のカーネルデフォルトコンソールデバイスになります。ただし、GRUB のコンソールは \fBserial\fR に変更\fBされません\fR (\fB\&'text'\fR になります)。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[add|del]-user\fR=<\fIusername\fR>\fR
+.ad
+.sp .6
+.RS 4n
+承認されたユーザーのリストにユーザー名を追加または削除します。パスワードの入力を 2 回求めます。パスワードがハッシュされた形式で格納されます。ユーザー名は Solaris ユーザー名と同じである必要はありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[auth-file]\fR=<\fIfile path\fR>\fR
+.ad
+.sp .6
+.RS 4n
+承認されたユーザーのリストに <\fIfile path\fR> 内のユーザー名とパスワードを追加します。<\fIfile path\fR> は、<username>=<password> ペアが入っているファイルです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[add|del]-superuser\fR=<\fIusername\fR>\fR
+.ad
+.sp .6
+.RS 4n
+スーパーユーザーのリストにユーザー名を追加または削除します。ユーザー名は承認されたユーザーのリストにすでに存在している必要があります。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBserial_params\fR='\fIport\fR[,\fIspeed\fR[,\fIdatabits\fR[,\fIparity\fR[,\fIstopbits\fR[,\fIflowcontrol\fR]]]]]'\fR
+.ad
+.sp .6
+.RS 4n
+シリアルコンソール用のシリアルパラメータを指定します。
+.sp
+\fIport\fR は、シリアルポート番号を指定する数値です。
+.sp
+\fIspeed\fR は、接続のデータ転送率 (ビット/秒) を指定する数値です。
+.sp
+\fIdatabits\fR は、各文字内のデータビット数です。
+.sp
+\fIparity\fR には、転送エラーを検出する方法を指定します。指定可能な値は、次のとおりです。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBN\fR - パリティーなし
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBO\fR - 奇数パリティー
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBE\fR - 偶数パリティー
+.RE
+\fIparity\fR の値では、大文字と小文字が区別されません。
+.sp
+\fIstopbits\fR には、文字伝送で送信されるストップビットを指定します。指定可能な値は \fB0\fR または \fB1\fR です。
+.sp
+\fIflowcontrol\fR にはフロー制御を指定します。指定可能な値は、次のとおりです。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBH\fR - ハードウェアフロー制御
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBS\fR - ソフトウェアフロー制御
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBN\fR - フロー制御なし
+.RE
+\fIserial_params\fR を設定しない場合、デフォルトは次のとおりです:
+.sp
+.in +2
+.nf
+0,9600,8,N,1,N
+.fi
+.in -2
+.sp
+
+これにより、ボーレート 9600 ビット/秒、パリティーチェックなし、1 文字 8 ビットのデータビット、ストップビット 1、およびデフォルトのフロー制御なしで最初のシリアルポート (\fBCOM1\fR) が作成されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBquiet\fR\fR
+.ad
+.sp .6
+.RS 4n
+コンソールへの通知メッセージの出力を抑制するかどうかを指定します。デフォルトでは、この値は \fBfalse\fR です。
+.sp
+指定可能な値は \fBtrue\fR または \fBfalse\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsplashimage\fR\fR
+.ad
+.sp .6
+.RS 4n
+ブート時に表示するイメージとして使用するファイルのパスを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBforeground\fR\fR
+.ad
+.sp .6
+.RS 4n
+前景色を設定します。これは、\fIRRGGBB\fR 形式の 16 進数値の文字列で、\fIRR\fR は赤、\fIGG\fR は緑、\fIBB\fR は青です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbackground\fR\fR
+.ad
+.sp .6
+.RS 4n
+背景色を設定します。指定可能な値については、\fBforeground\fR を参照してください。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset-menu-password\fR [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]] [\fB-f\fR <\fIpath to file\fR> | \fB-s\fR] [\fB-r\fR] [\fB-l\fR \fB-t\fR [\fB-i\fR \fIentry_number\fR[,\fIentry_number\fR]...]|\fB-g\fR]\fR
+.ad
+.sp .6
+.RS 4n
+GRUB メニューを表示しないように保護するパスワードを設定または削除します。また、GRUB メニュー全体のパスワードが設定されているかどうか、および各メニューエントリのユーザーリストを表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlist-menu\fR [\fB-P\fR \fIpool\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]\fR
+.ad
+.sp .6
+.RS 4n
+現在の GRUB メニューエントリを一覧表示します。これには、自動ブートタイムアウト、デフォルトエントリ番号、および各エントリのタイトルが含まれます。x86 プラットフォームにのみ適用されます。エントリタイトルまたはエントリインデックスを指定すると、その特定エントリの詳細が出力されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgenerate-menu\fR [\fB-P\fR \fIpool\fR]\fR
+.ad
+.sp .6
+.RS 4n
+システムに現在インストールされている Solaris エントリのみを含む新しいメニュー構成を作成します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbootadm show-entry\fR [\fB-P\fR \fIpool\fR] <\fIentry_name\fR> | \fB-i\fR <\fIindex\fR>\fR
+.ad
+.sp .6
+.RS 4n
+メニューから名前 <\fIentry_name\fR> またはインデックスによって見つかったエントリを表示します。\fIentry_name\fR と \fIindex\fR には、複数のエントリまたはインデックスをコンマで区切ったリストも指定できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBadd-entry\fR [-P \fIpool\fR] [-i \fIentry_number\fR] \fIentry_title\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたエントリタイトルを使って、メニュー内に新規エントリを作成します。
+.sp
+\fIentry_number\fR が指定された場合、新しいエントリを指定された位置に挿入するか、指定された \fIentry_number\fR が現在のエントリ数よりも多い場合に最後のエントリとして追加します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchange-entry\fR [\fB-P\fR \fIpool\fR] {[\fIentry_title\fR[,\fIentry_title\fR...] | \fB-i\fR \fIentry_number\fR[,\fIentry_number\fR]...]} { \fIkey\fR=\fIvalue\fR [ \fIkey\fR=\fIvalue\fR ...] | \fBset-default\fR }\fR
+.ad
+.sp .6
+.RS 4n
+指定されたエントリまたはコンマ区切りのエントリのリストを変更します。エントリは、エントリタイトルまたはエントリ番号で指定します。同じタイトルのエントリが複数存在する場合、すべてが影響を受けます。
+.sp
+特殊なプロパティー \fBset-default\fR は、エントリを、タイマーの期限が切れたときにブートするデフォルトエントリに設定します。このプロパティーを指定する場合、サブコマンド内のエントリを 1 つだけ指定できます。
+.sp
+空白区切りの鍵 : 値ペア (\fIkey\fR=\fIvalue\fR) のリストを指定できます。
+.sp
+指定可能な値は、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtitle\fR=\fIentry_title\fR\fR
+.ad
+.sp .6
+.RS 4n
+エントリの新規タイトル。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkernel\fR=\fIpath_to_kernel\fR\fR
+.ad
+.sp .6
+.RS 4n
+カーネルのパス。例:
+.sp
+.in +2
+.nf
+/platform/i86pc/kernel/amd64/unix
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkargs\fR=\fIkernel_arguments\fR\fR
+.ad
+.sp .6
+.RS 4n
+ブート時にカーネルに渡される引数、または引数のリスト。指定可能なオプションについては、\fBkernel\fR(1M) を参照してください。リストに空白が含まれる場合は、鍵の値を単一引用符または二重引用符で囲みます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBboot_archive\fR=\fIpath_to_boot_archive\fR\fR
+.ad
+.sp .6
+.RS 4n
+ブートアーカイブのパス。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbootfs\fR=\fIbootfs\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBbootfs\fR プロパティーの値。詳細は、\fBzpool\fR(1M) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[add|del]-auth\fR=<\fIusername\fR>\fR
+.ad
+.sp .6
+.RS 4n
+ユーザー名に対して、エントリタイトルまたはエントリインデックスをブートする権限を付与または付与を取り消します。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBremove-entry\fR [\fB-P\fR \fIpool\fR] [{\fIentry_title\fR [,\fIentry_title\fR...] | \fB-i\fR \fIentry_number\fR[,\fIentry_number\fR...]}\fR
+.ad
+.sp .6
+.RS 4n
+指定されたエントリまたはコンマ区切りのエントリリストを削除します。指定されたタイトルのエントリが複数存在する場合は、すべてが削除されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstall-bootloader\fR [\fB-Mfv\fR] [\fB-P\fR \fIpool\fR] [\fB-R\fR \fIpath\fR] [\fIdevice1\fR ... \fIdeviceN\fR]\fR
+.ad
+.sp .6
+.RS 4n
+システムブートローダーをインストールします。デバイスのリストが指定された場合、指定されたデバイスのみにブートローダーがインストールされます。それ以外の場合、システム構成から自動的に抽出されるデバイスのリストにブートローダーがインストールされます。
+.sp
+デバイスは、ルートファイルシステムが存在するディスク上のスライスまたはパーティションの raw 文字デバイスの名前です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBboot-pool\fR [{\fBadd|remove\fR} [\fB-P\fR \fIrpool\fR] <\fIdevice list\fR>] | \fBlist\fR [\fB-P\fR \fIrpool\fR] | \fBresync\fR [\fB-P\fR \fIrpool\fR] [\fB-vA\fR] [<\fIBE_list\fR>] | \fBset\fR [\fB-P\fR \fIrpool\fR] <\fIparam\fR>=<\fIvalue\fR> ... }\fR
+.ad
+.sp .6
+.RS 4n
+\fBboot-pool\fR サブコマンドは、アクティブなブートプールを操作します (ブートプールを有効にしてシステムがインストールされている場合)。一部のプラットフォームでは、ブートプールに含める必要があるデバイスのセットが定義されます。その他のプラットフォームでは、ブートプールを構成するためインストール時に管理者がデバイスのセットを選択する必要がある場合があります。インストール後、ブートプールのデバイスのセットを変更および検査できます。また、ブートプールの動作も変更できます。ブートプール内の各デバイスは、障害が発生して交換された場合、プールに自動的に再追加されるため、ブートプール内のデバイスのセットが指定されているかぎり、デバイスが交換され、プールを再構築するときに、管理者の操作は必要ありません。
+.sp
+各サブコマンドは、ルートプールを明示的に選択できる \fB-P\fR 引数を受け入れます。
+.sp
+\fB-P\fR 引数が指定されていない場合、ルートプールはルートファイルシステムのデータセットが配置されているプールから派生します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBadd\fR [\fB-P\fR \fIrpool\fR] <\fIdevice list\fR>\fR
+.ad
+.sp .6
+.RS 4n
+ブートプールにデバイスを追加します。デバイスはただちに追加されます。独自にブート可能になるように、新たに追加されたデバイスが再同期化されるまで、システムの再起動を延期する必要があります (ブートプールはミラーであるため、再同期のプロセスが完了したあとに、ブートローダーはミラーの各デバイスにインストールされます)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBremove\fR [\fB-P\fR \fIrpool\fR] <\fIdevice list\fR>\fR
+.ad
+.sp .6
+.RS 4n
+ブートプールからデバイスをただちに削除します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlist\fR [\fB-P\fR \fIrpool\fR]\fR
+.ad
+.sp .6
+.RS 4n
+ブートプールの構成と設定に関する詳細を出力します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBresync\fR [\fB-P\fR \fIrpool\fR] [\fB-vA\fR] {<\fIBE_list\fR>}\fR
+.ad
+.sp .6
+.RS 4n
+ブートプールを再同期化します (必要に応じて、以前に構成したデバイスのセットを使用して再構築します)。また、指定されたブート環境 (存在する場合) のブートプールにブート可能なデータセットを作成します。コマンドオプションは次のとおりです:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.RS 6n
+.rt  
+最後にブートされたまたは作成されたブート環境を使用してブートプール全体にデータを再度取り込みます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 6n
+.rt  
+再同期中の詳細出力
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset\fR [\fB-P\fR \fIrpool\fR] <\fIparam\fR>=<\fIvalue\fR> ...\fR
+.ad
+.sp .6
+.RS 4n
+指定された値に指定されたブートプールパラメータを設定します。
+.sp
+次のパラメータがサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fBeviction_algorithm\fR
+.ad
+.RS 22n
+.rt  
+\fBeviction_algorithm\fR には、値として \fBnone\fR または \fBlru\fR のいずれかを指定できます。デフォルトでは、この値は \fBlru\fR に設定されます。
+.sp
+\fBeviction_algorithm\fR が \fBnone\fR に設定されていて、ブート環境のブート可能なファイルをブートプールにコピーする必要がある場合、ブートプールに十分な領域がないと、コピー操作は失敗します。システムの最大パフォーマンスを確保するため、ブートプールが最大容量の 85% を超えることは許可されていません。
+.sp
+\fBeviction_algorithm\fR が \fBlru\fR に設定されている場合、コピー操作が成功するために十分な領域が確保されるまで、最長時間未使用のブート環境に対応するブート可能なデータセットが強制的に排除されます。\fBnoevict\fR BE ポリシー (BE ごとに設定可能) は、この動作を変更して、これらの BE の強制的排除を停止しますが、たくさんの BE が \fBnoevict\fR とマークされると、システムはデータセットを強制的に排除することによって十分な空き領域を見出すことができないために、ブート可能なデータセットの作成に失敗する可能性があることに注意してください。
+.RE
+
+.RE
+
+.RE
+
+.SH オプション
+.sp
+.LP
+\fBbootadm\fR コマンドには、次のオプションがあります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBinstall-bootloader\fR のインストール時に、ブートローダーのインストールを強制的に実行して、システムのブートローダーのバージョンをダウングレードしないようにするためのバージョンチェックをすべてバイパスします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された操作の適用先エントリ番号またはコンマ区切りのエントリ番号のリスト。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR [BIOS ファームウェアを備える x86 システムのみ]\fR
+.ad
+.sp .6
+.RS 4n
+x86 システムへの \fBinstall-bootloader\fR 操作では、マスターブートレコード (MBR) にブートローダーをインストールして、システムブートローダーにします。デフォルト (BIOS ファームウェアを備えたシステム) では、ブートローダーをパーティションブートレコード (PBR) にインストールします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBupdate-archive\fR 処理の場合、アーカイブ内容のチェックは行われますが、その更新は行われません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用する指定されたプールに関連付けられたブート構成。このオプションを使用しない場合、現在のプール (システムのブート元) がブート構成に使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIplatform\fR\fR
+.ad
+.sp .6
+.RS 4n
+クライアントのプラットフォームまたはマシンのハードウェアクラス。プラットフォームの種類は \fB-R\fR とともにのみ指定でき、一般にはクライアントのプラットフォームクラスがサーバーとは異なる場合のディスクレスクライアントの管理にのみ有効です。プラットフォームには、\fBi86pc\fR、\fBsun4u\fR、\fBsun4v\fR のいずれかを指定する必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIaltroot\fR\fR
+.ad
+.sp .6
+.RS 4n
+操作は、パスまたは代替ルートパスに適用されます。
+.LP
+注 - 
+.sp
+.RS 2
+いかなる非大域ゾーンのルートファイルシステムも \fB-R\fR で参照しないでください。この操作によって、大域ゾーンのファイルシステムを損傷したり、大域ゾーンのセキュリティを損ねたり、非大域ゾーンのファイルシステムを損傷する可能性があります。\fBzones\fR(5) を参照してください。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR \fBverbose mode\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBupdate-archive\fR 処理の場合、無効なファイルが標準エラー出力に表示されます。\fBinstall-bootloader\fR 操作で冗長モードを有効にして、プロセスの詳細を出力します。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fR現在のブートアーカイブの更新
+.sp
+.LP
+次のコマンドは、現在のブートアーカイブを更新します。
+
+.sp
+.in +2
+.nf
+# \fBbootadm update-archive\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fR別のルート上にあるブートアーカイブの更新
+.sp
+.LP
+次のコマンドは、別のルート上にあるブートアーカイブを更新します。
+
+.sp
+.in +2
+.nf
+# \fBbootadm update-archive -R /a\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fRデフォルトブートエントリの切り替え
+.sp
+.LP
+次のコマンドは、1 つ前の例で表示されたメニューを参照しています。ユーザーは、Linux (項目 2) を選択しています。
+
+.sp
+.in +2
+.nf
+# \fBbootadm set-menu default=2\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+または
+
+.sp
+.in +2
+.nf
+# \fBbootadm change-entry -i 2 set-default\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fRGRUB メニューエントリの一覧表示
+.sp
+.LP
+次のコマンドは、GRUB メニューエントリを一覧表示します:
+
+.sp
+.in +2
+.nf
+# \fBbootadm list-menu\fR
+The location for the active GRUB menu is: /stubboot/boot/grub/menu.lst
+default 0
+timeout 10
+0 Solaris10
+1 Solaris10 failsafe
+2 Linux
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 5 \fRメニューエントリの追加と変更
+.sp
+.LP
+次のコマンドは、「New Solaris Entry」というタイトルのメニューエントリを GRUB メニュー内の 8 番目の位置に追加します。
+
+.sp
+.in +2
+.nf
+# bootadm  add-entry -i 8  "New Solaris Entry"
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次のコマンドは、追加したばかりのエントリをカーネル引数 \fB-s\fR 使って変更して、レベル \fBs\fR でブートします。
+
+.sp
+.in +2
+.nf
+# bootadm  change-entry "New Solaris Entry" kargs="-s"
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 6 \fR2 番目のルートプールへのブートローダーのインストール
+.sp
+.LP
+次のコマンドは、ブートローダーをプール \fBsecondrpool\fR にインストールします。
+
+.sp
+.in +2
+.nf
+# \fBbootadm install-bootloader -P secondrpool\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 7 \fR前景色と背景色の設定
+.sp
+.LP
+次のコマンドは、前景色を赤色に、背景色を青色に設定します。
+
+.sp
+.in +2
+.nf
+# \fBbootadm set-menu splashimage=/boot/grub/splash.xpm.gz \e\fR
+foreground=ff0000 background=0000ff
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 8 \fRアクティブなブートプールに関する情報の表示
+.sp
+.in +2
+.nf
+# \fBbootadm boot-pool list\fR                                              
+Boot pool name: bpool                                                  
+Parameters: eviction_algorithm=lru                                    
+Current: /dev/dsk/c1t0d0, /dev/dsk/c1t1d0                              
+Pending: /dev/dsk/c1t0d0, /dev/dsk/c1t1d0                              
+Platform-specified devices excluded: /dev/dsk/c1t2d0                  
+Platform-specified (auto-added, unless excluded): /dev/dsk/c1t0d0,
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+この例では、プラットフォームに 3 つのブートプールデバイスが指定されていますが、システムはそれらのうち 2 つしか使用していません。現在のブートプールデバイスのリストは、保留中のブートプールデバイスのリストと同じであるため、保留中のブートプールのメンバーシップの変更はありません。アクティブなブートプールがない場合、次の出力が返されます。
+
+.sp
+.in +2
+.nf
+bootadm: Boot pool operations are not applicable to root pool rpool.
+.fi
+.in -2
+.sp
+
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+コマンドが正常に完了しました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+エラーが発生したため、コマンドが終了しました。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性確実
+.TE
+
+.SH 注意事項
+.sp
+.LP
+\fBbootadm\fR は、デフォルトでは \fBTMPDIR\fR の設定に関係なく \fB/var/tmp\fR に一時ファイルを格納します。
+.SH 関連項目
+.sp
+.LP
+\fBboot\fR(1M), \fBinstallboot\fR(1M), \fBinstallgrub\fR(1M), \fBkernel\fR(1M), \fBzpool\fR(1M), \fBattributes\fR(5), \fBgrub\fR(5)
+.sp
+.LP
+次の GRUB ホームページを参照してください。
+.sp
+.in +2
+.nf
+http://www.gnu.org/
+.fi
+.in -2
+

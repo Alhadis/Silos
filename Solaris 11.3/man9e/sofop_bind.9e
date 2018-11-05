@@ -1,0 +1,320 @@
+'\" te
+.\" Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+.TH sofop_bind 9E "9 May 2012" "SunOS 5.11" "Driver Entry Points"
+.SH NAME
+sofop_bind, sofop_listen, sofop_connect, sofop_accepted, sofop_shutdown, sofop_getsockname, sofop_getpeername, sofop_setsockopt, sofop_getsockopt \- filter socket operations
+.SH SYNOPSIS
+.LP
+.nf
+#include <sys/sockfilter.h>
+
+sof_rval_t prefix_bind(sof_handle_t \fIhdl\fR, void *\fIcookie\fR,
+     struct sockaddr *\fIaddr\fR, socklen_t \fIaddrlen\fR, cred_t *\fIcr\fR);
+.fi
+
+.LP
+.nf
+sof_rval_t prefix_listen(sof_handle_t \fIhdl\fR, void *\fIcookie\fR,
+     int *\fIbacklogp\fR, cred_t *\fIcr\fR);
+.fi
+
+.LP
+.nf
+sof_rval_t prefix_accepted(sof_handle_t \fIhdl\fR, void *\fIcookie\fR,
+     cred_t *\fIcr\fR);
+.fi
+
+.LP
+.nf
+sof_rval_t prefix_connect(sof_handle_t \fIhdl\fR, void *\fIcookie\fR,
+     struct sockaddr *\fIaddr\fR, socklen_t \fIaddrlen\fR, cred_t *\fIcr\fR);
+.fi
+
+.LP
+.nf
+sof_rval_t prefix_shutdown(sof_handle_t \fIhdl\fR, void *\fIcookie\fR,
+     int *\fIhowp\fR, cred_t *\fIcr\fR);
+.fi
+
+.LP
+.nf
+sof_rval_t prefix_getsockname(sof_handle_t \fIhdl\fR, void *\fIcookie\fR,
+     struct sockaddr *\fIaddr\fR, socklen_t *\fIaddrlenp\fR, cred_t *\fIcr\fR);
+.fi
+
+.LP
+.nf
+sof_rval_t prefix_getpeername(sof_handle_t \fIhdl\fR, void *\fIcookie\fR,
+     struct sockaddr *\fIaddr\fR, socklen_t *\fIaddrlenp\fR, cred_t *\fIcr\fR);
+.fi
+
+.LP
+.nf
+sof_rval_t prefix_setsockopt(sof_handle_t \fIhdl\fR, void *\fIcookie\fR,
+     int \fIlevel\fR, int \fIoptions\fR, void *\fIopt\fR, socklen_t *\fIoptlenp\fR,
+     cred_t *\fIcr\fR);
+.fi
+
+.LP
+.nf
+sof_rval_t prefix_getsockopt(sof_handle_t \fIhdl\fR, void *\fIcookie\fR,
+     int \fIlevel\fR, int \fIoption\fR, void *\fIopt\fR, socklen_t *\fIoptlenp\fR,
+     cred_t *\fIcr\fR);
+.fi
+
+.SH PARAMETERS
+.sp
+.ne 2
+.mk
+.na
+\fB\fIhdl\fR\fR
+.ad
+.RS 12n
+.rt  
+per-socket filter handle
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcookie\fR\fR
+.ad
+.RS 12n
+.rt  
+per-socket filter-private data
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcr\fR\fR
+.ad
+.RS 12n
+.rt  
+pointer to the user credential structure for the operation
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIaddr\fR\fR
+.ad
+.RS 12n
+.rt  
+pointer to address
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIaddrlen\fR\fR
+.ad
+.RS 12n
+.rt  
+address length, in bytes
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIaddrlenp\fR\fR
+.ad
+.RS 12n
+.rt  
+pointer to address length, in bytes
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIbacklogp\fR\fR
+.ad
+.RS 12n
+.rt  
+pointer to backlog value
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIlevel\fR\fR
+.ad
+.RS 12n
+.rt  
+level of the socket option
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIoption\fR\fR
+.ad
+.RS 12n
+.rt  
+name of the socket option
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIopt\fR\fR
+.ad
+.RS 12n
+.rt  
+pointer to option data
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIoptlenp\fR\fR
+.ad
+.RS 12n
+.rt  
+pointer to options data length, in bytes
+.RE
+
+.SH DESCRIPTION
+.sp
+.LP
+The entry points described below are called in response to socket operations being issued on a socket to which the filter is attached. A filter can interrupt an operation, causing it to return immediately, by either returning an error, or \fBSOF_RVAL_RETURN\fR. Returning an error causes the operation to report a failure.
+.sp
+.LP
+The \fBsofop_bind()\fR entry point is called when a \fBbind\fR(3SOCKET) operation is issued on the socket. The filter can modify the address.
+.sp
+.LP
+The \fBsofop_listen()\fR entry point is called when a \fBlisten\fR(3SOCKET) operation is issued on the socket. The filter can modify the backlog size.
+.sp
+.LP
+The \fBsofop_accepted()\fR entry point is called when the socket has been accepted from the listener's accept queue. Returning an error will cause the connection to terminate, and \fBaccept\fR(3SOCKET) will report the failure.
+.sp
+.LP
+The \fBsofop_connect()\fR entry point is called when a \fBconnect\fR(3SOCKET) operation is issued on the socket. The filter can modify the address.
+.sp
+.LP
+The \fBsofop_shutdown()\fR entry point is called when a \fBshutdown()\fR operation is issued on the socket. The filter can modify how the socket is to be shut down, but the value must be one of the valid values listed in \fBshutdown\fR(3SOCKET).
+.sp
+.LP
+The \fBsofop_getsockname()\fR entry point is called when a \fBgetsockname\fR(3SOCKET) operation is issued on the socket. The filter can modify the address and address length. The address length can only be reduced.
+.sp
+.LP
+The \fBsofop_getpeername()\fR entry point is called when a \fBgetpeername\fR(3SOCKET) operation is issued on the socket. The filter can modify the address and address length. The address length can only be reduced.
+.sp
+.LP
+The \fBsofop_setsockopt()\fR entry point is called when a \fBsetsockopt\fR(3SOCKET) operations is issued on the socket. The filter can to modify the option data and option data length. The option data length can only be reduced.
+.sp
+.LP
+The \fBsofop_getsockopt()\fR entry point is called when a \fBgetsockopt\fR(3SOCKET) operation is issued on the socket. The filter can modify the option data and option data length. The option data length can only be reduced.
+.SH RETURN VALUES
+.sp
+.LP
+The \fBsofop_bind()\fR, \fBsofop_listen()\fR, \fBsofop_accepted()\fR, \fBsofop_connect()\fR, \fBsofop_shutdown()\fR, \fBsofop_getsockname()\fR, \fBsofop_getpeername()\fR, \fBsofop_setsockopt()\fR, and \fBsofop_getsockopt()\fR entry points return:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSOF_RVAL_CONTINUE\fR\fR
+.ad
+.RS 21n
+.rt  
+The operation will continue as normal.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSOF_RVAL_EINVAL\fR\fR
+.ad
+.RS 21n
+.rt  
+An argument was invalid.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSOF_RVAL_ENOMEM\fR\fR
+.ad
+.RS 21n
+.rt  
+There was insufficient memory for the operation to complete.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSOF_RVAL_EPERM\fR\fR
+.ad
+.RS 21n
+.rt  
+Permission was denied.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSOF_RVAL_RETURN\fR\fR
+.ad
+.RS 21n
+.rt  
+The filter satisfied the request, and the operation will return immediately without being processed by the protocol.
+.RE
+
+.sp
+.LP
+\fB\fR
+.sp
+.LP
+The  \fBsofop_accepted()\fR entry point may also return:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSOF_RVAL_ECONNABORTED\fR\fR
+.ad
+.RS 25n
+.rt  
+Software caused the connection to abort.
+.RE
+
+.SH CONTEXT
+.sp
+.LP
+All entry points can be called from kernel or user context.
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/kernel
+_
+Interface StabilityUncommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBaccept\fR(3SOCKET), \fBbind\fR(3SOCKET), \fBconnect\fR(3SOCKET), \fBgetpeername\fR(3SOCKET), \fBgetsockname\fR(3SOCKET), \fBgetsockopt\fR(3SOCKET), \fBlisten\fR(3SOCKET), \fBsetsockopt\fR(3SOCKET), \fBshutdown\fR(3SOCKET), \fBattributes\fR(5), \fBsof_bypass\fR(9F), \fBsof_flowctrl_data_in\fR(9F), \fBsof_inject_data_in\fR(9F), \fBsof_ops\fR(9S)

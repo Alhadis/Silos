@@ -1,0 +1,142 @@
+'\" te
+.\" Copyright (c) 2012, 2014, Oracle and/or its affiliates. All rights reserved
+.TH pfedit 1M "23 Jan 2014" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+pfedit \- per-file authorized edit of administrative files
+.SH SYNOPSIS
+.LP
+.nf
+\fBpfedit\fR [\fB-r\fR] [\fB-s\fR] \fIfile\fR
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBpfedit\fR command allows authorized users to edit system configuration files. The \fIfile\fR argument is a pathname of the file to be edited. If file is not an absolute pathname, the pathname of the current working directory is prepended, and all further processing proceeds as if that were the argument. The invoking user must have the authorization \fBsolaris.admin.edit/\fR\fIpath_to_file\fR or the blanket authorization \fBsolaris.admin.edit\fR. The \fBpfedit\fR command allows use of symbolic links, by also checking for authorization for the \fBrealpath\fR(3C) of file.
+.sp
+.LP
+The \fBpfedit\fR command creates a copy of file owned by the invoking user, then invokes an editor on that file using the id and privileges of the invoking user. The default editor is \fB/usr/bin/vi\fR, but can be selected through the use of the \fBEDITOR\fR or \fBVISUAL\fR environment variable; if both are set, \fBVISUAL\fR has precedence. When the user exits the editor and if the copied file has been updated, the updated contents are applied atomically to file. All discretionary access attributes (owner, group, permissions and ACLs) of file are retained, together with any system or extended attributes on the original file. In any case, the user-owned file copy is removed before \fBpfedit\fR exits. 
+.sp
+.LP
+If file does not exist the file will be created with owner root, group root. The file permissions will be 644 (\fB-rw-r--r--\fR) unless the \fB-s\fR option is selected, then the file permissions will be 600 (\fB-rw-------\fR).  After creation, the previously described operations are applied that  file. If \fBpfedit\fR has  been used	to create and modify file, the \fB-r\fR option can	be used to remove file.
+.sp
+.LP
+The \fBpfedit\fR command sets a discretionary lock on file, so that simultaneous updates by means of \fBpfedit\fR are prohibited.
+.sp
+.LP
+The \fBpfedit\fR command is careful not to break hard links to other files. Since the atomic update requires replacement of the existing file with a new one with the updated contents, \fBpfedit\fR will refuse to operate on a file with a link count greater than one.
+.sp
+.LP
+The \fBpfedit\fR command is restricted to editing text files, and will not accept updates which include non-text characters (NULs).
+.sp
+.LP
+If configured, in the case of a successful update, an attempt to make unauthorized use, or if an error occurs, an audit record is generated to capture the subject, the file name, the authorization used, the file change if any, and the success or failure of the operation. The audit event type and default class is one of:
+.sp
+.in +2
+.nf
+AUE_admin_edit:edit administrative file:as
+AUE_admin_file_create:create administrative file:as
+AUE_admin_file_remove:remove administrative file:as
+.fi
+.in -2
+.sp
+
+.SH OPTIONS
+.sp
+.LP
+The following option is supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+Remove specified file (if file has been created by \fBpfedit\fR).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 6n
+.rt  
+Mark a file "sensitive" (only valid when creating a file with \fBpfedit\fR).
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRCreating a Profile
+.sp
+.LP
+To create a profile with \fBsolaris.admin.edit\fR authorization that can be assigned to users to modify \fB/etc/syslog.conf\fR, use the \fBprofiles\fR(1) command.
+
+.sp
+.in +2
+.nf
+% \fBprofiles -p "syslog Configure"\fR
+profiles: syslog Configure> \fBset auths=solaris.admin.edit/etc/syslog.conf\fR
+profiles: syslog Configure> \fBset desc="Edit syslog configuration"\fR
+profiles: syslog Configure> \fBexit\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRModifying /etc/syslog.conf
+.sp
+.LP
+If a user has the "syslog Configure" profile as configured in the previous example then invoking:
+
+.sp
+.in +2
+.nf
+# \fBpfedit /etc/syslog.conf\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\&...creates a copy of \fB/etc/syslog.conf\fR owned by that user, and by default invokes \fB/usr/bin/vi\fR running as that user on the copy. When the user exits the editor, \fB/etc/syslog.conf\fR is atomically updated with the contents saved by the user.
+
+.SH EXIT STATUS
+.sp
+.LP
+The \fBpfedit\fR command has an exit value of 0 if it completes successfully, and a non-zero value if any part of the operation fails.
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/core-os
+_
+Interface StabilityUncommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBauths\fR(1), \fBpasswd\fR(1), \fBprofiles\fR(1), \fBgroupadd\fR(1M), \fBgroupdel\fR(1M), \fBgroupmod\fR(1M), \fBuseradd\fR(1M), \fBuserdel\fR(1M), \fBusermod\fR(1M), \fBfgetattr\fR(3C), \fBrealpath\fR(3C), \fBattributes\fR(5), \fBfsattr\fR(5)
+.SH NOTES
+.sp
+.LP
+Oracle Solaris includes administrative configuration files for which use of \fBpfedit\fR and the \fBsolaris.admin.edit/\fR\fIpath_to_file\fR authorization is not recommended. Alternate commands exist which are both domain-specific and safer. For example, for the \fB/etc/passwd\fR, \fB/etc/shadow\fR, or \fB/etc/user_attr\fR files, use instead \fBpasswd\fR(1), \fBuseradd\fR(1M), \fBuserdel\fR(1M), or \fBusermod\fR(1M). For the \fB/etc/group\fR file, use instead \fBgroupadd\fR(1M), \fBgroupdel\fR(1M), or \fBgroupmod\fR(1M). For updating \fB/etc/security/auth_attr\fR, \fB/etc/security/exec_attr\fR, or \fB/etc/security/prof_attr\fR, the preferred command is \fBprofiles\fR(1).
+.sp
+.LP
+The ability to modify the contents of some configuration files can be used to escalate the privileges assigned to the user. Assignment of an authorization to edit such a file, or of a profile containing such an authorization, should be considered equivalent to providing full privileged access.
+.sp
+.LP
+Files with the "sensitive" System Attribute or created with the \fB-s\fR option do not have the contents or content changes included in the audit record.

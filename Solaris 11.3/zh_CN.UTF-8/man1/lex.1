@@ -1,0 +1,788 @@
+'\" te
+.\"  Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\" Portions Copyright (c) 1997, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH lex 1 "2011 年 6 月 8 日" "SunOS 5.11" "用户命令"
+.SH 名称
+lex \- 生成处理词法任务的程序
+.SH 用法概要
+.LP
+.nf
+\fBlex\fR [\fB-cntv\fR] [\fB-e\fR | \fB-w\fR] [\fB-V\fR \fB-Q\fR [\fBy\fR | \fBn\fR]] [\fIfile\fR]...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBlex\fR 实用程序可生成用于对字符输入进行词法处理的 C 程序，这些程序可用作 \fByacc\fR 的接口。这些 C 程序由 \fBlex\fR 源代码生成，并且符合 ISO C 语言标准。通常，\fBlex\fR 实用程序会将其生成的程序写入文件 \fBlex.yy.c\fR 中。如果 \fBlex\fR 以非零退出状态退出，则不指定此文件的状态。有关 \fBlex\fR 输入语言的完整说明，请参见“扩展说明”\fB\fR。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 11n
+.rt  
+表示 C 语言操作（缺省选项）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.RS 11n
+.rt  
+生成一个可处理 \fBEUC\fR 字符的程序（不能与 \fB-w\fR 选项一起使用）。\fByytext[ ]\fR 的类型为 \fBunsigned char[ ]\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 11n
+.rt  
+禁用汇总统计信息，通常通过 \fB-v\fR 选项写入这些统计信息。如果在 \fBlex\fR 源代码中未指定表大小，且未指定 \fB-v\fR 选项，则隐式指定了 \fB-n\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.RS 11n
+.rt  
+将生成的程序写入标准输出，而非 \fBlex.yy.c\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 11n
+.rt  
+将汇总的 \fBlex\fR 统计信息写入标准错误。（请参见“lex 中的定义”\fB\fR标题下关于 \fBlex\fR 表大小的讨论。）如果在 \fBlex\fR 源代码中指定了表大小，但未指定 \fB-n\fR 选项，则可以启用 \fB-v\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-w\fR\fR
+.ad
+.RS 11n
+.rt  
+生成一个可处理 \fBEUC\fR 字符的程序（不能与 \fB-e\fR 选项一起使用）。与 \fB-e\fR 选项不同，\fByytext[ ]\fR 的类型为 \fBwchar_t[ ]\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR\fR
+.ad
+.RS 11n
+.rt  
+在标准错误中列显版本信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Q\fR\fB[y|n]\fR\fR
+.ad
+.RS 11n
+.rt  
+使用 \fB-Qy\fR 在输出文件 \fBlex.yy.c\fR 中列显版本信息。\fB-Qn\fR 选项不会输出版本信息，且为缺省值。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfile\fR\fR
+.ad
+.RS 8n
+.rt  
+输入文件的路径名称。如果指定了多个此类 \fIfile\fR，则会将所有文件连接起来，生成一个 \fBlex\fR 程序。如果未指定 \fIfile\fR 操作数，或者如果 \fIfile\fR 操作数为 \fB-\fR，则会使用标准输入。
+.RE
+
+.SH 输出
+.sp
+.LP
+下面介绍了 \fBlex\fR 输出文件。
+.SS "Stdout"
+.sp
+.LP
+如果指定了 \fB-t\fR 选项，则 \fBlex\fR 的 C 源代码输出的文本文件将写入标准输出。
+.SS "Stderr"
+.sp
+.LP
+如果指定了 \fB-t\fR 选项，则有关 \fBlex\fR 源代码输入内容的信息性消息、错误消息和警告消息将写入标准错误。
+.sp
+.LP
+如果未指定 \fB-t\fR 选项：
+.RS +4
+.TP
+1.
+有关 \fBlex\fR 源代码输入内容的信息性消息、错误消息和警告消息会写入标准输出或标准错误。
+.RE
+.RS +4
+.TP
+2.
+如果指定了 \fB-v\fR 选项，但未指定 \fB-n\fR 选项，则 \fBlex\fR 统计信息也会写入标准错误。如果在“\fBlex\fR 中的定义”\fB\fR\fB\fR部分使用 \fB%\fR 运算符指定了表大小（请参见“扩展说明”\fB\fR），则只要未指定 \fB-n\fR 选项，也可以生成这些统计信息。
+.RE
+.SS "输出文件"
+.sp
+.LP
+包含 C 源代码的文本文件会写入 \fBlex.yy.c\fR 或标准输出（如果存在 \fB-t\fR 选项）。
+.SH 扩展描述
+.sp
+.LP
+每个输入文件都包含 \fBlex\fR 源代码，这是一个表，包含各种正则表达式以及具有 C 程序片段形式的相应操作。
+.sp
+.LP
+对 \fBlex.yy.c\fR 进行编译并与 \fBlex\fR 库进行链接（通过 \fBc89\fR 或 \fBcc\fR 并使用 \fB-l\fR \fBl\fR 操作数）之后，生成的程序会从标准输入读取字符输入，并将其分解为与给定表达式匹配的字符串。
+.sp
+.LP
+当与某个表达式匹配后，会发生以下操作：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+匹配的输入字符串作为以 null 结尾的字符串保留在 \fIyytext\fR 中；\fIyytext\fR 可能是外部字符数组或字符串的指针。如“lex 中的定义”\fB\fR中所述，可以使用 \fB%array\fR 或 \fB%pointer\fR 声明来明确选择类型，但是缺省类型为 \fB%array\fR。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+外部 \fBint\fR \fIyyleng\fR 设置为匹配字符串的长度。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+表达式的相应程序片段或操作将会执行。
+.RE
+.sp
+.LP
+在模式匹配过程中，\fBlex\fR 会搜索模式集以查找一个可能的最长匹配项。在与相同字符数匹配的规则中，会选择给定的第一个规则。
+.sp
+.LP
+\fBlex\fR 源的通用格式为：
+.sp
+.in +2
+.nf
+\fIDefinitions\fR
+%%
+\fIRules\fR
+%%
+\fIUser Subroutines\fR
+.fi
+.in -2
+
+.sp
+.LP
+第一个 \fB%%\fR 是必需的，用来标记规则（正则表达式和操作）的开头，而第二个 \fB%%\fR 仅当后面跟有用户子例程时才需要。
+.sp
+.LP
+在 \fBDefinitions\fR \fBin\fR \fBlex\fR 部分中以空白字符开头的任何行都被假定为 C 程序片段，将会复制到 \fBlex.yy.c\fR 文件的外部定义区域。同样，“\fBlex\fR 中的定义”\fB\fR\fB\fR部分中包含在分隔符行（仅包含 \fB%{\fR 和 \fB%}\fR）之间的任何内容，也会不加更改地复制到 \fBlex.yy.c\fR 文件的外部定义区域。
+.sp
+.LP
+在 \fIRules\fR 部分的开头，在指定任何规则之前出现的任何此类输入（以空白字符开头或处于 \fB%{\fR 和 \fB%}\fR 分隔符行之间）都会写入 \fBlex.yy.c\fR，位于 \fByylex\fR 函数的变量声明之后，而在 \fByylex\fR 中的首行代码之前。因此，可在此处声明 \fByylex\fR 的本地用户变量，以及进入 \fByylex\fR 时要执行的应用程序代码。
+.sp
+.LP
+在遇到以空白字符开头或位于 \fB%{\fR 和 \fB%}\fR 分隔符行之间的任何输入（出现在 \fIRules\fR 部分中，但在已定义一个或多个规则之后）时，\fBlex\fR 要执行的操作未予以定义。出现此类输入会导致 \fByylex\fR 函数定义错误。
+.SS "lex 中的定义"
+.sp
+.LP
+\fBDefinitions\fR \fBin\fR \fBlex\fR 出现在第一个 \fB%%\fR 分隔符之前。此部分中不包含在 \fB%{\fR 和 \fB%}\fR 行之间，且不以空白字符开头的任何行均假设为用于定义 \fBlex\fR 替换字符串。这些行的格式为：
+.sp
+.in +2
+.nf
+\fIname   substitute\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果 \fIname\fR 不符合 ISO C 标准中标识符的要求，其结果不确定。在规则中使用时，字符串 \fIsubstitute\fR 会替换字符串 \fI{\fR \fIname\fR \fI}\fR。在此上下文中，仅当 \fIname\fR 字符串带有花括号且不出现在方括号表达式或双引号中时，才会对其进行识别。
+.sp
+.LP
+在 \fBDefinitions\fR \fBin\fR \fBlex\fR 部分中，以 \fB%\fR（百分比符号）字符开头，后跟以 \fBs\fR 或 \fBS\fR 开头的字母数字单词的任何行可定义一组起始条件。以 \fB%\fR 开头，后跟以 \fBx\fR 或 \fBX\fR 开头的单词的任何行可定义一组互斥起始条件。当生成的扫描程序处于 \fB%s\fR 状态时，未指定状态的模式也处于活动状态；当扫描程序处于 \fB%x\fR 状态时，此类模式处于不活动状态。行中首个单词之后的剩余部分被视为一个或多个以空白字符分隔的起始条件名称。起始条件名称的构成方式与定义名称的构成方式相同。起始条件可用于将正则表达式的匹配操作限制为“lex 中的常规表达式”\fB\fR中所述的一个或多个状态。
+.sp
+.LP
+程序的实现可在“\fBlex\fR 中的定义”\fB\fR\fB\fR部分中接受下列两个互斥声明中的任一个：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%array\fR\fR
+.ad
+.RS 12n
+.rt  
+声明 \fIyytext\fR 的类型为以 null 结尾的字符数组。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%pointer\fR\fR
+.ad
+.RS 12n
+.rt  
+声明 \fIyytext\fR 的类型为以 null 结尾的字符串的指针。
+.RE
+
+.sp
+.LP
+使用 \fB%pointer\fR 选项时，不能同时使用 \fByyless\fR 函数来更改 \fIyytext\fR。
+.sp
+.LP
+\fB%array\fR 为缺省值。如果指定了 \fB%array\fR（或 \fB%array\fR 和 \fB%pointer\fR 均未指定），则创建 \fIyyext\fR 的外部引用的正确方式是使用下列格式的声明：
+.sp
+.LP
+\fBextern char\fR \fIyytext\fR\fB[ ]\fR
+.sp
+.LP
+如果指定了 \fB%pointer\fR，则创建外部引用的正确方式是使用下列格式的声明：
+.sp
+.LP
+\fBextern char *\fR\fIyytext\fR\fB;\fR
+.sp
+.LP
+\fBlex\fR 接受“lex 中的定义”\fB\fR部分中用于设置某些内部表大小的声明。这些声明如下表所示。
+.sp
+.LP
+\fBlex\fR \fB中的\fR\fB表\fR\fB大小\fR\fB声明\fR
+.sp
+
+.sp
+.TS
+tab() box;
+cw(1.28i) cw(2.94i) cw(1.28i) 
+lw(1.28i) lw(2.94i) lw(1.28i) 
+.
+\fB声明\fR\fB说明\fR\fB缺省值\fR
+_
+\fB%p\fR\fIn\fR位置数目2500
+\fB%n\fR\fIn\fR状态数目500
+\fB%a\fR\fIn\fR转换数目2000
+\fB%e\fR\fIn\fR解析树节点数目1000
+\fB%k\fR\fIn\fR打包字符类数目10000
+\fB%o\fR\fIn\fR输出数组大小3000
+.TE
+
+.sp
+.LP
+\fBlex\fR 生成的程序需要 \fB-e\fR 或 \fB-w\fR 选项来处理某些输入，其中包含来自辅助代码集的 \fBEUC\fR 字符。如果这两个选项均未指定，则 \fByytext\fR 的类型为 \fBchar[ ]\fR，且生成的程序只能处理 \fBASCII\fR 字符。
+.sp
+.LP
+使用 \fB-e\fR 选项时，\fByytext\fR 的类型为 \fBunsigned\fR \fBchar[ ]\fR，且 \fByyleng\fR 会给出匹配字符串中的总\fI字节\fR数。使用此选项时，宏 \fBinput()\fR、\fBunput(\fIc\fR)\fR 和 \fBoutput(\fIc\fR)\fR 应以与使用常规 \fBASCII\fR \fBlex\fR 相同的方式，执行基于字节的 \fBI/O\fR。使用 \fB-e\fR 选项时还有另外两个变量 \fByywtext\fR 和 \fByywleng\fR，其行为与使用 \fB-w\fR 选项时的 \fByytext\fR 和 \fByyleng\fR 相同。
+.sp
+.LP
+使用 \fB-w\fR 选项时，\fByytext\fR 的类型为 \fBwchar_t[ ]\fR，且 \fByyleng\fR 会给出匹配字符串中的总\fI字符\fR数。如果在使用此选项时提供您自己的 \fBinput()\fR、\fBunput(\fIc\fR)\fR 或 \fBoutput(\fR\fIc\fR\fB)\fR 宏，则它们必须返回或接受宽字符格式 (\fBwchar_t\fR) 的 \fBEUC\fR 字符。这允许在您的程序和 lex 内部之间使用其他界面，以便加速某些程序。
+.SS "lex 中的规则"
+.sp
+.LP
+\fBRules\fR \fBin\fR \fBlex\fR 源文件是一个表，左列中包含正则表达式，右列中包含识别出表达式时要执行的相应操作（C 程序片段）。
+.sp
+.in +2
+.nf
+\fIERE action\fR
+\fIERE action\fR
+\&...
+.fi
+.in -2
+
+.sp
+.LP
+一行中的扩展正则表达式 (ERE, extended regular expression) 部分通过一个或多个空白字符与 \fIaction\fR 分隔开。在下列条件之一下可识别包含空白字符的正则表达式：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+整个表达式出现在双引号中。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+空白字符出现在双引号或方括号中。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+每个空白字符前面有反斜杠字符。
+.RE
+.SS "lex 中的用户子例程"
+.sp
+.LP
+用户子例程部分中的所有内容都会复制到 \fBlex.yy.c\fR 中，位于 \fByylex\fR 之后。
+.SS "lex 中的正则表达式"
+.sp
+.LP
+\fBlex\fR 实用程序支持 \fBregex\fR(5) 中介绍的扩展正则表达式 (ERE, Extended Regular Expressions) 集，并在语法上有下列增加内容和例外：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB . . .\fR\fR
+.ad
+.RS 10n
+.rt  
+括在双引号中的任何字符串表示双引号中的字符本身，除非识别出转义反斜杠（在下表中列出）。任何反斜杠转义序列都以右引号结尾。例如，\fB" \ 01""1"\fR 表示一个字符串：后跟字符 \fB1\fR 的八进制值 \fB1\fR。
+.RE
+
+.sp
+.LP
+\fI<\fR\fIstate\fR\fI>\fR\fIr\fR
+.sp
+.ne 2
+.mk
+.na
+\fB<\fIstate1\fR, \fIstate2\fR,  . . . >\fIr\fR\fR
+.ad
+.RS 30n
+.rt  
+仅当程序处于由 \fIstate\fR、\fIstate1\fR 等表示的起始条件之一时，才对正则表达式 \fIr\fR 进行匹配。有关更多信息，请参见\fB“lex 中的操作”\fR。作为本文档其余部分的印刷约定的例外情况，此处 <\fIstate\fR> 不表示元变量，而是将符号括起来的文字尖括号字符。起始条件仅在正则表达式的开头才会以此种方式识别。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIr\fR/\fIx\fR\fR
+.ad
+.RS 30n
+.rt  
+正则表达式 \fIr\fR 仅当后面跟有正则表达式 \fIx\fR 时才会进行匹配。\fIyytext\fR 中返回的标记仅与 \fIr\fR 匹配。如果 \fIr\fR 的结尾部分与 \fIx\fR 的开头匹配，其结果不确定。\fIr\fR 表达式不能包含更多的结尾上下文或 \fB$\fR（匹配行结尾）运算符；\fIx\fR 不能包含 \fB^\fR（匹配行开头）运算符、结尾上下文以及 \fB$\fR 运算符。也就是说，在 \fBlex\fR 正则表达式中仅允许出现一次结尾上下文，且 \fB^\fR 运算符只能在此类表达式的开头使用。另一个限制是结尾上下文运算符 \fB/\fR（斜杠）不能在括号中分组。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB{\fR\fIname\fR\fB}\fR\fR
+.ad
+.RS 30n
+.rt  
+如果 \fIname\fR 为 \fIDefinitions\fR 部分的替换符号之一，则包含花括号在内的该字符串将替换为 \fIsubstitute\fR 值。\fIsubstitute\fR 值在扩展的正则表达式中被视为已括在括号中。如果 \fB{\fR\fIname\fR\fB}\fR 出现在方括号表达式或双引号中，则不会执行替换。
+.RE
+
+.sp
+.LP
+在 \fBERE\fR 中，反斜杠字符（\fB \\\fR、\fB\ a\fR、\fB\ b\fR、\fB\ f\fR、\fB\ n\fR、\fB\ r\fR、\fB\ t\fR、\fB\ v\fR）被视为开始转义序列。此外，还会识别下表中的转义序列。
+.sp
+.LP
+\fBERE\fR 中不能出现文本换行符；转义序列 \fB\ n\fR 可用于表示换行符。不能使用句点运算符匹配换行符。
+.sp
+.LP
+\fBlex 中的转义序列\fR
+.sp
+
+.sp
+.TS
+tab() box;
+cw(1.22i) cw(2.92i) cw(1.36i) 
+cw(1.22i) cw(2.92i) cw(1.36i) 
+.
+lex 中的转义序列
+_
+转义序列说明 含义
+_
+\\fIdigits\fRT{
+反斜杠字符后跟一位、两位或三位八进制字符的最长序列 (01234567)。所有数字均为 0（即 NUL 字符的表示形式）时的行为未定义。
+T}T{
+编码以一位、两位或三位八进制整数表示的字符。多字节字符需要串联多个此类型的转义序列，其中每个字节包含前导 \。
+T}
+_
+\\fBx\fR\fIdigits\fRT{
+反斜杠字符后跟十六进制数字字符的最长序列 (01234567abcdefABCDEF)。所有数字均为 0（即 NUL 字符的表示形式）时的行为未定义。
+T}T{
+编码以十六进制整数表示的字符。
+T}
+_
+\\fIc\fRT{
+反斜杠字符后跟此表中未作介绍的任何字符。（\\、\a、\b、\f、\en、\r、\t、\v）。
+T}字符 c，未更改。
+.TE
+
+.sp
+.LP
+下表从高到低显示了对 \fBlex\fR 扩展正则表达式给予的优先级顺序。
+.sp
+.LP
+转义的字符条目并不表示它们是运算符，包括在此表中是为了显示它们与真正运算符之间的关系。由于此部分中介绍的位置限制，此表省略了起始条件、结尾上下文以及锚定表示法；它们只能出现在 \fBERE\fR 的开头或结尾。 
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) cw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+lex 中的 ERE 优先级
+_
+\fI整理相关的方括号符号\fR\fB[= =] [: :] [. .]\fR
+\fI转义字符\fR\fB\<\fR\fIspecial character\fR>
+\fI方括号表达式\fR\fB[ ]\fR
+\fI引用\fR\fB". . ."\fR
+\fI分组\fR\fB()\fR
+\fI定义\fR\fB{\fR\fIname\fR}
+\fI单字符 RE 复制\fR\fB* + ?\fR
+\fI串联\fR
+\fI区间表达式\fR\fB{\fR\fIm\fR,\fIn\fR}
+\fI交替\fR\fB|\fR
+.TE
+
+.sp
+.LP
+表中不显示 \fBERE\fR 锚定运算符（\fB ^\fR 和 \fB$\fR ）。使用 \fBlex\fR 正则表达式时，这些运算符的使用受以下限制：\fB^\fR 运算符只能用于整个正则表达式的开头，而 \fB$\fR 运算符只用于结尾。这些运算符适用于整个正则表达式。因此，并未定义例如 (\fB^abc)|(def$\fR) 这样的模式，而是可以将其写成两个单独的规则，一个用于正则表达式 \fB^abc\fR，另一个用于 \fBdef$\fR，两者通过特殊的 \fB|\fR 操作共享一个共同的操作（请参见下文）。如果模式写为 \fB^abc|def$\fR，它将通过自身在一行上匹配 \fBabc\fR 或 \fBdef\fR。
+.sp
+.LP
+与一般 \fBERE\fR 规则不同，大多数以前的 \fBlex\fR 实现不允许使用嵌入式锚定。嵌入式锚定的一个例子是，使用 (^)foo($)） 这样的模式来匹配作为完整单词存在的 \fBfoo\fR。使用现有的 \fBlex\fR 功能可实现此功能：
+.sp
+.in +2
+.nf
+^foo/[ \e\|n]|
+" foo"/[ \e\|n]    /* found foo as a separate word */
+.fi
+.in -2
+
+.sp
+.LP
+另请注意，\fB$\fR 是结尾上下文的一种形式（它等效于 \fB/\ n\fR），因此不能用于包含其他运算符实例的正则表达式（请参见前面对结尾上下文的讨论）。
+.sp
+.LP
+如果其他正则表达式结尾上下文运算符 \fB/\fR（斜杠）出现在双引号中 (\fB" / "\fR)、以反斜杠开头 (\fB\ /\fR) 或位于方括号表达式中 (\fB[ / ]\fR)，则可用作普通字符。起始条件 \fB<\fR 和 \fB>\fR 运算符仅在正则表达式开头的起始条件中为特殊字符，在正则表达式的其他位置被视为普通字符。
+.sp
+.LP
+以下示例阐明了 \fBlex\fR 正则表达式和在本文档其他位置出现的正则表达式之间的区别。对于 \fIr\fR/\fIx\fR 形式的正则表达式，始终返回与 \fIr\fR 匹配的字符串；如果 \fIx\fR 的开头与 \fIr\fR 的结尾部分匹配，则会产生混淆。例如，如果给定正则表达式 a*b/cc 和输入 \fBaaabcc\fR，则 \fIyytext\fR 找到的匹配项中会包含字符串 \fBaaab\fR。但是，如果给定正则表达式 x*/xy 和输入 \fBxxxy\fR，则某些实现会由于 \fBxxx\fR 匹配 x* 而返回令牌 \fBxxx\fR，而不是 \fBxx\fR。
+.sp
+.LP
+在规则 ab*/bc 中，位于 \fIr\fR 结尾的 b* 会将 \fIr\fR 的匹配内容扩展到结尾上下文的开始部分，因此结果不确定。但是，如果此规则为 ab/bc，则此规则会与后跟文本 \fBbc\fR 的文本 \fBab\fR 匹配。在后一种情况下，\fIr\fR 的匹配无法扩展到 \fIx\fR 的开头，因此结果是确定的。
+.SS "lex 中的操作"
+.sp
+.LP
+\fBERE\fR 匹配时要执行的操作可以是 C 程序片段，或下面介绍的特殊操作；程序片段可以包含一个或多个 C 语句，还可以包含特殊操作。空 C 语句 \fB;\fR 是有效的操作；实际会忽略或跳过在 \fBlex.yy.c\fR 输入中与此类规则的模式部分匹配的的所有字符串。但是，缺少操作是无效的，未定义 \fBlex\fR 在这种情况下所执行的操作。
+.sp
+.LP
+如果操作的规范（包括 C 语句和特殊操作）括在花括号中，则可以跨多行进行扩展：
+.sp
+.in +2
+.nf
+ERE <one or more blanks> { program statement
+program statement }
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+当 \fBlex.yy.c\fR 程序的输入中的字符串与任何表达式均不匹配时，缺省操作为将字符串复制到输出中。由于 \fBlex\fR 生成的程序的缺省行为是读取输入并将其复制到输出，因此仅包含 \fB%%\fR 的最小 \fBlex\fR 源程序会生成只将输入不加更改地复制到输出的 C 程序。
+.sp
+.LP
+提供了四个特殊操作：
+.sp
+.in +2
+.nf
+|       ECHO;      REJECT;      BEGIN
+.fi
+.in -2
+.sp
+
+.sp
+.ne 2
+.mk
+.na
+\fB|\fR
+.ad
+.RS 11n
+.rt  
+操作 \fB|\fR 表示下一规则的操作即为此规则的操作。与其他三个操作不同，\fB|\fR 不能括在花括号中，也不能以分号结尾。必须在没有其他操作的情况下单独指定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBECHO;\fR\fR
+.ad
+.RS 11n
+.rt  
+将字符串 \fIyytext\fR 的内容写入到输出中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBREJECT;\fR\fR
+.ad
+.RS 11n
+.rt  
+通常输入中的给定字符串仅与一个表达式匹配。\fBREJECT\fR 表示\fB继续查找与当前输入匹配的下一个表达式\fR，从而导致任何规则都成为要为同一个输入执行的当前规则之后的第二选择。因此，可以为一个输入字符串或重叠输入字符串匹配和执行多个规则。例如，如果给定了正则表达式 \fBxyz\fR 和 \fBxy\fR，以及输入 \fBxyz\fR，则通常只有正则表达式\fBxyz\fR 会匹配。下一个尝试的匹配会从 z 之后开始。如果 \fBxyz\fR 规则中的最后一个操作为 \fBREJECT\fR，则会同时执行此规则和 \fBxy\fR 规则。\fBREJECT\fR 操作可按这样的方式实现：在此操作之后不继续执行控制流，就如同相对于 \fBgoto\fR 一样，跳到 \fByylex\fR 的另一部分。使用 \fBREJECT\fR 会导致扫描程序更大且更慢。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBBEGIN\fR\fR
+.ad
+.RS 11n
+.rt  
+操作：
+.sp
+\fBBEGIN\fR \fInewstate\fR\fB;\fR
+.sp
+将状态（起始条件）切换到 \fInewstate\fR。如果之前未在 \fBDefinitions\fR \fBin\fR \fBlex\fR 部分将字符串 \fInewstate\fR 声明为起始条件，则结果不确定。初始状态由数字 \fB0\fR 或令牌 \fBINITIAL\fR 指定。
+.RE
+
+.sp
+.LP
+包含在 \fBlex\fR 输入中的用户代码不可访问下述函数或宏。未指定它们是出现在 \fBlex\fR 的 C 代码输出中，还是只能通过 \fBc89\fR 或 \fBcc\fR（\fBlex\fR 库）的 \fB\fR\fB-l\fR\fB l\fR 操作数访问。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint\fR \fByylex(void)\fR\fR
+.ad
+.RS 20n
+.rt  
+对输入执行词法分析；这是 \fBlex\fR 实用程序生成的主要函数。到达输入结尾时，此函数会返回零；否则将返回由选择的操作确定的非零值（令牌）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint\fR \fByymore(void)\fR\fR
+.ad
+.RS 20n
+.rt  
+调用此函数时，将指示在识别出下一个输入字符串时，将其附加到 \fIyytext\fR 的当前值，而不是替换该值；\fIyyleng\fR 中的值将相应地调整。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint\fR\fIyyless(int\fR \fBn\fR\fI)\fR\fR
+.ad
+.RS 20n
+.rt  
+在 \fIyytext\fR 中保留 \fIn\fR 个初始字符，以 null 结尾，并将剩余的字符视为尚未读取；\fIyyleng\fR 中的值将相应地调整。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint\fR \fBinput(void)\fR\fR
+.ad
+.RS 20n
+.rt  
+从输入返回下一个字符，或在文件结尾则返回零。它从流指针 \fIyyin\fR 获取输入（尽管可能通过中间缓冲区）。因此，开始扫描后，更改 \fIyyin\fR 的值的影响不确定。读取的字符会从扫描程序的输入流中删除，而扫描程序不会进行任何处理。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint\fR \fBunput(int\fR \fB\fIc\fR\fR\fB)\fR\fR
+.ad
+.RS 20n
+.rt  
+将字符 \fIc\fR 返回到输入；在匹配下一个表达式之前，\fIyytext\fR 和 \fIyyleng\fR 处于不确定状态。针对比输入内容更多的字符使用 \fIunput\fR 时，其结果不确定。
+.RE
+
+.sp
+.LP
+以下函数仅出现在可通过 \fB\fR\fB-l\fR\fB l\fR 操作数访问的 \fBlex\fR 库中；因此可移植应用程序可以重新定义这些函数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint\fR \fByywrap(void)\fR\fR
+.ad
+.sp .6
+.RS 4n
+由 \fByylex\fR 于文件结尾调用；缺省 \fByywrap\fR 始终返回 1。如果应用程序需要 \fByylex\fR 继续处理其他输入源，则该应用程序可包含函数 \fByywrap\fR，该函数可将另一个文件与外部变量 \fBFILE\fR *\fIyyin\fR 关联，并返回为零的值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint\fR \fBmain(int\fR \fB\fIargc\fR,\fR \fBchar\fR \fB*\fIargv\fR[ ])\fR\fR
+.ad
+.sp .6
+.RS 4n
+调用 \fByylex\fR 以执行词法分析，然后退出。用户代码可包含 \fBmain\fR 来执行特定于应用程序的操作，并视情况调用 \fByylex\fR。
+.RE
+
+.sp
+.LP
+之所以将这些函数分到两个列表中，原因是可移植应用程序只能对 \fBlibl.a\fR 中的函数可靠地重新定义。
+.sp
+.LP
+除 \fBinput\fR、\fBunput\fR 和 \fBmain\fR 以外，由 \fBlex\fR 生成的所有外部和静态名称都以 \fByy\fR 或 \fBYY\fR 为前缀。
+.SH 用法
+.sp
+.LP
+可移植应用程序需要注意，“lex 中的规则”\fB\fR部分不接受没有操作的 \fBERE\fR，但是无需由 \fBlex\fR 对此作为错误来检测。这会导致编译或运行时错误。
+.sp
+.LP
+对于词法分析而言，\fBinput\fR 的目的是从输入流中剥离某些字符，将其丢弃。常见用法是识别注释的开头后，就丢弃该注释的正文。
+.sp
+.LP
+在 \fBlex\fR 源代码或生成的词法分析器中，\fBlex\fR 实用程序对正则表达式的处理方法未完全国际化。执行词法分析器时，似乎需要让词法分析器根据指定的环境解释 \fBlex\fR 源中给定的正则表达式，但是当前的 \fBlex\fR 技术不可能实现这一点。此外，\fBlex\fR 生成的词法分析器在本质上必须与所描述的输入语言的词法要求紧密关联，而这通常总是特定于语言环境的。（例如，编写的适用于法语文本的分析器并不会自动适用于处理其他语言。）
+.SH 示例
+.LP
+\fB示例 1 \fR使用 lex
+.sp
+.LP
+下面是 \fBlex\fR 程序的示例，该程序实现一个类 Pascal 语法的基本扫描程序：
+
+.sp
+.in +2
+.nf
+%{
+/* need this for the call to atof() below */
+#include <math.h>
+/* need this for printf(), fopen() and stdin below */
+#include <stdio.h>
+%}
+
+DIGIT    [0-9]
+ID       [a-z][a-z0-9]*
+%%
+
+{DIGIT}+	{
+                       printf("An integer: %s (%d)\en", yytext,
+                       atoi(yytext));
+                       }
+
+{DIGIT}+"."{DIGIT}*    {
+                       printf("A float: %s (%g)\en", yytext,
+                       atof(yytext));
+                       }
+
+if|then|begin|end|procedure|function        {
+                       printf("A keyword: %s\en", yytext);
+                       }
+
+{ID}                   printf("An identifier: %s\en", yytext);
+
+"+"|"-"|"*"|"/"        printf("An operator: %s\en", yytext);
+
+"{"[^}\en]*"}"         /* eat up one-line comments */
+
+[ \et\en]+               /* eat up white space */
+
+\&.                      printf("Unrecognized character: %s\en", yytext);
+
+%%
+
+int main(int argc, char *argv[\|])
+{
+                      ++argv, --argc;  /* skip over program name */
+                      if (argc > 0)
+		                  yyin = fopen(argv[0], "r");
+                      else
+                      yyin = stdin;
+	
+                      yylex();
+}
+.fi
+.in -2
+.sp
+
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBlex\fR 执行的以下环境变量的说明，请参见 \fBenviron\fR(5)：\fBLANG\fR、\fBLC_ALL\fR、\fBLC_COLLATE\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR 和 \fBNLSPATH\fR。
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性developer/base-developer-utilities
+_
+接口稳定性Committed（已确定）
+_
+标准请参见 \fBstandards\fR(5)。
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fByacc\fR(1)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBregex\fR(5)、\fBstandards\fR(5)
+.SH 附注
+.sp
+.LP
+如果 \fB .l\fR (ell) 文件中的 \fByyback()\fR、\fByywrap()\fR 和 \fByylock()\fR 等例程将作为外部 C 函数，则用于编译 C++ 程序的命令行必须定义 \fB__EXTERN_C__\fR 宏。例如：
+.sp
+.in +2
+.nf
+example%  \fBCC -D__EXTERN_C__ ... file\fR
+.fi
+.in -2
+.sp
+

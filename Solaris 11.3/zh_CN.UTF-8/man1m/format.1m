@@ -1,0 +1,464 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Portions Copyright (c) 2002, 2014, Oracle and/or its affiliates.All rights reserved.
+.TH format 1M "2014 年 2 月 25 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+format \- 磁盘分区和维护实用程序
+.SH 用法概要
+.LP
+.nf
+\fBformat\fR [\fB-f\fR \fIcommand-file\fR] [\fB-l\fR \fIlog-file\fR] [\fB-x\fR \fIdata-file\fR] 
+     [\fB-d\fR \fIdisk-name\fR] [\fB-t\fR \fIdisk-type\fR] [\fB-p\fR \fIpartition-name\fR] 
+     [\fB-s\fR] [\fB-m\fR] [\fB-M\fR] [\fB-e\fR] [\fIdisk-list\fR]
+.fi
+
+.LP
+.nf
+\fBformat\fR \fB-L\fR \fIlabel-type\fR \fB-d\fR \fIdisk-name\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+使用 \fBformat\fR，您可以格式化、标记、修复以及分析系统中的磁盘。与以前的磁盘维护程序不同，\fBformat\fR 在 SunOS 下运行。因为系统运行时可以对系统磁盘执行的操作有限，所以也支持在内存驻留系统环境中使用 \fBformat\fR。但是，对于大多数应用程序，在 SunOS 下运行 \fBformat\fR 是更方便的方法。
+.sp
+.LP
+如果使用 \fB-x\fR 选项，\fBformat\fR 首先使用 \fIdata-file\fR 中定义的磁盘列表。然后，\fBformat\fR 检查 \fBFORMAT_PATH\fR 环境变量，文件名和/或目录的冒号分隔列表。如果是目录，\fBformat\fR 在该目录中搜索名为 \fBformat.dat\fR 的文件；文件名应该是绝对路径名并且使用时不进行更改。\fBformat\fR 将每个指定文件中的所有磁盘和分区定义添加到工作集。将忽略多个相同定义而无相关提示。如果未设置 \fBFORMAT_PATH\fR，路径缺省为 \fB/etc/format.dat\fR。
+.sp
+.LP
+\fIdisk-list\fR 是磁盘列表，采用 \fBc?t?d?\fR 或 \fB/dev/rdsk/c?t?d?s?\fR、\fB/dev/chassis/?/disk\fR 格式。对于最后两种格式，支持 shell 通配符规范。例如，指定 \fB/dev/rdsk/c2*\fR 会导致 \fBformat\fR 仅对连接到控制器 \fBc2\fR 的所有驱动器起作用。如果未指定 \fIdisk-list\fR，\fBformat\fR 列出系统中可由 \fBformat\fR 管理的所有磁盘。
+.sp
+.LP
+仅当用户在专家模式（选项 \fB-e\fR）下执行 \fBformat\fR 时，才列出可移除介质设备。提供此功能是为了实现向后兼容性。将 \fBrmformat\fR(1) 用于可重写的可移除介质设备。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdisk-name\fR\fR
+.ad
+.RS 21n
+.rt  
+指定进入程序时应使哪个磁盘成为当前磁盘。磁盘用其逻辑名称指定（例如 \fB-d\fR \fBc0t1d0\fR 或 \fB/dev/chassis/SYS/HD0/disk\fR）。还可以通过在磁盘列表中指定单个磁盘来实现此操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.RS 21n
+.rt  
+启用 \fBSCSI\fR 专家菜单。请注意，建议不要随便使用此选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIcommand-file\fR\fR
+.ad
+.RS 21n
+.rt  
+从 \fIcommand-file\fR 获取命令输入，而不是从标准输入获取。文件必须包含命令，这样命令应像从键盘输入的那样。使用此选项时，\fBformat\fR 不发出 \fBcontinue?\fR 提示；不需要在 \fIcommand-file\fR 中指定 "y(es)"（是）或 "n(o)"（否）答案。在非交互模式下，\fBformat\fR 最初不需要输入磁盘选择编号。调用 format 时，用户必须使用 \fB-d\fR \fI disk-name\fR 选项指定当前工作磁盘，或者在 \fIcommand-file\fR 中指定 \fBdisk\fR 和磁盘选择编号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIlog-file\fR\fR
+.ad
+.RS 21n
+.rt  
+将 \fBformat\fR 会话的副本记录到指示的 \fIlog-file\fR，包括标准输入、标准输出和标准错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR \fIlabel-type\fR\fR
+.ad
+.RS 21n
+.rt  
+立即并且以非交互方式将 \fIlabel-type\fR 类型的缺省标签写入使用 \fB-d\fR 指定的磁盘。\fIlabel-type\fR 必须是 \fBefi\fR 或 \fBvtoc\fR。\fIlabel-type\fR 将覆盖现有标签（如果存在）。在 x86 计算机上，整个磁盘将缺省为 \fIlabel-type\fR 类型的一个 Solaris 分区；所有 \fBfdisk\fR 分区将丢失。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.RS 21n
+.rt  
+启用扩展消息。在发生错误时提供更详细的信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR\fR
+.ad
+.RS 21n
+.rt  
+启用扩展和诊断消息。在格式化过程中，提供关于 \fBSCSI\fR 设备模式页面的状态的大量信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIpartition-name\fR\fR
+.ad
+.RS 21n
+.rt  
+为进入程序时成为当前磁盘的磁盘指定分区标签。使用在数据文件中定义的表名称指定表。仅当磁盘变为当前磁盘并且其类型已指定或者可以从磁盘标签获得时，才能使用此选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 21n
+.rt  
+无提示。禁止所有标准输出。仍将显示错误消息。该选项通常与 \fB-f\fR 选项一起使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fIdisk-type\fR\fR
+.ad
+.RS 21n
+.rt  
+指定进入程序时成为当前磁盘的磁盘的类型。使用数据文件中的名称指定磁盘的类型。仅当磁盘如上所述变为当前磁盘时，才能使用此选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fIdata-file\fR\fR
+.ad
+.RS 21n
+.rt  
+使用 \fIdata-file\fR 中包含的磁盘的列表。
+.RE
+
+.SH 用法
+.sp
+.LP
+如果调用 format 时不包含选项或者包含 \fB-e\fR、\fB-l\fR、\fB-m\fR、\fB-M\fR 或 \fB-s\fR 选项，程序会显示可用磁盘的带有编号的列表并提示您按列表编号指定磁盘。如果计算机中的磁盘超过满屏显示，按 SPACE 可以查看磁盘的下一个满屏显示。
+.sp
+.LP
+可以按列表编号指定磁盘，即使该磁盘未显示在当前满屏中也是如此。例如，如果当前屏幕显示磁盘 11-20，可以输入 \fB25\fR 来指定列表中的第二十五个磁盘。如果您输入当前未显示的磁盘的编号，\fBformat\fR 会提示您确认您的选择。如果输入显示的列表中的编号，\fBformat\fR 会接受您的选择而无相关提示。
+.sp
+.LP
+指定磁盘后，\fBformat\fR 会显示其主菜单。此菜单允许您执行以下任务：
+.sp
+.ne 2
+.mk
+.na
+\fBanalyze\fR
+.ad
+.RS 13n
+.rt  
+运行读取、写入、比较测试和数据清除。数据清除函数实现了 National Computer Security Center 在理解数据残余指南（\fBNCSC-TG-025\fR 版本 2）中提到的覆盖算法。请参见“附注”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBbackup\fR
+.ad
+.RS 13n
+.rt  
+搜索备份标签。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBcache\fR
+.ad
+.RS 13n
+.rt  
+启用、禁用以及查询写入高速缓存和读取高速缓存的状态。此菜单项仅当使用 \fB-e\fR 选项调用 \fBformat\fR 时才显示，并且仅在 \fBSCSI\fR 设备上才受支持。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBcurrent\fR
+.ad
+.RS 13n
+.rt  
+显示设备名称、磁盘几何参数以及磁盘设备的路径名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdefect\fR
+.ad
+.RS 13n
+.rt  
+检索和输出缺陷列表。此选项仅在 \fBSCSI\fR 设备上受支持。\fBIDE\fR 磁盘执行自动缺陷管理。在 \fBIDE\fR 磁盘上使用 \fBdefect\fR 选项时，将收到以下消息： 
+.sp
+.in +2
+.nf
+Controller does not support defect management
+or disk supports automatic defect management.
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdisk\fR
+.ad
+.RS 13n
+.rt  
+选择将在后续操作中使用的磁盘（称为当前磁盘）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBfdisk\fR
+.ad
+.RS 13n
+.rt  
+运行 \fBfdisk\fR(1M) 程序来为 Solaris 软件创建 \fBfdisk\fR 分区（仅限基于 x86 的系统）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBformat\fR
+.ad
+.RS 13n
+.rt  
+格式化并验证当前磁盘。此选项仅在 \fBSCSI\fR 设备上受支持。\fBIDE\fR 磁盘由生产商进行预先格式化。在 \fBIDE\fR 磁盘上使用 \fBformat\fR 选项时，将收到以下消息： 
+.sp
+.in +2
+.nf
+Cannot format this drive. Please use your 
+manufacturer-supplied formatting utility.
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBinquiry\fR
+.ad
+.RS 13n
+.rt  
+显示当前驱动器的供应商、产品名称和修订版级别。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBlabel\fR
+.ad
+.RS 13n
+.rt  
+将新标签写入当前磁盘。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBpartition\fR
+.ad
+.RS 13n
+.rt  
+创建和修改分片。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBquit\fR
+.ad
+.RS 13n
+.rt  
+退出 format 菜单。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBrepair\fR
+.ad
+.RS 13n
+.rt  
+修复磁盘上的特定块。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBsave\fR
+.ad
+.RS 13n
+.rt  
+保存新磁盘和分片信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBtype\fR
+.ad
+.RS 13n
+.rt  
+选择（定义）磁盘类型。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBverify\fR
+.ad
+.RS 13n
+.rt  
+读取和显示标签。列显柱面数量、备用柱面、磁头、扇区以及分区表等信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBvolname\fR
+.ad
+.RS 13n
+.rt  
+使用由八个字符组成的新卷名为磁盘设置标签。
+.RE
+
+.SH 环境变量
+.sp
+.ne 2
+.mk
+.na
+\fB\fBFORMAT_PATH\fR\fR
+.ad
+.RS 15n
+.rt  
+包含磁盘和分区定义的文件名和/或目录的冒号分隔列表。如果指定目录，\fBformat\fR 在该目录中搜索文件 \fBformat.dat\fR。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/format.dat\fR\fR
+.ad
+.RS 19n
+.rt  
+缺省数据文件
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBfmthard\fR(1M)、\fBprtvtoc\fR(1M)、\fBrmformat\fR(1)、\fBformat.dat\fR(4)、\fBattributes\fR(5)、\fBsd\fR(7D)
+.sp
+.LP
+\fI《Managing Devices in Oracle Solaris 11.2》\fR
+.SS "仅限于 x86"
+.sp
+.LP
+\fBfdisk\fR(1M)
+.SH 警告
+.sp
+.LP
+选择 \fBformat\fR 函数来格式化 Maxtor 207MB 磁盘时，会显示以下消息：
+.sp
+.in +2
+.nf
+Mode sense page(4) reports rpm value as 0, adjusting it to 3600
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+较早的第三方驱动器也可能出现此驱动器错误。以上消息不是错误；驱动器仍将正常运行。
+.sp
+.LP
+柱面 0 包含分区表（磁盘标签），如果第三方软件在原始磁盘分区中使用该柱面则可能会覆盖该分区表。在基于 x86 的系统上，此用法会造成柱面信息差一，进而导致容量存在一定差异，具体取决于磁盘是否设置了标签以及整个磁盘是否指定为唯一的 Solaris 分区。
+.sp
+.LP
+另请注意，CHS（Cylinder/Head/Sector，柱面/磁头/扇区）几何参数可能只对保持向后兼容性有逻辑意义，对实际磁盘设备没有物理意义。
+.sp
+.LP
+\fBformat\fR 支持写入符合 \fBEFI\fR 的磁盘标签，以便支持容量大于 1 TB 的磁盘或 \fBLUN\fR。但是，需要慎重，因为文件系统和卷管理器等许多软件组件的容量仍限制为 1 TB 或更少。有关其他信息，请参见\fI《Managing Devices in Oracle Solaris 11.2》\fR。
+.sp
+.LP
+缺省情况下，在无标签的磁盘上，将在大于 2 TB 的磁盘上写入 EFI 标签。如果使用 \fB-e\fR 选项调用 \fBformat\fR，在写入标签时可以选择标签类型。要引导这些带有 EFI 标签的磁带机，需要支持 GPT (EFI) 的 SPARC 固件和 UEFI x86 固件。
+.SH 附注
+.sp
+.LP
+\fBformat\fR 提供了帮助工具，需要在 format 中输入时就可以使用该工具。只需输入一个问号 (\fB?\fR)，您就可以请求所需信息的帮助，\fBformat\fR 会输出所需输入类型的简要说明。如果在菜单提示下键入 \fB?\fR，则将显示可用命令的列表。
+.sp
+.LP
+对于 \fBSCSI\fR 磁盘，缺省情况下格式化完成时会具有 "Primary"（主要）和 "Grown"（扩充）缺陷列表。但是，如果在格式化之前在 defect 菜单中仅提取了 "Primary"（主要）列表，格式化完成时将仅具有 "Primary"（主要）列表。
+.sp
+.LP
+仅 \fBSCSI\fR 设备上支持更改高速缓存的状态，并不是所有 \fBSCSI\fR 设备都支持更改或保存高速缓存的状态。
+.sp
+.LP
+\fBNCSC-TG-025\fR 覆盖算法满足 \fBDoD\fR 5200.28-M (\fBADP\fR Security Manual) Eraser Procedures 规范。\fBNIST\fR Guidelines for Media Sanitization (\fBNIST\fR \fBSP\fR 800-88) 也引用了此算法。

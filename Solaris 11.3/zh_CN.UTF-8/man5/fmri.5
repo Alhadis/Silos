@@ -1,0 +1,2143 @@
+'\" te
+.\" Copyright (c) 2012, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH fmri 5 "2015 年 2 月 18 日" "SunOS 5.11" "标准、环境和宏"
+.SH 名称
+fmri \- 故障管理资源标识符
+.SH 描述
+.sp
+.LP
+服务管理工具（请参见 \fBsmf\fR(5)）、故障管理守护进程（请参见 \fBfmd\fR(1M)、\fBfmadm\fR(1M)）和映像包管理系统（请参见 \fBpkg\fR(5)）等 Oracle Solaris 子系统可使用\fB故障管理资源标识符\fR（缩写为 FMRI）标识其管理的每个元素。
+.sp
+.LP
+FMRI 用于标识硬件资源和软件资源以及抽象资源。对于硬件资源，FMRI 通常是实现详细信息，当组件被诊断为出现故障时，FMRI 是用于标识该组件的 FRU（field replaceable unit，现场可更换单元）位置标签。如果无 FRU 标签可用，将使用 FMRI。对于 SMF 服务或 \fBpkg\fR(5) 软件包等软件抽象资源，FMRI（通常采用字符串形式）是除缩写外命名受管资源的唯一方式。
+.sp
+.LP
+所有 FMRI 均标识了所遵循的 FMRI 方案和所使用的 FMRI 方案的版本。识别出方案和版本后，将按 FMRI 方案版本的正式定义中的说明解释 FMRI 的剩余部分。存在针对 \fBsvc\fR、\fBpkg\fR、\fBcpu\fR、\fBhc\fR（硬件组件）、\fBdev\fR（设备）和其他许多对象的方案。
+.sp
+.LP
+特定 FMRI 方案给定版本的正式定义通过 FMRI 成员的无序序列进行指定，其中成员以 (member-name, data-type, data-semantics) 元组形式指定。FMRI 的一个实例是一系列 (name, type, value) 元组，其中的名称和类型与 FMRI 规范匹配，所提供的值是给定类型的值且根据该方案和版本的正式 FMRI 定义中所述的语义进行派生和解释。在 Oracle Solaris C 库 API（如 \fBlibfmevent\fR(3LIB)）中，使用 \fBlibnvpair\fR(3LIB) 库将 FMRI 表示为 \fBnvlists\fR。
+.sp
+.LP
+将给定 FMRI 实例表示为字符串通常更方便，例如在命令行交互或命令输出中。每个 FMRI 方案版本的规范包括将该方案和版本的 FMRI 格式化为字符串而非“名称-值”对列表的规则，并且给定一个 FMRI 字符串时可以反向应用相同的规则以恢复更正式的 FMRI 形式。在某些情况下，与正式形式相比，FMRI 的字符串形式包含的信息量较少，但提供的信息仍足以标识资源以供管理之用。FMRI 的字符串形式通常不包括 FMRI 版本号，因此将根据给定 FMRI 字符串所匹配的正式“FMRI 到字符串”格式化规则确定版本。FMRI 的字符串形式与 \fIRFC 2396\fR（用作语法模型）中所述的 URI 类似。具体而言，将保留相同的字符集 \fB:, ;, =, @, /, &, ', $\fR 和 \fB,\fR，并且当这些字符显示在字符串的 FMRI 成员值中时要求使用相同的转义编码约定。
+.SS "FMRI 成员"
+.sp
+.LP
+特定 FMRI 方案给定版本的正式定义通过以下元组的无序序列进行指定：
+.sp
+.in +2
+.nf
+(member-name, data-type, data-semantics)
+.fi
+.in -2
+
+.sp
+.LP
+，其中部分是必需的，部分是可选的。正式定义还指定如何以字符串形式呈现 FMRI。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmember-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+为 FMRI 成员关联一个名称，其中的字符来自以下字母：
+.sp
+.in +2
+.nf
+A-Z
+a-z
+\&'_' (underscore)
+\&'-' (hyphen)
+\&'.' (period)
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdata-type\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定此成员的数据类型。合法的基本数据类型列在下表中，对于所有基本类型，也会将该类型的数组定义为合法数据类型。基本的整型和双精度数据类型的定义与在 C 中一样，添加了布尔值和字符串基本数据类型：
+.sp
+.in +2
+.nf
+Primitive Datatype   Description
+---------------------------------------------
+boolean_value        Values can be 0 or 1
+string               ASCII string
+[u]int8              (Un)signed 8-bit integer
+[u]int16             (Un)signed 16-bit integer
+[u]int32             (Un)signed 32-bit integer
+[u]int64             (Un)signed 64-bit integer
+double               Double precision floating point
+.fi
+.in -2
+
+对于每种基本数据类型，构成一个聚合数据类型，即该基本类型的有序数组：
+.sp
+.in +2
+.nf
+Primitive Datatype    Description
+----------------------------------------------
+boolean_value array   Array of boolean_value
+string array          Array of ASCII strings
+[u]int8 array         Array of (un)signed 8-bit integer
+[u]int16 array        Array of (un)signed 16-bit integer
+[u]int32 array        Array of (un)signed 32-bit integer
+[u]int64 array        Array of (un)signed 64-bit integer
+double array          Array of double
+.fi
+.in -2
+
+定义了进一步的聚合数据类型－\fBnvlist\fR（“名称-值”列表）。\fBnvlist\fR 是 (\fBlist-member-name, list-member-datatype\fR) 的无序列表，其中 \fBlist-member-name\fR 使用以上用于 \fBmember-name\fR 的字母来命名成员，\fBlist-member-datatype\fR 是任意基本数据类型或聚合数据类型（包括 \fBnvlist\fR 自身）。我们将 \fBnvlist\fR 的成员称为：\fBnvpairs\fR（“名称-值”对）。
+.sp
+一种特殊类型的 \fBnvlist\fR 是 \fBfmri\fR，该 \fBnvlist\fR 符合下面所定义的 FMRI 方案版本之一。
+.sp
+.in +2
+.nf
+Synthetic Datatype    Description
+---------------------------------------------------------
+nvlist                Unordered list of nvpairs
+nvlist array          Array of nvlist
+fmri                  An nvlist that specifies an FMRI
+                      scheme and version and includes other
+                      members so as to be a valid FMRI
+                      in that scheme version.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdata-semantics\fR\fR
+.ad
+.sp .6
+.RS 4n
+FMRI 定义中给定成员的数据语义指定应如何解释该成员的值，即，值的含义。数据语义可以根据成员数据类型将成员可使用的合法值集限制为这些可表示值的子集。
+.RE
+
+.SS "稳定性"
+.sp
+.LP
+一些 FMRI 方案（如用于 SMF 的 \fBsvc\fR）面向管理员，而其他方案则更多是专用实现详细信息。与之对应，一些 FMRI 方案的定义构成 \fBCommitted\fR 接口，而其他方案的定义则构成 \fBPrivate\fR 接口。请参见 \fBattributes\fR(5)。与所有 \fBPrivate\fR 接口一样，\fBPrivate\fR FMRI 组件的定义随时可能会发生不兼容的更改，因此不应该使用此类接口，也不应该依赖于专用 FMRI 成员的存在或假定语义。
+.sp
+.LP
+在定义下面的 FMRI 方案时，将列出 (\fBmember-name, data-type, data-semantics\fR) 序列，指定哪些成员是必需的、哪些成员是可选的以及以字符串形式呈现 FMRI 的规则。在指定稳定性时，每个成员有两个关联的稳定性级别：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+(\fBmember-name, data-type\fR) 对的稳定性
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+对应的 data-semantics 的稳定性
+.RE
+.sp
+.LP
+两种级别的缺省值均为 \fBPrivate\fR。当成员的两种稳定性一致（这是通常的情况）时，仅写入一次稳定性级别。当两种稳定性不同时，首先写入成员名称和数据类型稳定性，后跟一个逗号，然后是数据语义稳定性级别。目前 FMRI 的稳定性级别只使用了 \fBCommitted\fR、\fBPrivate\fR 和 \fBNot An Interface\fR，但也允许使用其他级别。\fBCommitted\fR FMRI 组件的语义不会针对给定方案和其中的版本发生不兼容的更改。
+.SS "FMRI 方案和版本标识"
+.sp
+.LP
+要求所有 FMRI 定义包括适用于方案名称和其中主版本的成员。名称/数据类型和数据语义稳定性为 \fBCommitted\fR，因此要求所有 FMRI 定义按如下方式开头：
+.sp
+.in +2
+.nf
+Member Name      Data Type    Stability
+----------------------------------------
+scheme           string       Committed
+version          uint8        Committed
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBscheme\fR\fR
+.ad
+.sp .6
+.RS 4n
+命名此 FMRI 方案
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBversion\fR\fR
+.ad
+.sp .6
+.RS 4n
+方案主版本
+.RE
+
+.sp
+.LP
+两者结合使用可选择用于解释给定 FMRI 的规则集合（如下）。定义了少量方案名称以在不同子系统内处理资源标识，每个方案从版本号 0 开始版本化。 
+.sp
+.LP
+使用 FMRI 的非正式字符串表示形式时，始终会写入方案，但通常不会包含所使用的方案版本。会将给定 FMRI 字符串与“FMRI 到字符串”转换规则匹配的最新版本视为所使用的版本。
+.SS "FMRI 授权"
+.sp
+.LP
+更为必需的（尽管在某些情况下是隐式出现的）一个 FMRI 成员是 \fBauthority\fR：
+.sp
+.in +2
+.nf
+Member Name   Data Type  Stability
+----------------------------------------
+[authority]   nvlist     Committed, (Varies)
+.fi
+.in -2
+
+.sp
+.LP
+每个 FMRI 均包含授权信息，或者通过 \fBauthority nvlist\fR 显式表示（出现在 FMRI 中），或者使用本地故障管理域隐式表示（如果未出现在 FMRI 中）。授权信息有两种类型：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+高级别授权信息，例如用于标识作为 FMRI 主题的特定资源所在的平台和主机名
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+叶级别授权信息，提供作为 FMRI 主题的特定资源的标识信息
+.RE
+.sp
+.LP
+例如，标识磁盘的 FMRI 可以包含有关磁盘所在平台详细信息（主机名、产品名称、机箱序列号）的高级别授权信息，以及有关单个磁盘部件号、序列号等详细信息的叶级别授权信息。
+.sp
+.LP
+遗憾的是，一些 FMRI 方案已发展到包含 \fBauthority nvlist\fR 之外的叶级别授权信息作为独立的 FMRI 成员，并以字符串形式作为路径组件的一部分写入。
+.sp
+.LP
+在字符串表示形式中，高级别和叶级别的 FMRI 授权信息前均附加了冒号 (:)，例如：
+.sp
+.in +2
+.nf
+hc://:chassis-serial=12345/<string>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+":chassis-serial=12345" 是以字符串表示的授权成员。
+.sp
+.LP
+高级别授权有两个版本（版本 0 和版本 1）。以下是对每个版本的说明。
+.sp
+.LP
+将在下面的特定于方案的部分中描述叶级别授权成员。
+.sp
+.LP
+版本 0
+.sp
+.in +2
+.nf
+Member Name   Data Type   Stability
+-----------------------------------------------------
+[server-id]   string      Committed, Not an Interface
+[chassis-id]  string      Committed, Not an Interface
+[product-sn]  string      Committed, Not an Interface
+[product-id]  string      Committed, Not an Interface
+[domain-id]   string      Committed, Not an Interface
+[host-id]     string      Committed, Not an Interface
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[server-id]\fR\fR
+.ad
+.sp .6
+.RS 4n
+在其上运行 Fault Manager 的实体的主机名 (\fBuname\fR \fB-n\fR) 字符串。不是不变的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[chassis-id]\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是标识资源所在机箱的序列号。一些大型系统可以包括多个不同的机箱组件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[product-sn]\fR\fR
+.ad
+.sp .6
+.RS 4n
+在某些情况下，仅通过机箱 ID 无法完全标识系统，例如，对于按产品序列号加密的服务授权以及产品可能包含多个机箱元素的情况。不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[product-id]\fR\fR
+.ad
+.sp .6
+.RS 4n
+产品名称字符串，例如 Sun-Fire-X4600。不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[domain-id]\fR\fR
+.ad
+.sp .6
+.RS 4n
+在硬件支持该功能的情况下，标识特定硬件域。不是不变的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[host-id]\fR\fR
+.ad
+.sp .6
+.RS 4n
+Oracle Solaris 中的 \fBhostid\fR(1) 字符串；一般不使用。不一定不变。
+.RE
+
+.sp
+.LP
+版本 1
+.sp
+.in +2
+.nf
+Member Name     Data Type    Stability
+--------------------------------------------------------
+[system-mfg]      string      Committed, Not an Interface
+[system-name]     string      Committed, Not an Interface
+[system-part]     string      Committed, Not an Interface
+[system-serial]   string      Committed, Not an Interface
+[sys-comp-mfg]    string      Committed, Not an Interface
+[sys-comp-name]   string      Committed, Not an Interface
+[sys-comp-part]   string      Committed, Not an Interface
+[sys-comp-serial] string      Committed, Not an Interface
+[chassis-mfg]     string      Committed, Not an Interface
+[chassis-name]    string      Committed, Not an Interface
+[chassis-part]    string      Committed, Not an Interface
+[chassis-serial]  string      Committed, Not an Interface
+[chassis-alias]   string      Committed, Not an Interface
+[server-name]     string      Committed, Not an Interface
+[domain-name]     string      Committed, Not an Interface
+[host-id]         string      Committed, Not an Interface
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[system-mfg]\fR\fR
+.ad
+.sp .6
+.RS 4n
+顶层产品的生产商。在复合产品中，system-* 成员包含服务授权数据。在简单的独立机架系统中，system-*、sys-comp-* 和 chassis-* 数据是重复的。不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[system-name]\fR\fR
+.ad
+.sp .6
+.RS 4n
+顶层产品的型号名称。不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[system-part]\fR\fR
+.ad
+.sp .6
+.RS 4n
+顶层产品的部件号。不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[system-serial]\fR\fR
+.ad
+.sp .6
+.RS 4n
+顶层产品的序列号。不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[sys-comp-mfg]\fR\fR
+.ad
+.sp .6
+.RS 4n
+组件系统级产品的生产商。不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[sys-comp-name]\fR\fR
+.ad
+.sp .6
+.RS 4n
+组件系统级产品的型号名称。不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[sys-comp-part]\fR\fR
+.ad
+.sp .6
+.RS 4n
+组件系统级产品的部件号。不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[sys-comp-serial]\fR\fR
+.ad
+.sp .6
+.RS 4n
+组件系统级产品的序列号。不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[chassis-mfg]\fR\fR
+.ad
+.sp .6
+.RS 4n
+资源所在机箱的生产商。一些大型系统可以包括多个不同的机箱组件。不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[chassis-name]\fR\fR
+.ad
+.sp .6
+.RS 4n
+机箱的型号名称。不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[chassis-part]\fR\fR
+.ad
+.sp .6
+.RS 4n
+机箱的部件号。不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[chassis-serial]\fR\fR
+.ad
+.sp .6
+.RS 4n
+机箱的序列号。不变。
+.sp
+在某些情况下，仅通过一组 *-name/*-part/*-serial 无法完全标识系统，例如，对于按产品序列号加密的服务授权以及产品可能包含多个机箱元素的情况。不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[chassis-alias]\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是通过 `fmadm add-alias` 分配给此机箱的 Chassis Receptacle Occupant 别名值。不是不变的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[server-name]\fR\fR
+.ad
+.sp .6
+.RS 4n
+在其上运行 Fault Manager 的实体的主机名 (\fBuname\fR \fB-n\fR) 字符串。不是不变的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[domain-name]\fR\fR
+.ad
+.sp .6
+.RS 4n
+在硬件支持该功能的情况下，标识特定硬件域。不是不变的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[host-id]\fR\fR
+.ad
+.sp .6
+.RS 4n
+Oracle Solaris 中的 \fBhostid\fR(1) 字符串；一般不使用。不一定不变。
+.RE
+
+.SS "逻辑 FMRI 方案与通用 FMRI 方案"
+.sp
+.LP
+\fBlogical\fR FMRI 方案定义的 FMRI 只能在生成该 FMRI 的故障管理域（通常是 Oracle Solaris 实例）中进行有意义的解释。逻辑方案中属于不同故障管理域的相同 FMRI 不一定标识相同的实际资源。例如，使用 \fBcpu\fR 方案标识为 \fBcpu id 1\fR 的 \fBcpu\fR 必须在生成该 FMRI 的 Oracle Solaris 实例（即，其本机环境）中解释，其他许多 Oracle Solaris 实例也具有逻辑处理器 ID 号 \fB1\fR，但所有此类 FMRI 均不标识同一实际处理器。本机故障管理域通过其高级别授权信息进行标识，该信息通常不在 FMRI 实例中捕获，而是通过本地 Oracle Solaris 实例中的信息确定。 
+.sp
+.LP
+\fBuniversal\fR FMRI 方案通过一种通用的唯一方式来标识资源，无论在哪里解释 FMRI，一个通用方案中的两个相同 FMRI 都标识相同的实际资源。如果有避免歧义的必要，则需要使用此类方案，例如标识出现故障的硬件组件时。 
+.sp
+.LP
+FMRI 方案不包含表示该方案是逻辑方案还是通用方案的成员。
+.SS "FMRI 方案和版本"
+.sp
+.LP
+后面的部分中定义了以下 FMRI 方案版本：
+.sp
+.in +2
+.nf
+Scheme     Version(s) Universal? Description
+-------------------------------------------------------------
+cpu        0, 1       No         Logical processor identification
+dev        0          No         Device resources
+fmd        0, 1       No         Fault Management Daemon modules
+hc         0, 1       Yes        Hardware Components
+mem        0          No         Memory modules and cache
+mod        0          No         Kernel modules
+pkg        0, 1       Yes        Software packages
+svc        0          No         SMF services & service instances
+sw         0          No         Software objects
+zfs        0          No         zfs filesystem resources
+location   0          No         FRU location
+.fi
+.in -2
+
+.sp
+.LP
+在这些方案中，\fBsvc\fR 和 \fBpkg\fR 方案是在日常使用 Oracle Solaris 时最可能遇到的，而其他方案通常隐藏在与故障管理子系统（在诊断出问题的情况下）的命令行交互后。
+.SS "方案 \fBcpu\fR 版本 0"
+.sp
+.LP
+\fBcpu\fR 方案用于标识可能受诊断出的问题影响的逻辑 Oracle Solaris 处理器资源以及可以响应该问题诊断而脱机的资源。该方案不一定会标识所涉及的物理资源，不应当用于标识替换部件。
+.sp
+.LP
+\fBcpu\fR 方案是逻辑 FMRI 方案；\fBcpu\fR 方案中的 FMRI 仅在授权信息所标识的故障管理域中有意义。
+.sp
+.in +2
+.nf
+Member Name   Data Type    Stability
+------------------------------------
+scheme        string       Committed, value "cpu"
+version       uint8        Committed, value 0
+cpuid         uint32       Committed
+[serial]      uint64       Private
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcpuid\fR\fR
+.ad
+.sp .6
+.RS 4n
+此逻辑执行单元的 Oracle Solaris 处理器实例 ID，与授权信息所标识的 Oracle Solaris 实例上的 \fBpsradm\fR(1M) 所列出的一样。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[serial]\fR\fR
+.ad
+.sp .6
+.RS 4n
+未记录此专用 FMRI 成员的语义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB字符串形式：\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+cpu:///cpuid=<cpuid>[/serial=<hex-serial>]
+.fi
+.in -2
+
+\fB<hex-serial>\fR 是以十六进制写入的\fB序列\fR成员，无 \fB0x\fR 前缀。
+.RE
+
+.SS "方案 \fBcpu\fR 版本 1"
+.sp
+.LP
+\fBcpu\fR FMRI 方案的版本 1 与版本 0 的用法相同，只是更改和添加了一些专用 FMRI 成员。
+.sp
+.in +2
+.nf
+Member Name   Data Type   Stability
+------------------------------------------------
+scheme        string      Committed, value "cpu"
+version       uint8       Committed, value 1
+cpuid         uint32      Committed
+[serial]      string      Private
+[cpumask]     uint8       Private
+[cpufru]      string      Private
+[cacheindex]  uint32      Private
+[cacheway]    uint32      Private
+[cachebit]    uint16      Private
+[cachetype]   uint8       Private
+
+cpuid
+
+       As per cpu scheme version 0
+
+[serial]
+[cpumask]
+[cpufru]
+[cacheindex]
+[cacheway]
+[cachebit]
+[cachetype]
+.fi
+.in -2
+
+.sp
+.LP
+未记录这些专用 FMRI 成员的语义。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB字符串形式：\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+cpu:///cpuid=<cpuid>[/serial=<serial>]
+         [/cacheindex=.../cacheway=.../
+         cachebit=.../cachetype=...]
+.fi
+.in -2
+
+成员 \fBcpumask\fR 和 \fBcpufru\fR 不以字符串形式显示。
+.RE
+
+.SS "方案 \fBdev\fR 版本 0"
+.sp
+.LP
+\fBdev\fR 方案用于标识设备。该方案不是不变的。\fBdev\fR 方案 FMRI 仅应在授权信息所标识的故障管理域中解释。
+.sp
+.in +2
+.nf
+Member Name        Data Type   Stability
+-------------------------------------------------------------------
+scheme             string      Committed, value "dev"
+version            uint8       Committed, value 0
+device-path        string      Committed
+[devid]            string      Private
+[target-port-l0id] string      Private
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdevice-path\fR\fR
+.ad
+.sp .6
+.RS 4n
+Oracle Solaris \fB/devices\fR 树中用于标识设备节点的文件系统路径，例如 \fBpci@0,0/pci108e,cb84@2,1\fR。除了解释时此成员用于标识 \fB/devices\fR 路径，此类路径的内部结构（即，Oracle Solaris \fB/devices\fR 树的结构和节点命名）为 \fBNot An Interface\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[devid]\fR\fR
+.ad
+.br
+.na
+\fB\fB[target-port-l0id]\fR\fR
+.ad
+.sp .6
+.RS 4n
+未记录这些 \fBPrivate\fR FMRI 成员的语义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB字符串形式：\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+dev:///[:devid=<devid>]
+    [:target-port-l0id=<target-port-l0id>]
+    <device-path>
+.fi
+.in -2
+
+.RE
+
+.SS "方案 \fBfmd\fR 版本 0"
+.sp
+.LP
+此方案用于标识 Oracle Solaris Fault Manager (\fBfmd\fR(1M)) 模块。
+.sp
+.LP
+高级别授权：
+.sp
+.in +2
+.nf
+Member Name  Data Type  Stability
+---------------------------------
+[server-id]  string     Committed, Not an Interface
+[chassis-id] string     Committed, Not an Interface
+[product-sn] string     Committed, Not an Interface
+[product-id] string     Committed, Not an Interface
+[domain-id]  string     Committed, Not an Interface
+.fi
+.in -2
+
+.sp
+.LP
+FMRI 的授权 nvlist 内不包含任何叶级别授权信息，相反，它将作为 FMRI 的顶级成员。
+.sp
+.in +2
+.nf
+Member Name  Data Type  Stability
+-----------------------------
+scheme       string     Committed, value "fmd"
+version      uint8      Committed, value 0
+[authority]  nvlist     Committed, See above
+mod-name     string     Committed, Not an Interface
+mod-version  string     Committed, Not an Interface
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmod-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBfmd\fR 模块名称，一个不透明字符串。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmod-version\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBfmd\fR 模块版本，一个不透明字符串。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB字符串形式：\fR
+.ad
+.sp .6
+.RS 4n
+\fBfmd:///module/mod-name>\fR
+.RE
+
+.SS "方案 fmd 版本 1"
+.sp
+.LP
+此方案用于标识 Oracle Solaris Fault Manager (\fBfmd\fR(1M)) 模块。
+.sp
+.LP
+高级别授权：
+.sp
+.in +2
+.nf
+Member Name       Data Type  Stability
+--------------------------------------
+[system-mfg]      string     Committed, Not an Interface
+[system-name]     string     Committed, Not an Interface
+[system-part]     string     Committed, Not an Interface
+[system-serial]   string     Committed, Not an Interface
+[sys-comp-mfg]    string     Committed, Not an Interface
+[sys-comp-name]   string     Committed, Not an Interface
+[sys-comp-part]   string     Committed, Not an Interface
+[sys-comp-serial] string     Committed, Not an Interface
+[server-name]     string     Committed, Not an Interface
+[domain-name]     string     Committed, Not an Interface
+[host-id]         string     Committed, Not an Interface
+.fi
+.in -2
+
+.sp
+.LP
+与版本 0 一样，FMRI 的授权 nvlist 内不包含叶级别授权信息。相反，它将作为 FMRI 的顶级成员。
+.sp
+.in +2
+.nf
+Member Name       Data Type  Stability
+--------------------------------------
+scheme            string     Committed, value "fmd"
+version           uint8      Committed, value 1
+[authority]       nvlist     Committed, See above
+mod-name          string     Committed, Not an Interface
+mod-version       string     Committed, Not an Interface
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmod-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBfmd\fR 模块名称，一个不透明字符串。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmod-version\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBfmd\fR 模块版本，一个不透明字符串。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB字符串形式：\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+fmd:///module/<mod-name>
+.fi
+.in -2
+.sp
+
+.RE
+
+.SS "方案 legacy-hc 版本 0"
+.sp
+.LP
+hc 方案用于标识硬件组件。大多数情况下，这些 FMRI 应保留为内部实现详细信息，当硬件组件被诊断为出现故障时（例如，在 \fBfmadm\fR(1M) 中）则通过其 FRU 标签或位置标签进行标识。
+.sp
+.LP
+\fBhc\fR 方案只有一个版本（版本 0）在使用，但是要区分两个次要版本，这两个版本的区别在于是否存在成员指定的组件。包括组件成员的 \fBhc\fR 方案 FMRI 是已过时的传统 \fBhc\fR 方案的实例。
+.sp
+.LP
+过时的传统 \fBhc\fR 变体：
+.sp
+.in +2
+.nf
+Member Name  Data Type  Stability
+-------------------------------------------------------------------
+scheme       string      Committed, value "hc"
+version      uint8       Committed, value 0
+component    string      Committed
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcomponent\fR\fR
+.ad
+.sp .6
+.RS 4n
+资源的 FRU 标签。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB传统 \fBhc\fR 的字符串形式：\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+hc:///component=<component>
+.fi
+.in -2
+.sp
+
+.RE
+
+.SS "方案 \fBhc\fR 版本 0"
+.sp
+.LP
+授权 \fBnvlist\fR 是高级别授权信息，用于标识在其中生成给定 FMRI 的故障管理域。因此，其中包括用于主机名、产品名称、机箱序列号等的成员。上述的某些成员是不变的（例如平台序列号）并唯一地用于标识某些元素，而其他成员（例如主机名）是软标识，可以随时间而更改（尽管不常发生）。
+.sp
+.in +2
+.nf
+Member Name   Data Type   Stability
+-----------------------------------------------------
+[server-id]   string      Committed, Not an Interface
+[chassis-id]  string      Committed, Not an Interface
+[product-sn]  string      Committed, Not an Interface
+[product-id]  string      Committed, Not an Interface
+[domain-id]   string      Committed, Not an Interface
+[host-id]     string      Committed, Not an Interface
+.fi
+.in -2
+
+.sp
+.LP
+虽然所有成员均列为可选成员，但应包含尽可能多的成员以使给定的 FMRI 有意义。如果 FMRI 中不存在授权 \fBnvlist\fR，则会将本地故障管理域视为授权；如果 \fBhc\fR 方案 FMRI 在其本机域之外传送，则应包括显式高级别授权信息。
+.sp
+.LP
+每个数据语义的 \fBNot an Interface\fR 稳定性表示只能将该值视为不透明字符串，且字符串的任意内部结构均不是接口。例如，可以使用字符串比较来匹配序列号，但序列号字符串的长度和其中所包含的各个字符的意义均不是接口。
+.sp
+.LP
+字符串形式：
+.sp
+.LP
+这些出现在给定 FMRI 中的授权成员可以作为以冒号分隔的 \fIname\fR\fB=\fR\fIvalue\fR 对的无序系列以字符串形式写入。我们可以将其定义为 \fBauthstr\fR，用于说明以下导入缺省授权信息的各个 FMRI 方案的字符串形式。
+.sp
+.in +2
+.nf
+authstr = server-id=<server-id>
+                [:chassis-id=<chassis-id>]
+                [:product-sn=<product-sn>]
+                [:product-id=<product-id>]
+                [:domain-id=<domain-id>]
+                [:host-id=<host-id>]
+                [:devid=<devid>]
+.fi
+.in -2
+
+.sp
+.LP
+授权 \fBnvlist\fR 中不包含任何叶级别授权/标识信息－此类信息（序列号和部件号）将作为 FMRI 的顶级成员。
+.sp
+.in +2
+.nf
+Member Name    Data Type    Stability
+------------------------------------------------------
+scheme         string       Committed, value "hc"
+version        uint8        Committed, value 0
+[authority]    nvlist       Committed, See above
+[serial]       string       Committed, Not-an-Interface
+[devid]        string       Private
+[part]         string       Committed, Not-an-Interface
+[revision]     string       Committed, Not-an-Interface
+[hc-root]      string       Private
+hc-list-sz     uint32       Private
+hc-list        nvlist array Private
+[facility]     nvlist       Private
+[hc-specific]  nvlist       Private
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[serial]\fR\fR
+.ad
+.sp .6
+.RS 4n
+硬件组件的序列号字符串在此 FMRI 中标识。这是一个不透明字符串，其内部结构不是接口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[devid]\fR\fR
+.ad
+.sp .6
+.RS 4n
+未记录这些专用 FMRI 成员的语义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[part]\fR\fR
+.ad
+.sp .6
+.RS 4n
+硬件组件的部件号字符串在此 FMRI 中标识。这是一个不透明字符串，其内部结构不是接口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[revision]\fR\fR
+.ad
+.sp .6
+.RS 4n
+部件号的修订版（字符串形式）。这也是一个不透明字符串。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[hc-root]\fR\fR
+.ad
+.sp .6
+.RS 4n
+未记录此专用 FMRI 成员的语义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhc-list-sz\fR\fR
+.ad
+.sp .6
+.RS 4n
+未记录此专用 FMRI 成员的语义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhc-list\fR\fR
+.ad
+.sp .6
+.RS 4n
+未记录此专用 FMRI 成员的语义，但是枚举了内容的结构（可能会进行不兼容的更改）。（有序）\fBnvlist\fR 数组的每个成员均具有以下结构：
+.sp
+.in +2
+.nf
+Member Name    Data Type   Stability
+------------------------------------
+hc-name        string      Private
+hc-id          string      Private
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[facility]\fR\fR
+.ad
+.sp .6
+.RS 4n
+未记录此专用 FMRI 成员的语义，但是枚举了内容的结构（可能会进行不兼容的更改）。工具 \fBnvlist\fR 具有如下成员：
+.sp
+.in +2
+.nf
+Member Name    Data Type   Stability
+------------------------------------
+facility-type  string      Private
+facility-name  string      Private
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[hc-specific]\fR\fR
+.ad
+.sp .6
+.RS 4n
+未记录此专用 FMRI 成员的语义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB字符串形式：\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+authstr is defined above
+hcauthstr = [:serial=<serial>]
+                 [:devid=<devid>]
+                 [:part=<part>]
+                 [:revision=<revision>]
+
+hc-path =<hc-list[0].hc-name>=<hc-list[0].hc-id>
+               /<hc-list[1].hc-name>=<hc-list[1].hc-id>
+               /<hc-list[2].hc-name>=<hc-list[2].hc-id>
+               ...
+hcspecstr = private string formed from hc-specific nvlist,
+               of the form "/name=value"
+
+facstr = <facility.facility-type>=<facility.facility-name>
+
+hc://[authstr][hcauthstr]/[hc-root/]<hc-path>
+                                     [<hcspecstr>]
+                                     [?<facstr>]
+.fi
+.in -2
+
+来自授权 nvlist 的高级别授权信息显示在序列号和部件号的叶级别授权信息旁，这些信息均以冒号分隔。此授权字符串的各部分可以以任意顺序显示，高级别授权元素和叶级别授权元素可以相互交错。此类字符串的解析比较复杂，并需要事先知道哪些组件属于哪一类授权信息。
+.RE
+
+.SS "方案 hc 版本 1"
+.sp
+.LP
+hc FMRI 方案的版本 1 与版本 0 的用法相同，只是更改和添加了一些专用 FMRI 成员。
+.sp
+.in +2
+.nf
+Member Name     Data Type    Stability
+--------------------------------------------------------
+[chassis-mfg]     string      Committed, Not an Interface
+[chassis-name]    string      Committed, Not an Interface
+[chassis-part]    string      Committed, Not an Interface
+[chassis-serial]  string      Committed, Not an Interface
+[chassis-alias]   string      Committed, Not an Interface
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB字符串形式：\fR
+.ad
+.sp .6
+.RS 4n
+版本 0 中的语义也适用于 hc FMRI 方案版本 1 的字符串形式。
+.sp
+.in +2
+.nf
+authstr = [:chassis-mfg=<chassis-mfg>]
+                [:chassis-name=<chassis-name>]
+                [:chassis-part=<chassis-part>]
+                [:chassis-serial=<chassis-serial>]
+                [:chassis-alias=<chassis-alias>]
+.fi
+.in -2
+
+.RE
+
+.sp
+.LP
+与 hc 方案版本 0 一样，版本 1 中的授权 nvlist 不包含任何叶级别授权/标识信息－此类信息（例如，序列号/修订版号/部件号）将作为 FMRI 的顶级成员。
+.sp
+.in +2
+.nf
+Member Name    Data Type    Stability
+------------------------------------------------------
+scheme         string       Committed, value "hc"
+version        uint8        Committed, value 1
+[authority]    nvlist       Committed, See above
+[fru-mfg]      string       Committed, Not-an-Interface
+[fru-serial]   string       Committed, Not-an-Interface
+[fru-part]     string       Committed, Not-an-Interface
+[fru-revision] string       Committed, Not-an-Interface
+[devid]        string       Private
+[hc-root]      string       Private
+hc-list-sz     uint32       Private
+hc-list        nvlist array Private
+[facility]     nvlist       Private
+[hc-specific]  nvlist       Private
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[fru-mfg]\fR\fR
+.ad
+.sp .6
+.RS 4n
+硬件组件的生产商字符串在此 FMRI 中标识。这是一个不透明字符串，其内部结构不是接口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[fru-serial]\fR\fR
+.ad
+.sp .6
+.RS 4n
+硬件组件的序列号字符串在此 FMRI 中标识。这是一个不透明字符串，其内部结构不是接口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[fru-part]\fR\fR
+.ad
+.sp .6
+.RS 4n
+硬件组件的部件号字符串在此 FMRI 中标识。这是一个不透明字符串，其内部结构不是接口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[fru-revision]\fR\fR
+.ad
+.sp .6
+.RS 4n
+部件号的修订版（字符串形式）。这也是一个不透明字符串。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[devid]\fR\fR
+.ad
+.sp .6
+.RS 4n
+未记录这些专用 FMRI 成员的语义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[hc-root]\fR\fR
+.ad
+.sp .6
+.RS 4n
+未记录此专用 FMRI 成员的语义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhc-list-sz\fR\fR
+.ad
+.sp .6
+.RS 4n
+未记录此专用 FMRI 成员的语义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhc-list\fR\fR
+.ad
+.sp .6
+.RS 4n
+未记录此专用 FMRI 成员的语义，但是枚举了内容的结构（可能会进行不兼容的更改）。（有序）nvlist 数组的每个成员均具有以下结构：
+.sp
+.in +2
+.nf
+Member Name    Data Type   Stability
+------------------------------------
+hc-name        string      Private
+hc-id          string      Private
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[facility]\fR\fR
+.ad
+.sp .6
+.RS 4n
+未记录此专用 FMRI 成员的语义，但是枚举了内容的结构（可能会进行不兼容的更改）。工具 nvlist 具有如下成员：
+.sp
+.in +2
+.nf
+Member Name    Data Type   Stability
+------------------------------------
+facility-type  string      Private
+facility-name  string      Private
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[hc-specific]\fR\fR
+.ad
+.sp .6
+.RS 4n
+未记录此专用 FMRI 成员的语义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB字符串形式：\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+authstr is defined above
+hcauthstr = [:fru-mfg=<fru-mfg>]
+                 [:fru-serial=<fru-serial>]
+                 [:devid=<devid>]
+                 [:fru-part=<fru-part>]
+                 [:fru-revision=<fru-revision>]
+
+hc-path =<hc-list[0].hc-name>=<hc-list[0].hc-id>
+               /<hc-list[1].hc-name>=<hc-list[1].hc-id>
+               /<hc-list[2].hc-name>=<hc-list[2].hc-id>
+               ...
+hcspecstr = private string formed from hc-specific nvlist,
+               of the form "/name=value"
+
+facstr = <facility.facility-type>=<facility.facility-name>
+
+hc://[authstr][hcauthstr]/[hc-root/]<hc-path>
+                                     [<hcspecstr>]
+                                     [?<facstr>]
+.fi
+.in -2
+
+.RE
+
+.sp
+.LP
+来自授权 nvlist 的高级别授权信息显示在序列号和部件号的叶级别授权信息旁，这些信息均以冒号分隔。此授权字符串的各部分可以以任意顺序显示，高级别授权元素和叶级别授权元素可以相互交错。此类字符串的解析比较复杂，并需要事先知道哪些组件属于哪一类授权信息。
+.SS "方案 \fBmem\fR 版本 0"
+.sp
+.LP
+此方案用于标识内存模块和内存页面，虽然这些最近已在 \fBhc\fR 方案中进行了标识。\fBmem\fR 方案也用于标识 cpu 高速缓存资源。
+.sp
+.in +2
+.nf
+Member Name   Data Type    Stability
+-------------------------------------------------
+scheme        string       Committed, value "mem"
+version       uint8        Committed, value 0
+unum          string       Committed, Private
+[serial]      string array Private
+[physaddr]    uint64       Private
+[offset]      uint64       Private
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunum\fR\fR
+.ad
+.sp .6
+.RS 4n
+此字符串标识内存模块，通常与平台外框或服务标签中所标记的一致。字符串类型的此成员显示为 Committed 接口，但 \fBunum\fR 字符串的内部结构是 \fBPrivate\fR 接口。因此，可以使用不透明 \fBunum\fR 字符串来标识内存模块，但对 \fBunum\fR 字符串的各部分的解释依赖于平台且为 \fBPrivate\fR。  
+.sp
+\fBunum\fR 可以标识一组内存模块（或一个内存区）。否则，应通过多个 FMRI 进行标识，一个 FMRI 标识一个内存模块，但这是来自早期实现的历史异常设计。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[serial]\fR\fR
+.ad
+.sp .6
+.RS 4n
+通过 \fBunum\fR 成员指定的内存模块序列号的字符串数组。序列号字符串的内部结构不是接口，因此，您只能在匹配序列号时使用不透明字符串值并且不应用任何进一步解释。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[physaddr]\fR\fR
+.ad
+.br
+.na
+\fB\fB[offset]\fR\fR
+.ad
+.sp .6
+.RS 4n
+未记录这些专用 FMRI 成员的语义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB字符串形式：\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+mem:///unum=<unum>
+        [/offset=<hex-offset> | /physaddr=<hex-physaddr>]
+.fi
+.in -2
+
+.RE
+
+.SS "方案 \fBmod\fR 版本 0"
+.sp
+.LP
+此方案用于标识 Oracle Solaris 内核模块。
+.sp
+.in +2
+.nf
+Member Name    Data Type    Stability
+--------------------------------------------------
+scheme         string       Committed, value "fmd"
+version        uint8        Committed, value 0
+mod-name       string       Committed
+[mod-desc]     string       Committed
+[mod-pkg]      fmri         (fmri)
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmod-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+模块名称，如 \fBmodinfo\fR(1M) 中所示。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[mod-desc]\fR\fR
+.ad
+.sp .6
+.RS 4n
+模块说明，同样如 \fBmodinfo\fR(1M) 中所示。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[mod-pkg]\fR\fR
+.ad
+.sp .6
+.RS 4n
+交付此模块的软件包的 \fBpkg\fR 方案 FMRI。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB字符串形式：\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+mod:///mod-name=<mod-name>
+.fi
+.in -2
+.sp
+
+.RE
+
+.SS "方案 \fBpkg\fR 版本 0"
+.sp
+.LP
+与 \fBpkgadd\fR(1M)、\fBpkginfo\fR(1)、\fBpkgrm\fR(1M) 和相关实用程序一起使用时，此版本的 \fBpkg\fR 方案对应于传统的 SVR4 包管理。如果遵守软件包名称和软件包版本约定，则此方案是通用的。
+.sp
+.in +2
+.nf
+Member Name   Data Type   Stability
+-------------------------------------------------------------------
+scheme        string      Committed, value "pkg"
+version       int8        Committed, value 0
+pkg-name      string      Committed
+pkg-basedir   string      Committed
+pkg-inst      string      Committed
+pkg-version   string      Committed
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkg-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+软件包名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkg-basedir\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBBASEDIR\fR，如 \fBpkginfo\fR(1) 中所示
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkg-inst\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBPKGINST\fR，如 \fBpkginfo\fR(1) 中所示
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkg-version\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBVERSION\fR，如 \fBpkginfo\fR(1) 中所示
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB字符串形式：\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+pkg:///<pkg-name>/:version=<pkg-version>
+.fi
+.in -2
+.sp
+
+.RE
+
+.SS "方案 \fBpkg\fR 版本 1"
+.sp
+.LP
+此版本的 \fBpkg\fR 方案对应于 \fBpkg\fR(5) 映像包管理系统。在 \fBpkg\fR(1) 命令行及其输出中此类 FMRI 采用字符串形式，命令行允许使用 FMRI 字符串的缩写。
+.sp
+.LP
+\fBpkg\fR 方案版本 1 中的 FMRI 是通用的：同一个 FMRI 即使在两个不同的上下文（例如不同的 Oracle Solaris 实例）中进行解释，也标识相同的实际软件包（或其中的副本）。  
+.sp
+.LP
+\fBpkg\fR(5) 命令行使用版本 1 \fBpkg\fR FMRI 的字符串形式，并允许使用此类字符串的缩写。
+.sp
+.in +2
+.nf
+Member Name   Data Type    Stability
+-------------------------------------------------
+scheme        string       Committed, value "pkg"
+version       uint8        Committed, value 1
+[authority]   nvlist       Committed
+pkg-name      string       Committed
+[pkg-version] nvlist       Committed
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[authority]\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBauthority nvlist\fR 按 \fBpkg publisher\fR 输出中所示指定软件包发布者：
+.sp
+.in +2
+.nf
+Member Name    Data Type    Stability
+-------------------------------------
+publisher      string       Committed
+
+publisher
+.fi
+.in -2
+
+此软件包的发布者，如 Oracle Solaris。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkg-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+软件包的名称（主干）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[pkg-version]\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+Member Name    Data Type    Stability
+---------------------------------------
+release        string       Committed
+[built-on]     string       Committed
+[branch]       string       Committed
+[timestamp]    string       Committed
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrelease\fR\fR
+.ad
+.sp .6
+.RS 4n
+组件的主版本，以点序列字符串（任意长度的无前导零十进制数字的点分序列）形式写入。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbuilt-on\fR\fR
+.ad
+.sp .6
+.RS 4n
+在其中构建组件的操作系统版本，同样以点序列形式指定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbranch\fR\fR
+.ad
+.sp .6
+.RS 4n
+供应商分支版本（点序列形式）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtimestamp\fR\fR
+.ad
+.sp .6
+.RS 4n
+ISO 8601 日期字符串：\fIyyyymmdd\fR\fBT\fR\fIhhmmss\fR\fBZ\fR，其中 \fBT\fR 和 \fBZ\fR 是字母本身。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB字符串形式：\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+pkgauthstr = <authority.publisher>
+
+pkg://[pkgauthstr]/<pkg-name>
+    [@<release>[,<built-on>][-<branch>][:<timestamp>]
+.fi
+.in -2
+
+.RE
+
+.SS "方案 \fBsvc\fR 版本 0"
+.sp
+.LP
+\fBsvc\fR 方案描述了 SMF（请参见 \fBsmf\fR(5)）服务和服务实例。在 SMF 命令行（例如 \fBsvcadm\fR(1M)、\fBsvccfg\fR(1M)、\fBsvcprop\fR(1)、\fBsvcs\fR(1)）及其输出中，此类 FMRI 通常以字符串形式写入，SMF 命令行允许使用缩写。
+.sp
+.LP
+\fBsvc\fR 方案 FMRI 是逻辑方案，因此，仅应在生成 FMRI 的故障管理域（Oracle Solaris 实例）中对该 FMRI 进行解释。
+.sp
+.in +2
+.nf
+Member Name    Data Type   Stability
+-------------------------------------------------
+scheme         string      Committed, value "svc"
+version        uint8       Committed, value 0
+svc-name       string      Committed
+[svc-instance] string      Committed
+[contract-id]  string      Committed
+[svc-scope]    string      Committed
+
+     pkg://[pkgauthstr]/<pkg-name>
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvc-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+服务名称，如 \fBnetwork/smtp\fR。请参见 \fBsmf\fR(5)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[svc-instance]\fR\fR
+.ad
+.sp .6
+.RS 4n
+在标识服务实例时使用。通常为 \fBdefault\fR，但也可能类似于服务 \fBnetwork/smtp\fR 的 \fBsendmail\fR 实例。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[contract-id]\fR\fR
+.ad
+.sp .6
+.RS 4n
+该值标识用于管理服务的特定运行实例的数值（虽然以十进制字符串形式写入）合同 ID（请参见 \fBsmf\fR(5) 和 \fBcontract\fR(4)）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[svc-scope]\fR\fR
+.ad
+.sp .6
+.RS 4n
+如 \fBsmf\fR(5) 中所示，所有服务和实例对象都包含在一个表示配置信息集合的 \fBscope\fR 内。本地 Oracle Solaris 实例的配置称为 \fBlocalhost\fR 范围，这是当前唯一支持的范围。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB字符串形式：\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+svc://[<svc-scope>]/<svc-name>
+        [:<svc-instance>[@<contract-id>]]
+.fi
+.in -2
+
+SMF 子系统命令（如 \fBsvcadm\fR(1M)）允许（甚至要求）使用上述字符串形式的缩写。字符串开头的 \fBsvc\fR 方案标识被认为是可选的，且 SMF 命令行实用程序中暗含该标识。当使用 \fBsvc\fR 方案标识符时，授权组件也将缩写为 \fBsvc:/<svc-name>\fR 而非更正式的 \fBsvc:///<svc-name>\fR。例如，在 SMF 中写入
+.sp
+.in +2
+.nf
+svc:/network/smtp:sendmail
+.fi
+.in -2
+
+而非更正式的
+.sp
+.in +2
+.nf
+svc:///network/smtp:sendmail
+.fi
+.in -2
+
+甚至更为正式的
+.sp
+.in +2
+.nf
+svc://localhost/network/smtp:sendmail
+.fi
+.in -2
+
+此外，如果用于标识唯一服务或实例，则 SMF 允许使用进一步的缩写。例如，实例名称 \fBsendmail\fR 是唯一的，则可以使用 \fBsvcs sendmail\fR、\fBsvcadm restart sendmail\fR 等。  
+.sp
+此类缩写是 SMF 子系统的约定，不是正式 FMRI 定义的一部分。当收到 \fBnvlist\fR 形式的 \fBsvc\fR 方案 FMRI 时（例如，在 \fBlibfmevent\fR(3LIB) 订阅中），将以更正式的形式（即字符串）显示。
+.RE
+
+.SS "方案 \fBsw\fR 版本 0"
+.sp
+.LP
+此 FMRI 方案用于标识可执行文件、库目标文件和核心文件等软件资源。这是一个逻辑 FMRI 方案。
+.sp
+.in +2
+.nf
+Member Name   Data Type   Stability
+-----------------------------------------------
+scheme        string      Committed, value "sw"
+version       uint8       Committed, value 0
+object        nvlist      See belowPrivate
+[site]        nvlist      See belowPrivate
+[context]     nvlist      See belowPrivate
+.fi
+.in -2
+
+.sp
+.LP
+\fBobject\fR、\fBsite\fR 和 \fBcontext\fR 成员均为 \fBPrivate\fR 成员，并且可能会进行不兼容的更改，但下面记录了其中的内容以供参考。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBobject\fR\fR
+.ad
+.sp .6
+.RS 4n
+此必需成员用于标识软件对象。此时仅适用于驻留在文件系统内的对象。
+.sp
+.in +2
+.nf
+Member     Type        Description
+------------------------------------------------------------
+path       string      Filesystem path to object
+[root]     string      If present, real path to chroot root
+                       directory
+[pkg]      fmri        "pkg" scheme fmri of package that
+                       delivers path
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsite\fR\fR
+.ad
+.sp .6
+.RS 4n
+此可选成员用于标识对象内的站点。
+.sp
+.in +2
+.nf
+Member   Type    Description
+------------------------------------------------------------
+[token]  string  Vendor and subsystem unique publisher
+                 token id
+[module] string  Source module information
+[file]   string  Source filename (translation unit)
+[func]   string  Source function
+[line]   int64   Source file line number
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcontext\fR\fR
+.ad
+.sp .6
+.RS 4n
+此可选成员用于传递运行时信息。
+.sp
+.in +2
+.nf
+Member             Type         Description
+-------------------------------------------------------
+[origin]           string       "userland" or "kernel"
+[execname]         string       Executable name
+[pid]              uint64       Process id
+[thread-id]        uint64       Thread id
+[os-instance-uuid] string       Solaris instance UUID
+[zone]             string       Zone name, if not the global zone
+[ctid]             uint64       Contract id
+[stack]            string array Symbolic stack trace
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB字符串形式：\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+sw://[<authority>]/
+       [:root=<object.root]
+       :path=<object.path>
+       [#<fragment-identifier>]
+.fi
+.in -2
+
+根路径和对象路径中的斜杠字符 \fB/\fR 不进行转义。
+.sp
+\fB<fragment-identifier>\fR 为以下值之一：
+.sp
+.in +2
+.nf
+:token=<site.token>
+.fi
+.in -2
+
+或
+.sp
+.in +2
+.nf
+:file=<site.file>[:func=<site.func>][:line=<site.line>]
+.fi
+.in -2
+
+.RE
+
+.SS "方案 \fBzfs\fR 版本 0"
+.sp
+.in +2
+.nf
+Member Name   Data Type    Stability
+-------------------------------------------------------------------
+scheme        string       Committed, value "zfs"
+version       uint8        Committed, value 0
+[pool-name]   string       Committed
+pool          uint64       Committed
+[vdev]        uint64       Private
+[vdev-name]   string       Private
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[pool-name]\fR\fR
+.ad
+.sp .6
+.RS 4n
+池名称，如 \fBzpool list -o name\fR 中所示
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+池 GUID，如 \fBzpool list -o guid\fR 中所示
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[vdev]\fR\fR
+.ad
+.sp .6
+.RS 4n
+未记录此 \fBPrivate\fR FMRI 成员的语义
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[vdev-name]\fR\fR
+.ad
+.sp .6
+.RS 4n
+未记录此 \fBPrivate\fR FMRI 成员的语义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB字符串形式：\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.in +2
+.nf
+hex-vdev = 'vdev' in hexadecimal with no '0x' prefix.  
+hex-pool = 'pool' in hexadecimal with no '0x' prefix.
+zfs://[pool_name=<pool-name>/]pool=<hex-pool>
+zfs://[pool_name=<zfs://[pool_name=<hex-pool>
+[/vdev=<hex-vdev>][:vdev_name=<vdev-name>]
+.fi
+.in -2
+
+写入 \fB<vdev-name>\fR 而不转义任何 \fB/\fR 字符。
+.RE
+
+.SS "SCHEME \fBlocation\fR VERSION 0"
+.sp
+.LP
+此 FMRI 方案用来通过硬件资源的位置路径标识硬件资源。
+.sp
+.in +2
+.nf
+Member Name    Data Type    Stability
+-------------------------------------------------------------------
+scheme         string       Committed, value "location"
+version        uint8        Committed, value 0
+location-path  string       Committed
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlocation-path\fR\fR
+.ad
+.RS 22n
+.rt  
+资源的位置，通常与输出了硬件的标签匹配。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB字符串形式：\fR\fR
+.ad
+.RS 22n
+.rt  
+.sp
+.in +2
+.nf
+location:///<location-path>
+.fi
+.in -2
+
+在写入 \fB<location-path>\fR 时不会对任何 / 字符进行转义。
+.RE
+
+.SH 另请参见
+.sp
+.LP
+\fBhostid\fR(1)、\fBfmadm\fR(1M)、\fBfmd\fR(1M)、\fBfmdump\fR(1M)、\fBpkg\fR(5)、\fBpkg\fR(1)、\fBpkgadd\fR(1M)、\fBpkginfo\fR(1)、\fBpkgrm\fR(1M)、\fBpsradm\fR(1M)、\fBsvcadm\fR(1M)、\fBsvccfg\fR(1M)、\fBsvcprop\fR(1)、\fBsvcs\fR(1)、\fBlibfmevent\fR(3LIB)、\fBlibnvpair\fR(3LIB)、\fBcontract\fR(4)、\fBattributes\fR(5)、\fBsmf\fR(5)
+.sp
+.LP
+\fIRFC 2396\fR

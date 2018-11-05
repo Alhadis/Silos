@@ -1,0 +1,628 @@
+'\" te
+.\" To view license terms, attribution, and copyright for OpenSSH, the default path is /var/sadm/pkg/SUNWsshdr/install/copyright.If the Solaris operating environment has been installed anywhere other than the default, modify the specified path to access the file at the installed location.
+.\" Portions Copyright (c) 2007, 2012, Oracle and/or its affiliates. All rights reserved.
+.TH sftp 1 "2012 年 8 月 7 日" "SunOS 5.11" "用户命令"
+.SH 名称
+sftp \- 安全文件传输程序
+.SH 用法概要
+.LP
+.nf
+\fBsftp\fR [\fB-1Cv\fR] [\fB-B\fR \fIbuffer_size\fR] [\fB-b\fR \fIbatchfile\fR] [\fB-F\fR \fIssh_config\fR] 
+      [\fB-o\fR \fIssh_option\fR] [\fB-P\fR \fIsftp_server_path\fR] [\fB-R\fR \fInum_requests\fR] 
+      [\fB-S\fR \fIprogram\fR] [\fB-s\fR \fIsubsystem\fR | \fIsftp_server\fR] \fIhost\fR
+.fi
+
+.LP
+.nf
+\fBsftp\fR [[\fIuser\fR\fB@\fR]\fIhost\fR[\fB:\fR\fIfile\fR [\fIfile\fR]]]
+.fi
+
+.LP
+.nf
+\fBsftp\fR [[\fIuser\fR\fB@\fR]\fIhost\fR[:\fIdir\fR[\fB/\fR]]]
+.fi
+
+.LP
+.nf
+\fBsftp\fR \fB-b\fR \fIbatchfile\fR [\fIuser\fR\fB@\fR]\fIhost\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBsftp\fR 实用程序是一个交互式文件传输程序，其用户界面类似于 \fBftp\fR(1)，使用 \fBssh\fR(1) 创建到服务器的安全连接。
+.sp
+.LP
+\fBsftp\fR 实现了 IETF \fBdraft-ietf-secsh-filexfer\fR 中定义的 SSH 文件传输协议。\fBsftp\fR 使用的协议与 \fBftp\fR(1) 提供的 FTP 协议 (\fIRFC 959\fR) 之间没有关系。
+.sp
+.LP
+第一种用法格式可以让 \fBsftp\fR 连接到指定的主机并进入交互模式。如果提供了用户名，\fBsftp\fR 会尝试以指定的用户身份登录。如果提供了目录，\fBsftp\fR 将在进入交互模式之前尝试将服务器上的当前目录更改为指定的目录。
+.sp
+.LP
+第二种用法格式是从服务器检索指定的文件，并将其复制到客户机上指定的目标文件或目录。如果指定了用户名，\fBsftp\fR 将尝试以指定用户的身份登录。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR \fIbatchfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+批处理模式从输入 \fIbatchfile\fR（而非 \fBstdin\fR）读取一系列命令。因为这种方式缺乏用户交互，所以应当与非交互式验证结合使用。\fB-\fR 的批处理文件可用于指示标准输入。如果以下任一命令失败，\fBsftp\fR 将异常中止：\fBget\fR、\fBput\fR、\fBrm\fR、\fBrename\fR、\fBln\fR、\fBrm\fR、\fBmkdir\fR、\fBchdir\fR、\fBls\fR、\fBlchdir\fR、\fBchmod\fR、\fBchown\fR、\fBchgrp\fR、\fBlpwd\fR 和 \fBlmkdir\fR。通过在命令前面添加 \fB-\fR 字符（如 \fB-rm /tmp/blah*\fR），可以逐个命令禁止因错误导致终止的情况。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-B\fR \fIbuffer_size\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 \fBsftp\fR 传输文件时所使用的缓冲区的大小。缓冲区越大，需要的往返时间越少，但要以消耗更多的内存为代价。缺省值为 32768 个字节。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR\fR
+.ad
+.sp .6
+.RS 4n
+在 \fBssh\fR(1) 中使用 \fB-C\fR 标志，启用压缩功能。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR \fIssh_config\fR\fR
+.ad
+.sp .6
+.RS 4n
+为每位用户指定一个备用的 \fBssh\fR 配置文件。此选项将直接传递到 \fBssh\fR(1)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIssh_option\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定要直接传递给 \fBssh\fR(1) 的选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIsftp_server path\fR\fR
+.ad
+.sp .6
+.RS 4n
+将指定的路径作为 \fIsftp-server\fR 来执行操作，并使用管道（而非 \fBssh\fR 连接）与其进行通信。在调试 \fBsftp\fR 客户机和服务器时，此选项非常有用。当指定了 \fB-P\fR 选项时，将忽略 \fB-S\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fInum_requests\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定一次操作可以剩余的未解决请求数。增加此值可以略微提高文件传输速度，但会增加内存使用情况。缺省值为 64个未解决的请求。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIsubsystem\fR | \fIsftp_server\fR\fR
+.ad
+.sp .6
+.RS 4n
+在远程主机上指定 \fBSSH2\fR 子系统或 \fBsftp\fR 服务器的路径。在基于协议版本 1 使用 \fBsftp\fR 时，或远程 \fBsshd\fR 未配置 \fBsftp\fR 子系统时，路径非常有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR \fIssh_program\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用指定的程序代替 \fBssh\fR(1) 来连接 \fBsftp\fR 服务器。当指定了 \fB-P\fR 选项时，将忽略 \fB-S\fR 选项。程序必须识别 \fBssh\fR(1) 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+提高日志记录级别。此选项也会传递给 \fBssh\fR(1)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-1\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定使用协议版本 1。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIhostname\fR | \fIuser@hostname\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsftp\fR 连接并登录到的主机的名称。
+.RE
+
+.SH INTERACTIVE COMMANDS
+.sp
+.LP
+在交互模式下，\fBsftp\fR 可识别与 \fBftp\fR(1) 的命令相似的一组命令。这些命令不区分大小写，并且包含空格的路径名称可括在引号中。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbye\fR\fR
+.ad
+.sp .6
+.RS 4n
+退出 \fBsftp\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcd\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+将远程目录更改为 \fIpath\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchgrp\fR \fIgrp path\fR\fR
+.ad
+.sp .6
+.RS 4n
+将文件 \fIpath\fR 的组更改为 \fIgrp\fR。\fIgrp\fR 必须是一个数字 \fBGID\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchmod\fR \fImode path\fR\fR
+.ad
+.sp .6
+.RS 4n
+将文件 \fIpath\fR 的权限更改为 \fImode\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchown\fR \fIown path\fR\fR
+.ad
+.sp .6
+.RS 4n
+将文件 \fIpath\fR 的所有者更改为 \fIown\fR。\fIown\fR 必须是一个数字 \fBUID\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexit\fR\fR
+.ad
+.sp .6
+.RS 4n
+退出 \fBsftp\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBget\fR [\fIflags\fR] \fIremote-path\fR [\fIlocal-path\fR]\fR
+.ad
+.sp .6
+.RS 4n
+检索 \fIremote-path\fR 并将其存储在本地计算机上。如果未指定本地路径名称，将为其指定其在远程计算机上使用的相同名称。如果指定了 \fB-P\fR 标志，则还会复制文件的完整权限和访问时间。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhelp\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示帮助文本。
+.sp
+与 \fB?\fR 命令完全相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlcd\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+将本地目录更改为 \fIpath\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlls\fR [\fIls-options\fR [\fIpath\fR]]\fR
+.ad
+.sp .6
+.RS 4n
+显示 \fIpath\fR 或当前目录（如果未指定 \fIpath\fR）的本地目录列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlmkdir\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+创建 \fIpath\fR 所指定的本地目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBln\fR \fIoldpath\fR \fInewpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+创建从 \fIoldpath\fR 到 \fInewpath\fR 的链接。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlpwd\fR\fR
+.ad
+.sp .6
+.RS 4n
+列显本地工作目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBls\fR [\fB-1aflnrSt\fR] [\fIpath\fR]\fR
+.ad
+.sp .6
+.RS 4n
+显示 \fIpath\fR 或当前目录（如果未指定 \fIpath\fR）的远程目录列表。\fIpath\fR 可以包含通配符。
+.sp
+\fBls\fR 支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+列出以点 (\fB\&.\fR) 开头的文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+不对列表进行排序。缺省的排序顺序为字典顺序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示其他详细信息，包括权限和所有权信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+生成一个长列表，其中按数字顺序显示用户和组信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+颠倒列表的排序顺序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR\fR
+.ad
+.sp .6
+.RS 4n
+按文件大小对列表进行排序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+按上次修改时间对列表进行排序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-1\fR\fR
+.ad
+.sp .6
+.RS 4n
+生成单列输出。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlumask\fR \fIumask\fR\fR
+.ad
+.sp .6
+.RS 4n
+将本地 \fBumask\fR 设置为 \fIumask\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmkdir\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+创建 \fIpath\fR 所指定的远程目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBput\fR [\fIflags\fR] \fIlocal-path\fR [\fIlocal-path\fR]\fR
+.ad
+.sp .6
+.RS 4n
+上载 \fIlocal-path\fR 并将其存储在远程计算机上。如果未指定远程路径名称，将为其指定其在本地计算机上使用的相同名称。如果指定了 \fB-P\fR 标志，则还会复制文件的完整权限和访问时间。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpwd\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示远程工作目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBquit\fR\fR
+.ad
+.sp .6
+.RS 4n
+退出 \fBsftp\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrename\fR \fIoldpath newpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+将远程文件从 \fIoldpath\fR 重命名为 \fInewpath\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrm\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除 \fIpath\fR 所指定的远程文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrmdir\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除 \fIpath\fR 所指定的远程目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsymlink\fR \fIoldpath\fR \fInewpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+创建从 \fIoldpath\fR 到 \fInewpath\fR 的符号链接。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBversion\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示 \fBsftp\fR 协议版本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB#\fR [\fIcomment\fR]\fR
+.ad
+.sp .6
+.RS 4n
+包含一条注释。此选项在批处理文件中非常有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!\fR [\fIcommand\fR]\fR
+.ad
+.sp .6
+.RS 4n
+如果未指定 \fIcommand\fR，则不在本地 shell 中执行此 command。 
+.sp
+如果指定了 \fIcommand\fR，则在本地 shell 中执行 \fIcommand\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB?\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示帮助文本。
+.sp
+与 \fBhelp\fR 命令完全相同。
+.RE
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.sp .6
+.RS 4n
+出现错误。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性network/ssh
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBftp\fR(1)、\fBscp\fR(1)、\fBssh\fR(1)、\fBssh-add\fR(1)、\fBssh-keygen\fR(1)、\fBsshd\fR(1M)、\fBattributes\fR(5) 

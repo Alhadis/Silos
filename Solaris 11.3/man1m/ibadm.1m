@@ -1,0 +1,1492 @@
+'\" te
+.\" Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+.TH ibadm 1M "19 May 2015" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+ibadm \- administer InfiniBand Host Channel Adapters
+.SH SYNOPSIS
+.LP
+.nf
+ibadm
+.fi
+
+.LP
+.nf
+ibadm show-hca [[-p] -o <field>,...] [-v] [-l] [<hca>[.<vhca>]]
+    ibadm show-port [[-p] -o <field>,...] [<hca>[.<vhca>] [<port>]]
+.fi
+
+.LP
+.nf
+ibadm enable-iov [-f] [-p max-vhcas=<value>] <hca>
+    ibadm disable-iov [-f] <hca>
+    ibadm create-vhca [-f] [-p <prop>=<value>[,...] <hca>[.<vhca>]
+    ibadm delete-vhca [-f] <hca>.<vhca>
+.fi
+
+.LP
+.nf
+ibadm set-hcaprop [-f] -p <prop>=<value>[,...] <hca>[.<vhca>]
+    ibadm reset-hcaprop [-f] -p <prop>[,...] <hca>[.<vhca>]
+    ibadm show-hcaprop [[-c] -o <field>,...] [-p <prop>[,...]] [<hca>[.<vhca>]
+.fi
+
+.LP
+.nf
+ibadm set-portprop [-f] -p <prop>=<value>[,...] <hca>[.<vhca>] <port>
+    ibadm reset-portprop [-f] -p <prop>[,...] <hca>[.<vhca>] <port>
+    ibadm show-portprop [[-c] -o <field>,...] [-p <prop>[,...]]
+	 [<hca>[.<vhca>] [port]]
+.fi
+
+.LP
+.nf
+ibadm delete-hca [-f] <hca>
+.fi
+
+.LP
+.nf
+ibadm help [<sub-command>]
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBibadm\fR command is used to administer InfiniBand Host Channel Adapters (HCAs). An HCA device functions as an InfiniBand node with multiple ports that may be connected to the InfiniBand fabric.
+.sp
+.LP
+Some HCA devices support the PCI-Express SR-IOV capability which emulates multiple virtual HCAs on a single physical HCA. Each virtual HCA can be used by a different kernel zone or LDOMS IO domain making it appear as if the virtual systems are directly attached to the InfiniBand network.
+.SS "Managed Objects"
+.sp
+.LP
+\fBibadm\fR has a series of sub-commands to perform various operations. These sub-commands operate on the following objects:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhca\fR\fR
+.ad
+.RS 8n
+.rt  
+A Host Channel Adapter. \fBibadm\fR manages physical and virtual HCAs. The name for a physical HCA consists of a driver name and a driver instance number. The name for a virtual HCA created by Solaris over a physical HCA consists of the physical HCA name, the string \fB".vhca"\fR, and a VHCA instance number. For example:
+.sp
+.in +2
+.nf
+Physical HCA name:	hermon0
+Virtual HCA name:	 hermon0.vhca2
+.fi
+.in -2
+.sp
+
+When a virtual HCA is allocated to a kernel zone or LDOMS IO domain and is viewed from inside the virtual system, the the virtual HCA's name consists of a driver name and driver instance number.
+.sp
+.in +2
+.nf
+Inherited HCA name inside virtual system: hermon0
+.fi
+.in -2
+.sp
+
+Some sub-commands operate only on physical HCAs, others only on virtual HCAs.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBport\fR\fR
+.ad
+.RS 8n
+.rt  
+A physical or virtual point of attachment to the InfiniBand network. A port is identified by it's instance number on the HCA. Most sub-commands will accept just the number, or the number appended to the word "\fBport\fR". Depending on context, the HCA name must be provided with the port identification.
+.sp
+.in +2
+.nf
+Specific port on an HCA: hermon1 port2
+.fi
+.in -2
+.sp
+
+.RE
+
+.SH SUB-COMMANDS
+.sp
+.LP
+The sub-commands have various options. There is both a short form and a long form of each option. For example, "\fB-o\fR" is the short form of \fB"--output"\fR.
+.sp
+.LP
+When "\fBibadm\fR" is specified alone on the command line, it will display a summary of the HCAs configured on the system. This is the same display you see when entering "\fBibadm show-hca\fR".
+.sp
+.LP
+\fBibadm\fR supports the following sub-commands:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+show-hca
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+show-port
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+enable-iov
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+disable-iov
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+create-vhca
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+delete-vhca
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+set-hcaprop
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+reset-hcaprop
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+show-hcaprop
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+set-portprop
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+reset-portprop
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+show-portprop
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+delete-hca
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+help
+.RE
+.SS "show-hca"
+.sp
+.in +2
+.nf
+ibadm show-hca [[-p] -o <field>,...] [-v] [-l] [<hca>[.<vhca>]]
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Show HCA configuration information either for all HCAs or for the specified HCA. The specified HCA may be either a physical or virtual HCA.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o <field>[,...], --output=<field>[,...]\fR\fR
+.ad
+.sp .6
+.RS 4n
+A case-insensitive, comma-separated list of output fields to display. The field name must be one of the fields listed below, or the special value "all" to display all fields. By default (without \fB-o\fR), \fBshow-hca\fR displays the \fBHCA\fR, \fBTYPE\fR, \fBSTATE\fR, \fBIOV\fR, and \fBZONE\fR fields.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDEVICE-PATH\fR\fR
+.ad
+.RS 15n
+.rt  
+Path of directory names to the HCA device node in the system's device tree.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBFLAGS\fR\fR
+.ad
+.RS 16n
+.rt  
+Additional HCA status information. For each flag, the system will display either the specific flag character to indicate the condition exists, or a "\fB-\fR" to indicate the condition does not exist.
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBU\fR - Updates pending for reboot. The currently running HCA configuration is not the same as the default or persistently defined configuration. This can happen when the --force option was used to override a blocked change. The system will use the persistently defined configuration the next time the system reboots.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBT\fR - Temporary. A virtual HCA configuration is not persistently defined. This can happen when the \fB-force\fR switch was used to remove the virtual HCA. The virtual HCA will not be recreated the next time the system boots.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBI\fR - Inherited. A virtual HCA inside a kernel zone or an LDOMS I/O domain was inherited from LDOMS or from a parent Solaris system.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBZ\fR - The virtual HCA was created by zoneadmd and is allocated to a kernel zone.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBl\fR - SR-IOV features on the physical HCA are under LDOMS control. If this flag is set, \fBibadm\fR will not be able to create VHCAs over the physical HCA. This flag is only possible in a primary root LDOMS domain.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBb\fR - The physical HCA is used for boot. The \fB-force\fR switch has to be used in order to change IOV status or \fBmax-vhcas\fR property.
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHCA\fR\fR
+.ad
+.RS 16n
+.rt  
+The name of the physical or virtual HCA.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHW-MAX-VHCAS\fR\fR
+.ad
+.RS 16n
+.rt  
+Maximum number of virtual functions the physical HCA device can support.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBIOV\fR\fR
+.ad
+.RS 16n
+.rt  
+State of the SR-IOV feature on a physical HCA. Possible values are "\fBon\fR" or "\fBoff\fR". When set "\fBon\fR", virtual HCAs may be created.
+.sp
+This field may contain a "\fB(R)\fR", "\fB(b)\fR", or "\fB(l)\fR" suffix. The "\fB(R)\fR" suffix with the "\fBon\fR" or "\fBoff\fR" settings indicate that the IOV setting has been changed to the value shown using the \fB--force\fR option. A reboot will be required to complete the configuration. The "\fB(b)\fR" suffix with the "\fBon\fR" or "\fBoff\fR" settings indicate that this HCA is used for boot. Any changes to IOV or MAX-VHCAS need \fB--force\fR option. The "\fB(l)\fR" suffix with the "\fBon\fR" setting indicates SR-IOV features on the physical HCA are under LDOMS control.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBMAX-VHCAS\fR\fR
+.ad
+.RS 16n
+.rt  
+Total number of virtual functions configured on a physical HCA upon which virtual HCAs may be created.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNODE-GUID\fR\fR
+.ad
+.RS 16n
+.rt  
+Globally Unique Identifier of the HCA. The Node GUID is also referred to as an HCA GUID in the InfiniBand specifications.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNUM-PORTS\fR\fR
+.ad
+.RS 16n
+.rt  
+Number of available ports on the HCA.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSTATE\fR\fR
+.ad
+.RS 16n
+.rt  
+Current state of the HCA. Possible values are:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBonline\fR - The HCA driver is running in the kernel for this device.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBoffline\fR - The HCA driver is not attached to this device. This may occur when an HCA card has been removed from the system or when the HCA is transitioning between IOV states in response to an \fBenable-iov\fR or \fBdisable-iov\fR sub-command.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBdegraded\fR - The system encountered a problem that prevented successful configuraton of the requested IOV and MAX-VHCAS settings even though the settings are valid for the HCA. For example, disabling ARI Support in the BIOS on some Intel based systems effectively limits the configuration to 7 virtual HCAs on a physical HCA. When Solaris detects that something blocked a configuration attempt, it automatically falls back to an HCA configuration that the system can support. Use the show-hcaprop sub-command to view the degraded current and requested persistent property values. See the Solaris Release Notes for possible causes of degraded SR-IOV operation.
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTYPE\fR\fR
+.ad
+.RS 16n
+.rt  
+Type of HCA. Possible values are "\fBphysical\fR" or "\fBvirtual\fR".
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBVHCAS-AVAIL\fR\fR
+.ad
+.RS 16n
+.rt  
+Number of unused virtual functions under the current physical HCA that are available for the creation of additional virtual HCAs.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBVHCAS-INUSE\fR\fR
+.ad
+.RS 16n
+.rt  
+Number of virtual HCAs that are currently in-use under a physical HCA. This includes both online and offline VHCAs.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBZONE\fR\fR
+.ad
+.RS 16n
+.rt  
+Name of the zone a virtual HCA is currently allocated to.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p, --parseable\fR\fR
+.ad
+.sp .6
+.RS 4n
+Display the requested fields in a machine-parseable format. The \fB-o\fR option is required with -p. See "Parseable Output Format", below.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v, --virtual\fR\fR
+.ad
+.sp .6
+.RS 4n
+Include all virtual HCAs under the specified physical HCA in the display output.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l, --long\fR\fR
+.ad
+.sp .6
+.RS 4n
+Show additional non-default fields in an alternative "\fBlong\fR" format. The additional fields included are \fBvhcas-inuse\fR, \fBvhcas-avail\fR, \fBmax-vhcas\fR, \fBnode-guid\fR, \fBdevice-path\fR, \fBnum-ports\fR, plus the port fields \fBportN-guids\fR and \fBportN-pkeys\fR for each port on the HCA. See the \fBshow-port\fR command below for a definition of the port guids and pkeys fields. The additional fields that do not apply to a particular HCA will suppressed from the display. This option may not be used with the -o option.
+.RE
+
+.SS "show-port"
+.sp
+.in +2
+.nf
+ibadm show-port [[-p] -o <field>,...] [<hca>[.<vhca>] [<port>]]
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Show HCA port configuration information either for all HCAs, all ports on the specified HCA, or for the specified port on the specified HCA. The specified HCA may be either a physical or virtual HCA. The port may be specified using just the port number or the port number appended to the word "\fBport\fR".
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o <field>[,...], --output=<field>[,...]\fR\fR
+.ad
+.sp .6
+.RS 4n
+A case-insensitive, comma-separated list of output fields to display. The field name must be one of the fields listed below, or the special value "all" to display all fields. By default (without \fB-o\fR), \fBshow-port\fR displays all fields.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBGUIDS\fR\fR
+.ad
+.RS 9n
+.rt  
+Comma separated list of globally unique identifiers configured on the port.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHCA\fR\fR
+.ad
+.RS 9n
+.rt  
+The name of the physical or virtual HCA.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPKEYS\fR\fR
+.ad
+.RS 9n
+.rt  
+Comma separated list of InfiniBand Pkeys available on the port.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPORT\fR\fR
+.ad
+.RS 9n
+.rt  
+The port instance number on the HCA.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p, --parseable\fR\fR
+.ad
+.sp .6
+.RS 4n
+Display the requested fields in a machine-parseable format. The \fB-o\fR option is required with \fB-p\fR. See "Parseable Output Format", below.
+.RE
+
+.SS "enable-iov"
+.sp
+.in +2
+.nf
+ibadm enable-iov [-f] [-p max-vhcas=<value>] <hca>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Enable the PCI-Express SR-IOV feature on the specified physical HCA. IOV must be enabled before any virtual HCAs can be created on a physical HCA.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p <prop>=<value>,  --prop <prop>=<value>\fR\fR
+.ad
+.sp .6
+.RS 4n
+A comma-separated list of HCA properties to set to the specified values. The only supported property on the \fBenable-iov\fR sub-command is \fBmax-hcas\fR. See "HCA Properties" below for details.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f, --force\fR\fR
+.ad
+.sp .6
+.RS 4n
+Force this configuration change if something on the actively running system is blocking the change. The requested change will be held persistently and will take effect the next time the system boots.
+.RE
+
+.SS "disable-iov"
+.sp
+.in +2
+.nf
+ibadm disable-iov [-f] <hca>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Disable the PCI-Express SR-IOV feature on the specified physical HCA.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f, --force\fR\fR
+.ad
+.RS 15n
+.rt  
+Force this configuration change if something on the actively running system is blocking the change. The requested change will be held persistently and will take effect the next time the system boots. Any VHCAs that are configured in the global zone under this physical HCA will automatically be deleted.
+.RE
+
+.SS "create-vhca"
+.sp
+.in +2
+.nf
+ibadm create-vhca [-f] [-p <prop>=<value>[,...] <hca>[.<vhca>]
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Create a virtual HCA under the specified physical HCA. If the optional virtual HCA instance is specified, the system will attempt to create it. Otherwise, the system will select a vhca instance from the device's available virtual functions. This sub-command displays the name of the virtual HCA that is allocated.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p <prop>=<value>,...  --prop <prop>=<value>,...\fR\fR
+.ad
+.sp .6
+.RS 4n
+A comma-separated list of port properties to set to their specified values. The properties that may be set are:
+.sp
+.in +2
+.nf
+pkeys
+.fi
+.in -2
+.sp
+
+Port property names must be identified using "\fBport<number>-\fR" prefixed to the property name. For example, "\fBport1-pkeys=FFFF\fR". See "Entering Multiple Property Values" and "Port Properties" below.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f, --force\fR\fR
+.ad
+.sp .6
+.RS 4n
+Force this configuration change if something on the actively running system is blocking the change. The requested change will be held persistently and will take effect the next time the system boots.
+.RE
+
+.SS "delete-vhca"
+.sp
+.in +2
+.nf
+ibadm delete-vhca [-f] <hca>.<vhca>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Destroy the specified virtual HCA. This sub-command will not delete virtual HCAs that were created by \fBzoneadmd\fR. Use \fBzoneadm\fR(1M) and \fBzonecfg\fR(1M) to change zone configuration.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f, --force\fR\fR
+.ad
+.RS 15n
+.rt  
+Force this configuration change if something on the actively running system is blocking the change. The requested change will be held persistently and will take effect the next time the system boots.
+.RE
+
+.SS "set-hcaprop"
+.sp
+.in +2
+.nf
+ibadm set-hcaprop [-f] -p <prop>=<value>[,...] <hca>[.<vhca>]
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Modifies property values on an existing physical HCA to the values specified by the user.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p <prop>=<value>,...  --prop <prop>=<value>,...\fR\fR
+.ad
+.sp .6
+.RS 4n
+A comma-separated list of HCA properties to set to their specified values. See "Entering Multiple Property Values" and "HCA Properties" below.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f, --force\fR\fR
+.ad
+.sp .6
+.RS 4n
+Force this configuration change if something on the actively running system is blocking the change. The requested change will be held persistently and will take effect the next time the system boots.
+.RE
+
+.SS "reset-hcaprop"
+.sp
+.in +2
+.nf
+ibadm reset-hcaprop [-f] -p <prop>[,...] <hca>[.<vhca>]
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Reset property values on an existing physical HCA back to their default values.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p <prop>,...  --prop <prop>,...\fR\fR
+.ad
+.sp .6
+.RS 4n
+A comma-separated list of HCA properties. See "Entering Multiple Property Values" and "HCA Properties" below.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f, --force\fR\fR
+.ad
+.sp .6
+.RS 4n
+Force this configuration change if something on the actively running system is blocking the change. The requested change will be held persistently and will take effect the next time the system boots.
+.RE
+
+.SS "show-hcaprop"
+.sp
+.in +2
+.nf
+ibadm show-hcaprop [[-c] -o <field>,...] [-p <prop>[,...]] [<hca>[.<vhca>]
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Show the current and persistent values of one or more properties, either for all the existing HCAs or for the specified HCA. Several properties of interest can be retrieved at one time by providing comma-separated property names to the \fB-p\fR option. If the \fB-p\fR option is not specified, all available HCA properties are displayed.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o <field>[,...], --output=<field>[,...]\fR\fR
+.ad
+.sp .6
+.RS 4n
+A case-insensitive, comma-separated list of output fields to display. The field name must be one of the fields listed below, or the special value "all" to display all fields. All fields are displayed by default.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHCA\fR\fR
+.ad
+.RS 14n
+.rt  
+The name of the physical or virtual HCA.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPROPERTY\fR\fR
+.ad
+.RS 14n
+.rt  
+The name of the property.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPERM\fR\fR
+.ad
+.RS 14n
+.rt  
+The read/write permissions of the property. The value shown will be \fBr\fR (read-only) or \fBrw\fR (read-and-write).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCURRENT\fR\fR
+.ad
+.RS 14n
+.rt  
+The current value of the property. Current property values will be shown as "\fB--\fR" on disabled interfaces to indicate "\fBnot set\fR".
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPERSISTENT\fR\fR
+.ad
+.RS 14n
+.rt  
+The persistent value of the property. Persistent values are the values that will be reapplied on reboot.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDEFAULT\fR\fR
+.ad
+.RS 14n
+.rt  
+The default value of the property. "\fB--\fR" is displayed if the property has no default value.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPOSSIBLE\fR\fR
+.ad
+.RS 14n
+.rt  
+A comma-separated list of the values the property can have. If the values span a numeric range, min - max might be displayed as short-hand. If the possible values are unknown, \fB?\fR is displayed or if they are unbounded, \fB--\fR is displayed.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c, --parseable\fR\fR
+.ad
+.sp .6
+.RS 4n
+Display the requested fields in a machine-parseable format. The \fB-o\fR option is required with \fB-c\fR. See "Parseable Output Format", below.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p <prop>,..., --property <prop>,...\fR\fR
+.ad
+.sp .6
+.RS 4n
+Comma separated list of HCA properties to display.
+.RE
+
+.SS "set-portprop"
+.sp
+.in +2
+.nf
+ibadm set-portprop [-f] -p <prop>=<value>[,...] <hca>[.<vhca>] port
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Modifies property values on an existing virtual HCA port to the values specified by the user. The port may be specified using just the port number, or the port number appended to the word "\fBport\fR". This sub-command will not modify port properties on \fBzoneadmd\fR generated virtual HCAs. Use \fBzoneadm\fR(1M) and \fBzonecfg\fR(1M) to modify zone configuration.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p <prop>=<value>,...  --prop <prop>=<value>,...\fR\fR
+.ad
+.sp .6
+.RS 4n
+A comma-separated list of HCA properties to set to their specified values. See "Entering Multiple Property Values" and "HCA Properties" below.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f, --force\fR\fR
+.ad
+.sp .6
+.RS 4n
+Force this configuration change if something on the actively running system is blocking the change. The requested change will be held persistently and will take effect the next time the system boots.
+.RE
+
+.SS "reset-portprop"
+.sp
+.in +2
+.nf
+ibadm reset-portprop [-f] -p <prop>[,...] <hca>[.<vhca>] port
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Reset property values on an existing virtual HCA port back to their default values. The port may be specified using just the port number, or the port number appended to the word "\fBport\fR". This sub-command will not modify port properties on \fBzoneadmd\fR generated virtual HCAs. Use \fBzoneadm\fR(1M) and \fBzonecfg\fR(1M) to modify zone configuration.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p <prop>,...  --prop <prop>,...\fR\fR
+.ad
+.sp .6
+.RS 4n
+A comma-separated list of HCA properties. See "Entering Multiple Property Values" and "HCA Properties" below.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f, --force\fR\fR
+.ad
+.sp .6
+.RS 4n
+Force this configuration change if something on the actively running system is blocking the change. The requested change will be held persistently and will take effect the next time the system boots.
+.RE
+
+.SS "show-portprop"
+.sp
+.in +2
+.nf
+ibadm show-portprop [[-c] -o <field>,...] [-p <prop>[,...]] 
+	[<hca>[.<vhca>] [port]]
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Show the current and persistent values of one or more port properties, either for all ports on the existing HCAs, all ports on the specified HCA, or the specified port on the specified HCA. The port may be specified using just the port number, or the port number appended to the word "\fBport\fR".
+.sp
+.LP
+Several properties of interest can be retrieved at one time by providing comma-separated list of property names to the \fB-p\fR option. If the \fB-p\fR option is not specified, all available port properties are displayed.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o <field>[,...], --output=<field>[,...]\fR\fR
+.ad
+.sp .6
+.RS 4n
+A case-insensitive, comma-separated list of output fields to display. The field name must be one of the fields listed below, or the special value "all" to display all fields. All fields are displayed by default.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBHCA\fR\fR
+.ad
+.RS 14n
+.rt  
+The name of the physical or virtual HCA.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPORT\fR\fR
+.ad
+.RS 14n
+.rt  
+The port instance number on the HCA.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPROPERTY\fR\fR
+.ad
+.RS 14n
+.rt  
+The name of the property.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPERM\fR\fR
+.ad
+.RS 14n
+.rt  
+The read/write permissions of the property. The value shown will be \fBr\fR (read-only) or \fBrw\fR (read-and-write).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCURRENT\fR\fR
+.ad
+.RS 14n
+.rt  
+The current value of the property. Current property values will be shown as "\fB--\fR" on disabled interfaces to indicate "\fBnot set\fR".
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPERSISTENT\fR\fR
+.ad
+.RS 14n
+.rt  
+The persistent value of the property. Persistent values are the values that will be reapplied on reboot.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDEFAULT\fR\fR
+.ad
+.RS 14n
+.rt  
+The default value of the property. "\fB--\fR" is displayed if the property has no default value.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPOSSIBLE\fR\fR
+.ad
+.RS 14n
+.rt  
+A comma-separated list of the values the property can have. If the values span a numeric range, min - max might be displayed as short-hand. If the possible values are unknown, \fB?\fR is displayed or if they are unbounded, \fB--\fR is displayed.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c, --parseable\fR\fR
+.ad
+.sp .6
+.RS 4n
+Display the requested fields in a machine-parseable format. The \fB-o\fR option is required with \fB-c\fR. See "Parseable Output Format", below.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p <prop>,..., --property <prop>,...\fR\fR
+.ad
+.sp .6
+.RS 4n
+Comma separated list of HCA properties to display.
+.RE
+
+.SS "delete-hca"
+.sp
+.in +2
+.nf
+ibadm delete-hca [-f] <hca>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Clear the persistent configuration of a physical HCA and any underlying virtual HCAs associated with hardware that has been removed from the system.
+.sp
+.LP
+The system does not automatically purge configuration information from persistent storage when you remove InfiniBand hardware. As a result, the ibadm \fBshow-hca\fR sub-command may continue to list removed hardware as "\fBdisabled\fR" until you explicitly clear the configuration with the \fBdelete-hca\fR sub-command. This sub-command also works for inherited virtual HCAs.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f, --force\fR\fR
+.ad
+.RS 15n
+.rt  
+Force this configuration change if something on the actively running system is blocking the change. The requested change will be held persistently and will take effect the next time the system boots.
+.RE
+
+.SS "help"
+.sp
+.in +2
+.nf
+ibadm help [<sub-command>]
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Displays all the supported \fBibadm\fR sub-commands or usage for a given sub-command. If you invoke help for a specific sub-command, the command syntax is displayed. Using \fBibadm help\fR without any argument displays all of the sub-commands.
+.SS "Entering Multiple Property Values"
+.sp
+.LP
+Many \fBibadm\fR sub-commands have an option to enter lists of properties with their respective values after the \fB-p\fR option. Multiple property name/value pairs may be entered by separating each with a comma or by specifying more properties with an additional \fB-p\fR option.
+.sp
+.in +2
+.nf
+# ibadm create-vhca -p port1-pkeys=ffff,port2-pkeys=ffff
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+For properties with multiple values, enter the comma-separated list of values after the property name.
+.sp
+.in +2
+.nf
+# ibadm create-vhca -p port1-pkeys=8040,8060,ffff \
+	  -p port2-pkeys=8002,8060,ffff
+.fi
+.in -2
+.sp
+
+.SS "Parseable Output Format"
+.sp
+.LP
+Many \fBibadm\fR sub-commands have an option that displays output in a machine-parseable format. The output format is one or more lines of colon (\fB:\fR) delimited fields. Output includes only those fields requested by means of the \fB-o\fR option, in the order requested.
+.sp
+.LP
+When you request multiple fields, any literal colon characters are escaped by a backslash (\fB\\fR) before being output. Similarly, literal backslash characters will also be escaped (\fB\\\fR). This escape format is parseable by using shell \fBread()\fR functions with the environment variable \fBIFS=:\fR (see EXAMPLES, below). For more information, see, \fBread\fR(1) man page. Note that escaping is not done when you request only a single field.
+.SS "HCA Properties"
+.sp
+.LP
+The following HCA properties are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBiov\fR\fR
+.ad
+.RS 13n
+.rt  
+Setting this property on a physical HCA allows the user to enable/disable SR-IOV mode. This property does not apply to virtual HCAs nor to physical HCA devices that do not support SR-IOV technology. The possible values are:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBon\fR\fR
+.ad
+.RS 7n
+.rt  
+Turns SR-IOV mode on. This will allow the creation of virtual HCAs.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBoff\fR\fR
+.ad
+.RS 7n
+.rt  
+Turns SR-IOV mode off. This will disable the ability to create virtual HCAs.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmax-vhcas\fR\fR
+.ad
+.RS 13n
+.rt  
+Total number of virtual functions to configure on a physical HCA upon which virtual HCAs may be created. This property does not apply to virtual HCAs nor to physical HCA devices that do not support SR-IOV technology. The possible values are \fB1\fR to \fBhw-max-vhcas\fR.
+.RE
+
+.SS "Port Properties"
+.sp
+.LP
+The following HCA port properties are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkeys\fR\fR
+.ad
+.RS 9n
+.rt  
+A comma separated list of InfiniBand Pkeys available on the port. A \fBPkey\fR consistes of a hex-string containing from 1 to 4 hexadecimal characters. Each \fBPkey\fR entered for a virtual HCA must exist on the corresponding physical HCA port. Either the default or limited default Pkey (FFFF or 7FFF) must be included. 0 and 8000 are invalid \fBPkey\fR values. The keyword "\fBauto\fR" may be specified without any other values to use the \fBPkeys\fR defined on the physical HCA port.
+.RE
+
+.SS "Required Authorizations and Privileges"
+.sp
+.LP
+The following sub-commands use the \fBPRIV_SYS_IB_INFO\fR privilege which is included in the basic privilege set.
+.sp
+.in +2
+.nf
+show-hca, show-port, show-hcaprop, show-portprop
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The following sub-commands require \fBsolaris.smf.modify.ib\fR and \fBsolaris.smf.manage.ib\fR authorizations, both of which are included in the "InfiniBand Management" and "Network Management" execution profiles. These sub-commands use the \fBPRIV_SYS_DEVICES\fR privilege.
+.sp
+.in +2
+.nf
+enable-iov, disable-iov, create-vhca, delete-vhca,
+set-hcaprop, reset-hcaprop, set-portprop, reset-portprop,
+delete-hca
+.fi
+.in -2
+.sp
+
+.SS "LDOMS Interaction"
+.sp
+.LP
+The SR-IOV configuration of a physical HCA may be enabled and configured either by \fBibadm\fR in the Solaris host system's global zone or by LDOMS. When LDOMS enables the IOV capability on an HCA, it takes full control of VHCA configuration. The Solaris \fBibadm\fR command cannot view or modify the VHCA configuration on an LDOMS controlled HCA. Likewise, when ibadm is used to enable SR-IOV, LDOMS cannot be used to view or modify the VHCA configuration on the device.
+.sp
+.LP
+If you need to switch an HCA from an \fBibadm\fR controlled SR-IOV configuration to an LDOMS controlled configuration, use the \fBibadm delete-vhca\fR subcommand to remove all existing VHCAs on the device, then use the \fBdisable-iov\fR sub-command to release SR-IOV control. Once these steps are complete, you may use LDOMS to configure SR-IOV on the device.
+.sp
+.LP
+Likewise, to switch from an LDOMS controlled SR-IOV configuration, use the LDOMS commands to remove all virtual HCAs and disable SR-IOV before reconfiguring SR-IOV with the \fBibadm\fR command.
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRDisplaying Default HCA Configuration
+.sp
+.LP
+The following command displays a summary of the HCAs configured on the system. 
+
+.sp
+.in +2
+.nf
+#\fBibadm\fR
+HCA                TYPE            STATE        IOV        ZONE
+hermon2            physical       online        on        global
+hermon2.vhca3      virtual        online        --        global
+hermon2.vhca5      virtual        online        --        kzone1
+hermon3            physical       online        off       global
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRDisplaying Specific HCA Configuration in Long Form
+.sp
+.LP
+The following command displays additional details about a specific HCA in long form. 
+
+.sp
+.in +2
+.nf
+# \fBibadm show-hca -l hermon2\fR
+HCA            TYPE        STATE    IOV    ZONE
+---------------------------------------------------------
+hermon2        physical    online    on    global
+device-path = pci@400/pci@1/pci@0/pci@0/pciex15b3,673c@0
+num-vhcas   = 2 in use, 61 available, 63 maximum
+node-guid   = 21280001A17F56
+port1-guids = 21280001A17F57
+port2-guids = 21280001A17F58
+port1-pkeys = FFFF,8002
+port2-pkeys = FFFF,8002
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRDisplaying Specific Fields of an HCA and it's VHCAs
+.sp
+.LP
+The following command displays specific details about \fBhermon2\fR and it's underlying VHCAs.
+
+.sp
+.in +2
+.nf
+# \fBibadm show-hca -v -o hca,type,state,flags,zone hermon2\fR
+HCA            TYPE        STATE     FLAGS    ZONE
+hermon2        physical    online    -----    global
+hermon2.vhca3  virtual     online    U----    global
+hermon2.vhca5  virtual     online    ---Z-    kzone1
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 4 \fRDisplaying HCA Port Configuration
+.sp
+.LP
+The following command displays the configuration of all ports available to the current system. The ports on \fBhermon2.vhca5\fR are not listed because that vhca was allocated to a kernel zone.
+
+.sp
+.in +2
+.nf
+# \fBibadm show-port\fR
+HCA            PORT    GUIDS             PKEYS
+hermon2        1       21280001A17F57    FFFF,2
+hermon2        2       21280001A17F58    FFFF,2
+hermon2.vhca3  1       14050000000008    FFFF
+hermon2.vhca3  2       14050000000009    FFFF
+hermon3        1       14050000000016    FFFF
+hermon3        2       14050000000017    FFFF
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 5 \fRDisplaying Properties to Identify Pending Changes
+.sp
+.LP
+The following command shows that the \fBhermon3\fR physical HCA has a pending configuration change but does not indicate what the change is. 
+
+.sp
+.in +2
+.nf
+# \fBibadm show-hca -v -o hca,type,state,iov,num-vhcas,flags hermon3\fR
+HCA        TYPE        IOV    STATE    NUM-VHCAS    FLAGS
+hermon3    physical    on     online   7            U----
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The following commands show both the current and persistent values of properties that apply to the HCA and it's ports. The displays show that the \fBmax-vhcas\fR value will change from the current value of 7 to the persistent value of 63 on the next reboot. The port pkeys property can not be modified on this HCA. 
+
+.sp
+.in +2
+.nf
+# \fBibadm show-hcaprop hermon3\fR
+HCA        PROPERTY        PERM    CURRENT    PERSISTENT    DEFAULT
+hermon3    iov             rw        on        on            off
+hermon3    max-vhcas       rw        7         63            1-63
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBibadm show-portprop hermon3\fR
+HCA        PORT    PROPERTY    PERM    CURRENT    PERSISTENT    DEFAULT
+hermon3    1        pkeys        r-    ffff            --        --
+hermon3    2        pkeys        r-    ffff,8002       --        --
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 6 \fREnabling Virtualization on a Physical HCA
+.sp
+.LP
+The following command attempts to enable virtualization on \fBhermon3\fR. The HCA is currently being used by at least one InfiniBand service. It therefore cannot be reconfigured immediately.
+
+.sp
+.in +2
+.nf
+# \fBibadm enable-iov hermon3\fR
+ibadm: failed to update configuration
+entity is busy
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Use the \fB-f\fR switch to make a change that will take effect on the next reboot.
+
+.sp
+.in +2
+.nf
+# \fBibadm enable-iov -f hermon3\fR
+ibadm: failed to update configuration
+requested change will take effect on reboot
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+# \fBibadm\fR
+HCA            TYPE        STATE        IOV        ZONE
+hermon2        physical    online        on        global
+hermon2.vhca3  virtual     online        --        global
+hermon2.vhca5  virtual     online        --        kzone1
+hermon3        physical    online        on(R)     global
+
+# \fBshutdown -r\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 7 \fRCreating a Virtual HCA
+.sp
+.LP
+The following command creates a virtual HCA with P-Keys FFFF,2 on both ports. It lets the system select which available virtual function to use.
+
+.sp
+.in +2
+.nf
+# \fBibadm create-vhca -p port1-pkeys=ffff,8002 \\fR
+-p port2-pkeys=ffff,8002 hermon3
+hermon3.vhca1
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 8 \fRChanging Property on an HCA Port
+.sp
+.LP
+The following command changes the P-Keys on a port2 of virtual HCA \fBhermon3.vhca1\fR.
+
+.sp
+.in +2
+.nf
+# \fBibadm set-portprop -p pkeys=ffff,8002 hermon3.vhca1 2\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 9 \fRRemoving an HCA Card
+.sp
+.LP
+Solaris device drivers automatically detect when an InfiniBand HCA card is physically removed from the system and will react by no longer configuring the physical device. If the system has persistent configuration information stored for the HCA, the device will continue to be shown in the \fBshow-hca\fR sub-command display but with state "\fBdisabled\fR". If you do not intend to replace the device, enter the following command to delete the persistent HCA configuration.
+
+.sp
+.in +2
+.nf
+# \fBibadm delete-vhca hermon1\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 10 \fRUsing Parseable Output to Capture a Single Field
+.sp
+.LP
+The following assignment saves an HCA's \fBvhcas-avail\fR in a shell variable named available. 
+
+.sp
+.in +2
+.nf
+# \fBavailable=`ibadm show-hca -p -o vhcas-avail hermon2`\fR
+# \fBprint $available\fR
+30
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 11 \fRUsing Parseable Output to Iterate over HCAs
+.sp
+.LP
+The following script displays the online/offline state of each HCA on the system. 
+
+.sp
+.in +2
+.nf
+# \fBibadm show-hca -p -o hca,state | \\fR
+    while IFS=: read hca state; do
+        print "HCA $hca is $state"
+    done
+.fi
+.in -2
+.sp
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/io/infiniband
+_
+Interface StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBdladm\fR(1M), \fBibmgmtd\fR(1M), \fBzonecfg\fR(1M), \fBattributes\fR(5)

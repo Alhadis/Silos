@@ -1,0 +1,999 @@
+'\" te
+.\" Copyright (c) 2007, 2015, Oracle and/or its affiliates. All rights                reserved.
+.TH bootadm 1M "25 Mar 2015" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+bootadm \- manage boot configuration
+.SH SYNOPSIS
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR update-archive [\fB-v] [-f | -n\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR list-archive [\fB-vn\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR install-bootloader [\fB-Mfv\fR] [\fB-P\fR \fIpool\fR] [\fB-R\fR \fIpath\fR]
+     [\fIdevice1\fR ... \fIdeviceN\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm boot-pool\fR {
+     [{\fBadd|remove\fR} [\fB-P\fR \fIrpool\fR] <\fIdevice list\fR>] |
+     \fBlist\fR [\fB-P\fR \fIrpool\fR] |
+     \fBresync\fR [\fB-P\fR \fIrpool\fR] [\fB-vA\fR] [<\fIBE_list\fR>] |
+     \fBset\fR [\fB-P\fR \fIrpool\fR] <\fIparam\fR>=<\fIvalue\fR> ... }
+.fi
+
+.LP
+.nf
+x86 only
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR set-menu [\fB-P\fR \fIpool\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]
+     {\fIkey\fR=\fIvalue\fR [\fIkey\fR=\fIvalue\fR ...]}
+.fi
+
+.LP
+.nf
+/usr/sbin/bootadm set-menu-password [-P \fIpool\fR] [-R \fIaltroot\fR [-p \fIplatform\fR]]
+          [-f <\fIpath to file\fR>] | -s] | [-r] | [-l -t [-i \fIentry_number\fR] | -g]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR list-menu [\fB-P\fR \fIpool\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]
+     [[\fB-i\fR \fIentry_number\fR] | \fIentry_title\fR]
+.fi
+
+.LP
+.nf
+/usr/sbin/bootadm use-batch -f file
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR generate-menu [\fB-P\fR \fIpool\fR] [\fB-f\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR show-entry [-P \fIpool\fR] <\fIentry_name\fR> | -i <\fIindex\fR>
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR add-entry [\fB-P\fR \fIpool\fR] [\fB-i\fR \fIentry_number\fR] \fIentry_title\fR
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR change-entry [\fB-P\fR \fIpool\fR] {[\fIentry_title\fR[,\fIentry_title\fR...]
+| \fB-i\fR \fIentry_number\fR[,\fIentry_number\fR]...]} {\fIkey\fR=\fIvalue\fR [\fIkey\fR=\fIvalue\fR ...]
+| set-default }
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/bootadm\fR remove-entry [\fB-P\fR \fIpool\fR] {[\fIentry_title\fR[,\fIentry_title\fR...]
+| \fB-i\fR \fIentry_number\fR[,\fIentry_number\fR]...]}
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBbootadm\fR command manages the boot archive and, with x86 boot environments, the GRUB (GRand Unified Bootloader) menu. For x86, both Legacy GRUB and GRUB2 are supported (but not concurrently).
+.sp
+.LP
+The \fBupdate-archive\fR option provides a way for user to update the boot archive as a preventative measure or as part of a recovery procedure.
+.sp
+.LP
+The \fBset-menu\fR subcommand allows you to switch the \fBauto-boot\fR timeout and default boot entry in the GRUB menu.
+.sp
+.LP
+The \fBset-menu-password\fR subcommand sets the password to protect the GRUB menu from being seen. To set, use \fB-f\fR <\fIpath to file\fR>; if \fB-s\fR is used, will prompt for the password twice; \fB-r\fR removes the password; \fB-l\fR lists whether there is a global menu password lock, and the menu entry \fBuserlisti\fR \fB-l\fR \fB-t\fR lists the menu entry userlist in parsable output; if \fB-l\fR \fB-t\fR \fB-i\fR <\fIentry number\fR>, list the userlist for that list of entry numbers in parsable output; if \fB-l\fR \fB-t\fR \fB-g\fR, list whether there is a global menu password lock in parsable output.
+.sp
+.LP
+The \fBlist-menu\fR subcommand displays the current GRUB menu entries, or, optionally, details about a specific entry identified by an index (if \fB-i\fR is used) or a title string (if \fB-i\fR is omitted).
+.sp
+.LP
+The \fBuse-batch\fR subcommand \fB-f\fR <\fIfile\fR> executes bootadm instructions in the file supplied. This is most useful for setting password during installation from a manifest file.
+.sp
+.LP
+The \fBinstall-bootloader\fR subcommand installs the system bootloader. It supersedes the functionality of \fBinstallgrub\fR(1M) on x86 and \fBinstallboot\fR(1M) on SPARC, as well as supporting installation of GRUB2's bootloader on x86.
+.sp
+.LP
+When an active boot pool is present, bootable datasets are maintained, each corresponding to one boot environment and storing that boot environment's bootable \fBartifacts\fR (such as the boot_archive (x64 and SPARC platforms) and the unix kernel executable (x64 platforms only)). The \fBboot-pool\fR subcommmand allows an administrator to manage aspects of the boot pool, including device membership (with the \fBadd/remove\fR subcommands), manual synchronization of boot artifacts (with the \fBresync\fR subcommand), and setting boot pool attributes (with the \fBset\fR subcommand).
+.sp
+.LP
+The \fBgenerate-menu\fR subcommand provides a way to create a new menu configuration file for Solaris entries. If boot loader configuration files already exist, \fB-f\fR must be passed to force this subcommand to overwrite those files.
+.sp
+.LP
+The \fBshow-entry\fR, \fBadd-entry\fR, \fBchange-entry\fR and \fBremove-entry\fR subcommands provide options to show, add, change, or remove an entry from the GRUB menu. The \fBchange-entry\fR also provides options to add security protection to an entry.
+.sp
+.LP
+Note that OpenBoot PROM (OBP)-based machines, such as SPARC systems, do not use GRUB and have no boot menu manageable by \fBbootadm\fR.
+.sp
+.LP
+The \fBbootadm\fR command determines dynamically the options supported by the image to be managed, so that \fBbootadm\fR invoked on one platform can be used to manage diskless clients of a different platform type.
+.SH SUBCOMMANDS
+.sp
+.LP
+For the subcommands that support specifying \fIentry_title\fR, \fIentry_title\fR is a string that can be either double- or single-quoted.
+.sp
+.LP
+An \fIentry_number\fR is a non-negative integer number representing the index of the menu entry in the GRUB menu.
+.sp
+.LP
+The \fBbootadm\fR command has the following subcommands:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBupdate-archive\fR [\fB-v] [-f | -n\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]\fR
+.ad
+.sp .6
+.RS 4n
+Updates current boot archive if required. Applies to both SPARC and x86 platforms.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlist-archive\fR [\fB-vn\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]\fR
+.ad
+.sp .6
+.RS 4n
+Lists the files and directories to be included in the boot archive. Applies to both SPARC and x86 platforms.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset-menu\fR [\fB-vn\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]] {\fIkey\fR=\fIvalue\fR [\fIkey\fR=\fIvalue\fR]...}\fR
+.ad
+.sp .6
+.RS 4n
+Maintain the GRUB menu. A space-separated list of key-value pairs can be specified.
+.sp
+.ne 2
+.mk
+.na
+\fB\fIkey\fR=\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+Possible values are:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdefault\fR=\fIentry_number\fR\fR
+.ad
+.sp .6
+.RS 4n
+The entry number (for example, \fB0\fR, \fB1\fR, or \fB2\fR) in the GRUB menu designating the operating system to boot when the timer expires.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtimeout\fR=\fIseconds\fR\fR
+.ad
+.sp .6
+.RS 4n
+The number of seconds before the operating system  designated by the default item number is booted. If the value is \fB-1\fR, auto boot is disabled.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconsole\fR=\fIGRUB_console_type\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the type of console used for GRUB.
+.sp
+Possible values are:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\&'text'\fR\fR
+.ad
+.sp .6
+.RS 4n
+Selects a high resolution console.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\&'graphics'\fR\fR
+.ad
+.sp .6
+.RS 4n
+Selects a high resolution console which additionally leads to graphical boot. If BIOS console redirection is enabled, \fBgraphics\fR must not be used to set console.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\&'serial'\fR\fR
+.ad
+.sp .6
+.RS 4n
+Serial console for GRUB bootloader. Please see \fBserial_params\fR below for specific settings of serial parameters.
+.sp
+If BIOS console redirection is enabled, \fB\&'serial'\fR must not be used to set \fBconsole\fR.
+.sp
+When a system is installed by booting with a serial console, that serial console will become the Solaris's kernel default console device. However, GRUB's console will \fBnot\fR be changed to \fBserial\fR (it will be \fB\&'text'\fR).
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[add|del]-user\fR=<\fIusername\fR>\fR
+.ad
+.sp .6
+.RS 4n
+Adds or deletes the username to the list of authorized user. Will prompt for the password twice. Password is stored in hashed form. Username does not have to be the same as the Solaris username.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[auth-file]\fR=<\fIfile path\fR>\fR
+.ad
+.sp .6
+.RS 4n
+Adds username and password in <\fIfile path\fR> to the list of authorized users. <\fIfile path\fR> is a file with <username>=<password> pairs.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[add|del]-superuser\fR=<\fIusername\fR>\fR
+.ad
+.sp .6
+.RS 4n
+Adds or deletes username to the list of superusers. Username must already exists in the list of authorized users.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBserial_params\fR='\fIport\fR[,\fIspeed\fR[,\fIdatabits\fR[,\fIparity\fR[,\fIstopbits\fR[,\fIflowcontrol\fR]]]]]'\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the serial parameters for the serial console.
+.sp
+\fIport\fR is a number specifying the serial port number.
+.sp
+\fIspeed\fR is a number specifying the data rate for the connection in bits/second.
+.sp
+\fIdatabits\fR is the number of data bits in each character.
+.sp
+\fIparity\fR specifies the method for detecting transmission errors. Possible values are:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBN\fR for no parity
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBO\fR for odd parity
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBE\fR for even parity
+.RE
+Values for \fIparity\fR are not case-sensitive.
+.sp
+\fIstopbits\fR specifies the stop bit sent for the character transmission. Possible values are \fB0\fR or \fB1\fR.
+.sp
+\fIflowcontrol\fR specifies the flow control. Possible values are:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBH\fR for hardware flow control
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBS\fR for software flow control
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBN\fR for no flow control
+.RE
+If \fIserial_params\fR is not set, the default is:
+.sp
+.in +2
+.nf
+0,9600,8,N,1,N
+.fi
+.in -2
+.sp
+
+\&...which makes the first serial port (\fBCOM1\fR), using 9600 bits/sec baud rate, no parity checking, with databits of 8 bits per character, stop bit of 1, and no flow control to be the default.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBquiet\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies whether printing informative messages to the console should be suppressed. By default its value is \fBfalse\fR.
+.sp
+Possible values are \fBtrue\fR or \fBfalse\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsplashimage\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the path to the file used as an image to appear during boot.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBforeground\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the foreground color. It is a string of hex values with a format of \fIRRGGBB\fR, where \fIRR\fR is for Red, \fIGG\fR for Green and \fIBB\fR for Blue.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbackground\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the background color. See \fBforeground\fR for possible values.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset-menu-password\fR [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]] [\fB-f\fR <\fIpath to file\fR> | \fB-s\fR] [\fB-r\fR] [\fB-l\fR \fB-t\fR  [\fB-i\fR \fIentry_number\fR[,\fIentry_number\fR]...]|\fB-g\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Sets and deletes the password to protect the GRUB menu from being seen. Also, lists whether the entire GRUB menu password is set and the userlist for each menuentry.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlist-menu\fR [\fB-P\fR \fIpool\fR] [\fB-R\fR \fIaltroot\fR [\fB-p\fR \fIplatform\fR]]\fR
+.ad
+.sp .6
+.RS 4n
+Lists the current GRUB menu entries. This includes the autoboot-timeout, the default entry number, and the title of each entry. Applies to x86 platforms only. If an entry title or entry index is supplied, details about that specific entry are printed.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgenerate-menu\fR [\fB-P\fR \fIpool\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Create a new menu configuration that contains only the Solaris entries currently installed on the system.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbootadm show-entry\fR [\fB-P\fR \fIpool\fR] <\fIentry_name\fR> | \fB-i\fR <\fIindex\fR>\fR
+.ad
+.sp .6
+.RS 4n
+Show the entry found by name <\fIentry_name\fR> or index from the menu. Both \fIentry_name\fR and \fIindex\fR may also be a comma-separated list of entries/indices.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBadd-entry\fR [-P \fIpool\fR] [-i \fIentry_number\fR] \fIentry_title\fR\fR
+.ad
+.sp .6
+.RS 4n
+Create a new entry in the menu with given entry title.
+.sp
+If \fIentry_number\fR is specified, the new entry will be inserted at the given position, or added as the last entry if the given \fIentry_number\fR is more than current number of entries.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchange-entry\fR [\fB-P\fR \fIpool\fR] {[\fIentry_title\fR[,\fIentry_title\fR...] | \fB-i\fR \fIentry_number\fR[,\fIentry_number\fR]...]} { \fIkey\fR=\fIvalue\fR [ \fIkey\fR=\fIvalue\fR ...] | \fBset-default\fR }\fR
+.ad
+.sp .6
+.RS 4n
+Modify the contents of a given entry or a comma-separated list of entries. An entry is specified either by an entry title or by an entry number. If there are multiple entries with the same title, all will be affected.
+.sp
+The special property, \fBset-default\fR, sets the entry to be the default entry to boot from when the timer expires. Only one entry in the subcommand can be specified when specifying this property.
+.sp
+A space separated list of key value pairs can be specified: \fIkey\fR=\fIvalue\fR
+.sp
+Possible values are:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtitle\fR=\fIentry_title\fR\fR
+.ad
+.sp .6
+.RS 4n
+The new title for the entry (or entries).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkernel\fR=\fIpath_to_kernel\fR\fR
+.ad
+.sp .6
+.RS 4n
+Path to the kernel. Example:
+.sp
+.in +2
+.nf
+/platform/i86pc/kernel/amd64/unix
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkargs\fR=\fIkernel_arguments\fR\fR
+.ad
+.sp .6
+.RS 4n
+Argument or a list of arguments passed to kernel during boot. Please refer to \fBkernel\fR(1M) for possible options. If there are any spaces in the list, value of the key should be enclosed in quotes or double quotes.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBboot_archive\fR=\fIpath_to_boot_archive\fR\fR
+.ad
+.sp .6
+.RS 4n
+The path to the boot archive.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbootfs\fR=\fIbootfs\fR\fR
+.ad
+.sp .6
+.RS 4n
+The \fBbootfs\fR property value. Please refer to \fBzpool\fR(1M) for further information.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[add|del]-auth\fR=<\fIusername\fR>\fR
+.ad
+.sp .6
+.RS 4n
+Grant or ungrant username the privilege to boot an entry title or entry index.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBremove-entry\fR [\fB-P\fR \fIpool\fR] [{\fIentry_title\fR [,\fIentry_title\fR...] | \fB-i\fR \fIentry_number\fR[,\fIentry_number\fR...]}\fR
+.ad
+.sp .6
+.RS 4n
+Remove a given entry or a comma-separated list of entries. If there are multiple entries with the same specified title, all will be removed.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstall-bootloader\fR [\fB-Mfv\fR] [\fB-P\fR \fIpool\fR] [\fB-R\fR \fIpath\fR] [\fIdevice1\fR ... \fIdeviceN\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Install the system bootloader. If a list of devices is specified, the bootloader will be installed only on the given devices. Otherwise the bootloader will be installed on a list of devices that is automatically extracted from system configuration.
+.sp
+The device is the name of a raw character device of a slice or partition on the disk on which the root file system resides.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBboot-pool\fR [{\fBadd|remove\fR} [\fB-P\fR \fIrpool\fR] <\fIdevice list\fR>] | \fBlist\fR [\fB-P\fR \fIrpool\fR] | \fBresync\fR [\fB-P\fR \fIrpool\fR] [\fB-vA\fR] [<\fIBE_list\fR>] | \fBset\fR [\fB-P\fR \fIrpool\fR] <\fIparam\fR>=<\fIvalue\fR> ... }\fR
+.ad
+.sp .6
+.RS 4n
+The \fBboot-pool\fR subcommand manipulates the active boot pool (if the system was installed with a boot pool enabled). Certain platform define the set of devices that should be included in the boot pool. Others may require the administrator to select a set of devices at installation time to comprise the boot pool. After installation, the set of devices in the boot pool can be changed and inspected, and the behavior of the boot pool can be changed. Each device in the boot pool will be automatically re-added to the pool if it is faulted and subsequently replaced, so as long as the set of devices in the boot pool is specified, no administrator interaction is required when the pool is rebuilt when devices are replaced.
+.sp
+Each subcommand accepts the \fB-P\fR argument where a root pool can be specifically selected.
+.sp
+If no \fB-P\fR argument is given, the root pool is derived from the pool on which the root filesystem's dataset is located.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBadd\fR [\fB-P\fR \fIrpool\fR] <\fIdevice list\fR>\fR
+.ad
+.sp .6
+.RS 4n
+Adds devices to the boot pool. Devices are added immediately. It's essential that any system restart be deferred until the newly-added devices are resilvered to ensure they can be independently bootable (since the boot pool is a mirror, the boot loader is installed onto each device in the mirror AFTER the resilvering process is complete.)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBremove\fR [\fB-P\fR \fIrpool\fR] <\fIdevice list\fR>\fR
+.ad
+.sp .6
+.RS 4n
+Removes devices from the boot pool immediately.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlist\fR [\fB-P\fR \fIrpool\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Outputs details regarding the boot pool's configuration and settings.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBresync\fR [\fB-P\fR \fIrpool\fR] [\fB-vA\fR] {<\fIBE_list\fR>}\fR
+.ad
+.sp .6
+.RS 4n
+Resynchronize the boot pool (rebuilding it, if necessary, using the set of devices previously configured) and creates bootable datasets on the boot pool for the specified boot environment(s) (if any). Command options are as follows:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.RS 6n
+.rt  
+Repopulates the entire boot pool with the most recently booted/created boot environments.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 6n
+.rt  
+Verbose output during the resynchronization
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset\fR [\fB-P\fR \fIrpool\fR] <\fIparam\fR>=<\fIvalue\fR> ...\fR
+.ad
+.sp .6
+.RS 4n
+Sets the specified boot pool parameter to the specified value.
+.sp
+The following parameter is supported:
+.sp
+.ne 2
+.mk
+.na
+\fBeviction_algorithm\fR
+.ad
+.RS 22n
+.rt  
+The \fBeviction_algorithm\fR can have either \fBnone\fR or \fBlru\fR as its value. By default, the value is set to \fBlru\fR.
+.sp
+When \fBeviction_algorithm\fR is set to \fBnone\fR and a boot environment's bootable files need to be copied to the boot pool, if there is insufficient space on the boot pool, the copy operation will fail. NOTE that the boot pool will not be allowed to exceed 85% of its maximum capacity to ensure maximum system performance.
+.sp
+When \fBeviction_algorithm\fR is set to \fBlru\fR, the bootable datasets that correspond to the least recently-used boot environments will be evicted until sufficient space exists for the copy operation to succeed. Note that the \fBnoevict\fR BE policy (settable on a per-BE basis changes this behavior and stops those BEs from being evicted (if enough BEs are marked \fBnoevict\fR, it's possible for bootable dataset creation to fail, since the system would not be able to find enough free space by evicting datasets.))
+.RE
+
+.RE
+
+.RE
+
+.SH OPTIONS
+.sp
+.LP
+The \fBbootadm\fR command has the following options:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+In \fBinstall-bootloader\fR installation, forces the installation of the bootloader and bypasses any versioning checks for not downgrading the version of the bootloader on the system.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.sp .6
+.RS 4n
+Entry number or a list of comma-separated entry numbers to which to japply the specified operation.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR [x86 systems with BIOS firmware only]\fR
+.ad
+.sp .6
+.RS 4n
+In an \fBinstall-bootloader\fR operation on x86 systems, installs the boot loader into the Master Boot Record (MBR), making it the system boot loader. The default (on systems with BIOS firmware) is to install the boot loader into the Partition Boot Record (PBR).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+In an \fBupdate-archive\fR operation, archive content is checked but not updated.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+The boot configuration associated with the specified pool to be used. When this option is not used, the current pool from which the system was booted is used for boot configuration.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIplatform\fR\fR
+.ad
+.sp .6
+.RS 4n
+The platform, or machine hardware class, of the client. The platform type can only be specified together with \fB-R\fR, and is generally useful only for managing a diskless client where the client is of a different platform class than the server. Platform must be one of \fBi86pc\fR, \fBsun4u\fR, or \fBsun4v\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR\ \fIaltroot\fR\fR
+.ad
+.sp .6
+.RS 4n
+Operation is applied to the path or alternate root path.
+.LP
+Note - 
+.sp
+.RS 2
+The root file system of any non-global zones must not be referenced with the \fB-R\fR option. Doing so might damage the global zone's file system, might compromise the security of the global zone, and might damage the non-global zone's file system. See \fBzones\fR(5).
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR \fBverbose mode\fR\fR
+.ad
+.sp .6
+.RS 4n
+In an \fBupdate-archive\fR operation, stale files are displayed on stderr. In an \fBinstall-bootloader\fR operation, enables verbose mode to print more information about the process.
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRUpdating the Current Boot Archive
+.sp
+.LP
+The following command updates the current boot archive:
+
+.sp
+.in +2
+.nf
+# \fBbootadm update-archive\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRUpdating the Boot Archive on an Alternate Root
+.sp
+.LP
+The following command updates the boot archive on an alternate root:
+
+.sp
+.in +2
+.nf
+# \fBbootadm update-archive -R /a\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRSwitching Default Boot Entry
+.sp
+.LP
+The following command refers to the menu displayed in the previous example. The user selects Linux (item 2).
+
+.sp
+.in +2
+.nf
+# \fBbootadm set-menu default=2\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+or
+
+.sp
+.in +2
+.nf
+# \fBbootadm change-entry -i 2 set-default\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 4 \fRListing GRUB Menu Entries
+.sp
+.LP
+The following command lists the GRUB menu entries:
+
+.sp
+.in +2
+.nf
+# \fBbootadm list-menu\fR
+The location for the active GRUB menu is: /stubboot/boot/grub/menu.lst
+default 0
+timeout 10
+0 Solaris10
+1 Solaris10 failsafe
+2 Linux
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 5 \fRAdding and Changing a Menu Entry
+.sp
+.LP
+The following command adds a menu entry with the title "New Solaris Entry" at position 8 in the GRUB menu.
+
+.sp
+.in +2
+.nf
+# bootadm  add-entry -i 8  "New Solaris Entry"
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The following command changes the just-added entry with the kernel argument of \fB-s\fR  to boot into level \fBs\fR.
+
+.sp
+.in +2
+.nf
+# bootadm  change-entry "New Solaris Entry" kargs="-s"
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 6 \fRInstalling Bootloader on a Second Root Pool
+.sp
+.LP
+The following command installs the bootloader on the pool \fBsecondrpool\fR.
+
+.sp
+.in +2
+.nf
+# \fBbootadm install-bootloader -P secondrpool\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 7 \fRSetting Foreground and Background Color
+.sp
+.LP
+The following command sets the foreground color to be red and the background color to blue.
+
+.sp
+.in +2
+.nf
+# \fBbootadm set-menu splashimage=/boot/grub/splash.xpm.gz \e\fR
+foreground=ff0000 background=0000ff
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 8 \fRShowing information about the active boot pool
+.sp
+.in +2
+.nf
+# \fBbootadm boot-pool list\fR                                              
+Boot pool name: bpool                                                  
+Parameters: eviction_algorithm=lru                                    
+Current: /dev/dsk/c1t0d0, /dev/dsk/c1t1d0                              
+Pending: /dev/dsk/c1t0d0, /dev/dsk/c1t1d0                              
+Platform-specified devices excluded: /dev/dsk/c1t2d0                  
+Platform-specified (auto-added, unless excluded): /dev/dsk/c1t0d0,
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+In this example, the platform has specified three boot pool devices, but the system is using only two of them. The list of current boot pool devices is identical to the list of pending boot pool devices, so no boot pool membership changes are pending. Note that if there is no active boot pool, the following output would have been returned:
+
+.sp
+.in +2
+.nf
+bootadm: Boot pool operations are not applicable to root pool rpool.
+.fi
+.in -2
+.sp
+
+.SH EXIT STATUS
+.sp
+.LP
+The following exit values are returned:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+The command completed successfully.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+The command exited due to an error.
+.RE
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/core-os
+_
+Interface StabilityCommitted
+.TE
+
+.SH NOTES
+.sp
+.LP
+\fBbootadm\fR defaults to \fB/var/tmp\fR to store temporary files, regardless of \fBTMPDIR\fR settings.
+.SH SEE ALSO
+.sp
+.LP
+\fBboot\fR(1M), \fBinstallboot\fR(1M), \fBinstallgrub\fR(1M), \fBkernel\fR(1M), \fBzpool\fR(1M), \fBattributes\fR(5), \fBgrub\fR(5)
+.sp
+.LP
+Consult the GRUB home page, under:
+.sp
+.in +2
+.nf
+http://www.gnu.org/
+.fi
+.in -2
+

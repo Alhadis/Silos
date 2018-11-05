@@ -1,0 +1,2109 @@
+'\" te
+.\" Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\" Portions Copyright (c) 2003, 2011, Oracle and/or its affiliates. All rights reserved.
+.\" Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation. Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation. In the following statement, the phrase "this text" refers to portions of the system documentation. Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group. In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.opengroup.org/unix/online.html. This notice shall appear on any product containing this material.
+.TH locale 5 "2011 年 5 月 20 日" "SunOS 5.11" "標準、環境、マクロ"
+.SH 名前
+locale \- 言語や文化規約によるユーザー環境のサブセット
+.SH 機能説明
+.sp
+.LP
+\fBlocale\fR とは、言語や文化規約によるユーザー環境のサブセットを定義したものです。1 つ以上のカテゴリで構成されます。各カテゴリはその名前によって識別され、システムコンポーネントの動作の特定の側面を制御します。カテゴリ名は次の環境変数名に対応しています:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_CTYPE\fR\fR
+.ad
+.RS 15n
+.rt  
+文字の分類および大文字/小文字の変換。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_COLLATE\fR\fR
+.ad
+.RS 15n
+.rt  
+照合順序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_TIME\fR\fR
+.ad
+.RS 15n
+.rt  
+日付と時間の書式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_NUMERIC\fR\fR
+.ad
+.RS 15n
+.rt  
+数値の書式設定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_MONETARY\fR\fR
+.ad
+.RS 15n
+.rt  
+通貨の書式設定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_MESSAGES\fR\fR
+.ad
+.RS 15n
+.rt  
+情報メッセージや診断メッセージおよび対話式応答の書式。 
+.RE
+
+.sp
+.LP
+これらの標準ユーティリティーは、各ユーティリティーの「環境変数」セクションに定義されているように、現在のロケールに基づいて動作します。一部の C 言語関数の動作も、\fBsetlocale\fR(3C) の最後の呼び出しで定義されているように、現在のロケールに基づいて変更されます。     
+.sp
+.LP
+実装によって提供される以外のロケールは、\fBlocaledef\fR(1) ユーティリティーを通じてアプリケーションで作成できます。環境変数の使用時にロケールの指定に使われる値は、そのロケールが作成されたときに \fBlocaledef\fR の \fIname\fR オペランドとして指定された文字列になります。文字列「C」および「POSIX」は POSIX ロケールの識別子として予約されています。
+.sp
+.LP
+必要なロケールをアプリケーションで選択するには、適切な値を指定して \fBsetlocale()\fR 関数を呼び出します。この関数を次のような空の文字列で呼び出した場合:
+.sp
+.in +2
+.nf
+setlocale(LC_ALL, "");
+.fi
+.in -2
+
+.sp
+.LP
+対応する環境変数の値が使用されます。環境変数が未設定か、または空の文字列に設定されている場合は、\fBsetlocale()\fR 関数によって適切な環境が設定されます。
+.SS "ロケール定義"
+.sp
+.LP
+ロケールは、\fBlocaledef\fR ユーティリティーで受け入れられるファイル形式を使って記述できます。
+.sp
+.LP
+ロケール定義ファイルにはロケールカテゴリのソース定義が 1 つ以上含まれている必要があり、同じロケールカテゴリの定義が複数あってはいけません。
+.sp
+.LP
+カテゴリソース定義は、カテゴリヘッダー、カテゴリ本体、およびカテゴリトレーラで構成されます。カテゴリヘッダーは、文字 \fBLC_\fR で始まる、カテゴリ名を表す文字列で構成されます。カテゴリトレーラは、文字列 \fBEND\fR とそれに続く 1 つ以上の空白文字、および対応するカテゴリヘッダーで使用される文字列で構成されます。
+.sp
+.LP
+カテゴリ本体は、1 行以上のテキストで構成されます。各行には識別子が 1 つ含まれ、そのあとに必要に応じて 1 つ以上のオペランドが続きます。識別子は、特定のロケール要素を識別するキーワードか、または照合要素のどちらかです。ロケール内の各キーワードには一意の名前を付ける必要があります (つまり、2 つのカテゴリに一般的な名前のキーワードを含めることはできません)。キーワードを文字 \fBLC_\fR で始めることはできません。識別子とオペランドは 1 つ以上の空白文字で区切る必要があります。
+.sp
+.LP
+オペランドは、文字、照合要素、または文字列である必要があります。文字列は二重引用符 (\fB“\fR) で囲む必要があります。文字列内のリテラルの二重引用符の前には、次のように <\fIescape character\fR> を付ける必要があります。キーワードのあとに複数のオペランドが続く場合は、それらのオペランドをセミコロン (\fB;\fR) で区切る必要があります。セミコロンの前後に空白文字を入れてもかまいません。
+.sp
+.LP
+ファイル内の最初のカテゴリヘッダーの前に、コメント文字を変更する行を付けることができます。それは 1 列目から始まり、次のような形式になります:
+.sp
+.in +2
+.nf
+"comment_char %c\en",<\fIcomment character\fR>
+.fi
+.in -2
+
+.sp
+.LP
+コメント文字はデフォルトで番号記号 (\fB#\fR) になっています。先頭位置にある空白行と、<\fIcomment character\fR> を含む行は無視されます。
+.sp
+.LP
+ファイル内の最初のカテゴリヘッダーの前に、そのファイル内で使用されるエスケープ文字を変更する行を付けることができます。それは 1 列目から始まり、次のような形式になります:
+.sp
+.in +2
+.nf
+"escape_char %c\en",<\fIescape character\fR>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+エスケープ文字はデフォルトでバックスラッシュになっています。
+.sp
+.LP
+行を継続するには、その行の最後の文字としてエスケープ文字を配置します。この継続文字は入力から破棄されます。実装では、長さが \fB{LINE_MAX}\fR バイトを超える継続行のいずれの部分も受け入れる必要はありませんが、継続行の累積の長さには制限を設けていません。コメント行は、エスケープされた改行文字を使って次の行に継続することはできません。
+.sp
+.LP
+個々の文字、文字列内の文字、および照合要素は、次に定義しているように、シンボリック名を使用して表現する必要があります。また、文字は文字そのものを使用して表現することも、8 進定数、16 進定数、または 10 進定数として表現することもできます。シンボリック以外の表記法を使用すると、結果として得られるロケール定義は多くの場合、システム間で移植できなくなります。左山括弧 (\fB<\fR) はシンボリック名の開始を意味する予約シンボルであり、それ自体を表現するために使用するときは、その前にエスケープ文字を付ける必要があります。文字表現には次の規則が適用されます:
+.RS +4
+.TP
+1.
+山括弧 \fB<\fR と \fB>\fR で囲んだシンボリック名で文字を表現できます。シンボリック名 (山括弧を含む) は、\fBlocaledef\fR \fB-f\fR オプションで指定された charmap ファイルに定義されているシンボリック名と正確に一致する必要があり、charmap ファイル内のシンボリック名に関連付けられた値から特定される文字値に置き換えられます。charmap ファイルに存在しないシンボリック名を使用すると、エラーが発生しますが、カテゴリが \fBLC_CTYPE\fR または \fBLC_COLLATE\fR の場合は例外で、その場合は警告状態になります (エラーや警告がもたらす影響については \fBlocaledef\fR(1) を参照)。\fBcollating-element\fR または \fBcollating-symbol\fR セクションでのシンボリック名の指定のうち、charmap ファイル (存在する場合) 内でシンボリック名が重複しているものはエラーです。シンボリック名の内部でのエスケープ文字または右山括弧の使用は、文字の前にエスケープ文字を付ける場合を除いて無効です。  
+.sp
+例:
+.sp
+.in +2
+.nf
+<C>;<c-cedilla> "<M><a><y>"
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+2.
+文字はその文字自体で表現することができ、その場合、文字の値は実装に依存します。文字列の内部では、二重引用符文字、エスケープ文字、および右山括弧文字についてはエスケープして (エスケープ文字を前に付ける)、文字自体として解釈されるようにする必要があります。文字列の外側では、文字
+.sp
+.in +2
+.nf
+\fB,     ;     <     >\fR \fIescape_char\fR
+.fi
+.in -2
+.sp
+
+をエスケープして文字自体として解釈されるようにする必要があります。
+.sp
+例:
+.sp
+.in +2
+.nf
+c       "May"
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+3.
+文字を 8 進定数で表現できます。8 進定数は、エスケープ文字のあとに 8 進数字が 2 つ以上続く形式で指定されます。各定数はバイト値を表します。複数バイト値は、定数の最後の文字が最下位バイトを示すようなバイト順序で指定された連結定数によって表現できます。
+.sp
+例:
+.sp
+.in +2
+.nf
+\e143;\e347;\e143\e150    "\e115\e141\e171"
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+4.
+文字を 16 進定数で表現できます。16 進定数は、エスケープ文字のあとに \fBx\fR が 1 つ続き、そのあとに 16 進数字が 2 つ以上続く形式で指定されます。各定数はバイト値を表します。複数バイト値は、定数の最後の文字が最下位バイトを示すようなバイト順序で指定された連結定数によって表現できます。
+.sp
+例:
+.sp
+.in +2
+.nf
+\ex63;\exe7;\ex63\ex68    "\ex4d\ex61\ex79"
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+5.
+文字を 10 進定数で表現できます。10 進定数は、エスケープ文字のあとに \fBd\fR が 1 つ続き、そのあとに 10 進数字が 2 つ以上続く形式で指定されます。各定数はバイト値を表します。複数バイト値は、定数の最後の文字が最下位バイトを示すようなバイト順序で指定された連結定数によって表現できます。 
+.sp
+例:
+.sp
+.in +2
+.nf
+\ed99;\ed231;\ed99\ed104   "\ed77\ed97\ed121"
+.fi
+.in -2
+.sp
+
+シンボリック名、文字自体、8 進定数、10 進定数、または 16 進定数のどれを使用しても、ロケール定義が作成される文字セット内に存在する文字しか指定できません。charmap ファイルが存在する場合は、その charmap 内に定義されている文字のみを 8 進定数、10 進定数、または 16 進定数を使って指定できます。charmap ファイルに存在しないシンボリック名は、上記の項目 1 で規定されているように、指定することはできますが、無視されます。
+.RE
+.SS "LC_CTYPE"
+.sp
+.LP
+\fBLC_CTYPE\fR カテゴリは、文字の分類、大文字/小文字の変換、およびその他の文字属性を定義します。また、一連の文字を、省略記号 (\fB\&...\fR) を表す 3 つの隣接するピリオドで表現できます。省略記号の指定は、省略記号の前と後にある値の間にあるすべての値が有効な文字であるという意味に解釈されます。省略記号の指定はエンコードされた単一の文字セット内、つまり同じサイズの文字のグループ内でのみ有効です。省略記号は、その省略記号の前にある文字のエンコードされた値よりも大きく、その省略記号の後ろにある文字のエンコードされた値よりも小さいエンコードされた値を持つすべての文字をリストに含めるものと解釈されます。
+.sp
+.LP
+例:
+.sp
+.in +2
+.nf
+\ex30;...;\ex39;
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+エンドポイント間にあるエンコードされた値を持つすべての文字を文字クラスに含めます。
+.sp
+.LP
+次のキーワードが認識されています。説明の中で、「自動的に含まれる」という用語は参照文字のいずれかを含めても、省略してもエラーにならないことを意味します。
+.sp
+.LP
+文字クラス \fBdigit\fR、\fBxdigit\fR、\fBlower\fR、\fBupper\fR、および \fBspace\fR には、自動的に含まれる文字セットがあります。これらは、文字値 (つまりエンコーディング) が実装のデフォルト値と異なっている場合にのみ指定する必要があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBupper\fR\fR
+.ad
+.RS 18n
+.rt  
+大文字に分類される文字を定義します。
+.sp
+POSIX ロケールでは、26 個の大文字が含まれます:
+.sp
+.in +2
+.nf
+A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+.fi
+.in -2
+.sp
+
+ロケール定義ファイルでは、キーワード \fBcntrl\fR、\fBdigit\fR、\fBpunct\fR、または \fBspace\fR で指定された文字は指定できません。大文字 \fBA\fR - \fBZ\fR がこのクラスに自動的に含まれます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlower\fR\fR
+.ad
+.RS 18n
+.rt  
+小文字に分類される文字を定義します。POSIX ロケールでは、26 個の小文字が含まれます:
+.sp
+.in +2
+.nf
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+.fi
+.in -2
+.sp
+
+ロケール定義ファイルでは、キーワード \fBcntrl\fR、\fBdigit\fR、\fBpunct\fR、または \fBspace\fR で指定された文字は指定できません。移植可能な文字セットの小文字 \fBa\fR - \fBz\fR がこのクラスに自動的に含まれます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBalpha\fR\fR
+.ad
+.RS 18n
+.rt  
+アルファベット文字に分類される文字を定義します。 
+.sp
+POSIX ロケールでは、クラス \fBupper\fR と \fBlower\fR に含まれるすべての文字が含まれます。
+.sp
+ロケール定義ファイルでは、キーワード \fBcntrl\fR、\fBdigit\fR、\fBpunct\fR、または \fBspace\fR で指定された文字は指定できません。\fBupper\fR または \fBlower\fR のどちらかに分類された文字がこのクラスに自動的に含まれます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdigit\fR\fR
+.ad
+.RS 18n
+.rt  
+数字に分類される文字を定義します。
+.sp
+POSIX ロケールでは、
+.sp
+.in +2
+.nf
+0 1 2 3 4 5 6 7 8 9
+.fi
+.in -2
+.sp
+
+のみが含まれます。
+.sp
+ロケール定義ファイルでは、数字 \fB0\fR、\fB1\fR、\fB2\fR、\fB3\fR、\fB4\fR、\fB5\fR、\fB6\fR、\fB7\fR、\fB8\fR、および \fB9\fR のみを、昇順の連続する数値で指定できます。移植可能な文字セットの数字 \fB0\fR - \fB9\fR がこのクラスに自動的に含まれます。
+.sp
+文字クラス \fBdigit\fR の定義に必要なのはそれらの 10 文字のみです。数字を定義するそれらの文字は指定できますが、代替の数字 (ヒンディー語や漢字など) をここで指定することはできません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBalnum\fR\fR
+.ad
+.RS 18n
+.rt  
+文字および数字に分類される文字を定義します。\fBalpha\fR および \fBdigit\fR キーワードで指定された文字のみが指定されます。キーワード \fBalpha\fR および \fBdigit\fR で指定された文字がこのクラスに自動的に含まれます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBspace\fR\fR
+.ad
+.RS 18n
+.rt  
+空白文字に分類される文字を定義します。
+.sp
+POSIX ロケールでは、少なくとも文字 \fBSPACE\fR、\fBFORMFEED\fR、\fBNEWLINE\fR、\fBCARRIAGE RETURN\fR、\fBTAB\fR、および \fBVERTICAL TAB\fR が含まれます。
+.sp
+ロケール定義ファイルでは、キーワード \fBupper\fR、\fBlower\fR、\fBalpha\fR、\fBdigit\fR、\fBgraph\fR、または \fBxdigit\fR で指定された文字は指定できません。移植可能な文字セットの文字 \fBSPACE\fR、\fBFORMFEED\fR、\fBNEWLINE\fR、\fBCARRIAGE RETURN\fR、\fBTAB\fR、および \fBVERTICAL TAB\fR と、クラス \fBblank\fR に含まれるすべての文字がこのクラスに自動的に含まれます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcntrl\fR\fR
+.ad
+.RS 18n
+.rt  
+制御文字に分類される文字を定義します。 
+.sp
+POSIX ロケールでは、クラス \fBalpha\fR または \fBprint\fR 内の文字は含まれません。
+.sp
+ロケール定義ファイルでは、キーワード \fBupper\fR、\fBlower\fR、\fBalpha\fR、\fBdigit\fR、\fBpunct\fR、\fBgraph\fR、\fBprint\fR、または \fBxdigit\fR で指定された文字は指定できません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpunct\fR\fR
+.ad
+.RS 18n
+.rt  
+句読文字に分類される文字を定義します。 
+.sp
+POSIX ロケールでは、空白文字も、クラス \fBalpha\fR、\fBdigit\fR、または \fBcntrl\fR 内のどの文字も含まれません。
+.sp
+ロケール定義ファイルでは、キーワード \fBupper\fR、\fBlower\fR、\fBalpha\fR、\fBdigit\fR、\fBcntrl\fR、\fBxdigit\fR で指定された文字と空白文字は指定できません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgraph\fR\fR
+.ad
+.RS 18n
+.rt  
+出力可能文字に分類される文字 (空白文字は含まない) を定義します。 
+.sp
+POSIX ロケールでは、クラス \fBalpha\fR、\fBdigit\fR、および \fBpunct\fR 内の文字はすべて含まれますが、クラス \fBcntrl\fR 内の文字は含まれません。
+.sp
+ロケール定義ファイルでは、キーワード \fBupper\fR、\fBlower\fR、\fBalpha\fR、\fBdigit\fR、\fBxdigit\fR、および \fBpunct\fR で指定された文字がこのクラスに自動的に含まれます。キーワード \fBcntrl\fR で指定された文字は指定できません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprint\fR\fR
+.ad
+.RS 18n
+.rt  
+出力可能文字に分類される文字 (空白文字を含む) を定義します。 
+.sp
+POSIX ロケールでは、クラス \fBgraph\fR 内の文字はすべて含まれますが、クラス \fBcntrl\fR 内の文字は含まれません。
+.sp
+ロケール定義ファイルでは、キーワード \fBupper\fR、\fBlower\fR、\fBalpha\fR、\fBdigit\fR、\fBxdigit\fR、および \fBpunct\fR で指定された文字と空白文字がこのクラスに自動的に含まれます。キーワード \fBcntrl\fR で指定された文字は指定できません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBxdigit\fR\fR
+.ad
+.RS 18n
+.rt  
+16 進数字に分類される文字を定義します。
+.sp
+POSIX ロケールでは:
+.sp
+.in +2
+.nf
+0 1 2 3 4 5 6 7 8 9 A B C D E F a b c d e f
+.fi
+.in -2
+.sp
+
+のみが含まれます。
+.sp
+ロケール定義ファイルでは、クラス \fBdigit\fR で指定された文字のみを昇順の連続する数値で指定し、そのあとに 16 進数字 10 - 15 (15 を含む) を表す 6 文字のセット (各セットは昇順に指定) を 1 つ以上続けることができます (\fBA\fR、\fBB\fR、\fBC\fR、\fBD\fR、\fBE\fR、\fBF\fR、\fBa\fR、\fBb\fR、\fBc\fR、\fBd\fR、\fBe\fR、\fBf\fR など)。移植可能な文字セットの数字 \fB0\fR - \fB9\fR、大文字 \fBA\fR - \fBF\fR、および小文字 \fBa\fR - \fBf\fR がこのクラスに自動的に含まれます。
+.sp
+文字クラス \fBxdigit\fR の定義では、文字クラス \fBdigit\fR に含まれる文字もここに含まれることが必要です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBblank\fR\fR
+.ad
+.RS 18n
+.rt  
+空白文字に分類される文字を定義します。 
+.sp
+POSIX ロケールでは、空白文字とタブ文字のみが含まれます。
+.sp
+ロケール定義ファイルでは、空白文字とタブ文字がこのクラスに自動的に含まれます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcharclass\fR\fR
+.ad
+.RS 18n
+.rt  
+1 つ以上のロケール固有の文字クラス名をセミコロンで区切られた文字列として定義します。その後、それぞれの名前付き文字クラスを \fBLC_CTYPE\fR 定義内に定義できます。文字クラス名は、移植可能なファイル名文字セットからの 1 バイト以上 \fB{CHARCLASS_NAME_MAX} \fR バイト以下の英数字で構成されます。文字クラス名の最初の文字を数字にすることはできません。その名前をこのドキュメントに定義されている \fBLC_CTYPE\fR キーワードのいずれとも同じにすることはできません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcharclass-name\fR\fR
+.ad
+.RS 18n
+.rt  
+名前付きのロケール固有の文字クラスに属するものとして分類される文字を定義します。POSIX ロケールでは、ロケール固有の名前付き文字クラスは必要ありません。クラス名が \fBcharclass\fR キーワードで定義されているが、その後に文字が割り当てられていない場合、これはエラーではなく、どの文字も属していないクラスを表しています。\fBcharclass-name\fR は、\fBwctype\fR(3C) 関数の \fIproperty\fR 引数として、正規表現とシェルパターンマッチングのブラケット表現で、および \fBtr\fR(1) コマンドによって使用できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtoupper\fR\fR
+.ad
+.RS 18n
+.rt  
+小文字から大文字へのマッピングを定義します。
+.sp
+POSIX ロケールでは、少なくとも 26 個の小文字:
+.sp
+.in +2
+.nf
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+.fi
+.in -2
+.sp
+
+が対応する 26 個の大文字にマップされます:
+.sp
+.in +2
+.nf
+A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+.fi
+.in -2
+.sp
+
+ロケール定義ファイルでは、このオペランドはセミコロンで区切られた文字ペアで構成されます。各文字ペアの文字はコンマで区切られ、ペアは括弧で囲まれます。各ペアの最初の文字は小文字で、2 番目の文字は対応する大文字です。キーワード \fBlower\fR および \fBupper\fR で指定された文字のみを指定できます。移植可能な文字セットの小文字 \fBa\fR - \fBz\fR とそれに対応する大文字 \fBA\fR - \fBZ\fR がこのマッピングに自動的に含まれますが、\fBtoupper\fR キーワードがロケール定義で省略されている場合だけは除きます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtolower\fR\fR
+.ad
+.RS 18n
+.rt  
+大文字から小文字へのマッピングを定義します。
+.sp
+POSIX ロケールでは、少なくとも 26 個の大文字:
+.sp
+.in +2
+.nf
+A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+.fi
+.in -2
+.sp
+
+が対応する 26 個の小文字にマップされます:
+.sp
+.in +2
+.nf
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+.fi
+.in -2
+.sp
+
+ロケール定義ファイルでは、このオペランドはセミコロンで区切られた文字ペアで構成されます。各文字ペアの文字はコンマで区切られ、ペアは括弧で囲まれます。各ペアの最初の文字は大文字で、2 番目の文字は対応する小文字です。キーワード \fBlower\fR および \fBupper\fR で指定された文字のみを指定できます。\fBtolower\fR キーワードがロケール定義で省略されている場合、マッピングは \fBtoupper\fR に指定されたものの逆マッピングになります。
+.RE
+
+.SS "LC_COLLATE"
+.sp
+.LP
+\fBLC_COLLATE\fR カテゴリは、多数のユーティリティー (\fBsort\fR(1)、\fBuniq\fR(1) など)、正規表現照合 (\fBregex\fR(5) を参照)、そして \fBstrcoll\fR(3C)、\fBstrxfrm\fR(3C)、\fBwcscoll\fR(3C)、および \fBwcsxfrm\fR(3C) 関数のための照合順序定義を提供します。
+.sp
+.LP
+照合順序定義では、ロケール内の照合要素 (文字および複数文字の照合要素) 間の相対的な順序を定義します。この順序は、照合値によって、つまり各要素に 1 つ以上の照合値 (照合ウェイトとも呼ばれる) を割り当てることによって表されます。次の機能があります:
+.RS +4
+.TP
+1.
+\fB複数文字の照合要素\fR。複数文字の照合要素の指定 (つまり、1 つのエンティティーとして照合される 2 つ以上の文字のシーケンス)。
+.RE
+.RS +4
+.TP
+2.
+\fBユーザー定義の照合要素順序\fR。各照合要素には、文字 (基本) 照合順序におけるその順番を定義する照合値が割り当てられます。この順序付けは、正規表現やパターンマッチングによって使用され、また照合ウェイトが明示的に指定されていない場合はソートで使用される照合ウェイトとしても使用されます。
+.RE
+.RS +4
+.TP
+3.
+\fB複数のウェイトと等価クラス\fR。照合要素には、ソートで使用する照合ウェイトを 1 つ以上 (制限値 \fB{COLL_WEIGHTS_MAX}\fR\fB\fR まで) 割り当てることができます。以降は、最初のウェイトをプライマリウェイトと呼びます。
+.RE
+.RS +4
+.TP
+4.
+\fB1 対多のマッピング\fR。1 つの文字が一連の照合要素にマッピングされます。
+.RE
+.RS +4
+.TP
+5.
+\fB等価クラス定義\fR。2 つ以上の照合要素が同じ照合値 (プライマリウェイト) を持ちます。
+.RE
+.RS +4
+.TP
+6.
+\fBウェイトによる順序付け\fR。2 つの文字列を比較してその相対的な順序を判定する場合、それらの 2 つの文字列は最初に一連の照合要素に分割されます。次に、それらの要素の相対的なプライマリウェイトに従って、連続する要素ペア内の要素が比較されます。等しい場合、複数のウェイトが割り当てられていれば、照合要素ペアの 1 つが等しくないと判断されるか、またはウェイトが使い果たされるまで、相対的な以降のウェイトに従って照合要素ペアが再度比較されます。
+.RE
+.sp
+.LP
+照合順序定義では、次のキーワードが認識されています。それらについては、以降のセクションで詳しく説明します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcopy\fR\fR
+.ad
+.RS 21n
+.rt  
+このカテゴリの定義として使用される、既存のロケールの名前を指定します。このキーワードを指定した場合は、ほかのキーワードは指定しません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcollating-element\fR\fR
+.ad
+.RS 21n
+.rt  
+複数文字の照合要素を表す照合要素シンボルを定義します。このキーワードはオプションです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcollating-symbol\fR\fR
+.ad
+.RS 21n
+.rt  
+照合順序文で使用する照合シンボルを定義します。このキーワードはオプションです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBorder_start\fR\fR
+.ad
+.RS 21n
+.rt  
+照合規則を定義します。この文のあとに、文字の照合値と照合ウェイトを照合要素に割り当てる、1 つ以上の照合順序文が続きます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBorder_end\fR\fR
+.ad
+.RS 21n
+.rt  
+照合順序文の終了を指定します。
+.RE
+
+.SS "collating-element \fIキーワード\fR"
+.sp
+.LP
+文字セット内の照合要素に加えて、\fBcollating-element\fR キーワードを使用すると、複数文字の照合要素を定義できます。構文は次のとおりです:
+.sp
+.in +2
+.nf
+\fB"collating-element %s from \e"%s\e"\en",\fR<\fIcollating-symbol\fR>,<\fIstring\fR>
+.fi
+.in -2
+
+.sp
+.LP
+<\fIcollating-symbol\fR> オペランドは山括弧 (\fB<\fR と \fB>\fR) で囲まれたシンボリック名であり、現在の charmap ファイル (存在する場合) 内のシンボリック名、またはこの照合定義内で定義されているほかのシンボリック名と重複してはいけません。string オペランドは、1 つのエンティティーとして照合される 2 文字以上の文字列です。このキーワードで定義される <\fIcollating-element\fR> は、\fBLC_COLLATE\fR カテゴリでのみ認識されます。
+.sp
+.LP
+例:
+.br
+.in +2
+\fBcollating-element\fR <\fBch\fR> from “<\fBc\fR><\fBh\fR>”
+.in -2
+.br
+.in +2
+\fBcollating-element\fR <\fBe-acute\fR> from “<\fBacute\fR><\fBe\fR>”
+.in -2
+.br
+.in +2
+\fBcollating-element\fR <\fBll\fR> from “\fBll\fR”
+.in -2
+.SS "collating-symbol \fIキーワード\fR"
+.sp
+.LP
+このキーワードは、照合順序文、つまり \fBorder_start\fR キーワードと \fBorder_end\fR キーワードの間で使用するシンボルの定義に使われます。構文は次のとおりです:
+.sp
+.in +2
+.nf
+\fB"collating-symbol %s\en",\fR<\fIcollating-symbol\fR>
+.fi
+.in -2
+
+.sp
+.LP
+\fB<\fR\fIcollating-symbol\fR\fB>\fR は山括弧 (\fB<\fR と \fB>\fR) で囲まれたシンボリック名であり、現在の charmap ファイル (存在する場合) 内のシンボリック名、またはこの照合定義内で定義されているほかのシンボリック名と重複してはいけません。
+.sp
+.LP
+このキーワードによって定義される \fBcollating-symbol\fR は、\fBLC_COLLATE\fR カテゴリでのみ認識されます。
+.sp
+.LP
+例:
+.br
+.in +2
+\fBcollating-symbol\fR <\fBUPPER_CASE\fR>
+.in -2
+.br
+.in +2
+\fBcollating-symbol\fR <\fBHIGH\fR>
+.in -2
+.sp
+.LP
+\fBcollating-symbol\fR キーワードは、文字順序シーケンス内の相対位置に関連付けることができるシンボリック名を定義します。そのようなシンボリック名はいずれの照合要素も表しませんが、ウェイトとして使用できます。
+.SS "order_start \fIキーワード\fR"
+.sp
+.LP
+\fBorder_start\fR キーワードは、照合順序エントリの前に置く必要があり、この照合順序定義のウェイトの数とその他の照合規則を定義します。
+.sp
+.LP
+\fBorder_start\fR キーワードの構文は次のとおりです:
+.sp
+.in +2
+.nf
+\fB"order_start %s;%s;...;%s\en",\fR<\fIsort-rules\fR>,<\fIsort-rules\fR>
+.fi
+.in -2
+
+.sp
+.LP
+\fBorder_start\fR キーワードのオペランドはオプションです。存在する場合、オペランドは文字列が比較されるときに適用される規則を定義します。オペランドの数は、各要素に割り当てられているウェイトの数を定義します。オペランドが存在しない場合は、1 つの \fBforward\fR オペランドが想定されます。存在する場合は、最初のオペランドが最初の (プライマリ) ウェイトを使って文字列を比較するときに適用される規則を定義し、2 番目のオペランドが 2 番目のウェイトを使って文字列を比較するときに適用される規則を定義し、以下同様になります。オペランドはセミコロン (\fB;\fR) で区切ります。各オペランドは、コンマ (\fB,\fR) で区切った 1 つ以上の照合指令で構成されます。オペランドの数が制限値 \fB{COLL_WEIGHTS_MAX}\fR を超えると、ユーティリティーによって警告メッセージが発行されます。次の指令がサポートされています:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBforward\fR\fR
+.ad
+.RS 12n
+.rt  
+ウェイトレベルの比較演算が文字列の先頭から文字列の終わりに向かって行われることを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbackward\fR\fR
+.ad
+.RS 12n
+.rt  
+ウェイトレベルの比較演算が文字列の終わりから文字列の先頭に向かって行われることを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBposition\fR\fR
+.ad
+.RS 12n
+.rt  
+ウェイトレベルの比較演算で、\fBIGNORE\fR の対象とならない文字列内の要素の相対位置が考慮されることを指定します。比較の開始から \fBIGNORE\fR の対象となる最少の照合要素の後ろにある、\fBIGNORE\fR の対象とならない要素を含む文字列が最初に照合されます。両方の文字列内で、\fBIGNORE\fR の対象とならない文字が同じ相対位置に含まれている場合、それらの要素に割り当てられた照合値によって順序付けが決められます。同等の場合、\fBIGNORE\fR の対象とならない後続の文字が同様に考慮されます。
+.RE
+
+.sp
+.LP
+指令 \fBforward\fR および \fBbackward\fR は相互に排他的です。
+.sp
+.LP
+例:
+.sp
+.in +2
+.nf
+order_start	forward;backward
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+オペランドを指定しない場合は、1 つの \fBforward\fR オペランドが想定されます。
+.SS "照合順序"
+.sp
+.LP
+\fBorder_start\fR キーワードのあとには照合識別子エントリが続きます。照合要素エントリの構文は次のとおりです:
+.sp
+.in +2
+.nf
+\fB"%s %s;%s;...;%s\en"\fR<\fIcollating-identifier\fR>,<\fIweight\fR>,<\fIweight\fR>\fB,...\fR
+.fi
+.in -2
+
+.sp
+.LP
+各 \fIcollating-identifier\fR は、上記の「\fBロケール定義\fR」で説明している文字、<\fIcollating-element\fR>、<\fIcollating-symbol\fR>、省略記号、または特殊シンボル \fBUNDEFINED\fR で構成されます。照合要素が指定される順序によって、各照合要素がそれに続く要素に比べて小さくなるように文字順序シーケンスが決められます。\fBNUL\fR 文字はほかのどの文字と比べても小さくなります。
+.sp
+.LP
+<\fIcollating-element\fR> は、複数文字の照合要素を指定するために使用され、<\fIcollating-element\fR> で指定された文字シーケンスが 1 つの単位として、その場所によって指定された相対的な順序で照合されることを示します。
+.sp
+.LP
+<\fIcollating-symbol\fR> は、ウェイトで使用する、相対的な順序での位置を定義するために使用します。 <\fIcollating-symbol\fR> ではウェイトは指定されません。 
+.sp
+.LP
+省略記号は、一連の文字がそれらのエンコードされた文字値に従って照合されることを指定します。それは、現在のコード化文字セット内にある、前の行の文字の値よりも大きく、次の行の文字の値よりも小さいコード化文字セット値を持つすべての文字が、それらのコード化文字セット値に従って昇順に、前の文字と次の文字間に文字照合順序で配置されることを示すものと解釈されます。現在のコード化文字セット内で、最初の省略記号は前の行に NUL 文字が指定されているかのように解釈され、末尾の省略記号は次の行にもっとも大きいコード化文字セット値が指定されているかのように解釈されます。現在のコード化文字セット内で前の行と次の行に文字が指定されていない場合、省略記号は無効とみなされます。省略記号の使用により、定義が特定のコード化文字セットに結び付けられ、実装間で定義を移植できないようにすることができます。
+.sp
+.LP
+シンボル \fBUNDEFINED\fR は、明示的にも、または省略記号によっても指定されていないすべてのコード化文字セット値を含むものと解釈されます。このような文字は、文字照合順序内の、このシンボルで指示された位置に、それらのコード化文字セット値に従って昇順に挿入されます。\fBUNDEFINED\fR シンボルが指定されず、現在のコード化文字セットに、このセクションで定められていない文字が含まれている場合、ユーティリティーによって警告メッセージが発行され、そのような文字は文字照合順序の最後に置かれます。
+.sp
+.LP
+各照合要素のオプションのオペランドは、照合要素のプライマリ、セカンダリ、またはそれ以降のウェイトを定義するために使用されます。最初のオペランドは相対的なプライマリウェイトを指定し、2 番目は相対的なセカンダリウェイトを指定し、以下同様になります。2 つ以上の照合要素に同じウェイトを割り当てることができます。つまり、それらが同じプライマリウェイトを持つ場合、それらは同じ\fI等価クラス\fRに属します。\fBorder_start\fR キーワードで対応するレベルに対して \fBposition\fR 照合指令が指定されていなければ、照合はウェイトレベルごとに、\fBIGNORE\fR の対象となる要素が削除されたかのように動作します。そして、次の要素ペアがそれらの要素の相対的なウェイトに従って比較されます。2 つの文字列を比較して等しい場合は、制限値 {\fBCOLL_WEIGHTS_MAX\fR} に達するまで、次のウェイトレベルに対してこのプロセスが繰り返されます。
+.sp
+.LP
+ウェイトは、上記の「\fBロケール定義\fR」で説明している文字、<\fIcollating-symbol\fR>、<\fIcollating-element\fR>、省略記号、または特殊シンボル \fBIGNORE\fR として表されます。1 つの文字、<\fI collating–symbol\fR>、または <\fIcollating–element\fR> は、文字または文字自体ではなく、文字またはシンボルの文字照合順序における相対位置を表します。このように、絶対値をウェイトに割り当てるのではなく、特定のウェイトが、文字照合順序での順序に基づいて照合要素に割り当てられた相対的な順序値を使って表されます。
+.sp
+.LP
+1 対多のマッピングは、2 つ以上の連結された文字またはシンボリック名を指定することで示されます。たとえば、文字 <\fBeszet\fR> に文字列 “<\fBs\fR><\fBs\fR>” をウェイトとして指定した場合は、文字 <\fBeszet\fR> のすべてのオカレンスが <\fBs\fR><\fBs\fR> によって置き換えられたかのように比較が行われます (<\fBs\fR> には照合ウェイト <\fBs\fR> が割り当てられているものとします)。<\fBeszet\fR> と <\fBs\fR><\fBs\fR> を等価クラスとして定義する必要がある場合は、文字列 \fBss\fR に対して照合要素を定義する必要があります。
+.sp
+.LP
+省略記号で指定されたすべての文字にはデフォルトで、文字の相対的な順序に等しい、一意のウェイトが割り当てられます。明示的または暗黙的な \fBUNDEFINED\fR 特殊シンボルで指定された文字には、デフォルトで同じプライマリウェイトが割り当てられます (つまり、それらは同じ等価クラスに属します)。ウェイトとしての省略記号は、シーケンス内の各文字が、文字照合順序でのそれらの文字の相対的な順序に等しい、一意のウェイトを持つことを意味するものと解釈されます。省略記号のウェイトとしての使用は、照合要素が省略記号でも特殊シンボル \fBUNDEFINED\fR でもない場合、エラーとして扱われます。
+.sp
+.LP
+ウェイトとしての特殊なキーワード \fBIGNORE\fR は、\fBIGNORE\fR が指定されているレベルのウェイトを使用して文字列を比較するときに、その照合要素が無視される、つまり文字列にその照合要素が含まれていなかったかのようになることを示します。正規表現およびパターンマッチングでは、プライマリウェイトで \fBIGNORE\fR の対象となるすべての文字によって等価クラスが形成されます。
+.sp
+.LP
+空のオペランドは、照合要素そのものとして解釈されます。
+.sp
+.LP
+たとえば、順序文:
+.sp
+.in +2
+.nf
+<a>	 <a>;<a>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+は次と同じです:
+.sp
+.in +2
+.nf
+<a>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+省略記号は、照合要素が省略記号だった場合はオペランドとして使用でき、その省略記号によって定義された各文字の値として解釈されます。
+.sp
+.LP
+このセクションで定義されている照合順序は、正規表現におけるブラケット表現の解釈を定義します。
+.sp
+.LP
+例:
+.sp
+
+.sp
+.TS
+tab();
+lw(2.75i) lw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+\fBorder_start\fR\fBforward;backward\fR
+\fBUNDEFINED\fR\fBIGNORE;IGNORE\fR
+\fB<LOW>\fR
+\fB<space>\fR\fB<LOW>;<space>\fR
+\fB\&. . .\fR\fB<LOW>;. . .\fR
+\fB<a>\fR\fB<a>;<a>\fR
+\fB<a-acute>\fR\fB<a>;<a-acute>\fR
+\fB<a-grave>\fR\fB<a>;<a-grave>\fR
+\fB<A>\fR\fB<a>;<A>\fR
+\fB<A-acute>\fR\fB<a>;<A-acute>\fR
+\fB<A-grave>\fR\fB<a>;<A-grave>\fR
+\fB<ch>\fR\fB<ch>;<ch>\fR
+\fB<Ch>\fR\fB<ch>;<Ch>\fR
+\fB<s>\fR\fB<s>;<s>\fR
+\fB<eszet>\fR\fB"<s><s>";"<eszet><eszet>"\fR
+\fBorder_end\fR
+.TE
+
+.sp
+.LP
+この例は、次のように解釈されます:
+.RS +4
+.TP
+1.
+\fBUNDEFINED\fR は、この定義内に (明示的に、または省略記号で) 指定されていないすべての文字が照合の際に無視されることを意味します。正規表現の際には、それらは先頭に順序付けられます。
+.RE
+.RS +4
+.TP
+2.
+<\fBspace\fR> と <\fBa\fR> の間にあるすべての文字は同じプライマリ等価クラスと、エンコードされた序数値に基づく個別のセカンダリウェイトを持ちます。
+.RE
+.RS +4
+.TP
+3.
+大文字または小文字の \fBa\fR に基づいた文字はすべて同じ 1 次等価クラスに属します。
+.RE
+.RS +4
+.TP
+4.
+複数文字の照合要素 <\fBch\fR> は照合シンボル <\fBch\fR> で表され、複数文字の照合要素 <\fBCh\fR> と同じ 1 次等価クラスに属します。
+.RE
+.SS "order_end \fIキーワード\fR"
+.sp
+.LP
+照合順序エントリは、\fBorder_end\fR キーワードで終了させる必要があります。
+.SS "LC_MONETARY"
+.sp
+.LP
+\fBLC_MONETARY\fR カテゴリは、通貨の数値情報の書式設定に使用される規則と記号を定義します。この情報は、\fBlocaleconv\fR(3C) 関数によって入手できます
+.sp
+.LP
+ロケールのこのカテゴリには、次の項目が定義されています。項目名は、ロケールの定義時に \fBlocaledef\fR(1) ユーティリティーによって認識されるキーワードです。それらは、<\fBlocale.h\fR> に定義されている \fBlconv\fR 構造のメンバー名にも似ています。\fBlocaleconv\fR 関数は、未定義の整数項目に対して \fB{CHAR_MAX}\fR を返し、未定義またはサイズが 0 の文字列項目に対して空の文字列 (\fB""\fR) を返します。
+.sp
+.LP
+ロケール定義ファイルでは、オペランドは文字列です。一部のキーワードでは、文字列に整数しか含めることができません。提供されていないキーワード、空の文字列 (\fB""\fR) に設定された文字列値、\fB–1\fR に設定された整数のキーワードは、その値がロケールで使用できないことを示すために使われます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint_curr_symbol\fR\fR
+.ad
+.RS 22n
+.rt  
+国際通貨記号。オペランドは 4 文字からなる文字列であり、最初の 3 文字には ISO 4217 標準に指定されたものに合致した英字の国際通貨記号が含まれます。4 番目の文字は、国際通貨記号と金額を区切るために使われる文字です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcurrency_symbol\fR\fR
+.ad
+.RS 22n
+.rt  
+ローカルの通貨記号として使用される文字列。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmon_decimal_point\fR\fR
+.ad
+.RS 22n
+.rt  
+オペランドは、金額を書式設定する際に小数点 (基数文字) として使用される記号を含む文字列です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmon_thousands_sep\fR\fR
+.ad
+.RS 22n
+.rt  
+オペランドは、書式設定された金額の中で小数点の左側にある数字の位取り記号として使用される記号を含む文字列です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmon_grouping\fR\fR
+.ad
+.RS 22n
+.rt  
+書式設定された金額の中で数字の位取りの桁数を定義します。オペランドは、セミコロンで区切られた一連の整数です。各整数は位取りの桁数を指定します。最初の整数は小数点のすぐ左側の桁数を定義し、以降の整数はその左側の桁数を定義します。最後の整数が \fB–1\fR でない場合、その前の桁数 (存在する場合) が残りの数字に対して繰り返し使用されます。最後の整数が \fB–1\fR の場合、これ以上の位取りは行われません。
+.sp
+\fBmon_grouping\fR キーワードの解釈の例を次に示します。書式設定される値は \fB123456789\fR で、\fBmon_thousands_sep\fR が \fB\&'\fR であると仮定して、次の表にその結果が表示されています。3 列目には、この位取りに対応するために \fBlocaleconv\fR 関数で使用される、ISO C 標準に含まれているのと同等の文字列が表示されています。
+.sp
+.in +2
+.nf
+mon_grouping   Formatted Value  ISO C String
+
+3;-1           123456'789       "\e3\e177"
+3              123'456'789      "\e3"
+3;2;-1         1234'56'789      "\e3\e2\e177"
+3;2            12'34'56'789     "\e3\e2"
+-1             1234567898       "\e177"
+.fi
+.in -2
+.sp
+
+これらの例では、\fB{CHAR_MAX}\fR の 8 進値は 177 です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpositive_sign\fR\fR
+.ad
+.RS 22n
+.rt  
+書式設定された負でない金額を示すために使用される文字列。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnegative_sign\fR\fR
+.ad
+.RS 22n
+.rt  
+書式設定された負の金額を示すために使用される文字列。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint_frac_digits\fR\fR
+.ad
+.RS 22n
+.rt  
+\fBint_curr_symbol\fR を使用して書式設定された金額の中で記述される小数点以下の桁数 (小数点の右側の桁数) を表す整数。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfrac_digits\fR\fR
+.ad
+.RS 22n
+.rt  
+\fBcurrency_symbol\fR を使用して書式設定された金額の中で記述される小数点以下の桁数 (小数点の右側の桁数) を表す整数。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp_cs_precedes\fR\fR
+.ad
+.RS 22n
+.rt  
+SUSv3 標準に準拠したアプリケーションでは、\fBcurrency_symbol\fR が、負でない金額値の前に置かれる場合は \fB1\fR に設定され、その記号がその値のあとに続く場合は \fB0\fR に設定される整数。
+.sp
+SUSv3 標準に準拠\fBしない\fRアプリケーションでは、\fBcurrency_symbol\fR または \fBint_currency_symbol\fR が、負でない金額値の前に置かれる場合は \fB1\fR に設定され、その記号がその値のあとに続く場合は \fB0\fR に設定される整数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp_sep_by_space\fR\fR
+.ad
+.RS 22n
+.rt  
+SUSv3 標準に準拠したアプリケーションでは、\fBcurrency_symbol\fR と負でない金額値が空白で区切られない場合は \fB0\fR に設定され、その記号とその値が空白で区切られる場合は \fB1\fR に設定され、その記号と符号文字列が隣接する場合に両者が空白で区切られる場合は \fB2\fR に設定される整数。
+.sp
+SUSv3 標準に準拠\fBしない\fRアプリケーションでは、\fBcurrency_symbol\fR または \fBint_curr_symbol\fR と負でない金額値が空白で区切られない場合は \fB0\fR に設定され、その記号とその値が空白で区切られる場合は \fB1\fR に設定され、その記号と符号文字列が隣接する場合に両者が空白で区切られる場合は \fB2\fR に設定される整数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBn_cs_precedes\fR\fR
+.ad
+.RS 22n
+.rt  
+SUSv3 標準に準拠したアプリケーションでは、\fBcurrency_symbol\fR が、負の金額値の前に置かれる場合は \fB1\fR に設定され、その記号がその値のあとに続く場合は \fB0\fR に設定される整数。
+.sp
+SUSv3 標準に準拠\fBしない\fRアプリケーションでは、\fBcurrency_symbol\fR または \fBint_currency_symbol\fR が、負の金額値の前に置かれる場合は \fB1\fR に設定され、その記号がその値のあとに続く場合は \fB0\fR に設定される整数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBn_sep_by_space\fR\fR
+.ad
+.RS 22n
+.rt  
+SUSv3 標準に準拠したアプリケーションでは、\fBcurrency_symbol\fR と負の金額値が空白で区切られない場合は \fB0\fR に設定され、その記号とその値が空白で区切られる場合は \fB1\fR に設定され、その記号と符号文字列が隣接する場合に両者が空白で区切られる場合は \fB2\fR に設定される整数。
+.sp
+SUSv3 標準に準拠\fBしない\fRアプリケーションでは、\fBcurrency_symbol\fR または \fBint_curr_symbol\fR と負の金額値が空白で区切られない場合は \fB0\fR に設定され、その記号とその値が空白で区切られる場合は \fB1\fR に設定され、その記号と符号文字列が隣接する場合に両者が空白で区切られる場合は \fB2\fR に設定される整数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp_sign_posn\fR\fR
+.ad
+.RS 22n
+.rt  
+負でない金額値における、\fBpositive_sign\fR の位置を示す値に設定される整数。\fBp_sign_posn\fR と \fBn_sign_posn\fR の両方に対して、次の整数値が認識されています:
+.sp
+SUSv3 標準に準拠したアプリケーションでは:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+金額と \fBcurrency_symbol\fR を括弧で囲みます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+金額と \fBcurrency_symbol\fR の前に符号文字列が置かれます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+金額と \fBcurrency_symbol\fR のあとに符号文字列が続きます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.RS 5n
+.rt  
+\fBcurrency_symbol\fR の前に符号文字列が置かれます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR\fR
+.ad
+.RS 5n
+.rt  
+\fBcurrency_symbol\fR のあとに符号文字列が続きます。
+.RE
+
+SUSv3 標準に準拠\fBしない\fRアプリケーションでは:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+金額と \fBcurrency_symbol\fR または \fBint_curr_symbol\fR を括弧で囲みます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+金額と \fBcurrency_symbol\fR または \fBint_curr_symbol\fR の前に符号文字列が置かれます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+金額と \fBcurrency_symbol\fR または \fBint_curr_symbol\fR のあとに符号文字列が続きます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.RS 5n
+.rt  
+\fBcurrency_symbol\fR または \fBint_curr_symbol\fR の前に符号文字列が置かれます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR\fR
+.ad
+.RS 5n
+.rt  
+\fBcurrency_symbol\fR または \fBint_curr_symbol\fR のあとに符号文字列が続きます。 
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBn_sign_posn\fR\fR
+.ad
+.RS 22n
+.rt  
+書式設定された負の金額値における、\fBnegative_sign\fR の位置を示す値に設定される整数。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint_p_cs_precedes\fR\fR
+.ad
+.RS 22n
+.rt  
+\fBint_curr_symbol\fR が、負でない金額値の前に置かれる場合は \fB1\fR に設定され、その記号がその値のあとに続く場合は \fB0\fR に設定される整数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint_n_cs_precedes\fR\fR
+.ad
+.RS 22n
+.rt  
+\fBint_curr_symbol\fR が、負の金額値の前に置かれる場合は \fB1\fR に設定され、その記号がその値のあとに続く場合は \fB0\fR に設定される整数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint_p_sep_by_space\fR\fR
+.ad
+.RS 22n
+.rt  
+\fBint_curr_symbol\fR と負でない金額値が空白で区切られない場合は \fB0\fR に設定され、その記号とその値が空白で区切られる場合は \fB1\fR に設定され、その記号と符号文字列が隣接する場合に両者が空白で区切られる場合は \fB2\fR に設定される整数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint_n_sep_by_space\fR\fR
+.ad
+.RS 22n
+.rt  
+\fBint_curr_symbol\fR と負の金額値が空白で区切られない場合は \fB0\fR に設定され、その記号とその値が空白で区切られる場合は \fB1\fR に設定され、その記号と符号文字列が隣接する場合に両者が空白で区切られる場合は \fB2\fR に設定される整数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint_p_sign_posn\fR\fR
+.ad
+.RS 22n
+.rt  
+国際書式で書式設定された正の金額値における、\fBpositive_sign\fR の位置を示す値に設定される整数。\fBint_p_sign_posn\fR と \fBint_n_sign_posn\fR に対して、次の整数値が認識されています:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+金額と \fB\fR\fBint_curr_symbol\fR を括弧で囲みます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+金額と \fBint_curr_symbol\fR の前に符号文字列が置かれます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+金額と \fBint_curr_symbol\fR の前に符号文字列が置かれます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.RS 5n
+.rt  
+\fBint_curr_symbol\fR の前に符号文字列が置かれます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR\fR
+.ad
+.RS 5n
+.rt  
+\fBint_curr_symbol\fR のあとに符号文字列が続きます。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBint_n_sign_posn\fR\fR
+.ad
+.RS 22n
+.rt  
+国際書式で書式設定された負の金額値における、\fBnegative_sign\fR の位置を示す値に設定される整数。
+.RE
+
+.sp
+.LP
+さまざまな組み合わせの結果を次の表に示します:
+.sp
+
+.sp
+.TS
+tab();
+lw(1.48i) lw(1.48i) lw(.8i) lw(.8i) lw(.8i) lw(.13i) 
+lw(1.48i) lw(1.48i) lw(.8i) lw(.8i) lw(.8i) lw(.13i) 
+.
+\fBp_sep_by_space\fR
+210
+\fBp_cs_precedes\fR= 1\fBp_sign_posn\fR= 0\fB($1.25)\fR\fB($1.25)\fR\fB($1.25)\fR
+\fBp_sign_posn\fR= 1\fB+$1.25\fR\fB+$1.25\fR\fB+$1.25\fR
+\fBp_sign_posn\fR= 2\fB$1.25+\fR\fB$1.25+\fR\fB$1.25+\fR
+\fBp_sign_posn\fR= 3\fB+$1.25\fR\fB+$1.25\fR\fB+$1.25\fR
+\fBp_sign_posn\fR= 4\fB$+1.25\fR\fB$+1.25\fR\fB$+1.25\fR
+\fBp_cs_precedes\fR= 0\fBp_sign_posn\fR= 0\fB(1.25 $)\fR\fB(1.25 $)\fR\fB(1.25$)\fR
+\fBp_sign_posn\fR= 1\fB+1.25 $\fR\fB+1.25 $\fR\fB+1.25$\fR
+\fBp_sign_posn\fR= 2\fB1.25$ +\fR\fB1.25 $+\fR\fB1.25$+\fR
+\fBp_sign_posn\fR= 3\fB1.25+ $\fR\fB1.25 +$\fR\fB1.25+$\fR
+\fBp_sign_posn\fR= 4\fB1.25$ +\fR\fB1.25 $+\fR\fB1.25$+\fR
+.TE
+
+.sp
+.LP
+POSIX ロケールでの金額の書式設定定義は次に従います。コードリストは \fBlocaledef\fR(1) の入力を表し、表は同じ情報に \fBlocaleconv\fR(3C) および \fBnl_langinfo\fR(3C) 形式を加えたものを表しています。すべての値は POSIX ロケールで未指定です。
+.sp
+.in +2
+.nf
+LC_MONETARY
+# This is the POSIX locale definition for
+# the LC_MONETARY category.
+#
+int_curr_symbol       ""
+currency_symbol       ""
+mon_decimal_point     ""
+mon_thousands_sep     ""
+mon_grouping          -1
+positive_sign         ""
+negative_sign         ""
+int_frac_digits       -1
+frac_digits           -1
+p_cs_precedes         -1
+p_sep_by_space        -1
+n_cs_precedes         -1
+n_sep_by_space        -1
+p_sign_posn           -1
+n_sign_posn           -1
+int_p_cs_precedes     -1
+int_p_sep_by_space    -1
+int_n_cs_precedes     -1
+int_n_sep_by_space    -1
+int_p_sign_posn       -1
+int_n_sign_posn       -1
+#
+END LC_MONETARY
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+エントリ \fBn/a\fR は、その値が POSIX ロケールで使用できないことを示します。
+.SS "LC_NUMERIC"
+.sp
+.LP
+\fBLC_NUMERIC\fR カテゴリは、通貨以外の数値情報の書式設定に使用される規則と記号を定義します。この情報は、\fBlocaleconv\fR(3C) 関数によって入手できます。
+.sp
+.LP
+ロケールのこのカテゴリには、次の項目が定義されています。項目名は、ロケールの定義時に \fBlocaledef\fR ユーティリティーによって認識されるキーワードです。それらは、<\fBlocale.h\fR> に定義されている \fIlconv\fR 構造のメンバー名にも似ています。\fBlocaleconv()\fR 関数は、未指定の整数項目に対して \fB{CHAR_MAX}\fR を返し、未指定またはサイズが 0 の文字列項目に対して空の文字列 (\fB“”\fR) を返します。
+.sp
+.LP
+ロケール定義ファイルでは、オペランドは文字列です。一部のキーワードでは、文字列に整数しか含めることができません。提供されていないキーワード、空の文字列 (\fB“”\fR) に設定された文字列値、\fB–1\fR に設定された整数のキーワードは、その値がロケールで使用できないことを示すために使われます。次のキーワードが認識されています:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdecimal_point\fR\fR
+.ad
+.RS 17n
+.rt  
+オペランドは、金額以外の数を書式設定する際に小数点 (基数文字) として使用される記号を含む文字列です。このキーワードを省略することも、空の文字列に設定することもできません。標準によって \fBdecimal_point\fR が単一バイトに制限されているコンテキストでは、複数バイトのオペランドを指定した結果は不確定です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBthousands_sep\fR\fR
+.ad
+.RS 17n
+.rt  
+オペランドは、書式設定された金額以外の数の中で小数点の左側にある数字の位取り記号として使用される記号を含む文字列です。標準によって \fBthousands_sep\fR が単一バイトに制限されている状況では、複数バイトのオペランドを指定した結果は不確定です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgrouping\fR\fR
+.ad
+.RS 17n
+.rt  
+書式設定された金額以外の数の中で数字の位取りの桁数を定義します。オペランドは、セミコロンで区切られた一連の整数です。各整数は位取りの桁数を指定します。最初の整数は小数点のすぐ左側の桁数を定義し、以降の整数はその左側の桁数を定義します。最後の整数が \fB-1\fR でない場合、その前の桁数 (存在する場合) が残りの数字に対して繰り返し使用されます。最後の整数が \fB–1\fR の場合、これ以上の位取りは行われません。POSIX ロケールでの金額以外の数の書式設定定義は次に従います。コードリストは \fBlocaledef\fR の入力を表し、表は同じ情報に \fBlocaleconv\fR 値と \fBnl_langinfo \fR 定数を加えたものを表しています。
+.sp
+.in +2
+.nf
+LC_NUMERIC
+# This is the POSIX locale definition for
+# the LC_NUMERIC category.
+#
+decimal_point	"<period>"
+thousands_sep	""
+grouping	-1
+#
+END LC_NUMERIC
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+
+.sp
+.TS
+tab();
+lw(1.1i) lw(1.1i) lw(1.1i) lw(1.1i) lw(1.11i) 
+lw(1.1i) lw(1.1i) lw(1.1i) lw(1.1i) lw(1.11i) 
+.
+\fBPOSIX ロケール\fR\fBlanginfo\fR\fBlocaleconv()\fR\fBlocaledef\fR
+\fB項目\fR\fB値\fR\fB定数\fR\fB値\fR\fB値\fR
+_
+\fBdecimal_point\fR\fB"."\fR\fBRADIXCHAR\fR\fB"."\fR\fB\&.\fR
+\fBthousands_sep\fR\fBn/a\fR\fBTHOUSEP\fR\fB""\fR\fB""\fR
+\fBgrouping\fR\fBn/a\fR\fB-\fR\fB""\fR\fB-1\fR
+.TE
+
+.sp
+.LP
+エントリ \fBn/a\fR は、その値が POSIX ロケールで使用できないことを示します。
+.SS "LC_TIME"
+.sp
+.LP
+\fBLC_TIME\fR カテゴリは、\fBdate\fR(1) によってサポートされるフィールド記述子の解釈を定義し、\fBstrftime\fR(3C)、\fBwcsftime\fR(3C)、\fBstrptime\fR(3C)、および \fBnl_langinfo\fR(3C) 関数の動作に影響を及ぼします。C 言語へのアクセスとロケール定義のインタフェースはかなり異なっているため、それらについては個別に説明します。ロケール定義では、次の必須キーワードが認識されています:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBabday\fR\fR
+.ad
+.RS 15n
+.rt  
+\fB%a\fR フィールド記述子に対応する、曜日の短縮名を定義します (\fBstrftime()\fR、\fBwcsftime()\fR、および \fBstrptime()\fR 関数の変換仕様)。オペランドは、セミコロンで区切られた 7 つの文字列で構成され、それぞれが二重引用符で囲まれています。最初の文字列が Sunday に対応する曜日の短縮名で、2 番目が Monday に対応する曜日の短縮名となり、以下同様です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBday\fR\fR
+.ad
+.RS 15n
+.rt  
+\fB%A\fR フィールド記述子に対応する、曜日の完全な名前を定義します。オペランドは、セミコロンで区切られた 7 つの文字列で構成され、それぞれが二重引用符で囲まれています。最初の文字列が Sunday に対応する曜日の完全な名前で、2 番目が Monday に対応する曜日の完全な名前となり、以下同様です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBabmon\fR\fR
+.ad
+.RS 15n
+.rt  
+\fB%b\fR フィールド記述子に対応する、月の短縮名を定義します。オペランドは、セミコロンで区切られた 12 個の文字列で構成され、それぞれが二重引用符で囲まれています。最初の文字列が 1 年の最初の月 (January) の短縮名で、2 番目が 2 番目の月の短縮名となり、以下同様です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmon\fR\fR
+.ad
+.RS 15n
+.rt  
+\fB%B\fR フィールド記述子に対応する、月の完全な名前を定義します。オペランドは、セミコロンで区切られた 12 個の文字列で構成され、それぞれが二重引用符で囲まれています。最初の文字列が 1 年の最初の月 (January) の完全な名前で、2 番目が 2 番目の月の完全な名前となり、以下同様です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBd_t_fmt\fR\fR
+.ad
+.RS 15n
+.rt  
+\fB%c\fR フィールド記述子に対応する、日付と時間の適切な表現を定義します。オペランドは 1 つの文字列で構成され、文字とフィールド記述子の任意の組み合わせを含めることができます。また、この文字列にはエスケープシーケンス \\、\fB \a\fR、\fB\b\fR、\fB\f\fR、\fB\n\fR、\fB\r\fR、\fB\t\fR、\fB\v\fR を含めることもできます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdate_fmt\fR\fR
+.ad
+.RS 15n
+.rt  
+\fB%C\fR フィールド記述子に対応する、日付と時間の適切な表現を定義します。オペランドは 1 つの文字列で構成され、文字とフィールド記述子の任意の組み合わせを含めることができます。また、この文字列にはエスケープシーケンス \fB\\ \fR、\fB \a\fR、\fB\b\fR、\fB\f\fR、\fB\n\fR、\fB\r\fR、\fB\t\fR、\fB\v\fR を含めることもできます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBd_fmt\fR\fR
+.ad
+.RS 15n
+.rt  
+\fB%x\fR フィールド記述子に対応する、適切な日付表現を定義します。オペランドは 1 つの文字列で構成され、文字とフィールド記述子の任意の組み合わせを含めることができます。また、この文字列にはエスケープシーケンス \fB\\ \fR、\fB \a\fR、\fB\b\fR、\fB\f\fR、\fB\n\fR、\fB\r\fR、\fB\t\fR、\fB\v\fR を含めることもできます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBt_fmt\fR\fR
+.ad
+.RS 15n
+.rt  
+\fB%X\fR フィールド記述子に対応する、適切な時間表現を定義します。オペランドは 1 つの文字列で構成され、文字とフィールド記述子の任意の組み合わせを含めることができます。また、この文字列にはエスケープシーケンス \fB\\ \fR、\fB \a\fR、\fB\b\fR、\fB\f\fR、\fB\n\fR、\fB\r\fR、\fB\t\fR、\fB\v\fR を含めることもできます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBam_pm\fR\fR
+.ad
+.RS 15n
+.rt  
+\fB%p\fR フィールド記述子に対応する、\fIante meridiem\fR および \fIpost meridiem\fR 文字列の適切な表現を定義します。オペランドは、セミコロンで区切られた 2 つの文字列で構成され、それぞれが二重引用符で囲まれています。最初の文字列が \fIante meridiem\fR 指定を表し、最後の文字列が \fIpost meridiem\fR 指定を表します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBt_fmt_ampm\fR\fR
+.ad
+.RS 15n
+.rt  
+\fB%r\fR フィールド記述子に対応する、\fBam_pm\fR を含む 12 時間形式による適切な時間表現を定義します。オペランドは 1 つの文字列で構成され、文字とフィールド記述子の任意の組み合わせを含めることができます。文字列が空の場合、12 時間形式はこのロケールでサポートされません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBera\fR\fR
+.ad
+.RS 15n
+.rt  
+ロケールにおける、年号ごとの年の数え方や表示の仕方を定義します。オペランドは、セミコロンで区切られた文字列で構成されます。各文字列は、次の形式による年号記述セグメントです:
+.sp
+\fIdirection\fR:\fIoffset\fR:\fIstart_date\fR:\fIend_date\fR:\fIera_name\fR:\fIera_format\fR
+.sp
+次の定義に従います。各種年号を記述するのに必要な数だけ年号記述セグメントを指定できます。
+.sp
+年号の開始はもっとも初期の時点ではないことがあります。たとえば、西暦紀元前は西暦元年 1 月 1 日の前日に始まり、時間をさかのぼるにつれて増えていきます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdirection\fR\fR
+.ad
+.RS 14n
+.rt  
+\fB+\fR または \fB–\fR 文字のどちらか。\fB+\fR 文字は、\fIstart_date\fR に近い年の方が \fIend_date\fR に近い年よりも小さい数字になっていることを示します。\fB–\fR 文字は、\fIstart_date\fR に近い年の方が \fIend_date\fR に近い年よりも大きい数字になっていることを示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIoffset\fR\fR
+.ad
+.RS 14n
+.rt  
+\fB%Eg\fR および \fB%Ey\fR フィールド記述子に対応する、年号の \fIstart_date\fR にもっとも近い年を表す数値。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIstart_date\fR\fR
+.ad
+.RS 14n
+.rt  
+形式 \fIyyyy\fR/\fImm\fR/\fBdd\fR による日付。ここでの \fIyyyy\fR、\fImm\fR、および \fBdd\fR はそれぞれ、年号の開始の年、月、および日を表す数値です。西暦元年より以前の年は、負の数で表されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIend_date\fR\fR
+.ad
+.RS 14n
+.rt  
+\fIstart_date\fR と同じ形式、または 2 つの特殊な値 –* または +* のいずれかによる年号の終了日付。–* 値は、最終日付が時の始まりになることを示します。+* 値は、最終日付が時の終わりになることを示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIera_name\fR\fR
+.ad
+.RS 14n
+.rt  
+\fB%EC\fR フィールド記述子に対応する、年号の名前を表す文字列。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIera_format\fR\fR
+.ad
+.RS 14n
+.rt  
+\fB%EG\fR および \fB%EY\fR フィールド記述子に対応する、年号における年を書式設定するための文字列。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBera_d_fmt\fR\fR
+.ad
+.RS 15n
+.rt  
+\fB%Ex\fR フィールド記述子に対応する、代替年号表記による日付の形式を定義します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBera_t_fmt\fR\fR
+.ad
+.RS 15n
+.rt  
+\fB%EX\fR フィールド記述子に対応する、ロケールの適切な代替時間形式を定義します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBera_d_t_fmt\fR\fR
+.ad
+.RS 15n
+.rt  
+\fB%Ec\fR フィールド記述子に対応する、ロケールの適切な代替日付/時間形式を定義します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBalt_digits\fR\fR
+.ad
+.RS 15n
+.rt  
+\fB%O\fR フィールド記述子修飾子に対応する、数字用の代替シンボルを定義します。オペランドは、セミコロンで区切られた文字列で構成され、それぞれが二重引用符で囲まれています。最初の文字列が 0 に対応する代替シンボルで、2 番目の文字列が 1 に対応する代替シンボルとなり、以下同様です。最大 100 個の代替シンボル文字列を指定できます。\fB%O\fR 修飾子は、そのフィールド記述子によって指定された値に対応する文字列がその値の代わりに使用されることを示します。
+.RE
+
+.SS "LC_TIME の \fIC 言語\fRへのアクセス"
+.sp
+.LP
+次の情報にアクセスできます。これらは <\fBlanginfo.h\fR> に定義されている定数に対応しており、\fBnl_langinfo\fR(3C) 関数の引数として使用できます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBABDAY_\fIx\fR\fR\fR
+.ad
+.RS 15n
+.rt  
+曜日の短縮名 (Sun など)。\fIx\fR は 1 - 7 の数値です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDAY_\fIx\fR\fR\fR
+.ad
+.RS 15n
+.rt  
+曜日の完全な名前 (Sunday など)。\fIx\fR は 1 - 7 の数値です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBABMON_\fIx\fR\fR\fR
+.ad
+.RS 15n
+.rt  
+月の短縮名 (Jan など)。\fIx\fR は 1 - 12 の数値です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBMON_\fIx\fR\fR\fR
+.ad
+.RS 15n
+.rt  
+月の完全な名前 (January など)。\fIx\fR は 1 - 12 の数値です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBD_T_FMT\fR\fR
+.ad
+.RS 15n
+.rt  
+適切な日付と時間の表現。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBD_FMT\fR\fR
+.ad
+.RS 15n
+.rt  
+適切な日付表現。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBT_FMT\fR\fR
+.ad
+.RS 15n
+.rt  
+適切な時間表現。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBAM_STR\fR\fR
+.ad
+.RS 15n
+.rt  
+適切な a.m. 接辞。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPM_STR\fR\fR
+.ad
+.RS 15n
+.rt  
+適切な p.m. 接辞。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBT_FMT_AMPM\fR\fR
+.ad
+.RS 15n
+.rt  
+\fBAM_STR\fR と \fBPM_STR\fR を含む 12 時間形式による適切な時間表現。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBERA\fR\fR
+.ad
+.RS 15n
+.rt  
+年号記述セグメント。ロケールにおける、年号ごとの年の数え方や表示の仕方を記述します。各年号記述セグメントの形式は次のとおりです:
+.sp
+.in +2
+.nf
+\fIdirection\fR:\fIoffset\fR:\fIstart_date\fR:\fIend_date\fR:\fIera_name\fR:\fIera_format\fR
+.fi
+.in -2
+.sp
+
+次の定義に従います。各種年号を記述するのに必要な数だけ年号記述セグメントがあります。年号記述セグメントはセミコロンで区切られます。
+.sp
+年号の開始はもっとも初期の時点ではないことがあります。たとえば、西暦紀元前は西暦元年 1 月 1 日の前日に始まり、時間をさかのぼるにつれて増えていきます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdirection\fR\fR
+.ad
+.RS 14n
+.rt  
++ または – 文字のどちらか。+ 文字は、\fIstart_date\fR に近い年の方が \fIend_date\fR に近い年よりも小さい数字になっていることを示します。– 文字は、\fIstart_date\fR に近い年の方が \fIend_date\fR に近い年よりも大きい数字になっていることを示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIoffset\fR\fR
+.ad
+.RS 14n
+.rt  
+年号の start_date にもっとも近い年を表す数値。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIstart_date\fR\fR
+.ad
+.RS 14n
+.rt  
+形式 \fIyyyy\fR/\fImm\fR/\fIdd\fR による日付。ここでの \fIyyyy\fR、\fImm\fR、および \fBdd\fR はそれぞれ、年号の開始の年、月、および日を表す数値です。西暦元年より以前の年は、負の数で表されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIend_date\fR\fR
+.ad
+.RS 14n
+.rt  
+\fIstart_date\fR と同じ形式、または 2 つの特殊な値 \fB–*\fR または \fB+*\fR のいずれかによる年号の終了日付。\fB–*\fR 値は、最終日付が時の始まりになることを示します。\fB+*\fR 値は、最終日付が時の終わりになることを示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIera_name\fR\fR
+.ad
+.RS 14n
+.rt  
+\fB%EC\fR 変換仕様に対応する年号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIera_format\fR\fR
+.ad
+.RS 14n
+.rt  
+\fB%EY\fR および \fB%EY\fR 変換仕様に対応する、年号における年の形式。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBERA_D_FMT\fR\fR
+.ad
+.RS 15n
+.rt  
+年号の日付の形式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBERA_T_FMT\fR\fR
+.ad
+.RS 15n
+.rt  
+\fB%EX\fR フィールド記述子に対応する、ロケールの適切な代替時間形式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBERA_D_T_FMT\fR\fR
+.ad
+.RS 15n
+.rt  
+\fB%Ec\fR フィールド記述子に対応する、ロケールの適切な代替日付/時間形式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBALT_DIGITS\fR\fR
+.ad
+.RS 15n
+.rt  
+\fB%O\fR 変換仕様修飾子に対応する、数字用の代替シンボル。この値はセミコロンで区切られたシンボルで構成されます。最初が 0 に対応する代替シンボルで、2 番目が 1 に対応する代替シンボルとなり、以下同様です。最大 100 個の代替シンボルを指定できます。次の表に、前述の項目間の対応関係と、\fBdate\fR(1)、\fBstrftime\fR(3C)、\fBwcsftime\fR(3C)、および \fBstrptime\fR(3C) 関数で使用される変換指示子を示します。
+.RE
+
+.sp
+
+.sp
+.TS
+tab() box;
+cw(1.83i) |cw(1.83i) |cw(1.83i) 
+cw(1.83i) |cw(1.83i) |cw(1.83i) 
+.
+\fBlocaledef\fR\fBlanginfo\fR\fB変換\fR
+\fBキーワード\fR\fB定数\fR\fB指示子\fR
+_
+\fBabday\fR\fBABDAY_\fR\fIx\fR\fB%a\fR
+\fBday\fR\fBDAY_\fR\fIx\fR\fB%A\fR
+\fBabmon\fR\fBABMON_\fR\fIx\fR\fB%b\fR
+\fBmon\fR\fBMON\fR\fB%B\fR
+\fBd_t_fmt\fR\fBD_T_FMT\fR\fB%c\fR
+\fBdate_fmt\fR\fBDATE_FMT\fR\fB%C\fR
+\fBd_fmt\fR\fBD_FMT\fR\fB%x\fR
+\fBt_fmt\fR\fBT_FMT\fR\fB%X\fR
+\fBam_pm\fR\fBAM_STR\fR\fB%p\fR
+\fBam_pm\fR\fBPM_STR\fR\fB%p\fR
+\fBt_fmt_ampm\fR\fBT_FMT_AMPM\fR\fB%r\fR
+\fBera\fR\fBERA\fR\fB%EC, %Eg,\fR
+\fB%EG, %Ey, %EY\fR
+\fBera_d_fmt\fR\fBERA_D_FMT\fR\fB%Ex\fR
+\fBera_t_fmt\fR\fBERA_T_FMT\fR\fB%EX\fR
+\fBera_d_t_fmt\fR\fBERA_D_T_FMT\fR\fB%Ec\fR
+\fBalt_digits\fR\fBALT_DIGITS\fR\fB%O\fR
+.TE
+
+.SS "LC_TIME の\fI一般\fR情報"
+.sp
+.LP
+POSIX ロケールのフィールド記述子のいくつか (月の名前など) は頭文字を大文字にして示しますが、ほかのロケールではその必要はありません。これらのフィールドを使用するプログラムでは、出力が文頭に使用される場合に大文字使用の調整が必要になることがあります。
+.sp
+.LP
+\fBLC_TIME\fR での \fBabday\fR、\fBday\fR、\fBmon\fR、および \fBabmon\fR の説明では、グレゴリオ暦様式のカレンダー (1 週間は 7 日、1 年は 12 か月、うるう年など) を暗に示しています。ほかの種類のカレンダーの時間文字列の書式設定については、このドキュメントでは扱っていません。
+.sp
+.LP
+「\fBロケール定義\fR」の \fBdate\fR と、\fBstrftime\fR(3C) で規定されているように、オプションのキーワードに対応するフィールド記述子は、修飾子とそのあとに続く従来のフィールド記述子 (\fB%Ex\fR など) で構成されています。オプションのキーワードが実装によってサポートされていなかったり、現在のロケールで未定義だったりする場合、これらのフィールド記述子は従来のフィールド記述子として扱われます。たとえば、次のキーワードがあると想定します:
+.sp
+.in +2
+.nf
+alt_digits	"0th" ; "1st" ; "2nd" ; "3rd" ; "4th" ; "5th" ; \e
+"6th" ; "7th" ; "8th" ; "9th" ; "10th">
+d_fmt	"The %Od day of %B in %Y"
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+7/4/1776 については、\fB%x\fR フィールド記述子によって「The 4th day of July in 1776」となる一方、7/14/1789 は「The 14 day of July in 1789」と表示されます。上記の例は、実例を示すためだけのものです。\fB%O\fR 修飾子は主に、\fBdate\fR 形式での漢字またはヒンディー語の数字での使用を意図しています。
+.SS "LC_MESSAGES"
+.sp
+.LP
+\fBLC_MESSAGES\fR カテゴリは、肯定応答および否定応答の形式と値を定義します。
+.sp
+.LP
+次のキーワードがロケール定義ファイルの一部として認識されています。\fBnl_langinfo\fR(3C) 関数は、最初の 4 つのキーワードの大文字バージョンを受け入れます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fByesexpr\fR\fR
+.ad
+.RS 11n
+.rt  
+オペランドは、肯定または否定応答を求める質問への受け入れ可能な肯定応答を記述する拡張正規表現 (\fBregex\fR(5) を参照) で構成されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoexpr\fR\fR
+.ad
+.RS 11n
+.rt  
+オペランドは、肯定または否定応答を求める質問への受け入れ可能な否定応答を記述する拡張正規表現で構成されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fByesstr\fR\fR
+.ad
+.RS 11n
+.rt  
+オペランドは、プロンプトなどで受け入れ可能な肯定応答を一覧表示するメッセージを作成するためにアプリケーションで使用できる固定文字列 (正規表現ではなく) で構成されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnostr\fR\fR
+.ad
+.RS 11n
+.rt  
+オペランドは、受け入れ可能な否定応答を一覧表示するメッセージを作成するためにアプリケーションで使用できる固定文字列で構成されます。POSIX ロケールの肯定および否定応答の形式と値は、\fBlocaledef \fR の入力を表すコードリスト、同じ情報に \fBnl_langinfo()\fR 定数を加えたものを表す表に従います。 
+.sp
+.in +2
+.nf
+LC_MESSAGES
+# This is the POSIX locale definition for
+# the LC_MESSAGES category.
+#
+yesexpr "<circumflex><left-square-bracket><y><Y>\e
+        <right-square-bracket>"
+#
+noexpr  "<circumflex><left-square-bracket><n><N>\e
+        <right-square-bracket>"
+#
+yesstr	"yes"
+nostr	"no"
+END LC_MESSAGES
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+
+.sp
+.TS
+tab() box;
+lw(1.83i) |lw(1.83i) |lw(1.83i) 
+lw(1.83i) |lw(1.83i) |lw(1.83i) 
+.
+\fBlocaledef キーワード\fR\fBlanginfo 定数\fR\fBPOSIX ロケールの値\fR
+\fByesexpr\fR\fBYESEXPR\fR\fB"^[yY]"\fR
+\fBnoexpr\fR\fBNOEXPR\fR\fB"^[nN]"\fR
+\fByesstr\fR\fBYESSTR\fR\fB"yes"\fR
+\fBnostr\fR\fBNOSTR\fR\fB"no"\fR
+.TE
+
+.sp
+.LP
+SUSv3 標準に準拠したアプリケーションでは、\fByesstr\fR および \fBnostr\fR に関する情報は使用できません。
+.SH 関連項目
+.sp
+.LP
+\fBdate\fR(1), \fBlocale\fR(1), \fBlocaledef\fR(1), \fBsort\fR(1), \fBtr\fR(1), \fBuniq\fR(1), \fBlocaleconv\fR(3C), \fBnl_langinfo\fR(3C), \fBsetlocale\fR(3C), \fBstrcoll\fR(3C), \fBstrftime\fR(3C), \fBstrptime\fR(3C), \fBstrxfrm\fR(3C), \fBwcscoll\fR(3C), \fBwcsftime\fR(3C), \fBwcsxfrm\fR(3C), \fBwctype\fR(3C), \fBattributes\fR(5), \fBcharmap\fR(5), \fBextensions\fR(5), \fBregex\fR(5) 

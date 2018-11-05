@@ -1,0 +1,346 @@
+'\" te
+.\"  Copyright (c) 2006, Sun Microsystems, Inc. All Rights Reserved
+.TH setfacl 1 "2006 年 12 月 19 日" "SunOS 5.11" "ユーザーコマンド"
+.SH 名前
+setfacl \- 1 つまたは複数のファイルのアクセス制御リスト (ACL) の変更
+.SH 形式
+.LP
+.nf
+\fBsetfacl\fR [\fB-r\fR] \fB-s\fR \fIacl_entries\fR \fIfile\fR
+.fi
+
+.LP
+.nf
+\fBsetfacl\fR [\fB-r\fR] \fB-md\fR \fIacl_entries\fR \fIfile\fR
+.fi
+
+.LP
+.nf
+\fBsetfacl\fR [\fB-r\fR] \fB-f\fR \fIacl_file\fR \fIfile\fR
+.fi
+
+.SH 機能説明
+.sp
+.LP
+指定された各ファイルについて、\fBsetfacl\fR は \fBACL\fR 全体 (ディレクトリ上のデフォルトの \fBACL\fR を含む) を置き換えるか、あるいは 1 つ以上の \fBACL\fR エントリ (ディレクトリ上のデフォルトのエントリを含む) を追加、変更、または削除するかのどちらかを行ないます。
+.sp
+.LP
+\fBsetfacl\fR コマンドが使用されると、ファイルのアクセス権ビットが変更される場合があります。ファイル所有者のユーザー \fBACL\fR エントリが変更された場合は、ファイル所有者クラスのアクセス権ビットが変更されます。ファイルグループクラスのグループ \fBACL\fR エントリが変更された場合は、ファイルグループクラスのアクセス権ビットが変更されます。その他の \fBACL\fR エントリが変更された場合は、ファイルのほかのクラスのアクセス権ビットが変更されます。
+.sp
+.LP
+\fBchmod\fR(1) コマンドを使用して \fBACL\fR エントリを含むファイルに対するファイルグループ所有者のアクセス権を変更した場合は、ファイルグループ所有者のアクセス権と \fBACL\fR マスクの両方が新しいアクセス権に変更されます。新しい \fBACL\fR マスクのアクセス権は、そのファイル上に \fBACL\fR エントリを持つ追加ユーザーおよびグループの実効アクセス権を変更する場合があるので注意が必要です。
+.sp
+.LP
+ディレクトリには、デフォルトの \fBACL\fR エントリを含めることができます。デフォルトの \fBACL\fR エントリを含むディレクトリ内にファイルまたはディレクトリが作成された場合、新しく作成されたファイルには、デフォルトの \fBACL\fR エントリと、作成時に要求されたアクセス権の共通部分に従って生成されたアクセス権が与えられます。ディレクトリにデフォルトの \fBACL\fR エントリが含まれている場合、\fBumask\fR(1) は適用されません。特定のユーザー (または複数のユーザー) に対してデフォルトの \fBACL\fR が指定されている場合、ファイルには、作成された通常の \fBACL\fR が与えられます。それ以外の場合は、上で説明した共通部分に従ってモードビットのみが初期化されます。デフォルトの \fBACL\fR を、付与できる最大の随意アクセス権と考えてください。
+.sp
+.LP
+POSIX ドラフト ACL (または \fBaclent_t\fR スタイルの ACL) をサポートする UFS ファイルシステム内のファイルに ACL を設定するには、\fBsetfacl\fR コマンドを使用します。NFSv4 スタイルの ACL (または \fBace_t\fR スタイルの ACL) をサポートする ZFS ファイルシステム内のファイルに ACL を設定するには、\fBchmod\fR コマンドを使用します。
+.SS "\fIacl_entries\fR の構文"
+.sp
+.LP
+\fB-m\fR オプションと \fB-s\fR オプションの場合、\fIacl_entries\fR は、コンマで区切られた 1 つ以上の \fBACL\fR エントリです。
+.sp
+.LP
+\fBACL\fR エントリは、コロンで区切られた次のフィールドで構成されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIentry_type\fR\fR
+.ad
+.RS 21n
+.rt  
+ファイルアクセス権を設定する \fBACL\fR エントリのタイプ。たとえば、\fIentry_type\fR には、\fBuser\fR (ファイルの所有者) または \fBmask\fR (\fBACL\fR マスク) を指定できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIuid\fR または \fIgid\fR\fR
+.ad
+.RS 21n
+.rt  
+ユーザー名またはユーザー ID 番号。または、グループ名またはグループ ID 番号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIperms\fR\fR
+.ad
+.RS 21n
+.rt  
+\fIentry_type\fR に設定されているアクセス権を表します。\fIperms\fR は、シンボル文字 \fBrwx\fR または番号 (\fBchmod\fR コマンドで使用されるのと同じアクセス権の番号) で示すことができます。
+.RE
+
+.sp
+.LP
+次の表は、有効な \fBACL\fR エントリを示しています (デフォルトのエントリは、ディレクトリに対してのみ指定できます)。
+.sp
+
+.sp
+.TS
+tab();
+cw(2i) cw(3.5i) 
+lw(2i) lw(3.5i) 
+.
+\fBACL\fR Entry説明
+_
+u[ser]::\fIperms\fR T{
+ファイル所有者のアクセス権。
+T}
+g[roup]::\fIperms\fR T{
+ファイルのグループ所有者のアクセス権。
+T}
+o[ther]:\fIperms\fR T{
+ファイル所有者またはファイルグループ所有者のメンバー以外のユーザーのアクセス権。
+T}
+m[ask]:\fIperms\fR T{
+\fBACL\fR マスク。マスクエントリは、ユーザー (所有者以外) とグループに許可される最大のアクセス権を示します。マスクは、すべてのユーザーおよびグループに対するアクセス権をすばやく変更するための方法です。
+T}
+u[ser]:\fIuid:perms\fRT{
+特定のユーザーのアクセス権。\fIuid\fR には、ユーザー名または数値 UID のどちらかを指定できます。
+T}
+g[roup]:\fIgid:perms\fRT{
+特定のグループのアクセス権。\fIgid\fR には、グループ名または数値 GID のどちらかを指定できます。
+T}
+d[efault]:u[ser]::\fIperms\fR T{
+所有者のデフォルトアクセス権。
+T}
+d[efault]:g[roup]::\fIperms\fR T{
+ファイルのグループ所有者のデフォルトアクセス権。
+T}
+d[efault]:o[ther]:\fIperms\fR T{
+ファイル所有者またはファイルグループ所有者のメンバー以外のユーザーのデフォルトのアクセス権。
+T}
+d[efault]:m[ask]:\fIperms\fR デフォルトの \fBACL\fR マスク。
+d[efault]:u[ser]:\fIuid\fR:\fIperms\fRT{
+特定のユーザーのデフォルトアクセス権。\fIuid\fR には、ユーザー名または数値 UID のどちらかを指定できます。
+T}
+d[efault]:g[roup]:\fIgid\fR:\fIperms\fRT{
+特定のグループのデフォルトアクセス権。\fIgid\fR には、グループ名または数値 GID のどちらかを指定できます。
+T}
+.TE
+
+.sp
+.LP
+\fB-d\fR オプションの場合、\fIacl_entries\fR は、アクセス権のない、コンマで区切られた 1 つ以上の \fBACL\fR エントリです。ファイル所有者、ファイルグループ所有者、\fBACL\fR マスク、およびその他のユーザーのエントリは削除できないことに注意してください。
+.SH オプション
+.sp
+.LP
+各オプションの意味は次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIacl_entries\fR\fR
+.ad
+.RS 18n
+.rt  
+ファイルから 1 つ以上のエントリを削除します。\fBACL\fR からファイル所有者、ファイルグループ所有者、およびその他のユーザーのエントリを削除することはできません。エントリの削除が、必ずしもそのエントリからすべてのアクセス権を削除するのと同じ効果があるとは限りません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIacl_file\fR\fR
+.ad
+.RS 18n
+.rt  
+ファイルの \fBACL\fR に、\fIacl_file\fR という名前のファイルに含まれている \fBACL\fR エントリを設定します。指定されるエントリには、\fB-s\fR オプションと同じ制約が適用されます。これらのエントリがファイル内に特定の順序で存在する必要はありません。また、\fIacl_file\fR にダッシュ (\fB-\fR) を指定した場合は、ファイルの \fBACL\fR を設定するために標準入力が使用されます。
+.sp
+\fIacl_file\fR 内に文字 \fB#\fR を使用すると、コメントを示すことができます。\fB#\fR で始まる文字は、その行の最後まですべて無視されます。\fIacl_file\fR が \fBgetfacl\fR(1) コマンドの出力として作成されている場合は、\fB#\fR に続く実効アクセス権がすべて無視されることに注意してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fIacl_entries\fR\fR
+.ad
+.RS 18n
+.rt  
+1 つ以上の新しい \fBACL\fR エントリをファイルに追加するか、またはファイル上の 1 つ以上の既存の \fBACL\fR エントリを変更するか、あるいはその両方を行ないます。指定された \fIuid\fR または \fIgid\fR のエントリがすでに存在する場合は、指定されたアクセス権によって現在のアクセス権が置き換えられます。指定された \fIuid\fR または \fIgid\fR のエントリが存在しない場合は、エントリが作成されます。\fB-m\fR オプションを使用してデフォルトの \fBACL\fR を変更している場合は、完全なデフォルトの \fBACL\fR (user、group、other、mask、および任意の追加のエントリ) を最初に指定する必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBACL\fR マスクエントリのアクセス権を再計算します。\fBACL\fR マスクエントリで指定されたアクセス権は無視され、\fBACL\fR 内のすべての追加のユーザー、ファイルグループ所有者、および追加のグループエントリへのアクセスを許可するために必要な最大のアクセス権で置き換えられます。追加のユーザー、ファイルグループ所有者、および追加のグループエントリ内のアクセス権は変更されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIacl_entries\fR\fR
+.ad
+.RS 18n
+.rt  
+ファイルの \fBACL\fR を設定します。すべての古い \fBACL\fR エントリが削除され、新しく指定された \fBACL\fR に置き換えられます。これらのエントリが特定の順序で存在する必要はありません。ファイルに適用される前に、このコマンドによってエントリがソートされます。
+.sp
+必要なエントリは次のとおりです。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ファイル所有者に対して指定された正確に 1 つの \fBuser\fR エントリ。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ファイルグループ所有者に対する正確に 1 つの \fBgroup\fR エントリ。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+指定された正確に 1 つの \fBother\fR エントリ。
+.RE
+追加のユーザーおよびグループエントリが存在する場合は次のとおりです。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ユーザー (所有者以外) とグループに許可される最大のアクセス権を示す、\fBACL\fR マスクに対して指定された正確に 1 つの \fBmask\fR エントリ。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+同じ \fIuid\fR を持つ重複した \fBuser\fR エントリが存在していてはいけません。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+同じ \fIgid\fR を持つ重複した \fBgroup\fR エントリが存在していてはいけません。
+.RE
+\fIfile\fR がディレクトリである場合は、次のデフォルトの \fBACL\fR エントリを指定できます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ファイル所有者に対する正確に 1 つの \fBdefault user\fR エントリ。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ファイルグループ所有者に対する正確に 1 つの \fBdefault group\fR エントリ。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBACL\fR マスクに対する正確に 1 つの \fBdefault mask\fR エントリ。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+正確に 1 つの \fBdefault other\fR エントリ。
+.RE
+追加の \fBdefault user\fR エントリや追加の \fBdefault group\fR エントリを指定できますが、同じ \fIuid\fR を持つ重複した追加の \fBdefault user\fR エントリ、または同じ \fIgid\fR を持つ重複した \fBdefault group\fR エントリが存在していてはいけません。 
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fR読み取り権のみの追加
+.sp
+.LP
+次の例では、ファイル \fBabc\fR に、ユーザー \fBshea\fR に読み取り権のみを許可する 1 つの \fBACL\fR エントリを追加します。
+
+.sp
+.in +2
+.nf
+\fBsetfacl -m user:shea:r\(mi\(mi abc\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRファイルの \fBACL\fR 全体の置き換え
+.sp
+.LP
+次の例では、ファイル \fBabc\fR の \fBACL\fR 全体を置き換えます。これにより、\fBshea\fR に読み取りアクセス権、ファイル所有者にすべてのアクセス権、ファイルグループ所有者に読み取りアクセス権のみ、\fBACL\fR マスクに読み取りアクセス権のみがそれぞれ許可され、その他のユーザーにはアクセス権が許可されません。
+
+.sp
+.in +2
+.nf
+\fBsetfacl -s user:shea:rwx,user::rwx,group::rw-,mask:r--,other:--- abc\fR 
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+このコマンドのあと、ファイルのアクセス権ビットは \fBrwxr-----\fR になります。ファイルグループ所有者には読み取り権と書き込み権が設定されたにもかかわらず、\fBACL\fR マスクエントリによって読み取り権のみに制限されています。このマスクエントリはまた、すべての追加のユーザーおよびグループ \fBACL\fR エントリに使用可能な最大のアクセス権も指定しています。同様に、ユーザー \fBshea\fR にはすべてのアクセス権が設定されたにもかかわらず、このマスクによって読み取り権のみに制限されています。\fBACL\fR マスクエントリは、\fBACL\fR 内のすべてのユーザーおよびグループエントリへのアクセスをすばやく制限したり、開いたりするための方法です。たとえば、このマスクエントリを読み取りと書き込みに変更することによって、ファイルグループ所有者とユーザー \fBshea\fR の両方に読み取りアクセス権と書き込みアクセス権が許可されます。
+
+.LP
+\fB例 3 \fR2 つのファイルでの同じ \fBACL\fR の設定
+.sp
+.LP
+次の例では、ファイル \fBabc\fR にファイル \fBxyz\fR と同じ \fBACL\fR を設定します。
+
+.sp
+.in +2
+.nf
+\fBgetfacl xyz | setfacl -f \(mi abc\fR
+.fi
+.in -2
+.sp
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/passwd\fR\fR
+.ad
+.RS 15n
+.rt  
+パスワードファイル
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/group\fR\fR
+.ad
+.RS 15n
+.rt  
+グループファイル
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBchmod\fR(1), \fBgetfacl\fR(1), \fBumask\fR(1), \fBaclcheck\fR(3SEC), \fBaclsort\fR(3SEC), \fBgroup\fR(4), \fBpasswd\fR(4), \fBattributes\fR(5)

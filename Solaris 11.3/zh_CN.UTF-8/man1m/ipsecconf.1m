@@ -1,0 +1,1736 @@
+'\" te
+.\" Copyright (c) 2008, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH ipsecconf 1M "2015 年 6 月 29 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+ipsecconf \- 配置系统范围的 IPsec 策略
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR 
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR \fB-a\fR \fIfile\fR [\fB-q\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR \fB-c\fR \fIfile\fR
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR \fB-d\fR [\fB-i\fR \fItunnel-name\fR] {\fIindex\fR, \fItunnel-name\fR, \fIindex\fR}
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR \fB-f\fR [\fB-i\fR \fItunnel-name\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR \fB-F\fR
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR \fB-Fa\fR \fIfile\fR [\fB-q\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR \fB-l\fR [\fB-i\fR \fItunnel-name\fR] [\fB-n\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR \fB-L\fR [\fB-n\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR \fB-r\fR \fIfile\fR [\fB-q\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBipsecconf\fR 实用程序用于为主机或主机的某个隧道配置 IPsec 策略。配置该策略后，所有传出和传入数据报在退出和进入主机或隧道时都要受到该策略检查。对于主机策略，如果未找到任何条目，则不会完成任何策略检查，并且将传输所有通信。对于隧道，如果该隧道至少有一个条目，但未找到任何条目，则将自动丢弃通信。出现以上行为差异是因为大量实现中对 IPsec 隧道做了相关假设。转发的数据报不会受到使用此命令添加的策略检查。有关如何保护转发的数据包的信息，请参见 \fBifconfig\fR(1M) 和 \fBdladm\fR(1M)。系统根据匹配的策略条目采取具体操作。
+.sp
+.LP
+该命令只能由超级用户运行。
+.sp
+.LP
+每个条目可以保护某一方向的通信（保护两个方向需要一对条目），也可以通过单个策略条目来保护双向通信（该条目安装所需的对称 \fBsadb\fR 规则）。
+.sp
+.LP
+如果在不带任何参数的情况下执行此命令，则会显示装入的文件策略条目的列表。要显示 SPD 策略条目，请使用 \fB-l\fR 选项。两种方法均会显示条目的索引号。要指定一个隧道的 SPD，请组合使用 \fB-i\fR 选项和 \fB-l\fR。要指定主机和所有隧道的全部 SPD，请使用 \fB-L\fR。
+.sp
+.LP
+请注意，由于一个文件策略条目 (file policy entry, \fBFPE\fR) 可生成多个 SPD 策略条目 (SPD policy entry, \fBSPE\fR)，因此 FPE 的列表可能不会显示所有实际条目。但是，这仍有助于确定 spd 变为当前状态是因添加的哪些规则导致的。
+.sp
+.LP
+组合使用 \fB-d\fR 选项和索引可以删除系统中的给定策略。如果 \fB-d\fR 选项要删除的 FPE 条目生成了多个 SPE，则将仅删除其策略索引与该 FPE 相同的 SPD。这可能会导致存在 SPE 而没有任何 FPE 的情况。
+.sp
+.LP
+与 \fB-l\fR 一样，\fB-d\fR 也可以使用 \fB-i\fR 标志表示隧道。另一种语法是指定隧道名称，后跟逗号 (\fB,\fR)，再后跟索引。例如，\fBip.tun0,1\fR。
+.sp
+.LP
+如果没有任何选项，则会按条目的添加顺序来显示它们，该顺序不一定是匹配通信的顺序。
+.sp
+.LP
+要查看匹配通信的顺序，请使用 \fB-l\fR 选项。规则按照以下顺序检查：首先检查所有 bypass 规则，然后检查 ESP 规则，再检查 AH 规则。然后按照规则的输入顺序检查规则。
+.sp
+.LP
+系统重新启动后策略条目将丢失。永久性策略条目应添加到 \fB/etc/inet/ipsecinit.conf\fR。该文件由以下 \fBsmf\fR(5) 服务读取：
+.sp
+.in +2
+.nf
+svc:/network/ipsec/policy
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有关管理 IPsec 安全策略的更多信息，请参见\fB\fR“附注”部分；有关保护 \fB/etc/inet/ipsecinit.conf\fR 的问题，请参见\fB\fR“安全”部分。
+.SH 选项
+.sp
+.LP
+\fBipsecconf\fR 支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fIfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+按照文件中各个条目的指定向系统添加 IPsec 策略。IPsec 配置文件包含指定系统配置的一个或多个条目。添加策略后，所有传出和传入数据报都将受到该策略检查。
+.sp
+下面的Operands部分介绍了这些文件中的条目。下面的Examples部分提供了一些示例。
+.sp
+对于 \fBconnect\fR(3SOCKET) 或 \fBaccept\fR(3SOCKET) 处理的 TCP/UDP 套接字，将锁定策略。因此，添加新策略条目不会影响此类端点或套接字。但是，系统将对已有非空策略的套接字锁定策略。因此，请确保不存在新策略条目要检查的连接。
+.sp
+上述策略锁定功能将来可能会发生更改。建议不要依赖此功能。
+.sp
+缺省行为是向现有策略附加新规则。如果新规则与现有规则冲突，则会报告错误，并且将不会添加新规则。
+.sp
+要添加与现有规则冲突的新规则，必须删除现有规则（请参见下文）或清空现有策略。如果清空策略，在添加新策略之前，IPsec 将不会保护任何网络通信。
+.sp
+\fB-F\fR（清空）标志可以与 \fB-a\fR 组合使用来执行原子策略替换；现有策略将替换为配置文件中描述的新策略。通过组合这两个标志，系统几乎没有不存在策略的窗口期，在清空命令后立即运行添加命令即会如此。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+检查配置文件的语法并报告发现的任何错误，但不会对策略进行任何更改。调试配置以及 \fBsmf\fR(5) 报告配置错误时，此选项非常有用。请参见\fB\fR“安全”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIindex\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除索引表示的主机策略。通过调用不带任何参数或带有 \fB-l\fR 选项的 \fBipsecconf\fR，可以获取索引。有关更多信息，请参见“说明”部分。删除策略条目之后，受该策略条目影响的所有传出和传入数据报都不会再受到该策略检查。请注意，对于已锁定策略的连接，传出数据包将继续使用相同策略进行检查，即使该策略已被删除也是如此。建议使用 \fB-l\fR 选项查找正确的策略索引。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIname\fR,\fIindex\fR\fR
+.ad
+.sp .6
+.RS 4n
+在 \fIname\fR 表示的隧道上删除 \fIindex\fR 表示的策略条目。由于隧道可影响源自非本地节点的通信，因此锁定对隧道策略的作用并不像主机策略那样。等效于：\fB-d\fR \fI index\fR \fB-i\fR \fIname\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+清空系统中的所有策略。在锁定以及主机与各隧道行为方面，该选项的约束与 \fB-d\fR 选项类似。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fR
+.ad
+.sp .6
+.RS 4n
+清空所有隧道的所有策略，同时清空所有主机策略。请参见上文选项 \fB-a\fR 中关于组合使用 \fB-F\fR 和 \fB-a\fR 选项的讨论。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定一个与 \fB-d\fR、\fB-f\fR 或 \fB-l\fR 标志一起使用的隧道接口名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+列出一个策略表，缺省为主机策略。如果调用不带任何参数的 \fBipsecconf\fR，则会显示自引导以来用户添加的策略条目及其索引的完整列表。例如，如果添加了多宿主条目或发生策略重新排序，或者如果某个规则条目生成了两个 \fBspd\fR 规则，当前表可能与上一表不同。对于多宿主条目，将显式列出所有地址。如果以前未指定掩码，而是从地址推断而来，则会在此处显式列出掩码。此选项用于按正确顺序显示策略条目。传出和传入策略条目单独列出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR\fR
+.ad
+.sp .6
+.RS 4n
+列出所有策略表，包括主机策略和所有隧道实例（包括已配置但未激活的实例）。
+.sp
+如果指定了 \fB-i\fR，\fB-L\fR 会列出特定隧道接口的策略表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+用数字显示网络地址、端口、协议。\fB-n\fR 选项只能与 \fB-l\fR 选项一起使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR\fR
+.ad
+.sp .6
+.RS 4n
+静默模式。添加策略时不显示生成的警告消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+根据 \fIfile\fR 中各个条目的指定，从系统中删除 IPsec 策略规则。该文件的内容格式与使用 \fB-a\fR 选项指定的内容格式相同。该文件可使用 \fBipsecconf\fR \fB-l\fR 创建，并使用编辑器进行编辑。
+.RE
+
+.SH 操作数
+.sp
+.LP
+每个策略条目包含按如下方式指定的三个部分：
+.sp
+.in +2
+.nf
+{pattern} action {properties}
+.fi
+.in -2
+
+.sp
+.LP
+或
+.sp
+.in +2
+.nf
+{pattern} action {properties} ["or" action {properties}]*
+.fi
+.in -2
+
+.sp
+.LP
+每个策略条目都从一个新行开始，并且可跨越多个行。如果某个条目超出行长度，则只能在 "{}" 部分中拆分该条目，或者紧接在 {} 部分的第一个（左）花括号之前拆分该条目。避免使用反斜杠字符 (\)。请参见“示例”部分。
+.sp
+.LP
+以上语法中显示的 \fIpattern\fR 部分指定传出和传入数据报进行匹配时所应依据的通信模式。如果存在匹配项，将根据策略条目的 \fIproperties\fR 执行第二个参数确定的特定 \fIaction\fR。 
+.sp
+.LP
+如果规则中包含 \fBor\fR（一个给定模式具有多个操作-属性），发送器将使用第一个有效的操作-属性对，而接收器将使用可接受的任何操作-属性对。 
+.sp
+.LP
+\fIpattern\fR 和 \fIproperties\fR 是名称-值对，其中名称和值使用 <空格>、<制表符> 或 <换行符> 分隔。多个名称-值对应使用 <空格>、<制表符> 或 <换行符> 分隔。模式和属性的开头和结尾分别使用 \fB{\fR 和 \fB}\fR 标记。 
+.sp
+.LP
+文件可包含多个策略条目。\fIpattern\fR 中未指定的名称-值对将视为通配符。通配符条目与数据报中的任意对应条目匹配。 
+.sp
+.LP
+应注意的一点是：始终会绕过 UDP 端口 500，而不考虑任何策略条目。这是保证 \fBin.iked\fR(1M) 正常工作的一个要求。 
+.sp
+.LP
+将 \fB#\fR 作为第一个字符，可以在文件添加注释。可以在行开头或末尾插入注释。
+.sp
+.LP
+策略条目的完整语法为：
+.sp
+.in +2
+.nf
+policy ::= { <pattern1> } <action1> { <properties1> } |
+     { <pattern2> } <action2> { <properties2> } 
+     [ 'or' <action2> { <properties2>} ]*
+
+     pattern1 ::=  <pattern_name_value_pair1>*
+
+     pattern2 ::=  <pattern_name_value_pair2>*
+ 
+     action1 ::= apply | permit | bypass | pass
+     action2 ::=  bypass | pass | drop | ipsec
+
+     properties1 ::=   {<prop_name_value_pair1>}
+     properties2 ::=   {<prop_name_value_pair2>}
+
+
+     pattern_name_value_pair1 ::=
+        saddr <address>/<prefix> |
+        src  <address>/<prefix> |
+        srcaddr <address>/<prefix> |      
+        smask <mask> |
+        sport <port> |
+        daddr <address>/<prefix> |
+        dst <address>/<prefix> |
+        dstaddr <address>/<prefix> |
+        dmask <mask> |
+        dport <port> |
+        ulp <protocol> |
+        proto <protocol> |
+        type <icmp-type> |
+        type <number>-<number> |
+        code <icmp-code>
+        code <number>-<number>
+        tunnel <interface-name> |
+        negotiate <tunnel,transport> |
+        dir <dir_val2>
+
+     pattern_name_value_pair2 ::=
+        raddr <address>/<prefix> |
+        remote <address>/<prefix> |
+        rport <port> |
+        laddr <address>/<prefix> |
+        local <address>/<prefix> |
+        lport <port> |
+        ulp <protocol> |
+        type <icmp-type> |
+        type <number>-<number> |
+        code <icmp-code> |
+        code <number>-<number>
+        proto <protocol>  |
+        tunnel <interface-name> |
+        negotiate <tunnel,transport> |
+        dir <dir_val2>
+
+     address ::=  <IPv4 dot notation> | <IPv6 colon notation> |
+                  <String recognized by gethostbyname>|
+                  <String recognized by getnetbyname>
+
+     prefix ::=  <number>
+
+     mask ::= <0xhexdigit[hexdigit]> | <0Xhexdigit[hexdigit]> |
+              <IPv4 dot notation>
+
+     port ::= <number>| <String recognized by getservbyname>
+
+     protocol ::=  <number>| <String recognized by getprotobyname>
+
+     prop_name_value_pair1 ::=
+          auth_algs <auth_alg> |
+          encr_algs <encr_alg> |
+          encr_auth_algs <auth_alg> |
+          sa <sa_val> |
+          dir <dir_val1> |
+         ike_version <version>
+
+     prop_name_value_pair2 ::=
+          auth_algs <auth_alg> |
+          encr_algs <encr_alg> |
+          encr_auth_algs <auth_alg> |
+          sa <sa_val>
+
+     auth_alg ::=  <auth_algname> 
+     auth_algname ::= <auth_algname>
+
+     encr_alg ::= <encr_algname> ['(' <keylen> ')']
+     encr_algname ::= <encr_algname> ['(' <keylen> ')']
+     
+     keylen ::= <number> | <number>'..' | '..'<number> | <number>'..' \e
+     <number>
+
+     sa_val ::= shared | unique
+
+     dir_val1 ::= out | in
+     dir_val2 ::= out | in | both
+    version  ::= 1 | 2
+
+     number ::= < 0 | 1 | 2 ... 9> <number>
+     icmp-type ::= <number> | unreach | echo | echorep | squench |
+                   redir | timex | paramprob | timest | timestrep |
+                   inforeq | inforep | maskreq | maskrep | unreach6 |
+                   pkttoobig6 | timex6 | paramprob6 | echo6 | echorep6 |
+                   router-sol6 | router-ad6 | neigh-sol6 | neigh-ad6 |
+                   redir6
+
+     icmp-code ::= <number> | net-unr | host-unr | proto-unr | port-unr |
+                   needfrag | srcfail | net-unk | host-unk | isolate |
+                   net-prohib | host-prohib | net-tos | host-tos |
+                   filter-prohib | host-preced | cutoff-preced |
+                   no-route6 | adm-prohib6 | addr-unr6 | port-unr6 |
+                   hop-limex6 | frag-re-timex6 | err-head6 | unrec-head6 |
+                   unreq-opt6
+.fi
+.in -2
+
+.sp
+.LP
+策略条目的 \fIpattern\fR 字段中可包含下列（名称值）对。在给定策略条目中每个（名称值）对只能出现一次。
+.sp
+.ne 2
+.mk
+.na
+\fBladdr/plen\fR
+.ad
+.br
+.na
+\fBlocal/plen\fR
+.ad
+.sp .6
+.RS 4n
+后跟的值是数据报的本地地址以及前缀长度。只匹配数据包源地址的 plen 前导位。plen 是可选的。Local 表示传入数据包的目标和传出数据包的源。源地址值可以是 getaddrinfo(3SOCKET) 中所述的主机名、\fBgetnetbyname\fR(3XNET) 中所述的网络名或者采用 Internet 标准点记法的主机地址或网络地址。请参见 \fBinet_addr\fR(3XNET)。如果指定了一个主机名而 getaddrinfo(3SOCKET) 返回多个主机地址，则会为每个地址添加策略，添加时除地址以外的其他项保持不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBraddr/plen\fR
+.ad
+.br
+.na
+\fBremote/plen\fR
+.ad
+.sp .6
+.RS 4n
+后跟的值是数据报的远程地址以及前缀长度。只匹配数据包远程地址的 plen 前导位。plen 是可选的。Remote 表示传入数据包的源和传出数据包的目标。远程地址值可以是 \fBgetaddrinfo\fR(3SOCKET) 中所述的主机名、\fBgetnetbyname\fR(3XNET) 中所述的网络名或者采用 Internet 标准点记法的主机地址或网络地址。请参见 \fBinet_addr\fR(3XNET)。如果指定了一个主机名而 \fBgetaddrinfo\fR(3SOCKET) 返回多个主机地址，则会为每个地址添加策略，添加时除地址以外的其他项保持不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBsrc/plen\fR
+.ad
+.br
+.na
+\fBsrcaddr/plen\fR
+.ad
+.br
+.na
+\fBsaddr/plen\fR
+.ad
+.sp .6
+.RS 4n
+后跟的值是数据报的源地址以及前缀长度。只匹配数据包源地址的 \fIplen\fR 前导位。\fIplen\fR 是可选的。
+.sp
+源地址值可以是 \fBgetaddrinfo\fR(3SOCKET) 中所述的主机名、\fBgetnetbyname\fR(3XNET) 中所述的网络名或者采用 Internet 标准点记法的主机地址或网络地址。请参见 \fBinet_addr\fR(3XNET)。
+.sp
+如果指定了一个主机名而 \fBgetaddrinfo\fR(3SOCKET) 返回多个主机地址，则会为每个地址添加策略，添加时除地址以外的其他项保持不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdaddr/plen\fR
+.ad
+.br
+.na
+\fBdest/plen\fR
+.ad
+.br
+.na
+\fBdstaddr/plen\fR
+.ad
+.sp .6
+.RS 4n
+后跟的值是数据报的目标地址以及前缀长度。只匹配数据包目标地址的 \fIplen\fR 前导位。\fIplen\fR 是可选的。
+.sp
+有关可指定的有效值，请参见 \fIsaddr\fR。如果发现多个源地址和目标地址，则会将包含每个源地址-目标地址对的策略条目添加到系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIsmask\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅适用于 IPv4。后跟的值是源掩码。如果在 \fIsaddr\fR 中指定了前缀长度，则不应指定该掩码。该掩码可以用带有前导 \fB0x\fR 或 \fB0X\fR 的十六进制数字表示（例如，\fB0xffff0000\fR、\fB0Xffff0000\fR），或用 Internet 十进制点记法表示（例如，\fB255.255.0.0\fR 和 \fB255.255.255.0\fR）。该掩码应为连续数字，没有定义不连续掩码的行为。
+.sp
+仅当指定了 \fIsaddr\fR 时才会考虑 \fIsmask\fR。
+.sp
+对于 IPv4 和 IPv6 地址，可以将相同信息指定为附加到 \fIsaddr\fR 参数的 \fIslen\fR 值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdmask\fR\fR
+.ad
+.sp .6
+.RS 4n
+类似于 \fIsmask\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIlport\fR\fR
+.ad
+.sp .6
+.RS 4n
+后跟的值是数据报的本地端口。该值可以是一个端口号或使用 NULL proto 参数搜索到的字符串，如 getservbyname(3XNET) 中所述。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIrport\fR\fR
+.ad
+.sp .6
+.RS 4n
+后跟的值是数据报的远程端口。该值可以是一个端口号或使用 NULL proto 参数搜索到的字符串，如 getservbyname(3XNET) 中所述。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIsport\fR\fR
+.ad
+.sp .6
+.RS 4n
+后跟的值是数据报的源端口。该值可以是一个端口号或使用 \fBNULL\fR proto  参数搜索到的字符串，如 \fBgetservbyname\fR(3XNET) 中所述。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdport\fR\fR
+.ad
+.sp .6
+.RS 4n
+后跟的值是数据报的目标端口。该值可以是一个端口号或使用 \fBNULL\fR proto 参数搜索到的字符串，如 \fBgetservbyname\fR(3XNET) 中所述。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBproto\fR \fIulp\fR\fR
+.ad
+.sp .6
+.RS 4n
+后跟的值是匹配此条目时所应依据的上层协议。该值可以是数字或字符串，如 \fBgetprotobyname\fR(3XNET)中所述。如果未指定 smask 或 plen，则将对 IPv4 使用 plen 32，对 IPv6 使用 plen 128（表示主机）。如果 \fIulp\fR 为 \fBicmp\fR 或 \fBipv6-icmp\fR，则对于所有 \fBicmp\fR 规则而言，应用 IPsec 的所有操作必须相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtype\fR \fInum\fR 或 \fInum\fR-\fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+后跟的值是匹配此条目时所应依据的 ICMP 类型。\fBtype\fR 必须为 0 至 255 之间的数字，或者为相应的 \fBicmp-type\fR 关键字之一。此外，还必须存在 \fIulp\fR，并且必须指定\fB icmp\fR 或 \fBipv6-icmp\fR。通过连字符分隔数字可以指定一系列类型。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcode\fR \fInum\fR 或 \fInum\fR-\fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+后跟的值是匹配此条目时所应依据的 ICMP 代码。关键字 \fBcode\fR 后跟的值必须为 0 至 254 之间的数字，或者为相应的 \fBicmp-code\fR 关键字之一。此外，还必须存在 \fBtype\fR。通过连字符分隔数字可以指定一系列代码。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtunnel\fR \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+按照 \fBifconfig\fR(1M) 配置的那样指定隧道网络接口。即使不存在名为 \fIname\fR 的隧道，仍会添加策略条目，并会在创建该隧道时与隧道状态关联。如果隧道未激活，其策略条目将消失。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnegotiate\fR \fItunnel\fR\fR
+.ad
+.br
+.na
+\fB\fBnegotiate\fR \fItransport\fR\fR
+.ad
+.sp .6
+.RS 4n
+为保证每个隧道的安全，请指定保护通信的 IPsec SA 应当为隧道模式 SA 还是传输模式 SA。如果指定传输模式 SA，策略条目中不能出现任何地址。传输模式用于与 Solaris 9 向后兼容，并且使用 \fBifconfig\fR(1M) 配置的隧道 IPsec 策略在此处将显示为传输模式条目。
+.RE
+
+.sp
+.LP
+策略条目的属性字段中可包含下列（名称值）对。在给定策略条目中每个（名称值）对只能出现一次。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauth_algs\fR\fR
+.ad
+.sp .6
+.RS 4n
+该参数后跟可接受的值表明传出数据报中将包含 IPsec \fBAH\fR 头（在外部 IP 头之后）。在\fB auth_algs\fR 关键字之后指定的算法将基于原始数据包的内容生成完整性检查值 (Integrity Check Value, ICV)。以下算法不加密数据包的内容，只是提供一个用来确认数据包内容在传输过程中未被修改的机制。请参见 \fIRFC 2402\fR。 
+.sp
+如果 \fBauth_algs\fR 与 \fBencr_algs\fR 结合使用，将使用 \fBencr_algs\fR 后指定的算法加密原始有效载荷。在这种情况下，AH 生成的 ICV 将属于加密后的数据包和加密后插入的 ESP 头。
+.sp
+不同的验证算法会生成不同长度的 ICV。一般情况下，ICV 越长，验证功能越强。较强的算法通常会对性能造成不利影响。
+.sp
+此条目应当包含一个字符串。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstring\fR\fR
+.ad
+.sp .6
+.RS 4n
+可以是下列项之一：
+.sp
+.in +2
+.nf
+    string value:	   Algorithm Used:	    See RFC:
+--------------------------------------------------------------------
+sha256 or hmac-sha256	  HMAC-SHA256	       4868
+sha384 or hmac-sha384	  HMAC-SHA384	       4868
+sha512 or hmac-sha512	  HMAC-SHA512	       4868
+aes-xcbc                   AES-XCBC-MAC-96       3566
+aes-gmac128                AES-GMAC              4543
+aes-gmac192                AES-GMAC              4543
+es-gmac256                 AES-GMAC              4543
+.fi
+.in -2
+
+.LP
+注 - 
+.sp
+.RS 2
+使用 AES-GMAC 算法的 \fBauth_algs\fR 的所有值都将生成相同长度的 ICV，但会采用不同长度的密钥，分别为 128、192 或 256 位。
+.RE
+为实现向后兼容，也允许使用以下已过时的验证算法。不过，鼓励管理员们尽快不再使用这些已过时的算法。
+.sp
+.in +2
+.nf
+        string value:	   Algorithm Used:	    See RFC:
+--------------------------------------------------------------------
+md5 or hmac-md5	          HMAC-MD5	          2403
+sha1 or hmac-sha1 or sha	 HMAC-SHA1	         2404
+.fi
+.in -2
+
+使用 \fBipsecalgs\fR(1M) 命令可以获取完整的验证算法列表。
+.sp
+字符串不区分大小写。
+.RE
+
+如果不存在 \fIauth_algs\fR，传出数据报中将不包含 \fBAH\fR 头，并且将按照相同标准对传入数据报进行验证。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBencr_algs\fR\fR
+.ad
+.sp .6
+.RS 4n
+该关键字后跟可接受的值表明传出数据报中将包含 IPsec ESP 头。该值描述了将用于加密传出数据报的原始有效载荷的加密算法。下面列出的有些算法也会基于加密数据包的内容和 ESP 头生成完整性检查值 (Integrity Check Value, ICV)。生成的 ICV 会添加到数据报末尾，即加密的有效荷载之后，可供接收系统用于确认数据包在传输过程中未被修改。请参见 \fIRFC 2406\fR。 
+.sp
+未作为加密操作的一部分生成 ICV 的算法应与通过 \fBencr_auth_algs\fR 关键字指定的验证算法结合使用。
+.sp
+下表列出了支持的仅加密算法和组合模式加密算法。
+.sp
+此条目应当包含一个字符串。字符串不区分大小写。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstring\fR\fR
+.ad
+.sp .6
+.RS 4n
+以下加密算法仅提供加密功能，需要使用验证算法生成 ICV。它们应与 \fBencr_auth_algs\fR 关键字结合使用。
+.sp
+以下每个算法都支持长度为 128、192 或 256 位的密钥。
+.sp
+.in +2
+.nf
+string value:                Algorithm Used:        See RFC:
+--------------------------------------------------------------------
+aes or aes-cbc                AES-CBC	           2451
+camellia or camellia-cbc      Camellia-CBC          4312
+.fi
+.in -2
+
+以下组合模式算法在一个操作中综合了加密和 ICV 生成。它们不得与 \fBencr_auth_algs\fR 关键字结合使用。
+.sp
+以下每个算法都支持长度为 128、192 或 256 位的密钥。
+.sp
+.in +2
+.nf
+string value:            Algorithm Used:        ICV Length    See RFC:
+-----------------------------------------------------------------------
+aes-ccm or aes-ccm16        AES-CCM	         16 bytes	  4309
+aes-ccm8                    AES-CCM	         8 bytes       4309
+aes-ccm12                   AES-CCM	         12 bytes	  4309
+aes-gcm or aes-gcm16        AES-GCM	         16 bytes      4106
+aes-gcm8                    AES-GCM	         8 bytes       4106
+aes-gcm12                   AES-GCM	         12 bytes	  4106
+aes-none-gmac [*]           AES-GMAC            16 bytes	  4543
+.fi
+.in -2
+
+[*] 仅生成供验证使用的 ICV，不加密。在下面的“示例”部分查看有关使用 AES GMAC 的示例。
+.sp
+为实现向后兼容，也允许使用以下已过时的仅加密算法。不过，鼓励管理员们尽快不再使用这些已过时的算法。
+.sp
+
+.sp
+.TS
+tab();
+cw(1.83i) cw(1.83i) cw(1.83i) 
+lw(1.83i) lw(1.83i) lw(1.83i) 
+.
+字符串值：所用算法：RFC 参考：
+_
+des 或 des-cbcDES-CBC2405
+3des 或 3des-cbc3DES-CBC2451
+blowfish 或 blowfish-cbcBlowfish-CBC2451
+.TE
+
+使用 \fBipsecalgs\fR(1M) 命令可以获取完整的验证算法列表。
+.sp
+该值可以为 \fBNULL\fR，这表示 \fIRFC 2410\fR 的 \fBNULL\fR 加密。这意味着将不会对有效负荷加密。该字符串也可以是 \fBANY\fR，表示没有首选算法。对于手动 SA，缺省算法将根据此时可用的 SA 进行选择，对于自动 SA，则根据密钥协商守护进程进行选择。字符串不区分大小写。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBencr_auth_algs\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBencr_auth_algs\fR 后跟可接受的值表明传出数据报中将包含 IPsec \fBESP\fR 头。\fBencr_auth_algs\fR 后跟的值描述了在对传出数据报应用 IPsec \fBESP\fR 协议时将使用的验证算法，还将验证传入数据报中是否包含 IPsec ESP 头。请参见 \fIRFC 2406\fR。此条目必须包含一个字符串。字符串不区分大小写。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstring\fR\fR
+.ad
+.sp .6
+.RS 4n
+可以是下列项之一：
+.sp
+.in +2
+.nf
+    string value:	   Algorithm Used:	    See RFC:
+--------------------------------------------------------------------
+sha256 or hmac-sha256	  HMAC-SHA256	       4868
+sha384 or hmac-sha384	  HMAC-SHA384	       4868
+sha512 or hmac-sha512	  HMAC-SHA512	       4868
+aes-xcbc                   AES-XCBC-MAC-96       3566
+.fi
+.in -2
+
+为实现向后兼容，也允许使用以下已过时的验证算法。不过，鼓励管理员们尽快不再使用这些已过时的算法。
+.sp
+.in +2
+.nf
+    string value:	      Algorithm Used:	  See RFC:
+--------------------------------------------------------------------
+md5 or hmac-md5	          HMAC-MD5	       2403
+sha1 or hmac-sha1 or sha	 HMAC-SHA1	      2404
+.fi
+.in -2
+
+使用 \fBipsecalgs\fR(1M) 命令可以获取完整的验证算法列表。字符串不区分大小写。
+.RE
+
+如果策略条目中存在 \fBencr_algs\fR 但不存在 \fBencr_auth_algs\fR，系统将使用 \fBESP\fR \fBSA\fR，而不管 \fBSA\fR 是否具有验证算法。 
+.sp
+如果策略条目中不存在 \fBencr_algs\fR 但存在 \fBencr_auth_algs\fR，将对传出和传入数据报使用 NULL 加密，这等效于带有 \fBNULL\fR 的 \fBencr_algs\fR。 
+.sp
+如果策略条目中不存在 \fBencr_algs\fR 和 \fBencr_auth_algs\fR，传出数据报中将不包含 \fBESP\fR 头，并且将按照相同标准对传入数据报进行验证。
+.sp
+如果策略条目中同时存在 \fBencr_algs\fR 和 \fBencr_auth_algs\fR，传出数据报中将包含具有完整性校验和的 \fBESP\fR 头，并且将按照相同标准对传入数据报进行验证。
+.sp
+对于 \fBencr_algs\fR、\fBencr_auth_algs\fR 和 \fBauth_algs\fR，必须指定密钥长度。该值要么是一个指定算法的唯一有效密钥长度的值，要么是一个指定有效的最小和/或最大密钥长度的范围。可省略最小或最大长度。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdir\fR\fR
+.ad
+.sp .6
+.RS 4n
+此参数后跟的值决定此策略条目是否应用于传出和/或传入数据报。一般情况下，不应指定此值，因为对于典型的网络通信来说，IPsec 策略应同时应用于传入和传出通信。大部分常见的网络协议都是双向的。
+.sp
+当操作为 "apply" 或 "permit" 时不需要此条目，因为这些操作就包含了此条目。当操作为 "ipsec" 时此条目无效，因为此操作包含了传入和传出两个方向。
+.sp
+操作为 "bypass" 时例外，必须指定此条目。
+.sp
+如果指定了一个方向，务必非常小心地确保对等方具有匹配的反向策略，否则 IKE 协商可能会失败。
+.sp
+有效值应为以下字符串之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBout\fR\fR
+.ad
+.sp .6
+.RS 4n
+这表示此策略条目仅针对传出数据报。这等效于不指定任何内容。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin\fR\fR
+.ad
+.sp .6
+.RS 4n
+这表示此策略条目仅针对传入数据报。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBboth\fR\fR
+.ad
+.sp .6
+.RS 4n
+这表示此策略条目针对传入和传出数据报
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsa\fR\fR
+.ad
+.sp .6
+.RS 4n
+该参数后跟的值确定安全关联的属性。该值指示是应使用唯一的安全关联，还是可以使用任何现有 \fBSA\fR。如果具有策略要求，则会使用密钥管理守护进程在第一个传出数据报中动态创建 \fBSA\fR。使用 \fBipseckey\fR(1M) 可以创建静态 \fBSA\fR。此处使用的值确定是否将使用/获取新 \fBSA\fR。有效值可以是以下字符串之一： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunique\fR\fR
+.ad
+.sp .6
+.RS 4n
+唯一关联。将为与此策略条目匹配的数据包获取/使用新的/未使用的关联。如果存在由相同的 5 个元组（即，{源地址、目标地址、源端口、目标端口、协议（例如，\fBTCP\fR/\fBUDP\fR）}）使用过的 \fBSA\fR，则将重用该 SA。因此，唯一性由上面指定的 5 个元组表示。上述 5 个元组使用的安全关联将不会供任何其他套接字使用。对于传入数据报，不会验证唯一性。
+.sp
+对于隧道模式隧道，将忽略 \fBunique\fR。在隧道模式隧道中，SA 按照规则进行分配。对于传输模式隧道，由于只作用于外部数据包地址且协议值要么为 IPv4-in-IP，要么为 IPv6-in-IP，因此隐含使用 \fBunique\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshared\fR\fR
+.ad
+.sp .6
+.RS 4n
+共享关联。如果此源-目标对已存在 \fBSA\fR，则使用它。否则获取新的 \fBSA\fR。这是缺省值。
+.RE
+
+只有在传出策略条目中该参数才是必需的，不应在操作是 "bypass" 的条目中指定该参数。如果没有为传入条目指定此项（例如，当 "dir" 为 in 或 "action" 为 permit 时），将假定为共享关联。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBike_version\fR\fR
+.ad
+.sp .6
+.RS 4n
+限制此策略，从而 IPsec SA 的请求仅由特定版本的 IKE 守护进程来处理。为 \fBin.iked\fR(1M) 指定 ike_version 1，为 \fBin.ikev2d\fR(1M) 指定 ike_version 2。不进行此操作将解释为通配符，即，任何适当配置的守护进程都可以响应。
+.RE
+
+.sp
+.LP
+操作位于模式之后，并且应在属性前指定。操作应当为下列值之一，并且此字段是必需的。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipsec\fR\fR
+.ad
+.sp .6
+.RS 4n
+按属性所述对数据报使用 IPsec（如果模式与数据报匹配）。如果指定的 ipsec 的未给定 dir，模式将与传入和传出数据报匹配。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBapply\fR\fR
+.ad
+.sp .6
+.RS 4n
+按属性所述对数据报应用 IPsec（如果模式与数据报匹配）。如果指定了 \fBapply\fR，模式仅与传出数据报进行匹配。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpermit\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果模式与传入数据报匹配，并且符合属性描述的约束，则允许数据报。如果不符合属性，则放弃数据报。如果指定了 \fBpermit\fR，模式仅与传入数据报进行匹配。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbypass\fR\fR
+.ad
+.br
+.na
+\fB\fBpass\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果模式与数据报匹配，则绕过所有策略检查。属性中的 \fBdir\fR 确定是对传出数据报还是传入数据报执行检查。所有 \fBbypass\fR 条目都在系统中的任何其他策略条目之前检查。同任何其他条目相比，该条目的优先级最高。当操作为 \fBbypass\fR 时，只能存在 \fBdir\fR 字段。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdrop\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除与模式匹配的任何数据包。
+.RE
+
+.sp
+.LP
+例如，如果文件包含多个策略条目，则假定这些策略条目按照其应用顺序列出。如果有多个条目与传出和传入数据报匹配，则采用第一个匹配条目。仅当满足下列条件时，系统才会对策略条目重新排序，即将新条目添加在旧条目之前：
+.sp
+.LP
+保护级别“强”于旧保护级别。
+.sp
+.LP
+目前，强度定义为：
+.sp
+.in +2
+.nf
+AH and ESP > ESP > AH
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+在此由高到低的排名中，组合使用 \fBAH\fR 和 \fBESP\fR 的标准用法强度最高。此排名存在缺陷。\fBESP \fR 可以在不进行验证的情况下使用，这将允许剪切和粘贴或重放攻击；也可以在不进行加密的情况下使用，这使其强度等于或略低于 \fBAH\fR。管理员应谨慎行事，以保证正确使用 \fBESP\fR。有关更多详细信息，请参见 \fBipsecesp\fR(7P)。
+.sp
+.LP
+如果新条目的操作为 \fBbypass\fR，\fBbypass\fR 具有最高优先级。该新条目可以在任意位置添加，并且系统仍会在匹配任何其他条目之前匹配所有 \fBbypass\fR 条目。此功能对密钥管理守护进程非常有用，由于该守护进程保护其自己的通信，因此可使用此功能绕过 IPsec。
+.sp
+.LP
+新添加的同时具有 \fBAH\fR（策略条目中包含 \fBauth_algs\fR）和 \fBESP\fR（策略条目中包含 \fBencr_algs\fR 或 \fBencr_auth_algs\fR）保护的条目排列在具有 \fBAH\fR 和 \fBESP\fR 的所有已有条目之后，在仅具有 \fBAH\fR 的已有条目和仅具有 \fBESP\fR 的已有条目之前。在其他所有情况下，不会修改用户指定的顺序，即在所有旧条目之后添加新条目。请参见Examples。
+.sp
+.LP
+如果旧条目和新条目匹配的通信模式相同，则将新条目视为旧条目的重复条目。有关重复条目的信息，请参见Examples。
+.SH 安全
+.sp
+.LP
+例如，如果通过线路从挂载了 \fBNFS\fR 的文件系统传输策略文件，对手可以修改该文件中包含的数据，从而更改计算机上配置的策略以满足其需求。管理员在通过网络传输策略文件副本时应谨慎。
+.sp
+.LP
+为了防止非特权用户修改安全策略，请确保只有可信用户才能对配置文件执行写入。
+.sp
+.LP
+配置文件通过 \fBpolicy\fR \fBsmf\fR(5) 服务的属性定义。缺省配置文件为 \fB/etc/inet/ipsecinit.conf\fR。使用 \fBsvcprop\fR(1) 命令可更改此设置。有关更多详细信息，请参见\fB\fR“附注”部分。
+.sp
+.LP
+策略描述语言支持使用标记，标记可通过名称服务解析（使用 \fBgethostbyname\fR(3NSL) 等函数）。尽管使用这些函数非常方便，但其安全程度与系统配置使用的名称服务一样。当名称服务用于解析安全策略的元素时，务必谨慎行事，确保名称服务安全可靠。
+.sp
+.LP
+如果您的源地址是可通过网络查找的主机，并且您的命名系统本身已泄密，使用的所有名称都将不再值得信任。
+.sp
+.LP
+如果名称转换配置为使用非系统本地的名称服务，可能需要添加 bypass 策略条目以免策略阻止与名称服务通信。请参见 \fBnsswitch.conf\fR(4)。
+.sp
+.LP
+对于 \fBconnect\fR(3SOCKET) 或 \fBaccept\fR(3SOCKET) 处理的 \fBTCP/UDP\fR 套接字，将锁定策略。添加新策略条目不会对此类套接字有任何影响。此锁定功能将来可能会发生更改。建议不要依赖此功能。
+.sp
+.LP
+\fBipsecconf\fR 命令只能由具有足够的特权打开 \fBpf_key\fR(7P) 套接字的用户运行。使用 "Network IPsec Management"（网络 IPsec 管理）配置文件可以将相应特权分配给用户。请参见 \fBprofiles\fR(1)、\fBrbac\fR(5)、\fBprof_attr\fR(4)。
+.sp
+.LP
+务必在启动任何通信之前设置策略，因为添加新策略条目可能会影响现有连接。类似地，请勿在通信过程中更改策略。 
+.sp
+.LP
+请注意，某些 \fBndd\fR 可调参数会影响使用此工具配置的策略的执行；有关更多详细信息，请参见 \fBipsecesp\fR(7P)。
+.SH 示例
+.LP
+\fB示例 1 \fR使用 ESP 保护两个主机之间的所有通信
+.sp
+.LP
+下面的示例指定使用 AES 加密算法保护通信，使用 SHA256 进行验证。
+
+.sp
+.in +2
+.nf
+{ laddr spiderweb raddr arachnid } ipsec
+    { encr_algs aes encr_auth_algs sha256 }
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR使用 AH 验证传输到 Telnet 端口的所有传入通信
+.sp
+.LP
+此条目指定传输到 Telnet 端口的所有传入数据报都应使用 AH 保护、使用 SHA1 算法验证。否则，将丢弃该数据报。如果没有此条目，将允许传输到端口 23 的不受任何保护的通信。不使用端口 23 的通信与此规则不匹配，如果这是唯一的规则，那么所有其他通信都不需要 IPsec 保护。
+
+.sp
+.in +2
+.nf
+#
+# All the inbound traffic to the telnet port should be
+# authenticated.
+#
+{ lport telnet dir in } ipsec { auth_algs sha1 }
+.fi
+.in -2
+
+.LP
+\fB示例 3 \fR使用 ESP Null 加密验证传入通信
+.sp
+.LP
+第一个条目允许任何来自地址 host-B 的数据包进入没有 IPsec 保护的系统。第二个条目要求来自地址计算机 network-B 规范的数据包由 ESP 保护，采用 NULL 加密，但使用 \fBsha512\fR 进行验证。
+
+.sp
+.LP
+Null 加密的 ESP 提供与 AH 类似的保护级别。
+
+.sp
+.in +2
+.nf
+#
+# Make sure that all inbound traffic from network-B is NULL
+# encrypted, but bypass for host-B alone from that network.
+# Add the bypass first.
+
+{ raddr host-B dir in } bypass {}
+
+# Now add for network-B.
+{ raddr network-B/16 dir in } ipsec
+     { encr_algs NULL encr_auth_algs sha512 }
+.fi
+.in -2
+
+.LP
+\fB示例 4 \fR允许 DNS 通信绕过 IPsec 的条目
+.sp
+.LP
+前两个条目允许从计算机源端口 53 传出或传入端口 53 的任何数据报在没有 IPsec 保护的情况下进行传输，而不考虑系统中的任何其他策略条目。因此，仅对端口号 53 以外的端口考虑后两个条目。
+
+.sp
+.in +2
+.nf
+#
+# Bypass traffic for port number 53
+#
+{lport 53 dir out} bypass {}
+{rport 53 dir in} bypass {}
+{raddr spiderweb } ipsec {encr_algs aes-ccm sa unique}
+.fi
+.in -2
+
+.LP
+\fB示例 5 \fR保护传出通信
+.sp
+.in +2
+.nf
+ #
+     # Protect the outbound traffic from all interfaces.
+     #
+{raddr spiderweb dir out} ipsec {auth_algs any sa unique}
+{ laddr arachnid raddr spiderweb dir in } ipsec
+      {auth_algs sha256 sa unique}
+.fi
+.in -2
+
+.sp
+.LP
+如果针对 spiderweb 的 \fBgethostbyname\fR(3C) 调用生成多个地址，则将以相同的属性为所有源地址添加多个策略条目。
+
+.sp
+.in +2
+.nf
+{ 
+    laddr arachnid 
+    raddr spiderweb 
+    dir in 
+} ipsec {auth_algs any sa unique}
+.fi
+.in -2
+
+.sp
+.LP
+如果针对 spiderweb 的 \fBgethostbyname\fR(3C) 调用和针对 arachnid 的 \fBgethostbyname\fR(3C) 调用生成多个地址，则将以相同的属性为每个 (\fBsaddr\fR \fBdaddr\fR) 对添加多个策略条目。使用 \fBipsecconf\fR \fB-l\fR 可查看添加的所有策略条目。
+
+.LP
+\fB示例 6 \fR使未验证的通信绕过检查
+.sp
+.in +2
+.nf
+#
+# Protect all the outbound traffic with ESP except any traffic
+# to network-b which should be authenticated and bypass anything
+# to network-c
+#
+{raddr network-b/16 dir out} ipsec {auth_algs sha256 }
+{dir out} ipsec {encr_algs aes-ccm}
+{raddr	network-c/16 dir out} bypass {}
+.fi
+.in -2
+
+.sp
+.LP
+请注意，可以在任意位置指定bypass，其优先级高于所有其他条目。第二个规则中的 NULL 模式与所有通信均匹配。
+
+.LP
+\fB示例 7 \fR使用 Camellia 和 sha256 加密 IPv6 通信
+.sp
+.LP
+要求地址为 \fIfe80::a00:20ff:fe21:4483\fR 的主机与地址为 \fIfe80::a00:20ff:felf:e346\fR 的主机之间的数据包使用 ESP，并使用 Camellia 进行加密和使用 sha256 进行验证。
+
+.sp
+.in +2
+.nf
+{
+    laddr fe80::a00:20ff:fe21:4483
+    raddr fe80::a00:20ff:felf:e346
+    
+} ipsec {
+    encr_algs camellia
+    encr_auth_algs sha256
+}
+.fi
+.in -2
+
+.LP
+\fB示例 8 \fR使用 AH 确认 IPv6 通信，使用 sha384 进行验证
+.sp
+.LP
+以下两个条目要求使用 sha384 验证传入和传出 IPv6 站点本地网络 \fBfec0:abcd::0/32\fR 的所有 IPv6 通信。
+
+.sp
+.in +2
+.nf
+{raddr fec0:abcd::0/32} ipsec { auth_algs sha384 }
+.fi
+.in -2
+
+.LP
+\fB示例 9 \fR密钥长度
+.sp
+.in +2
+.nf
+# use aes at any key length defined my ipsecalgs(1m)
+{raddr	spiderweb} ipsec {encr_algs aes encr_auth_algs sha256}
+# This has the same effect
+{raddr spiderweb} ipsec {encr_algs aes(128..256) encr_auth_algs sha256}
+
+# Only use aes with a 192 bit key
+{raddr spiderweb} ipsec {encr_algs aes(192) encr_auth_algs sha256}
+
+# use aes with any key length up to 192 bits
+# i.e. 192 bits or less
+{raddr spiderweb} ipsec {encr_algs aes(..192) encr_auth_algs sha256}
+
+# use aes with any key length of 192 or more
+# i.e. 192 bits or more
+{raddr spiderweb} ipsec {encr_algs aes(192..) encr_auth_algs sha256}
+
+#use aes with any key from 192 to 256 bits
+{raddr spiderweb} ipsec {encr_algs aes(192..256) encr_auth_algs sha256}
+
+#use any algorithm with a key of 192 bits or longer
+{raddr spiderweb} ipsec {encr_algs any(192..) encr_auth_algs sha256}
+.fi
+.in -2
+
+.sp
+.LP
+请注意，如果使用 IKE，指定多个密钥长度的策略条目将向其对等方生成多个提议。由对等方选择与其本地 IPsec 策略最匹配的提议。
+
+.LP
+\fB示例 10 \fR正确和错误的策略条目
+.sp
+.LP
+以下示例列举了正确格式的策略条目：
+
+.sp
+.in +2
+.nf
+{ raddr that_system rport telnet } ipsec { encr_algs aes
+ encr_auth_algs sha256 sa shared}
+
+{
+        raddr that_system
+        rport telnet
+} ipsec {
+        encr_algs aes
+        encr_auth_algs sha256
+        sa shared
+}
+
+{ raddr that_system rport telnet } ipsec
+        { encr_algs aes encr_auth_algs sha1 sa shared}
+
+{ raddr that_system rport telnet } ipsec
+        { encr_algs 3des encr_auth_algs sha256 sa shared} or ipsec
+        { encr_algs aes encr_auth_algs sha256 sa shared}
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\&...以下是错误格式的策略条目：
+
+.sp
+.in +2
+.nf
+{ raddr that_system rport telnet } ipsec
+        { encr_algs 3des encr_auth_algs sha1 sa shared}
+        or ipsec { encr_algs aes encr_auth_algs sha1 sa shared}
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+在上一错误的策略条目中，请注意第三行以 “\fBor ipsec\fR” 开头。此类条目会导致 \fBipsecconf\fR 返回错误。
+
+.LP
+\fB示例 11 \fR允许相邻节点搜索绕过 IPsec
+.sp
+.LP
+以下两个条目要求使用 sha256 验证传入和传出 IPv6 站点本地网络 \fBfec0:abcd::0/32\fR 的所有 IPv6 通信。第二个条目使相邻节点搜索能正确运行。
+
+.sp
+.in +2
+.nf
+{raddr fec0:abcd::0/32} ipsec { auth_algs sha256 }
+{raddr fec0:abcd::0/32 ulp ipv6-icmp type 133-137
+   dir both } pass { }
+.fi
+.in -2
+
+.LP
+\fB示例 12 \fR使用 "or"
+.sp
+.LP
+以下条目允许来自远程计算机 spiderweb 的 IPsec 通信使用 AES 或 Blowfish 算法。在某些情况下，它还将允许来自 spiderweb 的未加密通信：
+
+.sp
+.in +2
+.nf
+{raddr spiderweb} ipsec {encr_auth_algs sha256 encr_algs aes} 
+        or ipsec {encr_algs blowfish} or pass {}
+.fi
+.in -2
+
+.sp
+.LP
+对于从该系统启动的传出通信，第一个数据包将触发 AQCUIRE 消息从内核发送到密钥管理守护进程（\fBin.iked\fR(1M) 或 \fBin.ikev2d\fR(1M)）。
+
+.sp
+.LP
+ACQUIRE 将包含两个算法组合，对等系统将选择一个可以接受的算法组合，并将添加 IPsec SA。通信将使用这些 SA。
+
+.sp
+.LP
+对于传入通信，IPsec 保护的数据包将需要一个 SA 在接收系统上对数据包进行解密。对于支持锁定功能的协议（如 TCP），将在第一个使用 SA 的数据包解密后根据策略对其进行检查，然后将锁定该策略。对于不支持锁定功能的协议（如 UDP），将始终根据传入策略检查数据包。
+
+.sp
+.LP
+在上面的示例中，有第三个操作 "pass"。对于传入通信，此系统将接受 IPsec 数据包或来自 spiderweb 的不受保护的数据包。
+
+.sp
+.LP
+当此系统响应时，必须决定使用哪个 IPsec 算法（如有）。响应将使用 SADB 中已经存在的任何匹配 SA。如果传入数据包受 IPsec 的保护，必须存在 IKE 交换才能生成 SA。由于 IPsec SA 是成对添加的，也就是一个传入和一个传出，因此必须有 SA 可用。传出数据包将受 IPsec 的保护。
+
+.sp
+.LP
+与此相反，如果没有可用的 SA，将在不采取任何保护措施的情况下发送数据包。数据包锁定功能在此处具有重要作用，这一点必须知道。
+
+.sp
+.LP
+使用 "pass" 操作的策略条目是一款非常实用的迁移工具，允许系统使用 IPsec（如果可用）。应当谨慎写入使用 "pass" 操作的规则。 
+
+.LP
+\fB示例 13 \fR配置隧道以便与 Solaris 9 向后兼容
+.sp
+.LP
+以下示例等效于 \fBifconfig\fR(1M) 中的 "\fBencr_algs aes encr_auth_algs sha1\fR"：
+
+.sp
+.in +2
+.nf
+{tunnel ip.tun0 negotiate transport} ipsec
+                  {encr_algs aes encr_auth_algs sha1}
+.fi
+.in -2
+
+.LP
+\fB示例 14 \fR使用分配的地址配置到 VPN 客户机的隧道
+.sp
+.LP
+以下示例假定存在一个单独的“内部”网络，它具有自己的拓扑，因而客户机的缺省路由转向“内部”。
+
+.sp
+.in +2
+.nf
+# Unlike route(1m), the default route has to be spelled-out.
+{tunnel ip.tun0 negotiate tunnel raddr client-inside/32
+laddr 0.0.0.0/0} ipsec {encr_algs aes encr_auth_algs sha256}
+.fi
+.in -2
+
+.LP
+\fB示例 15 \fR在两个隧道子网和第三个子网之间传输信息的 VPN 路由器
+.sp
+.LP
+以下示例为在两个隧道子网和第三个链路子网之间路由信息的 VPN 路由器指定配置。假定远程站点 A、远程站点 B 和本地站点 C 分别具有 \fB/24\fR 地址分配。
+
+.sp
+.in +2
+.nf
+# ip.tun0 between me (C) and remote-site A.
+# Cover remote-site A to remote-side B.
+{tunnel ip.tun0 negotiate tunnel
+    raddr A-prefix/24 laddr B-prefix/24} ipsec
+     {encr_algs aes encr_auth_algs sha256}
+
+# Cover remote-site A traffic to my subnet.
+{tunnel ip.tun0 negotiate tunnel
+    raddr A-prefix/24 laddr C-prefix/24}
+    ipsec {encr_algs aes encr_auth_algs sha256}
+
+# ip.tun1 between me (C) and remote-site B.
+# Cover remote-site B to remote-site A.
+{tunnel ip.tun1 negotiate tunnel
+    raddr B-prefix/24 laddr A-prefix/24} ipsec
+    {encr_algs camellia encr_auth_algs sha256}
+
+# Cover remote-site B traffic to my subnet.
+{tunnel ip.tun1 negotiate tunnel
+    raddr B-prefix/24 laddr C-prefix/24} ipsec
+    {encr_algs camellia encr_auth_algs sha256}
+.fi
+.in -2
+
+.LP
+\fB示例 16 \fR使用组合模式加密算法
+.sp
+.LP
+使用的参数与任何其他 encr_algs 相同。在两个示例中，算法令牌中的数字都表示完整性检查值 (Integrity Check Vector, ICV) 的长度。请参见 \fBipsecalgs\fR(1M)。
+
+.sp
+.in +2
+.nf
+# simple example using GCM in transport mode
+{laddr 192.168.99.2 raddr 192.168.99.3} ipsec
+    {encr_algs aes-gcm sa shared}
+# simple example using CCM mode and 128 bit keys
+{laddr 192.168.99.100 raddr 192.168.99.200} ipsec
+    {encr_algs aes-ccm(128) sa shared}
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 17 \fR使用 AES GMAC
+.sp
+.LP
+AES GMAC 算法是提供消息验证的散列算法。会计算完整性检查向量 (Integrity Check Vector, ICV)，并将其作为验证的数据包的一部分传送。
+
+.sp
+.LP
+AES GMAC 算法可用于 ESP 模式，此种情况下会验证数据包数据和 ESP 头。当与 IPsec ESP 组合使用时，AES GMAC 只能作为加密算法指定，即使它未提供任何加密也是如此。
+
+.sp
+.in +2
+.nf
+# \fBsimple example using AES GMAC and 128 bit keys for ESP\fR
+\fB{laddr 192.168.99.100 raddr 192.168.99.200} ipsec\fR
+    \fB{encr_algs aes-none-gmac(128) sa shared}\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以上示例类似于以下无效示例：
+
+.sp
+.in +2
+.nf
+{laddr 192.168.99.100 raddr 192.168.99.200} ipsec
+    {encr_algs null encr_auth_algs aes-gmac(128) sa shared}
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+当与 ESP 组合使用时，\fBaes-none-gmac\fR 算法将密钥长度作为可选参数，使用 \fBipsecalgs\fR(1M) 命令可显示支持的密钥长度。
+
+.sp
+.LP
+AES GMAC 算法可用于 AH 模式，此种情况下会验证整个数据包（包括 IP 头）。当与 IPsec AH 组合使用时，AES GMAC 只能作为验证算法指定。
+
+.sp
+.in +2
+.nf
+# \fBsimple example using AES GMAC and 128 bit keys for AH\fR
+\fB{laddr 192.168.99.100 raddr 192.168.99.200} ipsec\fR
+    \fB{auth_algs aes-gmac128 sa shared}\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+当与 AH 组合使用时，每个密钥长度都具有自己的 DOI 编号，密钥长度不需要指定为参数。
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/run/ipsecpolicy.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+该文件缓存了当前为系统配置的 IPsec 策略，由 \fBipsecconf\fR 命令维护。请勿编辑该文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ipsecinit.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+该文件包含在重新启动系统时 \fBpolicy\fR \fBsmf\fR(5) 服务要安装的 IPsec 策略。有关更多信息，请参见\fB\fR“附注”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ipsecinit.sample\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBipseconf\fR 的示例输入文件。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBauths\fR(1)、\fBprofiles\fR(1)、\fBsvcprop\fR(1)、\fBsvcs\fR(1)、\fBin.iked\fR(1M)、\fBinit\fR(1M)、\fBifconfig\fR(1M)、\fBipsecalgs\fR(1M)、\fBipseckey\fR(1M)、\fBnetcfg\fR(1M)、\fBsvcadm\fR(1M)、\fBsvccfg\fR(1M)、\fBgethostbyname\fR(3NSL)、\fBaccept\fR(3SOCKET)、\fBconnect\fR(3SOCKET)、\fBgethostbyname\fR(3XNET)、\fBgetnetbyname\fR(3XNET)、\fBgetprotobyname\fR(3XNET)、\fBgetservbyname\fR(3XNET)、\fBgetaddrinfo\fR(3SOCKET)、\fBsocket\fR(3SOCKET)、\fBike.config\fR(4)、\fBnsswitch.conf\fR(4)、\fBprof_attr\fR(4)、\fBuser_attr\fR(4)、\fBattributes\fR(5)、\fBrbac\fR(5)、\fBsmf\fR(5)、\fBipsecah\fR(7P)、\fBipsecesp\fR(7P)、\fBpf_key\fR(7P)
+.sp
+.LP
+由 Glenn, R. 和 Kent, S. 合著的《\fIThe NULL Encryption Algorithm and Its Use With IPsec\fR》，RFC 2410。互联网协会出版，1998 年。
+.sp
+.LP
+由 Kent, S. 和 Atkinson, R. 合著的《\fIIP Authentication Header\fR》，RFC 2402。互联网协会出版，1998 年。
+.sp
+.LP
+由 Kent, S. 和 Atkinson, R. 合著的《\fIIP Encapsulating Security Payload (ESP)\fR》，RFC 2406。互联网协会出版，1998 年。
+.sp
+.LP
+由 Madsen, C. 和 Glenn, R. 合著的《\fIThe Use of HMAC-MD5-96 within ESP and AH\fR》，RFC 2403。互联网协会出版，1998 年。
+.sp
+.LP
+由 Madsen, C. 和 Glenn, R. 合著的《\fIThe Use of HMAC-SHA-1-96 within ESP and AH\fR》，RFC 2404。互联网协会出版，1998 年。
+.sp
+.LP
+由 Madsen, C. 和 Doraswamy, N. 合著的《\fIThe ESP DES-CBC Cipher Algorithm With Explicit IV\fR》，RFC 2405。互联网协会出版，1998 年。
+.sp
+.LP
+由 Pereira, R. 和 Adams, R. 合著的《\fIThe ESP CBC-Mode Cipher Algorithms\fR》，RFC 2451。互联网协会出版，1998 年。
+.sp
+.LP
+由 Frankel, S. 和 Kelly, R.Glenn 合著的《\fIThe AES Cipher Algorithm and Its Use With IPsec\fR》。2001 年。
+.sp
+.LP
+由 Kelly, S. 和 Frankel, S. 合著的《\fIUsing HMAC-SHA-256, HMAC-SHA-384, and HMAC-SHA-512 with IPsec\fR》，RFC 4868。Internet Society 出版，2007 年。
+.sp
+.LP
+由 Kato, A.、Moriai, S. 和 Kanda, M. 合著的《\fIThe Camellia Cipher Algorithm and Its Use With IPsec\fR》，RFC 4312。Internet Society 出版，2005 年。
+.sp
+.LP
+由 McGrew, D. 和 Viega, J. 合著的《\fIThe Use of Galois Message Authentication Code (GMAC) in IPsec ESP and AH\fR》，RFC 4543。Internet Society 出版，2006 年。
+.sp
+.LP
+由 Frankel, S. 和 Herbert, H. 合著的《\fIThe AES-XCBC-MAC-96 Algorithm and Its Use With IPsec\fR》，RFC 3566。Internet Society 出版，2003 年。 
+.SH 诊断
+.sp
+.ne 2
+.mk
+.na
+\fBBad “string” on line \fIN\fR.\fR
+.ad
+.br
+.na
+\fBDuplicate “string” on line \fIN\fR.\fR
+.ad
+.sp .6
+.RS 4n
+\fIstring\fR 表示模式或属性中的某个名称。Bad（错误）字符串表示参数格式错误；Duplicate（重复）字符串表示存在多个类似类型的参数，例如，多个源地址参数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBInterface name already selected\fR
+.ad
+.sp .6
+.RS 4n
+对某个接口同时使用 \fB-i\fR \fIname\fR 和 \fIname\fR,\fIindex\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBError before or at line \fIN\fR.\fR
+.ad
+.sp .6
+.RS 4n
+表示第 \fIN\fR 行或其前面的行出现解析错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBNon-existent index\fR
+.ad
+.sp .6
+.RS 4n
+当要删除的 \fIindex\fR 不是有效索引时，会报告此错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBspd_msg return: File exists\fR
+.ad
+.sp .6
+.RS 4n
+当已存在与此新条目的通信相匹配的策略条目时，会报告此错误。 
+.RE
+
+.SH 附注
+.sp
+.LP
+IPsec 手动密钥由服务管理工具 \fBsmf\fR(5) 管理。下面列出的服务管理 IPsec 的组件。这些服务按如下方式交付：
+.sp
+.in +2
+.nf
+svc:/network/ipsec/policy:default (enabled)
+svc:/network/ipsec/ipsecalgs:default (enabled)
+svc:/network/ipsec/manual-key:default (disabled)
+svc:/network/ipsec/ike:default (disabled)
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+手动密钥服务以禁用状态交付。系统管理员必须先按 \fBipseckey\fR(1M) 中所述手动创建 IPsec 安全关联 (Security Association, SA)，然后才能启用该服务。
+.sp
+.LP
+策略服务以启用状态交付，但没有配置文件，因此，在起始状态下，数据包不受 IPsec 保护。按照本手册页中所述创建配置文件 \fB/etc/inet/ipsecinit.conf\fR 和刷新服务（\fBsvcadm refresh\fR，请参见下文）后，会应用配置文件中包含的策略。如果该文件中存在错误，该服务会进入维护模式。
+.sp
+.LP
+以禁用状态交付的服务之所以按该方式交付是因为：系统管理员必须先为其创建配置文件，然后才能启用这些服务。有关 \fBike\fR 服务，请参见 \fBike.config\fR(4)。
+.sp
+.LP
+有关 \fBipsecalgs\fR 服务，请参见 \fBipsecalgs\fR(1M)。
+.sp
+.LP
+正确的管理步骤是先为每项服务创建配置文件，然后使用 \fBsvcadm\fR(1M) 启用每项服务。
+.sp
+.LP
+如果需要更改配置，应先编辑配置文件，然后再刷新服务，如下所示：
+.sp
+.in +2
+.nf
+example# \fBsvcadm refresh policy\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBsmf\fR(5) 框架将在服务特定的日志文件中记录发现的任何错误。可使用以下任一命令检查 \fBlogfile\fR 属性：
+.sp
+.in +2
+.nf
+example# \fBsvcs -l policy\fR
+example# \fBsvcprop policy\fR
+example# \fBsvccfg -s policy listprop\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+为 \fBpolicy\fR 服务定义了以下属性：
+.sp
+.in +2
+.nf
+config/config_file
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+分配了以下授权的用户可以使用 \fBsvccfg\fR(1M) 修改此属性：
+.sp
+.in +2
+.nf
+solaris.smf.value.ipsec
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+请参见 \fBauths\fR(1)、\fBuser_attr\fR(4)、\fBrbac\fR(5)。
+.sp
+.LP
+必须先使用 \fBsvcadm\fR(1M) 刷新该服务，新属性才能生效。使用 \fBsvcprop\fR(1) 命令可以查看不可修改的常规属性。
+.sp
+.in +2
+.nf
+# \fBsvccfg -s ipsec/policy setprop config/config_file = /new/config_file\fR
+# \fBsvcadm refresh policy\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以使用 \fBsvcadm\fR(1M) 来对此服务执行管理操作（如启用、禁用、刷新和请求重新启动）。分配有以下授权的用户可以执行这些操作：
+.sp
+.in +2
+.nf
+solaris.smf.manage.ipsec
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以使用 \fBsvcs\fR(1) 命令来查询服务的状态。
+.sp
+.LP
+\fBipsecconf\fR 命令设计为由 \fBpolicy\fR \fBsmf\fR(5) 服务进行管理。尽管可以从命令行运行 \fBipsecconf\fR 命令，但是不建议采用这种方法。如果要从命令行运行 \fBipsecconf\fR 命令，应该首先禁用 \fBpolicy\fR \fBsmf\fR(5) 服务。请参见 \fBsvcadm\fR(1M)。

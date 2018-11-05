@@ -1,0 +1,120 @@
+'\" te
+.\" Copyright (c) 2009, 2011, Oracle and/or its affiliates. All rights reserved.
+.TH if_mpadm 1M "2009 年 1 月 5 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+if_mpadm \- IP マルチパスグループ内のインタフェースの管理
+.SH 形式
+.LP
+.nf
+\fBif_mpadm\fR \fB-d\fR | \fB-r\fR \fIifname\fR
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBif_mpadm\fR ユーティリティーは、IP マルチパス (IPMP) グループの一部となっている IP インタフェースを管理します。現在のところ、管理は IP インタフェースのオフライン化と直前のオフライン操作の取り消しに限定されています。
+.sp
+.LP
+IP インタフェースがオフラインになると、その IP インタフェースを通過していたすべての IP データトラフィックが IPMP グループ内の別の IP インタフェースに移動します。さらに、その IP インタフェースでホストされていたすべての \fBUP\fR IP アドレスが down 状態になるため、\fBin.mpathd\fR(1M) はその IP インタフェースに対するプローブベースの障害検出を中止します。この結果、オフラインの IP インタフェースはどのインバウンドまたはアウトバウンド IP トラフィックにも使用されなくなります。IPMP グループに含まれる IP インタフェースだけがオフライン状態になる可能性があります。その IP インタフェースが IPMP グループで最後の正常に機能するインタフェースである場合、オフライン操作は失敗します。
+.sp
+.LP
+オフライン操作が取り消されると、その IP インタフェースでホストされている IP アドレスは \fBUP\fR 状態になり、\fBin.mpathd\fR によってプローブベースの障害検出の対象とみなされます。さらに、別の理由で IP インタフェースがアクティブである場合 (\fBin.mpathd\fR(1M) を参照)、その IP インタフェースは再度 IPMP グループの IP データトラフィックを送受信するために使用されます。すべてのオフライン操作を取り消すことができるわけではありません。たとえば、\fBin.mpathd\fR はハードウェアアドレスが IPMP グループ内で一意でなかったために IP インタフェースをオフラインにした可能性があります。\fBipmpstat\fR ユーティリティーを使用して、IP インタフェースがオフラインである理由を判定したり、グループ内のどの IP インタフェースがインバウンドおよびアウトバウンド IP トラフィックのために使用されているかを識別したりできます。\fBipmpstat\fR(1M) を参照してください。
+.SH オプション
+.sp
+.LP
+\fBif_mpadm\fR ユーティリティーは、次のオプションをサポートします。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIifname\fR\fR
+.ad
+.RS 13n
+.rt  
+\fIifname\fR で指定された IP インタフェースをオフラインにします。\fIifname\fR が IPMP グループに含まれていない場合や、オフラインにすると IPMP グループのネットワーク接続が失われる場合は、この操作は失敗します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIifname\fR\fR
+.ad
+.RS 13n
+.rt  
+\fIifname\fR で指定された IP インタフェースの直前のオフラインを取り消します。\fIifname\fR がオフラインでない場合、この操作は失敗します。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRIP インタフェースをオフラインにする
+.sp
+.LP
+次のコマンドは、\fBunder0\fR をオフラインにすることにより、それを経由して送受信されていた IP パケットがグループ内の別の IP インタフェースによって処理されるようにします。
+
+.sp
+.in +2
+.nf
+example% \fBif_mpadm -d under0\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fR直前のオフライン操作を取り消す
+.sp
+.LP
+前の例の操作を取り消すには、次のコマンドを使用します。
+
+.sp
+.in +2
+.nf
+example% \fBif_mpdadm -r under0\fR
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性不確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBifconfig\fR(1M), \fBin.mpathd\fR(1M), \fBipmpstat\fR(1M), \fBattributes\fR(5)
+.SH 診断
+.sp
+.LP
+cannot offline: no other functioning interfaces are in its IPMP group. 
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+このメッセージは、この IP インタフェースをオフラインにすると IPMP グループのネットワーク接続が失われることを意味します。
+.RE
+
+.sp
+.LP
+cannot offline: not a physical interface or not in an IPMP group
+.RS +4
+\fB説明: \fR
+.sp
+.LP
+これは、この IP インタフェースが IPMP グループ内のベースとなるインタフェースでなく、したがってオフラインにする条件を満たしていないことを意味します。
+.RE
+

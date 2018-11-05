@@ -1,0 +1,371 @@
+'\" te
+.\" Copyright (c) 1999, 2012, Oracle and/or its affiliates. All rights reserved.
+.TH auditd 1M "2012 年 4 月 13 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+auditd \- 監査サービスデーモン
+.SH 形式
+.LP
+.nf
+\fB/usr/sbin/auditd\fR 
+.fi
+
+.SH 機能説明
+.sp
+.LP
+監査サービスデーモン \fBauditd\fR は、ローカル (\fBaudit_binfile\fR(5)、\fBaudit_syslog\fR(5) および \fBaudit_remote\fR(5) を参照) またはリモート (下記の「監査リモートサーバー」を参照) で生成された監査データを管理します。監査が有効になっている場合、\fBauditd\fR は構成を読み取って次のことを行います。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+監査ポリシーを構成する。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+監査キュー制御パラメータを構成する。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+イベント - クラスマッピングを構成する。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+デフォルト監査マスクを設定する。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ローカル監査が有効な場合は (次の「ローカル監査」を参照)、1 つ以上のプラグインをロードします。
+.sp
+Solaris には 3 つのプラグインが用意されています。\fBaudit_binfile\fR(5) は、バイナリ監査データをファイルに書き込みます。\fBaudit_remote\fR(5) は、バイナリ監査データを、プライバシと整合性が保護された状態で認証済みサーバーに送信します。\fBaudit_syslog\fR(5) は、監査レコードのテキストサマリーを \fBsyslog\fR デーモンに送信します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+カーネルから監査データを読み取り、そのデータを各アクティブプラグインに渡します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBaudit_warn\fR(1M) スクリプトを実行して、さまざまな状態について警告します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+リモート監査 (\fBars\fR(5)) が有効な場合は、リクエストを処理し、リモートで生成された監査データを格納します。
+.RE
+.sp
+.LP
+監査サービスを制御するために、\fBaudit\fR(1M) が使用されます。これによって、\fBauditd\fR が次のことを行う可能性があります。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+リモート監査サーバーへの接続を閉じることで、それぞれの監査ファイルを閉じます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+現在のプロパティーに基づいてサービスを起動してリフレッシュする。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+監査トレールを閉じて、ローカル監査およびリモート監査サービスを無効にします。
+.RE
+.sp
+.LP
+監査サービスを構成するために、\fBauditconfig\fR(1M) が使用されます。これによって、アクティブで持続的な次のものを構成できます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+監査ポリシー
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+監査キュー制御パラメータ
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+デフォルト監査マスク
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+読み込まれるプラグイン
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+プラグイン属性
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+監査リモートサーバーの状態、属性、および接続グループ
+.RE
+.SS "ローカル監査"
+.sp
+.LP
+ローカルシステムで生成される監査レコードを収集すること。レコードは、大域ゾーンまたは非大域ゾーン、あるいはその両方で生成される場合があります。
+.SS "リモート監査"
+.sp
+.LP
+監査リモートサーバー (ARS) は、監査中かつアクティブな \fBaudit_remote\fR プラグインで構成されているシステムから監査レコードを受信して格納します。監査対象のシステムは、ARS と区別するため、ローカルで監査されるシステムと呼ばれることがあります。
+.SS "監査条件"
+.sp
+.LP
+1 つ以上の監査デーモンプラグインがアクティブに構成されている場合、監査サービスデーモンはローカル監査を有効にします。
+.sp
+.LP
+監査リモートサーバー機能は、サーバーが非アクティブとして構成されておらず (\fBauditconfig\fR(1M) の \fB-setremote\fR サーバーオプションを参照)、かつ少なくとも 1 つの接続グループがアクティブである場合に有効になります。詳細は、「監査リモートサーバー」のセクションを参照してください。
+.sp
+.LP
+ローカル監査と監査リモートサーバーは個別に構成できます。
+.SS "監査リモートサーバー"
+.sp
+.LP
+監査リモートサーバー (ARS) は、\fBauditd\fR の不可欠な部分です。これは、\fBaudit_remote\fR(5) プラグインに対応します。サーバーは、その構成に従って、プラグインにより送信されるデータを取得、処理、および格納できます。
+.sp
+.LP
+ARS は、無効な Solaris 監査コンポーネントとして提供されます。リモート監査トレールの処理に使用するには、事前に構成が必要です。ARS の構成は二重になっており、最初にセキュアな監査データトランスポートに使用されるベースとなるセキュリティーメカニズムを構成し (\fBaudit_remote\fR(5) を参照)、次に監査サブシステムを適切に構成する必要があります。
+.sp
+.LP
+ARS を監視および構成するには、\fBauditconfig\fR(1M) \fB-setremote\fR および \fB-getremote\fR オプションを使用します。構成は、\fBserver\fR の構成と \fBgroup\fR の構成に分けられます。\fBserver\fR 構成では一般的な ARS パラメータを変更でき、\fBgroup\fR キーワードでは同じローカルストレージパラメータを共有する一連のホストである接続グループを構成できます。
+.SS "サーバー構成属性"
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlisten_address\fR\fR
+.ad
+.sp .6
+.RS 4n
+サーバーが待機するアドレス。デフォルトは空の \fBlisten_address\fR 属性で、すべてのローカルアドレスで待機します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlisten_port\fR\fR
+.ad
+.sp .6
+.RS 4n
+ローカル待機ポートで、デフォルトは 0 で 16162 を意味します。\fBsolaris-audit\fR インターネットサービス名に関連付けられたポート。\fBservices\fR(4) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlogin_grace_time\fR\fR
+.ad
+.sp .6
+.RS 4n
+接続の確立に成功しない場合、サーバーはログイン猶予時間 (秒) 後に接続を切り離します。デフォルトは \fB0\fR で、制限はありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmax_startups\fR\fR
+.ad
+.sp .6
+.RS 4n
+サーバーが新しい接続を拒否し始める、サーバーへの未認証の同時接続数。ランダム早期ドロップモードを許可するために、この値が \fIbegin\fR:\fIrate\fR:\fIfull\fR の形式 (\fB10:30:60\fR など) で指定される可能性があることに注意してください。これは、現時点で (\fBstart\fR フィールドから) 10 個の未認証接続が存在する場合に、\fIrate\fR/100 (この例では 30%) の確率で ARS が接続試行を拒否することを意味します。確率は直線的に増加し、未認証接続数が \fBfull\fR (この例では 60) に達すると、すべての接続試行が拒否されます。
+.RE
+
+.SS "グループ構成属性"
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbinfile_dir\fR、\fBbinfile_fsize\fR、\fBbinfile_minfree\fR\fR
+.ad
+.sp .6
+.RS 4n
+属性は \fBaudit_binfile\fR(5) で定義されたそれぞれの \fBp_*\fR 属性に従い、簡潔に示すと次のようになります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbinfile_dir\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホスト監査データ単位の格納用ディレクトリ。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbinfile_fsize\fR\fR
+.ad
+.sp .6
+.RS 4n
+格納される各監査トレールファイルの最大サイズのデフォルトは \fB0\fR で、制限はありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbinfile_minfree\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBaudit_binfile\fR(5) が \fBaudit_warn\fR(1M) を使用して管理者に通知できるようになる前の、binfile_dir を含むファイルシステム上の最小空き領域。デフォルトは \fB0\fR で、制限はありません。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhosts\fR\fR
+.ad
+.sp .6
+.RS 4n
+サーバーへの監査データの送信を許可する、指定された接続グループ内のホストを定義します。コンマは、ホストエントリが複数存在する場合の区切り記号です。\fBhosts\fR が空の場合、この種の接続グループはワイルドカード接続グループと呼ばれます。新しい接続をほかのいかなる (非ワイルドカード) 接続グループにも分類できず、かつ構成済みのアクティブなワイルドカード接続グループが存在する場合、新しい接続はその接続グループに分類されます。アクティブなワイルドカード接続グループは 1 つだけ構成できます。
+.sp
+構成例については、「使用例」を参照してください。
+.RE
+
+.sp
+.LP
+包括的な構成の説明と例については、\fI『Securing Systems and Attached Devices in Oracle Solaris 11.3 』\fRの該当する章を参照してください。 
+.SS "監査レコードキュー"
+.sp
+.LP
+プラグインに送信される監査データ用キューの最大レコード数を指定するには、プラグインに指定する \fBqsize\fR パラメータによって指定されます。省略された場合は現在の \fBhiwater\fR マークが使用されます。\fBauditconfig\fR(1M) の \fB-getqctrl\fR オプションを参照してください。この最大数に達すると、\fBauditd\fR は、\fBauditconfig\fR(1M) で説明されている \fBcnt\fR 監査ポリシーに応じてプロセスをブロックするか、またはデータを破棄します。
+.SS "監査システム警告"
+.sp
+.LP
+監査サービスデーモンと監査プラグインは、特定の条件下でスクリプト \fBaudit_warn\fR(1M) を呼び出します。詳細は、\fBaudit_warn\fR(1M) を参照してください。
+.SH 使用例
+.LP
+\fB例 1 \fR監査リモートサーバーの構成
+.sp
+.LP
+次の例では、監査リモートサーバーを、特定のアドレスで待機するように構成する手順を示します。ワイルドカード接続グループと非ワイルドカード接続グループが、1 つずつ作成されます。非ワイルドカード接続グループ構成は、\fBtic.cz.example.com\fR および \fBtac.us.example.com\fR からリモート監査データをアドレス指定します。トレールは、\fB/var/audit/remote\fR に格納されます。
+
+.sp
+.in +2
+.nf
+# Print the current audit remote server configuration.
+# Both server and connection groups (if any) is displayed.
+
+# \fBauditconfig -getremote\fR
+
+# Set address the audit remote server will listen on.
+
+# \fBauditconfig -setremote server "listen_address=192.168.0.1"\fR
+
+# Create two connection groups. Note that by default the
+# connection group is created with no hosts specified
+# (wild card connection group).
+
+# \fBauditconfig -setremote group create clockhouse\fR
+# \fBauditconfig -setremote group create sink\fR
+
+# Add hosts to the connection group (convert the wild card
+# connection group no non-wild card one). Set the storage
+# directory and activate the connection group.
+
+# \fBauditconfig -setremote group active clockhouse \e\fR
+# \fB"hosts=tic.cz.example.com,tac.us.example.com,\e\fR
+# \fBbinfile_dir=/var/audit/remote"\fR
+
+# Activate the wild card connection group.
+
+# \fBauditconfig -setremote group active sink\fR
+
+# Verify the audit remote server configuration.
+
+# \fBauditconfig -getremote\fR
+
+# Start or refresh the audit service.
+
+# \fBaudit -s\fR
+.fi
+.in -2
+.sp
+
+.SH ファイル
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBetc/security/audit/audit_class\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBetc/security/audit/audit_event\fR
+.RE
+.SH 属性
+.sp
+.LP
+次の属性については、\fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBaudit\fR(1M)、\fBaudit_warn\fR(1M)、\fBauditconfig\fR(1M)、\fBpraudit\fR(1M)、\fBaudit_class\fR(4)、\fBaudit_class\fR(4)、\fBaudit_event\fR(4)、\fBservices\fR(4)、\fBars\fR(5)、\fBattributes\fR(5)、\fBaudit_binfile\fR(5)、\fBaudit_flags\fR(5)、\fBaudit_remote\fR(5)、\fBaudit_syslog\fR(5)、\fBsmf\fR(5)
+.sp
+.LP
+\fI『Securing Systems and Attached Devices in Oracle Solaris 11.3』\fRの監査に関するセクションを参照してください。 
+.SH 注意事項
+.sp
+.LP
+監査が有効になっている場合は、\fBauditd\fR がブート時に大域ゾーンに読み込まれます。
+.sp
+.LP
+監査ポリシー \fBperzone\fR が設定されている場合は、\fBauditd\fR は各ゾーン内で実行され、非大域ゾーンのブート時に自動的に起動されます。\fBperzone\fR ポリシーの設定時にゾーンが実行されている場合、非大域ゾーンで監査を手動で開始する必要があります。非大域ゾーンで監査を開始するときに、システムや非大域ゾーンをリブートする必要はありません。\fBauditd\fR は \fBaudit\fR \fB-s\fR で起動でき、ゾーンのその後のブート時に自動的に起動します。
+.sp
+.LP
+\fBauditd\fR が非大域ゾーンで実行されている場合、非大域ゾーンの \fBsmf\fR(5) リポジトリと \fB/etc/security\fR ディレクトリのファイル \fBaudit_class\fR、\fBuser_attr\fR、および \fBaudit_event\fR から構成が取得されます。
+.sp
+.LP
+構成を変更しても、それらの変更はプロセスの事前選択マスクを変更しないため、現在実行中の監査セッションには影響しません。実行中プロセスで事前選択マスクを変更するには、\fBauditconfig\fR コマンド (\fBauditconfig\fR(1M) を参照) の \fB–setpmask\fR オプションを使用します。ユーザーがログアウトしてから再度ログインすると、次回の監査セッションで新しい構成変更が反映されます。
+.sp
+.LP
+監査サービス FMRI は \fBsvc:/system/auditd:default\fR です。

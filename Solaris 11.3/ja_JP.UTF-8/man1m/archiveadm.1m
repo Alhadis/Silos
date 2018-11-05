@@ -1,0 +1,685 @@
+'\" te
+.\" Copyright (c) 2011, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH archiveadm 1M "2015 年 2 月 23 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+archiveadm \- Solaris アーカイブユーティリティー
+.SH 形式
+.LP
+.nf
+\fBarchiveadm\fR <\fBsubcommand\fR> [options] <arguments>
+            \fBcreate\fR  <\fIarchive name\fR>
+                [-z|--zone <zone(s)>]
+                [-D|--exclude-dataset <dataset(s)>]
+                [-Z|--exclude-zone <zone(s)>]
+                [-r|--recovery]
+                [-e|--exclude-media]
+                [-s|--skip-capacity-check]
+                 [   --root-only] 
+            \fBinfo\fR  <\fIarchive name\fR>
+                [-p|--parseable]
+                [-k|--key]
+                [-c|--cert]
+                [-C|--ca-cert]
+                [-v|--verbose]
+            \fBcreate-media\fR    <\fIarchive name\fR>
+                [-g|--global-zone <global-zone>]
+                [-s|--source <ISO image> | <repository URI>]
+                [-k|--key <ssl_key]
+                [-c|--cert <ssl_cert]
+                [-d|--dataset <name>]
+                [-f|--format <iso or usb>]
+                [-o|--output <path for final image>]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBarchiveadm\fR ユーティリティーは、システムのクローニングや復旧の目的で、実行中の Solaris システムのシステムアーカイブイメージを作成するための機能をユーザーに提供します。また、このユーティリティーを使用すると、作成済みのアーカイブに関する情報を取得したり、アーカイブからブート可能メディアを作成したりすることもできます。
+.sp
+.LP
+作成されるアーカイブタイプは、Solaris 統合アーカイブです。Solaris 統合アーカイブは、Solaris ブート環境および ZFS データストリームに基づいたマルチシステムアーカイブです。統合アーカイブには、アーカイブ作成中に選択された 1 つまたは複数のシステムが含まれています。あとでシステムを選択的に配備できるように、各システムを統合アーカイブ全体の中の独自のアーカイブ内にカプセル化できます。あるいは、単一のモノリシックアーカイブを作成することもできます。この場合は、複数の組み込みシステムを備えた、単独で配備可能なアーカイブが生成されます。
+.sp
+.LP
+作成されたあと、Solaris 統合アーカイブは Solaris Automated Installer または Solaris ゾーンソフトウェアユーティリティーで配備できます。
+.sp
+.LP
+Solaris Automated Installer の配備中、IPS パブリッシャーで実行される処理と同様に、アーカイブファイルはインストールサービス構成パラメータとして設定されます。クライアントがサービスをブートすると、インストールソフトウェアが必要な ZFS プール (元のシステムのローカルで設定されたすべての ZFS プールプロパティーを含む) を使用してシステムを構成したあと、アーカイブされたシステムが新しいプールに受信されます。
+.sp
+.LP
+ホストシステムからの Solaris ゾーンの配備中、zonecfg(1M) および zoneadm(1M) ユーティリティーが使用されます。Solaris 統合アーカイブから構成データを抽出するには、zonecfg(1M) を使用して新しいゾーンを構成できます。アーカイブから直接ゾーンをインストールするには、zoneadm(1M) ユーティリティーを使用できます。ゾーンはまた、新しい Solaris Automated Installer 配備の一部として、大域ゾーンとともにインストールすることもできます。
+.sp
+.LP
+デフォルトでは、Solaris 統合アーカイブは、システムのアクティブなブート環境および関連するデータセットに基づいた軽量の形式で作成されます。ゾーンシステムアーカイブのコンテキストでの関連するデータセットは、そのゾーンの委任されたデータセットです。ホスト大域ゾーンのアーカイブの場合、関連するデータセットは、システム上の任意のゾーン設定されていないデータセットです。これらのアーカイブは、システムのクローニングの目的に適しているため、「クローンアーカイブ」と呼ばれます。これらのアーカイブは、複数のノードにわたってカスタマイズされた同じイメージの迅速な配備に最適です。
+.sp
+.LP
+アクティブなブート環境だけでなく、すべてのブート環境をオプションで含むアーカイブを作成できます。このタイプのアーカイブは、システム復旧の目的により適しているため、「復旧用のアーカイブ」と呼ばれます。このモードは、選択されたゾーンを含む単一のシステムとしてのアーカイブを作成します。選択された大域ゾーン内のすべての非大域ゾーンがアーカイブ内に組み込まれ、すべてのシステムのすべてのブート環境が含まれます。
+.sp
+.LP
+アーカイブ作成中、作成されているアーカイブに特定のシステムを明示的に含めることができます。これにより、その他のすべてのシステムが暗黙的に除外されます。逆に、特定のシステムを除外し、その他のすべてのシステムを暗黙的に含めることができます。
+.sp
+.LP
+クローンアーカイブ作成中、特定のシステムをアーカイブに明示的に含めるか、またはアーカイブから除外することができます。特定のシステムのリストを含めると、その他のすべてのシステムが暗黙的に除外されることに注意してください。逆に、明示的に除外されていないシステムはすべて含まれます。
+.sp
+.LP
+復旧用のアーカイブを作成する場合は、特定のシステムを 1 つ選択できます。システムがインストール済みゾーンを含むホストである場合は、これらのゾーンがアーカイブ内に組み込まれます。特定のゾーンの復旧用のアーカイブが望ましい場合は、そのゾーンを選択できます。復旧用のアーカイブでは、システムの除外は許可されません。
+.sp
+.LP
+また、特定のデータセットを除外することもできます。これにより、アーカイブのサイズがさらに削減される場合があります。デフォルトでは、すべてのスワップおよびダンプデバイスがすべてのアーカイブから除外されます。さらに、\fBVARSHARE\fR データセットがクローンアーカイブから除外されます。これは、復旧用のアーカイブに含まれます。
+.sp
+.LP
+ルートプールのデータのみを含むアーカイブをオプションで作成できます。\fBcreate\fR サブコマンドで \fB--root-only\fR オプションを使用すると、すべての非ルートプールがアーカイブから除外されます。
+.sp
+.LP
+配備中、アーカイブされたシステムをクローンの統合アーカイブから選択的に配備できます。また、システムをゾーンとして配備することもできます。これにより、Global-to-Non-global (G2N) 変換機能が提供されます。単一システムの復旧用のアーカイブは選択できないことに注意してください。復旧用のアーカイブ全体が単一の配備として配備されます。
+.sp
+.LP
+Solaris 統合アーカイブから、ブート可能なインストールメディアを作成できます。ユーザーは、構築領域や、インストールメディアの内容を定義するオプションを指定できます。次に、結果として得られるメディアイメージを使用して、復旧メディアやそれ以外のカスタムインストールメディアを作成できます。
+.sp
+.LP
+このユーティリティーの 3 つの主な機能はそれぞれ、下の「サブコマンド」のセクションで説明されています。
+.SH オプション
+.sp
+.LP
+次のオプションがサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR、\fB--help\fR\fR
+.ad
+.RS 15n
+.rt  
+このユーティリティーの使用法を示すヘルプメッセージを出力します。
+.RE
+
+.SH サブコマンド
+.sp
+.LP
+サポートされているサブコマンドは次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBarchiveadm create\fR <\fIarchive name\fR>\fR
+.ad
+.br
+.na
+\fB[\fB-r\fR|\fB--recovery\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-z\fR|\fB--zone\fR <\fIzone(s)\fR>] \fR
+.ad
+.br
+.na
+\fB[\fB-Z\fR|\fB--exclude-zone\fR <\fI zone(s)\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-D\fR|\fB--exclude-dataset\fR <\fI dataset(s)\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-e\fR|\fB--exclude-media \fR]\fR
+.ad
+.br
+.na
+\fB[\fB-s\fR|\fB--skip-capacity-check\fR] \fR
+.ad
+.br
+.na
+\fB[\fB--root-only\fR]\fR
+.ad
+.sp .6
+.RS 4n
+\fBcreate\fR コマンドは、新しい Solaris 統合アーカイブの作成を起動します。このコマンドには、新しいアーカイブの場所と名前が必要です。これは、書き込み可能なディレクトリ内の新しいアーカイブファイル名へのパスとして渡されます。
+.sp
+オプションを指定しない場合、\fBcreate\fR は、このコマンドが呼び出されたシステムのアーカイブを構築します。システムが大域ゾーンである場合は、ホスト上のすべての仮想システムが含まれます。アーカイブは、各システムのアクティブなブート環境と、すべての関連するデータセットで構成されます。ゾーンの場合は、関連するデータセットのリストが、委任されたデータセットのリストに等しくなります。大域ゾーンでは、ゾーンと連携していないすべてのデータセットがアーカイブされます。
+.sp
+すべてのスワップおよびダンプデバイスがすべてのアーカイブから除外されます。\fBVARSHARE\fR データセットは、デフォルトでは、すべてのクローンアーカイブから除外されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR|\fB--recovery\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションは、システム復旧に適したアーカイブを作成します。このアーカイブタイプは、選択されたゾーンを含む単一の配備可能システムで構成されます。ゾーンが大域ゾーンである場合、アーカイブにはそのゾーンと、それがホストするすべての非大域ゾーンが含まれます。すべてのシステムのすべてのブート環境 (アクティブでないブート環境を含む) がアーカイブに含まれます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-z\fR|\fB--zone\fR <\fIzone(s) \fR>]\fR
+.ad
+.sp .6
+.RS 4n
+このオプションは、アーカイブされるゾーン名またはゾーン名のリストを指定するために使用されます。これにより、その他のすべてのシステムがアーカイブ対象から暗黙的に除外されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-Z\fR|\fB--exclude-zone\fR <\fI zone(s)\fR>]\fR
+.ad
+.sp .6
+.RS 4n
+このオプションは、アーカイブから除外されるゾーン名またはゾーン名のリストを指定するために使用されます。これにより、その他のすべてのシステムが暗黙的に含まれます。\fB--zone\fR と \fB--exclude-zone\fR は相互に排他的です。このオプションは、\fB--recovery\fR が使用されている場合は無効です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-D\fR|\fB--exclude-dataset\fR <\fI dataset(s)\fR>]\fR
+.ad
+.sp .6
+.RS 4n
+このオプションは、1 つまたは複数のデータセットをアーカイブから除外するために使用されます。渡されたデータセット名は、アーカイブから再帰的に除外されます。つまり、除外されたデータセットの階層的な「子」であるデータセットもすべて除外されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB--root-only\fR]\fR
+.ad
+.sp .6
+.RS 4n
+このオプションは、すべての非ルートプールデータを除外するために使用します。生成されるアーカイブイメージから、個々の非ルートプールが再帰的に除外されます。これは、ルートのみのアーカイブが必要であり、非ルートプールのリストが不明である場合に便利です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-e\fR|\fB--exclude-media\fR]\fR
+.ad
+.sp .6
+.RS 4n
+このオプションを使用すると、統合アーカイブ内の各大域ゾーンに対するブート可能メディアの生成をスキップできます。このメディアは、アーカイブの移植性を向上させるために、自動的に大域ゾーンごとに作成されます。これが望ましくない場合は、このオプションを使用できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-s\fR|\fB--skip-capacity-check\fR]\fR
+.ad
+.sp .6
+.RS 4n
+アーカイブストリーム作成の前に、ステージングディレクトリ内で容量のチェックが実行されます。このオプションは、ユーザーがこの容量のチェックをスキップしたい場合に使用できます。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBarchiveadm info\fR <\fIarchive name\fR>\fR
+.ad
+.br
+.na
+\fB[\fB-v\fR|\fB--verbose\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-k\fR|\fB--key\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-c\fR|\fB- -cert\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-C\fR|\fB--ca-cert\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-p\fR|\fB--parseable\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-t\fR|\fB- -targets\fR]\fR
+.ad
+.sp .6
+.RS 4n
+\fBinfo\fR コマンドは、URI として渡された Solaris アーカイブファイルの内容に関する情報を提供します。このパスがシステムでアクセス可能なファイルへの相対パスまたは絶対パスである場合、「file」の URI タイプはオプションです。サポートされているその他の URI タイプは、HTTP と HTTPS です。
+.sp
+このコマンドの出力は、アーカイブ作成時間や、ホスト名、アーキテクチャー、Solaris バージョンといった元のシステムに関連した情報などの、アーカイブ関連のデータを提供します。また、配備可能システムアーカイブのリスト (システム名ごと) も提供します。
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-v\fR|\fB--verbose\fR]\fR
+.ad
+.br
+.na
+\fB\fR
+.ad
+.RS 20n
+.rt  
+このオプションは、アクティブなブート環境の名前、インストールされている Solaris のバージョン、各システムアーカイブを配備するために必要なサイズを含む、配備可能システムアーカイブに関連したより詳細な情報を提供します。また、冗長モードでは、統合アーカイブファイルや各システムアーカイブの一意の ID (UUID) も表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-k\fR|\fB--key\fR]\fR
+.ad
+.br
+.na
+\fB[\fB- c\fR|\fB--cert\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-C\fR|\fB--ca-cert \fR]\fR
+.ad
+.RS 20n
+.rt  
+これらのオプションは、指定されたパスが HTTPS URI である場合に HTTPS 資格証明を渡すために使用されます。これらのオプションでは、クライアント証明書、CA 証明書、および鍵が設定されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-p\fR|\fB--parseable\fR]\fR
+.ad
+.RS 20n
+.rt  
+このオプションは、書式設定された出力の代わりに、アーカイブ情報に関連した解析可能なコロン区切りの一連の値を提供します。これは、スクリプトやデータ入力アプリケーションに役立ちます。冗長と非冗長の両方の解析可能な出力に、出力をラベル付けするヘッダーが含まれます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR|\fB--targets\fR]\fR
+.ad
+.RS 20n
+.rt  
+このオプションは、元のシステム上のストレージ構成に特に関連した情報を一覧表示します。Automated Installer にクライアントシステムの構成方法に関するガイドラインを提供するために、配備中に使用されるデータとともに、構成メタデータがアーカイブされます。このオプションは、ユーザーに AI が配備時に作成しようとする内容を検査するための方法を提供します。 
+.sp
+このオプションを使用すると、元のシステムのターゲット構成を取得できます。これにより、AI マニフェストのストレージ構成が再作成される可能性があります。少しの変更で使用できるように、マニフェストの内容は XML で表示されます。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBarchiveadm create-media\fR <\fIarchive name\fR>\fR
+.ad
+.br
+.na
+\fB[\fB-g\fR|\fB--global-zone\fR <\fIglobal-zone\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-s\fR|\fB--source\fR <\fI ISO image\fR> | <\fIrepository URI\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-k\fR|\fB--key\fR <\fIssl_key\fR>] \fR
+.ad
+.br
+.na
+\fB[\fB-c\fR|\fB--cert\fR <\fIssl_cert \fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-d\fR|\fB--dataset\fR <\fI name\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-f\fR|\fB--format\fR <\fI iso or usb\fR>]\fR
+.ad
+.br
+.na
+\fB[\fB-o\fR|\fB--output\fR <\fI path for final image\fR>]\fR
+.ad
+.sp .6
+.RS 4n
+\fBcreate-media\fR コマンドは、統合アーカイブからブート可能メディアを作成するために使用されます。次に、結果として得られるメディアイメージを使用して、アーカイブの内容からシステムをブートおよびインストールすることができます。アーカイブファイルは、パスとして渡されます。このパスは、相対パスまたは絶対パスのどちらでもかまいません。
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-g\fR|\fB--global-zone\fR]\fR
+.ad
+.RS 22n
+.rt  
+メディアはアーカイブされた大域ゾーンから作成されます。このスイッチを使用すると、ユーザーはメディアの作成元の大域ゾーンを選択できます。結果として得られるメディアでは、指定された大域ゾーンのアーカイブが、埋め込まれたゾーンも含めて配備されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-s\fR|\fB--source\fR]\fR
+.ad
+.RS 22n
+.rt  
+ブート可能メディアは、Solaris AI イメージに基づいています。このスイッチを使用すると、ユーザーは AI イメージのソースを指定できます。有効なソースは、互換性のある Solaris Automated Install ISO イメージファイルへのパスか、または互換性のある \fBpkg://solaris/install-image/solaris-auto-install\fR パッケージを含む Solaris IPS リポジトリの URI のどちらかです。互換性は、Solaris のバージョンに基づいています。
+.sp
+ソースが渡されない場合は、create-media を実行しているシステム上に設定されたすべての IPS パブリッシャーが検索され、solaris-auto-install パッケージの互換性のあるバージョンであるかどうか確認されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-k\fR|\fB--key\fR]\fR
+.ad
+.br
+.na
+\fB[\fB- c\fR|\fB--cert\fR]\fR
+.ad
+.br
+.na
+\fB\fR
+.ad
+.RS 22n
+.rt  
+これらのオプションは、指定されたソースが HTTPS URI である場合に HTTPS 資格証明を渡すために使用されます。これらのオプションでは、クライアント証明書と鍵が設定されます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-d\fR|\fB--dataset\fR]\fR
+.ad
+.RS 22n
+.rt  
+このスイッチを使用すると、ユーザーは、メディア作成のためのステージング領域として使用される ZFS データセットを指定できます。これが渡されない場合は、rpool 上のデフォルトのステージング領域が使用されます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-f\fR|\fB--format\fR]\fR
+.ad
+.RS 22n
+.rt  
+結果として得られるブート可能メディアの形式を ISO または USB イメージファイルのどちらかから選択します。結果として得られるメディアイメージが 4G バイトより大きい場合は、USB 形式のみがサポートされます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-o\fR|\fB--output\fR]\fR
+.ad
+.RS 22n
+.rt  
+結果として得られるメディアイメージファイルの名前。指定されない場合は、デフォルト名が使用されます。
+.RE
+
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRデフォルトのアーカイブの作成
+.sp
+.LP
+この例では、オプションなしでアーカイブを作成します。これにより、ホスト上のすべてのシステムを含む統合アーカイブが作成されます。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRデータセットが除外されたアーカイブの作成
+.sp
+.LP
+この例では、data/scratch および tank/tmp データセットが除外されたアーカイブを作成します。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create -D data/scratch,tank/tmp ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fR単一のゾーンのアーカイブ
+.sp
+.LP
+この例では、ゾーンのアクティブなブート環境、関連する rpool データセット、およびすべての委任されたデータセットで構成される単一システムのアーカイブを作成します。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create -z zone1 ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fRゾーンが除外されたアーカイブの作成
+.sp
+.LP
+この例では、「zone3」および「zone4」ゾーンが除外されたアーカイブを作成します。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create -Z zone3,zone4 ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 5 \fR\fBsolaris-kz\fR ゾーンのアーカイブ
+.sp
+.LP
+この例では、\fBsolaris-kz\fR ブランドゾーンで構成される単一システムのアーカイブを作成します。カーネルゾーン内に配備されているゾーンはすべて、単一システムのアーカイブ内にアーカイブされます。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create -z kz1 ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 6 \fR基本アーカイブ情報の取得
+.sp
+.LP
+この例では、アーカイブに関連した基本情報を取得します。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm info ./archive.uar\fR
+        Archive Information
+                          Creation Time:  2012-09-29T01:29:29Z
+                            Source Host:  osai-brm-x-5
+                           Architecture:  i386
+                       Operating System:  Oracle Solaris 12.0 X86
+                     Deployable Systems:  global,zone1
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 7 \fR冗長アーカイブ情報の取得
+.sp
+.LP
+この例では、アーカイブとその配備可能システムアーカイブに関連した冗長情報を取得します。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm info --verbose archive.uar\fR
+        Archive Information
+          Creation Time:  2012-09-29T01:29:29Z
+                Source Host:  osai-brm-x-5
+           Architecture:  i386
+   Operating System:  Oracle Solaris 12.0 X86
+                  Unique ID:  d1689f79-0bca-6cea-e06c-f335e98006f0
+        Archive Version:  1
+         
+        Deployable Systems
+          'global'
+            OS Version:  5.12
+             OS Branch:  5.12.0.0.0.5.2
+             Active BE:  on12_05-ref
+                 Brand:  solaris
+           Size Needed:  21.44GB
+             Unique ID:  73ec33b8-55c2-6291-cabd-943f3b1c359e
+          'zone1'
+            OS Version:  5.12.0.0.0.5.2
+             Active BE:  solaris-6
+                 Brand:  solaris
+           Size Needed:  345.90MB
+             Unique ID:  2ef3e063-764b-c756-b58d-a778dd18a00c
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 8 \fRストレージ構成情報の取得
+.sp
+.LP
+この例では、Solaris Automated Installer を使用してアーカイブが配備された場合に必要になるターゲットのリソースに関連した情報をアーカイブから取得します。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm info --targets archive.uar\fR
+<target name="origin">
+      <disk in_zpool="rpool" in_vdev="rpool-none" whole_disk="true">
+        <disk_name name="SYS/HDD0" name_type="receptacle"/>
+        <disk_prop dev_type="scsi" dev_vendor="HITACHI" dev_chassis="SYS"
+dev_size="585937500secs"/>
+        <gpt_partition name="0" action="create" force="false" part_type="bbp">
+          <size val="524288secs" start_sector="256"/>
+        </gpt_partition>
+        <gpt_partition name="1" action="create" force="false" part_type="solaris">
+          <size val="585396539secs" start_sector="524544"/>
+        </gpt_partition>
+        <gpt_partition name="8" action="create" force="false" part_type="reserved">
+          <size val="16384secs" start_sector="585921083"/>
+        </gpt_partition>
+      </disk>
+      <disk in_zpool="data" in_vdev="data-none" whole_disk="true">
+        <disk_name name="SYS/HDD1" name_type="receptacle"/>
+        <disk_prop dev_type="scsi" dev_vendor="HITACHI" dev_chassis="SYS"
+dev_size="585937500secs"/>
+        <gpt_partition name="0" action="create" force="false" part_type="solaris">
+          <size val="585920827secs" start_sector="256"/>
+        </gpt_partition>
+        <gpt_partition name="8" action="create" force="false" part_type="reserved">
+          <size val="16384secs" start_sector="585921083"/>
+        </gpt_partition>
+      </disk>
+      <logical noswap="false" nodump="false">
+        <zpool name="data" action="create" is_root="false" mountpoint="/data">
+          <vdev name="data-none" redundancy="none"/>
+        </zpool>
+        <zpool name="rpool" action="create" is_root="true" mountpoint="/rpool">
+          <vdev name="rpool-none" redundancy="none"/>
+        </zpool>
+      </logical>
+    </target>
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 9 \fRメディアの作成
+.sp
+.LP
+この例では、ブート時に「archive.uar」から大域ゾーンを配備するブート可能な USB イメージを作成します。これは、\fBusbcopy\fR(1M) コマンドを使用して USB デバイスにコピーできます。AI イメージコンポーネントは、IPS パブリッシャーの現在のリストがソースになります。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create-media ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 10 \fRIPS パブリッシャーからのメディアの作成
+.sp
+.LP
+この例では、AI イメージコンポーネントが特定の IPS パブリッシャーをソースとしているブート可能メディアを作成します。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create-media -s http://server.domain:port
+                ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 11 \fRユーザーが選択した構築領域でのメディアの作成
+.sp
+.LP
+この例は、AI ISO イメージをブートアーカイブのソースとして使用してメディアを作成する方法を示しています。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create-media -d data/build
+                -s S11-2-x86-AI.iso ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 12 \fR選択した大域ゾーンからのメディアの作成
+.sp
+.LP
+この例は、アーカイブされた特定の大域ゾーンからメディアを作成する方法を示しています。
+
+.sp
+.in +2
+.nf
+# \fBarchiveadm create-media -g kz-global ./archive.uar\fR
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件install/archive|
+_
+インタフェースの安定性不確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBai_manifest\fR(4)、\fBzoneadm\fR(1M)、\fBzonecfg\fR(1M)

@@ -1,0 +1,233 @@
+'\" te
+.\" Copyright (c) 2011, Oracle and/or its affiliates.All rights reserved.
+.TH pam_zfs_key 5 "2011 年 2 月 22 日" "SunOS 5.11" "標準、環境、マクロ"
+.SH 名前
+pam_zfs_key \- ZFS の PAM ユーザー資格モジュール
+.SH 形式
+.LP
+.nf
+\fBpam_zfs_key.so.1 [create] [homes=]\fR
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBpam_zfs_key\fR モジュールは \fBpam_sm_setcred\fR(3PAM) および \fBpam_sm_chauthtok\fR(3PAM) を実装します。 
+.sp
+.LP
+\fBpam_zfs_key\fR モジュールはユーザーのホームディレクトリの場所にマウントされた暗号化ファイルシステムの ZFS 暗号化パスフレーズのロードと変更を許可する機能を提供します。認証サービスモジュールでは \fBpam_sm_authenticate()\fR と \fB pam_sm_setcred()\fR の両方を実装する必要があります。 
+.sp
+.LP
+このモジュールの \fBpam_sm_authenticate()\fR は常に \fBPAM_IGNORE\fR を返します。それらが別の場所に存在する場合、モジュールオプション \fBhomes=\fR を使用して、それを指定できます。それは ZFS データセット名で、マウントポイントではなく、通常は \fB/export/home/\fR になります。 
+.sp
+.LP
+ZFS データセット名の最後のコンポーネントは、\fBPAM_USER\fR の値、つまりユーザーログイン名に一致している必要があります。ユーザーホームディレクトリが、暗号化が有効にされているローカル ZFS ファイルシステムで、ZFS keysource プロパティーが \fBpassphrase,prompt\fR に設定されている場合、\fBpam_sm_setcred()\fR でこのモジュールは次のように鍵を管理します。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPAM_DELETE_CRED\fR\fR
+.ad
+.RS 22n
+.rt  
+ファイルシステムを \fBumount\fR し、鍵をロード解除しようとします。現在の作業ディレクトリとしてユーザーのホームディレクトリにまだプロセスがあるため、これは失敗することがあります。\fBforce\fR モジュールオプションは、まず強制的なアンマウントを試みるために提供されています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPAM_ESTABLISH_CRED\fR\fR
+.ad
+.RS 22n
+.rt  
+\fBPAM_AUTHTOK\fR の値を使用して、ZFS データセットの鍵をロードし、それをマウントしようとします。
+.sp
+\fBPAM_AUTHTOK\fR が正しいパスフレーズでない場合、ユーザーは 1 回代替を入力するように求められます。ユーザーホームディレクトリである ZFS データセットの正しいパスフレーズである場合でも、この値は \fBPAM_AUTHTOK\fR に保存されません。は、次のようなスクリプトと等価です。
+.sp
+.in +2
+.nf
+zfs key -l rpool/export/home/$USER
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.LP
+ユーザーの ZFS ファイルシステムが存在せず、\fBcreate\fR モジュールオプションが指定されている場合、新しいファイルシステムが作成されます。モジュールに \fBencryption=\fR プロパティーが設定され、オーバーライドされていないかぎり、この例では、ZFS 暗号化プロパティーのデフォルトは \fBon\fR に設定されます。
+.sp
+.LP
+\fBcreate\fR モジュールオプションが指定されておらず、ユーザーの ZFS ファイルシステムが存在しない場合、モジュールは \fBPAM_IGNORE\fR を返します。 
+.sp
+.LP
+新しく作成された ZFS ファイルシステムには、それが作成されたユーザーに ZFS 委任 (\fBkey,keychange,mount\fR) が指定されます。これらの例では、\fBkeysource\fR は常に \fBpassphrase,prompt\fR に設定されます。
+.sp
+.LP
+たとえば、パスワードの変更時に \fBpam_sm_chauthtok\fR(3PAM) が呼び出されると、このモジュールは \fBPAM_AUTHTOK\fR の値に一致するように ZFS データセットのパスフレーズを変更しようと試みます。これは次を実行することと同等です。
+.sp
+.in +2
+.nf
+zfs key -c rpool/export/home/$USER
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+パスワード変更は通常ユーザーとして実行するため、これにはユーザーに \fBkeychange\fR 委任が必要です。
+.sp
+.LP
+次のマウントオプションがサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate\fR\fR
+.ad
+.RS 14n
+.rt  
+新しい ZFS データセットを作成します
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBencryption\fR\fR
+.ad
+.RS 14n
+.rt  
+\fBcreate\fR の ZFS 暗号化プロパティーを設定します
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBforce\fR\fR
+.ad
+.RS 14n
+.rt  
+\fBPAM_DELETE_CRED\fR の実行時にデータセットの \fBMS_FORCE\fR で、\fBumount2\fR(2) を試みます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhomes=\fR\fR
+.ad
+.RS 14n
+.rt  
+ユーザーホームディレクトリの ZFS データセットの代替の場所。デフォルトは \fBrpool/export/home\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnowarn\fR\fR
+.ad
+.RS 14n
+.rt  
+エラーメッセージや警告を提供しないでください。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRデフォルトモードでの \fBpam_zfs_key\fR の使用
+.sp
+.LP
+次の例ではデフォルトモードで \fBpam_zfs_key\fR を使用します。
+
+.sp
+.in +2
+.nf
+gdm     auth requisite          pam_authtok_get.so.1
+gdm     auth required           pam_dhkeys.so.1
+gdm     auth required           pam_unix_cred.so.1
+gdm     auth required           pam_unix_auth.so.1
+gdm     auth optional           pam_zfs_key.so.1
+
+other   password required       pam_dhkeys.so.1
+other   password requisite      pam_authtok_get.so.1
+other   password requisite      pam_authtok_check.so.1
+other   password required       pam_authtok_store.so.1
+other   password optional       pam_zfs_key.so.1
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fR代替の ZFS データセットの指定
+.sp
+.LP
+次の例では、ホームディレクトリファイルシステムの代替の ZFS データセットの場所を指定しています。エントリが存在しない場合、ZFS 暗号化プロパティー設定として \fBaes-256-gcm\fR を使用して、新しいエントリを作成してください。
+
+.sp
+.in +2
+.nf
+gdm auth requisite  pam_authtok_get.so.1
+gdm auth required   pam_dhkeys.so.1
+gdm auth required   pam_unix_cred.so.1
+gdm auth required   pam_unix_auth.so.1
+gdm auth optional   pam_zfs_key.so.1 homes=tank/users \e
+create encryption=aes-256-gcm
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fRZFS データセットのマウントを必須にする
+.sp
+.LP
+次の例では、ZFS データセットのマウントを必須にし、パスフレーズが常にログインパスワードと同期するようにします。
+
+.sp
+.in +2
+.nf
+gdm     auth requisite          pam_authtok_get.so.1
+gdm     auth required           pam_dhkeys.so.1
+gdm     auth required           pam_unix_cred.so.1
+gdm     auth required           pam_unix_auth.so.1
+gdm     auth required           pam_zfs_key.so.1
+
+other   password required       pam_dhkeys.so.1
+other   password requisite      pam_authtok_get.so.1
+other   password requisite      pam_authtok_check.so.1
+other   password requisite      pam_zfs_key.so.1
+other   password required       pam_authtok_store.so.1
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+インタフェースの安定性確実
+_
+MT レベルT{
+例外付きで MT-安全。下記を参照。
+T}
+.TE
+
+.sp
+.LP
+\fBlibpam\fR(3LIB) のインタフェースは、マルチスレッドアプリケーション内部の各スレッドが独自の PAM ハンドルを使用する場合にのみ、「MT- 安全」です。
+.SH 関連項目
+.sp
+.LP
+\fBzfs\fR(1M), \fBumount2\fR(2), \fBpam.conf\fR(4), \fBlibpam\fR(3LIB), \fBpam\fR(3PAM), \fBpam_sm_chauthtok\fR(3PAM), \fBpam_sm_setcred\fR(3PAM), \fBattributes\fR(5)

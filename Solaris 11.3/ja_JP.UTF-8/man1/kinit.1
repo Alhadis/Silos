@@ -1,0 +1,642 @@
+'\" te
+.\" Copyright 1987, 1989 by the Student Information Processing Board of the Massachusetts Institute of Technology. For copying and distribution information, please see the file kerberosv5/mit-sipb-copyright.h.
+.\" Portions Copyright (c) 2008, 2012, Oracle and/or its affiliates. All rights reserved.
+.TH kinit 1 "2012 年 6 月 20 日" "SunOS 5.11" "ユーザーコマンド"
+.SH 名前
+kinit \- Kerberos チケット認可チケットの取得およびキャッシュ
+.SH 形式
+.LP
+.nf
+\fB/usr/bin/kinit\fR [\fB-ARvV\fR] [\fB-p\fR | \fB-P\fR] [\fB-f\fR | \fB-F\fR] [\fB-a\fR] [\fB-c\fR \fIcache_name\fR] 
+     [\fB-C\fR] [\fB-E\fR] [\fB-k\fR [\fB-t\fR \fIkeytab_file\fR]] [\fB-l\fR \fIlifetime\fR]
+     [\fB-r\fR \fIrenewable_life\fR] [\fB-s\fR \fIstart_time\fR] [\fB-n\fR] [\fB-S\fR \fIservice_name\fR]
+     [\fB-X\fR \fBattribute\fR[\fB=\fR\fIvalue\fR]] [\fB-T\fR \fIarmor_ccache\fR] [\fIprincipal\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBkinit\fR コマンドは、\fIprincipal\fR の初期のチケット認可チケット (資格) を取得してキャッシュするために使用されます。このチケットは、Kerberos システムによる認証に使用されます。Kerberos システムを使用できるのは、Kerberos 主体を持つユーザーだけです。Kerberos 主体については、\fBkerberos\fR(5) を参照してください。 
+.sp
+.LP
+\fBkinit\fR をオプションなしで使用すると、このユーティリティーは \fIprincipal\fR と Kerberos パスワードの入力を求め、ローカルの Kerberos サーバーを使用してログインの認証を試みます。\fIprincipal\fR は、必要に応じてコマンド行で指定できます。
+.sp
+.LP
+Kerberos がログイン試行を認証した場合、\fBkinit\fR は初期のチケット認可チケットを取得し、それをチケットキャッシュ内に格納します。デフォルトでは、チケットはファイル \fB/tmp/krb5cc_\fIuid\fR\fR 内に格納されます。ここで、\fIuid\fR はユーザー ID 番号を指定します。チケットは、指定された有効期間が経過すると期限切れになります。そのあとは、\fBkinit\fR をふたたび実行する必要があります。\fBkinit\fR では、キャッシュの既存の内容はすべて破棄されます。
+.sp
+.LP
+コマンド行で指定された値によって、Kerberos 構成ファイル内で \fIlifetime\fR と \fIrenewable_life\fR に指定されている値がオーバーライドされます。
+.sp
+.LP
+ログインセッションを終了する前にアクティブなチケットをすべて破棄するには、\fBkdestroy\fR(1) コマンドを使用できます。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 24n
+.rt  
+ローカルアドレスを含むチケットを要求します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.RS 24n
+.rt  
+アドレスを含まないチケットを要求します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIcache_name\fR\fR
+.ad
+.RS 24n
+.rt  
+\fIcache_name\fR は、資格 (チケット) のキャッシュ名および場所として使用します。このオプションが使用されていない場合は、デフォルトのキャッシュ名および場所が使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR\fR
+.ad
+.RS 24n
+.rt  
+主体名の正規化を要求します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-E\fR\fR
+.ad
+.RS 24n
+.rt  
+主体名を企業名として扱います。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.RS 24n
+.rt  
+転送可能チケットを要求します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fR
+.ad
+.RS 24n
+.rt  
+転送可能ではありません。転送可能チケットを要求しません。
+.sp
+あるホスト上で取得されたチケットは通常、別のホスト上では使用できません。クライアントは、チケットを転送可能としてマークすることを要求できます。あるチケットに対して \fBTKT_FLG_FORWARDABLE\fR フラグが設定されたあと、ユーザーはこのチケットを使用して新しいチケットを要求できますが、別の \fBIP\fR アドレスを指定します。そのため、ユーザーは自分の現在の資格を使用して、別のマシン上で有効な資格を取得できます。このオプションを使用すると、ユーザーは転送可能でないチケットを明示的に取得できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR [\fB-t\fR \fIkeytab_file\fR]\fR
+.ad
+.RS 24n
+.rt  
+ローカルホストの \fIkeytab\fR ファイル内の鍵から取得されたホストのチケットを要求します。keytab ファイルの名前と場所は、\fB-t\fR \fIkeytab_file\fR オプションで指定できます。それ以外の場合は、デフォルトの名前と場所が使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIlifetime\fR\fR
+.ad
+.RS 24n
+.rt  
+有効期間 \fIlifetime\fR を持つチケットを要求します。\fB-l\fR オプションが指定されていない場合は、デフォルトのチケット有効期間 (各サイトで構成済み) が使用されます。最大のチケット有効期間 (各サイトで構成済み) より長いチケット有効期間を指定すると、最大の有効期間を持つチケットが生成されます。\fIlifetime\fR で指定できる有効な期間の形式については、「\fB時間\fR\fB形式\fR」セクションを参照してください。\fBkdc.conf\fR(4) および \fBkadmin\fR(1M) (サーバー主体の有効期間の値を検証するには \fBgetprinc\fR コマンド) を参照してください。
+.sp
+返されるチケットの有効期間は、次の最小値です。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+コマンド行で指定された値。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBKDC\fR 構成ファイルで指定された値。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+サーバー主体の Kerberos データベースで指定された値。\fBkinit\fR の場合は、\fBkrbtgt/\fIrealm name\fR\fR です。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ユーザー主体の Kerberos データベースで指定された値。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 24n
+.rt  
+匿名の処理を要求します。 
+.sp
+2 つのタイプの匿名主体がサポートされています。完全に匿名の Kerberos の場合は、\fBpkinit\fR を KDC 上で構成し、\fBpkinit_anchors\fR をクライアントの \fBkrb5.conf\fR 内に構成します。次に、\fB-n\fR オプションを使用して \fB@\fIREALM\fR\fR の形式の主体 (空の主体名のあとにアットマーク記号とレルム名) を指定します。KDC によって許可されている場合は、匿名チケットが返されます。 
+.sp
+また、2 番目の形式の匿名チケットもサポートされています。これらのレルムが公開されたチケットでは、クライアントの識別情報は非表示になりますが、クライアントのレルムは表示されます。このモードでは、\fBkinit -n\fR を使用して通常の主体名を指定します。KDC でサポートされている場合は、匿名主体によって (レルムではなく) 主体が置き換えられます。リリース 1.8 の時点で、完全に匿名の操作をサポートしているのは MIT Kerberos KDC だけです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 24n
+.rt  
+プロキシ可能チケットを要求します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR\fR
+.ad
+.RS 24n
+.rt  
+プロキシ可能ではありません。プロキシ可能チケットを要求しません。
+.sp
+プロキシ可能チケットは、チケット認可チケット内のアドレス以外の \fBIP\fR アドレスを使用してサービスのチケットを取得できるチケットです。このオプションを使用すると、ユーザーはプロキシ可能でないチケットを明示的に取得できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIrenewable_life\fR\fR
+.ad
+.RS 24n
+.rt  
+\fIrenewable_life\fR の合計有効期間を持つ更新可能なチケットを要求します。\fIrenewable_life\fR で指定できる有効な期間の形式については、「\fB時間\fR\fB形式\fR」セクションを参照してください。\fBkdc.conf\fR(4) および \fBkadmin\fR(1M) (サーバー主体の有効期間の値を検証するには \fBgetprinc\fR コマンド) を参照してください。
+.sp
+返されるチケットの更新可能な有効期間は、次の最小値です。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+コマンド行で指定された値。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBKDC\fR 構成ファイルで指定された値。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+サーバー主体の Kerberos データベースで指定された値。\fBkinit\fR の場合は、\fBkrbtgt/\fIrealm name\fR\fR です。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ユーザー主体の Kerberos データベースで指定された値。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR\fR
+.ad
+.RS 24n
+.rt  
+チケット認可チケットの更新を要求します。期限が切れたチケットは、そのチケットがまだ更新可能な期間内に含まれていたとしても更新できません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIstart_time\fR\fR
+.ad
+.RS 24n
+.rt  
+\fIstart_time\fR から有効になる遅延チケットを要求します。遅延チケットは \fIinvalid\fR フラグが設定された状態で発行されるため、使用する前に \fBKDC\fR にフィードバックする必要があります。\fIstart_time\fR で指定できる有効な絶対時間または期間の形式については、「\fB時間\fR\fB形式\fR」セクションを参照してください。\fBkinit\fR は、期間の一致を試みる前に、まず絶対時間を一致させようとします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR \fIservice_name\fR\fR
+.ad
+.RS 24n
+.rt  
+初期のチケットを取得するときに使用する代替サービス名を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fIarmor_ccache\fR\fR
+.ad
+.RS 24n
+.rt  
+KDC でサポートされている場合は、すでにチケットが含まれている資格キャッシュの名前 (\fBccache\fR) を指定します。この \fBccache\fR は、要求を保護することによって、攻撃者がその要求を攻撃するには保護チケットの鍵と、認証に使用される主体の鍵の両方を知る必要があるようにするために使用されます。 
+.sp
+また、この保護により、KDC からの応答が遷移中に変更されないことも保証されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 24n
+.rt  
+キャッシュ内の (\fIinvalid\fR フラグが設定された) チケット認可チケットを検証のために \fBKDC\fR に渡すことを要求します。チケットが要求された時間範囲内に含まれている場合、キャッシュは、検証されたチケットに置き換えられます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR \fR
+.ad
+.RS 24n
+.rt  
+詳細情報を出力します。ユーザーに認証やバージョンの確認などの詳細情報を表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-X\fR \fB\fIattribute\fR[=\fIvalue\fR]\fR\fR
+.ad
+.RS 24n
+.rt  
+事前認証プラグインに渡される事前認証の属性と値を指定します。\fIattribute\fR と \fIvalue\fR に指定できる値は、事前認証プラグインによって異なります。このオプションは、複数の属性を指定するために複数回指定できます。値が指定されていない場合は、\fByes\fR であると見なされます。 
+.sp
+OpenSSL の \fBpkinit\fR 事前認証メカニズムでは、次の属性が認識されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBX509_user_identity=URI\fR\fR
+.ad
+.sp .6
+.RS 4n
+ユーザーの X509 識別情報をどこで見つけるかを指定します。
+.sp
+有効な URI タイプは \fBFILE\fR、\fBDIR\fR、\fBPKCS11\fR、\fBPKCS12\fR、および \fBENV\fR です。詳細は、「\fBpkinit の URI タイプ\fR」セクションを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBX509_anchors=URI\fR\fR
+.ad
+.sp .6
+.RS 4n
+信頼できる X509 アンカー情報をどこで見つけるかを指定します。
+.sp
+有効な URI タイプは \fBFILE\fR と \fBDIR\fR です。詳細は、「\fBpkinit の URI タイプ\fR」セクションを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBflag_RSA_PROTOCOL[=yes]\fR\fR
+.ad
+.sp .6
+.RS 4n
+デフォルトの Diffie-Hellman プロトコルではなく、RSA の使用を指定します。
+.RE
+
+.RE
+
+.SS "pkinit の URI タイプ"
+.sp
+.ne 2
+.mk
+.na
+\fBFILE:\fIfile-name\fR[,\fIkey-file-name\fR]\fR
+.ad
+.sp .6
+.RS 4n
+このオプションには、コンテキスト固有の動作があります。
+.sp
+.ne 2
+.mk
+.na
+\fBX509_user_identity\fR
+.ad
+.RS 22n
+.rt  
+\fIfile-name\fR は、ユーザーの証明書が含まれた PEM 形式ファイルの名前を指定します。\fIkey-file-name\fR が指定されていない場合は、ユーザーの秘密鍵も \fIfile-name\fR 内に存在すると想定されます。それ以外の場合は、\fIkey-file-name\fR が、秘密鍵を含むファイルの名前です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBX509_anchors\fR
+.ad
+.RS 22n
+.rt  
+\fIfile-name\fR は、OpenSSL スタイルの ca-bundle ファイルの名前であると見なされます。\fBca-bundle\fR ファイルは、base-64 でエンコードされているべきです。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBDIR:\fIdirectory-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションには、コンテキスト固有の動作があります。
+.sp
+.ne 2
+.mk
+.na
+\fBX509_user_identity\fR
+.ad
+.RS 22n
+.rt  
+\fIdirectory-name\fR は、\fB*.crt\fR および \fB*.key\fR という名前のファイルを含むディレクトリを指定し、ここで、ファイル名の最初の部分は、証明書ファイルと秘密鍵ファイルの一致するペアで同じです。\fB\&.crt\fR で終わる名前を持つファイルが見つかった場合は、\fB\&.key\fR で終わる一致するファイルが、秘密鍵を含んでいると見なされます。このようなファイルが見つからない場合、\fB\&.crt\fR 内の証明書は使用されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBX509_anchors\fR
+.ad
+.RS 22n
+.rt  
+\fIdirectory-name\fR は、各 CA 証明書が \fBhash-of-ca-cert.\fR\fI#\fR という名前のファイル内に格納されている、OpenSSL スタイルのハッシュされた CA ディレクトリであると見なされます。このインフラストラクチャーが推奨されますが、そのディレクトリ内のすべてのファイルが検査され、証明書 (PEM 形式) が含まれている場合は、それらのファイルが使用されます。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBPKCS12:\fIpkcs12-file-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIpkcs12-file-name\fR は、ユーザーの証明書と秘密鍵が含まれた \fBPKCS #12\fR 形式ファイルの名前です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBPKCS11:[slotid=\fIslot-id\fR][:token=\fItoken-label\fR][:certid=\fIcert-id\fR][:certlabel=\fIcert-label\fR]\fR
+.ad
+.sp .6
+.RS 4n
+すべてのキーワードおよび値がオプションです。PKCS11 モジュール (たとえば、\fBopensc-pkcs11.so\fR) が、\fBlibpkcs11\fR(3LIB) の下の暗号化プロバイダとしてインストールされている必要があります。\fBslotid=\fR または \fBtoken=\fR、あるいはその両方を指定すると、特定のスマートカードリーダーまたはトークンを強制的に使用できます (複数使用可能な場合)。\fBcertid=\fR または \fBcertlabel=\fR、あるいはその両方を指定すると、デバイス上の特定の証明書を強制的に選択できます。\fBpkinit\fR で使用する特定の証明書を選択するためのその他の方法については、\fBpkinit_cert_match\fR 構成オプションを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBENV:\fIenvironment-variable-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIenvironment-variable-name\fR は、前のいずれかの値に準拠する値に設定されている環境変数の名前を指定します。たとえば、\fBENV:X509_PROXY\fR と指定し、ここで、環境変数 \fBX509_PROXY\fR は \fBFILE:/tmp/my_proxy.pem\fR に設定されています。
+.RE
+
+.SS "時間形式"
+.sp
+.LP
+\fB-s\fR \fIstart_time\fR オプションには、次の絶対時間の形式を使用できます。これらの例は、1999 年 7 月 2 日午後 1:35:30 の日付と時間に基づいています。 
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) cw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+絶対時間の形式例 
+\fIyymmddhhmm\fR[\fIss\fR]990702133530
+\fIhhmm\fR[\fIss\fR]133530
+\fIyy\fR.\fImm\fR.\fBdd\fR.\fIhh\fR.\fImm\fR.\fIss\fR99:07:02:13:35:30
+\fIhh\fR:\fImm\fR[:\fIss\fR]13:35:30
+\fIldate\fR:\fIltime\fR07-07-99:13:35:30
+\fBdd\fR-\fImonth\fR-\fIyyyy\fR:\fIhh\fR:\fImm\fR[:\fIss\fR]02-july-1999:13:35:30
+.TE
+
+.sp
+.in +2
+.nf
+Variable   
+.fi
+.in -2
+.sp
+
+.sp
+
+.sp
+.TS
+tab();
+cw(0i) cw(5.5i) 
+lw(0i) lw(5.5i) 
+.
+変数説明
+\fBdd\fR日
+\fIhh\fR時間 (24 時間制)
+\fImm\fR分
+\fIss\fR秒
+\fIyy\fRT{
+世紀内の年 (0-68 は 2000 から 2068 まで、69-99 は 1969 から 1999 まで)
+T}
+\fIyyyy\fR世紀を含む年
+\fImonth\fRT{
+ロケールの完全な、または短縮された月の名前
+T}
+\fIldate\fRロケールの適切な日付表現
+\fIltime\fRロケールの適切な時間表現
+.TE
+
+.sp
+.LP
+\fB-l\fR \fIlifetime\fR、\fB-r\fR \fIrenewable_life\fR、および \fB-s\fR \fIstart_time\fR オプションには、次の期間の形式を使用できます。これらの例は、14 日、7 時間、5 分、および 30 秒の期間に基づいています。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) cw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+期間の形式例
+\fI#\fRd14d
+\fI#\fRh7h
+\fI#\fRm5m
+\fI#\fRs30s
+\fI#\fRd\fI#\fRh\fI#\fRm\fI#\fRs14d7h5m30s 
+\fI#\fRh\fI#\fRm[\fI#\fRs]7h5m30s
+\fIdays\fR-\fIhh\fR:\fImm\fR:\fIss\fR14-07:05:30
+\fIhours\fR:\fImm\fR[:\fIss\fR]7:05:30
+.TE
+
+.sp
+
+.sp
+.TS
+tab();
+cw(2.75i) cw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+区切り記号説明
+d日数
+h時間数 
+m分数
+s秒数
+.TE
+
+.sp
+
+.sp
+.TS
+tab();
+cw(2.75i) cw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+変数説明
+\fI#\fR数字
+\fIdays\fR日数
+\fIhours\fR時間数
+\fIhh\fR時間 (24 時間制)
+\fImm\fR分
+\fIss\fR秒
+.TE
+
+.SH 環境
+.sp
+.LP
+\fBkinit\fR は、次の環境変数を使用します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBKRB5CCNAME\fR\fR
+.ad
+.RS 14n
+.rt  
+資格 (チケット) のキャッシュの場所。構文および詳細については、\fBkrb5envvar\fR(5) を参照してください。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/tmp/krb5cc_\fIuid\fR\fR\fR
+.ad
+.RS 25n
+.rt  
+デフォルトの資格キャッシュ (\fIuid\fR は、ユーザーの 10 進数の \fBUID\fR です)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/krb5/krb5.keytab\fR\fR
+.ad
+.RS 25n
+.rt  
+ローカルホストの \fBkeytab\fR ファイルのデフォルトの場所。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/krb5/krb5.conf\fR\fR
+.ad
+.RS 25n
+.rt  
+ローカルホストの構成ファイルのデフォルトの場所。\fBkrb5.conf\fR(4) を参照してください。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件service/security/kerberos-5
+_
+インタフェースの安定性下記を参照。
+.TE
+
+.sp
+.LP
+コマンド引数は「確実」です。コマンド出力は「不確実」です。
+.SH 関連項目
+.sp
+.LP
+\fBkdestroy\fR(1), \fBklist\fR(1), \fBkadmin\fR(1M), \fBktkt_warnd\fR(1M), \fBlibpkcs11\fR(3LIB), \fBkdc.conf\fR(4), \fBkrb5.conf\fR(4), \fBattributes\fR(5), \fBkerberos\fR(5), \fBkrb5envvar\fR(5), \fBpam_krb5\fR(5)
+.SH 注意事項
+.sp
+.LP
+成功した場合、\fBkinit\fR は \fBktkt_warnd\fR(1M) に、初期の資格 (チケット認可チケット) の期限が近づいてきたらユーザーに警告するよう通知します。

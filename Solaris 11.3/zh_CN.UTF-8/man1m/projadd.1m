@@ -1,0 +1,311 @@
+'\" te
+.\" Copyright (c) 2001, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH projadd 1M "2015 年 5 月 21 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+projadd \-  管理系统中的新项目
+.SH 用法概要
+.LP
+.nf
+\fBprojadd\fR [\fB-n\fR] [\fB-f\fR \fIfilename\fR] [\fB-p\fR \fIprojid\fR [\fB-o\fR]] [\fB-c\fR \fIcomment\fR] 
+     [\fB-U\fR \fIuser\fR [,\fIuser\fR]... ] [\fB-G\fR \fIgroup\fR [,\fIgroup\fR]... ] 
+     [ [\fB-K\fR \fIname\fR [=\fIvalue\fR [,\fIvalue\fR]...]...]] \fIproject\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBprojadd\fR 用于将新项目条目添加到 \fB/etc/project\fR 文件中。如果项目数据库在使用文件后端，新项目将在 \fBprojadd\fR 命令完成后立即可用。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIcomment\fR\fR
+.ad
+.RS 29n
+.rt  
+添加项目注释。注释存储在 \fB/etc/project\fR 文件内相应项目的条目中。通常，注释包含项目的简短说明，并用作存储项目完整名称的字段。 
+.sp
+将 \fIcomment\fR 指定为文本字符串。\fIcomment\fR 不能包含冒号 (\fB:\fR) 或换行符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfilename\fR\fR
+.ad
+.RS 29n
+.rt  
+指定要修改的项目文件。如果没有指定 \fIfilename\fR，将修改系统项目文件 \fB/etc/project\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-G\fR \fIgroup\fR[,group...]\fR
+.ad
+.RS 29n
+.rt  
+指定项目的组列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-K\fR \fIname\fR[=\fIvalue\fR[,\fIvalue\fR...]\fR
+.ad
+.RS 29n
+.rt  
+指定项目的属性列表。可以指定多个 \fB-K\fR 选项以设置多个键的值，例如：
+.sp
+.in +2
+.nf
+-K \fIkey1\fR=\fIvalue1\fR -K "\fIkey2\fR=(\fIvalue2a\fR),(\fIvalue2b\fR)"
+.fi
+.in -2
+
+资源控制属性使用括号来指定键值。由于许多用户 shell 都将括号解释为特殊字符，因此最好使用双引号将包含括号的 \fB-K\fR 参数括起来，如上例和下文的“示例”部分所示。有关可以为项目指定的资源控制的说明，请参见 \fBresource-controls \fR(5)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 29n
+.rt  
+语法检查。仅检查现有系统项目文件格式和相关修改。不检查现有项目文件内容，例如项目属性中指定的用户名、组名和资源。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR\fR
+.ad
+.RS 29n
+.rt  
+此选项允许 \fB-p\fR 选项指定的项目 ID 在项目文件中不唯一。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIprojid\fR\fR
+.ad
+.RS 29n
+.rt  
+设置新项目的项目 \fBID\fR。 
+.sp
+将 \fIprojid\fR 指定为小于 \fBlimits.h\fR 中定义的 \fBUID_MAX\fR 的非负十进制整数。\fIprojid\fR 缺省为高于当前指定的最大编号的下一个可用唯一编号。例如，如果指定了 \fIprojid\fR \fB100\fR、\fB105\fR 和 \fB200\fR，下一个缺省 \fIprojid\fR 将为 \fB201\fR。\fIprojid\fR \fB0\fR 到 \fB99\fR 是 SunOS 的保留值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-U\fR \fIuser\fR[,user...]\fR
+.ad
+.RS 29n
+.rt  
+指定项目的用户列表。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIproject\fR\fR
+.ad
+.RS 11n
+.rt  
+要创建的项目的名称。\fIproject\fR 操作数是一个由以下字符组成的字符串，字母字符、数字字符、下划线 (_) 和连字符 (-)。句点 ('.') 保留用于对操作系统具有特殊意义的项目。项目名称的第一个字符必须为字母。如果不满足这些限制，将显示错误消息。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR添加项目
+.sp
+.LP
+以下命令创建项目 \fBsalesaudit\fR 并将资源控制设置为 \fB-K\fR 选项的指定参数。
+
+.sp
+.in +2
+.nf
+projadd -p 111 -G sales,finance -c "Auditing Project" \e
+   -K "rcap.max-rss=10GB" \e
+   -K "process.max-file-size=(priv,50MB,deny)" \e
+   -K "task.max-lwps=(priv,100,deny)" salesaudit
+.fi
+.in -2
+
+.sp
+.LP
+此命令将在 \fB/etc/project\fR 中生成以下条目：
+
+.sp
+.in +2
+.nf
+salesaudit:111:Auditing Project::sales,finance: \e
+process.max-file-size=(priv,52428800,deny); \e
+rcap.max-rss=10737418240;task.max-lwps=(priv,100,deny)
+.fi
+.in -2
+
+.sp
+.LP
+请注意，以上条目在 \fB/etc/project\fR 中将显示为一行。
+
+.sp
+.LP
+对比 \fBprojadd\fR 命令和 \fB/etc/project\fR 中生成的输出，可以看出比例系数对资源上限 (\fBrcap.max-rss=10GB\fR) 和资源控制 (\fBprocess.max-file-size=(priv,50MB,deny)\fR) 的作用。修饰符（例如 B、KB 和 MB）以及比例系数是在 \fBresource-controls \fR(5) 中指定的。
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功完成。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 6n
+.rt  
+命令语法无效。将显示 \fBprojadd\fR 的用法消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.RS 6n
+.rt  
+为选项提供的参数无效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR\fR
+.ad
+.RS 6n
+.rt  
+使用 \fB-p\fR 选项指定的 \fIprojid\fR 已在使用中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB5\fR\fR
+.ad
+.RS 6n
+.rt  
+项目文件中包含错误。请参见 \fBproject\fR(4)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB6\fR\fR
+.ad
+.RS 6n
+.rt  
+要添加的项目、组、用户或资源不存在。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB9\fR\fR
+.ad
+.RS 6n
+.rt  
+项目已在使用中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB10\fR\fR
+.ad
+.RS 6n
+.rt  
+无法更新 \fB/etc/project\fR 文件。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/project\fR\fR
+.ad
+.RS 16n
+.rt  
+系统项目文件
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(5.5i) |cw(0i) 
+lw(5.5i) |lw(0i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性请参见下文。
+.TE
+
+.sp
+.LP
+调用正在发展中。用户可读的输出不稳定。
+.SH 另请参见
+.sp
+.LP
+\fBprojects\fR(1)、\fBgroupadd\fR(1M)、\fBgroupdel\fR(1M)、\fBgroupmod\fR(1M)、\fBgrpck\fR(1M)、\fBprojdel\fR(1M)、\fBprojmod\fR(1M)、\fBuseradd\fR(1M)、\fBuserdel\fR(1M)、\fBusermod\fR(1M)、\fBproject\fR(4)、\fBattributes\fR(5)、\fBresource-controls \fR(5)
+.SH 附注
+.sp
+.LP
+如果出现错误，\fBprojadd\fR 将输出错误消息并以非零状态退出。
+.sp
+.LP
+\fBprojadd\fR 仅在本地系统中添加项目定义。如果在使用网络名称服务（例如 NIS 或 LDAP）为本地 \fB/etc/project\fR 文件补充其他条目，\fBprojadd\fR 将无法更改网络名称服务提供的信息。

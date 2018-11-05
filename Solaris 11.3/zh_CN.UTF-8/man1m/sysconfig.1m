@@ -1,0 +1,455 @@
+'\" te
+.\" Copyright (c) 2012, 2015, Oracle and/or its affiliates.All rights reserved
+.TH sysconfig 1M "2015 年 4 月 6 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+sysconfig \- 取消配置或重新配置 Solaris 实例
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/sysconfig\fR
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/sysconfig\fR configure [\fB-s\fR] [\fB-c\fR \fIconfig_profile\fR.xml | \fIdir\fR]
+     [\fB--destructive\fR] [\fB-g\fR <\fIgrouping\fR>,<\fIgrouping\fR>]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/sysconfig\fR unconfigure [\fB-s\fR] [\fB--destructive\fR]
+     [\fB-g\fR <\fIgrouping\fR>,<\fIgrouping\fR>]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/sysconfig\fR unconfigure [\fB-s\fR] [\fB-g\fR \fIsystem\fR] [\fB--destructive\fR]
+\fB--include-site-profile\fR
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/sysconfig\fR create-profile [\fB-o\fR \fIoutput_directory\fR [\fB-l\fR \fIlogfile\fR]
+     [\fB-v\fR \fIverbosity\fR] [\fB-b\fR] [\fB-g\fR <\fIgrouping\fR>,<\fIgrouping\fR>]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBsysconfig\fR 实用程序是用于取消配置和重新配置 Solaris 实例的界面。Solaris 实例定义为全局区域或非全局区域中的导环境。用户无法取消配置特定的预定义子系统。系统的可配置子系统称为“功能分组”。功能分组是在执行该实用程序时所配置或取消配置的一个或一组服务。
+.sp
+.LP
+使用 \fBsysconfig\fR 实用程序可执行三种操作：取消配置、配置和配置文件创建。
+.sp
+.LP
+使用 \fBunconfigure\fR 子命令调用 \fBsysconfig\fR 时，将取消系统配置并将其置于未配置状态。
+.sp
+.LP
+系统配置可以采用交互方式或非交互方式执行。如果调用 \fBconfigure\fR 子命令时未指定配置文件，则会激活交互式界面，并引导用户完成系统配置过程。如果调用 configure 子命令时指定了配置文件，则配置时会读取该配置文件，并采用非交互方式执行配置。以上任一种情况都会导致请求的功能分组建立新配置。
+.sp
+.LP
+配置与重新配置的含义相同。reconfigure 子命令是 configure 子命令的别名。
+.sp
+.LP
+\fBsysconfig\fR 命令还可用于生成系统配置文件，即使用 \fBcreate-profile\fR 子命令。生成的配置文件可与 \fBsysconfig\fR \fBconfigure\fR 子命令一起使用，从而以非交互方式配置功能分组。有效的配置文件名称包含 \fB\&.xml\fR 扩展名。
+.sp
+.LP
+系统配置可以使用交互式系统配置 (System Configuration Interactive, SCI) 工具以交互方式执行，也可以使用系统配置文件以非交互方式执行。
+.sp
+.LP
+SCI 工具使用文本用户界面以交互方式配置目标系统。它还可用于收集用户生成的描述目标系统所需配置的信息。然后该工具会生成包含所需系统配置的系统配置文件。
+.sp
+.LP
+SCI 工具支持对全新安装或未配置的系统进行配置。该工具用于为新创建的非全局区域和在文本安装期间提供系统配置。如果需要使用 SCI 工具对已配置系统的配置进行修改，则必须先取消此系统的配置，然后才能运行 SCI 工具。
+.sp
+.LP
+\fBsysconfig\fR 除了用于执行系统配置外，还可用于重新配置和取消配置单个功能分组。系统上可以配置的功能分组包括 \fBdate_time\fR、\fBnetwork\fR、\fBnaming_services\fR、\fBlocation\fR、\fBusers\fR、\fBidentity\fR、\fBsupport\fR 和 \fBkeyboard\fR。系统分组将配置或取消配置所有功能分组。还可以取消配置分组并将其置于未配置状态。处于未配置状态的分组的缺省值如下所示。
+.sp
+.LP
+以下分组是可配置的。
+.sp
+.in +2
+.nf
+Grouping | Components            | Unconfigured Stat
+------------------------------------------------------------
+identity        | system nodename       | unknown
+------------------------------------------------------------
+keyboard        | Keyboard              | U.S. English
+------------------------------------------------------------
+naming_services | DNS, NIS and LDAP     | No network naming
+                | clients, nsswitch     | services
+------------------------------------------------------------
+network         | network               | No network
+------------------------------------------------------------
+location        | timezone              | UTC
+                | locale                | C locale
+------------------------------------------------------------
+support         | ASR                   | ASR disabled
+                | OCM                   | Disconnected Mode
+------------------------------------------------------------
+system          | all groupings         | all groupings
+                |                       | unconfigured
+------------------------------------------------------------
+users           | root                  | Empty root password
+                | initial user account  | Remove user account
+------------------------------------------------------------
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBsysconfig\fR 实用程序使用 Solaris 管理工具 (Solaris Management Facility, SMF) 将配置信息集中化。系统配置操作生成的数据是对 SMF 系统信息库的管理性定制，并且存储在 SMF 系统信息库的管理层中。在配置期间生成的配置文件将在 \fB/etc/svc/profile/sysconfig\fR 中归档。用户在其他 SMF 层中存储的系统配置信息将被管理层中的信息覆盖。
+.SH 子命令
+.sp
+.LP
+以下部分介绍了支持的子命令及其关联选项。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunconfigure\fR [\fB-s\fR] [\fB- g\fR \fIsystem\fR] [\fB--destructive\fR]\fR
+.ad
+.sp .6
+.RS 4n
+取消配置系统，将其置于 \fBunconfigured\fR 状态。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.sp .6
+.RS 4n
+在取消配置完成后关闭系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR \fIgrouping\fR\fR
+.ad
+.sp .6
+.RS 4n
+要取消配置的分组。如果未指定 \fB-g\fR，则会取消配置所有分组，从而导致取消配置系统。在取消配置系统前，会要求用户进行确认。如果指定 \fB-g\fR 系统，将询问用户。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB--destructive\fR\fR
+.ad
+.sp .6
+.RS 4n
+在取消配置时，不保留通常保留的系统数据。通过指定此标志，用户可向所有取消配置的分组指示其通常保留的数据可能会被删除。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunconfigure\fR [\fB-s\fR] [\fB- g\fR \fIsystem\fR] \fB--include-site-profile\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.ne 2
+.mk
+.na
+\fB\fB--include-site-profile\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项仅对 \fBunconfigure\fR 子命令有效。
+.sp
+此标志将取消配置系统并从 SMF \fBsite-profile\fR 和 \fBadmin\fR 层删除配置数据。这可以有效地将系统返回到安装程序所提供的原始系统配置状态。
+.sp
+在此过程中将删除并保存 \fB/etc/svc/profile/site\fR 中的 \fBsite-profile\fR 目录所存储的 XML 配置文件。还将删除所有分组的管理定制。\fB/etc/svc/profile/sysconfig\fR 中存储的所有数据都将被删除。
+.sp
+由于此操作涉及面较大，删除的 XML 配置文件将归档在 \fB/etc/svc/profile/sysconfig\fR 目录下名为 \fBsite-profile.tar\fR 的 tar 文件中。
+.sp
+此选项仅对系统分组有效。调用此选项时，可选择使用 \fB-g\fR \fI system\fR。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfigure\fR|\fBreconfigure\fR [\fB- s\fR] [\fB-g\fR \fIgrouping\fR] [\fB-c\fR \fI config_profile\fR.xml | \fIdir\fR] [\fB--destructive \fR]\fR
+.ad
+.sp .6
+.RS 4n
+配置或取消配置分组。\fBconfigure\fR 子命令可以访问与 \fBunconfigure\fR 子命令相同的选项。它还包含以下附加选项。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR \fIsystem\fR\fR
+.ad
+.sp .6
+.RS 4n
+要配置的分组。如果未指定 \fB-g\fR，将在配置系统之前询问用户进行确认。如果指定 \fB-g\fR 系统，将询问用户。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIconfig_profile\fR.xml | \fIdir\fR\fR
+.ad
+.sp .6
+.RS 4n
+提供要在配置期间应用的配置文件或配置文件目录。如果应用配置文件，则以非交互方式执行配置步骤。如果未提供配置文件，则使用交互式系统配置工具来配置分组。
+.sp
+所有配置文件必须具有 \fB\&.xml\fR 文件扩展名。
+.sp
+如果您为 \fB-c\fR 提供了目录，则该目录中的所有配置文件都必须是有效（格式正确）的配置文件。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate-profile\fR [\fB-o\fR \fI output_directory\fR [\fB-l\fR \fIlogfile\fR] [\fB-v\fR \fIverbosity\fR] [\fB-b\fR] [\fB-g\fR \fIgrouping\fR,...]\fR
+.ad
+.sp .6
+.RS 4n
+运行 SCI 工具并创建系统配置文件。该配置文件的缺省位置为 \fB/system/volatile/profile/sc_profile.xml\fR。生成的配置不会应用于系统。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIoutput_directory\fR\fR
+.ad
+.sp .6
+.RS 4n
+将配置文件的缺省位置替换为 \fIoutput_directory\fR。将在此目录下创建 \fBsc_profile.xml\fR 文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIlogfile\fR, \fB- -log-location\fR=\fIlogfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+日志文件的位置。缺省值为 \fB/var/tmp/install/sysconfig.log\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR \fIverbosity\fR, \fB- -log-level\fR=\fIverbosity\fR\fR
+.ad
+.sp .6
+.RS 4n
+详细程度，值可以是 \fBerror\fR、\fBwarn\fR、\fBinfo\fR、\fBdebug\fR 或 \fBinput\fR 之一。以上值按详细程度从低到高的顺序排列。缺省值为 \fBinfo\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.sp .6
+.RS 4n
+黑白版本的 SCI 工具。
+.RE
+
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR取消配置并关闭
+.sp
+.LP
+以下命令取消配置系统并将其置于 \fBunconfigured\fR 状态。缺省情况下，如果未指定任何分组，会取消配置整个系统的分组。
+
+.sp
+.in +2
+.nf
+# \fBsysconfig unconfigure -s\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR取消配置系统
+.sp
+.LP
+以下命令取消配置系统并将其置于 \fBunconfigured\fR 状态。
+
+.sp
+.in +2
+.nf
+# \fBsysconfig unconfigure -g system\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR使用 SCI 工具重新配置系统
+.sp
+.LP
+以下命令启动 SCI 工具重新配置系统。
+
+.sp
+.in +2
+.nf
+# \fBsysconfig configure\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR使用配置文件重新配置
+.sp
+.LP
+以下命令使用配置文件重新配置系统。
+
+.sp
+.in +2
+.nf
+# \fBsysconfig configure -c some_profile.xml\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR创建和使用配置文件
+.sp
+.LP
+以下命令序列创建配置文件，然后使用该配置文件重新配置系统。
+
+.sp
+.in +2
+.nf
+# \fBsysconfig create-profile -o /tmp/myprofile.xml\fR
+# \fBsysconfig configure -g system -c /tmp/myprofile.xml\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR在区域中配置系统
+.sp
+.LP
+以下命令在区域中配置系统。
+
+.sp
+.in +2
+.nf
+# \fBzlogin ZONENAME\fR
+root@ZONENAME# \fBsysconfig configure -g system\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR以交互方式配置功能分组
+.sp
+.LP
+以下命令重新配置网络和命名服务功能分组。将调用 SCI 工具，并以交互方式重新配置分组。
+
+.sp
+.in +2
+.nf
+# \fBsysconfig configure -g network,naming_services\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 8 \fR以非交互方式配置功能分组
+.sp
+.LP
+以下命令序列为网络和命名服务创建配置文件，然后使用该配置文件以非交互方式重新配置分组。
+
+.sp
+.in +2
+.nf
+# \fBsysconfig create-profile -g network,naming_services \e\fR
+\fB-o /tmp/my_sysconfig_directory/\fR
+# \fBsysconfig configure -g network,naming_services \e\fR
+\fB-c /tmp/my_sysconfig_directory/sc_profile.xml\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 9 \fR取消配置系统和恢复分组
+.sp
+.LP
+以下命令取消配置系统并将分组恢复到缺省安装状态。
+
+.sp
+.in +2
+.nf
+# \fBsysconfigure unconfigure --include-site-profile\fR
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.sp .6
+.RS 4n
+失败。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+system/install
+_
+system/install/configuration
+_
+system/library/install
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBsvcprop\fR(1)、\fBsvcadm\fR(1M)、\fBsvccfg\fR(1M)、\fBattributes\fR(5)、\fBattributes\fR(5)

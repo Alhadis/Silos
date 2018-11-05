@@ -1,0 +1,62 @@
+'\" te
+.\"  Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved
+.TH pam_eval 3PAM "28 Mar 2012" "SunOS 5.11" "PAM Library Functions"
+.SH NAME
+pam_eval \- module control over PAM configuration
+.SH SYNOPSIS
+.LP
+.nf
+\fBcc\fR [ \fIflag\fR ... ] \fIfile\fR ... \fB-lpam\fR [ \fIlibrary\fR ... ]
+#include <security/pam_appl.h>
+#include <security/pam_modules.h
+
+\fBint\fR \fBpam_eval\fR(\fBpam_handle_t *\fR\fIpamh\fR, \fBconst char *\fR\fIconf_path\fR);
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBpam_eval()\fR function can be called by module service functions to cause PAM to evaluate the PAM configuration for the current service (auth, account, password or session) listed in the file named by \fIconf_path\fR.  The \fIconf_path\fR argument must be an absolute path to a PAM configuration file.
+.sp
+.LP
+The \fBpam_eval()\fR function does not have non-local exits. For example, if a requisite module in the given \fIconf_path\fR returns a status other than \fBPAM_IGNORE\fR or \fBPAM_SUCCESS\fR, \fBpam_eval()\fR still returns to its caller.
+.sp
+.LP
+The named PAM configuration file has the same format as \fBpam.conf\fR(4) and must include the service name field just as \fB/etc/pam.conf\fR. The \fBpam_eval()\fR function will load the PAM configuration for the current \fBPAM_SERVICE\fR from \fIconf_path\fR or, if \fBPAM_SERVICE\fR is not found, for the "other" service, as usual.
+.sp
+.LP
+The \fBpam_eval()\fR function may not be called by applications.
+.SH RETURN VALUES
+.sp
+.LP
+If the named configuration could not be found or parsed, or if NULL or "" was given, or if a relative path is supplied for the configuration file, then \fBpam_eval()\fR returns \fBPAM_SYSTEM_ERR\fR. If \fBpam_eval()\fR is called by an application, then \fBPAM_PERM_DENIED\fR is returned.
+.sp
+.LP
+Otherwise \fBpam_eval()\fR returns the same value that would have been returned by the current service function (for example, \fBpam_authenticate\fR(3PAM)) had it used the named PAM configuration. That is, the return value will be either the same as that returned by a service module as per the named configuration or, if all modules return \fBPAM_IGNORE\fR, the default error for the current stack (for example, \fBPAM_AUTH_ERR\fR, for the auth stack).
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for description of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Interface StabilityCommitted
+_
+MT-LevelMT-Safe with exceptions
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBlibpam\fR(3LIB), \fBpam\fR(3PAM), \fBpam_authenticate\fR(3PAM), \fBpam.conf\fR(4), \fBattributes\fR(5), \fBpam_user_policy\fR(5)
+.SH NOTES
+.sp
+.LP
+The interfaces in \fBlibpam\fR are MT-Safe only if each thread within the multithreaded application uses its own \fBPAM\fR handle.

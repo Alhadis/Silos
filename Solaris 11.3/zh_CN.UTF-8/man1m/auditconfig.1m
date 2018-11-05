@@ -1,0 +1,1206 @@
+'\" te
+.\" Copyright (c) 2004, 2012, Oracle and/or its affiliates.All rights reserved.
+.TH auditconfig 1M "2012 年 5 月 3 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+auditconfig \- 配置审计
+.SH 用法概要
+.LP
+.nf
+\fBauditconfig\fR \fIsubcommand\fR...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBauditconfig\fR 提供了一个用于获取和设置内核审计参数的命令行接口。
+.sp
+.LP
+除了获取或设置持久性的审计服务值以外，只有在启用了 Solaris 审计功能时此功能才可用。
+.sp
+.LP
+队列值为零 (\fB0\fR) 表示应用系统缺省值。
+.sp
+.LP
+\fBperzone\fR 策略的设置决定了 \fBauditconfig\fR 控制的审计设置的作用域。如果设置了 \fBperzone\fR，则这些值反映本地区域，除非另行说明。否则，这些设置针对整个系统。基于 \fBperzone\fR 设置所做的任何限制只针对应用了该限制的每个选项。
+.sp
+.LP
+非全局区域管理员可以设置除 \fBperzone\fR 和 \fBahlt\fR 以外的所有审计策略选项。\fBperzone\fR 和 \fBahlt\fR 仅适用于全局区域；设置这些策略需要有全局区域管理员权限。\fBperzone\fR 和 \fBahlt\fR 在下面的 \fB-setpolicy\fR 选项中介绍。
+.sp
+.LP
+此命令可供授予了“审计控制权限”配置文件的管理员使用。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示或设置正在运行的系统上除审计服务的持久性值以外的其他值。
+.sp
+此选项仅适用于以下列出了此选项的子命令。
+.RE
+
+.SH 子命令
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-aconf\fR\fR
+.ad
+.sp .6
+.RS 4n
+将所配置的无归属审计掩码 \fBkmask\fR 设置为所配置的无归属审计掩码。例如：
+.sp
+.in +2
+.nf
+# \fBauditconfig -aconf\fR
+Configured non-attributable event mask.
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-audit\fR \fIevent\fR \fIsorf\fR \fIretval\fR \fIstring\fR\fR
+.ad
+.sp .6
+.RS 4n
+此命令使用包含文本标记 \fIstring\fR 的进程审计特征来构建审计事件 \fIevent\fR 的审计记录。返回标记是根据 \fIsorf\fR（成功/失败标志）和 \fIretval\fR（返回值）构建的。事件为 \fBchar*\fR 类型，\fIsorf\fR 为 0/1（代表成功/失败），\fIretval\fR 为错误号值，\fIstring\fR 为 \fB*char\fR 类型。此命令用于通过 shell 脚本构建审计记录。此选项的示例：
+.sp
+.in +2
+.nf
+# \fBauditconfig -audit AUE_ftpd 0 0 "test string"\fR
+#
+
+audit record from audit trail:
+    header,76,2,ftp access,,Fri Dec 08 08:44:02 2000, + 669 msec
+    subject,abc,root,other,root,other,104449,102336,235 197121 elbow
+    text,test string
+    return,success,0
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-chkaconf\fR\fR
+.ad
+.sp .6
+.RS 4n
+根据审计服务中配置的条目 (\fB-setnaflags\fR) 检查内核中设置的无归属事件配置。如果内核审计事件的活动类掩码与配置的类掩码不匹配，则会报告不匹配。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-chkconf\fR\fR
+.ad
+.sp .6
+.RS 4n
+检查内核审计事件到类映射的配置。如果内核审计事件的运行时类掩码与配置的类掩码不匹配，将报告不匹配。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+对内核审计事件到类映射进行配置。运行时类映射将改为与审计事件到类数据库文件中的映射一致。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getasid\fR\fR
+.ad
+.sp .6
+.RS 4n
+列显当前进程的审计会话 ID。例如：
+.sp
+.in +2
+.nf
+# \fBauditconfig -getasid\fR
+audit session id = 102336
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getaudit\fR\fR
+.ad
+.sp .6
+.RS 4n
+返回当前进程的审计特征。
+.sp
+.in +2
+.nf
+# \fBauditconfig -getaudit\fR
+audit id = abc(666)
+process preselection mask = lo(0x1000,0x1000)
+terminal id (maj,min,host) = 235,197121,elbow(172.146.89.77)
+audit session id = 102336
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getauid\fR\fR
+.ad
+.sp .6
+.RS 4n
+列显当前进程的审计 ID。例如：
+.sp
+.in +2
+.nf
+# \fBauditconfig -getauid\fR
+audit id = abc(666)
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getcar\fR\fR
+.ad
+.sp .6
+.RS 4n
+列显当前的活动根位置（以系统引导时的根位置 [或本地区域根位置] 作为锚点）。例如：
+.sp
+.in +2
+.nf
+# \fBauditconfig -getcar\fR
+current active root = /
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getclass\fR \fIevent\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示与指定内核审计事件关联的 preselection 掩码。\fIevent\fR 是内核事件编号或事件名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getcond\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示内核审计状况。显示的状况为以下文本字符串之一：\fBauditing\fR，表示审计已启用并处于打开状态（内核审计模块正在构建审计记录并将其排队，审计守护进程正在运行）；\fBnoaudit\fR，表示审计已启用但处于关闭状态（内核审计模块未构建审计记录，也未对其排队，审计守护进程未运行）；\fBdisabled\fR，表示尚未启用审计模块（在 \fBsystem\fR(4) 中排除了该模块）。有关详细信息，请参见 \fBauditd\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getestate\fR \fIevent\fR\fR
+.ad
+.sp .6
+.RS 4n
+对于指定的事件（字符串或事件编号），输出 \fIevent\fR 已分配的类。例如：
+.sp
+.in +2
+.nf
+# \fBauditconfig -getestate 20\fR
+audit class mask for event AUE_REBOOT(20) = 0x800
+# auditconfig -getestate AUE_RENAME
+audit class mask for event AUE_RENAME(42) = 0x30
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getflags\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示用户的缺省 preselection 审计标志。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getkaudit\fR\fR
+.ad
+.sp .6
+.RS 4n
+获取当前区域的审计特征。例如：
+.sp
+.in +2
+.nf
+# \fBauditconfig -getkaudit\fR
+audit id = unknown(-2)
+process preselection mask = lo,na(0x1400,0x1400)
+terminal id (maj,min,host) = 0,0,(0.0.0.0)
+audit session id = 0
+.fi
+.in -2
+.sp
+
+如果未设置 \fBperzone\fR 审计策略，终端 ID 将是全局区域的终端 ID。否则，将是本地区域的终端 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getkmask\fR\fR
+.ad
+.sp .6
+.RS 4n
+获取当前区域的无归属 preselection 掩码。例如：
+.sp
+.in +2
+.nf
+# \fBauditconfig -getkmask\fR
+audit flags for non-attributable events = lo,na(0x1400,0x1400)
+.fi
+.in -2
+.sp
+
+如果未设置审计策略 \fBperzone\fR，则内核掩码是全局区域的内核掩码。否则，它是本地区域的内核掩码。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getnaflags\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示无归属审计标志。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getpinfo\fR \fIpid\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示指定进程的审计 ID、preselection 掩码、终端 ID 以及审计会话 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getplugin\fR [\fIname\fR]\fR
+.ad
+.sp .6
+.RS 4n
+显示有关插件名称的信息。如果未指定 \fIname\fR，则显示所有插件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-getpolicy\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示内核审计策略。\fBahlt\fR 和 \fBperzone\fR 策略反映全局区域中的设置。如果设置了 \fBperzone\fR，所有其他策略将反映本地区域的设置。如果未设置 \fBperzone\fR，策略是在计算机范围内应用的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getremote\fR [\fIserver\fR|[\fIgroup\fR [\fIconnection_group\fR]]]\fR
+.ad
+.sp .6
+.RS 4n
+显示与审计远程服务器有关的信息。如果使用了 \fIserver\fR 选项参数，则只会显示通用审计远程服务器配置。如果使用了 \fIgroup\fR 选项参数，则会显示有关所配置的所有连接组的信息。除了 group 参数以外，如果还指定了 \fIconnection_group\fR 名称，则只会显示有关相应连接组的信息。
+.sp
+如果没有使用任何选项参数，则会显示有关通用审计远程服务器配置详细信息和所有连接组的信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getcwd\fR\fR
+.ad
+.sp .6
+.RS 4n
+列显当前工作目录（以系统引导时的区域根位置为锚点）。例如：
+.sp
+.in +2
+.nf
+# \fBcd /usr/tmp\fR
+# \fBauditconfig -getcwd\fR
+current working directory = /var/tmp
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-getqbufsz\fR\fR
+.ad
+.sp .6
+.RS 4n
+获取审计队列写入缓冲区大小。例如：
+.sp
+.in +2
+.nf
+# \fBauditconfig -getqbufsz\fR
+no configured audit queue size
+audit queue buffer size (bytes) = 1024
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-getqctrl\fR\fR
+.ad
+.sp .6
+.RS 4n
+获取审计队列写入缓冲区大小、审计队列 \fBhiwater\fR 标记、审计队列 \fBlowater\fR 标记、审计队列 \fBprod\fR 间隔（周期）。
+.sp
+.in +2
+.nf
+# \fBauditconfig -getqctrl\fR
+no configured audit queue lowater mark
+no configured audit queue hiwater mark
+no configured audit queue size
+no configured audit queue delay
+audit queue hiwater mark (records) = 100
+audit queue lowater mark (records) = 10
+audit queue buffer size (bytes) = 1024
+audit queue delay (ticks) = 20
+
+# auditconfig -setqbufsz 8192
+# auditconfig -t -setqbufsz 12288
+# auditconfig -setqdelay 20
+# auditconfig -t -setqdelay 25
+# auditconfig -getqctrl
+no configured audit queue lowater mark
+no configured audit queue hiwater mark
+configured audit queue buffer size (bytes) = 8192
+configured audit queue delay (ticks) = 20
+active audit queue hiwater mark (records) =     100
+active audit queue lowater mark (records) =     10
+active audit queue buffer size (bytes) = 12288
+active audit queue delay (ticks) = 25
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-getqdelay\fR\fR
+.ad
+.sp .6
+.RS 4n
+获取唤醒审计队列开始输出的间隔。例如：
+.sp
+.in +2
+.nf
+# \fBauditconfig -getqdelay\fR
+no configured audit queue delay
+audit queue delay (ticks) = 20
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-getqhiwater\fR\fR
+.ad
+.sp .6
+.RS 4n
+获取阻塞审计记录生成进程时的未传送审计记录的高水位点。例如：
+.sp
+.in +2
+.nf
+# \fB\&./auditconfig -getqhiwater\fR
+no configured audit queue hiwater mark
+audit queue hiwater mark (records) = 100
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-getqlowater\fR\fR
+.ad
+.sp .6
+.RS 4n
+获取被阻塞的进程继续执行时的未传送审计记录的低水位点。例如：
+.sp
+.in +2
+.nf
+# \fBauditconfig -getqlowater\fR
+no configured audit queue lowater mark
+audit queue lowater mark (records) = 10
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-getstat\fR\fR
+.ad
+.sp .6
+.RS 4n
+列显当前的审计统计信息。例如：
+.sp
+.in +2
+.nf
+# \fBauditconfig -getstat\fR
+gen nona kern  aud  ctl  enq wrtn wblk rblk drop  tot  mem
+910    1  725  184    0  910  910    0  231    0   88   48
+.fi
+.in -2
+.sp
+
+有关 \fB-getstat\fR 输出中标题的说明，请参见 \fBauditstat\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-gettid\fR\fR
+.ad
+.sp .6
+.RS 4n
+列显当前进程的审计终端 ID。例如：
+.sp
+.in +2
+.nf
+# \fBauditconfig -gettid\fR
+terminal id (maj,min,host) = 235,197121,elbow(172.146.89.77)
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-lsevent\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示当前配置的（运行时）内核和用户级审计事件信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-lspolicy\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示内核审计策略以及每个策略的说明。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setasid\fR \fIsession-ID\fR [\fIcmd\fR]\fR
+.ad
+.sp .6
+.RS 4n
+使用指定的 \fIsession-ID\fR 执行 shell 或 \fIcmd\fR。例如：
+.sp
+.in +2
+.nf
+# \fB\&./auditconfig -setasid 2000 /bin/ksh\fR
+#
+# \fB\&./auditconfig -getpinfo 104485\fR
+audit id = abc(666)
+process preselection mask = lo(0x1000,0x1000)
+terminal id (maj,min,host) = 235,197121,elbow(172.146.89.77)
+audit session id = 2000
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setaudit\fR \fIaudit-ID\fR \fIpreselect_flags\fR \fIterm-ID\fR \fIsession-ID\fR [\fIcmd\fR]\fR
+.ad
+.sp .6
+.RS 4n
+使用指定的审计特征执行 shell 或 \fIcmd\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setauid\fR \fIaudit-ID\fR [\fIcmd\fR]\fR
+.ad
+.sp .6
+.RS 4n
+执行具有指定 \fIaudit–ID\fR 的 shell 或 \fIcmd\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setclass\fR \fIevent audit_flag\fR[\fI,audit_flag . . .\fR]\fR
+.ad
+.sp .6
+.RS 4n
+将内核事件 \fIevent\fR 映射到 \fBaudit_flag\fR 列表指定的类。\fIevent\fR 是事件编号或名称。\fIaudit_flag\fR 是代表审计类的字符串。有关详细信息，请参见 \fBaudit_flags\fR(5)。如果未设置 \fBperzone\fR，此选项仅在全局区域内有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setflags\fR \fIaudit_flags\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置用户的缺省 preselection 审计标志；请参见 \fBaudit_flags\fR(5)。缺省 preselection 标志将与用户的特定审计标志相结合，共同构成用户的 preselection 审计掩码。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setkaudit\fR \fIIP-address_type\fR \fIIP_address\fR\fR
+.ad
+.sp .6
+.RS 4n
+将计算机的 IP 地址设置为指定的值。\fIIP-address_type\fR 为 \fBipv6\fR 或 \fBipv4\fR。
+.sp
+如果未设置 \fBperzone\fR，此选项仅在全局区域内有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setkmask\fR \fIaudit_flags\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置计算机的无归属 preselection 标志。
+.sp
+如果未设置 \fBperzone\fR，此选项仅在全局区域内有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setnaflags\fR \fIaudit_flags\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置无归属审计标志；请参见 \fBaudit_flags\fR(5)。无归属审计标志定义了无法将操作归属到某个验证用户时要审计的事件类。无归属事件的一个示例是登录失败。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setpmask\fR \fIpid\fR \fIflags\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置指定进程的 preselection 掩码。\fIflags\fR 是标志的 ASCII 表示形式，类似于 \fBaudit_flags\fR(5) 中的表示形式。
+.sp
+如果未设置 \fBperzone\fR，此选项仅在全局区域内有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setplugin\fR \fIplugin_name\fR \fBactive\fR|\fBinactive\fR [ \fIattributes\fR [\fIqsize\fR]]\fR
+.ad
+.br
+.na
+\fB\fB-setplugin\fR \fIplugin_name\fR [\fB active\fR|\fBinactive\fR] \fIattributes\fR [\fIqsize\fR]\fR
+.ad
+.sp .6
+.RS 4n
+将插件 \fIplugin_name\fR 配置为 \fBactive\fR 或 \fBinactive\fR 的。（可选）配置排队等候插件处理的未处理审计记录的属性和数目。请参见相关的审计插件手册页和 \fBauditd\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-setpolicy\fR [\fI+\fR|\fI-\fR]\fIpolicy_flag\fR[\fI,policy_flag ...\fR]\fR
+.ad
+.sp .6
+.RS 4n
+设置内核审计策略。策略 \fIpolicy_flag\fR 是表示审计策略的文本字符串。\fB+\fR 前缀表示向当前审计策略中添加指定的策略。使用前缀 \fB-\fR 会从当前审计策略中删除指定的策略。只有先在全局区域设置了 \fBperzone\fR 策略，才能在本地区域设置策略。以下是有效的策略标志字符串（\fBauditconfig\fR \fB-lspolicy\fR 还可列出当前有效的审计策略标志字符串）：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBall\fR\fR
+.ad
+.RS 16n
+.rt  
+包括应用于当前区域的所有策略。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBahlt\fR\fR
+.ad
+.RS 16n
+.rt  
+如果发生了无法传送的异步审计事件（因审计队列已达到高水位标记或因资源不足无法构建审计记录），则会调用 panic 并且系统会转储核心文件。缺省情况下，会删除记录并保留已删除记录的计数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBarge\fR\fR
+.ad
+.RS 16n
+.rt  
+将 \fBexecv\fR(2) 系统调用环境参数包含在审计记录内。缺省情况下不包含此信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBargv\fR\fR
+.ad
+.RS 16n
+.rt  
+将 \fBexecv\fR(2) 系统调用参数包括到审计记录中。缺省情况下不包含此信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcnt\fR\fR
+.ad
+.RS 16n
+.rt  
+在审计资源耗尽时不暂停进程，而是删除审计记录并保留已删除记录的计数。缺省情况下，将暂停进程，直到有审计资源可用为止。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgroup\fR\fR
+.ad
+.RS 16n
+.rt  
+将辅助组标记包含在审计记录内。缺省情况下，不包含组标记。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnone\fR\fR
+.ad
+.RS 16n
+.rt  
+不包含任何策略。如果不是在全局区域中使用，\fBahlt\fR 和 \fBperzone\fR 策略不会发生改变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpath\fR\fR
+.ad
+.RS 16n
+.rt  
+将辅助路径标记添加到审计记录内。对于 shell 脚本，这些通常是动态链接共享库或命令解释程序的路径名。缺省情况下，不包括这些标记。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBperzone\fR\fR
+.ad
+.RS 16n
+.rt  
+为每个区域维护单独的配置、队列以及日志并为每个区域执行单独的 \fBauditd\fR(1M) 版本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpublic\fR\fR
+.ad
+.RS 16n
+.rt  
+审计公用文件。缺省情况下，不会对满足\fB公用\fR特征（由 root 用户拥有、可供所有人读取但不是所有人都可以写入）的特定文件审计读取类型的操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtrail\fR\fR
+.ad
+.RS 16n
+.rt  
+在每个审计记录中包含尾部标记。缺省情况下，不包括尾部标记。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBseq\fR\fR
+.ad
+.RS 16n
+.rt  
+在每个审计记录中包含序列标记。缺省情况下，不包括序列标记。序列标记将在每个审计记录中附加序列号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBwindata_down\fR\fR
+.ad
+.RS 16n
+.rt  
+在审计记录中包含在窗口之间移动的任何降级数据。仅当系统配置有 Trusted Extensions 时，此策略才可用。缺省情况下，不包括此信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBwindata_up\fR\fR
+.ad
+.RS 16n
+.rt  
+在审计记录中包括任何在窗口之间移动的已升级数据。仅当系统配置有 Trusted Extensions 时，此策略才可用。缺省情况下，不包括此信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzonename\fR\fR
+.ad
+.RS 16n
+.rt  
+在每个审计记录中包括 \fBzonename\fR 标记。缺省情况下，不包括 \fBzonename\fR 标记。\fBzonename\fR 标记提供审计记录所源自的区域的名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setremote\fR \fIserver\fR \fBactive\fR|\fBinactive\fR [\fIattributes\fR]\fR
+.ad
+.br
+.na
+\fB\fB-setremote\fR \fIserver\fR [\fBactive\fR|\fBinactive\fR] \fI attributes\fR\fR
+.ad
+.sp .6
+.RS 4n
+将主审计远程服务器开关配置为活动或非活动的。如果将其设置为非活动的，则所配置的所有连接组将被视为非活动的。（可选）配置通用审计远程服务器属性。有关更多信息，请参见 \fBars\fR(5)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fR
+.ad
+.br
+.na
+\fB\fB-setremote\fR \fBgroup\fR \fBactive\fR|\fBinactive\fR \fIgroup_name\fR [\fIattributes\fR]\fR
+.ad
+.br
+.na
+\fB\fB-setremote\fR \fBgroup\fR [\fBactive\fR|\fB inactive\fR] \fIgroup_name\fR \fIattributes\fR\fR
+.ad
+.sp .6
+.RS 4n
+将审计远程服务器连接组 group_name 配置为活动或非活动的。（可选）配置相应的连接组属性。有关更多信息，请参见 \fBars\fR(5)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fR
+.ad
+.br
+.na
+\fB\fB-setremote\fR \fBgroup\fR \fBcreate\fR|\fBdestroy\fR \fIgroup_name\fR\fR
+.ad
+.sp .6
+.RS 4n
+创建或销毁审计远程服务器连接组 \fIgroup_name\fR。有关更多信息，请参见 \fBars\fR(5)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-setqbufsz\fR \fIbuffer_size\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置审计队列写入缓冲区大小（字节）。零 (\fB0\fR) 表示重置为无配置的值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-setqctrl\fR \fIhiwater\fR \fIlowater\fR \fIbufsz\fR \fIinterval\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置审计队列写入缓冲区大小（字节）、hiwater 审计记录计数、lowater 审计记录计数以及转醒间隔（周期）。仅当设置了 \fBperzone\fR 时，才在本地区域内有效。零 (\fB0\fR) 表示重置为无配置的值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-setqdelay\fR \fIinterval\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置审计队列转醒间隔（周期）。该选项决定了内核唤醒审计队列将审计记录写入到审计迹的间隔。仅当设置了 \fBperzone\fR 时，才在本地区域内有效。零 (\fB0\fR) 表示重置为无配置的值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-setqhiwater\fR \fIhiwater\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置审计队列中未传送审计记录达到多少时审计记录生成进程将阻塞。仅当设置了 \fBperzone\fR 时，才在本地区域内有效。零 (\fB0\fR) 表示重置为无配置的值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB[\fB-t\fR] \fB-setqlowater\fR \fIlowater\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置审计队列中未传送审计记录达到多少时被阻塞的审计进程将解除阻塞。仅当设置了 \fBperzone\fR 时，才在本地区域内有效。零 (\fB0\fR) 表示重置为无配置的值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setsmask\fR \fIasid flags\fR\fR
+.ad
+.sp .6
+.RS 4n
+为具有指定审计会话 ID 的所有进程设置 preselection 掩码。仅当设置了 \fBperzone\fR 时，才在本地区域内有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setstat\fR\fR
+.ad
+.sp .6
+.RS 4n
+重置审计统计信息计数器。仅当设置了 \fBperzone\fR 时，才在本地区域内有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-setumask\fR \fIusername\fR|\fIauid flags\fR\fR
+.ad
+.sp .6
+.RS 4n
+为具有指定用户名或审计 ID 的所有进程设置 preselection 掩码。仅当设置了 \fBperzone\fR 时，才在本地区域内有效。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR使用 \fBauditconfig\fR
+.sp
+.LP
+以下是 \fBauditconfig\fR 命令的示例。
+
+.sp
+.in +2
+.nf
+#
+# Map kernel audit event number 10 to the "fr" audit class.
+
+# \fBauditconfig -setclass 10 fr\fR
+
+#
+# Turn on inclusion of exec arguments in exec audit records.
+
+# \fBauditconfig -setpolicy +argv\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR仅设置未处理审计记录的数目
+.sp
+.LP
+以下命令序列仅设置排队等候 \fBaudit_binfile\fR 插件的未处理审计记录的数目。
+
+.sp
+.in +2
+.nf
+# See if audit_binfile is active.
+% \fBauditconfig -getplugin audit_binfile\fR
+
+# Set to queue 20 unprocessed audit records.
+#
+% \fBauditconfig -setplugin audit_binfile "" 20\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR重置队列控制参数
+.sp
+.LP
+以下命令重置处于活动状态的已配置的队列控制参数。
+
+.sp
+.in +2
+.nf
+# Get the audit remote server configuration
+\fBauditconfig -getremote\fR
+
+# Change an audit remote server attribute
+\fBauditconfig -setremote server \e
+"listen_address=10.0.0.1,max_startups=10:30:60"\fR
+
+# Create an audit remote server (wild card) connection group
+\fBauditconfig -setremote group create egg_farm\fR
+
+# Get a specific audit remote server connection group information
+\fBauditconfig -getremote group egg_farm\fR
+
+# Set a connection group attribute, activate the connection group
+\fBauditconfig -setremote group active egg_farm \e
+"hosts=tipo.cz.oracle.com,binfile_dir=/var/audit/ARS"\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR配置审计远程服务器
+.sp
+.LP
+以下命令用于配置审计远程服务器。
+
+.sp
+.in +2
+.nf
+# Get the audit remote server configuration
+\fBauditconfig -getremote\fR
+
+# Change an audit remote server attribute
+\fBauditconfig -setremote server \e
+"listen_address=10.0.0.1,max_startups=10:30:60"\fR
+
+# Create an audit remote server (wild card) connection group
+\fBauditconfig -setremote group create egg_farm\fR
+
+# Get a specific audit remote server connection group information
+\fBauditconfig -getremote group egg_farm\fR
+
+# Set a connection group attribute, activate the connection group
+auditconfig -setremote group active egg_farm \e
+"hosts=tipo.cz.oracle.com,binfile_dir=/var/audit/ARS"
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+出现错误。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/security/audit_event\fR\fR
+.ad
+.RS 29n
+.rt  
+存储审计系统中使用的事件定义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/security/audit_class\fR\fR
+.ad
+.RS 29n
+.rt  
+存储审计系统中使用的类定义。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBaudit\fR(1M)、\fBauditd\fR(1M)、\fBauditstat\fR(1M)、\fBpraudit\fR(1M)、\fBexecv\fR(2)、\fBaudit_class\fR(4)、\fBaudit_event\fR(4)、\fBsystem\fR(4)、\fBars\fR(5)、\fBattributes\fR(5)、\fBaudit_binfile\fR(5)、\fBaudit_flags\fR(5)、\fBaudit_remote\fR(5)、\fBaudit_syslog\fR(5)
+.sp
+.LP
+请参见\fI《Securing Systems and Attached Devices in Oracle Solaris 11.3》\fR中有关审计的部分。
+.SH 附注
+.sp
+.LP
+如果使用 \fB-setplugin\fR 选项选择了插件输出，使用 \fB-setpolicy\fR \fB+cnt\fR 和 \fB-setqhiwater\fR 选项时的系统行为将略有不同。如果设置了 \fB-setpolicy\fR \fB+cnt\fR，那么即使 \fBaudit_binary\fR 插件的输出已停止，仍会继续将数据发送到选定的插件，而暂停磁盘空间释放。如果使用 \fB-setpolicy\fR \fB–cnt\fR，阻塞行为将如上面的\fB\fR“子命令”部分所述。在 \fBauditd\fR 中，队列的高水位标记值作为队列的上限使用，除非通过 \fBqsize\fR 属性进行覆盖，如上面的 \fB-setplugin\fR 选项的说明中所述。
+.sp
+.LP
+用于修改或显示基于进程的信息的 \fBauditconfig\fR 选项不受 \fBperzone\fR 策略影响。用于修改系统审计数据（如终端 ID 和审计队列参数）的选项仅在全局区域内有效，除非设置了 \fBperzone\fR 策略。如果设置了 \fBperzone\fR，显示的系统审计将反映本地区域。否则，将反映全局区域的设置。
+.sp
+.LP
+对插件 (\fB-setplugin\fR) 和审计远程服务器 (\fB-setremote\fR) 设置所做的更改要到刷新审计服务之后才会生效（例如变为活动或非活动的，或更改各自的属性）。使用 \fBaudit\fR(1M) 可以刷新审计服务。

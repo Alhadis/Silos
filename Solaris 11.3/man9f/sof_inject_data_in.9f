@@ -1,0 +1,96 @@
+'\" te
+.\" Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+.TH sof_inject_data_in 9F "9 May 2012" "SunOS 5.11" "Kernel Functions for Drivers"
+.SH NAME
+sof_inject_data_in, sof_inject_data_out \- inject data
+.SH SYNOPSIS
+.LP
+.nf
+#include <sys/sockfilter.h>
+
+int sof_inject_data_in(sof_handle_t \fIhdl\fR, mblk_t *\fImp\fR, boolean_t *\fIstop\fR);
+.fi
+
+.LP
+.nf
+int sof_inject_data_out(sof_handle_t \fIhdl\fR, mblk_t *\fImp\fR, boolean_t *\fIstop\fR);
+.fi
+
+.SH PARAMETERS
+.sp
+.ne 2
+.mk
+.na
+\fB\fIhdl\fR\fR
+.ad
+.RS 8n
+.rt  
+per-socket filter handle
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fImp\fR\fR
+.ad
+.RS 8n
+.rt  
+pointer to a \fBmsgb\fR(9S) structure containing data to inject. Multiple \fBmblk\fR structures can be chained together via \fIb_cont\fR. The first \fBmblk\fR can contain address and/or control information, which can be constructed from a message header structure using \fBsof_mblk_create\fR(9F).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIstop\fR\fR
+.ad
+.RS 8n
+.rt  
+result parameter indicating whether the socket is flow controlled. The filter should stop injecting any more data if \fIstop\fR is \fBB_TRUE\fR, and only resume once the \fBSOF_EV_FLOWCTRL_CLR\fR (\fBsofop_notify\fR(9E)) event is observed.
+.RE
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBsof_inject_data_in()\fR function is used to enqueue data in socket's receive buffer, which can then be consumed using \fBrecv\fR(3SOCKET).
+.sp
+.LP
+The \fBsof_inject_data_out()\fR function is used to transmit data from the socket to its peer.
+.sp
+.LP
+The framework takes ownership of the message chain on both successful and failed inject attempts.
+.sp
+.LP
+The filter can check flow control state by calling \fBsof_inject_data_in()\fR and \fBsof_inject_data_out()\fR with a \fINULL\fR message, which will update \fIstop\fR.
+.SH RETURN VALUES
+.sp
+.LP
+The \fBsof_inject_data_in()\fR and \fBsof_inject_data_out()\fR functions returns 0 if data was successfully injected, and a non-zero error value, as described in \fBIntro\fR(2), on failure.
+.SH CONTEXT
+.sp
+.LP
+The \fBsof_inject_data_in()\fR and \fBsof_inject_data_out()\fR functions can be called from user and kernel context
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/kernel
+_
+Interface StabilityUncommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBIntro\fR(2), \fBrecv\fR(3SOCKET), \fBattributes\fR(5), \fBsofop_notify\fR(9E), \fBsof_flowctrl_data_in\fR(9F), \fBsof_mblk_create\fR(9F), \fBmsgb\fR(9S), \fBsof_ops\fR(9S)

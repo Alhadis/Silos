@@ -1,0 +1,793 @@
+'\" te
+.\" Copyright (c) 2008, 2012, Oracle and/or its affiliates.All rights reserved.
+.TH fdisk 1M "2011 年 4 月 21 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+fdisk \- 创建或修改固定磁盘分区表
+.SH 用法概要
+.LP
+.nf
+\fBfdisk\fR [\fB-o\fR \fIoffset\fR] [\fB-s\fR \fIsize\fR] [\fB-P\fR \fIfill_patt\fR] [\fB-S\fR \fIgeom_file\fR] 
+     [\fB-w\fR | \fB-r\fR | \fB-d\fR | \fB-n\fR | \fB-I\fR | \fB-B\fR | \fB-t\fR | \fB-T\fR | \fB-g\fR | \fB-G\fR | \fB-R\fR | \fB-E\fR] 
+     [-\fB-F\fR \fIfdisk_file\fR] [ [\fB-v\fR] \fB-W\fR {\fIfdisk_file\fR | -}] 
+     [\fB-h\fR] [\fB-b\fR \fImasterboot\fR] 
+     [\fB-A\fR \fIid\fR : \fIact\fR : \fIbhead\fR : \fIbsect\fR : \fIbcyl\fR : \fIehead\fR : \fIesect\fR : 
+         \fIecyl\fR : \fIrsect\fR : \fInumsect\fR] 
+     [\fB-D\fR \fIid\fR : \fIact\fR : \fIbhead:\fR \fIbsect\fR : \fIbcyl\fR : \fIehead:\fR \fIesect\fR :
+         \fIecyl\fR : \fIrsect\fR : \fInumsect\fR] \fIrdevice\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+此命令用于执行以下操作：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在 x86 系统上创建和修改 \fBfdisk\fR 分区表
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在 SPARC 或 x86 系统上的可移除介质上创建和修改 \fBfdisk\fR 分区表
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+仅安装放入 x86 系统上固定磁盘的第一个扇区的主引导记录
+.RE
+.sp
+.LP
+第一阶段引导（或固件）使用此表标识为不同操作系统保留的磁盘部分以及标识包含第二阶段引导的分区（\fI活动\fR的 Solaris 分区）。必须使用 \fIrdevice\fR 参数指定与固定磁盘关联的原始设备，例如 \fB/dev/rdsk/c0t0d0p0\fR。
+.sp
+.LP
+该程序可以用三种不同的模式运行。第一种是交互模式。在交互模式下，当磁盘上存在分区表时程序会显示该表，然后提供一个菜单，允许用户修改该表。菜单、问题、警告和错误消息都不需要加以说明。
+.sp
+.LP
+在交互模式下，如果磁盘上没有分区表，会为用户提供选项来创建缺省分区或指定初始表值。缺省分区为 Solaris 系统分配整个磁盘并使 Solaris 系统分区处于活动状态。在任一情况下，创建初始表时，\fBfdisk\fR 还会随分区表一起写出第一阶段引导（仅限 x86）代码。在此模式下，（仅限 x86）在大于 2 TB（兆兆字节）的磁盘上创建非 EFI 分区的条目时，\fBfdisk\fR 会发出警告，指示分区的最大大小为 2 TB。在这些情况下，\fBfdisk\fR 显示的百分比基于 2 TB。
+.sp
+.LP
+第二种操作模式用于对整个 \fBfdisk\fR 表进行自动条目添加、条目删除和替换。此模式可以添加或删除命令行中描述的条目。在此模式下，可以从替换原始表的文件读入整个 \fBfdisk\fR 表。还可以使用 \fBfdisk\fR 创建此文件。提供了一个命令行选项，该选项会使 \fBfdisk\fR 使用 Solaris 系统的整个磁盘缺省值替换任意 \fBfdisk\fR 表。
+.sp
+.LP
+第三种操作模式用于磁盘诊断。在此模式下，可以通过用户指定的模式填充磁盘的区段，并且还可以读取或写入磁盘的模式区段。
+.LP
+注 - 
+.sp
+.RS 2
+扩展分区当前不支持第三种操作模式
+.RE
+.sp
+.LP
+\fBfdisk\fR 创建分区时，在 \fBfdisk\fR 分区表中分配空间，但是不对分配的磁盘空间进行初始化。需要使用 \fBnewfs\fR(1M) 创建文件系统元数据并将其写入新分区，需要使用 \fBformat\fR(1M) 来写入 VTOC 或 EFI/GPT 元数据。
+.SS "菜单选项"
+.sp
+.LP
+\fBfdisk\fR 程序提供的交互模式的菜单选项包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCreate a partition\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项允许用户创建新分区。最大分区数量为 4。该程序将要求提供分区的类型（SOLARIS、MS-DOS、UNIX 或其他）。然后将要求以磁盘的百分比形式提供分区的大小。用户还可以在此时输入字母 \fBc\fR，在这种情况下，该程序将要求提供起始柱面编号以及分区的大小（以柱面为单位）。如果未输入 \fBc\fR，该程序将确定分区将适合的起始柱面编号。在任一情况下，如果分区将与现有分区重叠或者不适合，将显示消息并且程序返回原始菜单。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBChange Active (Boot from) partition\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用此选项，用户可以指定第一阶段引导在其中查找第二阶段引导的分区（称为\fI活动\fR分区）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDelete a partition\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项允许用户删除以前创建的分区。请注意，这将销毁该分区中的所有数据。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBChange between Solaris and Solaris2 Partition IDs\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项允许用户在当前 \fBfdisk\fR 操作系统分区标识符和前一个标识符之间进行切换。此选项不会影响磁盘分区中的任何数据，是为了与旧软件兼容而提供的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEdit/View extended partitions\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项向用户提供扩展分区菜单。使用扩展分区菜单添加和删除逻辑驱动器，更改逻辑驱动器的 sysid 并显示逻辑驱动器信息。要提交在扩展分区中进行的更改，必须使用扩展分区子菜单选项 \fBr\fR 返回主菜单。还有一个选项可以显示扩展分区子菜单支持的选项的列表。该列表如下：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBa\fR\fR
+.ad
+.RS 5n
+.rt  
+添加逻辑驱动器。
+.sp
+使用此子菜单选项可添加逻辑驱动器。需要三条信息：起始柱面、大小（以柱面为单位或以用户可读形式－KB、MB 或 GB）以及分区 ID。指定分区 ID 时，可以使用一个选项 (\fBI\fR) 列出支持的分区。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBd\fR\fR
+.ad
+.RS 5n
+.rt  
+删除逻辑驱动器。
+.sp
+使用此子菜单选项删除逻辑驱动器。需要的唯一输入是要删除的逻辑驱动器的编号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBh\fR\fR
+.ad
+.RS 5n
+.rt  
+显示帮助菜单。
+.sp
+此子菜单选项在扩展分区子菜单中显示支持的操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBi\fR\fR
+.ad
+.RS 5n
+.rt  
+更改逻辑驱动器的 ID。
+.sp
+使用此子菜单选项更改现有逻辑驱动器的系统 ID。如果在此子菜单中时使用 \fBI\fR 选项，将显示支持的系统 ID 的列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp\fR\fR
+.ad
+.RS 5n
+.rt  
+显示逻辑驱动器布局。
+.sp
+向 stdout 显示逻辑驱动器信息。此输出反映在 \fBfdisk\fR 程序的当前运行过程中进行的所有更改。在返回主菜单（使用子菜单 \fBr\fR）并选择用于将更改提交到磁盘的选项后，才将这些更改提交到磁盘。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBr\fR\fR
+.ad
+.RS 5n
+.rt  
+返回主 \fBfdisk\fR 菜单。
+.sp
+退出扩展分区子菜单并返回主菜单。
+.RE
+
+请注意扩展分区编号的动态特性。例如，请考虑具有分区 \fBp1\fR、\fBp2\fR、\fBp3\fR 和 \fBp4\fR 的 Solaris 系统。创建扩展分区后，同一系统具有逻辑设备节点 \fBp5\fR 以及连续编号到最大值 \fBp36\fR 的连续节点。如果删除一个逻辑驱动器，假设 \fBp8\fR，则 \fBp8\fR 后面的所有节点（\fBp9\fR 直到 \fBp36\fR）将在分区的列表中向上移动一位，从而 \fBp9\fR 变为 \fBp8\fR，\fBp10\fR 变为 \fBp9\fR，以此类推。
+.RE
+
+.sp
+.LP
+使用以下选项可立刻应用对分区表的修改，或者取消会话而不修改该表：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBExit\fR\fR
+.ad
+.RS 10n
+.rt  
+此选项将使用 \fBfdisk\fR 在此会话过程中创建的新版本表写出到固定磁盘并退出程序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCancel\fR\fR
+.ad
+.RS 10n
+.rt  
+此选项退出而不修改分区表。
+.RE
+
+.SH 选项
+.sp
+.LP
+以下选项适用于 \fBfdisk\fR：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fIid:act:bhead:bsect:bcyl:ehead:esect:ecyl:rsect:numsect\fR\fR
+.ad
+.sp .6
+.RS 4n
+添加如参数所描述的分区（有关格式，请参见下面的 \fB-F\fR 选项）。如果 \fBfdisk\fR 表更改，使用此选项会将 Solaris 分区上的 \fBVTOC\fR 清零。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR \fImaster_boot\fR\fR
+.ad
+.sp .6
+.RS 4n
+将文件 \fImaster_boot\fR 指定为主引导程序。缺省主引导程序为 \fB/usr/lib/fs/ufs/mboot\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-B\fR\fR
+.ad
+.sp .6
+.RS 4n
+缺省设置为使用整个磁盘的一个 Solaris 分区。在 x86 计算机上，如果磁盘大于 2 TB（兆兆字节），Solaris 分区的缺省大小将限制为 2 TB。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+打开 \fIdebug\fR 详细模式。这将导致 \fBfdisk\fR 在使用时在 stderr 上输出其状态。此选项的输出不应该与 \fB-F\fR 一起使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR \fIid:act:bhead:bsect:bcyl:ehead:esect:ecyl:rsect:numsect\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除如参数所描述的分区（有关格式，请参见下面的 \fB-F\fR 选项）。请注意，参数必须完全匹配，否则将删除该条目！如果 \fBfdisk\fR 表更改，使用此选项会将 Solaris 分区上的 \fBVTOC\fR 清零。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-E\fR\fR
+.ad
+.sp .6
+.RS 4n
+创建使用整个磁盘的 \fBEFI\fR 分区。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR \fIfdisk_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 fdisk 文件 \fIfdisk_file\fR 来初始化表。如果 \fBfdisk\fR 表更改，使用此选项会将 Solaris 分区上的 \fBVTOC\fR 清零。
+.sp
+\fIfdisk_file\fR 包含指定主要分区的四个行，然后是指定逻辑驱动器的行。如果至少存在一个逻辑驱动器，则必须具有针对主要分区的四行。在这种情况下，如果要配置的主要分区数小于四，应使用零填充其余行。
+.sp
+每一行由与位置有关、以空格或分号分隔并且具有以下格式的条目组成：
+.sp
+\fIid act bhead bsect bcyl ehead esect ecyl rsect numsect\fR
+.sp
+……其中这些条目具有以下值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIid\fR\fR
+.ad
+.RS 11n
+.rt  
+这是分区的类型，正确的数值位于 \fBfdisk.h\fR 中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIact\fR\fR
+.ad
+.RS 11n
+.rt  
+这是活动的分区标志；\fB0\fR 表示不活动，\fB128\fR 表示活动。对于逻辑驱动器，此标志将始终设置为 0，即使用户指定为 128 也是如此。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIbhead\fR\fR
+.ad
+.RS 11n
+.rt  
+这是分区的开始磁头。如果此项设置为 \fB0\fR，\fBfdisk\fR 将使用其他信息填充此项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIbsect\fR\fR
+.ad
+.RS 11n
+.rt  
+这是分区的开始扇区。如果此项设置为 \fB0\fR，\fBfdisk\fR 将使用其他信息填充此项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIbcyl\fR\fR
+.ad
+.RS 11n
+.rt  
+这是分区的开始柱面。如果此项设置为 \fB0\fR，\fBfdisk\fR 将使用其他信息填充此项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIehead\fR\fR
+.ad
+.RS 11n
+.rt  
+这是分区的结束磁头。如果此项设置为 \fB0\fR，\fBfdisk\fR 将使用其他信息填充此项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIesect\fR\fR
+.ad
+.RS 11n
+.rt  
+这是分区的结束扇区。如果此项设置为 \fB0\fR，\fBfdisk\fR 将使用其他信息填充此项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIecyl\fR\fR
+.ad
+.RS 11n
+.rt  
+这是分区的结束柱面。如果此项设置为 \fB0\fR，\fBfdisk\fR 将使用其他信息填充此项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIrsect\fR\fR
+.ad
+.RS 11n
+.rt  
+这是相对于磁盘开头的扇区，分区从该扇区开始。必须指定此项并且 \fBfdisk\fR 可使用此项填充其他字段。对于逻辑驱动器，必须确保在为逻辑驱动器指定的 \fIrsect\fR 前面至少存在 63 个空闲扇区。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fInumsect\fR\fR
+.ad
+.RS 11n
+.rt  
+此磁盘分区中扇区的大小。必须指定此项并且 \fBfdisk\fR 可使用此项填充其他字段。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR\fR
+.ad
+.sp .6
+.RS 4n
+获取磁盘的标签几何参数并显示在 stdout 上（有关格式，请参见 \fB-S\fR 选项）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-G\fR\fR
+.ad
+.sp .6
+.RS 4n
+获取磁盘的物理几何参数并显示在 stdout 上（有关格式，请参见 \fB-S\fR 选项）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.sp .6
+.RS 4n
+输出详细消息；消息将列出所有选项并提供每个选项的说明。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR\fR
+.ad
+.sp .6
+.RS 4n
+停止设备检查。此项用于生成将在磁盘上使用的文件映像，而不使用设备。请注意，必须将 \fB-S\fR 与此选项配合使用（请参见上文）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+除非其他选项明确指定，否则不更新 \fBfdisk\fR 表。如果不使用其他选项，\fB-n\fR 仅将主引导记录写入磁盘。此外，请注意，如果指定 \fB-n\fR 选项，交互模式下将不出现 \fBfdisk\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIoffset\fR\fR
+.ad
+.sp .6
+.RS 4n
+相对磁盘开始处的块偏移。此选项用于 \fB-P\fR、\fB-r\fR 和 \fB-w\fR。不使用此选项时假定为零。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIfill_patt\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用模式 \fIfill_patt\fR 填充磁盘。\fIfill_patt\fR 可以是十进制或十六进制，用作常量长字模式的编号。如果 \fIfill_patt\fR 为 \fB#\fR，则模式是每个块的块编号。模式将以长字形式放入每个块并填充每个块（请参见 \fB-o\fR 和 \fB-s\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+从磁盘读取并写入 stdout。请参见 \fB-o\fR 和 \fB-s\fR，这两项指定操作的起点和大小。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR\fR
+.ad
+.sp .6
+.RS 4n
+将磁盘视为只读。这用于测试。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIsize\fR\fR
+.ad
+.sp .6
+.RS 4n
+要对其执行操作的块的数量（其参见 \fB-o\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR \fIgeom_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+将标签物理参数设置为 \fIgeom_file\fR 的内容。\fIgeom_file\fR 包含一个规范行。每行以换行符 (\fB\n\fR) 来分隔。如果一行的第一个字符为星号 (*)，则将该行视为注释。每一行由与位置有关、以空格分隔并具有以下格式的条目组成：
+.sp
+.in +2
+.nf
+\fIpcyl ncyl acyl bcyl nheads nsectors sectsiz\fR
+.fi
+.in -2
+.sp
+
+其中这些条目具有以下值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIpcyl\fR\fR
+.ad
+.RS 12n
+.rt  
+这是驱动器的物理柱面数量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIncyl\fR\fR
+.ad
+.RS 12n
+.rt  
+这是驱动器的可用柱面数量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIacyl\fR\fR
+.ad
+.RS 12n
+.rt  
+这是驱动器的备用柱面数量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIbcyl\fR\fR
+.ad
+.RS 12n
+.rt  
+这是驱动器的偏移柱面数量（应该为零）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fInheads\fR\fR
+.ad
+.RS 12n
+.rt  
+此驱动器的磁头数量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fInsectors\fR\fR
+.ad
+.RS 12n
+.rt  
+每个磁轨的扇区数量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIsectsiz\fR\fR
+.ad
+.RS 12n
+.rt  
+扇区的大小，以字节为单位。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+调整不正确的分片表条目，使其不超过分区表边界。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR\fR
+.ad
+.sp .6
+.RS 4n
+删除跨越分区表边界的不正确的分片表条目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+输出 HBA（虚拟）几何参数维。此选项必须与 \fB-W\fR 标志一起使用。此选项将适用于支持虚拟几何参数的平台。（仅限 x86）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-w\fR\fR
+.ad
+.sp .6
+.RS 4n
+写入磁盘并从 stdin 读取。请参见 \fB-o\fR 和 \fB-s\fR，这两项指定操作的起点和大小。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-W\fR \fB-\fR\fR
+.ad
+.sp .6
+.RS 4n
+将磁盘表输出到 \fBstdout\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-W\fR \fIfdisk_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+从磁盘表创建 \fBfdisk\fR 文件 \fIfdisk_file\fR。该选项不能与上面的 \fB-F\fR 选项一起使用。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/dev/rdsk/c0t0d0p0\fR\fR
+.ad
+.RS 25n
+.rt  
+与固定磁盘关联的原始设备。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/fs/ufs/mboot\fR\fR
+.ad
+.RS 25n
+.rt  
+缺省主引导程序。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+体系结构x86 和 SPARC
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBuname\fR(1)、\fBfmthard\fR(1M)、\fBformat\fR(1M)、\fBnewfs\fR(1M)、\fBparted\fR(1M)、\fBprtvtoc\fR(1M)、\fBattributes\fR(5)
+.SH 诊断
+.sp
+.LP
+大多数消息都不需要加以说明。启动程序后可能会立即显示以下消息：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBFdisk\fR: \fBcannot open\fR <\fBdevice\fR>\fR
+.ad
+.sp .6
+.RS 4n
+这指示设备名称参数无效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBFdisk\fR: \fBunable to get device parameters for device\fR <\fBdevice\fR>\fR
+.ad
+.sp .6
+.RS 4n
+这指示固定磁盘配置存在问题或者固定磁盘驱动程序中存在错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBFdisk\fR: \fBerror reading partition table\fR\fR
+.ad
+.sp .6
+.RS 4n
+这指示最初尝试读取固定磁盘时发生了某些错误。这可能是固定磁盘控制器或驱动程序存在问题，或者固定磁盘配置存在问题。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBFdisk\fR: \fBerror writing boot record\fR\fR
+.ad
+.sp .6
+.RS 4n
+这指示尝试将新分区表写出到固定磁盘时发生了某些错误。这可能是固定磁盘控制器、磁盘自身、驱动程序或固定磁盘配置存在问题。
+.RE
+

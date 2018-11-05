@@ -1,0 +1,148 @@
+'\" te
+.\"  Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\" Portions Copyright (c) 2009, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Portions Copyright (c) 1982-2007 AT&T Knowledge Ventures
+.\" Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH cksum 1 "2011 年 7 月 25 日" "SunOS 5.11" "用户命令"
+.SH 名称
+cksum \- 写入文件校验和与文件大小
+.SH 用法概要
+.LP
+.nf
+\fB/usr/bin/cksum\fR [\fIfile\fR...]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBcksum\fR 命令可以计算每个输入文件的循环冗余校验 (Cyclic Redundancy Check, CRC) 并将其写入标准输出，还会将每个文件中八位字节的数目写入标准输出。
+.sp
+.LP
+对于每个成功处理的文件，\fBcksum\fR 的写入方法采用以下格式：
+.sp
+.LP
+\fB"%u %d %s\n"\fR <\fIchecksum\fR>, <\fI# of octets\fR>, <\fIpath name\fR>
+.sp
+.LP
+如果未指定文件操作数，则省略路径名及其前导空格。
+.sp
+.LP
+使用的 CRC 基于用于引用以太网标准中 CRC 错误检查的多项式。
+.sp
+.LP
+CRC 校验和的编码通过生成多项式定义：
+.sp
+.in +2
+.nf
+G(x) = x**32 + x**26 + x**23 + x**22+ x**16 + x**12 + x**11
++ x**10 + x**8 + x**7 + x**5 + x**4 + x**2 + x + 1
+.fi
+.in -2
+
+.sp
+.LP
+从数学的角度来讲，对应于指定文件的 CRC 值按以下过程定义：
+.RS +4
+.TP
+1.
+将要求得的 \fIn\fR 位数视为模数为 2 的 \fIn\fR-\fI1\fR 项式 \fIM\fR(\fIx\fR) 的系数。\fIn\fR 位数即为文件的位数，最高有效位是文件的第一个八位字节的最高有效位，最后一位是最后一个八位字节的最低有效位，以零位填补（如有必要）得到一个八进制整数，后跟一个或多个八进制值，以二进制值表示文件长度，最低有效八位字节。将使用能够表示该整数的最小数目的八位字节。
+.RE
+.RS +4
+.TP
+2.
+\fIM\fR(\fIx\fR) 乘以 \fIx\fR ^\fI32\fR（即左移 32 位），然后按模数为 2 除以 \fIG\fR(\fIx\fR)，得出 ≤ 31 次项余数 \fIR\fR(\fIx\fR)。
+.RE
+.RS +4
+.TP
+3.
+将 \fIR\fR(\fIx\fR) 的系数视为 32 位序列。
+.RE
+.RS +4
+.TP
+4.
+将该位序列补全，结果即为 CRC。
+.RE
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfile\fR\fR
+.ad
+.RS 8n
+.rt  
+要检查的文件的路径名。如果未指定 \fIfile\fR 操作数，将使用标准输入。
+.RE
+
+.SH 用法
+.sp
+.LP
+\fBcksum\fR 命令通常用于根据某个可疑文件的可信版本快速比较该可疑文件，以确保通过可疑介质传输的文件在接收时完整无缺。但是，不能将这种比较视为加密形式的安全保护。损坏的文件生成的 CRC 与原始文件生成的相同几率极小；蓄意欺骗非常困难，但或许也不是不可能。
+.sp
+.LP
+尽管 \fBcksum\fR 的输入文件可以属于任何类型，但是结果不必是字符特殊设备文件的结果。由于本文档并未指定执行输入时使用的块大小，因此字符特殊文件的校验和无需处理这些文件中的所有数据。
+.sp
+.LP
+这种算法以一个字节流划分成若干八位字节表示。如果某个文件在两个系统之间传输并且经过了任何数据转换（例如将 8 位字符改为 9 位字节或者将 \fBLittle Endian\fR 字节顺序改为 \fBBig Endian\fR），不会得到相同的 CRC 值。执行此类转换的实现程序可以扩展 \fBcksum\fR 来应对此类情况。
+.sp
+.LP
+有关 \fBcksum\fR 遇到大于或等于 2 GB（2^31 字节）文件时行为的说明，请参见 \fBlargefile\fR(5)。
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBcksum\fR 执行的以下环境变量的说明，请参见 \fBenviron\fR(5)：\fBLANG\fR、\fBLC_ALL\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR 和 \fBNLSPATH\fR。
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+所有文件都已成功处理。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+_
+标准请参见 \fBstandards\fR(5)。
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBdigest\fR(1)、\fBsum\fR(1)、\fBbart\fR(1M)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBlargefile\fR(5)、\fBstandards\fR(5)

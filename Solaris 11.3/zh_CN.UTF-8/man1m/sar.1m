@@ -1,0 +1,151 @@
+'\" te
+.\" Copyright (c) 1998, 2011, Oracle and/or its affiliates.All rights reserved.
+.\"  Copyright 1989 AT&T
+.TH sar 1M "2011 年 8 月 16 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+sar, sa1, sa2, sadc \- 系统活动报告软件包
+.SH 用法概要
+.LP
+.nf
+\fB/usr/lib/sa/sadc\fR [\fIt\fR \fIn\fR] [\fIofile\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/sa/sa1\fR [\fIt\fR \fIn\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/sa/sa2\fR [\fB-aAbcdgkmpqruvwy\fR] [\fB-e\fR \fItime\fR] [\fB-f\fR \fIfilename\fR] 
+     [\fB-i\fR \fIsec\fR] [\fB-s\fR \fItime\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+可以在用户发出特殊请求时访问系统活动数据（请参见 \fBsar\fR(1)），也可以根据例程自动访问系统活动数据，如下所述。操作系统具有多个计数器，发生各种系统操作时，这些计数器会递增。这些计数器用于计算 \fBCPU\fR 利用率、缓冲区使用情况、磁盘和磁带 \fBI/O\fR 活动、\fBTTY\fR 设备活动、切换和系统调用活动、文件访问、队列活动、进程间通信以及分页。有关更多常规系统统计信息，请使用 \fBiostat\fR(1M)、\fBsar\fR(1) 或 \fBvmstat\fR(1M)。
+.sp
+.LP
+\fBsadc\fR 以及两个 shell 过程（\fBsa1\fR 和 \fBsa2\fR）用于对此数据进行抽样、保存和处理。
+.sp
+.LP
+数据收集器 \fBsadc\fR 可对系统数据进行 \fIn\fR 次抽样，每次抽样间隔 \fIt\fR 秒，然后以二进制格式写入 \fIofile\fR 或标准输出。抽样间隔 \fIt\fR 应大于 5 秒，否则 \fBsadc\fR 自身的活动可能会影响抽样。如果省略 \fIt\fR 和 \fIn\fR，则会写入一个特殊记录。此工具可以在系统引导至多用户状态时使用，以标记计数器从零重新开始的时间。例如，如果启用了记帐，则 \fBsvc:/system/sar:default\fR 服务会通过输入以下命令在每日数据文件中写入重新开始标记： 
+.sp
+.in +2
+.nf
+su sys -c "/usr/lib/sa/sadc /var/adm/sa/sa`date +%d`"
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+shell 脚本 \fBsa1\fR（\fBsadc\fR 的变体）用于收集数据并将数据存储在二进制文件 \fB/var/adm/sa/sa\fR\fIdd\fR 中，其中 \fBdd\fR 表示当天日期。使用参数 \fIt\fR 和\fI n\fR 可将记录写入 \fIn\fR 次，每次间隔 \fIt\fR 秒，如果省略这些参数，则仅写入一次。在 \fB/var/spool/cron/crontabs/sys\fR 中输入以下命令可在工作时间内每 20 分钟生成一次记录，否则，每小时生成一次记录：
+.sp
+.in +2
+.nf
+0 * * * 0-6 /usr/lib/sa/sa1
+20,40 8\(mi17 * * 1\(mi5 /usr/lib/sa/sa1
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有关详细信息，请参见 \fBcrontab\fR(1)。
+.sp
+.LP
+shell 脚本 \fBsa2\fR（\fBsar\fR 的变体）会在 \fB/var/adm/sa/sar\fR\fIdd\fR 文件中写入每日报告。有关不同选项的说明，请参见 \fBsar\fR(1) 中的\fB\fR“选项”部分。在 \fB/var/spool/cron/crontabs/sys\fR 中输入以下命令可在工作时间内每小时报告一次重要活动：
+.sp
+.in +2
+.nf
+5 18 * * 1\(mi5 /usr/lib/sa/sa2 \fB-s\fR 8:00 \fB-e\fR 18:01 \fB-i\fR 1200 \fB-A\fR
+.fi
+.in -2
+.sp
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/tmp/sa.adrfl\fR\fR
+.ad
+.sp .6
+.RS 4n
+地址文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/sa/sa\fR\fBdd\fR\fR
+.ad
+.sp .6
+.RS 4n
+每日数据文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/sa/sar\fR\fBdd\fR\fR
+.ad
+.sp .6
+.RS 4n
+每日报告文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/spool/cron/crontabs/sys\fR\fR
+.ad
+.sp .6
+.RS 4n
+用于性能收集
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/accounting/legacy-accounting
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBcrontab\fR(1)、\fBsar\fR(1)、\fBsvcs\fR(1)、\fBtimex\fR(1)、\fBiostat\fR(1M)、\fBsvcadm\fR(1M)、\fBvmstat\fR(1M)、\fBattributes\fR(5)、\fBsmf\fR(5)
+.sp
+.LP
+\fIIntroduction to Oracle Solaris 11.3                 Administration\fR
+.SH 附注
+.sp
+.LP
+\fBsar\fR 服务由服务管理工具 \fBsmf\fR(5) 管理，其服务标识符为：
+.sp
+.in +2
+.nf
+svc:/system/sar
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以使用 \fBsvcadm\fR(1M) 来对此服务执行管理操作（如启用、禁用或请求重新启动）。可以使用 \fBsvcs\fR(1) 命令来查询服务的状态。

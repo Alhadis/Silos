@@ -1,0 +1,332 @@
+'\" te
+.\" Copyright (c) 2008, 2011, Oracle and/or its affiliates.All rights reserved.
+.TH syslogd 1M "2011 年 11 月 14 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+syslogd \- 记录系统消息
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/syslogd\fR [\fB-d\fR] [\fB-f\fR \fIconfigfile\fR] [\fB-m\fR \fImarkinterval\fR] 
+     [\fB-p\fR \fIpath\fR] [\fB-t\fR | \fB-T\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBsyslogd\fR 可根据消息的优先级以及生成消息的系统工具读取系统消息，并将其转发到适当的日志文件或用户。配置文件 \fB/etc/syslog.conf\fR（请参见 \fBsyslog.conf\fR(4)）可控制将消息转发到的位置。\fBsyslogd\fR 将每 \fImarkinterval\fR 分钟（缺省为 \fB20\fR 分钟）记录一次优先级为 \fBLOG_INFO\fR 的标记（时间戳）消息，并将该消息记录到在 \fBsyslog.conf\fR 文件中命名为 \fBmark\fR 的工具中。
+.sp
+.LP
+系统消息包括单行文本，其前缀可能为括在尖括号 (\fB< >\fR) 中的优先级代码编号；优先级可在 \fB<sys/syslog.h>\fR 中进行定义。
+.sp
+.LP
+\fBsyslogd\fR 可从 \fBSTREAMS\fR 日志驱动程序 \fB/dev/log\fR 以及 \fB/etc/netconfig\fR、\fB/etc/net/transport/hosts\fR 和 \fB/etc/net/transport/services\fR 中指定的任何传输提供程序读取消息。
+.sp
+.LP
+\fBsyslogd\fR 将在启动时读取配置文件，一旦它收到 \fBHUP\fR 信号（请参见 \fBsignal.h\fR(3HEAD)），并关闭已打开的所有文件，它就会再次读取其配置文件，然后仅打开该配置文件中列出的日志文件。\fBsyslogd\fR 将在收到 \fBTERM\fR 信号时退出。
+.sp
+.LP
+\fBsyslogd\fR 将在启动时创建文件 \fB/var/run/syslog.pid\fR，如果可能，该文件将包含进程标识符 (\fBPID\fR)。
+.sp
+.LP
+如果启用了消息 \fBID\fR 生成（请参见 \fBlog\fR(7D)），则每个消息前面将附加一个标识符，格式如下：\fB[ID\fR \fI msgid facility\fR\fB\&.\fR\fIpriority\fR\fB]\fR。\fImsgid\fR 是该消息的数字标识符，如 \fBmsgid\fR(1M) 中所述。\fIfacility\fR 和 \fIpriority\fR 在 \fBsyslog.conf\fR(4) 中进行了介绍。\fB[ID 123456 kern.notice]\fR 就是在启用了消息 \fBID\fR 生成之后的一个标识符示例。 
+.sp
+.LP
+如果消息是从可装入的内核模块或驱动程序生成的，则会显示内核模块名称（例如 \fBufs\fR），而不是 \fBunix\fR。请参见\fB\fR”示例“部分以了解在启用和不启用消息 \fBID\fR 生成的情况下 \fBsyslogd\fR 的输出样例。
+.sp
+.LP
+为了减少视觉混乱，在将消息写入控制台时，不会显示消息 \fBID\fR；消息 \fBID\fR 仅写入日志文件。请参见\fB\fR“示例”部分。
+.sp
+.LP
+\fB/etc/default/syslogd\fR 文件包含缺省参数设置，如果未选择 \fB-t\fR 或 \fB-T\fR 选项，则这些缺省设置将生效。
+.sp
+.LP
+要允许或禁止记录消息，建议使用以下服务管理工具 (\fBsmf\fR(5)) 属性：
+.sp
+.in +2
+.nf
+svc:/system/system-log/config/log_from_remote
+.fi
+.in -2
+
+.sp
+.LP
+该属性用于指定是否记录远程消息。\fBlog_from_remote=true\fR 等效于 \fB-t\fR 命令行选项，而 \fBfalse\fR 等效于 \fB-T\fR 命令行选项。\fB-log_from_remote\fR 的缺省值为 \fBfalse\fR。请参见下文的“附注”部分。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLOG_FROM_REMOTE\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定是否记录远程消息。\fBLOG_FROM_REMOTE=NO\fR 等效于 \fB-t\fR 命令行选项。\fBLOG_FROM_REMOTE\fR 的缺省值为 \fBYES\fR。
+.RE
+
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用调试功能。只有当系统处于多用户模式时，才应在 root shell 中以交互方式使用该选项。该选项\fB不\fR应在系统启动脚本中使用，因为在启动 \fBsyslogd\fR 时会使系统挂起。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIconfigfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定备用配置文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fImarkinterval\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定标记消息之间的间隔（以分钟为单位）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定备用日志设备名称。缺省值为 \fB/dev/log\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用 \fBsyslogd\fR \fBUDP\fR 端口以启用远程消息日志记录。这是缺省行为。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁用 \fBsyslogd\fR \fBUDP\fR 端口以禁用远程消息日志记录。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR未启用消息 ID 生成时 \fBsyslogd\fR 的输出
+.sp
+.LP
+以下示例说明了\fB未\fR启用消息 \fBID\fR 生成时 \fBsyslogd\fR 的输出： 
+
+.sp
+.in +2
+.nf
+Sep 29 21:41:18 cathy unix: alloc /: file system full
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR启用消息 ID 生成时 \fBsyslogd\fR 的输出
+.sp
+.LP
+以下示例说明了\fB已\fR启用消息 \fBID\fR 生成时 \fBsyslogd\fR 的输出。在将消息写入日志文件 \fB/var/adm/messages\fR 时，将显示消息 \fBID\fR。
+
+.sp
+.in +2
+.nf
+Sep 29 21:41:18 cathy ufs: [ID 845546 kern.notice] 
+                                    alloc /: file system full
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR启用消息 ID 生成时 \fBsyslogd\fR 的输出
+.sp
+.LP
+以下示例说明了在\fB已\fR启用消息 \fBID\fR 生成的情况下将消息写入控制台时的 \fBsyslogd\fR 输出：即使已启用消息 ID，控制台上也不会显示消息 \fBID\fR。
+
+.sp
+.in +2
+.nf
+Sep 29 21:41:18 cathy ufs: alloc /: file system full
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR启用接受来自远程系统的 UDP 消息
+.sp
+.LP
+以下命令将使 \fBsyslogd\fR 可以接受来自远程系统的条目。
+
+.sp
+.in +2
+.nf
+# \fBsvccfg -s svc:/system/system-log setprop config/log_from_remote = true\fR
+# \fBsvcadm restart svc:/system/system-log\fR
+.fi
+.in -2
+.sp
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/syslog.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+配置文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/run/syslog.pid\fR\fR
+.ad
+.sp .6
+.RS 4n
+进程 \fBID\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/default/syslogd\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含缺省设置。可以通过命令行选项覆盖某些设置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/dev/log\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBSTREAMS\fR 日志驱动程序
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/netconfig\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统上可用的传输提供程序
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/net/transport/hosts\fR\fR
+.ad
+.sp .6
+.RS 4n
+每次传输所使用的网络主机
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/net/transport/services\fR\fR
+.ad
+.sp .6
+.RS 4n
+每次传输所使用的网络服务
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBlogger\fR(1)、\fBsvcs\fR(1)、\fBmsgid\fR(1M)、\fBsvcadm\fR(1M)、\fBsvccfg\fR(1M)、\fBsyslog\fR(3C)、\fBsyslog.conf\fR(4)、\fBattributes\fR(5)、\fBsignal.h\fR(3HEAD)、\fBsmf\fR(5)、\fBlog\fR(7D)
+.SH 附注
+.sp
+.LP
+\fBmark\fR 消息是一个系统时间戳，因此，只有运行 \fBsyslogd\fR 的系统才会定义该消息。它不能转发到其他系统。 
+.sp
+.LP
+如果 \fBsyslogd\fR 收到 \fBHUP\fR 信号，则它会尝试完成输出暂挂消息，然后关闭当前用于记录消息的所有日志文件。如果其中一个或多个文件由于某些原因没有在宽限期内关闭，则\fB syslogd\fR 将放弃暂挂消息，强制关闭这些文件，并启动重新配置。如果出现意外错误，从而影响到这一关闭过程，致使 \fBsyslogd\fR 无法完成重新配置，则 \fBsyslogd\fR 将向当前系统的超级用户发送一封邮件消息，指出它已关闭，然后退出。
+.sp
+.LP
+请务必确保显示 \fBsyslogd\fR 转发的消息的每个窗口（尤其是控制台窗口）都在系统缺省语言环境（即 \fBsyslogd\fR 的语言环境）下运行。如果不遵循这一建议，\fBsyslog\fR 消息就可能更改该窗口的终端设置，甚至可能会从该窗口远程执行任意命令。
+.sp
+.LP
+\fBsyslogd\fR 服务由服务管理工具 \fBsmf\fR(5) 管理，其服务标识符为：
+.sp
+.in +2
+.nf
+svc:/system/system-log:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以使用 \fBsvcadm\fR(1M) 来对此服务执行管理操作（如启用、禁用或请求重新启动）。可以使用 \fBsvcs\fR(1) 命令来查询服务的状态。
+.sp
+.LP
+通过 \fBsvcadm\fR(1M) 启动 \fBsyslogd\fR 后，如果在 \fB/etc/defaults/syslogd\fR 文件中指定了 \fBLOG_FROM_REMOTE\fR 的值，则 SMF 属性 \fBsvc:/system/system-log/config/log_from_remote\fR 将设置为与 \fBLOG_FROM_REMOTE\fR 的值对应的值，并会修改 \fB/etc/default/syslogd\fR 文件，以便使用以下注释替换 \fBLOG_FROM_REMOTE\fR 规范：
+.sp
+.in +2
+.nf
+# LOG_FROM_REMOTE is now set using svccfg(1m), see syslogd(1m).
+.fi
+.in -2
+
+.sp
+.LP
+如果 \fBLOG_FROM_REMOTE\fR 和 \fBsvc:/system/system-log/config/log_from_remote\fR 均未定义，则缺省设置为记录远程消息。
+.sp
+.LP
+安装时，\fBsvc:/system/system-log/config/log_from_remote\fR 的初始值为 \fBfalse\fR。

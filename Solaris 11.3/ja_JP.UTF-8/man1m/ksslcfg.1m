@@ -1,0 +1,470 @@
+'\" te
+.\" Copyright (c) 2005, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH ksslcfg 1M "2015 年 2 月 24 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+ksslcfg \- カーネル SSL の SMF インスタンスの有効化と構成
+.SH 形式
+.LP
+.nf
+ksslcfg create -f pkcs11 -T <\fItoken_label\fR> [-d \fIsofttoken_directory\fR] -C 
+  <\fIcertificate_label\fR> [-h <\fIca_certchain_file\fR>] 
+             -p <\fIpassword_file\fR> [options] -x <\fIproxy_port\fR> [<\fIserver_address\fR>] 
+  [<\fIserver_port\fR>] 
+.fi
+
+.LP
+.nf
+ksslcfg create -f pkcs12 -i <\fIcert_and_key_pk12file\fR> 
+             -p <\fIpassword_file\fR> [options] -x <\fIproxy_port\fR> [<\fIserver_address\fR>] 
+  [<\fIserver_port\fR>] 
+.fi
+
+.LP
+.nf
+ksslcfg create -f pem -i <\fIcert_and_key_pemfile\fR> 
+             -p <\fIpassword_file\fR> [options] -x <\fIproxy_port\fR> [<\fIserver_address\fR>] 
+  [<\fIserver_port\fR>] 
+.fi
+
+.LP
+.nf
+\fBksslcfg\fR delete [\fB-v\fR] [\fIhost\fR] \fIssl_port\fR
+.fi
+
+.LP
+.nf
+\fBksslcfg\fR \fB-V\fR
+.fi
+
+.LP
+.nf
+\fBksslcfg\fR \fB-?\fR
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBksslcfg\fR は、カーネル SSL プロキシモジュールの \fBsmf\fR(5) インスタンスを管理します。SSL 対応 Web サーバーは、そのカーネル Kernel プロキシのサービスを使用して、HTTPS パケット処理のパフォーマンスを向上させることができます。そのために、SSL プロキシポートおよびパラメータを指定してカーネル SSL サービスのインスタンスを作成し、プロキシポートで待機します。
+.sp
+.LP
+\fBcreate\fR サブコマンドは、指定されたアドレスと SSL ポートに対するインスタンスを作成し、サービスを有効にします。
+.sp
+.LP
+\fBdelete\fR サブコマンドは、指定されたアドレスとポートのサービスが有効になっている場合はそれを無効にし、SMF リポジトリからインスタンスを削除します。
+.sp
+.LP
+\fBksslcfg\fR は、root ユーザーまたは「ネットワークセキュリティー」プロファイルに割り当てられているほかのユーザーで実行できます。\fBrbac\fR(5) および \fBuser_attr\fR(4) を参照してください。
+.sp
+.LP
+\fBksslcfg\fR によってカーネルのサービスが正常に構成されたら、プロキシアプリケーションを起動するか、すでに実行中の場合は再起動する必要があります。
+.sp
+.LP
+\fBksslcfg\fR を実行してカーネル SSL プロキシを構成してからアプリケーションを起動する必要があります。
+.sp
+.LP
+\fBksslcfg\fR には、「オペランド」で説明されている \fIssl_port\fR オペランドと、\fB-x\fR オプションで \fIproxy_port\fR 値を指定できます。これらの値がカーネル SSL プロキシ用に指定されている場合、これらを Solaris Network Cache and Acceleration (NCA) 機能用にも構成することはできません。
+.sp
+.LP
+カーネル SSL プロキシインスタンスの障害管理リソース識別子 (FMRI) は \fBsvc://network/ssl/proxy\fR です。\fBksslcfg\fR は、ホストと SSL ポートの組み合わせに対して一意となるようにそのサービスのインスタンスを作成します。特定のプロキシエントリのインスタンスの FMRI は、\fBsvcs\fR(1) で見つけることができ、ほかのサービスの依存関係に使用されます。サービスインスタンスの状態は、カーネル内の構成だけを追跡します。プロキシポートで待機しているアプリケーションの存在や状態は反映されません。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIciphersuites\fR\fR
+.ad
+.sp .6
+.RS 4n
+クライアントがソート順序でネゴシエーションを行うことができる一連の暗号。サポートされている SSLv3 および TLSv1.0 の暗号を次に示します。名前はカンマで区切り、大文字と小文字は区別されないことに注意してください。
+.sp
+.in +2
+.nf
+rsa_rc4_128_sha
+rsa_rc4_128_md5
+rsa_aes_256_cbc_sha
+rsa_aes_128_cbc_sha
+rsa_3des_ede_cbc_sha
+rsa_des_cbc_sha
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIversions\fR\fR
+.ad
+.sp .6
+.RS 4n
+カーネル SSL プロキシモジュールに対して管理者によって有効にされている SSL/TLS プロトコルのバージョンのセット。認識される値は SSLv3 および TLSv1.0 です。デフォルトでは TLSv1.0 のみが有効です。バージョンはカンマで区切り、大文字と小文字は区別されないことに注意してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIkey_format\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIkey_format\fR で指定された証明書/鍵形式を使用します。サポートされているオプションは、\fBpkcs11\fR、\fBpkcs12\fR、および \fBpem\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fIkey_and_certificate_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-f\fR オプションで \fBpkcs12\fR または \fBpem\fR が指定されている場合、Web サーバーの鍵と証明書を \fIkey_and_certificate_file\fR から読み取ります。このファイルには、サーバー証明書のルート認証局までの証明書チェーンを形成する中間 CA 証明書も含まれる場合があります。これらの証明書は、ファイル内のサーバー証明書を下から上へ、つまり、もっとも低いレベルの CA 証明書のあとに次に高いレベルの CA 証明書、という順序でたどる必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR \fIcertificate_label\fR\fR
+.ad
+.sp .6
+.RS 4n
+PKCS#11 では、複数の証明書を単一のトークンに格納できます。このオプションでは、\fIcertificate_label\fR で識別される単一の証明書を指定できます。このラベルは、\fB-T\fR で指定されたトークン内の証明書オブジェクトの \fBCKA_LABEL\fR と一致する必要があります。このオプションは、\fB-f\fR \fBpkcs11\fR との組み合わせでのみ使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIsofttoken_directory\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションは、トークンラベルが Sun Software PKCS#11 ソフトトークンの場合に、\fBpkcs11\fR 鍵形式でのみ適用できますPKCS#11 ソフトトークンディレクトリのデフォルトの場所 (\fB$HOME/.sunw\fR) をオーバーライドする場合に、このオプションを使用します。\fBpkcs11_softtoken\fR(5) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR \fIca_certchain_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-f\fR オプションで \fBpkcs11\fR が指定されている場合、(\fB-C\fR オプションで指定された) サーバー証明書のルート認証局までの証明書チェーンを形成する一連の中間 CA 証明書を \fIca_certchain_file\fR から読み取ります。ファイルは PEM 形式である必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIpassword_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+秘密鍵を暗号化するために使用されるパスワードを \fIpassword_file\fR から取得します。\fBpkcs11\fR オプションを使用する場合 (上記の \fB-f\fR を参照)、パスワードは PKCS #11 トークンに対するユーザーの認証に使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR \fIssl_handshake_timeout\fR\fR
+.ad
+.sp .6
+.RS 4n
+SSL ハンドシェイクが終了するまでのタイムアウト値 (秒)。指定されたタイムアウトまでにハンドシェイクが終了しない場合、接続が破棄されます。デフォルト値は 30 秒です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR \fIssl_handshake_limit\fR\fR
+.ad
+.sp .6
+.RS 4n
+同時 SSL ハンドシェイクの最大数。ハンドシェイクの数がこの数に達すると、新しいハンドシェイクはすべて拒否されます。デフォルト値は 65536 です。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fIssl_session_cache_timeout\fR\fR
+.ad
+.sp .6
+.RS 4n
+SSL セッションのタイムアウト値 (秒)。Sun ONE Web サーバー構成の \fBSSL3SessionTimeout\fR または \fBmod_ssl\fR の \fBSSLSessionCacheTimeout\fR に対応します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fItoken_label\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-f\fR オプションで \fBpkcs11\fR が指定されている場合は、\fItoken_label\fR で指定された PKCS#11 トークンを使用します。使用可能なすべての PKCS#11 を表示するには、\fBcryptoadm list\fR \fB-v\fR を使用します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR \fIusername\fR\fR
+.ad
+.sp .6
+.RS 4n
+パスワードファイルを所有しているユーザーのユーザー名。省略されている場合、システムは root ユーザーとしてパスワードファイルを読み取ろうとします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+冗長モード。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR \fR
+.ad
+.sp .6
+.RS 4n
+バージョンを表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fIproxy_port\fR\fR
+.ad
+.sp .6
+.RS 4n
+SSL プロキシポート。ポート番号は、Web サーバーとカーネル SSL プロキシモジュール間の平文の HTTP 通信専用に指定されます。外部の HTTP パケットはこのポートに配信されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fIssl_session_cache_size\fR\fR
+.ad
+.sp .6
+.RS 4n
+キャッシュできる SSL セッションの最大数。Sun ONE Web サーバー構成の \fBSSLCacheEntries\fR に対応します。このオプションを指定しない場合、デフォルトは 5000 エントリです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-?\fR \fI\fR\fR
+.ad
+.sp .6
+.RS 4n
+コマンドの使用法を表示します。
+.RE
+
+.SH オペランド
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[\fIhost\fR] [\fIssl_port \fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+カーネル SSL エントリを作成する Web サーバーのアドレスとポート。\fIhost\fR が省略されている場合、着信先アドレスにかかわらず、\fIssl_port\fR に到着したすべての要求にこのエントリが使用されます。\fIhost\fR にはホスト名と IP アドレスの両方の形式を使用できます。\fIssl_port\fR は必須です。通常、この値は 443 です。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRカーネル SSL インスタンスを作成して有効にする
+.sp
+.LP
+次のコマンドは、PKCS#11 形式の証明書と鍵を使用して、カーネル SSL インスタンスを作成して有効にします。
+
+.sp
+.in +2
+.nf
+# ksslcfg create -f pkcs11 -T "Sun Software PKCS#11 softtoken"  \e
+-C "Server-Cert" -p /some/directory/password -u webservd \e
+-x 8080 www.mysite.com 443
+
+% svcs svc:/network/ssl/proxy
+STATE          STIME    FMRI
+online         Sep_27   svc:/network/ssl/proxy:kssl-www-mysite-com-443
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRすべてのアドレスのデフォルトインスタンスを作成して有効にする
+.sp
+.LP
+次のコマンドは、\fBpkcs#12\fR ファイル内の証明書と鍵を使用して、すべてのアドレスのデフォルトインスタンスを作成して有効にします。
+
+.sp
+.in +2
+.nf
+# ksslcfg create -x 8888 -f pkcs12 -i /some/directory/keypair.p12 \e
+    -p /some/directory/password -u webservd 443
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fR特定の暗号化方式群を使用してインスタンスを作成して有効にする
+.sp
+.LP
+次のコマンドは、特定の暗号化方式群を使用して、インスタンスを作成して有効にします。
+
+.sp
+.in +2
+.nf
+# ksslcfg create -x 8080 -f pem \e
+-i /some/directory/keypair.pem -p /some/directory/password \e
+-c "rsa_rc4_128_md5,rsa_rc4_128_sha" \e
+209.249.116.195 443
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fRインスタンスを無効にして削除する
+.sp
+.LP
+次のコマンドは、インスタンスを無効にして削除します。
+
+.sp
+.in +2
+.nf
+# ksslcfg delete www.mysite.com 443
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 5 \fRプロキシアプリケーションの依存関係を確立する
+.sp
+.LP
+次に示す一連のコマンドは、KSSL インスタンスにプロキシアプリケーションの依存関係を確立します。プロキシアプリケーションは、SSL カーネルプロキシインスタンスが起動されたあとでのみ起動するようにしてください。
+
+.sp
+.LP
+次のコマンドは、Apache 2.2 Web サーバーの依存関係を確立します。KSSL は SSL ポート 443 とワイルドカードアドレスで待機するように構成されています。
+
+.sp
+.in +2
+.nf
+# \fBsvccfg -s svc:/network/http:apache22\fR
+svc:/network/http:apache22> \fBaddpg kssl dependency\fR
+svc:/network/http:apache22> \fBsetprop kssl/entities = fmri:svc:/network/\e\fR
+\fBssl/proxy:kssl-INADDR_ANY-443\fR
+svc:/network/http:apache22> \fBsetprop kssl/grouping = astring: require_all\fR
+svc:/network/http:apache22> \fBsetprop kssl/restart_on = astring: refresh\fR
+svc:/network/http:apache22> \fBsetprop kssl/type = astring: service\fR
+svc:/network/http:apache22> \fBend\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次のコマンドは、Web サーバーを有効にします。
+
+.sp
+.in +2
+.nf
+# \fBsvcadm enable svc:/network/http:apache22\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Web サーバーがすでに実行中の場合は再起動します。
+
+.sp
+.in +2
+.nf
+# \fBsvcadm refresh svc:/network/http:apache22\fR
+# \fBsvcadm restart svc:/network/http:apache22\fR
+.fi
+.in -2
+.sp
+
+.SH 終了ステータス
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+正常終了。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB>\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+エラーが発生した。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性下記を参照。
+.TE
+
+.sp
+.LP
+コマンド行オプションおよびユーティリティー名は「確実」です。コマンド出力、FMRI サーバー名 (\fBsvc://network/ssl/proxy\fR)、および FMRI インスタンスの名前の形式は「不確実」です
+.SH 関連項目
+.sp
+.LP
+\fBsvcprop\fR(1)、\fBsvcs\fR(1)、\fBcryptoadm\fR(1M)、\fBsvcadm\fR(1M)、\fBsvccfg\fR(1M)、\fBuser_attr\fR(4)、\fBattributes\fR(5)、\fBkssl\fR(5)、\fBpkcs11_softtoken\fR(5)、\fBrbac\fR(5)、\fBsmf\fR(5)、\fBnca\fR(7d)
+.sp
+.LP
+『\fIRFC 3268, Advanced Encryption Standard (AES) Ciphersuites for Transport Layer Security (TLS)\fR』、Chown, P. 著、2002 年 6 月
+.SH 注意事項
+.sp
+.LP
+ホスト引数のない \fBksslcfg\fR \fBcreate\fR は、\fBINADDR_ANY\fR \fBsmf\fR インスタンスを作成します。ホスト引数のない \fBksslcfg\fR \fBdelete\fR は、\fBINADDR_ANY\fR インスタンスのみを削除します。\fBINADDR_ANY\fR 以外のインスタンスをすべて削除するには、\fBksslcfg\fR \fBdelete\fR にホスト引数が必要です。
+.sp
+.LP
+\fBzones\fR(5) がインストールされているシステムでは、現在のところ \fBksslcfg\fR コマンドは大域ゾーンでのみ使用できます。

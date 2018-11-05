@@ -1,0 +1,594 @@
+'\" te
+.\" Copyright (c) 2012, 2014, Oracle and/or its affiliates.All rights reserved
+.TH in.ikev2d 1M "2014 年 1 月 2 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+in.ikev2d \- インターネット鍵交換バージョン 2 (IKEv2) のデーモン
+.SH 形式
+.LP
+.nf
+\fB/usr/lib/inet/in.ikev2d\fR [\fB-d\fR] [\fB-f\fR \fIfilename\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/inet/in.ikev2d\fR \fB-c\fR [\fB-f\fR \fIfilename\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBin.ikev2d\fR デーモンは、RFC 5996 で定義されているインターネット鍵交換バージョン 2 (IKEv2) プロトコルを使用して IPsec の自動鍵管理を実行します。
+.sp
+.LP
+\fBin.ikev2d\fR では次をサポートしています。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+事前共有鍵、DSS 署名、RSA 署名、Elliptic Curve Digital Signature Algorithm (ECDSA) のいずれかによる IKE 認証。自己署名付き証明書と CA 署名付き証明書のどちらもサポートされています。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+RFC 3526、RFC 5114、RFC 5903、および RFC 5996 で定義されている MODP グループ 1、2、5、14、15、16、22、23、24 と ECP グループ 19、20、21、25、26 を使用した Diffie-Hellman 鍵の派生。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+認証済み暗号化アルゴリズムを使用したセキュアな IKEv2 交換の保護。
+.sp
+暗号化アルゴリズム: AES、3DES。
+.sp
+認証アルゴリズム: HMAC-MD5、HMAC-MD5-128、HMAC-SHA-1、HMAC-SHA1-160、HMAC-SHA256、HMAC-SHA384、または HMAC-SHA512。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBin.ikev2d\fR での暗号化は、IKEv2 認証および鍵交換に限定されています。IPsec 保護の選択については、\fBipsecesp\fR(7P) を参照してください。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+上記で定義されたアルゴリズムが、ピアとの交換を保護するために \fBin.ikev2d\fR によって使用されることに注意してください。実際の IPsec トラフィックの保護に使われるアルゴリズム (ESP/AH) とそれに関連付けられた鍵のネゴシエーションは、これらの IKEv2 交換の一環として行われます。IPsec で選ばれた実際のアルゴリズムは、このマニュアルページで説明している \fBin.ikev2d\fR 構成ファイルには定義されません (実際には IPsec ポリシーに定義されるため)。\fBin.ikev2d\fR と IPsec で使用されるアルゴリズムが異なる場合があります。IPsec ポリシーの詳細は、\fBipsecconf\fR(1M) および \fBipsecalgs\fR(1M) を参照してください。
+.RE
+.sp
+.LP
+\fBin.ikev2d\fR は、次の \fBike\fR \fBsmf\fR(5) サービスの \fBikev2\fR インスタンスによって管理されています。
+.sp
+.in +2
+.nf
+svc:/network/ipsec/ike:ikev2
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+このサービスは、サービスを有効にする前に構成ファイルを作成する必要があるため、無効になっています。このファイルの形式については、\fBikev2.config\fR(4) を参照してください。通常、このサービスは svc:/network/ipsec/policy サービスと組み合わせて使用されるため、そのサービスも構成して有効にしておく必要があります。そのサービスの詳細は、\fBipsecconf\fR(1M) を参照してください。
+.sp
+.LP
+サービス管理機能については、\fBsmf\fR(5) を参照してください。
+.sp
+.LP
+\fBin.ikev2d\fR では、IKEv2 プロトコルを使用するピアシステムとの IKEv2 プロトコル交換を送信および処理します。これは、ポート 500 または 4500 上の UDP ソケットを使用して行われます。\fBin.ikev2d\fR では、カーネル内の IPsec モジュールから送られてくる鍵情報のリクエストも処理します。これらのメッセージは、\fBpf_key\fR(7P) で説明されている特殊なソケットを使って送信されます。
+.sp
+.LP
+\fBin.ikev2d\fR では、ネゴシエートされた SA をカーネルの SADB に追加したり、着信リクエストがローカルの IPsec ポリシーに適合していることをチェックしたりするために \fBPF_KEY\fR インタフェースも使用します。
+.sp
+.LP
+すでに \fBin.iked\fR(1M) IKEv1 デーモンが実行されている場合、\fBin.ikev2d\fR デーモンは共存モードで実行されます。\fBin.iked\fR は IKEv1 および IKEv2 トラフィックを待機し、IKEv2 トラフィックがあれば、\fBin.ikev2d\fR に転送します。\fBin.ikev2d\fR は、IKEv1 デーモンが終了しているかどうかを検出して、その場合はスタンドアロンモードに戻ります。共存モードが必要になるのは、両方のデーモンがネットワークトラフィックに同じ UDP ポート (500 および 4500) を使用するためです。
+.sp
+.LP
+\fBin.ikev2d\fR は、RFC 5996 で定義されている IKEv2 プロトコルを使用してすべての IKE 交換を管理します。それは、RFC 2409 で定義されている IKE プロトコルのバージョンを使用して IKE 交換を管理する \fBin.iked\fR(1M) と共存できます。
+.sp
+.LP
+\fBin.iked\fR(1M) の構成は、\fBike.config\fR(4) に定義されています。\fBin.ikev2d\fR の構成は、\fBikev2.config\fR(4) で定義されています。各デーモンには、独自の構成ファイルセットがあります。
+.sp
+.LP
+両方のデーモンが同時に有効になっている場合は、構成ルール (つまり、両方のデーモンが同じローカルおよびリモートアドレスのペアに対してセッションを開始できるようにするルール) がオーバーラップしないよう注意してください。IKE/IKEv2 混在環境の IKE(v2) ルールの内側で接頭辞またはワイルドカードの \fIremote_addr\fR/\fIlocal_addr\fR 値が使用されるときは、特別な注意が必要です。
+.sp
+.LP
+最小特権の原則を満たすために、IKEv2 の管理タスクはすべて、Network IPsec Management 権利プロファイルの下で行うようにしてください。\fBrbac\fR(5) を参照してください。適切なファイルアクセス権および所有権を保持するために、構成ファイルは \fBpfedit\fR(1M) を使って変更するようにしてください。
+.sp
+.LP
+例: 
+.sp
+.in +2
+.nf
+$ \fBpfedit /etc/inet/ike/ikev2.config\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBin.ikev2d\fR は \fBikeuser\fR として実行され、そのすべての構成、ログ、および鍵と証明書ストアはその userid によって所有されます。その所有権およびアクセス権がこのように維持されることが必須であり、そうでない場合、実行中の \fBin.ikev2d\fR デーモンはその構成ファイルまたはキーストアの内容を読み取れません。
+.sp
+.LP
+\fBikeadm\fR(1M) コマンドは、実行中の \fBin.ikev2d\fR デーモンを管理できます。詳細と例については、\fBikeadm\fR(1M) のマニュアルページを参照してください。
+.sp
+.LP
+\fBpktool\fR(1) は、Solaris ユーザーのローカル証明書として X.509 証明書とそれに関連付けられた非公開鍵を管理するために使用されます。IKEv2 は、\fBikev2cert\fR(1M) を \fBikeuser\fR (実行中の \fBin.ikev2d\fR デーモンのユーザー ID) のキーストアへのその証明書管理インタフェースとして使用します。\fBikev2cert\fR(1M) は、それを \fBikeuser\fR として実行させ、IKEv2 キーストアへの書き出しやアクセスを行わせる \fBpktool\fR(1) のラッパーにすぎません。
+.sp
+.LP
+証明書ポリシーは、Solaris Key Management Framework (KMF) によって制御されます。\fBin.ikev2d\fR 用に提供されているデフォルトのポリシーを変更するためには、IKEv2 役割の KMF 構成ファイルに対して \fBkmfcfg\fR(1) を実行する必要があります。たとえば、証明書に含まれる不明の拡張鍵用途拡張機能を無視するには、次のコマンドを実行します。
+.sp
+.in +2
+.nf
+$ \fBpfexec kmfcfg modify \e
+dbfile=/etc/inet/ike/kmf-policy.xml policy=default \e
+ignore-unknown-eku=true\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有効な構成オプションについては、\fBkmfcfg\fR(1) を参照してください。
+.sp
+.LP
+次のコマンドを実行することにより、\fBin.ikev2d\fR デーモンはその構成 (事前共有鍵や証明書など) に変更があれば、それを認識できます。
+.sp
+.in +2
+.nf
+# \fBsvcadm refresh network/ipsec/ike:ikev2\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+前のコマンドの代わりに、\fBikeadm\fR(1M) コマンドのいずれか (\fBread rules\fR や \fBread preshared\fR など) を使用することもできます。
+.SS "サービス管理機能"
+.sp
+.LP
+IKE デーモン (\fBin.ikev2d\fR) は、サービス管理機能 \fBsmf\fR(5) によって管理されます。次の一連のサービスは、IPsec のコンポーネントを管理します。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsvc:/network/ipsec/ipsecalgs\fR (\fBipsecalgs\fR(1M) を参照してください)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsvc:/network/ipsec/policy\fR (\fBipsecconf\fR(1M) を参照してください)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsvc:/network/ipsec/manual-key\fR (\fBipseckey\fR(1M) を参照)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsvc:/network/ipsec/ike:ikev2\fR (このマニュアルページを参照)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsvc:/network/ipsec/ike:default\fR (\fBin.iked\fR(1M) を参照)
+.RE
+.sp
+.LP
+前述の各マニュアルページで説明されているように、\fBmanual-key\fR および \fBike\fR サービスは、システム管理者が各サービスの構成ファイルを作成する必要があるため、disabled 状態で提供されます。
+.sp
+.LP
+正しい管理手順としては、サイトのセキュリティーポリシーに関連する一連のサービスの構成ファイルを作成してから、\fBsvcadm\fR(1M) を使用して各サービスを有効にします。
+.sp
+.LP
+\fBike\fR サービスは、\fBipsecalgs\fR および \fBpolicy\fR サービスに対して依存関係があります。これらのサービスは、\fBike\fR サービスより前に有効にすべきです。
+.sp
+.LP
+後述のセクションでは、\fBin.ikev2d\fR によって使用されるいくつかの \fBsmf\fR(5) プロパティーについて説明します。これらのプロパティーのデフォルト値を変更する必要はめったにありません。これらのプロパティーのいずれかを変更した場合は、\fBike:ikev2\fR サービスをリフレッシュして、それらの値が \fBsmf\fR(5) データベース内で更新されるようにする必要があります。
+.sp
+.LP
+デーモン \fBin.ikev2d\fR は起動時にしかこれらのプロパティーを読み取らないため、プロパティーが変更されたあとは、\fBike:ikev2\fR サービスを再起動する必要もあります。例: 
+.sp
+.in +2
+.nf
+example# \fBsvcadm refresh ike:ikev2\fR
+example# \fBsvcadm restart ike:ikev2\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+詳細な手順については、後述の特定のプロパティーを参照してください。
+.sp
+.LP
+\fBikeadm\fR(1M) を使用することにより、もっとも一般的な構成変更を実行中のデーモンに適用できます。
+.sp
+.LP
+デーモンを再起動すると、既存の IKEv2 SA とそれらの関連付けられた CHILD SA がすべて破棄されることに注意してください。削除通知が各ピアに送信され、SA をすべて再確立する必要があります。
+.sp
+.LP
+\fBike\fR サービスの \fBikev2\fR インスタンスには、次のプロパティーが定義されています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/config_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用する構成ファイルを定義します。デフォルト値は \fB/etc/inet/ike/ikev2.config\fR です。このファイルの形式については、\fBikev2.config\fR(4) を参照してください。このプロパティーには \fB-f\fR フラグと同じ効果があります。「オプション」の \fB-f\fR の説明を参照してください。ユーザー ID \fBikeuser\fR がこのファイルを所有している必要があることに注意してください。
+.sp
+実行中のデーモンに別のファイルを読み取らせる場合は、\fBikeadm\fR(1M) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/debug_level\fR\fR
+.ad
+.sp .6
+.RS 4n
+後述の \fBdebug_logfile\fR ファイルに書き込まれるデバッグ出力の量を定義します。これに対するデフォルト値は \fBop\fR または \fBoperator\fR です。このプロパティーは、構成ファイルの再読み取りなどのイベントに関する情報の記録を制御します。\fBdebug_level\fR に設定可能な値は、\fBikeadm\fR(1M) のマニュアルページに一覧表示されています。値 \fBverbose\fR は一般的なプロトコルのトラブルシューティングに適しています。
+.sp
+例: 
+.sp
+.in +2
+.nf
+example# \fBsvccfg -s ike:ikev2 setprop config/debug_level = verbose\fR
+.fi
+.in -2
+.sp
+
+起動時のエラーメッセージは、\fBsmf\fR(5) フレームワークによって記録され、サービス固有のログファイルに記録されます。SMF 起動ログの名前を調べるには、コマンド \fBsvcs -xv ike:ikev2\fR を使用します。
+.sp
+デバッグの目的で実行中のデーモンのデバッグレベルを変更する場合は、\fBikeadm\fR(1M) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/debug_logfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+デバッグ出力の書き込み先を定義します。ここに書き込まれるメッセージは、\fBin.ikev2d\fR 内のデバッグコードに由来します。このパラメータが、ユーザー \fBikeuser\fR の所有するディレクトリに設定されていることが重要です。そうでなければ、そのデーモンは起動に失敗します。\fBlogfile\fR プロパティーを調べるには、次のコマンドを使用します。
+.sp
+.in +2
+.nf
+example# \fBsvccfg -s ike:ikev2 listprop config/debug_logfile\fR
+.fi
+.in -2
+.sp
+
+SMF ログファイルとデバッグログファイルの両方でエラーを検査するようにしてください。
+.sp
+実行中のデーモンのデバッグ出力をリダイレクトする場合は、\fBikeadm\fR(1M) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/ignore_errors\fR\fR
+.ad
+.sp .6
+.RS 4n
+構成ファイルに構文エラー、構成エラー、不足している事前共有鍵、不足している証明書などがあった場合に \fBin.ikev2d\fR の動作を制御するブール値。デフォルト値は \fBfalse\fR で、構成が無効だった場合は \fBin.ikev2d\fR が保守モードに移行します。
+.sp
+この値を true に設定すると、IKE サービスはオンライン状態のままになりますが、正常に動作させるには、管理者が \fBikeadm\fR(1M) を使用して実行中のデーモンを構成する必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/min_threads\fR\fR
+.ad
+.sp .6
+.RS 4n
+デーモンの動的にサイズ変更されたスレッドプールに対して最小スレッド数を強制します。この値はヒューリスティックに設定され、通常は変更する必要はありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/max_threads\fR\fR
+.ad
+.sp .6
+.RS 4n
+デーモンの動的にサイズ変更されたスレッドプールに含まれる最大スレッド数を制限します。この値はヒューリスティックに設定され、通常は変更する必要はありません。\fBin.ikev2d\fR プロセスに含まれる少数のスレッドはこの制限に反してカウントされないため、実行中のデーモンに含まれる合計スレッド数が \fBmax_threads\fR を超える可能性があります。同時に実行される未処理の CRL および OCSP 取得操作の合計数は、\fBmax_threads\fR によって制限されます。これらの PKI 機能が使用されている場合は、\fBmax_threads\fR を調整する前に、このことを熟慮するようにしてください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/response_wait_time\fR\fR
+.ad
+.sp .6
+.RS 4n
+IKEv2 がそのいずれかのリクエストに対していピアからの応答を待機する秒数。通常はこの値をチューニングする必要はありません。ピアシステムでは、リクエストに応答するために CRL の取得など、時間のかかる操作を実行することが必要になる場合があるため、この値を単なるネットワーク往復時間の最悪の値とみなすべきではありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkcs11_token/uri\fR\fR
+.ad
+.sp .6
+.RS 4n
+PKCS#11 URI 形式でのハードウェアトークン。例:
+.sp
+.in +2
+.nf
+# \fBsvccfg -s ike:ikev2 setprop pkcs11_token/uri = \e
+\&'pkcs11:token=Hardware Token Name'\fR
+.fi
+.in -2
+.sp
+
+この値はデフォルトで Metaslot になり、PIN で保護された、ユーザー \fBikeuser\fR のソフトトークンキーストアに鍵と証明書が格納されることを意味します。PKCS#11 ハードウェアトークンを指定するには、この値を変更します。ソフトトークンキーストアの詳細は、\fBpkcs11_softtoken\fR(5) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkcs11_token/pin\fR\fR
+.ad
+.sp .6
+.RS 4n
+PKCS#11 ソフトトークンキーストアの PIN。
+.sp
+この PIN は、\fBin.ikev2d\fR の無人起動用に設定する必要があります。この PIN がないと、\fBin.ikev2d\fR はそのキーストア内のどの非公開鍵にもアクセスできません。デフォルトでは、PIN は構成されず、キーストアは初期化されません。管理者は、\fBikev2cert\fR(1M) を実行して PIN を設定し、キーストアを初期化する必要があります。自動起動の場合は、特殊な \fBsmf\fR(5) プロパティーに PIN の値が格納されている必要があります。
+.sp
+ソフトトークンの場合 (デフォルト):
+.sp
+.in +2
+.nf
+# \fBikev2cert setpin\fR
+.fi
+.in -2
+.sp
+
+現在のトークンの状態は、次で表示できます。
+.sp
+.in +2
+.nf
+# \fBikev2cert tokens\fR
+.fi
+.in -2
+.sp
+
+ハードウェアトークンの場合、ハードウェアトークンはファイルシステムの一部ではなく、アクセス権や所有権を持っていないため、\fBikev2cert\fR(1M) は使用されません。\fBpktool\fR(1) を使用すると、ハードウェアを直接操作できます。
+.sp
+.in +2
+.nf
+# \fBpktool setpin token=\fItoken_name\fR\fR
+.fi
+.in -2
+.sp
+
+次に、読み取りまたは書き込みのために特別な承認を必要とする特殊な \fBsmf\fR(5) プロパティーに PIN の値を格納します。\fBsmf_security\fR(5) を参照してください。
+.sp
+.in +2
+.nf
+# \fBsvccfg -s ike:ikev2 editprop\fR
+.fi
+.in -2
+.sp
+
+エディタで:
+.sp
+.in +2
+.nf
+setprop pkcs11_token/pin = \fIpin_value\fR
+refresh
+.fi
+.in -2
+.sp
+
+セキュリティーポリシーで、PIN を SMF に格納できないことが定められている場合、このプロパティーは空のままになり、管理者は次のコマンドを実行して実行中のデーモンのソフトトークンを対話形式でロック解除できます。
+.sp
+.in +2
+.nf
+# \fBikeadm -v2 token login "Sun Metaslot"\fR
+.fi
+.in -2
+.sp
+
+ハードウェアトークンの場合、上記コマンドのトークンラベル名を置き換えます。
+.sp
+デーモンがまだ実行されている状態で遡及的にトークンにログインするには、次の手順を使用します。
+.RS +4
+.TP
+1.
+まだ行なっていない場合は、トークンを初期化します。初期化されていないトークンのデフォルトの PIN は \fBchangeme\fR です。プロンプトが表示されたら、この PIN を強力なパスフレーズに設定します。
+.sp
+.in +2
+.nf
+# \fBikev2cert setpin\fR
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+2.
+\fBsvccfg\fR(1M) を使用して PIN のプロパティーを設定します。
+.sp
+.in +2
+.nf
+# \fBsvccfg -s ike:ikev2 editprop\fR
+.fi
+.in -2
+.sp
+
+その PIN を実行中のデーモンに渡して、トークンをロック解除します。
+.sp
+.in +2
+.nf
+# \fBikeadm -v2 token login "Sun Metaslot"\fR
+.fi
+.in -2
+.sp
+
+後述するトークンのログイン承認に関する説明を参照してください。
+.RE
+これらのプロパティーは、Network IPsec Management 権利プロファイルを割り当てられたユーザーが \fBsvccfg\fR(1M) を使用して変更できます。\fBprof_attr\fR(4) のマニュアルページを参照してください。
+.sp
+その他のプロパティーは、\fBsvcprop\fR(1) コマンドを使用して表示できます。それらの機能は未定義であり、それらの変更はサポートされていません。
+.sp
+PKCS#11 トークンオブジェクトをロック解除またはロックするには、\fBikeadm\fR トークンのログインと \fBikeadm\fR トークンのログアウトをそれぞれ使用します。Network IPsec Management 権利プロファイルによって、ユーザーは PKCS#11 トークンオブジェクトのログインおよびログアウトができます。\fBprof_attr\fR(4) のマニュアルページを参照してください。
+.sp
+\fBauths\fR(1)、\fBikeadm\fR(1M)、\fBuser_attr\fR(4)、\fBrbac\fR(5)、\fBikev2cert\fR(1M) を参照してください。
+.RE
+
+.sp
+.LP
+新しいプロパティー値を有効にするには、\fBsvcadm\fR(1M) を使用してサービスをリフレッシュする必要があります。変更不可能な一般プロパティーは、\fBsvcprop\fR(1) コマンドを使用して表示できます。
+.sp
+.in +2
+.nf
+# \fBsvccfg -s ipsec/ike:ikev2 setprop config/config_file = \e
+/new/config_file\fR
+       # \fBsvcadm refresh ike:ikev2\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有効化、無効化、リフレッシュ、再起動リクエストなど、このサービスに対する管理アクションは、\fBsvcadm\fR(1M) を使用して実行できます。Network IPsec Management 権利プロファイルを割り当てられたユーザーは、これらのアクションを実行できます。
+.sp
+.LP
+サービスのステータスは \fBsvcs\fR(1) コマンドを使用して照会できます。
+.sp
+.LP
+\fBin.ikev2d\fR デーモンは、\fBsmf\fR(5) の管理下で実行されるように設計されています。\fBin.ikev2d\fR コマンドはコマンド行から実行できますが、これは推奨されていません。\fBin.ikev2d\fR をコマンド行から実行する場合は、最初に \fBike\fR \fBsmf\fR(5) サービスを無効にするようにしてください。\fBsvcadm\fR(1M) を参照してください。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.sp .6
+.RS 4n
+構成ファイルの構文を検査します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+デバッグモードを使用します。プロセスが制御端末に接続されたままになり、大量のデバッグ出力が生成されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfilename\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB/etc/inet/ike/ikev2.config\fR の代わりに filename を使用します。このファイルの形式については、\fBikev2.config\fR(4) を参照してください。
+.RE
+
+.SH セキュリティ
+.sp
+.LP
+このプログラムのイメージには、機密性の高い秘密鍵情報が含まれています。実行中の \fBin.ikev2d \fR デーモンのコアダンプやシステムダンプには機密性の高い鍵情報が含まれているため、これらのファイルには注意してください。実行中の \fBin.ikev2d\fR デーモンによって生成されたコアファイルを制限するには、\fBcoreadm\fR(1M) コマンドを使用します。
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ike/ikev2.config\fR\fR
+.ad
+.sp .6
+.RS 4n
+デフォルトの構成ファイル
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ike/ikev2.preshared\fR\fR
+.ad
+.sp .6
+.RS 4n
+IKE SA 認証用のデフォルトの IKEv2 事前共有秘密ファイル。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ike/kmf-policy.xml\fR\fR
+.ad
+.sp .6
+.RS 4n
+デフォルトの IKEv2 KMF ポリシー構成ファイル。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件network/ike
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBauths\fR(1), \fBkmfcfg\fR(1), \fBpktool\fR(1), \fBsvcprop\fR(1), \fBsvcs\fR(1), \fBcoreadm\fR(1M), \fBikeadm\fR(1M), \fBikev2cert\fR(1M), \fBin.iked\fR(1M), \fBipsecalgs\fR(1M), \fBipsecconf\fR(1M), \fBipseckey\fR(1M), \fBpfedit\fR(1M), \fBsvcadm\fR(1M), \fBsvccfg\fR(1M), \fBike.config\fR(4), \fBikev2.config\fR(4), \fBikev2.preshared\fR(4), \fBprof_attr\fR(4), \fBuser_attr\fR(4), \fBattributes\fR(5), \fBpkcs11_softtoken\fR(5), \fBrbac\fR(5), \fBsmf\fR(5), \fBsmf_security\fR(5), \fBipsecesp\fR(7P), \fBpf_key\fR(7P)
+.sp
+.LP
+Dan Harkins および Dave Carrel 著、「RFC 2409, Internet Key Exchange (IKE)」、Network Working Group 発行、1998 年 11 月
+.sp
+.LP
+Maughan、Douglas、Schertler, M.、Schneider, M.、Turner, J. 著、『RFC 2408, Internet Security Association and Key Management Protocol (ISAKMP)』、Network Working Group 発行、1998 年 11 月
+.sp
+.LP
+Piper、Derrell 著、『RFC 2407, The Internet IP Security Domain of Interpretation for ISAKMP』、Network Working Group 発行、1998 年 11 月
+.sp
+.LP
+Fu, D.、Solinos, J. 著、『RFC 4753, ECP Groups for IKE and IKEv2』、Network Working Group 発行、2007 年 1 月
+.sp
+.LP
+Lepinski, M.、Kent, S. 著、『RFC 5114, Additional Diffie-Hellman Groups for Use with IETF Standards』、Network Working Group 発行、2008 年 1 月
+.sp
+.LP
+Kaufman, C.、Hoffman, P.、Nir, Y.、および P.Eronen 著、『RFC 5996, Internet Key Exchange Protocol Version 2 (IKEv2)』、2010 年 9 月。

@@ -1,0 +1,607 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 1998, 2011, Oracle and/or its affiliates.All rights reserved.
+.TH automount 1M "2011 年 3 月 4 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+automount \- 安装自动挂载点
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/automount\fR [\fB-t\fR \fIduration\fR] [\fB-v\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBautomount\fR 实用程序安装 \fBautofs\fR 挂载点并将自动挂载映射与每个挂载点相关联。如果该实用程序在本地或分布式自动挂载映射中找到任何非普通条目，并且 \fBautomountd\fR(1M) 守护进程尚未运行，则它将启动该守护进程。\fBautofs\fR 文件系统监视针对其目录的访问尝试，并通知 \fBautomountd\fR(1M) 守护进程。该守护进程使用映射定位文件系统，然后将其挂载到 \fBautofs\fR 文件系统中的引用点。可以使用 \fB/etc/auto_master\fR 映射或直接映射中的条目将映射分配给 \fBautofs\fR 挂载。
+.sp
+.LP
+如果未在适当的间隔（缺省情况下为 \fB10\fR 分钟）内访问文件系统，则 \fBautomountd\fR 守护进程会卸载该文件系统。
+.sp
+.LP
+文件 \fB/etc/auto_master\fR 确定所有 \fBautofs\fR 挂载点的位置。缺省情况下，此文件包含三个条目：
+.sp
+.in +2
+.nf
+# Master map for automounter
+#
++auto_master
+/net          -hosts    -nosuid
+/home         auto_home
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fB+auto_master\fR 条目是对外部 \fBNIS\fR 主映射的引用。如果存在一个外部 NIS 主映射，则会读取其条目，就像它们出现在 \fB+auto_master\fR 条目的位置一样。主文件中的其余条目指定将对其执行 \fBautofs\fR 挂载的目录，后面跟有将与其关联的自动挂载程序映射。可选的挂载选项可作为每个条目中可选的第三个字段提供。这些选项用于映射中未明确指定挂载选项的条目。\fBautomount \fR 命令通常不带任何参数运行。它将 \fB/etc/auto_master\fR 条目与 \fB/etc/mnttab\fR 中 \fBautofs\fR 挂载的当前列表进行比较，然后添加、删除或更新 \fBautofs\fR 挂载，以便让 \fB/etc/auto_master\fR 与 \fB/etc/mnttab \fR 保持同步。引导时，它安装主映射中的所有 \fBautofs\fR 挂载。此后，它可能会针对主映射或直接映射中的新条目来安装 \fBautofs\fR 挂载，或者针对从这些映射中删除的条目来执行卸载。
+.SS "SMF 管理"
+.sp
+.LP
+\fBautomount\fR 服务由服务管理工具 \fBsmf\fR(5) 管理，其服务标识符为：
+.sp
+.in +2
+.nf
+svc:/system/filesystem/autofs:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以使用 \fBsvcadm\fR(1M) 来对此服务执行管理操作（如启用、禁用或请求重新启动）。可以使用 \fBsvcs\fR(1) 命令来查询服务的状态。
+.sp
+.LP
+\fBautomount\fR 的启动 autofs SMF 参数可以使用 \fBsharectl\fR(1M) 来处理。有关查看和更新这些参数的说明，请参阅 \fBsharectl\fR(1M)。受支持的参数包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtimeout\fR=\fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定未使用时文件系统保持挂载状态的持续时间（以秒为单位）。缺省值为 \fB600\fR（10 分钟）。等效于 \fBautomount\fR 中的 \fB-t\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBautomount_verbose\fR=\fBTRUE\fR | \fBFALSE\fR\fR
+.ad
+.sp .6
+.RS 4n
+详细模式。您会收到有关非关键事件的通知，例如 \fBautofs\fR 挂载和卸载。缺省值为 \fBFALSE\fR。等效于 \fBautomount\fR 中的 \fB-v\fR 选项。
+.RE
+
+.SS "Oracle Solaris Trusted Extensions 的自动挂载"
+.sp
+.LP
+如果某个系统配置了 Oracle Solaris Trusted Extensions，则用户会在其安全许可中的每个标签处有起始目录。因此，需要在每个相应的标记区域中提供起始目录。系统自动使用区域名称作为后缀来生成特殊映射，而不是使用 \fBauto_home\fR 映射。缺省情况下，映射包含单个条目：
+.sp
+.in +2
+.nf
+-fstype=lofs   :/export/home/&
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果引用了一个起始目录且该名称与区域 \fBauto_home_\fR\fIzonename\fR 映射中的其他任何关键字都不匹配，则将匹配此回送挂载规范。如果发生此回送匹配且该名称与起始目录不在该区域内的有效用户相对应，则自动代表该用户创建目录。
+.sp
+.LP
+还可以使用 NFS 以只读模式将某个区域中的起始目录与较高级别的区域共享。在这种情况下，较高级别的区域需要针对要导入的每个较低级别的区域生成一个自动映射条目。要在内部区域中解释的公共区域的典型映射条目称为 \fBauto_home_public\fR，此映射条目如下所示：
+.sp
+.in +2
+.nf
++auto_home_public
+
+\fIpublic-zone-IP-address\fR:/export/home/&
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+此自动映射条目将包含在 \fB/etc/auto_master\fR 中，如下所示：
+.sp
+.in +2
+.nf
+/zone/public/home      auto_home_public      -nobrowse
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+较高级别区域中的用户可以使用其最小标记区域作为源，通过 \fBupdatehome\fR(1) 实用程序来同步特定启动文件。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fIduration\fR\fR
+.ad
+.RS 15n
+.rt  
+指定未使用时文件系统保持挂载状态的\fI持续时间\fR（以秒为单位）。缺省值为 \fB10\fR 分钟。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 15n
+.rt  
+详细模式。通知 \fBautofs\fR 挂载、卸载或其他非重要信息。
+.RE
+
+.SH 用法
+.SS "映射条目的格式"
+.sp
+.LP
+简单的映射条目（映射）采用以下形式：
+.sp
+.in +2
+.nf
+key [ -\fImount-options\fR ] \fIlocation\fR .\|.\|.
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+其中 \fBkey\fR 是要挂载目录的全路径名（在直接映射中使用时）或者子目录的简单名称（在间接映射中）。\fImount-options\fR 是 \fBmount\fR 选项的逗号分隔列表，\fIlocation\fR 指定可以在其中挂载目录的文件系统。如果是简单 \fBNFS\fR 挂载，则可以使用 \fBmount_nfs\fR(1M) 中指定的选项，并且 \fIlocation\fR 采用以下形式：
+.sp
+.in +2
+.nf
+\fIhost\fR\fB:\|\fR\fIpathname\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fIhost\fR 是要在其中挂载文件系统的主机名称，\fIpathname\fR 是要挂载目录的绝对路径名。
+.sp
+.LP
+其他文件系统的选项在其他 \fBmount_*\fR 参考手册页中进行了介绍，例如 \fBmount_nfs\fR(1M)。
+.SS "复制的文件系统"
+.sp
+.LP
+可以针对复制的 \fBNFS\fR 文件系统指定多个 \fIlocation\fR 字段，在这种情况下 \fBautomount\fR 和内核都会尝试使用此信息来提高可用性。如果在映射条目中设置了只读标志，\fB automountd\fR 会挂载内核可以使用的位置列表，此列表按多个条件进行排序。仅挂载在挂载时可用的位置，以便供内核使用。如果服务器无响应，内核将切换到另一台服务器。\fB automount\fR 的排序顺序用于确定如何选择下一台服务器。如果未设置只读标志，则 \fBautomount\fR 将挂载单个最佳位置（按相同的排序顺序选择），仅在可以卸载并且重新挂载已完成时才选择新服务器。位于相同本地子网上的服务器是首选，本地网络上的服务器次之。对于距离相等的服务器，如果未使用加权因子（参见下文），则响应时间将确定顺序。
+.sp
+.LP
+如果列表同时包含使用 \fBNFS\fR 版本 2 协议和 \fBNFS\fR 版本 3 协议的服务器位置，则 \fBautomount\fR 仅选择列表中的一部分服务器位置，以便所有条目具有相同的协议。它将选择使用 \fBNFS\fR 版本 3 协议的服务器，只要不忽略本地子网上的 \fBNFS\fR 版本 2 协议服务器即可。
+.sp
+.LP
+如果列表中的每个 \fIlocation\fR 共享相同的 \fIpathname\fR，则可以通过主机名的逗号分隔列表使用单个 \fIlocation\fR：
+.sp
+.in +2
+.nf
+\fBhostname\fR\fB,\fR\fBhostname\fR\|.\|.\|.\|\fB:\fR\|\fIpathname\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+通过将加权因子作为括号内的整数附加到服务器名称，可以对服务器请求进行加权。不含加权的服务器被假定具有零值（最有可能被选择）。值越高，被选择的几率越小。在以下示例中，
+.sp
+.in +2
+.nf
+\fBman\fR -ro \fBalpha,bravo,charlie(1),delta(4)\|:\|/usr/man\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+主机 \fBalpha\fR 和 \fBbravo\fR 优先级最高；主机 \fBdelta\fR 优先级最低。
+.sp
+.LP
+在选择过程中优先考虑服务器邻近度。在上面的示例中，如果服务器 \fBdelta\fR 与客户机位于相同的网段上，但是其他服务器位于不同的网段上，则将选择 \fBdelta\fR；忽略加权值。只有在网络邻近度相同的服务器之间进行选择时，加权才有效。在本地主机和相同网段上的其他服务器之间，自动挂载程序始终优先选择前者，而不考虑加权。
+.sp
+.LP
+如果每个服务器具有不同的导出点，仍可以应用加权。例如：
+.sp
+.in +2
+.nf
+man -ro alpha:/usr/man  bravo,charlie(1):/usr/share/man  
+     delta(3):/export/man
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+通过使用反斜杠 (\) 将\fB换行\fR转义可以跨输入行继续书写映射。注释以井号 (\fB#\fR) 开头，以随后的换行符结束。
+.SS "映射关键字替换"
+.sp
+.LP
+和符号 (\fB&\fR) 字符会扩展为其所在条目的 \fBkey\fR 字段的值。在以下示例中：
+.sp
+.in +2
+.nf
+\fBjane\fR \fBsparcserver\|:\|/home/&\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fB&\fR 会扩展为 \fBjane\fR。
+.SS "通配符关键字"
+.sp
+.LP
+星号 (\fB*\fR) 字符作为 \fBkey\fR 字段提供时识别为全部捕获条目。此类条目将匹配先前不匹配的任何关键字。例如，如果以下条目出现在 \fB/config\fR 的间接映射中：
+.sp
+.in +2
+.nf
+*         &\|:\|/export/config/&
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+这将允许在 \fB/config\fR 中自动挂载位置指定为以下内容的任何远程文件系统：
+.sp
+.in +2
+.nf
+hostname\|:\|/export/config/hostname
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+请注意，通配符关键字不能与 \fB-browse\fR 选项一起使用。
+.SS "变量替换"
+.sp
+.LP
+可以在 \fBautomount\fR 映射中使用特定于客户机的变量。例如，如果 \fB$HOST\fR 出现在映射中，则 \fBautomount\fR 会将其扩展为客户机主机名的当前值。受支持的变量包括：
+.sp
+
+.sp
+.TS
+tab();
+lw(1.07i) lw(2.6i) lw(1.83i) 
+lw(1.07i) lw(2.6i) lw(1.83i) 
+.
+\fBARCH\fR\fBarch\fR 的输出T{
+体系结构名称。例如，sun4u 计算机上的 \fBsun4\fR。
+T}
+\fBCPU\fR\fBuname\fR \fB-p\fR 的输出处理器类型。
+例如，“sparc”
+\fBHOST\fR\fBuname\fR \fB-n\fR 的输出主机名。
+例如，\fBmyhost\fR。
+\fBKARCH\fR\fBarch -k\fR 或 \fBuname –m\fR 的输出T{
+内核体系结构名称或计算机硬件名称。例如，\fBsun4u\fR。
+T}
+
+\fBOSNAME\fR\fBuname\fR \fB-s\fR 的输出OS 名称。
+例如，“SunOS”
+\fBOSREL\fR\fBuname\fR \fB-r\fR 的输出OS 发行版名称。 
+例如，“5.3”
+\fBOSVERS\fR\fBuname\fR \fB-v\fR 的输出OS 版本。
+例如，“beta1.0”
+\fBNATISA\fR\fBisainfo\fR \fB-n\fR 的输出系统的本机指令集体系结构。
+例如，“sparcv9”
+\fBPLATFORM\fR\fBuname -i\fR 的输出T{
+平台名称。例如，\fBSUNW,Sun-Fire-V240\fR。
+T}
+
+.TE
+
+.sp
+.LP
+如果需要确保引用不受后缀字符的影响，您可以使用花括号将变量名括起来 (\fB { } \fR)。
+.SS "多个挂载"
+.sp
+.LP
+多挂载条目采用以下形式：
+.sp
+.in +2
+.nf
+key [\fI-mount-options\fR] [\|[\fImountpoint\fR] [\fI-mount-options\fR] \fIlocation\fR.\|.\|.\|]\|.\|.\|.
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+开头的 \fB/\fR[\fImountpoint\fR ] 对于第一个挂载是可选的，对于所有后续挂载是必需的。可选 \fImountpoint\fR 被视为相对于 \fBkey\fR 所指定目录的路径名。如果在第一个出现位置将 \fI mountpoint\fR 省略，则暗指 \fImountpoint\fR 为 \fB/\fR（根）。
+.sp
+.LP
+如果在间接映射中为 \fB/src\fR 指定了条目
+.sp
+.in +2
+.nf
+beta     -ro\e
+  /           svr1,svr2:/export/src/beta  \e
+  /1.0        svr1,svr2:/export/src/beta/1.0  \e
+  /1.0/man    svr1,svr2:/export/src/beta/1.0/man
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+所有偏移必须存在于服务器上的 \fBbeta\fR 下。\fBautomount\fR 将根据需要自动在 \fBsvr1\fR 或 \fBsvr2 \fR 中挂载 \fB/src/beta\fR、\fB/src/beta/1.0\fR 和 \fB/src/beta/1.0/man\fR，具体取决于哪个主机最近、首先响应。
+.SS "其他文件系统类型"
+.sp
+.LP
+自动挂载程序假定 \fBNFS\fR 挂载是缺省文件系统类型。可以使用 \fBfstype\fR 挂载选项描述其他文件系统类型。特定于此文件系统类型的其他挂载选项可以与 \fBfstype\fR 选项结合使用。位置字段必须包含特定于文件系统类型的信息。如果位置字段以斜杠开头，则必须在前面加上冒号字符，例如，要挂载 CD 文件系统：
+.sp
+.in +2
+.nf
+\fBcdrom -fstype=hsfs,ro   :\|/dev/sr0\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+或者执行 \fBautofs\fR 挂载：
+.sp
+.in +2
+.nf
+\fBsrc\fR \fB-fstype\fR\fB=autofs    auto_src\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+仅在您不使用卷管理器时才使用此过程。
+.sp
+.LP
+有关选项继承的信息，请参见\fB\fR“附注”部分。
+.SS "间接映射"
+.sp
+.LP
+间接映射允许您为要挂载到命令行中所示 \fBdirectory\fR 下的子目录指定映射。在间接映射中，每个 \fBkey\fR 都包含一个简单名称，该简单名称指的是根据需要要挂载的一个或多个文件系统。
+.SS "直接映射"
+.sp
+.LP
+直接映射中的条目直接与 \fBautofs\fR 挂载点相关联。每个 \fIkey\fR 都是 \fBautofs\fR 挂载点的全路径名。整个直接映射不与任何单个目录关联。
+.sp
+.LP
+直接映射与间接映射通过 \fB/-\fR 关键字进行区分。例如：
+.sp
+.in +2
+.nf
+# Master map for automounter
+#
++auto_master
+/net            -hosts          -nosuid,nobrowse
+/home           auto_home       -nobrowse
+/-              auto_direct
+.fi
+.in -2
+.sp
+
+.SS "包含的映射"
+.sp
+.LP
+另一映射的内容可以通过以下形式的条目包含在某个映射中
+.sp
+.in +2
+.nf
++\fImapname\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果 \fImapname\fR 以斜杠开头，则假定为本地文件的路径名。否则，映射的位置由名称服务转换策略根据 \fB/etc/nsswitch.conf\fR 中的自动挂载程序条目确定，例如
+.sp
+.in +2
+.nf
+automount: files nis
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果名称服务为 \fBfiles\fR，则假定名称为 \fB/etc\fR 中本地文件的名称。如果搜索的关键字未在包含的映射中找到，则继续搜索下一条目。
+.SS "特殊映射"
+.sp
+.LP
+有三种可用的特殊映射：\fB-hosts\fR、\fB-fedfs\fR 和 \fB-null\fR。\fB-hosts\fR 映射与 \fB/net\fR 目录一起使用，并假定映射关键字为 NFS 服务器的主机名。\fBautomountd \fR 守护进程基于服务器的导出文件系统列表动态构造映射条目。对 \fB/net/hermes\fR 下的目录的引用将引用相对于 \fBhermes\fR 根目录的相应目录。
+.sp
+.LP
+\fB-fedfs\fR 映射与 \fB/nfs4\fR 目录一起使用，并假定映射关键字为需要其域根文件系统的 DNS 域。\fBautomountd\fR 守护进程使用等效于以下内容的查询来查找域根服务器：
+.sp
+.in +2
+.nf
+% \fBnslookup -q=srv _nfs4._domainroot._tcp.\fIdomain\fR\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\&...并将 \fIserver-list\fR\fB:/.domainroot-\fR\fIdomain\fR 挂载到 \fB/nfs4/\fR\fIdomain\fR。
+.sp
+.LP
+这支持以下网址介绍的 IETF 暂定标准：
+.sp
+.in +2
+.nf
+http://datatracker.ietf.org/doc/\e
+draft-ietf-nfsv4-federated-fs-dns-srv-namespace/
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fB-null\fR 映射取消所示目录先前的映射。这最适合在 \fB/etc/auto_master\fR 中取消从 \fB+auto_master\fR 包含条目中继承的条目。要生效，\fB-null\fR 条目必须插入到包含的映射条目之前。
+.SS "可执行映射"
+.sp
+.LP
+自动挂载程序将执行在文件权限中设置了执行位的本地映射，并且将以参数形式为其提供要查找的关键字。可执行映射应在其标准输出中返回自动挂载程序映射条目的内容；如果无法确定条目，则无输出。直接映射不能转换为可执行映射。
+.SS "配置和 auto_master 映射"
+.sp
+.LP
+不带参数启动时，\fBautomount\fR 会查询主映射来确定 \fBautofs\fR 挂载点及其映射列表。它挂载尚未挂载的任何 \fBautofs\fR 挂载，并卸载已从主映射或直接映射中删除的 \fBautofs\fR 挂载。
+.sp
+.LP
+假定主映射称为 \fBauto_master\fR，其位置由名称服务转换策略确定。通常，主映射最初作为本地文件 \fB/etc/auto_master\fR 进行定位。
+.SS "浏览"
+.sp
+.LP
+\fBautomount\fR 守护进程支持间接映射浏览功能。这允许查看所有潜在的挂载点，无论它们是否已挂载。\fB-nobrowse\fR 选项可以添加到任何间接 \fBautofs\fR 映射以禁用浏览。例如：
+.sp
+.in +2
+.nf
+/net     -hosts      -nosuid,nobrowse
+/home    auto_home
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+在这种情况下，任何 \fIhostnames\fR 都仅在挂载之后才能显示在 \fB/net\fR 中，但是所有潜在挂载点都将显示在 \fB/home\fR 下。\fB-browse\fR 选项启用 \fBautofs\fR 文件系统浏览功能。这是所有间接映射的缺省设置。
+.sp
+.LP
+\fB-browse\fR 选项不能与通配符关键字一起使用。
+.SS "限制挂载映射"
+.sp
+.LP
+为某个映射指定的选项将用作该映射中所有条目的缺省选项。映射条目指定自己的挂载选项时，将忽略它们。
+.sp
+.LP
+然而，在某些情况下，最好强制执行 \fBnosuid\fR、\fBnodevices\fR、\fBnosetuid\fR 或 \fBnoexec\fR 来实现完整挂载映射及其子挂载。这可以通过指定其他挂载选项 \fB-restrict\fR 来完成。 
+.sp
+.in +2
+.nf
+ /home     auto_home       -restrict,nosuid,hard
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fB-restrict\fR 选项强制继承所有限制选项 \fBnosuid\fR、\fBnodevices\fR、\fBnosetuid\fR 和 \fBnoexec\fR 以及限制选项本身。在此特定示例中，继承了 \fBnosuid \fR 和 \fBrestrict\fR 选项，但未继承 \fBhard\fR 选项。\fBrestrict\fR 选项还禁止执行“可执行映射”，并针对由权限低于所在区域中全部可用特权的程序建立的自动挂载强制执行。 
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+出现错误。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/auto_master\fR\fR
+.ad
+.RS 22n
+.rt  
+主自动挂载映射。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/auto_home\fR\fR
+.ad
+.RS 22n
+.rt  
+支持自动挂载的起始目录的映射。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/nsswitch.conf\fR\fR
+.ad
+.RS 22n
+.rt  
+名称服务转换配置文件。请参见 \fBnsswitch.conf\fR(4)。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBisainfo\fR(1)、\fBls\fR(1)、\fBsvcs\fR(1)、\fBuname\fR(1)、\fBupdatehome\fR(1)、\fBautomountd\fR(1M)、\fBmount\fR(1M)、\fBmount_nfs\fR(1M)、\fBsharectl\fR(1M)、\fBsvcadm\fR(1M)、\fBattributes\fR(5)、\fBnfssec\fR(5)、\fBsmf\fR(5)
+.sp
+.LP
+\fI《Managing Network File Systems in Oracle Solaris         11.3》\fR
+.SH 附注
+.sp
+.LP
+\fBautofs\fR 挂载点不能具有分层结构关系。\fBautomount\fR 不允许在另一 \fBautofs\fR 挂载内创建 \fBautofs\fR 挂载点。
+.sp
+.LP
+因为每个直接映射条目都会产生新 \fBautofs\fR 挂载，所以此类映射应尽量简短。
+.sp
+.LP
+可以随时修改直接和间接映射中的条目。\fBautomountd\fR 下次使用映射条目执行挂载时将使用新信息。
+.sp
+.LP
+在运行 automount 命令以将添加到主映射或直接映射的新条目安装为新 \fBautofs\fR 挂载点之前，不能使用它们。可以立即使用添加到间接映射的新条目。
+.sp
+.LP
+从 Solaris 2.6 发行版开始，与间接映射关联的 \fBautofs\fR 目录的列表（参见 \fBls\fR(1)）将显示所有潜在的可挂载条目。与潜在可挂载条目关联的属性是临时属性。实际文件系统属性仅在挂载文件系统后才会显示。
+.sp
+.LP
+如果将缺省挂载选项指定为主映射中可选的第三个字段，这些选项将分配给整个映射。这些选项仅适用于无挂载选项的映射条目。请注意，具有选项的映射实体将覆盖缺省选项，因为目前选项不串联。串联功能计划在未来的发行版中提供。
+.sp
+.LP
+针对调用 NFS 挂载的映射执行操作时，自动挂载程序的缺省重试次数为 0，即尝试挂载一次，不重试。请注意，这与 \fBmount_nfs\fR(1M) 实用程序的缺省值 (10000) 有明显不同。
+.sp
+.LP
+网络信息服务 (Network Information Service, NIS) 以前称为 Sun 黄页 (Yellow Page, YP)。两者的功能相同。

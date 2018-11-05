@@ -1,0 +1,1643 @@
+'\" te
+.\" Copyright (c) 2005, 2015, Oracle and/or its affiliates. All rights
+.\"     reserved.
+.TH zfs_share 1M "23 Jul 2015" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+zfs_share \- share and unshare a ZFS file system
+.SH SYNOPSIS
+.LP
+.nf
+\fBzfs\fR \fBhelp\fR \fIsubcommand\fR | help | \fIproperty\fR \fIproperty-name\fR | \fIpermission\fR
+.fi
+
+.LP
+.nf
+\fBzfs\fR \fBhelp\fR -l \fBproperties\fR
+.fi
+
+.LP
+.nf
+\fBzfs\fR \fBdestroy\fR \fIshare\fR
+.fi
+
+.LP
+.nf
+\fBzfs\fR \fBget\fR [\fB-rHpe\fR|\fB-d\fR \fImax\fR][\fB-o\fR all | \fIfield\fR[,...]] [\fB-s\fR \fIsource\fR[,...]]
+
+     all | \fIproperty\fR[,...] \fIfilesystem\fR|\fIvolume\fR|\fIsnapshot\fR|\fIshare\fR ...
+.fi
+
+.LP
+.nf
+\fBzfs\fR \fBget\fR share [\fIfilesystem\fR]
+.fi
+
+.LP
+.nf
+\fBzfs\fR [-r] \fBset\fR [-r | -c] \fIfilesystem\fR|\fIvolume\fR|\fIsnapshot\fR|\fIshare\fR ...
+.fi
+
+.LP
+.nf
+\fBzfs\fR [-r] \fBset\fR share.nfs=on | off \fIfilesystem\fR
+.fi
+
+.LP
+.nf
+\fBzfs\fR [-r] \fBset\fR share.smb=on | off \fIfilesystem\fR
+.fi
+
+.LP
+.nf
+\fBzfs\fR \fBshare\fR \fB-u\fR [\fB-o property\fR=\fIvalue\fR]...  \fIfilesystem%share\fR
+.fi
+
+.LP
+.nf
+\fBzfs\fR \fBshare\fR \fIfilesystem|mountpoint|filesystem%share\fR
+.fi
+
+.LP
+.nf
+\fBzfs\fR \fBshare\fR \fB-a\fR | \fB-r\fR \fIfilesystem\fR
+.fi
+
+.LP
+.nf
+\fBzfs\fR \fBunshare\fR \fIfilesystem|mountpoint|filesystem%share\fR
+.fi
+
+.LP
+.nf
+\fBzfs\fR \fBunshare\fR \fB-a\fR | \fB-r\fR \fIfilesystem\fR
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+You can create an NFS share or an SMB share of a ZFS file system by setting \fBshare.nfs\fR or \fBshare.smb\fR property. You can also use the \fBzfs share\fR and \fBzfs unshare\fR commands to publish or unpublish a ZFS share.
+.SS "Sharing ZFS File Systems"
+.sp
+.LP
+A file system can be shared by setting or inheriting the \fBshare.nfs=on\fR or \fBshare.smb=on\fR property value. For example:
+.sp
+.in +2
+.nf
+# zfs set share.nfs=on tank/home
+
+# zfs set share.smb=on tank/data
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The above simple syntax creates and publishes the file system shares automatically. This method is referred to as an \fBautomatic\fR share. For more information, see the EXAMPLES section.
+.sp
+.LP
+The automatic share is read-only and inherits all of its properties from the parent file system. This method allows sharing to be enabled by inheritance alone, if needed, without having to create a share for each descendent file system. The published share name, \fBshare.name\fR, of an automatic share is generated from the dataset mount point.
+.sp
+.LP
+For example, the \fIshare.name\fR of \fBtank/home\fR is \fBtank_home\fR.
+.sp
+.LP
+A file system's automatic share name displays as \fBfilesystem\fR%. For example, \fBtank/home\fR%.
+.sp
+.LP
+You can also create and publish a share by using the \fBzfs share\fR command as follows:
+.sp
+.in +2
+.nf
+# zfs share -o share.smb=on sandbox/myfs%myshare
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The above syntax creates and publishes a \fBnamed\fR share, which provides more flexibility when you need to share subdirectories within a file system over NFS or SMB protocols. For more information, see the EXAMPLES section.
+.sp
+.LP
+The \fBlistshares\fR pool property is used to determine whether share information is displayed when using the \fBzfs list\fR command. For more information, see \fBzpool\fR(1M).
+.SS "Native Share File System Properties"
+.sp
+.LP
+File system properties are divided into two types, native properties and user-defined (or \fBuser\fR) properties. Native properties either display information or control ZFS behavior. In addition, native properties are either editable or read-only.
+.sp
+.LP
+Properties are inherited from the parent unless overridden by the child. Some properties apply only to certain types of datasets (file systems, volumes, or snapshots).
+.sp
+.LP
+The following native properties can be used to change the behavior of a ZFS file system and are generally used when a file system is shared.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnbmand\fR=\fBon\fR | \fBoff\fR\fR
+.ad
+.sp .6
+.RS 4n
+Controls whether the file system should be mounted with \fBnbmand\fR (Non Blocking mandatory locks). This is used for \fBSMB\fR clients. Changes to this property only take effect when the file system is unmounted and remounted. See \fBmount\fR(1M) for more information on \fBnbmand\fR mounts.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreadonly\fR=\fBon\fR | \fBoff\fR\fR
+.ad
+.sp .6
+.RS 4n
+Controls whether this dataset can be modified. The default value is \fBoff\fR.
+.sp
+This property can also be referred to by its shortened column name, \fBrdonly\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs\fR=\fBon\fR | \fBoff\fR\fR
+.ad
+.sp .6
+.RS 4n
+Controls whether a ZFS dataset is created and published as an NFS share. You can also publish and unpublish an named NFS share of a ZFS dataset by using the \fBzfs share\fR and \fBzfs unshare\fR commands. Both methods of publishing an NFS share require that the NFS share properties are already set. For information about setting NFS share properties, see the \fBzfs set\fR command syntax below.
+.sp
+When the \fBshare.nfs\fR property is changed, the file system share and any children inheriting the property are re-published with any new options that have been set with the \fBzfs set\fR command only if the property was previously \fBoff\fR, or if the shares were published before the property was changed. If the new property value is \fBoff\fR, the file system shares are unpublished.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.smb\fR=\fBon\fR | \fBoff\fR\fR
+.ad
+.sp .6
+.RS 4n
+Controls whether a ZFS dataset is created and published as an SMB share. You can also publish and unpublish an named SMB share of a ZFS dataset by using the \fBzfs share\fR and \fBzfs unshare\fR commands. Both methods of publishing an SMB share require that the SMB share properties are also set. For information about setting SMB share properties, see the \fBzfs set\fR command syntax below.
+.sp
+When SMB shares are created, the SMB share name appears as an entry in the \fB\&.zfs/shares\fR directory. You can use the \fBls\fR or \fBchmod\fR command to display the share-level ACLs on the entries in this directory.
+.sp
+When the property is changed from off to on, any shares that inherit the property are re-shared with their current options. When the property is set to off, the shares that inherit the property are unshared.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvscan\fR=\fBon\fR | \fBoff\fR\fR
+.ad
+.sp .6
+.RS 4n
+Controls whether regular files should be scanned for viruses when a file is opened and closed. In addition to enabling this property, the virus scan service must also be enabled for virus scanning to occur. The default value is \fBoff\fR.
+.RE
+
+.sp
+.LP
+The following properties cannot be changed after the file system is created and, therefore, should be set when the file system is created. If the properties are not set with the \fBzfs create\fR or \fBzpool create\fR commands, these properties are inherited from the parent dataset. If the parent dataset lacks these properties due to having been created prior to these features being supported, the new file system will have the default values for these properties.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcasesensitivity\fR=\fBsensitive\fR | \fBinsensitive\fR | \fBmixed\fR\fR
+.ad
+.sp .6
+.RS 4n
+Indicates whether the file name matching algorithm used by the file system should be case-sensitive, case-insensitive, or allow a combination of both styles of matching. The default value for the \fBcasesensitivity\fR property is \fBmixed\fR. Traditionally, UNIX and POSIX file systems have case-sensitive file names.
+.sp
+The \fBmixed\fR value for the \fBcasesensitivity\fR property indicates that the file system can support requests for both case-sensitive and case-insensitive matching behavior. Currently, case-insensitive matching behavior on a file system that supports mixed behavior is limited to the Solaris SMB server product. For more information about the \fBmixed\fR value behavior, see the \fIManaging ZFS File Systems in Oracle Solaris 11.3\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnormalization\fR = \fBnone\fR | \fBformC\fR | \fBformD\fR | \fBformKC\fR | \fBformKD\fR\fR
+.ad
+.sp .6
+.RS 4n
+Indicates whether the file system should perform a \fBunicode\fR normalization of file names whenever two file names are compared, and which normalization algorithm should be used. File names are always stored unmodified, names are normalized as part of any comparison process. If this property is set to a legal value other than \fBnone\fR, and the \fButf8only\fR property was left unspecified, the \fButf8only\fR property is automatically set to \fBon\fR. The default value of the \fBnormalization\fR property is \fBnone\fR. This property cannot be changed after the file system is created.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fButf8only\fR=\fBon\fR | \fBoff\fR\fR
+.ad
+.sp .6
+.RS 4n
+Indicates whether the file system should reject file names that include characters that are not present in the \fBUTF-8\fR character code set. If this property is explicitly set to \fBoff\fR, the normalization property must either not be explicitly set or be set to \fBnone\fR. The default value for the \fButf8only\fR property is \fBoff\fR. This property cannot be changed after the file system is created.
+.RE
+
+.SS "Specific NFS or SMB Properties"
+.sp
+.LP
+In addition to native properties and user properties, you can also designate properties that control the way a file system is shared. The following set of share-related properties fall into 3 categories: global properties that apply to both NFS and SMB sharing, NFS-specific properties, and SMB-specific properties. 
+.sp
+.LP
+Global share properties are mostly read-only with a few exceptions. The following global share properties apply to either a NFS or SMB share or on the shared or to be shared file system:
+.sp
+\fBTable 1 \fRGlobal Share Property Descriptions
+.sp
+.TS
+tab();
+cw(1.15i) cw(2.38i) cw(.81i) cw(1.15i) 
+lw(1.15i) lw(2.38i) lw(.81i) lw(1.15i) 
+.
+PropertyDescriptionInheritableValue
+_
+\fBshare.desc\fRT{
+Editable property that provides a user-defined description and can be set on the file system or a share. The default value is no description.
+T}Yes\fIstring\fR
+\fBshare.fs\fRT{
+Read-only property that identifies the file system name for a share.
+T}No\fIfilesystem\fR
+\fBshare.name\fRT{
+Read-only property that identifies the share name for a share.
+T}No\fIshare-name\fR
+\fBshare.auto\fRT{
+Editable property that enables automatic sharing and can only be set on the file system to be shared.
+T}Noon or off
+\fBshare.path\fRT{
+Editable property that sets the share path on a share.
+T}No\fImountpoint-relative-path\fR
+\fBshare.point\fRT{
+Read-only property that identifies the absolute path of an existing share that is derived from the current value of the \fBshare.path\fR property relative to the dataset mount point.
+T}No\fIpath\fR
+\fBshare.protocols\fRT{
+Read-only property that identifies the protocols established for the file system or the share.
+T}No\fBprotocol-list\fR
+\fBshare.state\fRT{
+Read-only property that identifies the current state of the share.
+T}Nounshared, shared, or failed
+.TE
+
+.sp
+.LP
+The following share properties are specific to the NFS protocol. All NFS share specific properties are editable and inheritable. The default value for most of these properties is off unless stated otherwise.
+.sp
+.LP
+The following are the NFS share property descriptions.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs\fR\fR
+.ad
+.sp .6
+.RS 4n
+Determines whether a file system is shared over the NFS protocol. Value: \fBon\fR or \fBoff\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.aclok\fR\fR
+.ad
+.sp .6
+.RS 4n
+Determines NFSv2 client access control so that when this property is set on the server, maximum access is given to all clients. If this property is not set, minimum access is given to all clients. Value: \fBon\fR or \fBoff\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.aclfab\fR\fR
+.ad
+.sp .6
+.RS 4n
+Determines whether ACL permissions are fabricated. Value: \fBon\fR or \fBoff\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.anon\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets UID to the effective user ID of unknown users.  By default, unknown users are given the effective UID \fBnobody\fR. If UID is set to  -1, access is denied. Value: \fIuid\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.euc-cn\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets NFS character encoding to \fBeuc-cn\fR (Chinese). Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.euc-jpms\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets NFS character encoding to \fBeuc-jpms\fR (MicroSoft-compatible Japanese). Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.euc-kr\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets NFS character encoding to \fBeuc-kr\fR (Korean). Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.euc-tw\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets NFS character encoding to \fBeuc-tw\fR (Taiwanese). Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.iso8859-1\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets NFS character encoding to ISO 8859-1 (Latin 1). Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.iso8859-2\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets NFS character encoding to ISO 8859-2 (Latin 2). Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.iso8859-5\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets NFS character encoding to ISO 8859-5 (Latin/Cyrillic). Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.iso8859-6\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets NFS character encoding to ISO 8859-6 (Arabic). Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.iso8859-7\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets NFS character encoding to ISO 8859-7 (Greek). Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.iso8859-8\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets NFS character encoding to ISO 8859-8 (Hebrew). Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.iso8859-9\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets NFS character encoding to ISO 8859-9 (Turkish). Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.iso8859-13\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets NFS character encoding to ISO 8859-13 (Baltic). Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.iso8859-15\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets NFS character encoding to ISO 8859-15 (Western European). Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.charset.koi8-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets NFS character encoding to ISO KOI8-R (Russian/Cyrillic). Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.cksum\fR\fR
+.ad
+.sp .6
+.RS 4n
+Not yet implemented. Value: \fIstring\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.index\fR\fR
+.ad
+.sp .6
+.RS 4n
+Determines whether a file is loaded rather than a directory listing that contains this file when the directory is referenced by an NFS URL. Value: \fIfilename\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.log\fR\fR
+.ad
+.sp .6
+.RS 4n
+Enables NFSv2 or NFSv3 server logging for the  specified file system. The tag is defined in the \fB/etc/nfs/nfslog.conf\fR file.  If no tag is specified, the default values associated with the global tag in the \fB/etc/nfs/nfslog.conf\fR file is used. Value: \fItag\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.nosub\fR\fR
+.ad
+.sp .6
+.RS 4n
+Prevents NFSv2 or NFSv3 clients from mounting subdirectories of shared directories. Value: \fBon\fR or \fBoff\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.nosuid\fR\fR
+.ad
+.sp .6
+.RS 4n
+Prevents the NFS client from creating files with \fBsetuid\fR or \fBsetguid\fR permissions. If enabled, the NFS server silently ignores any attempt to enable the \fBsetuid\fR or \fBsetgid\fR permissions. Value: \fBon\fR or \fBoff\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.public\fR\fR
+.ad
+.sp .6
+.RS 4n
+Changes the location of the public file handle from root to the shared directory for NFS-enabled browsers and clients. Value: \fBon\fR or \fBoff\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the default security mode to \fBSYS\fR. The \fBSYS\fR security mode uses \fBAUTH_SYS\fR authentication, which means the user's UID and GID are passed in clear text on the network, unauthenticated by the NFS server. Value: \fIsecurity-mode-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.default.none\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the default security mode to none for \fIaccess-list\fR. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.default.ro\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the default security mode to read-only access for \fIaccess-list\fR. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.default.root\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the default security mode to root access for \fIaccess-list\fR. By default, no system has root access. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.default.root_mapping\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the default security mode to root access to a specific \fIUID\fR. By default, no user has root access. Value: \fIUID\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.default.rw\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the default security mode to read-write access for \fIaccess-list\fR. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.default.window\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets a maximum life time in seconds for the requestor's credential that the NFS server allows for the default security mode. The default value is 30000 seconds (8.3 hours). Value: \fIseconds\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.dh.none\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the Diffie Helman (dh) security mode to none for \fIaccess-list\fR. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.dh.ro\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the dh security mode to read-only access for \fIaccess-list.\fR Value: \fIaccess-list.\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.dh.root\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the dh security mode to root access for \fIaccess-list\fR. By default, no system has root access. Value: \fIaccess-list.\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.dh.root_mapping\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the dh security mode to root access to a specific \fIUID\fR. By default, no user has root access. Value: \fIUID\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.dh.rw\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the default security mode to read-write access for \fIaccess-list\fR. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.dh.window\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets a maximum life time in seconds for the requestor's credential that the NFS server allows for the dh security mode. The default value is 30000 seconds (8.3 hours). Value: \fIseconds\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5.none\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the Kerberos V5 (krb5) security mode to none for \fIaccess-list\fR. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5.ro\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the krb5 security mode to read-only access for \fIaccess-list\fR. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5.root\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the krb5 security mode to root access for \fIaccess-list\fR. By default, no system has root access. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5.root_mapping\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the krb5 security mode to root access to a specific \fIUID\fR. By default, no user has root access. Value: \fIUID\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5.rw\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the krb5 security mode to read-write access for \fIaccess-list\fR. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5.window\fR\fR
+.ad
+.sp .6
+.RS 4n
+This property is not implemented for the krb5 security mode. Value: N/A
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5i.none\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the Kerberos V5 (krb5i) security mode to none. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5i.ro\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the krb5i security mode to read-only access for \fIaccess-list\fR. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5i.root\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the krb5i security mode to root access for \fIaccess-list\fR. By default, no system has root access. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5i.root_mapping\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the krb5i security mode to root access to a specific \fIUID\fR. By default, no user has root access. Value: \fIUID\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5i.rw\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the krb5i security mode to read-write access for \fIaccess-list\fR. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5i.window\fR\fR
+.ad
+.sp .6
+.RS 4n
+This property is not available for the krb5i security mode. Value: N/A
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5p.none\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the Kerberos V5 (krb5i) security mode to none for \fIaccess-list\fR. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5p.ro\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the krb5p security mode to read-only access for \fIaccess-list\fR. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5p.root\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the krb5p security mode to root access for \fIaccess-list\fR. By default, no system has root access. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5p.root_mapping\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the krb5p security mode to root access to a specific \fIUID\fR. By default, no user has root access. Value: \fIUID\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5p.rw\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the krb5i security mode to read-write access for \fIaccess-list\fR. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.krb5p.window\fR\fR
+.ad
+.sp .6
+.RS 4n
+This property is not implemented for the krb5p security mode. Value: N/A
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.none.none\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the security mode to none for \fIaccess-list\fR. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.none.ro\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the security mode to read-only access for \fIaccess-list.\fR Value: \fIaccess-list.\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.none.root\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the security mode to root access for \fIaccess-list\fR. By default, no system has root access. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.none.root_mapping\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the security mode to root access to a specific \fIUID\fR. By default, no user has root access. Value: \fIUID\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.none.rw\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the security mode to read-write access for \fIaccess-list\fR. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.none.window\fR\fR
+.ad
+.sp .6
+.RS 4n
+This property is not implemented. Value: \fIseconds\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.sys.resvport\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets whether the client requires a reserved port when accessing an \fBAUTH_SYS\fR share. Value: on or off.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.sys.none\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the \fBSYS\fR security mode to none for \fIaccess-list\fR. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.sys.ro\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the SYS security mode to read-only access for \fIaccess-list.\fR Value: \fIaccess-list.\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.sys.root\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the SYS security mode to root access for \fIaccess-list\fR. By default, no system has root access. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.sys.root_mapping\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the security mode to root access to a specific \fIUID\fR. By default, no user has root access. Value: \fIUID\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.sys.rw\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the security mode to read-write access for \fIaccess-list\fR. Value: \fIaccess-list\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshare.nfs.sec.sys.window\fR\fR
+.ad
+.sp .6
+.RS 4n
+This property is not implemented for the \fBSYS\fR security mode. Value: \fIseconds\fR
+.RE
+
+.sp
+.LP
+The following share properties are specific to the SMB protocol. All SMB share specific properties are editable and inheritable.
+.sp
+\fBTable 2 \fRSMB Share Property Descriptions
+.sp
+.TS
+tab();
+cw(1.56i) cw(2.46i) cw(1.48i) 
+lw(1.56i) lw(2.46i) lw(1.48i) 
+.
+PropertyDescriptionValue
+_
+\fBshare.smb\fRT{
+Determines whether a file system is shared over the SMB protocol. The default value it \fBoff\fR.
+T}\fBon\fR or \fBoff\fR
+\fBshare.smb.ad-container\fRT{
+Enables SMB share to be published in an AD container. The default value is \fBoff\fR.
+T}\fIstring\fR
+\fBshare.smb.abe\fRT{
+Enables Access-Based Enumeration (abe) support. The default is \fBoff\fR.
+T}\fIshare-name\fR
+\fBshare.smb.csc\fRT{
+Enables client side caching support. The default value is disabled.
+T}\fBdisabled\fR, \fBmanual\fR, \fBauto\fR, or \fBvdo\fR
+\fBshare.smb.catia\fRT{
+Enables CATIA translation support. The default value is \fBoff\fR.
+T}\fBon\fR or \fBoff\fR
+\fBshare.smb.dfsroot\fRT{
+Enables a DFS root support. The default value is \fBoff\fR.
+T}\fBon\fR or \fBoff\fR
+\fBshare.smb.guestok\fRT{
+Enables guest access. The default value is \fBoff\fR.
+T}\fBon\fR or \fBoff\fR
+\fBshare.smb.ro\fRT{
+Sets the SMB share to read-only. You can specify \fBon\fR, \fBoff\fR, or list of names (\fIaccess-list\fR). The default value is \fBoff\fR.
+T}\fIaccess-list\fR
+\fBshare.smb.rw\fRT{
+Sets the SMB share to read-write. You can specify \fBon\fR, \fBoff\fR, or list of names (\fIaccess-list\fR). The default value is \fBon\fR.
+T}\fIaccess-list\fR
+\fBshare.smb.none\fRT{
+Sets the SMB share to \fBoff\fR for the specified users in the \fIaccess-list\fR.
+T}\fIaccess-list\fR
+.TE
+
+.SH SUBCOMMANDS
+.sp
+.LP
+All subcommands that modify state are logged persistently to the pool in their original form.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs ?\fR\fR
+.ad
+.sp .6
+.RS 4n
+Displays a help message.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs help\fR \fIcommand\fR | help | \fIproperty\fR \fIproperty-name\fR | \fIpermission\fR\fR
+.ad
+.sp .6
+.RS 4n
+Displays \fBzfs\fR command usage information. You can display help for a specific command, property, or delegated permission. If you display help for a specific command or property, the command syntax or property value is displayed. Using \fBzfs help\fR without any arguments displays a complete list of \fBzfs\fR commands.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs help\fR \fB-l\fR \fBproperties\fR\fR
+.ad
+.sp .6
+.RS 4n
+Displays \fBzfs\fR property information, including whether the property value is editable and inheritable, and their possible values.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs create\fR [\fB-p\fR] [\fB-o\fR \fBshare.nfs=on | share.smb=on\fR \fB-o\fR ... \fIfilesystem\fR\fR
+.ad
+.sp .6
+.RS 4n
+Creates a new \fBZFS\fR file system. The file system is automatically mounted according to the \fBmountpoint\fR property inherited from the parent.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIproperty\fR=\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the specified property as if the command \fBzfs set\fR \fIproperty\fR=\fIvalue\fR was invoked at the same time the dataset was created. Any editable \fBZFS\fR property can also be set at creation time. Multiple \fB-o\fR options can be specified. An error results if the same property is specified in multiple \fB-o\fR options.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs destroy\fR [\fIshare\fR\fR
+.ad
+.sp .6
+.RS 4n
+The specified file system share is destroyed.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs get\fR [\fB-r\fR|\fB-d\fR \fIdepth\fR] [\fB-Hp\fR] [\fB-o\fR \fBall\fR | \fIfield\fR[,...] [\fB-s\fR \fIsource\fR[,...]] \fBall\fR | \fIproperty\fR[,...] \fIdataset\fR| \fIdataset%namedshare\fR ...\fR
+.ad
+.sp .6
+.RS 4n
+Displays properties for the given datasets. If no datasets are specified, then the command displays properties for all datasets on the system. For each property, the following columns are displayed:
+.sp
+.in +2
+.nf
+     name      Dataset name
+
+     property  Property name
+
+     value     Property value
+
+     source    Property source. Can either be local, default,
+
+               temporary, inherited, or none (-).
+.fi
+.in -2
+.sp
+
+All columns except the \fBRECEIVED\fR column are displayed by default; specify particular or all columns, using the \fB-o\fR option. This command takes a comma-separated list of properties as described in the "Native Properties" and "User Properties" sections.
+.sp
+The special value \fBall\fR can be used to display all properties that apply to the given dataset's type (filesystem, volume, or snapshot).
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+Recursively display properties for any children.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdepth\fR\fR
+.ad
+.sp .6
+.RS 4n
+Recursively display any children of the dataset, limiting the recursion to \fIdepth\fR. A depth of \fB1\fR will display only the dataset and its direct children.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-H\fR\fR
+.ad
+.sp .6
+.RS 4n
+Display output in a form more easily parsed by scripts. Any headers are omitted, and fields are explicitly separated by a single tab instead of an arbitrary amount of space.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIfield\fR\fR
+.ad
+.sp .6
+.RS 4n
+Set of fields to display. One or more of:
+.sp
+.in +2
+.nf
+name,property,value,received,source
+.fi
+.in -2
+.sp
+
+Present multiple fields as a comma-separated list. The default value is:
+.sp
+.in +2
+.nf
+name,property,value,source
+.fi
+.in -2
+.sp
+
+The keyword \fBall\fR specifies all sources.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIsource\fR\fR
+.ad
+.sp .6
+.RS 4n
+A comma-separated list of sources to display. Those properties coming from a source other than those in this list are ignored. Each source must be one of the following:
+.sp
+.in +2
+.nf
+local,default,inherited,temporary,received,none
+.fi
+.in -2
+.sp
+
+The default value is all sources.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+Display numbers in parseable (exact) values.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs get share\fR [\fIfilesystem\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Displays all defined shares or the defined shares for a specified file system.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs set\fR \fBshare.nfs\fR=on | \fBshare.smb=on\fR [\fBdesc\fR=\fIdescription\fR], \fIfilesystem\fR | \fIfilesystem%share\fR\fR
+.ad
+.sp .6
+.RS 4n
+Defines an NFS or SMB file sharing properties for a ZFS dataset by setting the \fBshare.nfs\fR or \fBshare.smb\fR property to \fBon\fR. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs set\fR [\fB-r\fR] \fIproperty\fR=\fIvalue\fR  \fIfilesystem|volume|snapshot|share\fR ...\fR
+.ad
+.sp .6
+.RS 4n
+Sets the property to the given value for each file system or file system share. Only some properties can be edited. See the section for more information on what properties can be set and acceptable values. For more information, see NFS Share Property Descriptions section or the SMB Share Property Descriptions section.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+Recursively applies the effective value of the setting throughout the subtree of child datasets. The effective value may be set or inherited, depending on the property.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs share\fR [\fB-u\fR] \fB-o\fR \fIproperty=value\fR ... \fIfilesystem%share\fR\fR
+.ad
+.br
+.na
+\fB\fBzfs share\fR \fIfilesystem|mountpoint|filesystem%share\fR\fR
+.ad
+.br
+.na
+\fB\fBzfs share\fR \fB-a\fR \fB-r\fR | \fIfilesystem\fR\fR
+.ad
+.sp .6
+.RS 4n
+Creates and publishes an NFS or SMB share of a ZFS dataset according to the share properties values.
+.sp
+Sharing a dataset with the NFS or SMB protocol means that the dataset data is available over the network. ZFS datasets that have the \fBshare.nfs\fR or \fBshare.smb\fR property set are automatically shared when a system is booted.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+Creates a share without immediately sharing it.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIproperty=value\fR\fR
+.ad
+.sp .6
+.RS 4n
+Shares the ZFS file system with the specified share property value.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+Shares all ZFS file systems according to their share property values and to the settings of the \fBshare.nfs\fR and \fBshare.smb\fR properties.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+Applies the share operation recursively to all file systems and shares below the specified file system. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfilesystem\fR | \fIfilesystem%share\fR\fR
+.ad
+.sp .6
+.RS 4n
+Shares the specified file system or named file system share.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzfs unshare\fR \fIfilesystem|mountpoint|filesystem%share\fR\fR
+.ad
+.br
+.na
+\fB\fBzfs unshare\fR \fB-a\fR | \fB-r\fR |\fIfilesystem\fR\fR
+.ad
+.sp .6
+.RS 4n
+Unshares all ZFS datasets that have the \fBshare.nfs\fR or \fBshare.smb\fR property set.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+Unshare all shared ZFS file systems. Invoked automatically as part of the boot process. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+Applies the unshare operation recursively to all file systems and shares below the specified file system
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfilesystem|mountpoint|filesystem%share\fR\fR
+.ad
+.sp .6
+.RS 4n
+Unshare the specified file system. The command can also be given a path to a \fBZFS\fR file system shared on the system.
+.RE
+
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRCreating an NFS or SMB Share of a ZFS File System
+.sp
+.LP
+The following examples show how to share ZFS file systems in different ways.
+
+.sp
+.LP
+A ZFS file system can be shared when it is created. For example:
+
+.sp
+.in +2
+.nf
+# \fBzfs create -o share.nfs=on tank/workspace\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+You can also apply a share property.
+
+.sp
+.in +2
+.nf
+# \fBzfs set share.nfs.nosuid=on tank/workspace\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Confirm that the file system is shared. For example:
+
+.sp
+.in +2
+.nf
+# \fBgrep workspace /etc/dfs/sharetab\fR
+
+/tank/workspace tank_workspace  nfs     nosuid,sec=sys,rw
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+A descendent file system is automatically shared. For example:
+
+.sp
+.in +2
+.nf
+# \fBzfs create tank/workspace/fs1\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+A file system can be shared after it is created. For example:
+
+.sp
+.in +2
+.nf
+# \fBzfs set share.smb=on tank/data\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRCreating a More Complex SMB Share of ZFS File System
+.sp
+.LP
+The following example shows how to create an SMB that uses ABE (access-enabled enumeration) to determine which users can see files for which they have access. A share called \fB%shareabe\fR is created with the \fBshare.smb.abe\fR property set to on. A new share called \fB%sharenoabe\fR is created on the same file system with \fBshare.smb.abe\fR set to off. 
+
+.sp
+.in +2
+.nf
+# \fBzfs share -o share.smb=on -o share.smb.abe=on tank/users/files%shareabe\fR
+
+# \fBzfs share -o share.smb=off tank/users/files%sharenoabe\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+To allow specific users to see all files in the \fBsharenoabe\fR share and other users to see only files for which they have access in the \fBshareabe\fR share, you would need to modify the share permissions that are accessible in \fB/tank/users/files/.zfs/shares\fR directory.
+
+.LP
+\fBExample 3 \fRAdding or Changing Share Properties on a ZFS File System
+.sp
+.LP
+You can share a file system over both NFS and SMB protocols. For example:
+
+.sp
+.in +2
+.nf
+# \fBzfs set share.nfs=on tank/data\fR
+
+# \fBzfs set share.smb=on tank/data\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+You can further add or change share properties. For example:
+
+.sp
+.in +2
+.nf
+# \fBzfs set share.nfs.ro=on tank/data\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 4 \fRDisplaying NFS or SMB Share Information
+.sp
+.LP
+Display NFS or SMB share information.
+
+.sp
+.LP
+Confirm that descendent file systems are shared when the parent file system is shared. For example:
+
+.sp
+.in +2
+.nf
+# \fBzfs get -r share.nfs tank/workspace\fR
+
+NAME                 PROPERTY   VALUE  SOURCE
+
+tank/workspace       share.nfs  on     local
+
+tank/workspace%      share.nfs  on     inherited from tank/workspace
+
+tank/workspace/fs1   share.nfs  on     inherited from tank/workspace
+
+tank/workspace/fs1%  share.nfs  on     inherited from tank/workspace
+.fi
+.in -2
+.sp
+
+.SH EXIT STATUS
+.sp
+.LP
+The following exit values are returned:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+Successful completion. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+An error occurred.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.sp .6
+.RS 4n
+Invalid command line options were specified.
+.RE
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/file-system/zfs
+_
+Interface StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBshare\fR(1M), \fBshare_nfs\fR(1M), \fBshare_smb\fR(1M), \fBunshare\fR(1M), \fBzfs\fR(1M), \fBzpool\fR(1M), \fBchmod\fR(2), \fBchown\fR(2), \fBstat\fR(2), \fBwrite\fR(2), \fBfsync\fR(3C), \fBdfstab\fR(4), \fBvfstab\fR(4), \fBattributes\fR(5)
+.sp
+.LP
+For information about using other \fBZFS\fR features, see \fBzfs_allow\fR(1M), \fBzfs_encrypt\fR(1M), and \fBzfs\fR(1M), and the \fIManaging ZFS File Systems in Oracle Solaris 11.3\fR.

@@ -1,0 +1,284 @@
+'\" te
+.\" Copyright (c) 2002, 2011, Oracle and/or its affiliates.All rights reserved.
+.TH devlinks 1M "2002 年 7 月 15 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+devlinks \- 为其他设备和伪设备添加 /dev 条目
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/devlinks\fR [\fB-d\fR] [\fB-r\fR \fIrootdir\fR] [\fB-t\fR \fItable-file\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBdevfsadm\fR(1M) 现在是用于 \fB/dev\fR 和 \fB/devices\fR 的首选命令，应使用其来代替 \fBdevlinks\fR。
+.sp
+.LP
+\fBdevlinks\fR 用于创建从 \fB/dev\fR 目录树到 \fB/devices\fR 目录树下实际块设备节点和字符特殊设备节点的符号链接。根据 \fItable-file\fR（缺省情况下为 \fB/etc/devlink.tab\fR）中的规范创建链接。
+.sp
+.LP
+每次对系统进行重新配置后引导时会调用 \fBdevlinks\fR，并且只能在运行 \fBdrvconfig\fR(1M) 后才能运行 devlinks。
+.sp
+.LP
+\fItable-file\fR（通常为 \fB/etc/devlink.tab\fR）是一个 ASCII 文件，每个记录占用一行。允许使用注释行，注释行必须以井号字符 (`\fB#\fR') 开头。每个条目必须至少包含两个字段，但可能包含三个字段。使用单个 TAB 字符分隔这些字段。
+.sp
+.LP
+这些字段包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdevfs-spec\fR\fR
+.ad
+.RS 18n
+.rt  
+devinfo 节点规范，用于为 devinfo 节点创建链接。该规范包含一个或多个关键字-值对，其中使用等号 ('\fB=\fR') 将关键字与值隔开，而通过分号将各个关键字-值对彼此分隔。
+.sp
+可能的关键字包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fItype\fR\fR
+.ad
+.RS 12n
+.rt  
+devinfo 设备类型。可能的值在 \fBddi_create_minor_node\fR(9F) 中指定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIname\fR\fR
+.ad
+.RS 12n
+.rt  
+节点的名称。这是 \fB/devices\fR 树条目名称的一部分，位于第一个 '\fB@\fR' 或 '\fB:\fR' 字符之前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIaddr\fR[\fIn\fR]\fR
+.ad
+.RS 12n
+.rt  
+节点名称的地址部分。这是节点名称的一部分，位于 '\fB@\fR' 和 '\fB:\fR' 字符之间。节点名称中有可能没有地址部分，许多伪设备节点即是这种情况。如果在 \fIaddr\fR 之后给定数字，它将指定与地址字段中以逗号分隔的特定子字段匹配：\fIaddr1\fR 匹配第一个子字段，\fIaddr2\fR 匹配第二个子字段，依此类推。\fIaddr0\fR 等效于 \fIaddr\fR，与整个字段匹配。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIminor\fR[\fIn\fR]\fR
+.ad
+.RS 12n
+.rt  
+节点名称的次要部分－'\fB:\fR' 之后的名称部分。与上述的 \fIaddr\fR 一样，\fIminor\fR 关键字之后的数字指定要匹配的子字段。
+.RE
+
+在这四个规范中，只有 \fItype\fR 规范必须始终存在。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIname\fR\fR
+.ad
+.RS 18n
+.rt  
+与 devinfo 节点对应的 \fB/dev\fR 链接的规范。该字段允许 \fBdevlinks\fR 为它找到的 \fB/devices\fR 节点确定匹配的 \fB/dev\fR 名称。该字段规范使用转义序列来允许 \fB/devices\fR 名称的各个部分包括在 \fB/dev\fR 名称中，\fI或者\fR允许在创建节点名称过程中使用计数器。如果使用计数器来创建名称，绝对必须指定计数器之前的名称部分，并且 \fB/dev/\fR 子目录中匹配的所有名称（一直到并且包括计数器）都被视为同一设备的子设备。这意味着它们都应指向相同的目录，即 \fB/devices/\fR 树下的 \fBname\fR 和 \fBaddress\fR。
+.sp
+可能的转义序列包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\D\fR\fR
+.ad
+.RS 7n
+.rt  
+替换对应的 devinfo 节点名称的 \fBdevice-name\fR（名称）部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\A\fR\fIn\fR\fR
+.ad
+.RS 7n
+.rt  
+替换对应的 devinfo 节点名称的 \fBaddress\fR 组成部分的第 \fIn\fR 个组成部分。各个子组成部分以逗号分隔，子组成部分 \fB0\fR 表示整个 \fBaddress\fR 组成部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\M\fR\fIn\fR\fR
+.ad
+.RS 7n
+.rt  
+替换对应的 devinfo 节点名称的 \fBminor\fR 组成部分的第 \fIn\fR 个子组成部分。各个子组成部分以逗号分隔，子组成部分 \fB0\fR 表示整个 \fBminor\fR 组成部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\N\fR\fIn\fR\fR
+.ad
+.RS 7n
+.rt  
+替换以 \fIn\fR 开头的 'counter' 的值。每个设备规范只能有一个计数器，需要为其选择计数器值并使这些值尽可能的小，从而不会与已存在的链接名称冲突。
+.sp
+在设备规范中，\fBcounter\fR 序列不应显式后跟数字，也不应因其他转义序列扩展而后跟数字。如果出现这种情况，它将不可能将已存在的链接与它们的计数器条目正确匹配，因为将不可能明确地解析已存在的 \fB/dev\fR 名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIextra-dev-link\fR\fR
+.ad
+.RS 18n
+.rt  
+指向初始 \fB/dev\fR 链接（在字段 2 中指定）的额外 \fB/dev\fR 链接的可选规范。该字段可能包含 \fBcounter\fR 转义序列（请参见针对 \fIdev-spec\fR 字段的描述），但不能包含任何其他转义序列。它提供了一种为特定 \fB/dev\fR 名称指定别名的方法。
+.RE
+
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.RS 17n
+.rt  
+调试模式－输出找到的所有 \fBdevinfo\fR 节点，并指示将创建哪些链接，但不执行任何操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIrootdir\fR\fR
+.ad
+.RS 17n
+.rt  
+使用 \fIrootdir\fR 作为在其下创建设备节点和链接的 \fB/dev\fR 和 \fB/devices\fR 目录的根目录。更改该根目录并不会更改 \fB/etc/devlink.tab\fR 缺省表的位置，也不会更改应用到为 \fB-t\fR 选项提供的文件名的根目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fItable-file\fR\fR
+.ad
+.RS 17n
+.rt  
+设置 \fBdevlinks\fR 所使用的表文件来指定必须创建的链接。如果未指定该选项，将使用 \fB/etc/devlink.tab\fR。该选项提供了一种指示 \fBdevlinks\fR 仅执行特定工作的方法，因为只有 \fBdevlinks\fR 应当创建的链接类型可以在命令文件中指定并输入到 \fBdevlinks\fR。
+.RE
+
+.SH 错误
+.sp
+.LP
+如果 \fBdevlinks\fR 在 \fItable-file\fR 的某一行中发现错误，它将在标准输出中输出一条警告消息，然后继续进入 \fItable-file\fR 中的下一行，而不执行错误规则指定的任何操作。
+.sp
+.LP
+如果由于某个与文件系统相关的原因而无法创建链接，它将输出一条错误消息，然后继续执行当前规则。
+.sp
+.LP
+如果无法读取所需数据，它将输出一条错误消息，然后继续进行下一个 \fItable-file\fR 行。
+.SH 示例
+.LP
+\fB示例 1 \fR使用 \fB/etc/devlink.tab\fR 字段
+.sp
+.LP
+以下是 \fB/etc/devlink.tab\fR 字段的示例：
+
+.sp
+.in +2
+.nf
+type=pseudo;name=win	win\eM0
+type=ddi_display	framebuffer/\eM0	fb\eN0
+.fi
+.in -2
+
+.sp
+.LP
+第一个示例指出，具有 \fBwin\fR 名称组成部分的所有 \fBpseudo\fR 类型设备将链接到 \fB/dev/win\fR\fIx\fR，其中 \fIx\fR 是 \fIdevinfo-name\fR 的次要组成部分（对于 \fBwin\fR 驱动程序，它始终为一位数）。
+
+.sp
+.LP
+第二个示例指出，所有 \fBddi_display\fR 类型的 devinfo 节点将链接到 \fB/dev/framebuffer\fR 目录下的条目，而名称与 \fB/devices\fR 名称的整个次要组成部分相同。此外，将创建从 \fB/dev/fb\fR\fIn\fR 指向 \fB/dev/framebuffer\fR 下条目的额外链接。该条目将使用计数器来结束名称。
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/dev\fR\fR
+.ad
+.RS 20n
+.rt  
+用于一般用途的其他设备的条目
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/devices\fR\fR
+.ad
+.RS 20n
+.rt  
+设备节点
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/devlink.tab\fR\fR
+.ad
+.RS 20n
+.rt  
+缺省规则文件
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBdevfsadm\fR(1M)、\fBattributes\fR(5)、\fBdevfs\fR(7FS)、\fBddi_create_minor_node\fR(9F)
+.SH 已知问题
+.sp
+.LP
+很容易会构造相互矛盾的链接规范，或永远无法匹配的规范。该程序不检查这些情况。

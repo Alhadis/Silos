@@ -1,0 +1,225 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 2000, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Portions Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\" Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase"this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard,the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH talk 1 "2011 年 7 月 7 日" "SunOS 5.11" "用户命令"
+.SH 名称
+talk \- 与其他用户通信
+.SH 用法概要
+.LP
+.nf
+\fBtalk\fR \fIaddress\fR [\fIterminal\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBtalk\fR 实用程序是双向的、面向屏幕的通信程序。
+.sp
+.LP
+首次调用时，\fBtalk\fR 会发送与以下消息类似的消息：
+.sp
+.in +2
+.nf
+Message from TalkDaemon@ \fIher_machine\fR at \fItime .\|.\|.\fR
+talk: connection requested by \fIyour_address\fR
+talk: respond with: talk \fIyour_address\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+到指定的 \fIaddress\fR。此时，可通过键入以下内容来回复消息接收者：
+.sp
+.in +2
+.nf
+talk \fIyour_address\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+一旦建立通信，双方便可同时键入，他们的输出将显示在屏幕的不同区域。字符的处理方式如下：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+键入警报字符将在接收者的终端发出警报。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+键入 Ctrl-l 将刷新发送者的屏幕区域。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果键入清除和删除字符，会按 \fBtermios\fR(3C) 界面中所述的方式影响发送者的终端。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+键入中断或文件结尾 (\fBEOF\fR) 字符将终止本地的 \fBtalk\fR 实用程序。一旦一端的 \fBtalk\fR 会话终止，\fBtalk\fR 会话的另一端便会收到通知，说明 \fBtalk\fR 会话已终止，除退出外无法进行其他操作。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果键入 \fBLC_CTYPE\fR 分类 \fBprint\fR 或 \fBspace\fR 中的字符，会将这些字符发送到接收者的终端。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+当且仅当启用了 \fBstty\fR \fBiexten\fR 本地模式，才会将其他特殊控制字符和多字节或单字节字符（如果其等效宽字符可输出）作为可输出字符处理。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果键入其他不可列显字符，会按以下方式将其写入接收者的终端：控制字符将显示为插入记号 (\fB^\fR) 后跟相应的 \fBASCII\fR 字符，设置了高序位的字符将以“元数据”表示法显示。例如，\fB\003\fR 显示为 \fB^C\fR，\fB\372\fR 显示为 \fBM-z\fR。
+.RE
+.sp
+.LP
+可以使用 \fBmesg\fR(1) 实用程序拒绝或授予接收 \fBtalk\fR 消息的权限。但是，用户的特权可以进一步限制其他用户终端的可访问性域。某些命令，如 \fBpr\fR(1)，会禁止消息以防止干扰其输出。如果用户缺少执行所请求操作的相应特权，则 \fBtalk\fR 将失败。
+.sp
+.LP
+某些锁定模式的终端不具备支持 \fBtalk\fR 的即时消息交换所需的所有功能。如果此类终端不支持此类型的交换，则实现可能支持同时交互级别更低的交换，或者可能报告错误（描述与终端相关的缺陷）。
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIaddress\fR\fR
+.ad
+.RS 12n
+.rt  
+\fBtalk\fR 会话的接收者。\fIaddress\fR 的一种格式为 \fIusername\fR，由 \fBwho\fR(1) 实用程序返回。如果您希望与自己计算机上的某人通信，则 \fIusername\fR 就是此人的登录名。如果您希望与其他主机上的用户通信，则 \fIusername\fR 可能是以下格式之一： 
+.sp
+.in +2
+.nf
+\fIhost\fR\fB!\fR\fIuser\fR
+\fIhost\fR\fB\&.\fR\fIuser\fR
+\fIhost\fR\fB:\fR\fIuser\fR
+\fIuser\fR\fB@\fR\fIhost\fR 
+.fi
+.in -2
+.sp
+
+尽管 \fIuser\fR\fB@\fR\fIhost\fR 可能是首选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIterminal\fR\fR
+.ad
+.RS 12n
+.rt  
+如果接收者多次登录，则可使用 \fIterminal\fR 来表示相应的终端名称。如果未指定 \fIterminal\fR，则 \fBtalk\fR 消息将显示在接收者使用的一个或多个可访问终端上。\fIterminal\fR 的格式将与 \fBwho\fR 返回的格式相同。
+.RE
+
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBtalk\fR 执行的以下环境变量的说明，请参见 \fBenviron\fR(5)：\fBLANG\fR、\fBLC_ALL\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR 和 \fBNLSPATH\fR。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTERM\fR\fR
+.ad
+.RS 8n
+.rt  
+确定调用者终端类型的名称。如果未设置该变量或该变量为空，则将使用不确定的终端类型。
+.RE
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+发生错误，或者在不支持的终端上调用了 \fBtalk\fR。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/hosts\fR\fR
+.ad
+.RS 18n
+.rt  
+主机名数据库
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/utmpx\fR\fR
+.ad
+.RS 18n
+.rt  
+\fBtalk\fR 的用户和记帐信息
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性service/network/network-servers
+_
+接口稳定性Committed（已确定）
+_
+标准请参见 \fBstandards\fR(5)。
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBmail\fR(1)、\fBmesg\fR(1)、\fBpr\fR(1)、\fBstty\fR(1)、\fBwho\fR(1)、\fBwrite\fR(1)、\fBtalkd\fR(1M)、\fBtermios\fR(3C)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBstandards\fR(5)
+.SH 附注
+.sp
+.LP
+键入 Ctrl-l 可重画屏幕，删除、中止和词语中止字符可在 \fBtalk\fR 中正常使用。要退出，请键入中断字符。\fBtalk\fR 随后会将光标移动到屏幕底部并将终端恢复到之前的状态。

@@ -1,0 +1,238 @@
+'\" te
+.\" Copyright (c) 2003, 2012, Oracle and/or its affiliates.All rights reserved.
+.TH in.ndpd 1M "2012 年 5 月 11 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+in.ndpd \- IPv6 自动配置的守护进程
+.SH 用法概要
+.LP
+.nf
+\fB/usr/lib/inet/in.ndpd\fR [\fB-adt\fR] [\fB-f\fR \fIconfig_file\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBin.ndpd\fR 提供“用于 IPv6 的相邻节点搜索”以及“用于 IPv6 的有状态和无状态地址自动配置”的主机和路由器自动配置组件。具体而言，\fBin.ndpd\fR 实现：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+路由器搜索；
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+前缀搜索；
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+参数搜索； 
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+有状态地址自动配置的调用；
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+无状态地址自动配置；和
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+无状态地址自动配置的保密性扩展。
+.RE
+.sp
+.LP
+相邻节点搜索的其他方面由 \fBip6\fR(7P) 实现，包括：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+地址解析；
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+相邻节点不可访问性检测；和 
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+重定向。
+.RE
+.sp
+.LP
+系统内核实现重复地址检测功能。
+.sp
+.LP
+\fBin.ndpd\fR 由服务管理工具 (service management facility, SMF) 通过服务标识符进行管理：
+.sp
+.in +2
+.nf
+svc:/network/routing/ndp:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果 \fB/etc/inet/ndpd.conf\fR 文件不存在或未将网络接口的变量 \fBAdvSendAdvertisements\fR 设置为 true，那么 \fBin.ndpd\fR 会将节点设为该接口的主机，即发送路由器请求消息，然后使用它收到的路由器通告消息自动配置节点。请注意，\fBin.ndpd\fR 仅根据前缀通告自动配置全局或站点本地范围内的地址。
+.sp
+.LP
+如果将接口的 \fBAdvSendAdvertisements\fR 设置为 true，那么 \fBin.ndpd\fR 将在该接口上执行路由器功能，即发送路由器通告消息以自动配置连接的主机，但是不将它收到的任何通告用于自动配置。但是发送通告时，\fBin.ndpd\fR 将使用其自身发送的通告自动配置其前缀。
+.sp
+.LP
+无状态自动配置不需要手动配置主机，需要少量（如果有）的路由器配置，并且不需要其他服务器。无状态机制允许主机生成其自己的地址，并使用本地信息以及路由器通告的非本地信息生成地址。\fBin.ndpd\fR 将为每个地址激活逻辑接口。
+.sp
+.LP
+有状态自动配置需要使用 \fBdhcpagent\fR(1M) 守护进程和 DHCPv6 协议。\fBdhcpagent\fR 守护进程负责为获取的地址激活逻辑接口、维护租用和处理重复的地址。\fBin.ndpd\fR 自动启动 \fBdhcpagent\fR 守护进程，并在应该启动 DHCPv6 时发送信号。\fBin.ndpd\fR 还检测 \fBdhcpagent\fR 何时配置逻辑接口，并根据收到的路由通告消息在每个接口上设置适当的前缀长度。\fBin.ndpd\fR 不会停止 \fBdhcpagent\fR；如果需要，可使用 \fBifconfig\fR(1M) 控制 \fBdhcpagent\fR。
+.sp
+.LP
+还可以实现为接口自动配置临时地址。这需要为主机上的一个或多个接口启用临时地址令牌。但是，与自动配置的标准 IPv6 地址不同，临时地址由站点前缀和一个随机生成的 64 位数字组成。该随机数字将成为 IPv6 地址的接口 ID 段。链路本地地址不是使用临时地址的接口 ID 生成的。
+.sp
+.LP
+如果内核检测到重复的临时地址，\fBin.ndpd\fR 将自动选择另一个。
+.sp
+.LP
+路由器通告在链路上分配的所有前缀。IPv6 主机使用相邻节点搜索从本地路由器获取子网前缀。主机通过将子网前缀与从接口的 MAC 地址生成的接口 ID 组合在一起来自动创建 IPv6 地址。在没有路由器的情况下，主机只能生成链路本地地址。链路本地地址只能用于与同一链路上的节点通信。
+.sp
+.LP
+有关如何启用 IPv6 地址自动配置的信息，请参见\fI《Managing IP Quality of Service in Oracle Solaris 11.3》\fR。
+.SH 选项
+.sp
+.LP
+下面列出了支持的选项和等效的 SMF 服务属性。SMF 服务属性使用以下形式的命令设置：
+.sp
+.in +2
+.nf
+# \fBrouteadm -m ndp:default \fIkey\fR=\fIvalue\fR\fR
+.fi
+.in -2
+.sp
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+关闭无状态和有状态地址自动配置。设置后，守护进程不自动配置任何地址，也不对任何地址进行重新编号。该选项与以下 \fBndpd.conf\fR(4) 命令行具有相同的效果：
+.sp
+.in +2
+.nf
+ifdefault StatefulAddrConf off
+ifdefault StatelessAddrConf off
+.fi
+.in -2
+
+使用该选项等效于将 \fBstateless_addr_conf\fR 属性设置为 false。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用 \fBstdout\fR 的大量调试输出。设置后，程序在前台运行，并保持与控制终端的连接。使用该选项等效于将 \fBdebug\fR 属性设置为 true。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR  \fIconfig_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fIconfig_file\fR 配置信息，而不是缺省的 \fB/etc/inet/ndpd.conf\fR。使用该选项等效于将 \fBconfig_file\fR 属性设置为要使用的配置文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用跟踪（输出） \fBstdout\fR 发送和已接收的所有数据包的功能。设置后，程序在前台运行，并保持与控制终端的连接。因而，该选项无法在 SMF 下运行。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ndpd.conf\fR\fR
+.ad
+.RS 23n
+.rt  
+配置文件。要允许 \fBin.ndpd\fR 将自动配置信息通告给主机，不一定要在主机上提供该文件，但是一定要在路由器上提供该文件。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBdhcpagent\fR(1M)、\fBifconfig\fR(1M)、\fBrouteadm\fR(1M)、\fBsvcadm\fR(1M)、\fBndpd.conf\fR(4)、\fBattributes\fR(5)、\fBicmp6\fR(7P),\fBip6\fR(7P)、\fBattributes\fR(5)、\fBsmf\fR(5)
+.sp
+.LP
+\fI《Managing IP Quality of Service in Oracle Solaris 11.3》\fR
+.sp
+.LP
+由 Narten, T.、Nordmark, E. 和 Simpson, W. 合著的《\fINeighbor Discovery for IP Version 6 (IPv6)\fR》，RFC 2461。Internet Society 出版。1998 年 12 月。
+.sp
+.LP
+由 Thomson, S., 和 Narten, T. 合著的《\fIIPv6 Stateless Address Autoconfiguration\fR》，RFC 2462。Internet Society 出版。1998 年 12 月。
+.sp
+.LP
+由 Narten, T. 和 Draves, R. 合著的《Privacy Extensions for Stateless Address Autoconfiguration in IPv6》，RFC 3041。Internet Society 出版。2001 年 1 月。
+.SH 诊断
+.sp
+.LP
+收到 \fBSIGHUP\fR 信号后，\fBin.ndpd\fR 将重新启动并重新读取 \fB/etc/inet/ndpd.conf\fR。 
+.SH 附注
+.sp
+.LP
+\fBin.ndpd\fR 守护进程服务由服务管理工具 \fBsmf\fR(5) 管理，其服务标识符为：
+.sp
+.in +2
+.nf
+svc:/network/routing/ndp:default
+.fi
+.in -2
+
+.sp
+.LP
+可以使用 \fBsvcadm\fR(1M) 或 \fBrouteadm\fR(1M) 来对此服务执行管理操作（如启用、禁用或请求重新启动）。

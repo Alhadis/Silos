@@ -1,0 +1,211 @@
+'\" te
+.\" Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+.TH sofop_notify 9E "9 May 2012" "SunOS 5.11" "Driver Entry Points"
+.SH NAME
+sofop_notify \- notification entry point
+.SH SYNOPSIS
+.LP
+.nf
+#include <sys/sockfilter.h>
+
+void prefix_notify(sof_handle_t hdl, void *cookie,
+     sof_event_t event, uintptr_t event_data);
+.fi
+
+.SH PARAMETERS
+.sp
+.ne 2
+.mk
+.na
+\fB\fIhdl\fR\fR
+.ad
+.RS 14n
+.rt  
+per-socket filter handle
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcookie\fR\fR
+.ad
+.RS 14n
+.rt  
+per-socket filter-private data
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIevent\fR\fR
+.ad
+.RS 14n
+.rt  
+socket event. The following events are possible:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSOF_EV_CLOSING\fR\fR
+.ad
+.sp .6
+.RS 4n
+Socket is closing.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSOF_EV_CONNECT_DONE\fR\fR
+.ad
+.sp .6
+.RS 4n
+A connect operation has finished, and \fIevent_data\fR, treated as an \fBuint32_t\fR, indicates the result:
+.sp
+.ne 2
+.mk
+.na
+\fB0\fR
+.ad
+.RS 13n
+.rt  
+Connect operation was successful.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB>0\fR
+.ad
+.RS 13n
+.rt  
+An error, as described in \fBIntro\fR(2), occurred.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSOF_EV_SHUTDOWN\fR\fR
+.ad
+.sp .6
+.RS 4n
+An event has occurred that has impacted the socket's ability to receive and/or send data. \fIevent_data\fR, treated as an \fBuint32_t\fR, describes what has been shut down:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSHUT_RD\fR\fR
+.ad
+.sp .6
+.RS 4n
+The receive side has shut down.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSHUT_WR\fR\fR
+.ad
+.sp .6
+.RS 4n
+The send side has shut down.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSHUT_RDWRSHUT_RDWR\fR\fR
+.ad
+.sp .6
+.RS 4n
+The receive and send sides have shut down.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSOF_EV_FLOWCTRL_CLR\fR\fR
+.ad
+.sp .6
+.RS 4n
+Flow control has been cleared. \fIevent_data\fR, treated as an \fBint32_t\fR, indicate the direction:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSOF_FLOWCTRL_DATA_IN\fR\fR
+.ad
+.RS 25n
+.rt  
+Receive side.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSOF_FLOWCTRL_DATA_OUT\fR\fR
+.ad
+.RS 25n
+.rt  
+Send side.
+.RE
+
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIevent_data\fR\fR
+.ad
+.RS 14n
+.rt  
+event specific information
+.RE
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBsofop_notify()\fR entry point is called in response to state changes for the socket. Notifications are purely informational and cannot be modified by the filter.
+.SH CONTEXT
+.sp
+.LP
+The \fBsofop_notify()\fR entry point can be called from interrupt context, except when \fIevent\fR is \fBSOF_EV_CLOSING\fR, in which case \fBsofop_notify()\fR is guaranteed to be called from kernel or user context.
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/kernel
+_
+Interface StabilityUncommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBIntro\fR(2), \fBattributes\fR(5), \fBsof_ops\fR(9S)

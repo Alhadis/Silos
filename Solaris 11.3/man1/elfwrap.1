@@ -1,0 +1,277 @@
+'\" te
+.\"  Copyright (c) 2008, 2014, Oracle and/or its affiliates. All rights reserved..
+.TH elfwrap 1 "23 April 2014" "SunOS 5.11" "User Commands"
+.SH NAME
+elfwrap \- wrap data in an \fBELF\fR file
+.SH SYNOPSIS
+.LP
+.nf
+\fBelfwrap\fR [\fB-64\fR] [\fB-e\fR \fIend-symbol\fR] [\fB-n\fR \fIsection-name\fR]
+[\fB-o\fR \fIrelobj-file\fR] [\fB-s\fR \fIstart-symbol\fR] [\fB-z\fR target=\fBsparc\fR | \fBx86\fR]
+\fIdata-file\fR ...
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBelfwrap\fR utility creates an \fBELF\fR relocatable object file from one or more data files. The relocatable object encapsulates each data file within an individual section, together with symbols that can be used to reference the section. The relocatable object is appropriate for inclusion with a subsequent link-edit. Users can reference the encapsulated data using the associated symbols.
+.sp
+.LP
+By default, a 32-bit \fBELF\fR relocatable object is created that is appropriate for the machine on which \fBelfwrap\fR is executed. The \fB-64\fR option can be used to create a 64-bit \fBELF\fR relocatable object. The \fB-z target\fR option can be used to create a relocatable object for a specific machine type.
+.sp
+.LP
+By default, the relocatable object \fBa.wrap.o\fR is created. The \fB-o\fR option can be used to specify an alternative relocatable object name.
+.sp
+.LP
+By default, the base name of each data file, as define by the \fBbasename\fR(1) utility, is used to create section and symbol names that are assigned to the associated data. The \fB-e\fR, \fB-n\fR, and \fB-s\fR options can be used to override these defaults. Without these options, an input data file \fBISV/isv-data\fR, has the following \fBELF\fR information associated to the data within the output relocatable object.
+.sp
+.ne 2
+.mk
+.na
+\fBAn \fBELF\fR section named \fB\&.isv-data\fR\fR
+.ad
+.sp .6
+.RS 4n
+This section contains the entire contents of the input data file. The section is also identified with the \fBSHF_SUNW_ELFWRAP\fR section flag.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBAn \fBELF\fR symbol named \fBisv-data_start\fR\fR
+.ad
+.sp .6
+.RS 4n
+This symbol reflects the starting address of the \fB\&.isv-data\fR section.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBAn \fBELF\fR symbol named \fBisv-data_end\fR\fR
+.ad
+.sp .6
+.RS 4n
+This symbol reflects the address of the first location after the \fB\&.isv-data\fR section.
+.RE
+
+.SH OPTIONS
+.sp
+.LP
+The following options are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-64\fR\fR
+.ad
+.sp .6
+.RS 4n
+Create a 64-bit \fBELF\fR relocatable object.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fIend-symbol\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the symbol name to be associated with the end of the input data file that follows this option on the command line.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR \fIsection-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the section name to be used for the input data file that follows this option on the command line.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIrelobj-file\fR\fR
+.ad
+.sp .6
+.RS 4n
+Produce a relocatable object that is named \fIrelobj-file\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIstart-symbol\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the symbol name to be associated with the start of the input data file that follows this option on the command line.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR target=\fBsparc\fR | \fBx86\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the machine type for the output relocatable object. Supported targets are \fBsparc\fR and \fBx86\fR. The 32-bit machine type for the specified target is used unless the \fB-64\fR option is also present, in which case the corresponding 64-bit machine type is used. By default, the relocatable object that is generated is 32-bit for the machine one which \fBelfwrap\fR is executed.
+.RE
+
+.sp
+.LP
+The \fB-e\fR, \fB-n\fR, and \fB-s\fR options are associated to the input data files that follow these options on the command line. These options can be repeated, prior to any input data file, to associate unique names to each data file. Applying the same \fB-e\fR, or \fB-s\fR options to more than one input data file results in multiply defined symbols being defined within the relocatable object being created. This may render the object unsuitable for additional link-editing. Multiple use of these options in this manner result in warning messages from \fBelfedit\fR.
+.SH EXAMPLES
+.sp
+.LP
+The following example encapsulates the system \fBpasswd\fR file and the system \fBgroup\fR file within a relocatable object \fBpassgroup.o\fR.
+.sp
+.in +2
+.nf
+example% \fBelfwrap -o passgroup.o /etc/passwd /etc/group\fR
+example% \fBelfdump -c -T PROGBITS passgroup.o\fR
+
+Section Header[1]:  sh_name: .passwd
+  sh_addr:  0      sh_flags:  [ SHF_ALLOC SHF_SUNW_ELFWRAP ]
+  sh_size:  0x5a2  sh_type:   [ SHT_PROGBITS ]
+  ...
+
+Section Header[2]:  sh_name: .group
+  sh_addr:  0      sh_flags:  [ SHF_ALLOC SHF_SUNW_ELFWRAP ]
+  sh_size:  0x199  sh_type:   [ SHT_PROGBITS ]
+  ...
+
+example% \fBelfdump -s passgroup.o | egrep "passwd|group"\fR
+  [2]      0     0  SECT LOCL  D  0 .passwd        
+  [3]      0     0  SECT LOCL  D  0 .group         
+  [7]      0 0x5a2  OBJT GLOB  D  0 .passwd  passwd_start
+  [8]  0x5a2     0  OBJT GLOB  D  0 .passwd  passwd_end
+  [9]      0 0x199  OBJT GLOB  D  0 .group   group_start
+ [10]  0x199     0  OBJT GLOB  D  0 .group   group_end
+
+example% \fBstrings -N.passwd passgroup.o | head -1\fR
+root:x:0:0:Super-User:/:/usr/sbin/sh
+example% \fBstrings -N.group passgroup.o | head -1\fR
+root::0:
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The password data within the relocatable object can be referenced from the following user code.
+.sp
+.in +2
+.nf
+example% \fBcat main.c\fR
+#include        <stdio.h>
+
+extern char     passwd_start, passwd_end;
+
+void main()
+{
+    char    *pstart = &passwd_start, *pend = &passwd_end;
+    char    *str, *lstr;
+
+    for (lstr = str = pstart; str < pend; str++) {
+        if ((*str == '\en') && (str != (pend - 1)))  {
+            (void) printf("%.*s", (++str - lstr), lstr);
+            lstr = str;
+        }
+    }
+}
+example% \fBcc -o main main.c passgroup.o\fR
+example% \fB\&./main\fR
+root:x:0:0:Super-User:/:/usr/sbin/sh
+\&....
+nobody4:x:65534:65534:SunOS 4.x NFS Anonymous Access User:/:
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The following example uses the same input files, but assigns their data to a common section name, and associates unique symbol names to each data.
+.sp
+.in +2
+.nf
+example% \fBelfwrap -o passgroup.o -n .rodata \e\fR
+    \fB-s P_START -e P_END /etc/passwd \e\fR
+    \fB-s G_START -e G_END /etc/group\fR
+example% \fBelfdump -c -T PROGBITS passgroup.o\fR
+
+Section Header[1]:  sh_name: .rodata
+  sh_addr:  0      sh_flags:  [ SHF_ALLOC SHF_SUNW_ELFWRAP ]
+  sh_size:  0x5a2  sh_type:   [ SHT_PROGBITS ]
+  ...
+
+Section Header[2]:  sh_name: .rodata
+  sh_addr:  0      sh_flags:  [ SHF_ALLOC SHF_SUNW_ELFWRAP ]
+  sh_size:  0x199  sh_type:   [ SHT_PROGBITS ]
+  ...
+
+example% \fBelfdump -s passgroup.o | fgrep .rodata\fR
+  [2]      0     0  SECT LOCL  D  0 .rodata
+  [3]      0     0  SECT LOCL  D  0 .rodata
+  [7]      0 0x5a2  OBJT GLOB  D  0 .rodata  P_START
+  [8]  0x5a2     0  OBJT GLOB  D  0 .rodata  P_END
+  [9]      0 0x199  OBJT GLOB  D  0 .rodata  G_START
+ [10]  0x199     0  OBJT GLOB  D  0 .rodata  G_END
+.fi
+.in -2
+.sp
+
+.SH FILES
+.sp
+.ne 2
+.mk
+.na
+\fB\fBa.wrap.o\fR\fR
+.ad
+.RS 12n
+.rt  
+The default relocatable object file created.
+.RE
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitydeveloper/base-developer-utilities
+_
+Interface StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBelfdump\fR(1), \fBld\fR(1), \fBstrings\fR(1), \fBelf\fR(3ELF), \fBattributes\fR(5), \fBddi_modopen\fR(9F)
+.sp
+.LP
+\fIOracle Solaris 11.3 Linkers and Libraries         Guide\fR
+.SH NOTES
+.sp
+.LP
+Any data encapsulated with \fBelfwrap\fR must be in a format appropriate for the destination target.
+.sp
+.LP
+The name of the input file drives the creation of the symbol names to associate with the input file data. Therefore, input files should be uniquely named to avoid the creation of symbols with the same name.

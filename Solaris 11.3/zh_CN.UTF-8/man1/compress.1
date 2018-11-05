@@ -1,0 +1,377 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 2008 Sun Microsystems, Inc. All Rights Reserved
+.\" Portions Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\"  Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase"this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard,the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH compress 1 "2008 年 3 月 13 日" "SunOS 5.11" "用户命令"
+.SH 名称
+compress, uncompress, zcat \- 压缩、解压缩文件或显示扩展的文件
+.SH 用法概要
+.LP
+.nf
+\fBcompress\fR [\fB-fv/\fR] [\fB-b\fR \fIbits\fR] [\fIfile\fR]...
+.fi
+
+.LP
+.nf
+\fBcompress\fR \fB-c\fR [\fB-fv\fR] [\fB-b\fR \fIbits\fR] [\fIfile\fR]
+.fi
+
+.LP
+.nf
+\fBuncompress\fR [\fB-fv\fR] [\fB-c | -/\fR] [\fIfile\fR]...
+.fi
+
+.LP
+.nf
+\fBzcat\fR [\fIfile\fR]...
+.fi
+
+.SH 描述
+.SS "压缩"
+.sp
+.LP
+\fBcompress\fR 实用程序尝试使用自适应 Lempel-Ziv 编码来降低指定文件的大小。除输出为标准输出外，每个文件都由扩展名为 \fB\&.Z\fR 的文件所替代，同时保持相同的所有权模式、更改时间和修改时间、ACL 以及扩展属性。压缩实用程序同样会尝试将 \fIfile\fR\fB\&.z\fR 的所有者和组设置为文件的所有者和组，但即使无法完成这一操作也不会失败。如果将 \fB\&.Z\fR 附加至文件路径名会导致路径名超过 \fB1023\fR 字节，则命令失败。如果未指定文件，则标准输入会压缩到标准输出。
+.sp
+.LP
+获得的压缩数量取决于输入大小、每个代码的 \fIbits\fR 数量和常用子串的分布。一般情况下，源代码或英文之类的文本会降低 50-60%。压缩结果通常要远优于霍夫曼编码（用于 \fBpack\fR(1)）的结果，且计算所花费的时间更少。在压缩期间指定的 \fIbits\fR 参数会与幻数一起编码至压缩文件，以确保之后无法解压随机数据或重新压缩已压缩的数据。
+.SS "解压缩"
+.sp
+.LP
+使用 \fBcompress\fR 实用程序压缩文件后，\fBuncompress\fR 实用程序会将这些文件恢复到原始状态。如果未指定文件，则标准输入会解压缩到标准输出。
+.sp
+.LP
+该实用程序支持解压缩任何由 \fBcompress\fR 生成的文件。对于 \fBcompress\fR 在其他系统上生成的文件，\fBuncompress\fR 支持 9 到 16 位压缩（请参见 \fB-b\fR）。
+.SS "zcat"
+.sp
+.LP
+\fBzcat\fR 实用程序会将使用 \fBcompress\fR 压缩的解压形式的文件写入到标准输出。这等效于 \fBuncompress\fR\fB-c\fR。输入文件不受影响。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR \fIbits\fR\fR
+.ad
+.RS 11n
+.rt  
+为通用子串代码设置上限（以位为单位）。\fIbits\fR 必须介于 9 和 16 之间（16 为缺省值）。降低位数将产生更大的、压缩较少的文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 11n
+.rt  
+写入到标准输出；无文件更改，无 \fB\&.Z\fR 文件创建。\fBzcat\fR 的行为等同于 "\fBuncompress\fR \fB-c\fR" 的行为。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.RS 11n
+.rt  
+会在压缩过程中强制压缩 \fIfile\fR，即使该操作不会真正降低文件大小，或者即使已存在对应的 \fIfile\fR\fB\&.Z\fR 文件。 
+.sp
+如果未指定 \fB-f\fR 选项，且进程没有在后台运行，则系统会提示您确认是否应该覆盖现有文件。如果回答是肯定的，则会覆盖现有文件。解压缩过程中不会显示覆盖文件的提示。如果未指定 \fB-f\fR 选项，且进程没有在后台运行，则系统会提示您确认是否应该覆盖现有文件。如果标准输入不是终端，且未指定 \fB-f\fR，则会向标准错误写入一条诊断消息，并以大于 \fB0\fR 的状态退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 11n
+.rt  
+详细模式。写入到关于每个文件的降低或扩展百分比的标准错误消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-/\fR\fR
+.ad
+.RS 11n
+.rt  
+在压缩或解压缩过程中，会将与源文件相关联的任何扩展系统属性复制到目标文件，并将与源文件扩展属性相关联的任何扩展系统属性复制到与目标文件相关联的对应扩展属性。如果有任何扩展系统属性无法复制，则保留原始文件，向 \fBstderr\fR 写入一条诊断消息，且最终退出状态为\fB非零值\fR。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfile\fR\fR
+.ad
+.RS 8n
+.rt  
+由 \fBcompress\fR 压缩、\fBuncompress\fR 解压缩的文件或其解压缩形式被 \fBzcat\fR 写入到标准输出的文件的路径名。如果 \fIfile\fR 为 \fB-\fR，或如果未指定 \fI file\fR，则使用标准输入。
+.RE
+
+.SH 用法
+.sp
+.LP
+有关 \fBcompress\fR、\fBuncompress\fR 和 \fBzcat\fR 遇到大于或等于 2 GB （2^31 字节）文件时行为的说明，请参见 \fBlargefile\fR(5)。
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBcompress\fR、\fBuncompress\fR 和 \fBzcat\fR 执行的以下环境变量的说明，请参见 \fBenviron\fR(5)：\fBLANG\fR、\fBLC_ALL\fR、\fBLC_COLLATE\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR 和 \fBNLSPATH\fR。 
+.sp
+.LP
+肯定的回答使用为用户语言环境中 \fBLC_MESSAGES\fR 类别的 \fByesexpr\fR 关键字定义的扩展正则表达式进行处理。\fBLC_COLLATE\fR 类别中指定的语言环境定义为 \fByesexpr\fR 定义的表达式中使用的范围、等效类和多字符整理元素的行为。\fBLC_CTYPE\fR 中指定的语言环境确定文本数据字符字节序列解释的语言环境，以及为 \fByesexpr\fR 定义的表达式中使用的字符类的行为。请参见 \fBlocale\fR(5)。
+.SH 退出状态
+.sp
+.LP
+将返回以下错误值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 6n
+.rt  
+因大小会增加（且未指定 \fB-f\fR 选项），一个或多个文件未被压缩。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>2\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+CSIEnabled（已启用）
+_
+接口稳定性Committed（已确定）
+_
+标准请参见 \fBstandards\fR(5)。
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBln\fR(1)、\fBpack\fR(1)、\fBfgetattr\fR(3C)、\fBfsetattr\fR(3C)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBlargefile\fR(5)、\fBlocale\fR(5)、\fBstandards\fR(5)
+.SH 诊断
+.sp
+.ne 2
+.mk
+.na
+\fB用法：\fBcompress [-fv/] [-b\fR \fIbits\fR] [\fIfile\fR . . . ]\fR
+.ad
+.br
+.na
+\fB\fBcompress c [-fv] [-b\fR \fIbits\fR] [\fIfile\fR . . . ]\fR
+.ad
+.sp .6
+.RS 4n
+在命令行指定了无效选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB用法：\fBuncompress [-fv] [-c | -/] [\fR\fIfile\fR\fB]...\fR\fR
+.ad
+.sp .6
+.RS 4n
+在命令行指定了无效选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB缺少最大位数\fR
+.ad
+.sp .6
+.RS 4n
+最大位数必须遵循 \fB-b\fR，或最大位数无效，并非数值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfile\fR：并非压缩格式\fR
+.ad
+.sp .6
+.RS 4n
+未压缩指定为 \fBuncompress\fR 的文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfile\fR：以 \fIxx\fR 位进行了压缩，只能处理 \fIyy\fR 位\fR
+.ad
+.sp .6
+.RS 4n
+可在此计算机上处理比压缩码\fI位数\fR更多的程序压缩了 \fBfile\fR。以更小\fI位数\fR重新压缩文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfile\fR：已经拥有 .Z 后缀 -- 无更改\fR
+.ad
+.sp .6
+.RS 4n
+假定该文件已经压缩。重命名文件并重试。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfile\fR：已经存在，是否要覆盖（y 或 n）？\fR
+.ad
+.sp .6
+.RS 4n
+如果希望替换输出文件，则回答 \fBy\fR；否则回答 \fBn\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB未压缩：损坏输入\fR
+.ad
+.sp .6
+.RS 4n
+检测到 \fBSIGSEGV\fR 违规，这通常意味着输入文件损坏。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB压缩：\fIxx.xx\fR\fB%\fR\fR
+.ad
+.sp .6
+.RS 4n
+压缩节省的输入百分比。（仅与 \fB-v\fR 相关。）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB– – 不是常规文件：未更改\fR
+.ad
+.sp .6
+.RS 4n
+如果输入文件不是常规文件（如目录），则会保留不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB– – 拥有 \fIxx\fR 个其他链接：未更改\fR
+.ad
+.sp .6
+.RS 4n
+输入文件拥有链接；保留不变。有关更多信息，请参见 \fBln\fR(1)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB– – 文件未更改\fR
+.ad
+.sp .6
+.RS 4n
+压缩未实现空间节省。输入未压缩。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB– –文件名太长，无法添加 .Z\fR
+.ad
+.sp .6
+.RS 4n
+文件名太长，无法附加 \fB\&.Z\fR 后缀。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB– –无法保留扩展属性。文件未更改\fR
+.ad
+.sp .6
+.RS 4n
+无法复制扩展系统属性。
+.RE
+
+.SH 附注
+.sp
+.LP
+尽管压缩文件可在具有大型内存的计算机间兼容，但应该为具有小型处理数据空间（64KB 或更小）的体系结构使用 \fB-b\fR 12 来传输文件。
+.sp
+.LP
+\fBcompress\fR 应该对 \fB\&. Z\fR 后缀的存在更加灵活。

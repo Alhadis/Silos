@@ -1,0 +1,263 @@
+'\" te
+.\" Copyright (c) 1990, Regents of the University of Michigan. All Rights Reserved.
+.\" Portions Copyright (c) 2006, 2012, Oracle and/or its affiliates. All rights reserved.
+.TH ldap 5 "2012 年 5 月 22 日" "SunOS 5.11" "ユーザーコマンド"
+.SH 名前
+ldap \- ネーミングリポジトリとしての LDAP
+.SH 機能説明
+.sp
+.LP
+LDAP (Lightweight Directory Access Protocol) は、ディレクトリサーバーにアクセスするための業界標準です。\fBldapclient\fR(1M) を使用してクライアントを初期化し、ネームサービススイッチファイル \fB/etc/nsswitch.conf\fR でキーワード \fBldap\fR を使用すると、Oracle Solaris クライアントは LDAP サーバーからネーミング情報を取得できます。ユーザー名、ホスト名、パスワードなどの情報は、\fBDIT\fR (Directory Information Tree) 内の LDAP サーバーに格納されます。\fBDIT\fR は、属性で構成されるエントリで構成されます。属性ごとに、1 つのタイプと 1 つ以上の値があります。
+.sp
+.LP
+Oracle Solaris LDAP クライアントが LDAP サーバーからネーミング情報にアクセスするときは、LDAP v3 プロトコルを使用します。ネームサービスモデルが LDAP にマップされている \fIRFC2307bis (ドラフト)\fR で定義されたオブジェクトクラスおよび属性が、LDAP サーバーでサポートされている必要があります。\fIRFC2307bis (ドラフト)\fR で定義されたスキーマを使用する代わりに、その他のスキーマセットを使用するようにシステムを構成でき、スキーママッピング機能は 2 つのスキーマ間でマップするように構成されます。詳細については、\fI『Working With Oracle Solaris 11.3 Directory and         Naming Services: LDAP』\fRを参照してください。
+.sp
+.LP
+\fBldapclient\fR(1M) ユーティリティーで適切なディレクトリ、ファイル、および構成情報を設定すると、Oracle Solaris マシンを LDAP クライアントにすることができます。LDAP クライアントは、この構成情報をローカルキャッシュファイルに格納します。この構成情報にアクセスするには、\fBldap_cachemgr\fR(1M) デーモンを使用します。また、このデーモンによって LDAP サーバーから構成ファイル内の情報がリフレッシュされるため、パフォーマンスおよびセキュリティーが改善されます。ネーミングサービスが正しく動作するには、常に \fBldap_cachemgr\fR が実行される必要があります。
+.sp
+.LP
+プロファイルを介して使用できる情報と、クライアントごとに構成された情報の 2 種類の構成情報があります。プロファイルには、クライアントがディレクトリにアクセスする方法に関する情報がすべて含まれます。プロキシユーザーの資格情報はクライアントごとに構成され、プロファイルを介してダウンロードされません。
+.sp
+.LP
+プロファイルには、サーバーで目的の LDAP ドメインを検索するときにすべてのクライアントが必要とするサーバー固有のパラメータが含まれます。たとえば、この情報にはサーバーの IP アドレスおよび検索ベースの識別名 (DN) が含まれることがあります。これはクライアントの初期化時にクライアントでデフォルトプロファイルから構成され、有効期限が経過すると定期的に \fBldap_cachemgr\fR デーモンによって更新されます。
+.sp
+.LP
+クライアントプロファイルは LDAP サーバーに格納でき、\fBldapclient\fR ユーティリティーで使用すれば LDAP クライアントを初期化できます。クライアントマシンを構成するもっとも簡単な方法は、クライアントプロファイルを使用することです。\fBldapclient\fR(1M) を参照してください。
+.sp
+.LP
+資格情報には、クライアントによって使用されるクライアント固有のパラメータが含まれています。この情報には、クライアントおよびパスワードのバインド DN (LDAP「ログイン」名) が含まれることがあります。これらのパラメータが必要な場合は、初期化時に \fBldapclient\fR(1M) を使用して手動で定義されます。
+.sp
+.LP
+ネーミング情報は、LDAP サーバー上のコンテナに格納されます。コンテナとは、ネームサービス情報を含む DIT 内のリーフ以外のエントリのことです。コンテナは NIS のマップに似ています。NIS データベースと LDAP 内のコンテナ間のデフォルトマッピングを次に示します。これらのコンテナの場所および名前は、\fBserviceSearchDescriptors\fR を使用することでオーバーライドできます。詳細については、\fBldapclient\fR(1M) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(1.83i) |cw(1.83i) |cw(1.83i) 
+lw(1.83i) |lw(1.83i) |lw(1.83i) 
+.
+データベースオブジェクトクラスコンテナ
+_
+passwdposixAccountou=people,dc=... 
+shadowAccount
+_
+groupposixGroupou=Group,dc=...
+_
+servicesipServiceou=Services,dc=...
+_
+protocolsipProtocolou=Protocols,dc=...
+_
+rpconcRpcou=Rpc,dc=...
+_
+hostsipHostou=Hosts,dc=...
+ipnodesipHostou=Hosts,dc=...
+_
+ethersieee802Deviceou=Ethers,dc=...
+_
+bootparamsbootableDeviceou=Ethers,dc=...
+_
+networksipNetworkou=Networks,dc=...
+netmasksipNetwork ou=Networks,dc=... 
+_
+netgroupnisNetgroupou=Netgroup,dc=...
+_
+aliasesmailGroupou=Aliases,dc=...
+_
+publickeynisKeyObject 
+_
+genericnisObjectnisMapName=...,dc=...
+_
+printersprinterServiceou=Printers,dc=... 
+_
+auth_attrSolarisAuthAttrou=SolarisAuthAttr,dc=...
+_
+prof_attrSolarisProfAttrou=SolarisProfAttr,dc=...
+_
+exec_attrSolarisExecAttrou=SolarisProfAttr,dc=...
+_
+user_attrSolarisUserAttrou=people,dc=...
+.TE
+
+.sp
+.LP
+クライアントのセキュリティーモデルは、使用される資格レベル、認証方法、および使用される PAM モジュールの組み合せによって定義されます。資格レベルでは、ディレクトリサーバーに対して認証を行なう際にクライアントが使用する必要のある資格が定義され、認証方式では選択する方法が定義されます。どちらにも複数の値を設定できます。Oracle Solaris LDAP の資格レベルでは、次の値がサポートされています:
+.br
+.in +2
+\fBanonymous\fR
+.in -2
+.br
+.in +2
+\fBproxy\fR
+.in -2
+.br
+.in +2
+\fBself\fR
+.in -2
+.sp
+.LP
+Oracle Solaris LDAP の認証方式では、次の値がサポートされています:
+.br
+.in +2
+\fBnone\fR
+.in -2
+.br
+.in +2
+\fBsimple\fR
+.in -2
+.br
+.in +2
+\fBsasl/CRAM-MD5\fR
+.in -2
+.br
+.in +2
+\fBsasl/DIGEST-MD5\fR
+.in -2
+.br
+.in +2
+\fBsasl/GSSAPI\fR
+.in -2
+.br
+.in +2
+\fBtls:simple\fR
+.in -2
+.br
+.in +2
+\fBtls:sasl/CRAM-MD5\fR
+.in -2
+.br
+.in +2
+\fBtls:sasl/DIGEST-MD5\fR
+.in -2
+.sp
+.LP
+資格レベルが \fBself\fR として構成されている場合は、DNS が構成され、認証方式は \fBsasl/GSSAPI\fR である必要があります。DNS (たとえば、\fBhosts: dns files\fR および \fBipnodes: dns files\fR) を使用するには、\fB/etc/nsswitch.conf\fR に \fBhosts\fR および \fBipnodes\fR を構成する必要があります。 
+.sp
+.LP
+これらがディレクトリサーバーで構成されない場合は、\fBsasl/GSSAPI\fR で自動的に \fBGSSAPI\fR の機密性および整合性オプションが使用されます。
+.sp
+.LP
+\fBself\fR の資格レベルでは、ユーザーごとのネームサービス検索、またはディレクトリサーバーへの接続時にユーザーの \fBGSSAPI\fR 資格を使用する検索が可能です。Kerberos V5 のこのモデルでは、現在、\fBGSSAPI\fR メカニズムのみがサポートされています。この資格レベルを使用する前に、Kerberos を構成する必要があります。詳細については、\fBkerberos\fR(5) を参照してください。
+.sp
+.LP
+アクセス制御を使用すると、より強力な保護が提供され、サーバーで特定のコンテナまたはエントリに対するアクセス権を付与できるようになります。アクセス制御は、LDAP サーバーに定義および格納されているアクセス制御リスト (ACL) で指定されます。LDAP サーバーのアクセス制御リストは、SunOne Directory Server ではアクセス制御命令 (ACI) と呼ばれます。各 ACI または ACL には、1 つ以上のディレクトリオブジェクトを指定します。たとえば、特定のコンテナの \fBcn\fR 属性、アクセス権を付与または拒否する 1 つ以上のクライアント、およびクライアントがオブジェクトに対して、またオブジェクトで実行できることを決定する 1 つ以上のアクセス権を指定します。クライアントにはユーザーまたはアプリケーションを指定できます。たとえば、読み取りおよび書き込みとしてアクセス権を指定できます。ネーミングリポジトリとして LDAP を使用する際の ACL および ACI の制限については、\fI『Working With Oracle Solaris 11.3 Directory and         Naming Services: LDAP』\fRを参照してください。
+.sp
+.LP
+\fBnsswitch.ldap\fR と呼ばれる \fBnsswitch.conf\fR(4) ファイルのサンプルは、\fB/etc\fR ディレクトリで提供されています。\fBldapclient\fR(1M) ユーティリティーを使用すると、これが \fB/etc/nsswitch.conf\fR にコピーされます。このファイルでは、\fBnsswitch.conf\fR ファイル内のさまざまなデータベースのリポジトリとして LDAP が使用されます。
+.sp
+.LP
+次に、LDAP に関連するユーザーコマンドのリストを示します:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBidsconfig\fR(1M)\fR
+.ad
+.RS 18n
+.rt  
+Solaris LDAP クライアントがサポート可能になるように、SunOne Directory Server の準備を行ないます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBldapaddent\fR(1M)\fR
+.ad
+.RS 18n
+.rt  
+対応する \fB/etc\fR ファイルから LDAP エントリを作成します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBldapclient\fR(1M)\fR
+.ad
+.RS 18n
+.rt  
+LDAP クライアントを初期化するか、ディレクトリに格納される構成プロファイルを生成します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBldaplist\fR(1)\fR
+.ad
+.RS 18n
+.rt  
+LDAP ネーミング領域の内容をリストします。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/ldap/ldap_client_cred\fR\fR
+.ad
+.br
+.na
+\fB\fB/var/ldap/ldap_client_file\fR\fR
+.ad
+.RS 30n
+.rt  
+クライアントの LDAP 構成を含むファイル。これらのファイルを手動で変更しないでください。その内容は人間が読めるとは限りません。これを更新するには、\fBldapclient\fR(1M) を使用します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/nsswitch.conf\fR\fR
+.ad
+.RS 30n
+.rt  
+ネームサービススイッチの構成ファイル。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/nsswitch.ldap\fR\fR
+.ad
+.RS 30n
+.rt  
+LDAP およびファイルで構成されたネームサービススイッチのサンプル構成ファイル。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/pam.conf\fR\fR
+.ad
+.RS 30n
+.rt  
+PAM フレームワーク構成ファイルです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/pam.d/\fIservice\fR\fR\fR
+.ad
+.RS 30n
+.rt  
+代替の PAM フレームワーク構成ファイルです。
+.RE
+
+.SH 関連項目
+.sp
+.LP
+\fBldaplist\fR(1)、\fBidsconfig\fR(1M)、\fBldap_cachemgr\fR(1M)、\fBldapaddent\fR(1M)、\fBldapclient\fR(1M)、\fBnsswitch.conf\fR(4)、\fBpam.conf\fR(4)、\fBkerberos\fR(5)\fBpam_authtok_check\fR(5)、\fBpam_authtok_get\fR(5)、\fBpam_authtok_store\fR(5)、\fBpam_dhkeys\fR(5)、\fBpam_ldap\fR(5)、\fBpam_passwd_auth\fR(5)、\fBpam_unix_account\fR(5)、\fBpam_unix_auth\fR(5)、\fBpam_unix_session\fR(5)
+.sp
+.LP
+\fI『Working With Oracle Solaris 11.3 Directory and         Naming Services: DNS and NIS』\fR
+.sp
+.LP
+\fI『Working With Oracle Solaris 11.3 Directory and         Naming Services: LDAP』\fR

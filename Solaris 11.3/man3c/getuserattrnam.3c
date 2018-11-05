@@ -1,0 +1,88 @@
+'\" te
+.\" Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+.TH getuserattrnam 3C "14 May 2012" "SunOS 5.11" "Standard C Library Functions"
+.SH NAME
+getuserattrnam \- get a user's attribute
+.SH SYNOPSIS
+.LP
+.nf
+#include <user_attr.h>
+
+char *getuserattrnam(const char *\fIuser\fR, const char *\fIkey\fR,
+     char **\fIwhere\fR, const char *\fIdeflt\fR);
+.fi
+
+.LP
+.nf
+char *getuserattruid(const uid_t \fIuserid\fR, const char *\fIkey\fR,
+     char **\fIwhere\fR, const char *\fIdeflt\fR);
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBgetuserattrnam()\fR function returns the first attribute value associated with \fIkey\fR for \fIuser\fR by searching first the attributes directly assigned to the user in \fBuser_attr\fR(4), then the attributes of the profiles of the user, and finally an administrator-defined local default in the "defaults" style \fIdeflt\fR file path. If \fIdeflt\fR is \fINULL\fR, \fBpolicy.conf\fR(4) is used. If \fIwhere\fR is non-null, the source of the returned value is returned in it. For example, the source could be \fBuser_attr\fR, a Rights Profile name, or a "defaults" style file path name.
+.sp
+.LP
+The \fBgetuserattruid()\fR function operates the same as the \fBgetuserattrnam()\fR function except that it takes a user ID rather then a user name for its first parameter.
+.SH RETURN VALUES
+.sp
+.LP
+These functions return the value found for the user's attribute key. They return \fINULL\fR if the no value found or if an error such as \fBENOMEM\fR occurred. The value returned and, if specified, the value returned in \fIwhere\fR should be released when no longer in use with \fBfree\fR(3C).
+.SH ERRORS
+.sp
+.ne 2
+.mk
+.na
+\fB\fBENOMEM\fR\fR
+.ad
+.RS 10n
+.rt  
+There is insufficient memory to return the attribute value.
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRDetermine if the process is being run by a role.
+.sp
+.in +2
+.nf
+#include <string.h>
+#include <unistd.h>
+#include <user_attr.h>
+\&...
+     char *type;
+
+     if ((type = getuserattruid(getuid(), USERATTR_TYPE_KW, NULL,
+         NULL)) != NULL) &&
+         (strcmp(type, USERATTR_TYPE_NONADMIN_KW) == 0)) {
+          /* is a role */
+     } else {
+          /* not a role */
+     }
+.fi
+.in -2
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Interface StabilityCommitted
+_
+MT-LevelMT-Safe
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBfree\fR(3C), \fBpolicy.conf\fR(4), \fBprof_attr\fR(4), \fBuser_attr\fR(4), \fBattributes\fR(5)

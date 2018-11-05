@@ -1,0 +1,311 @@
+'\" te
+.\" Copyright (c) 2002, 2011, Oracle and/or its affiliates. All rights reserved.
+.\" Copyright 1989 AT&T
+.TH acctsh 1M "2011 年 8 月 16 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+acctsh, chargefee, ckpacct, dodisk, lastlogin, monacct, nulladm, prctmp, prdaily, prtacct, shutacct, startup, turnacct \- アカウンティング用のシェルプロシージャー
+.SH 形式
+.LP
+.nf
+\fB/usr/lib/acct/chargefee\fR \fIlogin-name\fR \fInumber\fR
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/ckpacct\fR [\fIblocks\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/dodisk\fR [\fB-o\fR] [\fIfilename\fR]...
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/lastlogin\fR 
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/monacct\fR \fInumber\fR
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/nulladm\fR \fIfilename\fR...
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/prctmp\fR \fIfilename\fR
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/prdaily\fR [\fB-c\fR] [\fB-l\fR] [\fImmdd\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/prtacct\fR \fIfilename\fR ['' \fIheading\fR '']
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/shutacct\fR ['' \fIreason\fR '']
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/startup\fR 
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/turnacct\fR on | off | switch
+.fi
+
+.SH 機能説明
+.SS "chargefee コマンド"
+.sp
+.LP
+\fBchargefee\fR は、\fInumber\fR 個の単位を \fIlogin-name\fR に課金するために呼び出すことができます。レコードが \fB/var/adm/fee\fR に書き込まれると、\fBrunacct\fR(1M) によってほかのアカウンティングレコードとマージされます。
+.SS "ckpacct コマンド"
+.sp
+.LP
+\fBckpacct\fR は、\fB/var/adm/pacct\fR のサイズを定期的にチェックするために、\fBcron\fR(1M) を使って起動すべきです。サイズが \fIblocks\fR (デフォルトは \fB500\fR) を超えると、\fBturnacct\fR が引数 \fBswitch\fR とともに呼び出されます。\fBrunacct\fR 内での \fBturnacct switch\fR 実行との競合を避けるため、\fBckpacct\fR と \fBrunacct\fR を同時に実行しないでください。\fB/var\fR ファイルシステム内の空きディスクブロックの数が \fB500\fR 個を下回ると、\fBckpacct\fR は自動的に \fBturnacct\fR の \fBoff\fR 引数を使ってプロセスアカウンティングレコードの収集を無効にします。少なくとも \fB500\fR 個のブロックが復元されると、\fBckpacct\fR の次回呼び出し時にアカウンティングが再度アクティブ化されます。この機能は \fBckpacct\fR が実行 (通常は \fBcron\fR(1M) コマンドによって) される頻度に左右されます。
+.SS "dodisk コマンド"
+.sp
+.LP
+\fBdodisk\fR は、ディスクアカウンティング機能を実行するために、\fBcron\fR(1M) によって呼び出されるべきです。
+.SS "lastlogin コマンド"
+.sp
+.LP
+\fBlastlogin\fR は、各ユーザーが最後にログインした日付を表示する \fB/var/adm/acct/sum/loginlog\fR をリフレッシュするために、\fBrunacct\fR(1M) によって呼び出されます。
+.SS "monacct コマンド"
+.sp
+.LP
+\fBmonacct\fR は、月またはアカウンティング期間ごとに 1 回呼び出すべきです。\fInumber\fR はそれがどの月または期間であるかを示します。\fInumber\fR が指定されなかった場合のデフォルトは、現在の月 (01-12) になります。このデフォルトは、各月の初日に \fBcron\fR(1M) を使って \fBmonacct\fR を実行する場合に役立ちます。\fBmonacct\fR は、\fB/var/adm/acct/fiscal\fR にサマリーファイルを作成し、\fB/var/adm/acct/sum\fR 内のサマリーファイルを再起動します。
+.SS "nulladm コマンド"
+.sp
+.LP
+\fBnulladm\fR は、\fIfilename\fR をモード 664 で作成し、所有者とグループが \fBadm\fR になるようにします。これは、さまざまなアカウンティングシェルプロシージャーから呼び出されます。
+.SS "prctmp コマンド"
+.sp
+.LP
+\fBprctmp\fR は、セッションレコードファイル (通常は \fBacctcon1\fR (\fBacctcon\fR(1M) を参照) によって作成された \fB/var/adm/acct/nite/ctmp\fR) を表示するために使用できます。
+.SS "prdaily コマンド"
+.sp
+.LP
+\fBprdaily\fR は、前日のアカウンティングデータのレポートを書式設定するために、\fBrunacct\fR(1M) から呼び出されます。レポートは \fB/var/adm/acct/sum/rprt/mmdd\fR にあります (\fImmdd\fR はレポートの月と日)。現在の日次アカウンティングレポートは、\fBprdaily\fR を入力することで表示できます。以前の日付のアカウンティングレポートは、\fImmdd\fR オプションを使用して必要なレポート日付を正確に指定することで、表示できます。
+.SS "prtacct コマンド"
+.sp
+.LP
+\fBprtacct\fR は、任意の合計アカウンティング (\fBtacct\fR) ファイルを書式設定して表示するために使用できます。
+.SS "shutacct コマンド"
+.sp
+.LP
+\fBshutacct\fR は、プロセスアカウンティングを無効にして \fB/var/adm/wtmpx\fR に \fIreason\fR レコードを付加するために、システムのシャットダウン中に呼び出されます。
+.SS "startup コマンド"
+.sp
+.LP
+\fBstartup\fR は、システムがマルチユーザー状態になるときに、プロセスアカウンティングを有効にするために呼び出すことができます。
+.SS "turnacct コマンド"
+.sp
+.LP
+\fBturnacct\fR は \fBaccton\fR (\fBacct\fR(1M) を参照) へのインタフェースの 1 つで、プロセスアカウンティングを \fBon\fR または \fBoff\fR にします。\fBswitch\fR 引数は、現在の \fB/var/adm/pacct\fR を \fB/var/adm/pacct.\fIincr\fR\fR (\fIincr\fR は \fB0\fR から始まる数字、\fBpacct\fR ファイルが追加されるたびに 1 ずつ増分) 内で次に空いている名前に移動してから、アカウンティングを有効に戻します。このプロシージャーは \fBckpacct\fR から呼び出されるため、\fBcron\fR(1M) コマンドによって考慮され、\fBpacct\fR を適切なサイズに保つために使用できます。\fBshutacct\fR は \fBturnacct\fR を使ってプロセスアカウンティングを停止します。\fBstartup\fR は \fBturnacct\fR を使ってプロセスアカウンティングを開始します。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 6n
+.rt  
+このオプションは、異常なリソース使用状況のレポートをコマンド別に表示し、現在日のアカウンティングデータについてのみ使用できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 6n
+.rt  
+このオプションは、ログイン ID 別の異常な使用状況のレポートを指定された日付について表示します。\fBmonacct\fR の呼び出し後に以前の日次レポートはクリーンアップされ、アクセスできなくなります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR\fR
+.ad
+.RS 6n
+.rt  
+このオプションは、\fBacctdusg\fR (\fBacct\fR(1M) を参照) を使って低速版のログインディレクトリ別ディスクアカウンティングを行います。\fIfilename\fR は、ディスクアカウンティングが実行される 1 つ以上のファイルシステム名を指定します。\fIfilename\fR を使用した場合、それらのファイルシステムでのみディスクアカウンティングが行われます。\fB-o\fR オプションを使用する場合、\fIfilename\fR はマウント済みファイルシステムのマウントポイントにすべきです。\fB-o\fR オプションを省略する場合、\fIfilename\fR はマウント可能ファイルシステム専用のファイル名にすべきです。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/logadm.conf\fR\fR
+.ad
+.RS 30n
+.rt  
+\fBlogadm\fR(1M) コマンドの構成ファイル
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/acct\fR\fR
+.ad
+.RS 30n
+.rt  
+このマニュアルのセクション \fB1M\fR に記載されたすべてのアカウンティングコマンドを保持します
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/acct/ptecms.awk\fR\fR
+.ad
+.RS 30n
+.rt  
+コマンド名別の異常な使用状況の制限を含みます
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/acct/ptelus.awk\fR\fR
+.ad
+.RS 30n
+.rt  
+ログイン \fBID\fR 別の異常な使用状況の制限を含みます
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/acct/fiscal\fR\fR
+.ad
+.RS 30n
+.rt  
+会計レポートディレクトリ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/acct/nite\fR\fR
+.ad
+.RS 30n
+.rt  
+作業ディレクトリ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/acct/sum\fR\fR
+.ad
+.RS 30n
+.rt  
+\fBmonacct\fR の情報を含むサマリーディレクトリ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/acct/sum/loginlog\fR\fR
+.ad
+.RS 30n
+.rt  
+最終ログインで更新されるファイル
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/fee\fR\fR
+.ad
+.RS 30n
+.rt  
+料金を蓄積する場所
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/pacct\fR\fR
+.ad
+.RS 30n
+.rt  
+プロセス単位アカウンティングの現在のファイル
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/pacct\fR\fIincr\fR\fR
+.ad
+.RS 30n
+.rt  
+\fBpacct\fR が大きくなった場合に、日次アカウンティングプロシージャーの実行中に使用されます
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/wtmp\fR \fR
+.ad
+.RS 30n
+.rt  
+ユーザーアクセスと管理情報の履歴
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/accounting/legacy-accounting
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBacctcom\fR(1)、\fBacct\fR(1M)、\fBacctcms\fR(1M)、\fBacctcon\fR(1M)、\fBacctmerg\fR(1M)、\fBacctprc\fR(1M)、\fBcron\fR(1M)、\fBfwtmp\fR(1M)、\fBlogadm\fR(1M)、\fBrunacct\fR(1M)、\fBacct\fR(2)、\fBacct.h\fR(3HEAD)、\fButmpx\fR(4)、\fBattributes\fR(5)
+.SH 注意事項
+.sp
+.LP
+接続、プロセス、料金、およびディスクアカウンティングの蓄積を日次ベースで実行する、メイン日次アカウンティングシェルスクリプトについては、\fBrunacct\fR(1M) を参照してください。コマンド使用状況のサマリーの作成されます。

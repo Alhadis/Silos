@@ -1,0 +1,1426 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright © 2004, 2012, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright (c) 1983, 1990, 1993 The Regents of the University of California.All rights reserved.
+.TH telnet 1 "2012 年 5 月 23 日" "SunOS 5.11" "用户命令"
+.SH 名称
+telnet \- 使用 TELNET 协议与远程系统通信的用户接口
+.SH 用法概要
+.LP
+.nf
+\fBtelnet\fR [\fB-8EFKLacdfrx\fR] [\fB-X\fR \fIatype\fR] [\fB-e\fR \fIescape_char\fR] 
+     [\fB-k\fR \fIrealm\fR] [\fB-l\fR \fIuser\fR] [\fB-n\fR \fIfile\fR] 
+     [ [ [!] @hop1 [@hop2...] @] \fIhost\fR [\fIport\fR]]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBtelnet\fR 实用程序可使用 \fBTELNET\fR 协议与其他主机通信。如果调用 \fBtelnet\fR 而未指定参数，将在其提示符 \fBtelnet>\fR 指示下进入命令模式。在该模式下，它可接受并执行关联的命令。请参见\fB\fR“用法”部分。如果在调用它的同时指定了参数，将根据这些参数执行 \fBopen\fR 命令。
+.sp
+.LP
+例如，如果将 \fIhost\fR 指定为 \fI@hop1@hop2@host\fR，连接将通过主机 \fIhop1\fR 和 \fIhop2\fR，使用稀疏源路由在 \fIhost\fR 处结束。如果使用了前导 \fB!\fR，连接将遵循严格的源路由。请注意，\fBtelnet\fR 使用 IPv6 时，只能使用稀疏源路由，连接将忽略 \fB!\fR。
+.sp
+.LP
+一旦打开连接，\fBtelnet\fR 便进入输入模式。在该模式下，会将键入的文本发送到远程主机。根据远程系统的具体支持，进入的输入模式将为“行模式”、“每次传送一个字符”或“逐行处理”。
+.sp
+.LP
+在“行模式”下，将在远程系统的控制下在本地系统上完成字符处理。如果要禁用输入编辑或字符回显，远程系统将传递相应的信息。远程系统还会传递在远程系统上对任何特殊字符的更改，以使其在本地系统上生效。
+.sp
+.LP
+在“每次传送一个字符”模式下，会将键入的大部分文本立即发送到远程主机进行处理。
+.sp
+.LP
+在“逐行处理”模式下，所有文本都在本地回显，并且（通常）只将完整的行发送到远程主机。可以使用“本地回显字符”（以 \fB^E\fR 开头）禁用和启用本地回显。（利用该设置主要是为了输入口令而不回显口令。）
+.sp
+.LP
+如果启用了“行模式”选项或者如果将 \fBlocalchars\fR 切换到 \fBTRUE\fR（“逐行处理”模式下的缺省设置），用户的 \fBquit\fR、\fBintr\fR 和 \fBflush\fR 字符将在本地滞留，作为 \fBTELNET\fR 协议序列发送到远程端。如果启用过“行模式”，则用户的 \fBsusp\fR 和 \fBeof\fR 也作为 \fBTELNET\fR 协议序列发送。\fBquit\fR 则作为 \fBTELNET ABORT\fR 而非 \fBBREAK\fR 发送。选项 \fBtoggle\fR \fBautoflush\fR 和 \fBtoggle\fR \fBautosynch\fR 会导致该操作将后续输出驱逐到终端（直到远程主机确认 \fBTELNET\fR 序列为止）；而选项 \fBquit\fR 和 \fBintr\fR 会导致该操作清空之前的终端输入。
+.sp
+.LP
+连接到远程主机时，用户可通过键入 \fBtelnet\fR 转义符（以 \fB^]\fR 开头）进入 \fBtelnet\fR 命令模式。在命令模式下，可以遵循正常的终端编辑约定。在 \fBtelnet\fR 命令提示符中按 RETURN 键会导致 \fBtelnet\fR 退出命令模式。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-8\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定一个 8 位数据路径。将尝试对输入和输出协商 \fBTELNET BINARY\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+尝试自动登录。如果受远程系统支持，将通过 \fBENVIRON\fR 选项的 \fBUSER\fR 变量发送用户名。如果 \fBgetlogin\fR(3C) 返回的当前用户的名称与当前用户 \fBID\fR 相符，则使用当前用户的名称。否则，将使用与用户 \fBID\fR 关联的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁止读取用户的 \fBtelnetrc\fR 文件。（请参见本参考页上的 \fBtoggle\fR \fBskiprc\fR 命令。）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fBdebug\fR 切换的初始值设置为 \fBTRUE\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fIescape_char\fR\fR
+.ad
+.sp .6
+.RS 4n
+将初始转义符设置为 \fIescape_char\fR。\fIescape_char\fR 也可以是包含两个字符的序列：\fB^\fR（Ctrl 键）后跟一个字符。如果第二个字符为 \fB?\fR，则选择 \fBDEL\fR 字符。否则，会将第二个字符转换为控制字符并用作转义符。如果将 \fIescape_char\fR 定义为空字符串（即 \fB-e\fR \fB\&''\fR），这会等效于 \fB-e\fR '\fB^@\fR' (Ctrl-@)。要指定任何字符均不能为转义符，请使用 \fB-E\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-E\fR\fR
+.ad
+.sp .6
+.RS 4n
+防止任何字符被识别为转义符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+将本地凭证的一个副本转发到远程系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fR
+.ad
+.sp .6
+.RS 4n
+将本地凭证的一个可转发副本转发到远程系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR \fIrealm\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果正在使用 Kerberos 验证，请求 \fBtelnet\fR 在 \fIrealm\fR 中获取远程主机的票证，而非按照 \fBkrb5.conf\fR(4) 中确定的那样在远程主机的缺省领域中获取。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-K\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定不自动登录到远程系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIuser\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果连接到的远程系统了解 \fBENVIRON\fR 选项，则会将 \fIuser\fR 作为 \fBENVIRON\fR 变量 \fBUSER\fR 的值发送到远程系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定输出时使用的一个 8 位数据路径。这样会导致输出时协商 \fBBINARY\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR \fItracefile\fR\fR
+.ad
+.sp .6
+.RS 4n
+打开用于记录跟踪信息的 \fItracefile\fR。请参见下文的 \fBset\fR \fItracefile\fR 命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定类似于 \fBrlogin\fR 的用户接口。在该模式下，转义符设置为波浪号 (\fB~\fR) 字符，除非使用 \fB-e\fR 选项修改。仅当 \fBrlogin\fR 转义符前面有回车时才能将其识别。在该模式下，\fBtelnet\fR 转义符（通常为 '\fB^]\fR'）还必须位于 \fBtelnet\fR 命令前面。\fBrlogin\fR 转义符也可后跟 '\fB\&.\r\fR' 或 '\fB^Z\fR'（例如 \fBrlogin\fR(1)），分别用来关闭或暂停连接。该选项是一个未确定接口，将来可能会发生更改。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用数据流加密。启用该选项后，如果无法协商验证或无法启用加密，\fBtelnet\fR 将退出并显示错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-X\fR \fIatype\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁用 \fIatype\fR 验证类型。
+.RE
+
+.SH 用法
+.SS "telnet 命令"
+.sp
+.LP
+本部分介绍 \fBtelnet\fR 提供的命令。有必要对各项命令的篇幅加以限制，只够对其进行唯一标识即可。（\fBmode\fR、\fBset\fR、\fBtoggle\fR、\fBunset\fR、\fBenviron\fR 和 \fBdisplay\fR 命令的参数同样如此。）
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauth\fR \fIargument\fR ...\fR
+.ad
+.sp .6
+.RS 4n
+\fBauth\fR 命令操控通过 \fBTELNET\fR \fBAUTHENTICATE\fR 选项发送的信息。\fBauth\fR 命令的有效参数如下：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdisable\fR \fItype\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁用指定的验证类型。要获取可用类型的列表，请使用 \fBauth\fR \fBdisable ?\fR 命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBenable\fR \fItype\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用指定的验证类型。要获取可用类型的列表，请使用 \fBauth\fR \fBenable ?\fR 命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstatus\fR\fR
+.ad
+.sp .6
+.RS 4n
+列出各种验证类型的当前状态。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBopen\fR [\fB\fR\fB-l\fR \fIuser\fR ] [ [!] @\fIhop1\fR [@\fIhop2\fR ...]@\fIhost\fR [ \fIport\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+打开到指定主机的连接。如果未指定端口号，\fBtelnet\fR 将尝试通过缺省端口联系 \fBTELNET\fR 服务器。主机规范可以是主机名（请参见 \fBhosts\fR(4)）或在“点记法”中指定的 Internet 地址（请参见 \fBinet\fR(7P) 或 \fBinet6\fR(7P)）。如果将 \fIhost\fR 指定为 \fI@hop1@hop2@host\fR，连接将通过主机 \fIhop1\fR 和 \fIhop2\fR，使用稀疏源路由在 \fIhost\fR 处结束。必须使用 \fB@\fR 符号作为指定主机之间的分隔符。如果前导 \fB!\fR 与 IPv4 一起使用，连接将遵循严格的源路由。 
+.sp
+\fB-l\fR 选项可将 \fIuser\fR 作为 \fBENVIRON\fR 变量 \fBUSER\fR 的值传递到远程系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBclose\fR\fR
+.ad
+.sp .6
+.RS 4n
+关闭任何打开的 \fBTELNET\fR 会话。\fBEOF\fR（在命令模式下）也可关闭会话并退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBencrypt\fR\fR
+.ad
+.sp .6
+.RS 4n
+加密命令操控通过 \fBTELNET\fR \fBENCRYPT\fR 选项发送的信息。
+.sp
+加密命令的有效参数如下：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdisable\fR \fItype\fR [\fBinput\fR|\fBoutput\fR]\fR
+.ad
+.sp .6
+.RS 4n
+禁用指定的加密类型。如果省略输入和输出，输入和输出都会禁用加密。要获取可用类型的列表，应使用 \fBencrypt\fR \fBdisable ?\fR 命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBenable\fR \fItype\fR [\fBinput\fR|\fBoutput\fR]\fR
+.ad
+.sp .6
+.RS 4n
+启用指定的加密类型。如果省略输入和输出，输入和输出都会启用加密。要获取可用类型的列表，应使用 \fBencrypt\fR \fBenable ?\fR 命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinput\fR\fR
+.ad
+.sp .6
+.RS 4n
+该参数与 \fBencrypt\fR \fBstart input\fR 命令相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-input\fR\fR
+.ad
+.sp .6
+.RS 4n
+该参数与 \fBencrypt\fR \fBstop input\fR 命令相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBoutput\fR\fR
+.ad
+.sp .6
+.RS 4n
+该参数与 \fBencrypt\fR \fBstart output\fR 命令相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-output\fR\fR
+.ad
+.sp .6
+.RS 4n
+该参数与 \fBencrypt\fR \fBstop output\fR 命令相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstart\fR [\fBinput\fR|\fBoutput\fR]\fR
+.ad
+.sp .6
+.RS 4n
+尝试开始加密。如果省略输入和输出，输入和输出都会启用加密。要获取可用类型的列表，应使用 \fBencrypt\fR \fBenable ?\fR 命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstatus\fR\fR
+.ad
+.sp .6
+.RS 4n
+列出当前的加密状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstop\fR [\fBinput\fR|\fBoutput\fR]\fR
+.ad
+.sp .6
+.RS 4n
+停止加密。如果省略输入和输出，输入和输出都会启用加密。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtype\fR \fItype\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置要与随后的 \fBencrypt\fR \fBstart\fR 或 \fBencrypt\fR \fBstop\fR 命令一起使用的缺省加密类型。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBquit\fR\fR
+.ad
+.sp .6
+.RS 4n
+与 \fBclose\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBz\fR\fR
+.ad
+.sp .6
+.RS 4n
+暂停 \fBtelnet\fR。仅当用户在使用支持作业控制的 shell（例如 \fBsh\fR(1)）时，该命令才会起作用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmode\fR \fItype\fR\fR
+.ad
+.sp .6
+.RS 4n
+要求远程主机具有相应的权限才能进入请求的模式。如果远程主机能够进入该模式，将进入请求的模式。参数 \fItype\fR 为以下值之一： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcharacter\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁用 \fBTELNET LINEMODE\fR 选项，或者如果远程端不了解 \fBLINEMODE\fR 选项，则进入“每次传送一个字符”模式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBline\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用 \fBTELNET LINEMODE\fR 选项，或者如果远程端不了解 \fBLINEMODE\fR 选项，则尝试进入“逐行处理”模式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBisig\fR (\fB-isig\fR)\fR
+.ad
+.sp .6
+.RS 4n
+尝试启用（禁用）\fBLINEMODE\fR 选项的 \fBTRAPSIG\fR 模式。该参数要求启用 \fBLINEMODE\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBedit\fR (\fB-edit\fR)\fR
+.ad
+.sp .6
+.RS 4n
+尝试启用（禁用）\fBLINEMODE\fR 选项的 \fBEDIT\fR 模式。该参数要求启用 \fBLINEMODE\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsofttabs\fR (\fB-softtabs\fR)\fR
+.ad
+.sp .6
+.RS 4n
+尝试启用（禁用）\fBLINEMODE\fR 选项的 \fBSOFT_TAB\fR 模式。该参数要求启用 \fBLINEMODE\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlitecho\fR (\fB-litecho\fR)\fR
+.ad
+.sp .6
+.RS 4n
+尝试启用（禁用）\fBLINEMODE\fR 选项的 \fBLIT_ECHO\fR 模式。该参数要求启用 \fBLINEMODE\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB?\fR\fR
+.ad
+.sp .6
+.RS 4n
+列显 \fBmode\fR 命令的帮助信息。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstatus\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示 \fBtelnet\fR 的当前状态。其中包括连接到的对等方以及当前的模式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdisplay\fR\fR
+.ad
+.sp .6
+.RS 4n
+[\fIargument\fR . . . ] 显示全部或部分 \fBset\fR 和 \fBtoggle\fR 值（请参见 \fBtoggle\fR \fIargument\fR. . .）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB?\fR\fR
+.ad
+.sp .6
+.RS 4n
+[\fIcommand\fR] 获取帮助。如果未指定参数，\fBtelnet\fR 将列显帮助摘要。如果指定了某个命令，\fBtelnet\fR 将只列显该命令的帮助信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsend\fR \fIargument\fR\fB . . .\fR\fR
+.ad
+.sp .6
+.RS 4n
+将一个或多个特殊字符序列发送到远程主机。可以指定的参数如下（一次可以指定多个参数）： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBescape\fR\fR
+.ad
+.sp .6
+.RS 4n
+发送当前的 \fBtelnet\fR 转义符（以 \fB^]\fR 开头）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsynch\fR\fR
+.ad
+.sp .6
+.RS 4n
+发送 \fBTELNET SYNCH\fR 序列。该序列将在远程系统上放弃之前键入但尚未读取的所有输入。该序列作为 \fBTCP\fR 紧急数据发送，如果远程系统为 4.2 \fBBSD\fR 系统，则该序列可能不起作用。如果它不起作用，可能会在终端上回显小写 “r”。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbrk\fR 或 \fBbreak\fR\fR
+.ad
+.sp .6
+.RS 4n
+发送 \fBTELNET BRK\fR（中断）序列，该序列可能对远程系统有意义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBip\fR\fR
+.ad
+.sp .6
+.RS 4n
+发送 \fBTELNET IP\fR（中断进程）序列，该序列将异常中止远程系统上当前正在运行的进程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBabort\fR\fR
+.ad
+.sp .6
+.RS 4n
+发送 \fBTELNET ABORT\fR（异常中止进程）序列。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBao\fR\fR
+.ad
+.sp .6
+.RS 4n
+发送 \fBTELNET AO\fR（异常中止输出）序列，该序列会将所有输出从远程系统驱逐到用户的终端。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBayt\fR\fR
+.ad
+.sp .6
+.RS 4n
+发送 \fBTELNET AYT\fR（请求资源）序列，远程系统可能对其响应，也可能不对其响应。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBec\fR\fR
+.ad
+.sp .6
+.RS 4n
+发送 \fBTELNET EC\fR（清除字符）序列，该序列将清除输入的最后一个字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBel\fR\fR
+.ad
+.sp .6
+.RS 4n
+发送 \fBTELNET EL\fR（清除行）序列，该序列应该使远程系统清除当前正在输入的行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBeof\fR\fR
+.ad
+.sp .6
+.RS 4n
+发送 \fBTELNET EOF\fR（文件结束）序列。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBeor\fR\fR
+.ad
+.sp .6
+.RS 4n
+发送 \fBTELNET EOR\fR（记录结束）序列。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBga\fR\fR
+.ad
+.sp .6
+.RS 4n
+发送 \fBTELNET GA\fR（继续）序列，该序列可能对远程系统没有意义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgetstatus\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果远程端支持 \fBTELNET STATUS\fR 命令，\fBgetstatus\fR 将发送子协商以请求服务器发送其当前的选项状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnop\fR\fR
+.ad
+.sp .6
+.RS 4n
+发送 \fBTELNET NOP\fR（无操作）序列。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsusp\fR\fR
+.ad
+.sp .6
+.RS 4n
+发送 \fBTELNET SUSP\fR（暂停进程）序列。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdo\fR \fIoption\fR\fR
+.ad
+.br
+.na
+\fB\fBdont\fR \fIoption\fR\fR
+.ad
+.br
+.na
+\fB\fBwill\fR \fIoption\fR\fR
+.ad
+.br
+.na
+\fB\fBwont\fR \fIoption\fR\fR
+.ad
+.sp .6
+.RS 4n
+发送指示的 \fBTELNET\fR 协议选项协商。选项可能是协议选项的文本名称或者对应于选项的编号。如果指示的选项协商在当前状态下无效，将无提示地忽略该命令。如果将 \fIoption\fR 指定为 \fBhelp\fR 或 \fB?\fR，则会列出已知选项名称的列表。该命令主要对不寻常的调试情况有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB?\fR\fR
+.ad
+.sp .6
+.RS 4n
+列显 \fBsend\fR 命令的帮助信息。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset\fR \fIargument\fR [\fIvalue\fR]\fR
+.ad
+.br
+.na
+\fB\fBunset\fR \fIargument\fR\fR
+.ad
+.sp .6
+.RS 4n
+将多个 \fBtelnet\fR 变量中的任意一个设置为某个特定值。特殊值 \fBoff\fR 将禁用与变量关联的函数。可使用 \fBdisplay\fR 命令查询变量的值。如果省略了 \fIvalue\fR，则认为值是 true 或 “on”。如果采用 \fBunset\fR 格式，则认为值是 false 或 \fBoff\fR。可以指定以下变量： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBecho\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是在“逐行处理”模式下时在本地回显输入的字符进行正常处理与禁止回显输入的字符（例如输入口令）之间切换的值（以 \fB^E\fR 开头）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBescape\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是连接到远程系统时进入 \fBtelnet\fR 命令模式的 \fBtelnet\fR 转义符（以 \fB^]\fR 开头）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinterrupt\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果 \fBtelnet\fR 在 \fBlocalchars\fR 模式下（请参见 \fBtoggle\fR 和 \fBlocalchars\fR）且键入了 \fBinterrupt\fR 字符，会将 \fBTELNET IP\fR 序列（请参见 \fBsend\fR 和 \fBip\fR）发送到远程主机。认为中断字符的初始值是终端的 \fBintr\fR 字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBquit\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果 \fBtelnet\fR 在 \fBlocalchars\fR 模式下且键入了 \fBquit\fR 字符，会将 \fBTELNET BRK\fR 序列（请参见 \fBsend\fR 和 \fBbrk\fR）发送到远程主机。认为退出字符的初始值是终端的 \fBquit\fR 字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBflushoutput\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果 \fBtelnet\fR 在 \fBlocalchars\fR 模式下且键入了 \fBflushoutput\fR 字符，会将 \fBTELNET AO\fR 序列（请参见 \fBsend\fR 和 \fBao\fR）发送到远程主机。清空字符的初始值被视为终端的 \fBflush\fR 字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBerase\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果 \fBtelnet\fR 在 \fBlocalchars\fR 模式下\fI且\fR以“每次发送一个字符”模式运行，则键入 \fBerase\fR 字符时，则会将 \fBTELNET EC\fR 序列（请参见 \fBsend\fR 和 \fBec\fR）发送到远程系统。认为 \fBerase\fR 字符的初始值是终端的 \fBerase\fR 字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkill\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果 \fBtelnet\fR 在 \fBlocalchars\fR 模式下\fI且\fR以“每次发送一个字符”模式运行，则键入 \fBkill\fR 字符时，会将 \fBTELNET EL\fR 序列（请参见 \fBsend\fR 和 \fBel\fR）发送到远程系统。\fBkill\fR 字符的初始值被视为终端的 \fBkill\fR 字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBeof\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果 \fBtelnet\fR 在“逐行处理”模式下运行，则输入 \fBeof\fR 字符作为行中第一个字符时，会将该字符发送到远程系统。\fBeof\fR 的初始值被视为终端的 \fBeof\fR 字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBayt\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果 \fBtelnet\fR 在 \fBlocalchars\fR 模式下或启用了 \fBLINEMODE\fR 且键入了状态字符，则会将 \fBTELNET AYT\fR（“请求资源”）序列发送到远程主机。（请参见上文的 \fBsend\fR 和 \fBayt\fR。）\fBayt\fR 的初始值是终端的状态字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBforw1\fR\fR
+.ad
+.br
+.na
+\fB\fBforw2\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果 \fBtelnet\fR 在 \fBLINEMODE\fR 模式下运行且键入了 \fBforw1\fR 或 \fBforw2\fR 字符，则会将不完整的行转发到远程系统。转发字符的初始值来自终端的 \fBeol\fR 和 \fBeol2\fR 字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlnext\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果 \fBtelnet\fR 在 \fBLINEMODE\fR 或“逐行处理”模式下运行，则假定 \fBlnext\fR 字符是终端的 \fBlnext\fR 字符。\fBlnext\fR 字符的初始值被视为终端的 \fBlnext\fR 字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreprint\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果 \fBtelnet\fR 在 \fBLINEMODE\fR 或“逐行处理”模式下运行，则假定 \fBlnext\fR 字符是终端的 \fBreprint\fR 字符。\fBreprint\fR 的初始值被视为终端的 \fBreprint\fR 字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrlogin\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是 \fBrlogin\fR 转义符。如果设置了该字符，将忽略正常的 \fBtelnet\fR 转义符，除非其前面在行开头有该字符。在行开头且后跟 “\fB\&.\fR” 的 \fBrlogin\fR 字符将关闭连接。如果后跟 \fB^Z\fR，\fBrlogin\fR 命令将暂停 \fBtelnet\fR 命令。初始状态为禁用 \fBrlogin\fR 转义符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstart\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果启用了 \fBTELNET TOGGLE-FLOW-CONTROL\fR 选项，则 \fBstart\fR 字符被视为终端的 \fBstart\fR 字符。\fBkill\fR 字符的初始值被视为终端的 \fB start\fR 字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstop\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果启用了 \fBTELNET TOGGLE-FLOW-CONTROL\fR 选项，则 \fBstop\fR 字符被视为终端的 \fBstop\fR 字符。\fBkill\fR 字符的初始值被视为终端的 \fBstop\fR 字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsusp\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果 \fBtelnet\fR 在 \fBlocalchars\fR 模式下或启用了 \fBLINEMODE\fR 且键入了 \fBsuspend\fR 字符，则会将 \fBTELNET SUSP\fR 序列（请参见上文的 \fBsend\fR 和 \fBsusp\fR）发送到远程主机。\fBsuspend\fR 字符的初始值被视为终端的 \fBsuspend\fR 字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtracefile\fR\fR
+.ad
+.sp .6
+.RS 4n
+这是 \fBnetdata\fR 或 \fBdebug\fR 选项为 \fBTRUE\fR 时生成的输出将要写入的文件。如果将 \fBtracefile\fR 设置为 “\fB-\fR”，则会将跟踪信息写入标准输出（缺省设置）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBworderase\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果 \fBtelnet\fR 在 \fBLINEMODE\fR 或“逐行处理”模式下运行，则认为该字符是终端的 \fBworderase\fR 字符。\fBworderase\fR 字符的初始值被视为终端的 \fBworderase\fR 字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB?\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示合法的 \fBset\fR 和 \fBunset\fR 命令。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBslc\fR \fIstate\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBslc\fR（设置本地字符）命令用于在启用了 \fBTELNET LINEMODE\fR 选项的情况下设置或更改特殊字符的状态。特殊字符是指映射到 \fBTELNET\fR 命令序列（例如 \fBip\fR 或 \fBquit\fR）或行编辑字符（例如 \fBerase\fR 和 \fBkill\fR）的字符。缺省情况下，将导出本地特殊字符。\fIstate\fR 的有效值如下： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcheck\fR\fR
+.ad
+.sp .6
+.RS 4n
+验证当前特殊字符的设置。请求远程端发送当前的所有特殊字符设置。如果与本地端存在任何差异，本地设置将切换到远程值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexport\fR\fR
+.ad
+.sp .6
+.RS 4n
+切换到特殊字符的本地缺省值。本地缺省字符是指 \fBtelnet\fR 启动时本地终端的字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBimport\fR\fR
+.ad
+.sp .6
+.RS 4n
+切换到特殊字符的远程缺省值。远程缺省字符是指建立 \fBTELNET\fR 连接时远程系统的字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB?\fR\fR
+.ad
+.sp .6
+.RS 4n
+列显 \fBslc\fR 命令的帮助信息。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtoggle\fR \fIargument\fR...\fR
+.ad
+.sp .6
+.RS 4n
+将用于控制 \fBtelnet\fR 对事件响应方式的各种标志在 \fBTRUE\fR 与 \fBFALSE\fR 之间切换。可以指定多个参数。可使用 \fBdisplay\fR 命令查询这些标志的状态。有效参数如下： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauthdebug\fR\fR
+.ad
+.RS 20n
+.rt  
+对验证代码启用调试信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBautodecrypt\fR\fR
+.ad
+.RS 20n
+.rt  
+如果协商了 \fBTELNET\fR \fBENCRYPT\fR 选项，缺省情况下，不会自动开始数据流的实际加密（解密）。自动加密（自动解密）命令说明应该尽快启用输出（输入）流的加密。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBautologin\fR\fR
+.ad
+.RS 20n
+.rt  
+如果远程端支持 \fBTELNET\fR \fBAUTHENTICATION\fR 选项，\fBtelnet\fR 将尝试使用它执行自动验证。如果不支持 \fBAUTHENTICATION\fR 选项，将通过 \fBTELNET\fR \fBENVIRON\fR 选项传播用户的登录名。该命令与指定 \fBopen\fR 命令的 \fB-a\fR 选项相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBautoflush\fR\fR
+.ad
+.RS 20n
+.rt  
+如果 \fBautoflush\fR 和 \fBlocalchars\fR 均为 \fBTRUE\fR，则 \fBao\fR、\fBintr\fR 或 \fBquit\fR 字符被识别（并转换为 \fBTELNET\fR 序列；有关详细信息，请参见 \fBset\fR）时，\fBtelnet\fR 将拒绝在用户的终端上显示任何数据，直到远程系统确认（使用 \fBTELNET\fR 计时标记选项）已处理这些 \fBTELNET\fR 序列为止。如果终端用户尚未执行 “stty noflsh”，则切换的初始值为 \fBTRUE\fR。否则，值为 \fBFALSE\fR（请参见 \fBstty\fR(1)）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBautosynch\fR\fR
+.ad
+.RS 20n
+.rt  
+如果 \fBautosynch\fR 和 \fBlocalchars\fR 均为 \fBTRUE\fR，则键入 \fBinterrupt\fR 或 \fBquit\fR 字符（有关 \fBinterrupt\fR 和 \fBquit\fR 的说明，请参见 \fBset\fR）时，发送的生成的 \fBTELNET\fR 序列后跟 \fBTELNET SYNCH\fR 序列。该过程 \fIshould\fR 导致远程系统开始丢弃之前键入的所有输入，直到两个 \fBTELNET\fR 序列都已读取并予以执行。切换的初始值为 \fBFALSE\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbinary\fR\fR
+.ad
+.RS 20n
+.rt  
+对输入和输出启用或禁用 \fBTELNET BINARY\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinbinary\fR\fR
+.ad
+.RS 20n
+.rt  
+对输入启用或禁用 \fBTELNET BINARY\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBoutbinary\fR\fR
+.ad
+.RS 20n
+.rt  
+对输出启用或禁用 \fBTELNET BINARY\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcrlf\fR\fR
+.ad
+.RS 20n
+.rt  
+确定回车的发送方式。如果值为 \fBTRUE\fR，则回车将作为 \fB<CR><LF>\fR 发送。如果值为 \fBFALSE\fR，则回车将作为 \fB<CR><NUL>\fR 发送。切换的初始值为 \fBFALSE\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcrmod\fR\fR
+.ad
+.RS 20n
+.rt  
+切换 RETURN 模式。如果启用了该模式，从远程主机接收的大多数 RETURN 字符将映射到一个后跟一个换行符的 RETURN。该模式不会影响用户键入的字符，只影响从远程主机接收的字符。该模式只对发送 RETURN 但从不发送 LINEFEED 的远程主机有用。切换的初始值为 \fBFALSE\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdebug\fR\fR
+.ad
+.RS 20n
+.rt  
+切换套接字级别的调试（只有超级用户可执行该操作）。切换的初始值为 \fBFALSE\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBencdebug\fR\fR
+.ad
+.RS 20n
+.rt  
+对加密代码启用调试信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlocalchars\fR\fR
+.ad
+.RS 20n
+.rt  
+如果切换到 \fBTRUE\fR，则 \fBflush\fR、\fBinterrupt\fR、\fBquit\fR、\fBerase\fR 和 \fBkill\fR 字符（请参见 \fBset\fR）将在本地识别并分别转换为相应的 \fBTELNET\fR 控制序列 \fBao\fR、\fBip\fR、\fBbrk\fR、\fBec\fR 和 \fBel\fR（请参见 \fBsend\fR）。切换的初始值在“逐行处理”模式下为 \fBTRUE\fR，在“每次传送一个字符”模式下为 \fBFALSE\fR。如果启用了 \fBLINEMODE\fR 选项，则会忽略 \fBlocalchars\fR 的值，假定始终为 \fBTRUE\fR。如果启用过 \fBLINEMODE\fR，则 \fBquit\fR 将作为 \fBabort\fR 发送，\fBeof\fR 和 \fBsuspend\fR 将作为 \fBeof\fR 和 \fBsusp\fR 发送（请参见上文的 \fBsend\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnetdata\fR\fR
+.ad
+.RS 20n
+.rt  
+切换所有网络数据（采用十六进制格式）的显示。切换的初始值为 \fBFALSE\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBoptions\fR\fR
+.ad
+.RS 20n
+.rt  
+切换某些内部 \fBTELNET\fR 协议处理（与 \fBtelnet\fR 选项有关）的显示。切换的初始值为 \fBFALSE\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprettydump\fR\fR
+.ad
+.RS 20n
+.rt  
+启用 \fBnetdata\fR 切换后，如果启用了 \fBprettydump\fR，将以更易于用户读取的格式对 \fBnetdata\fR 命令的输出进行格式化。输出中各个字符之间留有空格。任何 \fBTELNET\fR 转义序列的开头前面都要有一个星号 (\fB*\fR)，以帮助找到它们。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBskiprc\fR\fR
+.ad
+.RS 20n
+.rt  
+如果将 \fBskiprc\fR 切换到 \fBTRUE\fR，打开连接时 \fBTELNET\fR 将跳过用户的主目录中 \fB\&.telnetrc\fR 文件的读取。切换的初始值为 \fBFALSE\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtermdata\fR\fR
+.ad
+.RS 20n
+.rt  
+切换所有终端数据（采用十六进制格式）的显示。切换的初始值为 \fBFALSE\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBverbose_encrypt\fR\fR
+.ad
+.RS 20n
+.rt  
+如果将 \fBverbose_encrypt\fR 标志切换为 \fBTRUE\fR，则每次启用或禁用加密时，\fBTELNET\fR 都会输出一条消息。切换的初始值为 \fBFALSE\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB?\fR\fR
+.ad
+.RS 20n
+.rt  
+显示合法的 \fBtoggle\fR 命令。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBenviron\fR \fIargument . . .\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBenviron\fR 命令用于操控可通过 \fBTELNET ENVIRON\fR 选项发送的变量。初始的一组变量从用户环境中获取。缺省情况下，仅导出 \fBDISPLAY\fR 和 \fBPRINTER\fR 变量。\fBenviron\fR 命令的有效参数如下： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdefine\fR \fIvariable value\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIvariable\fR 的值定义为 \fIvalue\fR。将自动导出由该命令定义的所有变量。\fIvalue\fR 可能会用单引号或双引号引起来，因此可能包含制表符和空格。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBundefine\fR \fIvariable\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIvariable\fR 从环境变量列表中删除。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexport\fR \fIvariable\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIvariable\fR 标记为要导出到远程端。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunexport\fR \fIvariable\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIvariable\fR 标记为除非远程端显式请求否则不导出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlist\fR\fR
+.ad
+.sp .6
+.RS 4n
+列出当前的一组环境变量。将自动发送标有星号 (\fB*\fR) 的变量。只有显式请求才会发送其他变量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB?\fR\fR
+.ad
+.sp .6
+.RS 4n
+列显 \fBenviron\fR 命令的帮助信息。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlogout\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fBtelnet logout\fR 选项发送到远程端。该命令类似于 \fBclose\fR 命令。但是，如果远程端不支持 \fBlogout\fR 选项，则不执行任何操作。但是，如果远程端支持 \fBlogout\fR 选项，该命令应该导致远程端关闭 \fBTELNET\fR 连接。如果远程端也支持暂停用户会话稍后重新连接的概念，则 \fBlogout\fR 参数指示远程端应该立即终止会话。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.telnetrc\fR\fR
+.ad
+.RS 19n
+.rt  
+包含要在发起 \fBtelnet\fR 会话之前执行的命令的文件
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性network/telnet
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBrlogin\fR(1)、\fBsh\fR(1)、\fBstty\fR(1)、\fBgetlogin\fR(3C)、\fBhosts\fR(4)、\fBkrb5.conf\fR(4)、\fBnologin\fR(4)、\fBtelnetrc\fR(4)、\fBattributes\fR(5)、\fBinet\fR(7P)、\fBinet6\fR(7P)
+.SH 诊断
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNO LOGINS: System going down in\fR \fIN\fR \fBminutes\fR\fR
+.ad
+.sp .6
+.RS 4n
+该计算机处于关机过程中，已禁用登录。
+.RE
+
+.SH 附注
+.sp
+.LP
+在某些远程系统上，在“逐行处理”模式下时，必须手动关闭回显。
+.sp
+.LP
+在“逐行处理”模式下或启用了 \fBLINEMODE\fR 时，仅当终端的 \fBEOF\fR 字符为行中第一个字符时，才会将其识别（并发送到远程系统）。
+.sp
+.LP
+\fBtelnet\fR 协议仅使用单个 DES 保护会话－客户端使用单个 DES 会话密钥请求服务票证。KDC 必须知道提供 \fBtelnet\fR 服务的主机服务主体支持单个 DES，这实际上表示此类主体必须在 KDC 数据库中有单个 DES 密钥。

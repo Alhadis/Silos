@@ -1,0 +1,674 @@
+'\" te
+.\" Copyright (c) 2003, 2014, Oracle and/or its affiliates.All rights reserved.
+.TH share_nfs 1M "2014 年 1 月 2 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+share_nfs \- 使 NFS 共享可供远程系统挂载
+.SH 用法概要
+.LP
+.nf
+\fBshare\fR \fB-F\fR nfs [-a [\fB-o\fR \fIspecific_options\fR] [\fB-d\fR \fIdescription\fR]
+     \fIpathname\fR [\fIsharename\fR] | [-A]]
+.fi
+
+.LP
+.nf
+\fBzfs set\fR share.nfs=on | off \fIfilesystem|share\fR
+.fi
+
+.LP
+.nf
+\fBzfs share\fR -o share.nfs=on | off \fIspecific_options\fR
+     \fIfilesystem|filesystem%share\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBshare\fR 实用程序用于定义和发布 NFS 共享，这使本地文件系统可供远程系统挂载。如果 \fBnfsd\fR(1M) 和 \fBmountd\fR(1M) 守护进程尚未运行，该命令会将其启动。
+.sp
+.LP
+可使用 \fBshare\fR 命令创建和发布 ZFS 文件系统共享，但此操作被视为旧操作。有关设置 \fBshare.nfs\fR 属性或使用 \fBzfs share\fR 命令创建并发布 NFS 共享的信息，请参见 \fBzfs\fR(1M)。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR \fBnfs\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 \fBNFS\fR 文件共享协议。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+发布所有已定义的共享。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIspecific_options\fR\fR
+.ad
+.sp .6
+.RS 4n
+以逗号分隔的关键字和属性-值-断言列表指定 \fIspecific_options\fR，以供 NFS 协议进行解释。缺省情况下，以读写访问权限向所有客户机发布共享，除非使用特定选项覆盖缺省访问权限。\fIspecific_options\fR 可以是以下项的任意组合：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaclok\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许 \fBNFS\fR 服务器对 \fBNFS\fR 版本 2 客户机进行访问控制。在服务器上设置了 \fBaclok\fR 时，将为所有客户机提供最高访问权限。例如，设置 \fBaclok\fR 后，如果有人具有读取权限，则每个用户均具有读取权限。如果未设置 \fBaclok\fR，则为所有客户机提供最低访问权限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBanon=\fR\fIuid\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fIuid\fR 设置为未知用户的有效用户 \fBID\fR。缺省情况下，为未知用户提供的有效用户 \fBID\fR 是 \fBUID_NOBODY\fR。如果 \fIuid\fR 设置为 \fB-1\fR，则拒绝访问。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcharset\fR\fR
+.ad
+.sp .6
+.RS 4n
+假定所有客户机使用指定的字符集（请参见以下说明中的列表），对于服务器，文件和路径名将转换为 UTF-8 格式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcharset\fR=\fIaccess_list\fR\fR
+.ad
+.sp .6
+.RS 4n
+其中，\fIcharset\fR 为以下项之一：\fBeuc-cn\fR、\fBeuc-jp\fR、\fBeuc-jpms\fR、\fBeuc-kr\fR、\fBeuc-tw\fR、\fBiso8859-1\fR、\fBiso8859-2\fR、\fBiso8859-5\fR、\fBiso8859-6\fR、\fBiso8859-7\fR、\fBiso8859-8\fR、\fBiso8859-9\fR、\fBiso8859-13\fR、\fBiso8859-15\fR、\fBkoi8-r\fR。
+.sp
+如果客户机与上述某一属性的 \fIaccess_list\fR 匹配，将假定客户机使用该字符集，对于服务器，文件和路径名将转换为 UTF-8 格式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBindex=\fR\fBfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+当 \fBNFS URL\fR 引用包含 \fBfile\fR 的目录时，装入此文件而不是装入包含此文件的目录的列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlog[=\fItag\fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+为指定的文件系统启用 \fBNFS\fR 服务器日志记录。该可选标记确定相关日志文件的位置。\fItag\fR 在 \fB/etc/nfs/nfslog.conf\fR 中定义。如果未指定任何 \fItag\fR，将使用与 \fB/etc/nfs/nfslog.conf\fR 中的\fB全局\fR \fItag\fR 关联的缺省值。仅为 NFS 版本 2 和版本 3 请求提供了 NFS 服务器日志记录支持。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoaclfab\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许 NFS 服务器不将编制的 ACL 返回给 NFS 客户机。NFS 服务器的缺省行为是编制 ACL。如果设置了 \fBnoaclfab\fR，则 NFS 服务器不会编制 ACL，如果底层文件系统不支持 POSIX Draft ACL，则适合选择此项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnone\fR\fR
+.ad
+.sp .6
+.RS 4n
+不允许所有客户机进行访问。\fBro\fR 或 \fBrw\fR 选项可以覆盖 \fBnone\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnone=\fR\fIaccess_list\fR\fR
+.ad
+.sp .6
+.RS 4n
+不允许与访问列表匹配的所有客户机进行访问。访问列表是一个星号 (\fB*\fR) 时例外，在这种情况下，\fBro\fR 或 \fBrw\fR 可以覆盖 \fBnone\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnosub\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁止客户机挂载共享目录的子目录。例如，如果使用 \fBnosub\fR 选项在服务器 \fIfooey\fR 上共享 \fB/export\fR，则 \fBNFS\fR 客户机无法执行以下命令：
+.sp
+.in +2
+.nf
+mount -F nfs fooey:/export/home/mnt
+.fi
+.in -2
+.sp
+
+NFS 版本 4 不使用 \fBMOUNT\fR 协议。\fBnosub\fR 选项仅适用于 NFS 版本 2 和版本 3 请求。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnosuid\fR\fR
+.ad
+.sp .6
+.RS 4n
+缺省情况下，允许客户机在启用了 setuid 或 setgid 模式的共享文件系统上创建文件。指定 \fBnosuid\fR 将导致服务器文件系统忽略任何启用 setuid 或 setgid 模式位的尝试且不给出提示。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpublic\fR\fR
+.ad
+.sp .6
+.RS 4n
+将公共文件句柄的位置从 \fBroot\fR (\fB/\fR) 移动到启用了 Web\fBNFS\fR 的浏览器和客户机的导出目录。此选项不启用 Web\fBNFS\fR 服务。Web\fBNFS\fR 始终处于启用状态。每个服务器上只允许一个文件系统使用此选项。可以与 \fBpublic\fR 选项一起使用任何其他选项（包括 \fB-ro=list\fR 和 \fB-rw=list\fR 选项）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBro\fR\fR
+.ad
+.sp .6
+.RS 4n
+以只读访问权限向所有客户机发布共享。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBro=\fR\fIaccess_list\fR\fR
+.ad
+.sp .6
+.RS 4n
+以只读访问权限向 \fIaccess_list\fR 中列出的客户机发布共享；覆盖指定客户机的 \fBrw\fR 子选项。请参见下文的 \fIaccess_list\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBroot\fR\fR
+.ad
+.sp .6
+.RS 4n
+所有主机中的 root 用户都具有 root 访问权限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBroot=\fR\fIaccess_list\fR\fR
+.ad
+.sp .6
+.RS 4n
+只有 \fIaccess_list\fR 中指定的主机中的 root 用户具有 root 访问权限。请参见下文的 \fIaccess_list\fR。缺省情况下，没有主机具有 root 访问权限，因此，root 用户会映射到一个匿名用户 \fBID\fR（请参见上述的 \fBanon=\fR\fIuid\fR 选项）。如果共享文件系统使用的是 UNIX 验证 (\fBAUTH_SYS\fR)，则可以使用网络组。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBroot_mapping=\fIuid\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+对于具有 root 访问权限的客户机，将其 root  UID 映射到指定的用户 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrw\fR\fR
+.ad
+.sp .6
+.RS 4n
+以读写访问权限向所有客户机发布共享。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrw=\fR\fIaccess_list\fR\fR
+.ad
+.sp .6
+.RS 4n
+以读写访问权限向 \fIaccess_list\fR 中列出的客户机发布共享；覆盖指定客户机的 \fBro\fR 子选项。请参见下文的 \fIaccess_list\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsec=\fR\fImode\fR[\fB:\fR\fImode\fR]. . .\fR
+.ad
+.sp .6
+.RS 4n
+使用指定的一个或多个安全模式发布共享。\fBsec=\fR\fImode\fR 选项中的 \fImode\fR 必须是客户机支持的节点名。如果未指定 \fBsec=\fR，使用的缺省安全模式为 \fBAUTH_SYS\fR。可在命令行中指定多个 \fBsec=\fR 选项，尽管一次只能显示一个模式。在 \fBnfssec\fR(5) 中定义了安全模式。
+.sp
+每个 \fBsec=\fR 选项指定了在下一个 \fBsec=\fR 选项前面提供的任何后续 \fBwindow=, rw, ro, rw=, ro=\fR 和 \fBroot=\fR 选项所应用的模式。附加的每个 \fBsec=\fR 会重置安全模式上下文，因此，可为附加的模式提供其他的 \fBwindow=\fR、\fBrw\fR、\fBro\fR、\fBrw=\fR、\fBro=\fR 和 \fBroot=\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsec=\fR\fInone\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果客户机使用 \fBAUTH_NONE\fR 且指定了 \fBsec=\fR\fInone\fR 选项，或者，如果客户机使用的安全模式不是共享文件系统时所用的那个安全模式，则每个 \fBNFS\fR 请求的凭证将被视为未通过验证。有关如何处理未通过验证的请求的说明，请参见 \fBanon=\fR\fIuid\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsecure\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项已过时，建议使用 \fBsec=\fR\fIdh\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBwindow=\fR\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+以 \fBsec=\fR\fIdh\fR 发布共享时，该项设置 \fBNFS\fR 服务器所允许的 \fBRPC\fR 请求凭证（位于验证头中）的最大生命周期（秒）。如果凭证超过所允许的生命周期，\fBNFS\fR 服务器会拒绝请求。缺省值为 30000 秒（8.3 小时）。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdescription\fR\fR
+.ad
+.sp .6
+.RS 4n
+提供用于描述要共享的文件系统的注释。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示所有定义的共享。
+.RE
+
+.SS "\fIaccess_list\fR"
+.sp
+.LP
+\fIaccess_list\fR 参数可以是字符串 “\fB*\fR”（表示所有主机），也可以是由冒号分隔的列表，其组件可以是任意数量的以下项：
+.sp
+.ne 2
+.mk
+.na
+\fBhostname\fR
+.ad
+.sp .6
+.RS 4n
+主机的名称。在 \fBnsswitch\fR \fBhosts\fR 条目中为 \fBDNS\fR 或 \fBLDAP\fR 命名配置了服务器时，任何主机名都必须表示为全限定的 \fBDNS\fR 或 \fBLDAP\fR 名称。指定的主机名必须是此主机的规范名称，并且必须匹配反向查找 NFS 客户机的传入 IP 地址时返回的主机名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBnetgroup\fR
+.ad
+.sp .6
+.RS 4n
+一个网络组包含多个主机名。在 \fBnsswitch\fR \fBhosts\fR 条目中为 \fBDNS\fR 或 \fBLDAP\fR 命名配置了服务器时，网络组中的任何主机名都必须表示为全限定的 \fBDNS\fR 或 \fBLDAP\fR 名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdomainname.suffix\fR
+.ad
+.sp .6
+.RS 4n
+要使用域成员关系，服务器必须使用 \fBDNS\fR 或 \fBLDAP\fR 将主机名解析为 \fBIP\fR 地址；即，\fB/etc/nsswitch.conf\fR 中的 \fBhosts\fR 条目必须在 \fBnis\fR 之前指定 \fBdns\fR 或 \fB ldap\fR，因为只有 \fBDNS\fR 和 \fBLDAP\fR 会返回主机的完整域名。其他名称服务（如 \fBNIS\fR）不能用于解析服务器上的主机名，因为将 \fBIP\fR 地址映射到主机名时，它们不返回域信息。例如， 
+.sp
+.in +2
+.nf
+NIS   172.16.45.9 --> "myhost"
+.fi
+.in -2
+.sp
+
+和：
+.sp
+.in +2
+.nf
+DNS or LDAP   172.16.45.9 --> 
+     "myhost.mydomain.mycompany.com"
+.fi
+.in -2
+.sp
+
+域名后缀通过前缀句点与主机名和网络组区分开来。例如，
+.sp
+\fBrw=.mydomain.mycompany.com\fR
+.sp
+单个句点可用于匹配不带后缀的主机名。例如，
+.sp
+\fBrw=.\fR
+.sp
+匹配 \fBmydomain\fR，但不匹配 \fBmydomain.mycompany.com\fR。此功能可用于匹配通过 \fBNIS\fR（而不是 \fBDNS\fR 和 \fBLDAP\fR）解析的主机。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBnetwork\fR
+.ad
+.sp .6
+.RS 4n
+网络或子网组件位于 at 符号 (\fB@\fR) 之后。可以是名称、IPv4 或 IPv6 地址。如果是名称，将通过 getnetbyname(3C) 将其转换为地址。例如，
+.sp
+\fB=@mynet\fR
+.sp
+等效于：
+.sp
+\fB=@172.16\fR 或 \fB=@172.16.0.0\fR
+.sp
+对于 IPv4 地址，网络前缀采用八位字节对齐的网络掩码，由地址低位部分中的第零个八位字节直至（包括）高位八位字节确定。如果您希望指定单个 IP 地址，请参见下文。如果网络前缀未按字节对齐，语法允许在斜杠 (\fB/\fR) 分隔符后显式指定掩码长度。例如，
+.sp
+\fB=@theothernet/17\fR 或 \fB=@172.16.132/22\fR
+.sp
+其中，掩码是对应 IP 地址中最左侧的连续有效数位。
+.sp
+对于 IPv6 地址，地址必须用一对方括号括起来。否则，出现的第一个 IPv6 分号会被解释为地址之间的分隔符。网络掩码长度在斜杠 (/) 分隔符后显式指定。例如，
+.sp
+.in +2
+.nf
+=@[fe80::/10]
+.fi
+.in -2
+.sp
+
+其中，掩码是对应 IP 网络地址中最左侧的连续有效数位。
+.sp
+指定单个 IP 地址时，也使用上述 \fB@\fR 表示法，但不指定网络掩码。例如：
+.sp
+.in +2
+.nf
+=@172.16.132.14
+.fi
+.in -2
+.sp
+
+例如，可以通过以下方式指定多个单独的 IP 地址：
+.sp
+.in +2
+.nf
+root=@172.16.132.20:@[fe80::209:3dff:fe00:c074]
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.LP
+减号 (\fB-\fR) 前缀表示拒绝 \fIaccess_list\fR 中的该组件访问。系统将按顺序搜索该列表，直至找到允许或拒绝访问的匹配项，或直至到达该列表的末尾。例如，如果主机 \fBterra \fR 位于 \fBengineering\fR 网络组中，则
+.sp
+.in +2
+.nf
+rw=-terra:engineering
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+拒绝 \fBterra\fR 访问，但
+.sp
+.in +2
+.nf
+rw=engineering:-terra
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+允许 \fBterra\fR 访问。
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIpathname\fR\fR
+.ad
+.sp .6
+.RS 4n
+要共享的文件系统的路径名。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR定义并发布 NFS 共享
+.sp
+.LP
+以下示例显示了如何使用传统的 \fBshare\fR 命令定义并发布 \fB/export/manuals\fR 文件系统共享。
+
+.sp
+.in +2
+.nf
+# \fBshare -F NFS /export/manuals\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下示例显示了如何使用 \fBzfs set\fR 命令共享 ZFS 文件系统。
+
+.sp
+.in +2
+.nf
+# \fBzfs set share.nfs=on tank/data\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下示例显示了如何使用 \fBshare.nfs.public\fR 选项创建指定的 NFS 共享 \fBtank/public%pubshare\fR，而不是在 ZFS 文件系统 \fBtank/public\fR 上设置该选项，因为该属性不可继承。
+
+.sp
+.in +2
+.nf
+# \fBzfs create -o mountpoint=/pub tank/public\fR
+# \fBzfs share -o share.nfs=on -o share.nfs.public=on tank/public%pubshare\fR
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.sp .6
+.RS 4n
+出现错误。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/dfs/fstypes\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统类型列表，缺省为 \fBNFS\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/dfs/sharetab\fR\fR
+.ad
+.sp .6
+.RS 4n
+共享文件系统的系统记录
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/nfs/nfslogtab\fR\fR
+.ad
+.sp .6
+.RS 4n
+日志文件系统的系统记录
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/nfs/nfslog.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+日志记录配置文件
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性service/file-system/nfs
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBmount\fR(1M)、\fBmountd\fR(1M)、\fBnfsd\fR(1M)、\fBnfslogd\fR(1M)、\fBshare\fR(1M)、\fBunshare\fR(1M)、\fBzfs_share\fR(1M)、\fBgetnetbyname\fR(3SOCKET)、\fBnfslog.conf\fR(4)、\fBnetgroup\fR(4)、\fBattributes\fR(5)、\fBnfssec\fR(5)
+.SH 附注
+.sp
+.LP
+使用 \fBshare\fR 命令创建和发布的 NFS 共享是永久性的，除非将其取消共享。发布 NFS 共享由以下 SMF 服务管理：
+.sp
+.in +2
+.nf
+$ svcs | grep share
+online         Mar_07   svc:/network/shares:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果要共享的文件系统是指向有效路径名的符号链接，则将共享该规范路径（符号链接所指的路径）。例如，如果 \fB/export/foo\fR 是 \fB/export/bar\fR 的符号链接 (\fB/export/foo ->\fR \fB/export/bar\fR)，则以下 \fBshare\fR 命令将导致 \fB/export/bar\fR 成为共享路径名（而不是 \fB/export/foo\fR）。
+.sp
+.in +2
+.nf
+# \fBshare\fR \fB-F\fR \fBnfs /export/foo\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+对 \fBserver:/export/foo\fR 执行 \fBNFS\fR 挂载将导致实际挂载 \fBserver:/export/bar\fR。
+.sp
+.LP
+\fBmountd\fR(1M) 进程允许处理包含符号链接的路径名。这允许处理本身未通过 \fBshare_nfs\fR 显式共享的路径。例如，\fB/export/foo\fR 可能是一个引用已专门共享的 \fB/export/bar\fR 的符号链接。当客户机挂载 \fB/export/foo\fR 时，\fBmountd\fR 处理将跟踪该符号链接并以 \fB/export/bar\fR 作为响应。NFS 版本 4 协议不使用 \fBmountd\fR 处理，客户机使用 \fB/export/foo\fR 所产生的效果与它在 NFS 版本 2 和版本 3 中执行此操作的效果不同，客户机尝试挂载 \fB/export/foo\fR 时将收到一个错误。

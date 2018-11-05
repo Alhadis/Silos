@@ -1,0 +1,822 @@
+'\" te
+.\" Portions Copyright (c) 2008, 2015, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright (c) 1980 Regents of the University of California. The Berkeley software License Agreement specifies the terms and conditions for redistribution.
+.TH man 1 "2015 年 5 月 20 日" "SunOS 5.11" "ユーザーコマンド"
+.SH 名前
+man \- マニュアルページの表示
+.SH 形式
+.LP
+.nf
+\fBman\fR [\fB-\fR] [\fB-adFlrt\fR] [\fB-M\fR \fIpath\fR] [\fB-T\fR \fImacro-package\fR] [\fB-s\fR \fIsection\fR] \fIname\fR...
+.fi
+
+.LP
+.nf
+\fBman\fR [\fB-M\fR \fIpath\fR] [\fB-s\fR \fIsection\fR] \fB-k\fR \fIquery\fR...
+.fi
+
+.LP
+.nf
+\fBman\fR [\fB-M\fR \fIpath\fR] \fB-f\fR \fIfile\fR...
+.fi
+
+.LP
+.nf
+\fBman\fR [\fB-M\fR \fIpath\fR] [\fB-s\fR \fIsection\fR] \fB-K\fR \fIquery\fR...
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBman\fR コマンドは、リファレンスマニュアルから得た情報を表示します。\fIname\fR で選択した完全なマニュアルページ、\fIquery\fR (\fB-k\fR または \fB-K\fR) あるいは関連付けられたファイルの名前 (\fB-f\fR) のどちらかで選択されたサマリーを表示します。マニュアルページが見つからない場合、\fBman\fR はエラーメッセージを出力します。
+.SS "ソース形式"
+.sp
+.LP
+リファレンスマニュアルのページは、\fBnroff\fR (\fBgroff\fR(1) を参照) または \fBSGML\fR (Standard Generalized Markup Language) タグ (\fBsgml\fR(5) を参照) のどちらかでマークアップされています。\fBman\fR コマンドはそのマークアップの種類を認識して、適宜にファイルを処理します。マークアップの種類によって分けられたディレクトリに、個々のソースファイルが置かれています。
+.SS "マニュアルページの位置"
+.sp
+.LP
+オンラインのリファレンスマニュアルのページのディレクトリは、通常 \fB/usr/share/man\fR ディレクトリにあります。\fBnroff\fR のソースは、\fB/usr/share/man/man\fR* ディレクトリにあります。\fBSGML\fR のソースは、\fB/usr/share/man/sman\fR* ディレクトリにあります。各ディレクトリは、マニュアルのセクションごとに対応しています。これらのディレクトリは必須ではないため、ホスト上にインストールされているとは限りません。存在していなければ、ほかのホストから \fB/usr/share/man\fR をマウントしてください。
+.sp
+.LP
+事前整形された最新バージョンが \fBcat\fR* または \fBfmt\fR* ディレクトリ中にあれば、\fBman\fR は単にそれを表示または印刷します。バージョンが古かったり存在しない場合には、\fBman\fR は再フォーマット処理を行なってから出力し、\fBcat\fR* または \fBfmt\fR* が書き込み可の場合に事前整形されたバージョンを格納します。インデックスファイルは更新されません。\fBcatman\fR(1M) を参照してください。事前整形されたバージョン用のディレクトリが提供されていない場合、\fBman\fR は要求に応じてページを再フォーマットし、表示処理中、フォーマットされたテキストを一時ファイルに収納します。\fB\fR
+.sp
+.LP
+標準出力が端末ではない場合、または `\fB-\fR'フラグが指定された場合には、\fBman\fR は \fBcat\fR(1) を通じてテキストを出力します。それ以外の場合、\fBman\fR は、画面でのページングや下線付けを処理するために、その出力を \fBless\fR(1) を通してパイプします。
+.SS "クエリー文字列"
+.sp
+.LP
+\fB-k\fR または \fB-K\fR オプションを使用して、マニュアルページで、\fIquery\fR (1 つ以上の語または語句) を検索できます。インデックスファイルベースの全文テキスト検索、クエリーの拡張、ステミング、および部分一致がサポートされています。インデックスファイルの生成方法については、\fBcatman\fR(1M) を参照してください。
+.sp
+.LP
+用語は、すべての英字、数字、および下線 {a-z,A-Z,_} を含む有効な文字セットの文字シーケンスです。これはフルテキスト処理の有用なセマンティック単位です。ただし、すべての有効な用語で、ストップワード (または用語) はインデックス付けも検索もされません。
+.sp
+.LP
+ストップワードには頻繁に使用される短い関数用語があります。たとえば the、is、at which などです。場合によっては、ストップ用語が原因で (特にそれらを含むクエリーが検索されたときに) 問題が発生する可能性があります。たとえば、"The zfs system"、"take that" などです。このため、インデックス作成やクエリー検索を実行する際は必ず、man(1) のパフォーマンスを向上させるためストップワードは削除されます。
+.sp
+.LP
+句は、非インデックス文字 (通常はスペース文字) で連結された複数の用語で構成されます。端末でユーザーが句を検索する際、通常は二重引用符で囲みます。
+.sp
+.LP
+クエリー拡張は、フルテキストドメインにおける有用な手法です。これは、空の検索結果が返されないように、ユーザーが入力した元のクエリー文字列のリファクタリング、および追加されたクエリー用語の再評価を実行するために使用され、man(1) フルテキスト検索のパフォーマンスを向上させます。
+.sp
+.LP
+用語クエリー拡張は、ユーザーが入力の不完全な用語を自動的に補足し、正しい形式を指定できるようにすることを目的としています。
+.sp
+.LP
+頭字語クエリー拡張は、ユーザーのクエリーにいくつかの頭字語が含まれる場合に、ユーザーが頭字語の拡張を実行するために使用されます。対応するフルネームの文字列をユーザーのクエリーに自動的に追加します。
+.sp
+.LP
+英語の場合、たとえば \fBcat\fR という語幹でステミングを実行すると、\fBcats\fR、\fBcatlike\fR、\fBcatty\fR などの文字列が検索されます。\fBstem\fR でステミングを実行すると、\fBstemmer\fR、\fBstemming\fR、および \fBstemmed\fR が検索されます。ステミングのアルゴリズムによって、\fBfishing\fR、\fBfished\fR、\fBfish\fR、および \fBfisher\fR という単語が \fBfish\fR という語幹に変換されます。 
+.sp
+.LP
+部分一致では、ユーザーは各マニュアルページの検索範囲を制限するために、クエリー文字列でセクション名を指定できます。セクション名は、マニュアルページのレイアウトや構造を定義するのに役立つ各マニュアルページのセクションタイトルを指します。たとえば、"NAME"、"SYNOPSIS"、"DESCRIPTION" などです。
+.sp
+.LP
+マッチングでは、大文字と小文字が区別されません。ステミングは、英語のマニュアルページでのみ使用できます。
+.sp
+.LP
+一致したマニュアルページは、クエリーの一致のスコアを基準として昇順にソートされて表示されます。
+.sp
+.LP
+Oracle Solaris のマニュアルページは、\fB名前\fR、\fB形式\fR、\fB機能説明\fR などのセクションに分かれています。ユーザーは、\fB-K\fR オプションで詳しく説明しているように、検索範囲を 1 つのセクションに限定できます。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBMANPATH\fR 検索パス中で \fIname\fR に一致したすべてのマニュアルページを出力します。複数個あるときは、見つかった順序で出力します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+デバッグします。セクションを示す引数に対応する値、検索に用いた方法、および \fBman\fR が検索を行なったパスを表示します。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfile ...\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBman\fR は、指定されたいずれかのファイルに関連するマニュアルページを見つけようとします。結果のベース名または名前を含むサマリーを出力します。これは実質的に \fBwhatis\fR(1) と同じです。
+.sp
+このオプションは、インデックスファイルを使用します。 インデックスファイルの生成方法の詳細は、\fBcatman\fR(1M) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fR
+.ad
+.sp .6
+.RS 4n
+インデックス照合ファイルを使う代わりに、\fBMANPATH\fR で指定した全ディレクトリまたは \fBman.cf\fR ファイルを使って検索を行うよう \fBman\fR に指示します。 このオプションは、インデックスファイルの内容が最新状態にない場合に便利な指定で、\fBman\fR コマンドのデフォルトの動作です。そのため、通常はこのオプションを起動する必要はありません。参考のためにここに記述しています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR \fIquery ...\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定したクエリーをインデックスファイルから検索し、サマリーを出力します。NAME セクションのみが検索されます。これは実質的に \fBapropos\fR(1) と同じです。
+.sp
+インデックスファイルの生成方法については、\fB-K\fR オプションを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-K\fR \fIquery ...\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定したクエリーをインデックスファイルから検索し、サマリーを出力します。デフォルトでは、すべてのセクションが検索されます。
+.sp
+クエリーオプション引数で左から 1 番目のテキストとしてセクション名を追加し、その最後にコロン (\fB:\fR) を付けて「\fIセクション名: クエリー\fR」のようにすると、そのクエリー文字列の検索は指定したセクションに対してのみ実行されます。指定したセクション名が存在しない場合は、ユーザーでサポートされているセクション名がすべてリストされます。
+.sp
+\fB-f\fR、\fB-k\fR、および \fB-K\fR によって使用される \fB/usr/share/man\fR および \fB/usr/gnu/share/man\fR 内のインデックスファイルは、これらのディレクトリ内のマニュアルページがインストールまたは更新され、これらを配布するパッケージが、\fBpkg\fR(5) で指定されるようにファイルに \fBrestart_fmri=svc:/application/man-index:default\fR のタグを付けたときに自動的に生成されます。これらは \fBsvcadm restart application/man-index\fR を手動で実行するか、\fBcatman\fR(1M) に \fB-w\fR を付けて実行しても生成できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+検索パス内にある、\fIname\fR に一致するマニュアルページをすべて一覧表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+マニュアルページ用に別の検索パスを指定します。\fIpath\fR には、マニュアルページのディレクトリサブツリーを含んだディレクトリの名前をコロンで区切って記述します。たとえば \fIpath\fR の値として \fB/usr/share/man:/usr/local/man\fR と指定すると、\fBman\fR は最初に標準のディレクトリを検索し、次に \fB/usr/local/man\fR を検索して \fIname\fR を探します。\fB-f\fR、\fB-k\fR または \fB-K\fR オプションとともに使用する場合は、\fB-M\fR オプションを最初に記述する必要があります。\fIpath\fR 内の各ディレクトリは、セクションごとに 1 つの \fBman\fR* または \fBsman\fR* という形式のサブディレクトリを含んでいると見なされます。このオプションは、\fBMANPATH\fR 環境変数より優先されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+マニュアルページを再フォーマットするだけで、結果の表示は行いません。この指定は、\fBman\fR \fB-\fR \fB-t\fR \fIname\fR と同等です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIsection ...\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBman\fR で検索するマニュアルのセクションを指定します。\fIsection\fR 引数に対応するディレクトリだけを検索して \fIname\fR を探します。\fIsection\fR の値は 1 桁の数字で、検索対象のセクション名を伴う場合もあります (たとえば、"\fB3lib\fR")。または、\fIsection\fR を 1 つの単語 (たとえば、\fBlocal\fR、\fBnew\fR、\fBold\fR、\fBpublic\fR) にすることもできます。また、\fIsection\fR は 1 文字の場合もあります。複数のセクションを指定するには、各セクションをコンマで区切ります。このオプションは、\fBMANPATH\fR 環境変数や \fBman.cf\fR ファイルより優先されます。\fBman\fR で検索を実行する方法の説明については、後続の「検索パス」を参照してください。\fB\fR\fB\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBman\fR は標準出力に PostScript を出力します。\fB-\fR と \fB-t\fR の両オプションがともに指定された場合、\fBman\fR は指定された各 \fIname\fR の \fBtroff\fR バージョンを (必要であれば) 更新しますが、結果の出力は行いません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fImacro-package\fR\fR
+.ad
+.sp .6
+.RS 4n
+標準の \fB-mandoc\fR マクロではなく、\fImacro-package\fR を使用してマニュアルページをフォーマットします。「\fB-m\fR」で始まっている場合は、マクロパッケージが groff のオプションで指定されるものとして処理されます。「\fB-r\fR」オプションを続けて追加して、マクロのオプションを指定できます。これらのオプションについては、groff(1) および groff_man(5) を参照してください。「\fB/\fR」で始まっている場合は、マクロパッケージが直接指定されるものとして処理されます。\fB/usr/share/lib/tmac\fR にあるマクロはこれによって指定できます。例 5 を参照してください。
+.RE
+
+.SH オペランド
+.sp
+.LP
+次のオペランドを指定できます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+標準ユーティリティーまたはキーワードの名前。
+.RE
+
+.SH 使用法
+.sp
+.LP
+\fBman\fR の使用方法は次のとおりです。
+.SS "マニュアルページのセクション"
+.sp
+.LP
+リファレンスマニュアルのエントリは、\fIセクション\fRに編成されています。セクションの名前は、通常 1 桁の主セクション名と、そのあとに必要に応じて続く通常 1 つ以上の文字であるサブセクション名から成ります。装飾のない主セクション名 (たとえば、「\fB9\fR」) は、「\fB9e\fR」、「\fB9f\fR」、「\fB9s\fR」などの、その名前のサブセクションの省略名としては機能しません。サブセクションを検索する場合は、\fBman\fR \fB-s\fR で個別に指定する必要があります。各セクションに属するマニュアルページ群は、共通のカテゴリに属しており、その中でさらに細かく分類するためにサブセクションがあります。このリリースで使用されている分類の説明については、\fBintro\fR のマニュアルページを参照してください。
+.sp
+.LP
+次に、マニュアルページの各セクションと、そこに含まれている情報について簡単について説明します。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+セクション 1 では、このオペレーティングシステムで使用できるコマンドをアルファベット順に説明しています。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+セクション 1M では、主にシステムの保守や管理に使用するコマンドを、アルファベット順に説明しています。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+セクション 2 では、すべてのシステムコールについて説明しています。これらのコールのほとんどに、1 つ以上のエラーの戻り値があります。エラー状態は、ほかの場合には返されない戻り値によって示されます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+セクション 3 では、さまざまなライブラリにある関数のうち、セクション 2 で説明されている、UNIX システムのプリミティブを直接呼び出す関数以外について説明しています。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+セクション 4 では、さまざまなファイルの形式の概要について説明しています。C 言語の構造体によるファイル形式の宣言も適宜示します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+セクション 5 には、文字セット表などのその他のドキュメントが含まれています。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+セクション 7 では、特定のハードウェア周辺装置やデバイスドライバを参照するさまざまな特殊ファイルについて説明しています。また、STREAMS ソフトウェアのドライバやモジュール、STREAMS で一般的な一連のシステムコールについても説明しています。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+セクション 9E では、開発者がデバイスドライバに含めることのできる DDI (デバイスドライバインタフェース)/DKI (ドライバ/カーネルインタフェース)、DDI のみ、および DKI のみのエントリポイントルーチンについて説明しています。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+このセクションでは、デバイスドライバで使用可能なカーネル関数について説明します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+セクション 9S では、ドライバとカーネルの間で情報を共有するためにドライバによって使用されるデータ構造について説明しています。
+.RE
+.SS "検索パス"
+.sp
+.LP
+指定されたある \fIname\fR を検索する前に、\fBman\fR はまず候補となりうるディレクトリとセクションのリストを構築します。\fBman\fR は環境変数 \fBMANPATH\fR が示すディレクトリ群の中で \fIname\fR を探します。
+.sp
+.LP
+\fBMANPATH\fR が存在しない場合、\fBman\fR は最初に \fBPATH\fR 要素の最後のコンポーネントに \fBman\fR を代入することによって、\fBPATH\fR 環境変数に基づいた検索パスを作成します。\fB/sbin\fR、\fB/usr/xpg4/bin\fR などのディレクトリの独自の特性に対応するために、特別なプロビジョニングが追加されています。ファイル引数に \fB/\fR 文字が含まれる場合は、検索パスを作成するために \fBPATH\fR 要素の代わりに引数の \fIdirname\fR 部分が使用されます。
+.sp
+.LP
+マニュアルページのディレクトリ内において、\fBman\fR は次に示すセクションだけを次の順序で検索します。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+コマンド行上で \fB-s\fR オプションにより指定された\fIセクション\fR群
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBMANPATH\fR 環境変数に埋め込まれている\fIセクション\fR群
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBMANPATH\fR 環境変数が示す各ディレクトリの \fBman.cf\fR ファイル中に指定されている\fIセクション\fR群
+.RE
+.sp
+.LP
+前述の指定がいずれも存在しない場合には、\fBman\fR はマニュアルページパス中の各ディレクトリを検索し、最初に見つかったマニュアルページだけを表示します。
+.sp
+.LP
+\fBman.cf\fR ファイルの形式は次のとおりです。
+.sp
+.in +2
+.nf
+MANSECTS=\fIsection\fR[,\fIsection\fR]... 
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+文字 `\fB#\fR' で始まる行および空行は注釈と見なされ、無視されます。\fBMANPATH\fR が示す各ディレクトリには、そのディレクトリのデフォルトの検索順序を指定するマニュアルページ構成ファイルを含めることができます。
+.SH マニュアルページのフォーマット
+.sp
+.LP
+マニュアルページは、\fBgroff\fR(1) または \fBsgml\fR(5) でマークアップされます。\fBnroff\fR のマニュアルページは、\fB-mandoc\fR マクロパッケージにより \fBgroff\fR(1) または \fBgtroff\fR(1) によって処理されます。マクロの使用法については、\fBgroff\fR(1) を参照してください。\fBSGML\fR タグがついたマニュアルページは、\fBSGML\fR パーサーによって処理され、フォーマッタに引き渡されます。
+.SS "\fBnroff\fR マニュアルページの前処理"
+.sp
+.LP
+\fBnroff\fR マニュアルページをフォーマットする際、\fBman\fR は、先頭行を検査して特殊な処理が必要かどうかを判断します。先頭行が
+.sp
+.in +2
+.nf
+\&'\e" \fIX\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+という形式の文字列 (\fIX\fR は「\fB"\fR」とは 1 つのスペースで区切られています) であり、次のリスト内の文字の任意の組み合わせで構成されている場合、\fBman\fR は、その入力を対応するプリプロセッサを通して \fBgtroff\fR(1) または \fBgroff\fR(1) にパイプします。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBe\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBgeqn\fR(1)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBr\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBgrefer\fR(1)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBt\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBgtbl\fR(1) 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBv\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBvgrind\fR(1)
+.RE
+
+.SS "ほかの \fBnroff\fR マニュアルページへの参照"
+.sp
+.LP
+\fBnroff\fR のマニュアルページの先頭行がこれらのパターンで別のマニュアルページを参照している場合:
+.sp
+.in +2
+.nf
+\&.so man*/\fIsourcefile\fR
+\&.so \fIsourcefile\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBman\fR は、現在のファイルの代わりにその参照されているファイルを処理します。シャドウファイルがその参照とは別のサブディレクトリ内に存在する場合は、最初のパターンのように、参照をマニュアルページのディレクトリサブツリーのルートに対する相対的なパス名として表す必要があります。これらが同じセクションの \fBsubdirectory(man*)\fR 内に存在する場合は、2 つ目のパターンのように参照をファイル名として表すことができます。
+.sp
+.LP
+2 行目以降の行が \fB\&.so\fR で始まっている場合、\fBman\fR はそれを無視します。関連する roff は、通常の方法でその要求を処理します。
+.SS "SGML マニュアルページの処理"
+.sp
+.LP
+マニュアルページは、ファイル中に \fB<!DOCTYPE\fR という文字列が存在することによって、SGML でマークアップされていると特定されます。ファイルに \fBSHADOW_PAGE\fR という文字列も含まれている場合、そのファイルは別のマニュアルページの内容を参照します。この参照は、テキストが含まれているマニュアルページへのファイル実体の参照によって行われます。これは、\fBnroff\fR フォーマットのマニュアルページで使用される \fB\&.so\fR のメカニズムに類似しています。
+.SH 環境
+.sp
+.LP
+\fBman\fR の実行に影響を与える環境変数 \fBLANG\fR、\fBLC_ALL\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR、および \fBNLSPATH\fR についての詳細は、\fBenviron\fR(5) を参照してください。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBMANPATH\fR\fR
+.ad
+.sp .6
+.RS 4n
+コロンで区切られたディレクトリのリスト。各ディレクトリは、コンマで区切られたセクションのリストのあとに続いて指定できます。設定されている場合は、その値によって、デフォルトのディレクトリ検索パスとしての \fB/usr/share/man\fR とデフォルトのセクション検索パスとしての \fBman.cf\fR ファイルがオーバーライドされます。これらの値がさらに、\fB-M\fR および \fB-s\fR フラグによってオーバーライドされます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPAGER\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBman\fR の出力を対話モードで画面に送るために使用するプログラム。設定されていない場合は、「less -ins」が使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTCAT\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBtroff\fR で処理されたマニュアルページを表示するために使用するプログラムの名前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTROFF\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-t\fR オプションが指定された場合に用いるフォーマッタの名前。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRテキストバージョンのマニュアルページの作成
+.sp
+.LP
+次の例では、\fBpipe\fR(2) のマニュアルページを ASCII テキストで作成します。
+
+.sp
+.in +2
+.nf
+% \fBman pipe.2 | col -x -b > pipe.text\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+これは、\fBman\fR \fB-t\fR を使用してマニュアルページをデフォルトのプリンタに送信する代わりに、テキストファイルバージョンのマニュアルページを作成します。
+
+.LP
+\fB例 2 \fR1 つ以上の用語に一致するマニュアルページのリストの取得
+.sp
+.LP
+次の例では、\fBzfs\fR または \fBcreate\fR という語に一致するマニュアルページのリストを取得します:
+
+.sp
+.in +2
+.nf
+% \fBman -K zfs create\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fR1 つ以上の語句に一致するマニュアルページのリストの取得
+.sp
+.LP
+次の例では、引用符で囲まれた語句「\fBzfs create\fR」または「\fBstorage pool\fR」に一致するマニュアルページのリストを取得します。
+
+.sp
+.in +2
+.nf
+% \fBman -K 'zfs create' "storage pool"\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fRセクション内で語または語句に一致するマニュアルページのリストの取得
+.sp
+.LP
+次の例では、「\fB関連項目\fR」セクションに \fBzfs\fR という用語が含まれるマニュアルページのリストを取得します。 
+
+.sp
+.in +2
+.nf
+% \fBman -K see also: zfs\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次の例では、「使用例」セクションに「\fBzfs create\fR」という語句が含まれるマニュアルページのリストを取得します。
+
+.sp
+.in +2
+.nf
+% \fBman -K examples: "zfs create"\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 5 \fRデフォルトのマクロパッケージの変更
+.sp
+.LP
+次の例では、行の幅を 67 カラムに設定し、長い 1 ページではなく複数のページに出力します。これにより、man(5) マクロで生成される出力に似たルックアンドフィールを実現できます。
+
+.sp
+.in +2
+.nf
+% \fBman -T '-mandoc -rLL=67n -rcR=0' zfs\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次の例では、デフォルトの \fBmandoc\fR マクロの代わりに、実際の man(5) マクロを使用します。
+
+.sp
+.in +2
+.nf
+% \fBman -T /usr/share/lib/tmac/an zfs\fR
+.fi
+.in -2
+.sp
+
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+正常終了。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB>\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+エラーが発生した。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/man\fR\fR
+.ad
+.sp .6
+.RS 4n
+標準マニュアルページのディレクトリサブツリーのルート
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/man/man?/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+書式なし \fBnroff\fR のマニュアルのエントリ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/man/man_index/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+目次とキーワードのデータべース。
+.sp
+次のファイルが生成されます。 
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/usr/share/man/man-index/term.idx\fR 
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/usr/share/man/man-index/term.dic\fR 
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/usr/share/man/man-index/term.req\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/usr/share/man/man-index/term.pos\fR 
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/usr/share/man/man-index/term.doc\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/usr/share/man/man-index/term.exp\fR 
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/man/sman?/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+書式なし \fBSGML\fR のマニュアルのエントリ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/man/cat?/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBnroff\fR 処理後のマニュアルのエントリ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/man/fmt?/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBtroff\fR 処理後のマニュアルのエントリ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/groff/<\fIversion\fR>/tmac/mandoc.tmac\fR\fR
+.ad
+.sp .6
+.RS 4n
+デフォルトで使用される標準 -\fBmandoc\fR マクロパッケージ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/lib/sgml/locale/C/dtd/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBSGML\fR ドキュメント型定義ファイル
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/lib/sgml/locale/C/solbook/*\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBSGML\fR のスタイルシートと実体ファイルの定義ディレクトリ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/lib/pub/eqnchar\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBeqn\fR と \fBneqn\fR の標準定義 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBman.cf\fR\fR
+.ad
+.sp .6
+.RS 4n
+セクションごとのデフォルトの検索順序
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件text/doctools
+_
+CSI有効。「注意事項」を参照。\fB\fR
+_
+インタフェースの安定性確実
+_
+標準T{
+\fBstandards\fR(5) を参照してください。 
+T}
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBapropos\fR(1), \fBcat\fR(1), \fBcol\fR(1), \fBgeqn\fR(1), \fBless\fR(1), \fBgroff\fR(1), \fBgrefer\fR(1), \fBgtbl\fR(1), \fBgtroff\fR(1), \fBvgrind\fR(1), \fBwhatis\fR(1), \fBcatman\fR(1M), \fBattributes\fR(5), \fBenviron\fR(5), \fBman\fR(5), \fBsgml\fR(5), \fBstandards\fR(5)
+.SH 注意事項
+.sp
+.LP
+\fB-f\fR、\fB-k\fR、および \fB-K\fR オプションは、\fBman\fR(5) で指定される SMF サービスによって自動的に生成されるか、または \fBcatman\fR(1M)で \fB-w\fR オプションを指定して手動で生成するインデックスファイルを使用します。 
+.sp
+.LP
+\fBwindex\fR データベースファイルは使用されなくなりました。\fBwindex\fR データベースファイルは新しいインデックスファイルに置き換えられました。 
+.sp
+.LP
+\fBman\fR コマンドは CSI に対応しています。ただし、\fBman\fR コマンドによって呼び出される一部のユーティリティーは、CSI に対応していることが検証されていません。このため、\fB-t\fR オプションを指定した \fBman\fR コマンドは、ASCII 以外のデータを処理できません。また、\fBgeqn\fR、\fBgrefer\fR、\fBgtbl\fR、または \fBvgrind\fR による特殊な処理が必要なマニュアルページを \fBman\fR コマンドを使用して表示することも、CSI に対応した操作にはなりません。デフォルトの PAGER プログラム less は、UTF-8 以外の複数バイト文字を処理できません。使用している環境が UTF-8 ロケールでない場合は、PAGER を「\fB/usr/xpg4/bin/more\fR」に設定するようにしてください。
+.sp
+.LP
+SGML フォーマットのマニュアルページは Oracle Solaris の将来のリリースではサポートされなくなります。
+.SH 使用上の留意点
+.sp
+.LP
+マニュアルは、写真植字機または \fBASCII\fR 端末のどちらかで再現可能であると想定されています。ただし、端末上では (たとえば、フォントの変更で示される) 一部の情報が失われます。

@@ -1,0 +1,2205 @@
+'\" te
+.\" Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\" Portions Copyright (c) 2008, 2012, Oracle and/or its affiliates.All rights reserved.
+.\" Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase"this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard,the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH pax 1 "2012 年 2 月 7 日" "SunOS 5.11" "用户命令"
+.SH 名称
+pax \- 可移植归档交换
+.SH 用法概要
+.LP
+.nf
+\fBpax\fR [\fB-cdnv\fR] [\fB-H\fR | \fB-L\fR] [\fB-f\fR \fIarchive\fR] [\fB-o\fR \fIoptions\fR]... 
+     [\fB-s\fR \fIreplstr\fR]... [\fIpattern\fR]...
+.fi
+
+.LP
+.nf
+\fBpax\fR \fB-r\fR [\fB-cdiknuv@/\fR] [\fB-H\fR | \fB-L\fR] [\fB-f\fR \fIarchive\fR] [\fB-o\fR \fIoptions\fR]... 
+     [\fB-p\fR \fIstring\fR]... [\fB-s\fR \fIreplstr\fR]... [\fIpattern\fR]...
+.fi
+
+.LP
+.nf
+\fBpax\fR \fB-w\fR [\fB-dituvX@/\fR] [\fB-H\fR | \fB-L\fR] [\fB-b\fR \fIblocksize\fR] [\fB-a\fR] 
+     [\fB-f\fR \fIarchive\fR] [\fB-o\fR \fIoptions\fR]... [\fB-s\fR \fIreplstr\fR]... 
+     [\fB-x\fR \fIformat\fR] [\fIfile\fR]...
+.fi
+
+.LP
+.nf
+\fBpax\fR \fB-r\fR \fB-w\fR [\fB-diklntuvX@/\fR] [\fB-H\fR | \fB-L\fR] [\fB-o\fR \fIoptions\fR]... 
+     [\fB-p\fR \fIstring\fR]... [\fB-s\fR \fIreplstr\fR]... [\fIfile\fR]... \fIdirectory\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBpax\fR 读取、写入，写入归档文件的成员列表并复制目录分层结构。支持各种归档格式。请参见 \fB-x\fR \fIformat\fR 选项。
+.SS "操作模式"
+.sp
+.LP
+要采取的操作取决于是否存在 \fB-r\fR 和 \fB-w\fR 选项。这四个 \fB-r\fR 和 \fB-w\fR 组合是指以下四种操作模式：\fBlist\fR、\fBread\fR、\fBwrite\fR 和 \fBcopy\fR 模式，分别对应于“用法概要”中显示的四种形式。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlist\fR\fR
+.ad
+.RS 9n
+.rt  
+在 \fBlist\fR 模式下，即，既未指定 \fB-r\fR 又未指定 \fB-w\fR 时，\fBpax\fR 会将从标准输入（路径名与指定的模式匹配）读取的归档文件成员名称写入标准输出。如果指定的文件包含扩展属性，还会列出这些扩展属性。如果指定的文件类型是目录，还会列出根目录为该文件的文件分层结构。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBread\fR\fR
+.ad
+.RS 9n
+.rt  
+在 \fBread\fR 模式下，即指定 \fB-r\fR 但未指定 \fB-w\fR 时，\fBpax\fR 会提取从标准输入（路径名与指定的模式匹配）读取的归档文件成员。如果提取的文件类型是目录，还会提取根目录为该文件的文件分层结构。提取的文件创建用于执行路径名解析，并将在其中调用 \fBpax\fR 的目录作为当前工作目录。
+.sp
+如果在某个目录已经存在的情况下尝试提取该目录，则不会视为错误。如果在某个 \fBFIFO\fR 已经存在的情况下尝试提取该 \fBFIFO\fR，则不会视为错误。
+.sp
+恢复的文件的所有权、访问和修改时间以及文件模式在 \fB-p\fR 选项下进行介绍。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBwrite\fR\fR
+.ad
+.RS 9n
+.rt  
+在 \fBwrite\fR 模式下，即指定 \fB-w\fR 但未指定 \fB-r\fR 时，\fBpax\fR 会以某种归档格式将 \fIfile\fR 操作数的内容写入标准输出。如果未指定任何 \fIfile\fR 操作数，将从标准输入中读取要复制的文件列表（每行一个）。类型为目录的文件包含根目录为该文件的文件分层结构中的所有文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcopy\fR\fR
+.ad
+.RS 9n
+.rt  
+在 \fBcopy\fR 模式下，即同时指定 \fB-r\fR 和 \fB-w\fR，\fBpax\fR 会将 \fIfile\fR 操作数复制到目标目录。
+.sp
+如果未指定任何 \fIfile\fR 操作数，将从标准输入中读取要复制的文件列表（每行一个）。类型为目录的文件包含根目录为该文件的文件分层结构中的所有文件。
+.sp
+\fBcopy\fR 的作用与将复制的文件写入归档文件而后再提取一样，只是原始文件与复制的文件之间能够包含硬链接。如果目标目录是要复制的其中一个文件的子目录，则结果不确定。如果 \fIdirectory\fR 不存在、不可由用户写入或者不是目录，则会出现错误。
+.RE
+
+.sp
+.LP
+在 \fBread\fR 或 \fBcopy\fR 模式下，如果需要使用中间目录提取某个归档成员，则 \fBpax\fR 执行与使用以下参数调用 \fBmkdir\fR(2) 函数等效的操作：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+将中间目录用作 \fIpath\fR 参数。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+将 \fB777\fR 或 \fBrwx\fR（读取、写入和执行权限）的八进制值用作 \fImode\fR 参数（请参见 \fBchmod\fR(1)）。
+.RE
+.sp
+.LP
+如果指定的任何 \fIpattern\fR 或 \fIfile\fR 操作数与至少一个文件或归档成员不匹配，\fBpax\fR 会将不匹配的每个操作数的诊断消息写入标准错误，并在退出时返回非零退出状态。
+.sp
+.LP
+输入时自动检测支持的归档格式。缺省输出归档格式为 \fBtar\fR(1)。
+.sp
+.LP
+单个归档能够跨多个文件。\fBpax\fR 负责确定下一个要读取或写入的文件。
+.sp
+.LP
+如果选择的归档格式支持链接的文件规范，但在提取归档时不能链接这些文件，则会出现错误（除非要链接的文件为符号链接，而系统无法为符号链接创建硬链接）。在这种情况下，需要为符号链接创建单独的副本。表示文件的归档中各名称中的任意名称均可用于选择要提取的文件。对于未存储每个名称均可用于创建硬链接的文件内容的归档格式，如果在此 \fBpax\fR 会话期间未提取包含数据的文件，则从原始文件恢复的数据或与文件名一起显示的诊断消息均可用于提取这些数据。在遍历目录中，\fBpax\fR 可检测死循环，即进入一个先前访问过的目录，该目录是所访问的上一文件的祖先。当检测到死循环时，\fBpax\fR 会将诊断消息写入标准错误，然后终止。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 16n
+.rt  
+将文件附加到归档末尾。此选项不适用于某些归档设备，如 1/4 英寸流磁带和 8 毫米磁带。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR \fIblocksize\fR\fR
+.ad
+.RS 16n
+.rt  
+阻止以每次写入十进制正整数字节的频率向归档文件输出。设备和归档格式能够对分块施加限制。分块由输入自动确定。可移植应用程序指定的 \fIblocksize\fR 值不得大于 \fB32256\fR。创建归档时使用的缺省分块取决于归档格式。请参见下文中的 \fB-x\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 16n
+.rt  
+匹配所有文件或归档成员（由 \fIpattern\fR 或 \fIfile\fR 操作数指定的文件或归档成员除外）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.RS 16n
+.rt  
+导致复制或归档目录类型的文件，或者提取或列出目录类型的归档成员，以便仅匹配文件或归档成员本身，而不是根目录为该文件的文件分层结构。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIarchive\fR\fR
+.ad
+.RS 16n
+.rt  
+指定输入或输出归档的路径名，覆盖缺省标准输入（\fBlist\fR 或 \fBread\fR 模式）或标准输出（\fBwrite\fR 模式）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-H\fR\fR
+.ad
+.RS 16n
+.rt  
+如果已在命令行上指定引用目录类型文件的符号链接，\fBpax\fR 会使用链接名称作为文件分层结构的根目录来归档以该链接引用的文件为根的文件分层结构。否则，如果命令行上指定了 \fBpax\fR 通常能够归档的引用任何其他文件类型的文件的符号链接，则 \fBpax\fR 会使用链接名称归档该链接引用的文件。缺省行为是归档符号链接本身。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.RS 16n
+.rt  
+以交互方式重命名文件或归档成员。对于与 \fIpattern\fR 操作数匹配的各归档成员或与 \fIfile\fR 操作数匹配的文件，会将提示写入文件 \fB/dev/tty\fR。提示包含文件名或归档成员名。然后从 \fB/dev/tty\fR 读取行。如果此行为空，则跳过对应的文件或归档成员。如果此行包含单个句点，则无需修改其名称即可处理文件或归档成员。否则，使用该行的内容替换其名称。如果在读取响应时遇到文件结尾或不能打开 \fB/dev/tty\fR 执行读取和写入，\fBpax\fR 将立即退出并返回非零退出状态。
+.sp
+提取已在提取期间重命名的文件的硬链接的结果不确定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR\fR
+.ad
+.RS 16n
+.rt  
+防止覆盖现有文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 16n
+.rt  
+链接文件。在 \fBcopy\fR 模式下，尽量在源文件分层结构和目标文件分层结构之间创建硬链接。如果与 \fB-H\fR 或 \fB-L\fR 一起指定，当遇到符号链接时，在目标文件分层结构中创建的硬链接将指向符号链接引用的文件。如果在既未指定 \fB-H\fR 也未指定 \fB-L\fR 的情况下指定，当遇到符号链接时，实现会创建一个指向源文件分层结构中的符号链接的硬链接，或将符号链接复制到目标文件分层结构。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR\fR
+.ad
+.RS 16n
+.rt  
+如果已在命令行上指定或在遍历文件分层结构期间遇到引用目录类型文件的符号链接，\fBpax\fR 会使用链接名称作为文件分层结构的根目录来归档以该链接引用的文件为根的文件分层结构。否则，如果命令行上指定或在遍历文件分层结构期间遇到 \fBpax\fR 通常能够归档的引用任何其他文件类型的文件的符号链接，则 \fBpax\fR 会使用链接名称归档该链接引用的文件。缺省行为是归档符号链接本身。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 16n
+.rt  
+选择与每个 \fIpattern\fR 操作数匹配的第一个归档成员。每种模式只与一个归档成员匹配，但目录类型的成员仍可与根目录为该文件的文件分层结构匹配。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIoptions\fR\fR
+.ad
+.RS 16n
+.rt  
+向实现提供信息以修改用于提取或写入文件的算法。选项值由以下格式的一个或多个关键字（以逗号分隔）组成：
+.sp
+.in +2
+.nf
+\fIkeyword\fR[[:]=\fIvalue\fR][,\fIkeyword\fR[[:]=\fIvalue\fR], ...]
+.fi
+.in -2
+.sp
+
+某些关键字仅适用于特定的文件格式，通过每项说明分别指示。使用不适用于正在处理的文件格式的关键字会产生不确定的结果。
+.sp
+\fIoptions\fR 参数中的关键字必须是表示有效可移植文件名的字符串。
+.sp
+关键字不一定是文件名，只有遵循与可移植文件名相同的字符编写规则的关键字才是文件名。
+.sp
+关键字前面可带有空格。\fIvalue\fR 字段包含零个或多个字符。在 \fIvalue\fR 中，应用程序的前面可带有任意文本逗号和反斜杠，反斜杠将被忽略，但会保留逗号作为 \fIvalue\fR 的一部分。逗号作为最后一个字符，或者逗号后面紧跟空格作为最后的字符，则在 \fIoptions\fR 中将被忽略。可以指定多个 \fB-o\fR 选项。如果提供给多个这类 \fB-o\fR 选项的关键字发生冲突，则出现在命令行序列后端的关键字和值优先，将忽略前端的关键字和值且不显示任何提示。指示的文件格式支持以下 \fIoptions\fR 关键字值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete=\fR\fIpattern\fR\fR
+.ad
+.sp .6
+.RS 4n
+此关键字仅适用于 \fB-x\fR \fBpax\fR 格式。在 \fBwrite\fR 或 \fBcopy\fR 模式下使用时，将省略扩展标头记录的 \fBpax\fR，该命令负责生成与字符串模式匹配的任意关键字。在 \fBread\fR 或 \fBlist\fR 模式下使用时，\fBpax\fR 会忽略与扩展标头记录中的字符串模式匹配的任意关键字。在这两种情况下，使用模式匹配表示法进行匹配。例如：
+.sp
+.in +2
+.nf
+\fB-o delete=security.*\fR
+.fi
+.in -2
+.sp
+
+将禁止与安全性相关的信息。
+.sp
+指定多个 \fB-o\fR \fBdelete=\fR\fIpattern\fR 选项时，模式可以累加。\fBpax\fR 生成的扩展标头记录中将省略与指定的字符串模式匹配的所有关键字。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexthdr.name=\fR\fIstring\fR\fR
+.ad
+.sp .6
+.RS 4n
+此关键字仅适用于 \fB-x\fR \fBpax\fR 格式。此关键字允许用户控制写入扩展标头 \fBustar\fR 头块的名称。名称为执行以下字符替换后 \fIstring\fR 的内容：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%d\fR\fR
+.ad
+.RS 6n
+.rt  
+文件的目录名称等同于转换的路径名的 \fIdirname\fR 实用程序结果。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%f\fR\fR
+.ad
+.RS 6n
+.rt  
+文件的文件名等同于转换的路径名的 \fIbasename\fR 实用程序结果。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%p\fR\fR
+.ad
+.RS 6n
+.rt  
+\fBpax\fR 进程的进程 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%%\fR\fR
+.ad
+.RS 6n
+.rt  
+\&'%' 字符。
+.RE
+
+\fIstring\fR 中的任何其他 '%' 字符均会产生不确定的结果。
+.sp
+如果未指定 \fB-o\fR \fBexthdr.name\fR=\fIstring\fR，\fBpax\fR 将使用以下缺省值：
+.sp
+.in +2
+.nf
+%d/PaxHeaders.%p/%f
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBglobexthdr.name=\fR\fIstring\fR\fR
+.ad
+.sp .6
+.RS 4n
+此关键字仅适用于 \fB-x\fR \fBpax\fR 格式。在 \fBwrite\fR 或 \fBcopy\fR 模式下与相应的选项一起使用时，\fBpax\fR 会创建带有 \fBustar\fR 头块（以前版本的 \fBpax\fR 将其视为常规文件）的全局扩展标头记录。此关键字允许用户控制写入全局扩展标头记录 \fBustar\fR 头块的名称。名称为执行以下字符替换后 \fIstring\fR 的内容：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%n\fR\fR
+.ad
+.RS 6n
+.rt  
+表示归档的全局扩展标头记录序列号的整数以 \fB1\fR 开头。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%p\fR\fR
+.ad
+.RS 6n
+.rt  
+\fBpax\fR 进程的进程 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB%%\fR\fR
+.ad
+.RS 6n
+.rt  
+\&'%' 字符。
+.RE
+
+\fIstring\fR 中的任何其他 '%' 字符均会产生不确定的结果。
+.sp
+如果未指定 \fB-o\fR \fBglobexthdr.name\fR=\fIstring\fR，\fBpax\fR 将使用以下缺省值：
+.sp
+.in +2
+.nf
+$TMPDIR/GlobalHead.%p.%n
+.fi
+.in -2
+.sp
+
+其中 \fB$TMPDIR\fR 表示 \fBTMPDIR\fR 环境变量的值。如果未设置 \fBTMPDIR\fR，\fBpax\fR 将使用 \fB/tmp\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinvalid=\fR\fIaction\fR\fR
+.ad
+.sp .6
+.RS 4n
+此关键字仅适用于 \fB-x\fR \fBpax\fR 格式。此关键字允许用户控制在遇到以下扩展标头记录值问题时 \fBpax\fR 采取的操作：在 \fBread\fR 或 \fBcopy\fR 模式下，扩展标头记录值在目标分层结构中无效；或在 \fBlist\fR 模式下，不能将扩展标头记录值写入实现的代码集和当前语言环境。以下是 \fBpax\fR 识别的无效值：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在 \fBread\fR 或 \fBcopy\fR 模式下，包含字符编码的文件名或链接名称在目标分层结构中无效。例如，该名称能够包含嵌入的 \fBNUL\fR。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在 \fBread\fR 或 \fBcopy\fR 模式下，允许目标分层结构中使用长度大于最大长度的文件名称或链接名称作为路径名组件或完整路径名。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在 \fBlist\fR 模式下，不能向实现的代码集和当前语言环境写入任何字符串值（文件名、链接名称、用户名等）。
+.RE
+支持 \fIaction\fR 参数的以下互斥值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbypass\fR\fR
+.ad
+.RS 10n
+.rt  
+在 \fBread\fR 或 \fBcopy\fR 模式下，\fBpax\fR 将绕过该文件，从而保持目标分层结构不变。在 \fBlist\fR 模式下，\fBpax\fR 将写入针对该文件请求的所有有效值，但未指定写入有效值的方法。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrename\fR\fR
+.ad
+.RS 10n
+.rt  
+在 \fBread\fR 或 \fBcopy\fR 模式下，\fBpax\fR 在执行时会假定 \fB-i\fR 选项对文件名或链接名称值无效的每个文件均有效，从而允许用户以交互方式提供替换名称。在 \fBlist\fR 模式下，\fB pax\fR 的行为方式与 \fBbypass\fR 操作相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBUTF-8\fR\fR
+.ad
+.RS 10n
+.rt  
+在 \fBread\fR、\fBcopy\fR 或 \fBlist\fR 模式下使用时，\fBpax\fR 将对名称使用实际 \fBUTF-8\fR 编码，且不能将扩展标头记录中的文件名、链接名称、所有者名称或任何其他字段从 \fBpax\fR \fBUTF-8\fR 代码集格式转换为实现的代码集和当前语言环境。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBwrite\fR\fR
+.ad
+.RS 10n
+.rt  
+在 \fBread\fR 或 \fBcopy\fR 模式下，无论是否能够覆盖具有有效名称的现有文件，\fBpax\fR 均将写入文件并转换名称。在 \fBlist\fR 模式下，\fB pax\fR 的行为方式与 \fBbypass\fR 操作相同。
+.RE
+
+如果未指定 \fB-o\fR \fBinvalid=\fR 选项，\fBpax\fR 在执行时会假定指定了 \fB-o\fR \fBinvalid=bypass\fR。\fB-o\fR \fBinvalid=\fR \fI action\fR 允许的任何现有文件覆盖操作均会受到权限 (\fB-p\fR) 和修改时间 (\fB-u\fR) 限制的影响，如果同时指定 \fB-k\fR 选项，则将被禁止。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlinkdata\fR\fR
+.ad
+.sp .6
+.RS 4n
+此关键字仅适用于 \fB-x\fR \fBpax\fR 格式。在 \fBwrite\fR 模式下，\fBpax\fR 会将文件内容写入归档，即使该文件只是内容已被写入归档的某个文件的硬链接也是如此。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlistopt=\fR\fIformat\fR\fR
+.ad
+.sp .6
+.RS 4n
+此关键字用于指定在指定 \fB-v\fR 选项（\fBlist\fR 模式）时生成的目录的输出格式。（请参见下文的\fB列表模式格式规范\fR。）为避免混淆，\fBlistopt=\fR\fIformat \fR 将是 \fB-o\fR 选项参数中的唯一或最后一个 \fIkeyword\fR=\fIvalue\fR 对。选项参数提示的所有字符均将被视为格式字符串的一部分。指定多个 \fB-o\fR \fBlistopt= \fR\fIformat\fR 选项时，格式字符串将被视为单个串联字符串（按命令行顺序计算）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtimes\fR\fR
+.ad
+.sp .6
+.RS 4n
+此关键字仅适用于 \fB-x\fR \fBpax\fR 和 \fB-x\fR \fBxustar\fR 格式。在写入或复制模式下使用时，\fBpax\fR 将包括每个文件的 \fBatime\fR 和 \fImtime\fR 扩展标头记录。
+.RE
+
+除这些关键字外，如果指定 \fB-x\fR \fBpax\fR 格式，还能够采用以下两种模式之一在 \fB-o\fR 选项参数中使用任何关键字和值（包括实现扩展）：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkeyword=\fR\fIvalue\fR\fR
+.ad
+.RS 18n
+.rt  
+在 \fBwrite\fR 或 \fBcopy\fR 模式下使用时，将在归档的开头包含这些关键字/值对作为 \fBtypeflag g\fR 全局扩展标头记录。在 \fBread\fR 或 \fBlist\fR 模式下使用时，这些关键字/值对在执行时会假定其位于归档开头作为 \fBtypeflag g\fR 全局扩展标头记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkeyword:=\fR\fIvalue\fR\fR
+.ad
+.RS 18n
+.rt  
+在 \fBwrite\fR 或 \fBcopy\fR 模式下使用时，这些关键字/值对将作为记录包含在每个文件的 \fBtypeflag x\fR 扩展标头开头。这等效于等号格式，只是不会创建任何 \fBtypeflag g\fR 全局扩展标头记录。在 \fBread\fR 或 \fBlist\fR 模式下使用时，这些关键字/值对在执行时会假定已作为记录包含在每个扩展标头末尾。因此，将覆盖所有同名的全局或文件特定的扩展标头记录关键字。例如，在以下命令中：
+.sp
+.in +2
+.nf
+\fBpax -r -o "
+gname:=mygroup,
+" <archive\fR
+.fi
+.in -2
+.sp
+
+组名称强制为新值，供所有文件从归档中读取。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIstring\fR\fR
+.ad
+.RS 16n
+.rt  
+指定一个或多个文件特征选项（特权）。\fIstring\fR 选项参数必须是字符串，指定在提取时保留还是放弃文件特征。该字符串由指定字符 \fBa\fR、\fB e\fR、\fBm\fR、\fBo\fR 和 \fBp\fR 组成。能够在同一字符串中串联多个特征，并且能够指定多个 \fB-p\fR 选项。指定字符的含义如下所示： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBa\fR\fR
+.ad
+.RS 5n
+.rt  
+不保留文件访问时间。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBe\fR\fR
+.ad
+.RS 5n
+.rt  
+保留用户 \fBID\fR、组 \fBID\fR、文件模式位、访问时间和修改时间。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBm\fR\fR
+.ad
+.RS 5n
+.rt  
+不保留文件修改时间。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBo\fR\fR
+.ad
+.RS 5n
+.rt  
+保留用户 \fBID\fR 和组 \fBID\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp\fR\fR
+.ad
+.RS 5n
+.rt  
+保留文件模式位。
+.RE
+
+在前面的列表中，\fBpreserve\fR 指示已为提取的文件提供存储在归档中的属性，这会受到调用进程的权限影响。否则，该属性将作为常规文件创建操作的一部分确定。除非使用 \fB-p\fR 选项指定或未存储在归档中，否则将保留文件的访问时间和修改时间。未保留的所有属性均将作为常规文件创建操作的一部分确定。
+.sp
+如果既未指定 \fBe\fR 也未指定 \fBo\fR 指定字符，或者出于任何原因未保留用户 \fBID\fR 和组 \fBID\fR，\fBpax\fR 不会设置文件模式的 \fBsetuid\fR 和 \fBsetgid\fR 位。
+.sp
+如果出于任何原因上述任何项目保留失败，\fBpax\fR 会将诊断消息写入标准错误。无法保留这些项目将影响最终退出状态，但不会导致删除提取的文件。
+.sp
+如果任何 \fIstring\fR 选项参数的文件特征关键字彼此重复或相互冲突，则最后给出的关键字优先。例如，如果指定 \fB-p\fR \fBeme\fR，将保留文件修改时间。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.RS 16n
+.rt  
+从标准输入读取归档文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIreplstr\fR\fR
+.ad
+.RS 16n
+.rt  
+使用正则表达式语法 \fBregex\fR(5)，根据替换表达式 \fIreplstr\fR（基于 \fBed\fR(1) \fBs\fR（替换）实用程序）修改由 \fIpattern\fR 或 \fIfile\fR 操作数指定的文件名或归档成员名称。“地址”和“行”概念在 \fBpax\fR 命令上下文中无意义，不得提供。该格式为：
+.sp
+.in +2
+.nf
+-s /\fIold\fR/\fInew\fR/ [gp]
+.fi
+.in -2
+.sp
+
+与在 \fBed\fR 中相同，其中 \fIold\fR 是基本正则表达式，\fInew\fR 可以包含和符号 (\fB&\fR)、\\fIn\fR 后向引用，而 \fIn\fR 是数字或子表达式匹配。\fIold\fR 字符串也允许包含换行符。
+.sp
+任何非空字符均可用作分隔符（此处显示 \fB/\fR）。可以指定多个 \fB-s\fR 表达式。表达式按指定顺序应用，并以第一次成功替换终止。可选结尾 \fBg\fR 定义参见 \fBed\fR 命令。可选结尾 \fBp\fR 会导致将成功替换写入标准错误。读取和写入归档时将忽略替换空字符串的文件名或归档成员名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.RS 16n
+.rt  
+从文件系统读取文件时，如果用户具备 \fButime()\fR 执行读取操作所需的权限，则将读取每个文件的访问时间设置为之前 \fBpax\fR 读取该文件的访问时间。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.RS 16n
+.rt  
+忽略早于先前已存在的同名文件或归档成员（文件修改时间更早）的文件。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBread\fR 模式\fR
+.ad
+.RS 16n
+.rt  
+提取与文件系统中的文件同名的归档成员（如果归档成员比文件更新）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBwrite\fR 模式\fR
+.ad
+.RS 16n
+.rt  
+取代与文件系统中的文件同名的归档文件成员（如果文件比归档成员更新）。如果还指定了 \fB-a\fR，则通过附加到归档来实现。否则，未指定通过归档内部实际替换还是附加到归档来实现。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcopy\fR 模式\fR
+.ad
+.RS 16n
+.rt  
+目标分层结构的文件会替换为源分层结构的文件或源分层结构文件的链接（如果源分层结构的文件更新）。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 16n
+.rt  
+在 \fBlist\fR 模式下，生成详细目录（请参见\fB标准输出\fR）。否则，会将归档成员路径名和扩展属性写入标准错误（请参见\fB标准错误\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-w\fR\fR
+.ad
+.RS 16n
+.rt  
+以指定的归档格式将文件写入标准输出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fIformat\fR\fR
+.ad
+.RS 16n
+.rt  
+指定输出归档格式。\fBpax\fR 实用程序识别以下格式：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcpio\fR\fR
+.ad
+.RS 10n
+.rt  
+扩展的 \fBcpio\fR(1) 交换格式。请参见 IEEE Std 1003.1–2001。此字符特殊归档文件格式的缺省 \fIblocksize\fR 为 \fB5120\fR。实现支持所有小于或等于 \fB32256\fR 且为 \fB512\fR 倍数的 \fIblocksize\fR 值。
+.sp
+此归档格式允许在归档中存储 \fBUID\fR 和 \fBGID\fR 最大为 \fB262143\fR 的文件。\fBUID\fR 和 \fBGID\fR 大于该值的文件使用值为 \fB60001\fR 的 \fBUID\fR 和 \fB GID\fR 进行归档。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpax\fR\fR
+.ad
+.RS 10n
+.rt  
+\fBpax\fR 交换格式。请参见 IEEE Std 1003.1–2001。此字符特殊归档文件格式的缺省 \fIblocksize\fR 为 \fB5120\fR。实现支持所有小于或等于 \fB32256\fR 且为 \fB512\fR 倍数的 \fIblocksize\fR 值。
+.sp
+类似于 \fBustar\fR。还允许归档和提取以下文件：大小大于 8GB；\fBUID\fR、\fBGID\fR、\fIdevmajor\fR 或 \fIdevminor\fR 值大于 \fB2097151\fR；路径（包括文件名）大于 \fB255\fR 个字符；或者 \fIlinkname\fR 大于 \fB100\fR 个字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBustar\fR\fR
+.ad
+.RS 10n
+.rt  
+扩展的 \fBtar\fR(1) 交换格式。请参见 IEEE 1003.1(1990) 规范。此字符特殊归档文件格式的缺省 \fIblocksize\fR 为 \fB10240\fR。实现支持所有小于或等于 \fB32256\fR 且为 \fB512\fR 倍数的 \fIblocksize\fR 值。
+.sp
+此归档格式允许在归档中存储 \fBUID\fR 和 \fBGID\fR 最大为 \fB2097151\fR 的文件。\fBUID\fR 和 \fBGID\fR 大于该值的文件使用值为 \fB60001\fR 的 \fBUID\fR 和 \fB GID\fR 进行归档。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBxustar\fR\fR
+.ad
+.RS 10n
+.rt  
+类似于 \fBustar\fR。还允许归档和提取以下文件：大小大于 8GB；\fBUID\fR、\fBGID\fR、\fIdevmajor\fR 或 \fIdevminor\fR 值大于 \fB2097151\fR；路径（包括文件名）大于 \fB255\fR 个字符；或者 \fIlinkname\fR 大于 \fB100\fR 个字符。如果要提取归档的归档程序不能处理较大的值，则不应使用此选项。
+.RE
+
+以与现有归档格式不同的格式附加到归档文件的任何尝试均会导致 \fBpax\fR 立即退出，并返回非零退出状态。
+.sp
+在 \fBcopy\fR 模式下，如果未指定 \fB-x\fR 格式，\fBpax\fR 的行为方式如同指定了 \fB-x\fR \fBpax\fR 一样。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-X\fR\fR
+.ad
+.RS 16n
+.rt  
+遍历按路径名指定的文件分层结构时，\fBpax\fR 不会深入到设备 ID 不同的目录（\fBst_dev\fR，请参见 \fBstat\fR(2)）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-@\fR\fR
+.ad
+.RS 16n
+.rt  
+将扩展属性包含在归档中。缺省情况下，\fBpax\fR 不会在归档中放入扩展属性。 
+.sp
+遍历按路径名指定的文件分层结构时，\fBpax\fR 将深入到带有扩展属性的任何文件的属性目录。扩展属性作为特殊文件进入归档。 
+.sp
+文件提取期间使用此标志时，还会提取与正在提取的文件关联的任何扩展属性。只能作为常规文件提取操作的一部分从归档中提取扩展属性文件。显式提取属性记录的尝试将被忽略。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-/\fR\fR
+.ad
+.RS 16n
+.rt  
+将扩展系统属性包含在归档中。缺省情况下，\fBpax\fR 不会在归档中放入扩展系统属性。
+.sp
+遍历按路径名指定的文件分层结构时，\fBpax\fR 将深入到带有扩展属性的任何文件的属性目录。扩展属性作为特殊文件进入归档。文件提取期间使用此标志时，还会提取与正在提取的文件关联的任何扩展属性。只能作为常规文件提取操作的一部分从归档中提取扩展属性文件。显式提取属性记录的尝试将被忽略。
+.RE
+
+.sp
+.LP
+指定多个 \fB-H\fR 和 \fB-L\fR 互斥选项不会被视为错误。指定的最后一个选项将决定实用程序的行为。
+.sp
+.LP
+对文件或归档成员（\fB-c\fR、\fB-i\fR、\fB-n\fR、\fB-s\fR、\fB-u\fR 和 \fB-v\fR）的名称执行操作的选项按如下方式进行交互。
+.sp
+.LP
+在 \fBread\fR 模式下，基于用户指定的 \fIpattern\fR 操作数（已由 \fB-c\fR、\fB-n\fR 和 \fB-u\fR 选项修改）选择归档成员。然后，所有 \fB-s\fR 和 \fB-i\fR 选项均将按此顺序修改选定文件的名称。\fB-v\fR 选项写入这些修改生成的名称。
+.sp
+.LP
+在 \fBwrite\fR 模式下，基于用户指定的路径名（已由 \fB-n\fR 和 \fB-u\fR 选项修改）选择文件。然后，所有 \fB-s\fR 和 \fB-i\fR 选项均将按此顺序修改这些选定文件的名称。\fB-v\fR 选项写入这些修改生成的名称。
+.sp
+.LP
+如果指定 \fB-u\fR 和 \fB-n\fR 选项，除非文件比与其比较的文件更新，否则 \fBpax\fR 不会将文件视为选定状态。
+.SS "列表模式格式规范"
+.sp
+.LP
+在 \fBlist\fR 模式（带有 \fB-o\fR \fBlistopt=\fR\fIformat\fR 选项）下，将对每个选定文件应用格式参数。\fBpax\fR 会将换行符附加到每个选定文件的 \fBlistopt\fR 输出。\fIformat\fR 参数用作格式字符串，但下述情况例外。（有关前五种例外，请参见 \fBprintf\fR(1)。）
+.RS +4
+.TP
+1.
+在任何非转换规范标志的上下文中，格式字符串中的\fB空格\fR字符都被视为复制到输出的普通字符。
+.RE
+.RS +4
+.TP
+2.
+格式字符串中的 \fB\&' '\fR 字符将被视为 \fB\&' '\fR 字符，而不会视为空格。
+.RE
+.RS +4
+.TP
+3.
+除 \fBformats\fR(5) 手册页 (\fB\\\fR, \fB\a\fR, \fB\b\fR, \fB\f\fR, \fB\n\fR, \fB\r\fR, \fB\t\fR, \fB\v\fR) 中所述的转义序列外，还有 \fB\\fR\fIddd\fR，其中 \fIddd\fR 是一位、两位或三位八进制数字，并写为以八进制数字指定的数值的一个字节。
+.RE
+.RS +4
+.TP
+4.
+\fBd\fR 或 \fBu\fR 转换说明符输出的前后不可带有非格式操作数指定的空白字符。
+.RE
+.RS +4
+.TP
+5.
+\fBo\fR 转换说明符输出的前面不可带有非格式操作数指定的零。
+.RE
+.RS +4
+.TP
+6.
+序列 (\fIkeyword\fR) 可以出现在格式转换说明符之前。转换参数通过 \fIkeyword\fR 的值定义。支持以下关键字（请参见 IEEE Std 1003.1–2001）：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBustar 头块 \fR和\fB面向八位字节的 cpio 归档条目\fR中的任意字段名称条目。除 \fBcpio c_ mode 字段值\fR要求的格式外，实现还支持不带前导 \fBc_\fR 的 \fBcpio\fR 关键字。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+针对 \fBpax 扩展标头\fR中的扩展标头定义的任意关键字。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+作为 \fBpax 扩展标头\fR中定义的扩展标头的实现定义扩展提供的任意关键字。
+.RE
+例如，序列 "\fB%(charset)s\fR" 是扩展标头的字符集名称的字符串值。
+.sp
+关键字转换参数的结果是适用标头字段或扩展标头的值，不带任何结尾 \fBNUL\fR。
+.sp
+作为转换参数使用的所有关键字值均将从 UTF -8 编码转换为适用于本地文件系统、用户数据库等（如果适用）的字符集。
+.RE
+.RS +4
+.TP
+7.
+另一种转换说明符字符 \fBT\fR 用于指定时间格式。\fBT\fR 转换说明符字符前面可带有序列 (\fIkeyword\fR=\fIsubformat\fR)，其中 \fIsubformat\fR 是由 \fIdate\fR 操作数定义的日期格式。缺省 \fIkeyword\fR 是 \fImtime\fR，而缺省 \fIsubformat\fR 是：
+.sp
+.in +2
+.nf
+%b %e %H:%M %Y
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+8.
+另一种转换说明符字符 \fBM\fR 用于指定 \fBls\fR 标准输出中定义的文件模式字符串。如果省略了 (\fIkeyword\fR)，则使用 \fBmode\fR 关键字。例如，\fB%.1M\fR 将写入与 \fBls\fR \fB-l\fR 命令的 \fIentry type\fR 字段对应的单个字符。
+.RE
+.RS +4
+.TP
+9.
+另一种转换说明符字符 \fBD\fR 用于以实现定义的格式为块文件或特殊文件指定（如果适用）设备。如果不适用，则指定 (\fIkeyword\fR)，此转换等效于 \fB%\fR(\fIkeyword\fR)\fBu\fR。如果不适用，则省略 (\fIkeyword\fR)，此转换等效于空格。
+.RE
+.RS +4
+.TP
+10.
+另一种转换说明符字符 \fBF\fR 用于指定路径名。\fBF\fR 转换字符前面可带有以逗号分隔的关键字序列：
+.sp
+.in +2
+.nf
+(\fIkeyword\fR[,\fIkeyword\fR] ... )
+.fi
+.in -2
+.sp
+
+串联所有非空关键字的值，各值之间以 '\fB/\fR' 分隔。如果定义了关键字 \fBpath\fR，则缺省值为 (\fBpath\fR)。否则，缺省值为 (\fIprefix\fR,\fBname\fR)。
+.RE
+.RS +4
+.TP
+11.
+另一种转换说明符字符 \fBL\fR 用于指定符号链接扩展。如果当前文件是符号链接，则 \fB%L\fR 扩展为：
+.sp
+.in +2
+.nf
+"%s -> %s", \fIvalue of keyword\fR, \fIcontents of link\fR
+.fi
+.in -2
+.sp
+
+否则，\fB%L\fR 转换规范等效于 \fB%F\fR。
+.RE
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdirectory\fR\fR
+.ad
+.RS 13n
+.rt  
+\fBcopy\fR 模式的目标目录路径名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfile\fR\fR
+.ad
+.RS 13n
+.rt  
+要复制或归档的文件的路径名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIpattern\fR\fR
+.ad
+.RS 13n
+.rt  
+与归档成员的一个或多个路径名匹配的模式。模式必须遵循 \fBfnmatch\fR(5) 手册页上规定的模式匹配表示法。如果未指定 \fIpattern\fR，则缺省值为选择归档中的所有成员。
+.RE
+
+.SH 输出
+.sp
+.LP
+下面对输出格式进行了讨论：
+.SS "标准输出"
+.sp
+.LP
+在 \fBwrite\fR 模式下，如果未指定 \fB-f\fR，标准输出为根据下文所述的格式之一格式化的归档。有关支持格式的列表，请参见 \fB-x\fR \fBformat\fR。
+.sp
+.LP
+在 \fBlist\fR 模式下，如果已指定 \fB-o\fR \fBlistopt=\fR\fIformat\fR 选项，会使用\fB列表模式格式规范\fR下所述的格式将选定的归档成员写入标准输出。在 \fBlist\fR 模式（不带 \fB-o\fR \fBlistopt=\fR\fIformat\fR 选项）下，则使用以下格式将选定的归档成员的目录写入标准输出：
+.sp
+.in +2
+.nf
+"%s\en", \fIpathname\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果在 \fBlist\fR 模式下指定 \fB-v\fR 选项，则使用以下格式将选定的归档成员的目录写入标准输出：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+对于表示之前归档成员的硬链接的路径名：
+.sp
+.in +2
+.nf
+"%s == %s\en", <\fIls\fR -l \fIlisting, linkname\fR
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+对于所有其他路径名：
+.sp
+.in +2
+.nf
+"%s\en", <\fIls\fR -l \fIlisting\fR>
+.fi
+.in -2
+.sp
+
+其中 <\fIls\fR \fB-l\fR \fIlisting\fR> 是由 \fBls\fR 命令使用 \fB-l\fR 选项指定的格式。以此格式写入路径名时，未指定为信息不正确的底层归档格式字段写入哪些内容，但会写入以空白字符分隔的字段的正确编号。
+.RE
+.sp
+.LP
+在 \fBlist\fR 模式下，缓冲标准输出时一次不能超过一行。
+.SS "标准错误"
+.sp
+.LP
+如果在 \fBread\fR、\fBwrite\fR 或 \fBcopy\fR 模式下指定 \fB-v\fR，\fBpax\fR 会使用以下格式将其处理的路径名写入标准错误输出。
+.sp
+.in +2
+.nf
+"%s\en", \fIpathname\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+只要开始处理文件或归档成员，这些路径名就会立即写入并刷新到标准错误。结尾换行符（不缓冲）将在读取或写入文件时写入。
+.sp
+.LP
+如果指定 \fB-s\fR 选项，替换字符串包含结尾 \fBp\fR，则会使用以下格式将替换写入标准错误：
+.sp
+.in +2
+.nf
+"%s >> %s\en", <\fIoriginal pathname\fR>, <\fInew pathname\fR>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+在 \fBpax\fR 的所有运行模式下，有关输入归档格式和卷号、文件数量、块、卷和介质部分的未指定格式可选消息及其他诊断消息均可写入标准错误。
+.sp
+.LP
+在标准输出和标准错误的所有格式下，均未指定写入路径名或链接名称的不可输出字符的方式。
+.sp
+.LP
+当 \fBpax\fR 处于 \fBread\fR 模式或 \fBlist\fR 模式下时，使用 \fB-x\fR \fBpax\fR 归档格式，扩展标头记录中的文件名、链接名称、所有者名称或任何其他字段均不能从 \fBpax\fR UTF-8 代码集格式转换为实现的代码集和当前语言环境，\fBpax\fR 会将诊断消息写入标准错误，按照 \fB-o\fR \fBinvalid=\fR选项所述的方法处理文件，然后继续处理归档中的下一个文件。
+.SS "输出文件"
+.sp
+.LP
+在 \fBread\fR 模式下，提取的输出文件类型是归档文件。在 \fBcopy\fR 模式下，复制的输出文件类型是正在复制的文件类型。在上述两种模式的任一模式下，仅当所有权限 (\fB-p\fR)、修改时间 (\fB-u\fR) 和无效值 (\fB-o\fR \fBinvalid=\fR) 测试均允许覆盖时，才会覆盖目标分层结构中的现有文件。在 \fBwrite\fR 模式下，由 \fB-f\fR 选项参数指定的输出文件是根据 IEEE Std 1003.1–2001 的规范之一格式化的文件。
+.SH 错误
+.sp
+.LP
+如果 \fBpax\fR 不能在读取归档时创建文件或链接，不能在写入归档时查找文件，或者不能在指定 \fB-p\fR 选项时保留用户 \fBID\fR、组 \fBID\fR 或文件模式，则向标准错误写入诊断消息并返回非零退出状态，但会继续处理。在 \fBpax\fR 不能为文件创建链接的情况下，缺省情况下，\fBpax\fR 不会为文件创建第二个副本。
+.sp
+.LP
+如果因信号或错误而过早终止从归档提取文件，\fBpax\fR 只能部分提取文件，或者如果未指定 \fB-n\fR 选项，则可能已经提取与用户指定的文件同名的文件，但该文件并非用户所需的文件。此外，提取的目录的文件模式还可能包含读取、写入、执行掩码集的其他位，以及不正确的修改时间和访问时间。
+.SH 用法
+.sp
+.LP
+\fB-p\fR（特权）选项设计用于协调历史 \fBtar\fR(1) 与 \fBcpio\fR(1) 实现之间的差异。特别要指出的是，两种实用程序以截然相反的方式使用 \fB-m\fR。\fB-p\fR 选项还提供一致的方式来扩展能够处理未来文件属性的方式，如增强的安全系统或高性能文件。虽然看似复杂，其实最常使用两种模式：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fBe\fR\fR
+.ad
+.RS 8n
+.rt  
+全部保留。此模式由具有所有相应特权的历史超级用户使用，以便在将文件记录到归档时保留文件的各方面信息。\fBe\fR 标志是 \fBo\fR、\fBp\fR 及其他与实现相关的属性的总和。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fBp\fR\fR
+.ad
+.RS 8n
+.rt  
+保留文件模式位。此模式由具有常规特权并希望保留除所有权以外的文件信息的用户使用。缺省情况下保留文件时间，但会提供两个其他标志以禁用这些标志并使用提取时间。
+.RE
+
+.sp
+.LP
+每行一个路径名的标准输入格式排除包含换行符的路径名。虽然此类路径名违反可移植文件名准则，但可以存在并且其存在能够禁止在 shell 脚本中使用 \fBpax\fR。此问题继承自历史归档程序。通过在命令行而非标准输入上列出文件名参数能够避免该问题。
+.sp
+.LP
+几乎可以肯定的是，\fBpax\fR 需要相应的特权才能完成各个部分。具体而言，创建块特殊类型或字符特殊类型文件、恢复文件访问时间（除非文件由用户所有（\fB-t\fR 选项）），或者保留文件所有者、组和模式（\fB-p\fR 选项）可能均需要相应的特权。
+.sp
+.LP
+在 \fBread\fR 模式下，实现允许在归档包含多个同名成员时覆盖文件。如果第一个版本的文件不允许被覆盖，则此操作可能会失败。
+.sp
+.LP
+使用 \fB-x\fR \fBxustar\fR 和 \fB-x\fR \fB-pax\fR 归档格式时，如果底层文件系统报告正在归档的文件包含漏洞，Solaris \fBpax\fR 实用程序将在归档文件时报告扩展标头记录中存在漏洞。如果此扩展标头报告与归档中的某个文件关联，则每当从归档中提取该文件时均会重新产生这些漏洞。请参见 \fBlseek\fR(2) 中的 \fBSEEK_DATA\fR 和 \fBSEEK_HOLE\fR whence 值。在所有其他情况下，归档中发现的任何 \fBNUL\fR (\fB\0\fR) 字符串均将在提取时被写入文件。
+.sp
+.LP
+有关 \fBpax\fR 遇到大于或等于 2 GB（2^31 字节）文件时行为的说明，请参见 \fBlargefile\fR(5)。
+.SS "标准输入"
+.sp
+.LP
+在 \fBwrite\fR 模式下，仅当未指定 \fIfile\fR 操作数时才使用标准输入。它是包含路径名列表（每行一个）且不带前导或结尾空格的文本文件。在 \fBlist\fR 和 \fBread\fR 模式下，如果未指定 \fB-f\fR，则标准输入为归档文件。否则，不使用标准输入。
+.SS "输入文件"
+.sp
+.LP
+由 \fIarchive\fR 选项参数指定的输入文件（或者从此处读取归档时的标准输入）是根据下文所述的格式之一格式化的文件。请参见\fB扩展说明\fR。文件 \fB/dev/tty\fR 用于写入提示符和读取响应。
+.SH 示例
+.LP
+\fB示例 1 \fR复制当前目录的内容
+.sp
+.LP
+以下命令：
+
+.sp
+.in +2
+.nf
+example% \fBpax -w -f /dev/rmt/1m .\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+将当前目录的内容复制到磁带机 1 介质密度。这假定历史 System V 设备命名过程。该历史 \fBBSD\fR 设备名称将为 \fB/dev/rmt9\fR。
+
+.LP
+\fB示例 2 \fR复制目录分层结构
+.sp
+.LP
+以下命令：
+
+.sp
+.in +2
+.nf
+example% \fBmkdir newdir\fR
+example% \fBpax -rw olddir newdir\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+将 \fBolddir\fR 目录分层结构复制到 \fBnewdir\fR。
+
+.LP
+\fB示例 3 \fR读取相对于当前目录提取的归档
+.sp
+.LP
+以下命令：
+
+.sp
+.in +2
+.nf
+example% \fBpax -r -s ',^//*usr//*,,' -f a.pax\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+读取归档 \fBa.pax\fR（所有文件的根目录均为相对于当前目录提取的归档中的 \fB/usr\fR）。
+
+.LP
+\fB示例 4 \fR覆盖缺省输出说明
+.sp
+.LP
+使用选项：
+
+.sp
+.in +2
+.nf
+\fB-o listopt="%M %(atime)T %(size)D %(name)s"\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+覆盖\fB标准输出\fR中的缺省输出说明，而后写入：
+
+.sp
+.in +2
+.nf
+-rw-rw- - - Jan 12 15:53 2003 1492 /usr/foo/bar
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+使用选项：
+
+.sp
+.in +2
+.nf
+\fB-o listopt='%L\et%(size)D\en%.7' \e
+-o listopt='(name)s\en%(atime)T\en%T'\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+覆盖标准输出中的缺省输出说明，而后写入：
+
+.sp
+.in +2
+.nf
+usr/foo/bar -> /tmp             1492
+/usr/foo
+Jan 12 15:53 1991
+Jan 31 15:53 2003
+.fi
+.in -2
+.sp
+
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBpax\fR 执行的以下环境变量的说明，请参见 \fBenviron\fR(5)：\fBLANG\fR、\fBLC_ALL\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR、\fBLC_TIME\fR 和 \fBNLSPATH\fR。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_COLLATE\fR\fR
+.ad
+.RS 14n
+.rt  
+确定 \fIpattern\fR 操作数模式匹配表达式、\fB-s\fR 选项基本正则表达式和为 \fBLC_MESSAGES\fR 类别的 \fByesexpr\fR 语言环境关键字定义的扩展正则表达式中使用的范围、等效类和多字符整理元素的行为的语言环境。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTMPDIR\fR\fR
+.ad
+.RS 14n
+.rt  
+确定提供部分缺省全局扩展标头记录文件的路径名，参见“选项”部分对 \fB-o\fR \fBglobexthdr=\fR 关键字的介绍。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTZ\fR\fR
+.ad
+.RS 14n
+.rt  
+确定指定 \fB-v\fR 选项时用于计算日期和时间字符串的时区。如果 \fBTZ\fR 未设置或为空，则使用不确定的缺省时区。
+.RE
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+所有文件都已成功处理。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。
+.RE
+
+.SH 扩展描述
+.SS "\fBpax\fR 交换格式"
+.sp
+.LP
+以 \fB-xpax\fR 格式生成的 \fBpax\fR 归档磁带或文件包含一系列块。归档的物理布局与 \fBustar 交换格式\fR中所述的 \fBustar\fR 格式完全相同。归档的每个文件均通过以下序列表示：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+带有扩展标头记录的可选头块。此头块的形式为 27403，\fItypeflag\fR 值为 \fBx\fR 或 \fBg\fR。扩展标头记录将作为此头块的数据。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+描述文件的头块。前面的可选扩展标头中的任何字段将覆盖该文件头块中的关联字段。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+包含文件内容的零个或多个块。
+.RE
+.sp
+.LP
+归档文件末尾包含两个以二进制零填充的 512 字节块，解释为归档结束指示符。 
+.sp
+.LP
+以下是 pax 格式归档中带有全局扩展标头记录和两个实际文件的示例归档示意图。在该示例中，归档中的第二个文件前面不带任何扩展标头，假定因为其无需扩展属性。
+.sp
+
+.sp
+.TS
+tab();
+cw(2.67i) cw(2.83i) 
+lw(2.67i) lw(2.83i) 
+.
+说明块
+全局扩展标头ustar 标头 [\fItypeflag\fR=g]
+全局扩展标头数据
+文件 1：包含扩展标头ustar 标头 [\fItypeflag\fR=x]
+扩展标头数据
+[\fItypeflag\fR=0]
+文件 1 的 ustar 标头数据
+文件 2：不含扩展标头ustar 标头 [\fItypeflag\fR=0]
+文件 2 的数据
+归档结束指示符二进制零块
+二进制零块
+.TE
+
+.SS "\fBpax\fR 头块"
+.sp
+.LP
+\fBpax\fR 头块与 \fBustar 交换格式\fR中所述的 \fBustar\fR 头块完全相同，只是额外定义了两个 \fItypeflag\fR 值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBg\fR\fR
+.ad
+.RS 5n
+.rt  
+表示归档中以下文件的全局扩展标头记录。这些扩展标头记录的格式如 \fBpax 扩展标头\fR中所述。每个值均会影响未在其各自的扩展标头记录中覆盖相应值的所有后续文件，直到另一个全局扩展标头记录到达并为该字段提供另一个值为止。\fItypeflag\fR \fBg\fR 全局标头不应与交换介质一起使用，这样可能会在传输归档的过程中导致部分数据丢失。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBx\fR\fR
+.ad
+.RS 5n
+.rt  
+表示归档中以下文件的扩展标头记录（包含其各自的 \fBustar\fR 头块）。这些扩展标头记录的格式如 \fBpax 扩展标头\fR中所述。 
+.RE
+
+.sp
+.LP
+对于这两种类型，\fIsize\fR 字段是以八位字节表示的扩展标头记录大小。头块中的其他字段对此版本的 \fBpax\fR 无意义。但是，如果此归档由 \fBpax\fR 遵循以前版本的 \fIISO POSIX-2:1993 标准\fR 读取，则头块字段用于创建常规文件（包含扩展标头记录作为数据）。因此，应选择头块字段值以对此常规文件进行合理的文件访问。 
+.sp
+.LP
+它与 \fBustar\fR 头块的进一步区别在于可包含 \fItypeflag\fR \fB1\fR（数字一）（硬链接）的文件数据块，这意味着 \fIsize\fR 字段能够大于零。由 \fBpax\fR \fB-o\fR \fBlinkdata\fR 创建的归档包括这些带有硬链接的数据块。
+.SS "\fBpax\fR 扩展标头"
+.sp
+.LP
+由于该格式的限制，\fBpax\fR 扩展标头包含不适用于 \fBustar\fR 头块的值：需要不同于 \fIISO/IEC 646: 1991 标准\fR中所述的字符编码的字段、表示未在 \fBustar\fR 标头中描述的文件属性的字段，以及格式或长度不符合 \fBustar\fR 标头要求的字段。扩展标头值会将属性添加到指定的一个或多个文件，或者覆盖指定头块中的值，如以下关键字列表中所示。请参见 \fItypeflag\fR \fBg\fR 头块的说明。 
+.sp
+.LP
+一个扩展标头可包含一个或多个记录，每个扩展标头的构建方法如下所示：
+.sp
+.in +2
+.nf
+"%d %s=%s\en", \fIlength\fR, \fIkeyword\fR, \fIvalue\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+扩展标头记录根据\fI ISO/IEC 10646-1: 2000 标准\fR (UTF-8) 进行编码。\fIlength\fR、\fBBLANK\fR、等号 (\fB=\fR) 和换行符仅限于可移植字符集，与以 UTF-8 编码一样。\fIkeyword\fR 和 \fIvalue\fR 可为任何 UTF-8 字符。\fIlength\fR 是以八位字节表示的扩展标头记录的十进制长度，包括结尾换行符。 
+.sp
+.LP
+\fIkeyword\fR 是作为实现扩展提供的以下列表或关键字的条目之一。保留完全由小写字母、数字和句点组成的关键字以实现未来标准化。关键字不包括等号。 
+.sp
+.LP
+在以下列表中，使用 \fBfile(s)\fR 或 \fBblock(s)\fR 表示法确认关键字会影响 \fItypeflag\fR \fBx\fR 扩展标头后的指定单个文件，也可能影响 \fI typeflag\fR \fBg\fR 后的多个文件。在写入或复制模式下包含记录的 \fBpax\fR 列表的任何要求，均仅在未使用 \fB-o\fR 选项提供此类记录时应用。在复制模式下使用时，\fBpax\fR 的行为方式如同已使用适用的扩展标头记录创建归档然后进行提取一样。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBatime\fR\fR
+.ad
+.RS 16n
+.rt  
+指定文件的文件访问时间与文件 stat 结构 \fBst_atime\fR 成员的值相等，如 \fBstat\fR(2) 函数所述。如果进程具备执行操作所需的相应特权，将恢复访问时间 (\fBatime\fR)。\fIvalue\fR 的格式如 \fBpax 扩展标头文件时间\fR中所述。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcharset\fR\fR
+.ad
+.RS 16n
+.rt  
+字符集名称用于编码指定文件的数据。下表中定义的这些条目用于引用已知标准；发起方和接收方可就其他名称进行协商。
+.sp
+
+.sp
+.TS
+tab();
+lw(2.75i) lw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+\fIvalue\fR正式标准
+ISO-IR 646 1990ISO/IEC646:1990
+ISO-IR 8859 1 1998ISO/IEC8859–1:1998
+ISO-IR 8859 2 1999ISO/IEC 8859–2:1999
+ISO-IR 8859 3 1999ISO/IEC 8859–3:1999
+ISO-IR 8859 4 1999ISO/IEC8859–4:1998
+ISO-IR 8859 5 1999ISO/IEC8859–5–1999
+ISO-IR 8859 6 1999ISO/IEC8859–6–1999
+ISO-IR 8859 7 1987ISO/IEC8859–7:1987
+ISO-IR 8859 8 1999ISO/IEC8859–8:1999
+ISO-IR 8859 9 1999ISO/IEC8859–9:1999
+ISO-IR 8859 10 1998ISO/IEC8859–10:1999
+ISO-IR 8859 13 1998ISO/IEC8859–13:1998
+ISO-IR 8859 14 1998ISO/IEC8859–14:1998
+ISO-IR 8859 15 1999ISO/IEC8859–15:1999
+ISO-IR 10646 2000ISO/IEC 10646:2000
+ISO-IR 10646 2000 UTF-8ISO/IEC 10646,UTF-8 编码
+BINARY无
+.TE
+
+该编码包含在扩展标头中仅用于提供信息；按照 \fIIEEE Std 1003.1-200x\fR 中描述的方式使用 \fBpax\fR 时，不会将文件数据转换为任何其他编码。BINARY 条目指示未编码的二进制数据。在写入或复制模式下使用时，由实现定义 \fBpax\fR 是否包括文件的 \fBcharset\fR 扩展标头记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcomment\fR\fR
+.ad
+.RS 16n
+.rt  
+用作注释的一系列字符。\fBpax\fR 将忽略 \fIvalue\fR 字段中的所有字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgid\fR\fR
+.ad
+.RS 16n
+.rt  
+拥有文件的组的组 ID，使用 \fIISO/IEC 646: 1991 标准\fR中的数字以十进制数字表示。此记录将覆盖指定头块中的 \fBgid\fR 字段。在写入或复制模式下使用时，\fBpax\fR 包括组 ID 大于 2097151（八进制 \fB7777777\fR）的每个文件的 \fBgid\fR 扩展标头记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIgname\fR\fR
+.ad
+.RS 16n
+.rt  
+文件组的格式为组数据库中的组名称。此记录会覆盖指定头块中的 \fBgid\fR 和 \fIgname\fR 字段，以及任何 \fBgid\fR 扩展标头记录。在读取、复制或列表模式下使用时，\fBpax\fR 会将名称从标头记录的 UTF-8 编码转换为适用于接收系统组数据库的字符集。如果任何 UTF-8 字符不能转换，并且未指定 \fB-o invalid=UTF-8\fR 选项，结果将由实现定义。在写入或复制模式下使用时，\fBpax\fR 包括组名称不能完全通过可移植字符集的字母和数字表示的每个文件的 \fIgname\fR 扩展标头记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlinkpath\fR\fR
+.ad
+.RS 16n
+.rt  
+正在为先前归档的另一个文件（任意类型）创建的链接的路径名。此记录将覆盖指定 \fBustar\fR 头块中的 \fIlinkname\fR 字段。指定 \fBustar\fR 头块确定创建的链接类型。如果指定头块的 \fItypeflag\fR 为 1，则为硬链接。如果 \fItypeflag\fR 为 2，则为符号链接，而 \fBlinkpath\fR 值是符号链接的内容。\fBpax\fR 将链接名称（符号链接的内容）从 UTF-8 编码转换为适用于本地文件系统的字符集。在写入或复制模式下使用时，\fBpax\fR 包括路径名不能完全通过 \fBNULL\fR 以外的可移植字符集成员表示的每个链接的 \fBlinkpath\fR 扩展标头记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fImtime\fR\fR
+.ad
+.RS 16n
+.rt  
+正在为先前归档的另一个文件（任意类型）创建的链接的路径名。此记录将覆盖指定 \fBustar\fR 头块中的 \fIlinkname\fR 字段。指定 \fBustar\fR 头块确定创建的链接类型。如果指定头块的 \fItypeflag\fR 为 \fB1\fR，则为硬链接。如果 \fItypeflag\fR 为 \fB2\fR，则为符号链接，而 \fBlinkpath\fR 值是符号链接的内容。\fBpax\fR 将链接名称（符号链接的内容）从 UTF-8 编码转换为适用于本地文件系统的字符集。在写入或复制模式下使用时，\fBpax\fR 包括路径名不能完全通过 \fBNULL\fR 以外的可移植字符集成员表示的每个链接的 \fBlinkpath\fR 扩展标头记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpath\fR\fR
+.ad
+.RS 16n
+.rt  
+指定文件的路径名。此记录将覆盖指定头块中的名称和 \fIprefix\fR 字段。\fBpax\fR 会将文件的路径名从 UTF-8 编码转换为适用于本地文件系统的字符集。在写入或复制模式下使用时，\fBpax\fR 包括路径名不能完全通过 \fBNULL\fR 以外的可移植字符集成员表示的每个文件的路径扩展标头记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrealtime.\fR\fIany\fR\fR
+.ad
+.RS 16n
+.rt  
+保留带有 \fBrealtime\fR 前缀的关键字以实现未来标准化。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsecurity.\fR\fIany\fR\fR
+.ad
+.RS 16n
+.rt  
+保留带有 \fBsecurity\fR 前缀的关键字以实现未来标准化。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIsize\fR\fR
+.ad
+.RS 16n
+.rt  
+以八位字节表示的文件大小，使用 \fIISO/IEC 646: 1991 标准\fR中的数字以十进制数字表示。此记录将覆盖指定头块中的 \fIsize\fR 字段。在写入或复制模式下使用时，\fBpax\fR 包括 \fIsize\fR 值大于 \fB8589934591\fR（八进制 \fB77777777777\fR）的每个文件的大小扩展标头记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIuid\fR\fR
+.ad
+.RS 16n
+.rt  
+文件所有者的用户 \fBID\fR，使用 I\fISO/IEC 646:1991\fR 标准中的数字以十进制数字表示。此记录将覆盖以下头块中的 \fBuid\fR 字段。在写入或复制模式下使用时，\fB pax\fR 包括所有者 ID 大于 \fB2097151（八进制 7777777）\fR 的每个文件的 \fBuid\fR 扩展标头记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIuname\fR\fR
+.ad
+.RS 16n
+.rt  
+指定文件所有者的格式为用户数据库中的用户名。此记录会覆盖指定头块中的 \fIuid\fR 和 \fIuname\fR 字段，以及任何 \fIuid\fR 扩展标头记录。在读取、复制或列表模式下使用时，\fBpax\fR 会将名称从标头记录的 UTF-8 编码转换为适用于接收系统用户数据库的字符集。如果任何 UTF-8 字符不能转换，并且未指定 \fB-o invalid= UTF-8\fR 选项，结果将由实现定义。在写入或复制模式下使用时，\fBpax\fR 包括用户名不能完全通过可移植字符集的字母和数字表示的每个文件的 \fIuname\fR 扩展标头记录。
+.RE
+
+.sp
+.LP
+如果 \fBvalue\fR 字段的长度为零，将删除先前输入同名扩展标头值或全局扩展标头值的所有头块字段。 
+.sp
+.LP
+如果扩展标头记录（或 \fB-o\fR 选项参数）中的关键字覆盖或删除 \fBustar\fR 头块中的对应字段，\fBpax\fR 将忽略该头块字段的内容。
+.sp
+.LP
+与 \fBustar\fR 头块字段不同，\fBNULLs\fR 不限定值；值字段中的所有字符均将视为该字段的数据。 
+.SS "\fBpax\fR 扩展标头关键字优先级"
+.sp
+.LP
+本节介绍选择要应用于归档文件的各种标头记录和字段及命令行选项所依据的优先级。在读取或列表模式下使用 \fBpax\fR 时，将按以下序列确定文件属性： 
+.RS +4
+.TP
+1.
+如果使用 \fB-o delete\fR\fB=\fR\fIkeyword-prefix\fR，将按照步骤 7（如果适用）确定受影响的属性，否则忽略受影响的属性。
+.RE
+.RS +4
+.TP
+2.
+如果使用 \fB-o\fR \fIkeyword:=\fR，则忽略受影响的属性。 
+.RE
+.RS +4
+.TP
+3.
+如果使用 \fB-o\fR \fIkeyword:=value\fR，则为受影响的属性指定值。
+.RE
+.RS +4
+.TP
+4.
+如果包含 \fItypeflag\fR \fBx\fR 扩展标头记录，则为受影响的属性指定值。扩展标头记录发生冲突时，则最后在标头中提供的扩展标头记录优先。
+.RE
+.RS +4
+.TP
+5.
+如果使用 \fB-o\fR \fIkeyword=value\fR，则为受影响的属性指定值。
+.RE
+.RS +4
+.TP
+6.
+如果包含 \fItypeflag g\fR 全局扩展标头记录，则为受影响的属性指定值。全局扩展标头记录发生冲突时，则最后在标头中提供的全局扩展标头记录优先。 
+.RE
+.RS +4
+.TP
+7.
+否则，通过 \fBustar\fR 头块确定属性。
+.RE
+.SS "\fBpax\fR 扩展标头文件时间"
+.sp
+.LP
+如果不能在 \fBustar\fR 交换格式中所述的 \fBustar\fR 标头逻辑记录中确切表示文件的修改时间，\fBpax\fR 将在写入或复制模式下为每个文件写入 \fImtime\fR 记录。如果时间超出 \fBustar\fR 范围，或者底层实现的文件系统支持非整数时间粒度且时间并非整数，可能会发生这种情况。所有这些时间记录的格式均以自新纪元算起的时间十进制表示（以秒为单位）。如果存在句点式 (\fB\&.\fR) 小数点字符，小数点右侧的数字表示次秒计时粒度单位，其中第一个数字是指十分之一秒，后续的每个数字均为前一个数字的十分之一。在读取或复制模式下，\fBpax \fR 会将文件的时间截断为最大不超过输入标头文件时间的值。在写入或复制模式下，如果能够将时间确切表示为十进制数字，\fBpax\fR 将输出确切时间；否则，如果该文件提取自底层实现支持相同时间粒度的系统，将仅生成足够的数字以便恢复该时间。
+.SS "\fBustar\fR 交换格式"
+.sp
+.LP
+\fBustar\fR 归档磁带或文件包含一系列逻辑记录。每个逻辑记录均为 512 八位字节的固定大小逻辑记录。虽然可考虑将此格式存储到 9 磁轨行业标准 12.7 毫米（0.5 英寸）磁带，但也不排除其他类型的可移动介质。每种文件归档都由描述该文件的标头逻辑记录表示，后跟零个或多个逻辑记录以提供文件内容。归档文件末尾包含两个以二进制零填充的 512 八位字节逻辑记录，解释为归档结束指示符。 
+.sp
+.LP
+逻辑记录可按物理 I/O 操作进行分组，如 \fB-b\fR\fIblocksize\fR 和 \fB-x\fR \fBustar\fR 选项下所述。每组逻辑记录均可通过单项操作（等效于 \fBwrite\fR(2) 函数）写入。在磁带上，该写入的结果是单个磁带物理块。最后一个物理块通常是完整大小，两个零逻辑记录后的逻辑记录可包含未定义的数据。 
+.sp
+.LP
+标头逻辑记录的构造如下表所示。所有长度和偏移均以十进制表示。
+.sp
+\fB表 1 \fR\fBustar\fR 头块
+.sp
+.TS
+tab();
+cw(1.83i) cw(1.83i) cw(1.83i) 
+lw(1.83i) lw(1.83i) lw(1.83i) 
+.
+字段名称八位字节偏移长度（以八位字节为单位）
+\fIname\fR\fB0\fR100
+\fImode\fR1008
+\fIuid\fR1088
+\fIgid\fR1168
+\fIsize\fR12412
+\fImtime\fR13612
+\fIchksum\fR1488
+\fItypeflag\fR1561
+\fIlinkname\fR157100
+\fImagic\fR2576
+\fIversion\fR2632
+\fIuname\fR26532
+\fIgname\fR29732
+\fIdevmajor\fR3298
+\fIdevminor\fR3378
+\fIprefix\fR345155
+.TE
+
+.sp
+.LP
+标头逻辑记录中的所有字符均以 \fIISO/IEC 646: 1991\fR 标准的编码字符集表示。为最大限度地提高实现间的可移植性，应从以八位字节（带有最高有效位零）显示的可移植文件名字符集表示的字符中选择名称。如果实现支持在文件、用户和组名称中使用斜杠外部字符和可移植文件名字符集，则会出于交换目的为这些字符提供一个或多个实现定义编码。 
+.sp
+.LP
+\fBpax\fR 永远不会在不能使用 \fIIEEE Std 1003.1-200x\fR 中所述的过程进行访问的本地系统上创建文件名。如果发现介质上的某个文件名会成为无效文件名，则通过实现定义该文件的数据是否存储在文件分层结构中以及以什么名称存储。只要生成错误指示将忽略文件，\fBpax\fR 即可选择忽略这些文件。标头逻辑记录中的每个字段是连续的，即不使用任何填充。 
+.sp
+.LP
+标头逻辑记录中的每个字段是连续的。不使用任何填充。归档介质上的每个字符以连续方式存储。
+.sp
+.LP
+字段 \fImagic\fR、\fIuname\fR 和 \fIgname\fR 是字符串，每个字段均以空字符结尾。字段 \fIname\fR、\fIlinkname\fR 和 \fIprefix\fR 是以空字符结尾的字符串，仅当数组中的所有字符均包含非空字符（包括最后一个字符）时除外。\fIversion\fR 字段是两个八位字节数（包括字符 \fB00\fR（零零））。\fItypeflag\fR 包含一个字符。所有其他字段是前导零填充八进制数字（使用 \fIISO/IEC 646:1991\fR 标准 IRV 数字）。每个数字字段以一个或多个空字符空格结尾。
+.sp
+.LP
+归档介质上的每个字符以连续方式存储。字段 \fImagic\fR、\fIuname\fR 和 \fIgname\fR 是字符串，每个字段均以 \fBNULL\fR 字符结尾。 
+.sp
+.LP
+\fIname\fR、\fIlinkname\fR 和 \fIprefix\fR 是以空字符结尾的字符串，仅当数组中的所有字符均包含非空字符（包括最后一个字符）时除外。\fIversion\fR 字段是两个八位字节数（包括字符 \fB00\fR（零零））。\fItypeflag\fR 包含单个字符。所有其他字段是前导零填充八进制数字（使用 \fIISO/IEC 646:1991\fR 标准 IRV 数字）。每个数字字段以一个或多个空格或空字符结尾。 
+.sp
+.LP
+\fIname\fR 和 \fIprefix\fR 字段生成文件路径名。如果 \fIprefix\fR 并非空字符串（第一个字符不为 \fBNULL\fR），则通过串联 \fIprefix \fR（最多到第一个 \fBNULL\fR 字符）、斜杠字符和名称组成新路径名；否则，将单独使用名称。无论哪种情况，名称均在第一个 \fBNULL\fR 字符位置终止。如果 \fIprefix\fR 以 \fBNULL\fR 开头，则忽略该字符。通过这种方式，能够支持最多包含 256 个字符的路径名。如果路径名与提供的空间不符，\fBpax\fR 会将错误通知给用户，并且不会存储文件标头或介质数据的任何部分。 
+.sp
+.LP
+\fIlinkname\fR 字段不使用 \fIprefix\fR 生成路径名。因此，\fIlinkname\fR 限制为 100 个字符。如果名称与提供的空间不符，\fBpax\fR 会将错误通知给用户，并且不会尝试在介质上存储链接。\fImode\fR 字段提供 12 个以 \fIISO/IEC 646: 1991\fR 标准八进制数字表示法编码的位。编码位表示 \fBustar\fR \fI mode\fR 字段中的以下值：
+.sp
+
+.sp
+.TS
+tab();
+lw(.57i) lw(1.64i) lw(3.29i) 
+lw(.57i) lw(1.64i) lw(3.29i) 
+.
+位值IEE Std 1003.1–2001 位说明
+04000S_ISUID执行时设置 UID
+02000S_ISGID执行时设置 GID
+01000\fI保留\fR保留供未来标准化
+00400S_IRUSR读取文件所有者类的权限
+00200S_IWUSR写入文件所有者类的权限
+00100S_IXUSR执行/搜索文件所有者类的权限
+00040S_IRGRP读取文件组类的权限
+00020S_IWGRP写入文件组类的权限
+00010S_IXGRP执行/搜索文件组类的权限
+00004S_IROTH读取文件其他类的权限
+00002S_IWOTH写入文件其他类的权限
+00001S_IXOTH执行/搜索文件其他类的权限
+.TE
+
+.sp
+.LP
+需要相应特权才能设置其中某个模式位且从归档恢复文件的用户不具备相应特权时，则忽略用户不具备相应特权的模式位。某些归档格式的模式位在 \fIIEEE Std 1003.1-200x\fR 卷中的其他位置没有提及。如果实现不支持这些位，则可予以忽略。 
+.sp
+.LP
+\fIuid\fR 和 \fIgid\fR 字段分别是文件的所有者和组的用户和组 ID。 
+.sp
+.LP
+\fIsize\fR 字段是文件大小（以八位字节为单位）。如果设置 \fItypeflag\fR 字段将文件指定为类型 \fB1\fR（链接）或 \fI2\fR（符号链接），则 \fIsize\fR 字段将被指定为零。如果设置 \fItypeflag\fR 字段将文件指定为类型 5（目录），将按照相应记录类型定义的方式解释 \fIsize\fR 字段。不会存储类型 1、2 或 5 的数据逻辑记录。如果将 \fItypeflag\fR 字段设置为 3（字符特殊文件）、4（块特殊文件）或 6 (FIFO)，卷 \fIIEEE Std 1003.1-200x\fR 将不指定 \fIsize\fR 字段的含义，也不会在介质上存储任何数据逻辑记录。此外，对于类型 6，读取时将忽略 \fIsize\fR 字段。如果将 \fItypeflag\fR 字段设置为任何其他值，标头后写入的逻辑记录数为 (\fIsize\fR+511)/512，忽略除法运算结果中的所有小数。 
+.sp
+.LP
+\fImtime\fR 字段是归档文件时的文件修改时间。该字段是从 \fBstat()\fR 函数获取的修改时间八进制值的 \fIISO/IEC 646: 1991\fR 标准表示形式。 
+.sp
+.LP
+\fIchksum\fR 字段是对标头逻辑记录中的所有八位字节简单求和得出的八进制值的 \fIISO/IEC 646: 1991\fR 标准 IRV 表示形式。标头中的每个八位字节均被视为无符号值。这些值将添加为无符号整数，初始化为零，精度不小于 17 位。计算校验和时，按照将 \fIchksum\fR 字段全部指定为空格的方式进行处理。 
+.sp
+.LP
+\fItypeflag\fR 字段指定归档文件的类型。如果某个特定实现不识别该类型，或用户不具备创建该类型的相应特权，在定义该文件类型对 \fIsize\fR 字段有效的情况下，提取文件时会假定其为常规文件，这可能会导致数据逻辑记录被写入介质。如果转换为常规文件，\fBpax\fR 将生成错误指示已进行转换。所有 \fItypeflag\fR 字段均以 \fIISO/IEC 646: 1991\fR 标准 IRV 进行编码：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 17n
+.rt  
+表示常规文件。为实现向后兼容，从归档提取文件时，应将二进制零 ('\0') 的 \fItypeflag\fR 值的含义识别为常规文件。以此版本归档文件格式写入的归档使用 \fIISO/IEC 646: 1991\fR 标准 IRV '0' 的 \fItypeflag\fR 值创建常规文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 17n
+.rt  
+表示链接到先前归档的任意类型的另一个文件的文件。此类文件通过具有相同设备和文件序列号的每个文件进行标识。链接名称在 \fIlinkname\fR 字段中指定并标识 \fBNULL\fR 字符结束符（如果该名称的长度小于 100 八位字节）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 17n
+.rt  
+表示符号链接。符号链接的内容存储在 \fIlinkname\fR 字段中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3,4\fR\fR
+.ad
+.RS 17n
+.rt  
+分别表示字符特殊文件和块特殊文件。在这种情况下，\fIdevmajor\fR 和 \fIdevminor\fR 字段包含定义设备的信息，卷 \fIIEEE Std 1003.1-200x\fR 未指定字段格式。实现可将设备规范映射到其各自的逻辑规范，也可忽略该条目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB5\fR\fR
+.ad
+.RS 17n
+.rt  
+指定目录或子目录。在基于目录进行磁盘分配的系统上，\fIsize\fR 字段包含目录可承受的最大八位字节数（可舍入到最近的磁盘块分配单位）。\fIsize\fR 字段为零指示不存在此类限制。不支持通过这种方式进行限制的系统应忽略 \fIsize\fR 字段。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB6\fR\fR
+.ad
+.RS 17n
+.rt  
+指定 FIFO 特殊文件。FIFO 文件归档会归档是否存在此文件及其内容。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB7\fR\fR
+.ad
+.RS 17n
+.rt  
+保留以表示与实现的某种高性能属性关联的文件。不带此类扩展的实现应将此文件视为常规文件（类型 0）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBA-Z\fR\fR
+.ad
+.RS 17n
+.rt  
+字母 \fBA\fR 到 \fBZ\fR（包含两者）专为定制实现保留。所有其他值则为将来版本的 \fIIEEE Std 1003.1-200x\fR 保留。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSUN.devmajor\fR\fR
+.ad
+.RS 17n
+.rt  
+\fBpax\fR 扩展标头关键字的 Solaris 扩展名。指定文件的主设备号。 
+.sp
+在写入或复制模式下使用且指定 \fBxustar\fR 或 \fBpax\fR 格式（请参见 \fB-x format\fR）时，\fBpax\fR 将包含主设备号过大无法适应 8 八位字节限制的每个文件的 \fBSUN.devmajor\fR 扩展标头记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSUN.devminor\fR\fR
+.ad
+.RS 17n
+.rt  
+\fBpax\fR 扩展标头关键字的 Solaris 扩展名。指定文件的次要设备号。 
+.sp
+在写入或复制模式下使用且指定 \fBxustar\fR 或 \fBpax\fR 格式（请参见 \fB-x format\fR）时，\fBpax\fR 将包含次要设备号过大无法适应 8 八位字节限制的每个文件的 \fBSUN.\fR\fIdevminor\fR 扩展标头记录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSUN.holesdata\fR\fR
+.ad
+.RS 17n
+.rt  
+\fBpax\fR 扩展标头关键字的 Solaris 扩展名。为稀疏文件指定数据和漏洞对。 
+.sp
+在写入或复制模式下且指定 \fBxustar\fR 或 \fBpax\fR 格式时（请参见 \fB-x format\fR），如果底层文件系统支持检测存在漏洞的文件（请参见 \fBfpathconf\fR(2)），并报告正在归档的文件中至少有一个漏洞，\fBpax\fR 将包含 \fBSUN.holesdate\fR 扩展标头记录。\fIvalue\fR 由两个或更多以下格式的连续条目组成：
+.sp
+.in +2
+.nf
+\fBSPACE\fR\fIdata_offset\fR\fBSPACE\fR\fIhole_offset\fR
+.fi
+.in -2
+.sp
+
+其中数据偏移和漏洞偏移是将 \fBSEEK_DATA\fR 和 \fBSEEK_HOLE\fR 分别传递给 \fBlseek\fR(2) 返回的长值。例如，以下条目是一个文件（数据偏移：0、24576 和 49152 字节；漏洞偏移：8192、32768 和 49159: 49 \fBSUN.holesdata= 0 8192 24576 32768 49152 49159\fR 字节）扩展标头的 \fBSUN.holesdata\fR 条目示例。
+.sp
+.in +2
+.nf
+49 SUN.holesdata= 0 8192 24576 32768 49152 49159
+.fi
+.in -2
+.sp
+
+在读取或复制模式下提取文件时，如果在文件的扩展标头中发现 \fBSUN.holesdata =\fR 对，则使用此数据恢复文件并标识漏洞。例如，对于上面示例中提供的 \fBSUN.holesdata\fR，0 到 8192 字节作为数据存储，漏洞一直持续至下一数据位置 (24576)，24576 至 32768 字节作为数据恢复，依此类推。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBX\fR\fR
+.ad
+.RS 17n
+.rt  
+指定 \fBxustar\fR 格式（请参见 \fB-x format\fR）扩展标头的 Solaris 定制 \fBtypeflag\fR 实现。\fBtypeflag 'x'\fR 扩展标头被视为 \fBustar typeflag 'x'\fR 扩展标头。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBE\fR\fR
+.ad
+.RS 17n
+.rt  
+指定扩展属性标头的 Solaris 定制 \fBtypeflag\fR 实现。请参见 \fBfsattr\fR(5)。
+.RE
+
+.sp
+.LP
+尝试使用 \fBustar\fR 交换格式归档套接字将生成诊断消息。其他文件类型的处理由实现定义。 
+.sp
+.LP
+\fImagic\fR 字段是以该归档格式输出此归档的规范。如果此字段包含 \fBustar\fR（显示的 \fIISO/IEC 646: 1991\fR 标准 IRV 的五个字符，后跟有 \fBNULL\fR），\fIuname\fR 和 \fIgname\fR 字段分别包含 \fIISO/IEC 646: 1991\fR 标准 IRV 表示形式的文件所有者和组（如有必要，请截断适应空间）。通过保护保留版本的特权实用程序恢复文件时，将扫描用户和组数据库以查找这些名称。如果找到，将使用这些文件中包含的用户和组 ID，而不是 \fIuid\fR 和 \fBgid\fR 字段中包含的值。
+.SS "\fBcpio\fR 交换格式"
+.sp
+.LP
+面向八位字节的 \fBcpio\fR 归档格式是一系列条目，每个条目由标头（描述文件）、文件名和文件内容组成。
+.sp
+.LP
+归档可记录为一系列固定大小的八位字节块。使用此分块只是为了使物理 I/O 更有效。最后一组块始终为完整大小。 
+.sp
+.LP
+对于面向八位字节的 \fBcpio\fR 归档格式，各条目信息的顺序由下表指示和描述：面向八位字节的 \fBcpio\fR 归档条目。有关其他详细信息，请参见 \fBcpio.h\fR 标头。
+.sp
+
+.sp
+.TS
+tab();
+lw(1.83i) lw(1.83i) lw(1.83i) 
+lw(1.83i) lw(1.83i) lw(1.83i) 
+.
+标头字段名称长度（以八位字节为单位）解释为
+\fIc_magic\fR6八进制数
+\fIc_dev\fR6八进制数
+\fIc_ino\fR6八进制数
+\fIc_mode\fR6八进制数
+\fIc_uid\fR6八进制数
+\fIc_gid\fR6八进制数
+\fIc_nlink\fR6八进制数
+\fIc_rdev\fR6八进制数
+\fIc_mtime\fR11八进制数
+\fIc_namesize\fR6八进制数
+\fIc_filesize\fR11八进制数
+.TE
+
+.sp
+
+.sp
+.TS
+tab();
+lw(1.83i) lw(1.83i) lw(1.83i) 
+lw(1.83i) lw(1.83i) lw(1.83i) 
+.
+文件名字段名称长度解释为
+\fIc_name\fR\fIc_namesize\fR路径名字符串
+.TE
+
+.sp
+
+.sp
+.TS
+tab();
+lw(1.83i) lw(1.83i) lw(1.83i) 
+lw(1.83i) lw(1.83i) lw(1.83i) 
+.
+文件名字段名称长度解释为
+\fIc_filedata\fR\fIc_filesize\fR数据
+.TE
+
+.SS "\fBcpio\fR 标头"
+.sp
+.LP
+对于归档中的每个文件，标头仍按照先前写入的方式定义。标头字段的信息将写入为 \fIISO/IEC 646: 1991\fR 标准字符（解释为八进制数）流。通过在数字的最高有效位一侧附加 \fIISO/IEC 646: 1991\fR 标准 IRV 零，将八进制数扩展为必要的长度。结果将首先写入八位字节流的最高有效位。字段解释如下：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIc_magic\fR\fR
+.ad
+.RS 15n
+.rt  
+通过包含标识值 \fB"070707"\fR 将归档标识为可传输归档。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIc_dev,c_ino\fR\fR
+.ad
+.RS 15n
+.rt  
+包含在归档中唯一标识文件的值（即没有文件包含同一对 \fIc_dev\fR 和 \fIc_ino\fR 值，除非两者链接到同一个文件）。值以未指定的方式确定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIc_mode\fR\fR
+.ad
+.RS 15n
+.rt  
+包含下表中定义的文件类型和访问权限。
+.sp
+遵循卷 \fIIEEE Std 1003.1-200x\fR 的系统上支持目录、FIFO、系统链接和常规文件；保留先前定义的其他值以确保与现有系统兼容。能够支持其他文件类型。不应将此类文件写入专为传输到其他系统而设计的归档。
+.sp
+
+.sp
+.TS
+tab();
+lw(1.83i) lw(1.83i) lw(1.83i) 
+lw(1.83i) lw(1.83i) lw(1.83i) 
+.
+文件权限名称值指示
+\fBC_IRUSR\fR\fB000400\fR所有者
+\fBC_IWUSR\fR\fB000200\fR所有者
+\fBC_IXUSR\fR\fB000100\fR所有者
+\fBC_IRGRP\fR\fB000040\fR组
+\fBCW_IWFGP\fR\fB000020\fR组
+\fBCW_IXGRP\fR\fB000010\fR组
+\fBCW_IROTH\fR\fB000004\fR其他
+\fBCW_IWOTH\fR\fB000002\fR其他
+\fBCW_IXOTH\fR\fB000001\fR其他
+\fBCW_ISUID\fR\fB004000\fR设置 \fBuid\fR
+\fBW_ISGID\fR\fB002000\fR设置 \fBgid\fR
+\fBW_ISVTX\fR\fB001000\fR保留
+.TE
+
+.sp
+
+.sp
+.TS
+tab();
+lw(1.83i) lw(1.83i) lw(1.83i) 
+lw(1.83i) lw(1.83i) lw(1.83i) 
+.
+文件类型名称值指示
+\fBC_ISDIR\fR\fB040000\fR目录
+\fBC_ISFIFO\fR\fB010000\fRFIFO
+\fBC_ISREG\fR\fB0100000\fR常规文件
+\fBC_ISLNK\fR\fB0120000\fR符号链接
+\fBC_ISBLK\fR\fB060000\fR块特殊文件
+\fBC_ISCHR\fR\fB020000\fR字符特殊文件
+\fBC_ISSOCK\fR\fB0140000\fR套接字
+\fBC_ISCTG\fR\fB0110000\fR保留
+.TE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIc_uid\fR\fR
+.ad
+.RS 15n
+.rt  
+包含所有者的用户 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIc_gid\fR\fR
+.ad
+.RS 15n
+.rt  
+包含组的组 ID
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIc_nlink\fR\fR
+.ad
+.RS 15n
+.rt  
+包含数字（大于或等于引用文件的归档中的链接数）。如果使用 \fB-a\fR 选项附加到 \fBcpio\fR 归档，则在计算归档附加部分的 \fIc_nlink\fR 值时，\fBpax\fR 无需计入归档现有部分的文件。如果向归档附加具有相同 \fIc_dev\fR 和 \fI c-ino\fR 值的其他文件，则也无需更改归档现有部分的 \fIc_nlink\fR 值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIc_rdev\fR\fR
+.ad
+.RS 15n
+.rt  
+包含字符特殊文件或块特殊文件的实现定义信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIc_mtime\fR\fR
+.ad
+.RS 15n
+.rt  
+包含自创建归档起文件的最新修改时间。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIc_namesize\fR\fR
+.ad
+.RS 15n
+.rt  
+包含路径名长度，包括结尾的空字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIc_filesize\fR\fR
+.ad
+.RS 15n
+.rt  
+包含文件长度（以八位字节为单位）。此长度是指紧跟标头结构的数据部分。
+.RE
+
+.SS "\fBcpio\fR 文件名"
+.sp
+.LP
+\fIc_name\fR 字段包含文件的路径名。此字段的长度（以八位字节为单位）是 \fIc_namesize\fR 值。如果发现介质上的某个文件名会成为无效路径名，则通过实现定义该文件的数据是否存储在文件分层结构中以及以什么名称存储。所有字符均以 \fIISO/IEC 646: 1991\fR 标准 IRV 表示。为最大限度地提高实现间的可移植性，应从以八位字节（带有最高有效位零）显示的可移植文件名字符集表示的字符中选择名称。如果实现支持在文件、用户和组名称中使用可移植文件名字符集外部字符，则会出于交换目的为这些字符提供一个或多个实现定义编码。\fB pax\fR 不会在不能通过卷 \fIIEEE Std 1003.1-200x\fR 中所述的过程进行访问的本地系统上创建文件名。如果发现介质上的某个文件名会成为无效文件名，则通过实现定义该文件的数据是否存储在本地文件系统中以及以什么名称存储。只要生成错误指示将忽略文件，\fBpax\fR 即可选择忽略这些文件。
+.SS "\fBcpio\fR 文件数据"
+.sp
+.LP
+\fIc_name\fR 后面是 \fIc_filesize\fR 八位字节数据。以基于文件的方式解释此类数据。如果 \fIc_filesize\fR 为零，则 \fIc_filedata\fR 中不包含任何数据。从归档中恢复时： 
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果用户不具备创建指定类型文件的相应特权，\fBpax\fR 将忽略该条目并将错误消息写入标准错误。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+只有常规文件具有要恢复的数据。假定常规文件符合用户可能对格式读取实用程序施加的任何选择条件，则恢复此类数据。 
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果用户不具备设置某个特定 \fImode\fR 标志的相应特权，则忽略该标志。某些归档格式的 \fImode\fR 标志在 \fIIEEE Std 1003.1-200x\fR 卷中没有提及。如果实现不支持这些标志，则可予以忽略。 
+.RE
+.SS "\fBcpio\fR 特殊条目"
+.sp
+.LP
+FIFO 特殊文件、目录和尾部将被记录，且 \fIc_filesize\fR 等于零。对于其他特殊文件，卷 \fIIEEE Std 1003.1-200x\fR 中未指定 \fIc_filesize\fR。归档中下一个文件条目的标头将直接写在其前面的文件条目的最后一个八位字节后。表示文件名尾部的标头指示归档末尾；此类标头后的归档的最后一个块中的八位字节内容不确定。 
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+_
+标准请参见 \fBstandards\fR(5)。
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBchmod\fR(1)、\fBcpio\fR(1)、\fBed\fR(1)、\fBprintf\fR(1)、\fBtar\fR(1)、\fBmkdir\fR(2)、\fBlseek\fR(2)、\fBstat\fR(2)、\fBwrite\fR(2)、\fBarchives.h\fR(3HEAD)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBfnmatch\fR(5)、\fBformats\fR(5)、\fBfsattr\fR(5)、\fBlargefile\fR(5)、\fBregex\fR(5)、\fBstandards\fR(5)
+.sp
+.LP
+\fIIEEE Std 1003.1-200x\fR、\fIISO/IEC 646: 1991\fR、\fIISO POSIX-2:1993 标准\fR

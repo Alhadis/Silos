@@ -1,0 +1,228 @@
+'\" te
+.\"  Copyright (c) 1992, X/Open Company Limited All Rights Reserved Portions Copyright (c) 1995, Sun Microsystems, Inc. All Rights Reserved
+.\"  Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH time 1 "1995 年 2 月 1 日" "SunOS 5.11" "用户命令"
+.SH 名称
+time \- 为简单命令计时
+.SH 用法概要
+.LP
+.nf
+\fBtime\fR [\fB-p\fR] \fIutility\fR [\fIargument\fR]...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBtime\fR 实用程序可调用带有 \fIargument\fR 的 \fIutility\fR 操作数，并将一条消息写入标准错误，其中列出 \fIutility\fR 的计时统计信息。消息包含以下信息：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+从调用 \fIutility\fR 到其终止期间经过的（实际）时间。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+用户 \fBCPU\fR 时间相当于 \fBtimes\fR(2) 函数为执行 \fIutility\fR 的进程返回的 \fItms_utime\fR 和 \fItms_cutime\fR 字段之和。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+系统 \fBCPU\fR 时间相当于 \fBtimes()\fR 函数为执行 \fIutility\fR 的进程返回的 \fItms_stime\fR 和 \fItms_cstime\fR 字段之和。
+.RE
+.sp
+.LP
+如果 \fBtime\fR 用作某个流水线的一部分，则报告的时间未指定（但它是该流水线上一个分组命令中的唯一一个命令时除外）。例如，下方左侧命令报告的时间未指定；右侧命令分别报告实用程序 \fBa\fR 和 \fBc\fR 的时间：
+.sp
+.in +2
+.nf
+time a | b | c		{ time a } | b | c
+a | b | time c		a | b | (time c)
+.fi
+.in -2
+
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 6n
+.rt  
+采用以下格式将计时输出写入标准错误：
+.sp
+.in +2
+.nf
+real %f\enuser %f\ensys %f\en < \fIreal seconds\fR>, <\fIuser seconds\fR>,
+<\fIsystem seconds\fR>
+.fi
+.in -2
+.sp
+
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIutility\fR \fR
+.ad
+.RS 13n
+.rt  
+要调用的实用程序的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIargument\fR \fR
+.ad
+.RS 13n
+.rt  
+调用 \fIutility\fR 时要作为参数提供的任何字符串。
+.RE
+
+.SH 用法
+.sp
+.LP
+如果出现错误，\fBtime\fR 实用程序将返回退出状态\fB127\fR ，以使应用程序能够区分“无法找到实用程序”与“调用的实用程序已退出并已指明错误”。之所以选择值 \fB127\fR，是因为它不常用来表示其他含义。大多数实用程序使用小值表示“常规错误情形”，大于 \fB128\fR 的值可能会与因收到信号而终止混淆。值 \fB126\fR 的选择方式类似，表示可以找到但无法调用实用程序。
+.SH 示例
+.LP
+\fB示例 1 \fR使用 time 命令
+.sp
+.LP
+经常需要将 \fBtime\fR 应用于流水线或命令列表。将流水线和命令列表置于一个文件中便可实现。随后可将这一个文件作为实用程序调用，\fBtime\fR 将应用于文件中的所有内容。
+
+.sp
+.LP
+或者，也可以使用以下命令将 \fBtime\fR 应用于复杂的命令：
+
+.sp
+.in +2
+.nf
+example% \fBtime sh -c 'complex-command-line'\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR在 csh shell 中使用 time 命令
+.sp
+.LP
+以下两个示例说明了 \fBcsh\fR 版本的 \fBtime\fR 与 \fB/usr/bin/time\fR 中版本之间的区别。这些示例假定 \fBcsh\fR 是正在使用的 shell。
+
+.sp
+.in +2
+.nf
+example% \fBtime find / -name csh.1 -print
+/usr/share/man/man1/csh.1\fR
+95.0u 692.0s 1:17:52 16% 0+0k 0+0io 0pf+0w
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有关 \fBtime\fR 输出格式的说明，请参见 \fBcsh\fR(1)。
+
+.sp
+.in +2
+.nf
+example% \fB/usr/bin/time find / -name csh.1 -print
+/usr/share/man/man1/csh.1\fR
+real  1:23:31.5
+user     1:33.2
+sys     11:28.2
+.fi
+.in -2
+.sp
+
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBtime\fR 执行的环境变量 \fBLANG\fR、\fBLC_ALL\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR、\fBLC_NUMERIC\fR、\fBNLSPATH\fR 和 \fBPATH\fR 的说明，请参见 \fBenviron\fR(5)。 
+.SH 退出状态
+.sp
+.LP
+如果调用了 \fIutility\fR，\fBtime\fR 的退出状态将为 \fIutility\fR 的退出状态。否则，\fBtime\fR 实用程序将以下列值之一退出：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1-125\fR \fR
+.ad
+.RS 10n
+.rt  
+\fBtime\fR 实用程序中出现错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB126\fR \fR
+.ad
+.RS 10n
+.rt  
+\fIutility\fR 已找到但无法调用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB127\fR \fR
+.ad
+.RS 10n
+.rt  
+无法找到 \fIutility\fR。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+_
+标准请参见 \fBstandards\fR(5)。
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBcsh\fR(1)、\fBshell_builtins\fR(1)、\fBtimex\fR(1)、\fBtimes\fR(2)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBstandards\fR(5)
+.SH 附注
+.sp
+.LP
+在多处理器计算机上运行 time 命令时，为 \fBuser\fR 和 \fBsys\fR 输出的值之和可能会超过 \fBreal\fR。这是因为在多处理器计算机上，可能会在多个处理器之间划分任务。
+.sp
+.LP
+如果计时的命令中断，显示的计时值可能并不总是非常精确。
+.SH 已知问题
+.sp
+.LP
+经过的时间精确到秒，而 \fBCPU\fR 时间以百分之一秒计。因此，\fBCPU\fR 时间之和最多会比经过的时间多一秒。

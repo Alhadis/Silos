@@ -1,0 +1,676 @@
+'\" te
+.\" Copyright (c) 2009, 2015, Oracle and/or its affiliates. All rights reserved.
+.TH solaris-kz 5 "14 Jul 2015" "SunOS 5.11" "Standards, Environments, and Macros"
+.SH NAME
+solaris-kz \- solaris kernel zone
+.SH DESCRIPTION
+.sp
+.LP
+The \fBsolaris-kz\fR brand uses the branded zones framework described in \fBbrands\fR(5) to run zones with a separate kernel and OS installation from that used by the global zone.
+.SS "Installation and Update"
+.sp
+.LP
+A \fBsolaris-kz\fR installation is independent of that of the global zone; it is not a \fBpkg\fR(5) linked image and can be modified regardless of the global zone content. A \fBsolaris-kz\fR zone can be installed in the same manner as other brands directly from the global zone, or via a boot media as described below.
+.sp
+.LP
+When specifying a manifest for installation, the manifest used should be the one suitable for a global zone installation. As kernel zones always install into a known location for the root pool, an installation target disk should not be specified.
+.sp
+.LP
+Boot environment (BE) management is independent of the global zone. BE creation in the global zone does not create a new BE in the zone. See \fBbeadm\fR(1M).
+.SS "Process Management and Visibility"
+.sp
+.LP
+As, unlike other brands, a \fBsolaris-kz\fR zone runs a separate kernel, some differences are apparent when examining the zone from the global zone.
+.sp
+.LP
+Processes that are running in a \fBsolaris-kz\fR zone are not directly accessible by the global zone. For example, to see the list of processes in a kernel zone named \fBkz-zone\fR, rather than using the \fBps\fR command with \fB-z\fR \fBkz-zone\fR options, you need to use the following command:
+.sp
+.in +2
+.nf
+# \fBzlogin kz-zone ps -e\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The global zone and each kernel zone manage their own process ID space. Thus, the \fBprocess 1234\fR may exist in the global zone and one or more kernel zones. Those are unique processes. If the global zone administrator wish to kill \fBprocess 1234\fR in \fBkz-zone\fR, it should be done with the following command or an equivalent:
+.sp
+.in +2
+.nf
+# \fBzlogin kz-zone kill 1234\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBps\fR(1) and similar tools run from the global zone will see processes associated with managing a \fBsolaris-kz\fR zone instance, such as \fBkzhost\fR and \fBzlogin-kz\fR. This can be useful for debugging, but otherwise they are private implementation details.
+.sp
+.LP
+Similarly, resource management functionality is different. For example, resource controls such as \fBmax-processes\fR are not available when configuring a \fBsolaris-kz\fR zone, as they are only meaningful when sharing a single kernel instance. That is, a process running inside a \fBsolaris-kz\fR zone cannot take up a process table slot in the global zone, as the kernels are independent.
+.sp
+.LP
+The \fBzonestat\fR utility displays the resource usage of the zone. The output is generally correct, but may reflect the host values. For example, the resource control values such as \fBlwps\fR show the \fBlwps\fR used on the host, not the ones used inside the zone.
+.sp
+.LP
+The \fBsolaris-kz\fR brand uses certain hardware features which may not be available in older systems, or in virtualized environments. To detect whether a system supports the \fBsolaris-kz brand\fR, install the \fBbrand-solaris-kz\fR package and then run the \fBvirtinfo\fR command.
+.sp
+.in +2
+.nf
+# virtinfo -c supported list kernel-zone
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+If \fBkernel-zone\fR is not shown in the supported list, you can see \fBsyslog\fR for more information. Messages pertaining to kernel zones will contain the string \fBkernel-zone\fR.
+.sp
+.LP
+Stolen time as reported by the \fBmpstat\fR(1M), \fBiostat\fR(1M), \fBvmstat\fR(1M) and other utilities directly reflects the time when the kernel zone could not run as the host might be using CPU resources for other purposes.
+.SS "Storage Access"
+.sp
+.LP
+A \fBsolaris-kz\fR brand zone must reside on one or more devices. A default \fBzfs\fR(1M) volume will be created in the global zone's root \fBzpool\fR if the configuration is not customized prior to installation. The device onto which the zone is installed is specified with device resources that have the \fBbootpri\fR property set to any positive integer value. If a device will not be used as a boot device, it must not have the \fBbootpri\fR property set. To unset \fBbootpri\fR, use clear \fBbootpri\fR while in the device resource scope. If multiple bootable devices are present during installation, the devices will be used for a mirrored root ZFS pool in the zone. The default boot order is determined by sorting devices first by \fBbootpri\fR, then by \fBid\fR if multiple devices have the same \fBbootpri\fR.
+.sp
+.LP
+The \fBzonepath\fR cannot be set for a kernel zone. As an implementation detail, it is set to a fixed location using \fBtmpfs\fR(7FS). It contains no persistent or otherwise user-servicable data. As the zone root is contained with the root ZFS volume, it is not mounted in the global zone under the zone path, unlike traditional zones. Access to the zone root can only be done via the zone itself, for example \fBzlogin\fR.
+.sp
+.LP
+A \fBsolaris-kz\fR zone cannot directly take advantage of shared-kernel features such as ZFS datasets and file system mounts. Instead, storage is made available to the zone via block devices such as raw disks, ZFS volumes, and \fBlofi\fR devices.
+.sp
+.LP
+A \fBsolaris-kz\fR zone's root is always accessible. Storage can be added by using \fBadd device\fR in \fBzonecfg\fR. The device path specified must be a raw device, and either a ZFS volume, a raw disk, or a \fBlofi\fR device. The specified device must be a whole disk or LUN. Use the device path without any partition/slice suffix, for example:
+.sp
+.in +2
+.nf
+# \fBzonecfg -z myzone\fR
+zonecfg:myzone> \fBadd device\fR
+zonecfg:myzone:device> \fBset match=/dev/rdsk/c4t9d0\fR
+zonecfg:myzone:device> \fBset id=4\fR
+zonecfg:myzone:device> \fBset bootpri=1\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The \fBid\fR can be specified to fix the disk address inside the zone. If not given, it is automatically allocated.
+.sp
+.LP
+As described in \fBzonecfg\fR(1M), a device resource can also configure a storage URI in order to make the zone's configuration portable to other host systems. See \fBsuri\fR(5).
+.sp
+.LP
+For example:
+.sp
+.in +2
+.nf
+# \fBzonecfg -z \fImyzone\fR\fR
+zonecfg:myzone> \fBadd device\fR
+zonecfg:myzone:device> \fBset storage=\fInfs://user1:staff@host1/export/file1\fR\fR
+zonecfg:myzone:device> \fBset create-size=\fI4g\fR\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+To see information about the current configuration for device resources, use the \fBinfo\fR subcommand. For example:
+.sp
+.in +2
+.nf
+# \fBzonecfg -z \fImyzone\fR info device\fR
+device:
+    match not specified
+    storage: dev:/dev/zvol/dsk/rpool/VARSHARE/zones/myzone/disk0
+    id: 0
+    bootpri: 0
+device:
+    match not specified
+    storage: nfs://user1:staff@host1/export/file1
+    create-size: 4g
+    id: 1
+    bootpri not specified
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+You can also shorten the output by specifying the \fBid\fR:
+.sp
+.in +2
+.nf
+# \fBzonecfg -z \fImyzone\fR info device id=\fI1\fR\fR
+device:
+    match not specified
+    storage: nfs://user1:staff@host1/export/file1
+    create-size: 4g
+    id: 1
+    bootpri not specified
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+To install a zone to a non-default location, to an iSCSI logical unit, for example, the device resource for the root disk must be modified. For example:
+.sp
+.in +2
+.nf
+# \fBzonecfg -z myzone\fR
+zonecfg:myzone> \fBselect device id=0\fR
+zonecfg:myzone:device> \fBset storage=iscsi://host/luname.naa.0000abcd\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+At least one device must have \fBbootpri\fR set to a positive integer to indicate that it is bootable. Within a kernel zone, all devices that act as mirrors or spares for the root ZFS pool must be bootable.
+.sp
+.LP
+Only storage devices are supported by \fBadd device\fR for the \fBsolaris-kz\fR brand.
+.SS "Network Access"
+.sp
+.LP
+Kernel zones must be \fBexclusive stack\fR. Network access is provided by adding \fBnet\fR or \fBanet\fR resources for Ethernet datalinks and by adding \fBanet\fR resources for IPoIB datalinks. The datalink specified by these resources will be used as the backend of the datalinks visible in the zone. Both IPoIB and Ethernet network resources can be specified, and the datalinks visible in the zone will be of the corresponding media type. As with storage devices, an ID may be specified to identify the virtual NIC address inside the zone. Adding InfiniBand network links through \fBnet\fR resources is not supported.
+.sp
+.LP
+Kernel zones may themselves host zones (in which case they play the role of the global zone for those zones). The network access to the hosted zones are provided over the Ethernet datalinks only and not over the IPoIB datalinks. However, because the networking configuration of the kernel zone is partially defined by its zone configuration, hosted zones are restricted in which MAC addresses may be used. Attempting to boot a zone with \fBmac-address\fR settings of random or a specific MAC address are not permitted.
+.sp
+.LP
+To supply additional MAC addresses to a kernel zone, add them to the \fBmac-address\fR property for the relevant resource. See \fBzonecfg\fR(1M). This will make that \fBmac-address\fR available as a \fBfactory\fR address inside the kernel zone.
+.sp
+.LP
+A hosted zone may then use that MAC address itself. To do this, configure the \fBmac-address\fR property of the hosted zone to be either the explicit MAC address configured (use \fBmac-address\fR property), or specify \fBauto\fR. See \fBzonecfg\fR(1M) for details of these settings.
+.SS "Memory Configuration"
+.sp
+.LP
+A fixed amount of host RAM must be allocated to a kernel zone. This is configured by the \fBphysical\fR property of the \fBcapped-memory\fR resource in \fBzonecfg\fR(1M). The given value may be rounded up to a supported platform value. The allocated memory is locked, and hence not pageable to a swap device.
+.SS "Suspend, Resume, and Warm Migration"
+.sp
+.LP
+Kernel zones may be suspended to disk by the \fBzoneadm suspend\fR command. The running state of the zone is written to the disk. As this includes the entire RAM used by the zone, this can take a significant amount of time and space.
+.sp
+.LP
+Suspend and resume are supported for a kernel zone only if it has a suspend resource in its configuration. Within a suspend resource, the path or storage (but not both) must be specified. The \fBpath\fR property specifies the name of a file that will contain the suspend image. The directory containing the file must exist and be writable by the \fBroot\fR user. Any file system that is mounted prior to the start of \fBsvc:/system/zones:default\fR may be used. The \fBstorage\fR property specifies the storage URI (see \fBsuri\fR(5)) of a disk device that will contain the suspend image. The whole device will be used. This device may not be shared with anything else.
+.sp
+.LP
+The suspend image is compressed prior to writing. As such, the size of the suspend image will typically be significantly smaller than the size of the zone's RAM. During suspend, a message is printed and logged to the console log indicating the size of the suspend image.
+.sp
+.LP
+After compression, the suspend image is encrypted using AES-128-CCM. The encryption key is automatically generated by \fB/dev/random\fR (see \fBrandom\fR(7D)) and is stored in the keysource resource's raw property.
+.sp
+.LP
+If a zone is suspended, the \fBzoneadm boot\fR command will resume it. The \fBboot \fB-R\fR\fR option can be used to boot afresh if a resume is not desired.
+.sp
+.LP
+If the suspend image and the rest of the zone's storage is accessible by multiple hosts (typically by using \fBsuspend:storage\fR and \fBdevice:storage\fR properties), the suspend image can be used to support warm migration following the usual zone cold migration with \fBzoneadm detach\fR or \fBzoneadm attach\fR, but using \fBzoneadm suspend\fR instead of \fBzoneadm shutdown\fR as the first step. This will avoid any zone startup cost on the destination host, excluding the time spent to resume.
+.sp
+.LP
+The source and the destination host must be the same platform. On x86, the vendor (AMD/Intel) as well as the CPU model name must match. On SPARC, the hardware platform must be the same. For example, you cannot warm migrate from a T4 host to a T5 host. If you want to migrate between different hardware platforms, you need to specify migration class in cpu-arch property approriately.
+.sp
+.LP
+On resume, the current configuration of the zone is used to boot and to allow specifying a new configuration. However, there are restrictions, as the resuming zone is expecting a particular setup. Any incompatibilities will cause boot to fail. For example, the boot process might fail if:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+The CPU supports different features (for example, see \fBcpuid\fR(7D))
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+The configuration has a different capped-memory value
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+The configuration defines different number of virtual CPUs
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+A disk is missing (no \fBdevice\fR resource with a suitable \fBid\fR property)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+A virtual NIC is missing (no \fBnet\fR or \fBanet\fR resource with a suitable \fBid\fR property)
+.RE
+.sp
+.LP
+No specific check for storage identification is done. Note that it is the administrator's responsibility to ensure that the device listed under a particular ID is the one that the zone is expecting to see.
+.SS "Live Migration"
+.sp
+.LP
+Kernel zones can be live migrated to compatible hosts by using the \fBzoneadm migrate\fR command, as described in \fBzoneadm\fR(1M).
+.sp
+.LP
+Live migration has the same compatibility restrictions as described in the Suspend, Resume, and Warm Migration section above.
+.SS "Auxiliary State"
+.sp
+.LP
+The following auxiliary states (as shown by \fBzoneadm list -is\fR) are defined for this brand:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsuspended\fR\fR
+.ad
+.RS 17n
+.rt  
+The zone has been suspended and will resume on next boot. Note that the zone must be attached before this state is visible.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdebugging\fR\fR
+.ad
+.RS 17n
+.rt  
+The zone is in \fBrunning\fR state, but the kernel debugger is running within the zone and therefore cannot service network requests etc. Connect to the zone console to interact with the debugger (\fBkmdb\fR).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpanicked\fR\fR
+.ad
+.RS 17n
+.rt  
+The zone is in \fBrunning\fR state, but the zone has panicked and the host is not affected.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmigrating-out\fR\fR
+.ad
+.RS 17n
+.rt  
+The zone is fully running, but is being migrated to another host.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmigrating-in\fR\fR
+.ad
+.RS 17n
+.rt  
+The zone is booted on the host, and is receiving the migration image, so is not yet fully running until migration is complete.
+.RE
+
+.SS "Host Data"
+.sp
+.LP
+Each of a kernel zone's bootable devices contains state information known as host data. This data keeps track of where a zone is in use, if it is suspended, and other state information. Host data is encrypted and authenticated with AES-128-CCM, using the same encryption key used for the suspend image.
+.sp
+.LP
+As a kernel zone is readied or booted, the host data is read to determine if the kernel zone's boot storage is in use on another system. If it is in use by another system, the kernel zone will enter the unavailable state and an error message will indicate which system is using it. If it is certain that the storage is not in use on the other system, the kernel zone can be repaired by using the \fB-x force-takeover extended\fR option to \fBzoneadm attach\fR. See the warning below before executing this command.
+.sp
+.LP
+If the encryption key is inaccessible, the host data and any suspend image will not be readable. In such a circumstance, any attempt to ready or boot the zone will cause the zone to enter the unavailable state. If recovery of the encryption key is not possible, the \fB-x initialize-hostdata extended\fR option to the \fBzoneadm attach\fR subcommand can be used to generate a new encryption key and host data. See the warning below before executing this command.
+.LP
+Note - 
+.sp
+.RS 2
+WARNING: Forcing a take over or reinitialization of host data will make it impossible to detect if the zone is in use on any other system. Running multiple instances of a zone that reference the same storage will lead to unrepairable corruption of the zone's file systems.
+.RE
+.sp
+.LP
+To prevent loss of the encryption key during a warm or cold migration, use \fBzonecfg export\fR on the source system to generate a command file to be used on the destination system. For example:
+.sp
+.in +2
+.nf
+  root@host1# \fBzonecfg -z myzone export -f /net/.../myzone.cfg\fR
+  root@host2# \fBzonecfg -z myzone -f /net/.../myzone.cfg\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Because myzone.cfg in this example contains the encryption key, it is important to protect its contents from disclosure.
+.SS "Configuration"
+.sp
+.LP
+A \fBsolaris-kz\fR brand zone can be configured by using the \fBSYSsolaris-kz\fR template.
+.sp
+.LP
+The following \fBzonecfg\fR(1M) resources and properties are not supported for this brand:
+.sp
+.in +2
+.nf
+anet:address
+capped-memory:locked
+capped-memory:swap
+dataset
+device:allow-partition
+device:allow-raw-io
+fs
+file-mac-profile
+fs-allowed
+ip-type
+limitpriv
+global-time
+max-lwps
+max-msg-ids
+max-processes
+max-sem-ids
+max-shm-memory
+rctl:zone.max-lofi
+rctl:zone.max-swap
+rctl:zone.max-locked-memory
+rctl:zone.max-shm-memory
+rctl:zone.max-shm-ids
+rctl:zone.max-sem-ids
+rctl:zone.max-msg-ids
+rctl:zone.max-processes
+rctl:zone.max-lwps
+rootzpool
+zpool
+.fi
+.in -2
+
+.sp
+.LP
+The following \fBzonecfg\fR(1M) resources and properties are supported by the live zone reconfiguration for this brand:
+.sp
+.in +2
+.nf
+anet (with exceptions stated below)
+device
+net (with exceptions stated below)
+.fi
+.in -2
+
+.sp
+.LP
+The following \fBzonecfg\fR(1M) resources and properties are not supported by the live zone reconfiguration for this brand:
+.sp
+.in +2
+.nf
+anet:allowed-address
+anet:configure-allowed-address
+anet:defrouter
+capped-cpu (zone.cpu-cap)
+capped-memory
+cpu-shares (zone.cpu-shares)
+dedicated-cpu
+hostid
+ib-vhca
+ib-vhca:port
+cpu-arch
+keysource
+net:allowed-address
+net:configure-allowed-address
+net:defrouter
+pool
+rctl
+scheduling-class
+tenant
+virtual-cpu
+.fi
+.in -2
+
+.sp
+.LP
+Any changes made to the listed unsupported resources and properties in the persistent configuration will be ignored by the live zone reconfiguration if they are applied to the running zone.
+.sp
+.LP
+Any attempts to modify listed unsupported resources and properties in the live configuration will be refused.
+.sp
+.LP
+Changes made to \fBanet\fR and \fBnet\fR properties supported for \fBsolaris-kz\fR brand should be for the same media type.
+.sp
+.LP
+There are specific defaults for properties supported for \fBsolaris-kz\fR brand as listed below:
+.sp
+.in +2
+.nf
+Resource                Property                    Default Value
+global                  zonepath                    /system/zones/%{zonename}
+                        autoboot                    false
+                        ip-type                     exclusive
+                        auto-shutdown               shutdown
+net                     configure-allowed-address   true
+anet                    mac-address                 auto
+                        lower-link                  auto
+                        link-protection             mac-nospoof
+                        linkmode                    cm
+anet:mac                mac-address                 auto
+ib-vhca:port            pkey                        auto
+.fi
+.in -2
+
+.SH SUB-COMMANDS
+.sp
+.LP
+The following \fBsolaris-kz\fR brand-specific subcommand options are supported by \fBzoneadm\fR(1M).
+.sp
+.ne 2
+.mk
+.na
+\fB\fBattach [-x force-takeover | initialize-hostdata]\fR\fR
+.ad
+.sp .6
+.RS 4n
+Attach the specified \fBsolaris-kz\fR branded zone image into the zone. The zone's bootable device(s) are assumed to already be populated correctly.
+.sp
+The \fB-x force-takeover\fR extended option clears state information indicating that the zone is installed or running on another system. Use this option with extreme caution: if the same storage is simultaneously used by two instances of a zone, file system will corrupt.
+.sp
+The \fB-x initialize-hostdata\fR extended option reinitializes the encryption key and host data. As with \fB-x force-takeover\fR, ensure the zone is not in use on another system before using this option.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBboot [-R] -- [-L | -Z \fIbootenv\fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+If a zone is suspended, the \fB-R\fR option can be used to ignore the suspended image (which is then deleted), and boot afresh.
+.sp
+The \fB-L\fR option tells the bootloader to list the available boot environments. The BE to boot can be interactively selected.
+.sp
+The \fB-Z\fR option tells the bootloader to boot a particular BE. For example:
+.sp
+.in +2
+.nf
+# \fBzoneadm -z myzone \\fR 
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+\fBboot -- -Z rpool/ROOT/solaris\fR
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBclone [-c config_profile.xml | dir]\fR\fR
+.ad
+.sp .6
+.RS 4n
+Provides a profile or a directory of profiles to apply after installation from the repository.
+.sp
+All profiles must have an \fB\&.xml\fR extension.
+.sp
+For \fBzoneadm clone\fR, if storage is automatically created, it will be created as the same size as the disk in the source zone.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstall\fR [\fB-v\fR] [\fB-a\fR \fIarchive\fR [\fB-x\fR no-auto-shutdown] | \fB-m\fR \fImanifest\fR\fB\&.xml\fR]  [\fB-c\fR \fIconfig_profile\fR\fB\&.xml\fR | \fIdir\fR] [\fB-C\fR \fIinstall_profile\fR\fB\&.xml\fR | \fIdir\fR] [\fB-S\fR \fIrootsize\fR] [\fB-b\fR \fI/path/to/media.iso\fR [\fB-x\fR no-auto-shutdown]] [\fB-z\fR \fIarchived_zone\fR]\fR
+.ad
+.br
+.na
+\fB[\fB-x\fR <\fBcert|cacert|key\fR>=\fIpath\fR] ...\fR
+.ad
+.sp .6
+.RS 4n
+Kernel zones can be installed with the global zone's publishers and a default AI manifest, with a custom AI manifest, with an ISO image of Solaris installation media, or with a Unified Archive.
+.sp
+Unless the \fB-a\fR, \fB-b\fR, or \fB-m\fR options are used, the default AI manifest, \fB/usr/share/auto_install/manifest/default.xml\fR, and the global zone's \fBpkg\fR(5) publishers are used to perform the installation. The supported media types are the text installer and the automated installer. This allows any supported Oracle Solaris version to be installed. Solaris 11.2 is the first version of Solaris supported in a kernel zone.
+.sp
+If an AI manifest is specified with the \fB-m\fR option, an IPS or Unified Archive installation will be performed, based on the content of the AI manifest. See \fBai_manifest\fR(4).
+.sp
+If an ISO image of bootable Solaris installation media is provided with the \fB-b\fR option, the kernel zone is booted from the installation media and the install program is run on the zone's console. A console login session is established during installation, allowing for interaction with and/or observation of the install program.
+.sp
+If a Unified Archive is specified with the \fB-a\fR option, the installation is performed from the Unified Archive. If the Unified Archive contains multiple zones (deployable systems in \fBarchiveadm info\fR output), the \fB-z\fR option is used to specify which archived zone to install. Unified archives are created with \fBarchiveadm\fR(1M).
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a archive\fR\fR
+.ad
+.sp .6
+.RS 4n
+Install from the specified Unified Archive. The \fIarchived_zone\fR may be a global zone, a kernel zone, or a solaris brand zone. If the archived zone is a solaris brand zone, a non-global to global \fBpkg\fR(5) image transform is performed. For the transform to be successful, the zone's installation envirionment must have sufficient network access to allow access to all \fBpkg\fR(5) publishers. This is most easily accomplished by allowing the kernel zone's network to be configured via DHCP.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b /path/to/media.iso\fR\fR
+.ad
+.sp .6
+.RS 4n
+Boot and install from the given media.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c config_profile.xml | dir\fR\fR
+.ad
+.sp .6
+.RS 4n
+Provides a profile or a directory of profiles to apply after installation from the repository.
+.sp
+All profiles must have an \fB\&.xml\fR extension.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C install_profile.xml | dir\fR\fR
+.ad
+.sp .6
+.RS 4n
+Provides a profile or a directory of profiles to apply to the installation environment when booted to AI media to perform the install.
+.sp
+All profiles must have an \fB\&.xml\fR extension.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m manifest.xml\fR\fR
+.ad
+.sp .6
+.RS 4n
+Manifest file to be specified to the automated installer. 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x install-size\fR\fR
+.ad
+.sp .6
+.RS 4n
+Explicitly set the size of the root file system (default is \fB16g\fR).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x no-auto-shutdown\fR\fR
+.ad
+.sp .6
+.RS 4n
+Leaves the kernel zone login to the console after installation, allowing for interactions with the install system. This option is only valid with the \fB-a\fR or the \fB-b\fR options.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB-x cert=\fBpath\fR\fR
+.ad
+.br
+.na
+\fB-x cacert=\fBpath\fR\fR
+.ad
+.br
+.na
+\fB-x key=\fBpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+Use the specified certificate, CA certificate, and/or key when installing from a Unified Archive at a https URI. Only valid with the \fB-a\fR option.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+Verbose output from the install process.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z archived_zone\fR\fR
+.ad
+.sp .6
+.RS 4n
+Install the zone using \fIarchived_zone\fR from the Unified Archive. See Deployable Systems in the output of \fBarchiveadm\fR(1M) info command for a list of valid values for a particular Unified Archive. Only valid with the \fB-a\fR option.
+.RE
+
+.RE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBarchiveadm\fR(1M), \fBai_manifest\fR(4), \fBpkg\fR(5)
+.SH NOTES
+.sp
+.LP
+VirtualBox can be used on the same host as kernel zones, but must be configured appropriately. See the VirtualBox documentation for more details. Since kernel zones are running in a separate Solaris kernel environment they may possibly crash and dump the same core that a kernel in a global zone running on metal would. In such a case the dump is saved in the kernel zone storage and found in the same place as any Solaris crash dump would be found, subject to the crash dump parameters as configured by \fBdumpadm\fR(1M). Kernel zones also have the ability to have a core dump generated from the host environment using the \fBzoneadm savecore\fR subcommand. Additionally, if a kernel zone does crash and attempts to dump a core image but is unable to successfully save a core in the kernel zone's storage it will request the host to attempt to save a core image as if a \fBzoneadm savecore\fR subcommand had been issued. The core will be saved in a location specified by \fBcoreadm\fR(1M), this will only succeed if \fBcoreadm\fR(1M) has configured a location for and enabled kernel zone core dumps.

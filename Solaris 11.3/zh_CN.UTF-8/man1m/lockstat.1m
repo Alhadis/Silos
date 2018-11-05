@@ -1,0 +1,845 @@
+'\" te
+.\" Copyright (c) 2008, 2011, Oracle and/or its affiliates.All rights reserved.
+.TH lockstat 1M "2011 年 8 月 16 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+lockstat \- 报告内核锁定和分析统计信息
+.SH 用法概要
+.LP
+.nf
+\fBlockstat\fR [\fB-ACEHI\fR] [\fB-e\fR \fIevent_list\fR] [\fB-i\fR \fIrate\fR] 
+     [\fB-b\fR | \fB-t\fR | \fB-h\fR | \fB-s\fR \fIdepth\fR] [\fB-n\fR \fInrecords\fR] 
+     [\fB-l\fR \fIlock\fR [, \fIsize\fR]] [\fB-d\fR \fIduration\fR] 
+     [\fB-f\fR \fIfunction\fR [, \fIsize\fR]] [\fB-T\fR] [\fB-ckgwWRpP\fR] [\fB-D\fR \fIcount\fR] 
+     [\fB-o\fR \fIfilename\fR] [\fB-x\fR \fIopt\fR [=val]] \fIcommand\fR [\fIargs\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBlockstat\fR 实用程序用于收集和显示内核锁定和分析统计信息。通过 \fBlockstat\fR，您可以指定要观察哪些事件（例如，自适应互斥锁的自旋、由于等待写入器而阻塞对 rwlock 的读取访问等）、要为每个事件收集多少数据以及如何显示该数据。缺省情况下，\fBlockstat\fR 监视所有锁争用事件、收集有关这些事件的频率和时间数据，并按频率降序显示这些数据，以便首先显示最常见的事件。
+.sp
+.LP
+\fBlockstat\fR 会一直收集数据，直到指定命令完成为止。例如，要按固定时间间隔收集统计信息，请使用 \fBsleep\fR(1) 命令，如下所示：
+.sp
+.LP
+\fBexample#\fR \fBlockstat\fR \fBsleep\fR \fB5\fR
+.sp
+.LP
+如果指定了 \fB-I\fR 选项，\fBlockstat\fR 将基于每个处理器建立高级别定期中断源以收集分析数据。中断处理程序只生成一个 \fBlockstat\fR 事件，该事件的调用者为中断的 PC（program counter，程序计数器）。分析事件与任何其他 \fBlockstat\fR 事件一样，因此所有常规 \fBlockstat\fR 选项都适用。
+.sp
+.LP
+\fBlockstat\fR 依靠 DTrace 来修改运行内核的文本以拦截关注的事件。这会对所有系统活动产生较小但可察觉的开销，因此，缺省情况下，只有超级用户才能访问 \fBlockstat\fR。系统管理员可以通过为其他用户授予附加 DTrace 特权来允许这些用户使用 \fBlockstat\fR。有关 DTrace 安全功能的更多信息，请参见《\fISolaris 动态跟踪指南\fR》。
+.SH 选项
+.sp
+.LP
+支持以下选项： 
+.SS "事件选择"
+.sp
+.LP
+如果未指定事件选择选项，则缺省值为 \fB-C\fR。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.sp .6
+.RS 4n
+观察所有锁定事件。\fB-A\fR 等效于 \fB-CH\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR\fR
+.ad
+.sp .6
+.RS 4n
+观察争用事件。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-E\fR\fR
+.ad
+.sp .6
+.RS 4n
+观察错误事件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-e\fR \fIevent_list\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅观察指定事件，\fIevent\fR \fIlist\fR 是用逗号分隔的事件或事件范围列表（如 1,4-7,35）。运行无参数的 \fBlockstat\fR 可查看所有事件的简要说明。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-H\fR\fR
+.ad
+.sp .6
+.RS 4n
+观察保持事件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR\fR
+.ad
+.sp .6
+.RS 4n
+观察分析中断事件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-i\fR \fIrate\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-I\fR 的中断速率（每秒）。缺省值为 97 Hz，因此不会以采用时钟中断（运行速率为 100 Hz）的 lockstep 运行分析。
+.RE
+
+.SS "数据收集"
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fIarg\fR[=\fIval\fR]\fR
+.ad
+.sp .6
+.RS 4n
+启用或修改 DTrace 运行时选项或 D 编译器选项。选项列表位于 \fBdtrace\fR(1M)。将通过指定名称来启用布尔选项。可通过使用等号 (=) 分隔选项名称和值来设置包含值的选项。
+.RE
+
+.SS "数据收集（互斥）"
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.sp .6
+.RS 4n
+基本统计信息：锁、调用者、事件数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.sp .6
+.RS 4n
+直方图：计时和时间分布直方图。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-s\fR \fIdepth\fR\fR
+.ad
+.sp .6
+.RS 4n
+栈跟踪：直方图加上栈跟踪，深度最多为 \fIdepth\fR 个帧。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+计时：基本计时加上所有事件的计时 [缺省]。
+.RE
+
+.SS "数据过滤"
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-d\fR \fIduration\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅观察持续时间超过 \fIduration\fR 的事件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-f\fR \fIfunc[,size]\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅观察 \fIfunc\fR 生成的事件，可以指定为符号名称或十六进制地址。\fIsize\fR 缺省为 \fBELF\fR 符号大小（如果可用）；否则缺省为 \fB1\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-l\fR \fIlock[,size]\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅观察 \fIlock\fR，可以指定为符号名称或十六进制地址。\fBsize\fR 缺省为 \fBELF\fR 符号大小，如果该符号大小不可用，则缺省为 \fB1\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-n\fR \fInrecords\fR\fR
+.ad
+.sp .6
+.RS 4n
+数据记录的最大数目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR\fR
+.ad
+.sp .6
+.RS 4n
+跟踪（而不是抽样）事件 [缺省情况下禁用]。
+.RE
+
+.SS "数据报告"
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.sp .6
+.RS 4n
+合并锁数组（例如，\fBpse_mutex[]\fR）的锁数据。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-D\fR \fIcount\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅显示每种类型最常发生的 \fIcount\fR 个事件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示函数生成的所有事件。例如，如果 \fBfoo()\fR 在一个循环中调用 \fBbar()\fR，则 \fBbar()\fR 生成的工作量以及 \fBfoo()\fR 自身生成的任何工作量都会计为 \fBfoo()\fR 生成的工作量。\fB-g\fR 选项统计出现每个函数的栈帧的总数。这意味着：(1) 如果栈跟踪深度不够，则 \fB-g\fR 报告的数据就可能造成误导，(2) 以递归方式调用的函数显示的活动可能会超过 100%。对于问题 (1)，使用 \fB-g\fR 时的缺省数据收集模式为 \fB-s\fR \fB50\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR\fR
+.ad
+.sp .6
+.RS 4n
+合并函数中的 PC。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-o\fR \fIfilename\fR\fR
+.ad
+.sp .6
+.RS 4n
+将输出定向到 \fIfilename\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR\fR
+.ad
+.sp .6
+.RS 4n
+按 (\fIcount * time\fR) 乘积对数据进行排序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+可解析的输出格式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示速率（每秒事件数），而不是计数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-W\fR\fR
+.ad
+.sp .6
+.RS 4n
+任意对象：仅按调用者（而不按锁）区分事件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-w\fR\fR
+.ad
+.sp .6
+.RS 4n
+任意位置：仅按锁（而不按调用者）区分事件。
+.RE
+
+.SH 显示格式
+.sp
+.LP
+以下标头会显示在各个数据列上。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCount\fR 或 \fBops/s\fR\fR
+.ad
+.sp .6
+.RS 4n
+此事件发生的次数，或者如果指定了 \fB-R\fR，则表示速率（每秒次数）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBindv\fR\fR
+.ad
+.sp .6
+.RS 4n
+由该单个事件表示的所有这类事件的百分比。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgenr\fR\fR
+.ad
+.sp .6
+.RS 4n
+由该函数生成的所有事件的百分比。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcuml\fR\fR
+.ad
+.sp .6
+.RS 4n
+累积百分比；各个事件的运行总计。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrcnt\fR\fR
+.ad
+.sp .6
+.RS 4n
+平均引用计数。对于独占锁（互斥锁、自旋锁、写入器持有的 rwlock），该值始终为 \fB1\fR，但是对于共享锁（读取器持有的 rwlock），则可能大于 \fB1\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnsec\fR\fR
+.ad
+.sp .6
+.RS 4n
+适用于事件的平均持续时间（以纳秒为单位）。对于分析事件，持续时间是指中断延迟。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLock\fR\fR
+.ad
+.sp .6
+.RS 4n
+锁的地址；如果可能，以符号形式显示。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCPU+PIL\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBCPU\fR 和处理器中断级别 (processor interrupt level, \fBPIL\fR)。例如，如果 \fBCPU\fR 4 在 \fBPIL\fR 6 中断，则该事件将报告为 \fBcpu[4]+6\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCaller\fR\fR
+.ad
+.sp .6
+.RS 4n
+调用者的地址；如果可能，以符号形式显示。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR测量内核锁争用
+.sp
+.in +2
+.nf
+example# \fBlockstat sleep 5\fR
+Adaptive mutex spin: 2210 events in 5.055 seconds (437 events/sec)
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+Count indv cuml rcnt     nsec Lock                Caller
+------------------------------------------------------------------------
+  269  12%  12% 1.00     2160 service_queue       background+0xdc
+  249  11%  23% 1.00       86 service_queue       qenable_locked+0x64
+  228  10%  34% 1.00      131 service_queue       background+0x15c
+   68   3%  37% 1.00       79 0x30000024070       untimeout+0x1c
+   59   3%  40% 1.00      384 0x300066fa8e0       background+0xb0
+   43   2%  41% 1.00       30 rqcred_lock         svc_getreq+0x3c
+   42   2%  43% 1.00      341 0x30006834eb8       background+0xb0
+   41   2%  45% 1.00      135 0x30000021058       untimeout+0x1c
+   40   2%  47% 1.00       39 rqcred_lock         svc_getreq+0x260
+   37   2%  49% 1.00     2372 0x300068e83d0       hmestart+0x1c4
+   36   2%  50% 1.00       77 0x30000021058       timeout_common+0x4
+   36   2%  52% 1.00      354 0x300066fa120       background+0xb0
+   32   1%  53% 1.00       97 0x30000024070       timeout_common+0x4
+   31   1%  55% 1.00     2923 0x300069883d0       hmestart+0x1c4
+   29   1%  56% 1.00      366 0x300066fb290       background+0xb0
+   28   1%  57% 1.00      117 0x3000001e040       untimeout+0x1c
+   25   1%  59% 1.00       93 0x3000001e040       timeout_common+0x4
+   22   1%  60% 1.00       25 0x30005161110       sync_stream_buf+0xdc
+   21   1%  60% 1.00      291 0x30006834eb8       putq+0xa4
+   19   1%  61% 1.00       43 0x3000515dcb0       mdf_alloc+0xc
+   18   1%  62% 1.00      456 0x30006834eb8       qenable+0x8
+   18   1%  63% 1.00       61 service_queue       queuerun+0x168
+   17   1%  64% 1.00      268 0x30005418ee8       vmem_free+0x3c
+[...]
+
+R/W reader blocked by writer: 76 events in 5.055 seconds (15 events/sec)
+
+Count indv cuml rcnt     nsec Lock                Caller
+------------------------------------------------------------------------
+   23  30%  30% 1.00 22590137 0x300098ba358       ufs_dirlook+0xd0
+   17  22%  53% 1.00  5820995 0x3000ad815e8       find_bp+0x10
+   13  17%  70% 1.00  2639918 0x300098ba360       ufs_iget+0x198
+    4   5%  75% 1.00  3193015 0x300098ba360       ufs_getattr+0x54
+    3   4%  79% 1.00  7953418 0x3000ad817c0       find_bp+0x10
+    3   4%  83% 1.00   935211 0x3000ad815e8       find_read_lof+0x14
+    2   3%  86% 1.00 16357310 0x300073a4720       find_bp+0x10
+    2   3%  88% 1.00  2072433 0x300073a4720       find_read_lof+0x14
+    2   3%  91% 1.00  1606153 0x300073a4370       find_bp+0x10
+    1   1%  92% 1.00  2656909 0x300107e7400       ufs_iget+0x198
+[...]
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR测量保留次数
+.sp
+.in +2
+.nf
+example# \fBlockstat -H -D 10 sleep 1\fR
+Adaptive mutex spin: 513 events
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+Count indv cuml rcnt     nsec Lock                Caller
+-------------------------------------------------------------------------
+  480   5%   5% 1.00     1136 0x300007718e8       putnext+0x40
+  286   3%   9% 1.00      666 0x3000077b430       getf+0xd8
+  271   3%  12% 1.00      537 0x3000077b430       msgio32+0x2fc
+  270   3%  15% 1.00     3670 0x300007718e8       strgetmsg+0x3d4
+  270   3%  18% 1.00     1016 0x300007c38b0       getq_noenab+0x200
+  264   3%  20% 1.00     1649 0x300007718e8       strgetmsg+0xa70
+  216   2%  23% 1.00     6251 tcp_mi_lock         tcp_snmp_get+0xfc
+  206   2%  25% 1.00      602 thread_free_lock    clock+0x250
+  138   2%  27% 1.00      485 0x300007c3998       putnext+0xb8
+  138   2%  28% 1.00     3706 0x300007718e8       strrput+0x5b8
+-------------------------------------------------------------------------
+[...]
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR测量包含特定函数的栈跟踪的保留次数
+.sp
+.in +2
+.nf
+example# \fBlockstat -H -f tcp_rput_data -s 50 -D 10 sleep 1\fR
+Adaptive mutex spin: 11 events in 1.023 seconds (11
+events/sec)
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+-------------------------------------------------------------------------
+Count indv cuml rcnt     nsec Lock                   Caller
+    9  82%  82% 1.00     2540 0x30000031380          tcp_rput_data+0x2b90
+
+      nsec ------ Time Distribution ------ count     Stack
+       256 |@@@@@@@@@@@@@@@@               5         tcp_rput_data+0x2b90
+       512 |@@@@@@                         2         putnext+0x78
+      1024 |@@@                            1         ip_rput+0xec4
+      2048 |                               0         _c_putnext+0x148
+      4096 |                               0         hmeread+0x31c
+      8192 |                               0         hmeintr+0x36c
+     16384 |@@@                            1
+sbus_intr_wrapper+0x30
+[...]
+
+Count indv cuml rcnt     nsec Lock                   Caller
+    1   9%  91% 1.00     1036 0x30000055380          freemsg+0x44
+
+      nsec ------ Time Distribution ------ count     Stack
+      1024 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ 1         freemsg+0x44
+                                                     tcp_rput_data+0x2fd0
+                                                     putnext+0x78
+                                                     ip_rput+0xec4
+                                                     _c_putnext+0x148
+                                                     hmeread+0x31c
+                                                     hmeintr+0x36c
+
+sbus_intr_wrapper+0x30
+-------------------------------------------------------------------------
+[...]
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR基本内核分析
+.sp
+.LP
+对于基本分析，由于不关心分析中断抽样的是 \fBfoo()\fR\fB+0x4c\fR 还是 \fBfoo()\fR\fB+0x78\fR，只要求对 \fBfoo()\fR 中的某个位置进行了抽样，因此使用 \fB-k\fR。\fBCPU\fR 和 \fBPIL\fR 与基本分析无关，因为将系统作为整体进行测量，而不是对特定的 \fBCPU\fR 或中断级别进行测量，因此使用 \fB-W\fR。
+
+.sp
+.in +2
+.nf
+example# \fBlockstat -kIW -D 20 ./polltest\fR
+Profiling interrupt: 82 events in 0.424 seconds (194
+events/sec)
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+Count indv cuml rcnt     nsec Hottest CPU+PIL     Caller
+-----------------------------------------------------------------------
+    8  10%  10% 1.00      698 cpu[1]              utl0
+    6   7%  17% 1.00      299 cpu[0]              read
+    5   6%  23% 1.00      124 cpu[1]              getf
+    4   5%  28% 1.00      327 cpu[0]              fifo_read
+    4   5%  33% 1.00      112 cpu[1]              poll
+    4   5%  38% 1.00      212 cpu[1]              uiomove
+    4   5%  43% 1.00      361 cpu[1]              mutex_tryenter
+    3   4%  46% 1.00      682 cpu[0]              write
+    3   4%  50% 1.00       89 cpu[0]              pcache_poll
+    3   4%  54% 1.00      118 cpu[1]              set_active_fd
+    3   4%  57% 1.00      105 cpu[0]              syscall_trap32
+    3   4%  61% 1.00      640 cpu[1]              (usermode)
+    2   2%  63% 1.00      127 cpu[1]              fifo_poll
+    2   2%  66% 1.00      300 cpu[1]              fifo_write
+    2   2%  68% 1.00      669 cpu[0]              releasef
+    2   2%  71% 1.00      112 cpu[1]              bt_getlowbit
+    2   2%  73% 1.00      247 cpu[1]              splx
+    2   2%  76% 1.00      503 cpu[0]              mutex_enter
+    2   2%  78% 1.00      467 cpu[0]+10           disp_lock_enter
+    2   2%  80% 1.00      139 cpu[1]              default_copyin
+-----------------------------------------------------------------------
+[...]
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR分析所生成的负载
+.sp
+.LP
+在上述示例中，5% 的抽样属于 \fBpoll()\fR。这指出在 \fBpoll()\fR 中花费了多长时间，但不能指出 \fBpoll()\fR \fB生成\fR了多少工作量；即，在 \fBpoll()\fR 调用的函数中花费了多少时间。要了解这一点，需要使用 \fB-g\fR 选项。以下示例显示，尽管 \fBpolltest\fR 在 \fBpoll()\fR 中仅花费了 5% 的时间，但 \fBpoll()\fR 产生的工作量占负载的 34%。
+
+.sp
+.LP
+请注意，生成分析中断的函数（\fBlockstat_intr()\fR、\fBcyclic_fire()\fR 等）出现在每个栈跟踪中，因此会认为生成了 100% 的负载。这说明一点：所生成的负载百分比总和\fB不会\fR是 100%，因为这些负载不是独立的。如果 \fBfoo()\fR 和 \fBbar()\fR 占所有栈跟踪的 72%，则 \fBfoo()\fR 和 \fBbar()\fR 生成了 72% 的负载。
+
+.sp
+.in +2
+.nf
+example# \fBlockstat -kgIW -D 20 ./polltest\fR
+Profiling interrupt: 80 events in 0.412 seconds (194 events/sec)
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+Count genr cuml rcnt     nsec Hottest CPU+PIL     Caller
+-------------------------------------------------------------------------
+   80 100% ---- 1.00      310 cpu[1]              lockstat_intr
+   80 100% ---- 1.00      310 cpu[1]              cyclic_fire
+   80 100% ---- 1.00      310 cpu[1]              cbe_level14
+   80 100% ---- 1.00      310 cpu[1]              current_thread
+   27  34% ---- 1.00      176 cpu[1]              poll
+   20  25% ---- 1.00      221 cpu[0]              write
+   19  24% ---- 1.00      249 cpu[1]              read
+   17  21% ---- 1.00      232 cpu[0]              write32
+   17  21% ---- 1.00      207 cpu[1]              pcache_poll
+   14  18% ---- 1.00      319 cpu[0]              fifo_write
+   13  16% ---- 1.00      214 cpu[1]              read32
+   10  12% ---- 1.00      208 cpu[1]              fifo_read
+   10  12% ---- 1.00      787 cpu[1]              utl0
+    9  11% ---- 1.00      178 cpu[0]              pcacheset_resolve
+    9  11% ---- 1.00      262 cpu[0]              uiomove
+    7   9% ---- 1.00      506 cpu[1]              (usermode)
+    5   6% ---- 1.00      195 cpu[1]              fifo_poll
+    5   6% ---- 1.00      136 cpu[1]              syscall_trap32
+    4   5% ---- 1.00      139 cpu[0]              releasef
+    3   4% ---- 1.00      277 cpu[1]              polllock
+-------------------------------------------------------------------------
+[...]
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR收集特定模块的锁争用和分析数据
+.sp
+.LP
+在此示例中，使用 \fB-f\fR 选项不是为了指定单个函数，而是为了指定 \fBsbus\fR 模块的整个文本空间。将收集锁争用和分析统计信息，以便了解争用与模块的整体负载之间的关联。 
+
+.sp
+.in +2
+.nf
+example# \fBmodinfo | grep sbus\fR
+ 24 102a8b6f   b8b4  59   1  sbus (SBus (sysio) nexus driver)
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+example# \fBlockstat -kICE -f 0x102a8b6f,0xb8b4 sleep 10\fR
+Adaptive mutex spin: 39 events in 10.042 seconds (4 events/sec)
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+Count indv cuml rcnt     nsec Lock               Caller
+-------------------------------------------------------------------------
+   15  38%  38% 1.00      206 0x30005160528      sync_stream_buf
+    7  18%  56% 1.00       14 0x30005160d18      sync_stream_buf
+    6  15%  72% 1.00       27 0x300060c3118      sync_stream_buf
+    5  13%  85% 1.00       24 0x300060c3510      sync_stream_buf
+    2   5%  90% 1.00       29 0x300060c2d20      sync_stream_buf
+    2   5%  95% 1.00       24 0x30005161cf8      sync_stream_buf
+    1   3%  97% 1.00       21 0x30005161110      sync_stream_buf
+    1   3% 100% 1.00       23 0x30005160130      sync_stream_buf
+[...]
+
+Adaptive mutex block: 9 events in 10.042 seconds (1 events/sec)
+
+Count indv cuml rcnt     nsec Lock               Caller
+-------------------------------------------------------------------------
+    4  44%  44% 1.00   156539 0x30005160528      sync_stream_buf
+    2  22%  67% 1.00   763516 0x30005160d18      sync_stream_buf
+    1  11%  78% 1.00   462130 0x300060c3510      sync_stream_buf
+    1  11%  89% 1.00   288749 0x30005161110      sync_stream_buf
+    1  11% 100% 1.00  1015374 0x30005160130      sync_stream_buf
+[...]
+
+Profiling interrupt: 229 events in 10.042 seconds (23 events/sec)
+
+Count indv cuml rcnt     nsec Hottest CPU+PIL    Caller
+ 
+-------------------------------------------------------------------------
+   89  39%  39% 1.00      426 cpu[0]+6           sync_stream_buf
+   64  28%  67% 1.00      398 cpu[0]+6           sbus_intr_wrapper
+   23  10%  77% 1.00      324 cpu[0]+6           iommu_dvma_kaddr_load
+   21   9%  86% 1.00      512 cpu[0]+6           iommu_tlb_flush
+   14   6%  92% 1.00      342 cpu[0]+6           iommu_dvma_unload
+   13   6%  98% 1.00      306 cpu[1]             iommu_dvma_sync
+    5   2% 100% 1.00      389 cpu[1]             iommu_dma_bindhdl
+-------------------------------------------------------------------------
+[...]
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR确定 CPU 的平均 PIL（processor interrupt level，处理器中断级别）
+.sp
+.in +2
+.nf
+example# \fBlockstat -Iw -l cpu[3] ./testprog\fR
+
+Profiling interrupt: 14791 events in 152.463 seconds (97 events/sec)
+
+Count indv cuml rcnt     nsec CPU+PIL             Hottest Caller
+
+-----------------------------------------------------------------------
+13641  92%  92% 1.00      253 cpu[3]              (usermode)
+  579   4%  96% 1.00      325 cpu[3]+6            ip_ocsum+0xe8
+  375   3%  99% 1.00      411 cpu[3]+10           splx
+  154   1% 100% 1.00      527 cpu[3]+4            fas_intr_svc+0x80
+   41   0% 100% 1.00      293 cpu[3]+13           send_mondo+0x18
+    1   0% 100% 1.00      266 cpu[3]+12           zsa_rxint+0x400
+-----------------------------------------------------------------------
+[...]
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 8 \fR确定导致系统繁忙的子系统
+.sp
+.in +2
+.nf
+example# \fBlockstat -s 10 -I sleep 20\fR
+
+Profiling interrupt: 4863 events in 47.375 seconds (103 events/sec)
+
+Count indv cuml rcnt     nsec CPU+PIL          Caller
+
+-----------------------------------------------------------------------
+1929   40%  40% 0.00     3215 cpu[0]           usec_delay+0x78
+  nsec ------ Time Distribution ------ count   Stack
+  4096 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  1872    ata_wait+0x90
+  8192 |                               27      acersb_get_intr_status+0x34     
+ 16384 |                               29      ata_set_feature+0x124
+ 32768 |                               1       ata_disk_start+0x15c
+                                               ata_hba_start+0xbc
+                                               ghd_waitq_process_and \e
+                                               _mutex_hold+0x70
+                                               ghd_waitq_process_and \e
+                                               _mutex_exit+0x4
+                                               ghd_transport+0x12c
+                                               ata_disk_tran_start+0x108
+-----------------------------------------------------------------------
+[...]
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/dtrace
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBdtrace\fR(1M)、\fBplockstat\fR(1M)、\fBattributes\fR(5)、\fBlockstat\fR(7D)、\fBmutex\fR(9F)、\fBrwlock\fR(9F)
+.sp
+.LP
+《\fISolaris 动态跟踪指南\fR》
+.SH 附注
+.sp
+.LP
+\fBlockstat\fR \fB-I\fR 提供的分析支持将取代旧的 \fB/usr/bin/kgmon\fR 和 \fB/dev/profile\fR（未在文档中说明）。
+.sp
+.LP
+尾部调用消除技术会影响调用点。例如，如果 \fBfoo()\fR\fB+0x50\fR 调用 \fBbar()\fR，而 \fBbar()\fR 最后执行的操作是调用 \fBmutex_exit()\fR，编译器可能会安排 \fBbar()\fR 转到 \fBmutex_exit()\fR 并将 \fBfoo()\fR\fB+0x58\fR 作为返回地址。因此，\fBbar()\fR 中的 \fBmutex_exit()\fR 看起来就像发生在 \fBfoo()\fR\fB+0x58\fR 一样。
+.sp
+.LP
+栈帧中发生中断的 \fBPC\fR 可能是虚假的，因为在两次函数调用之间，编译器可以自由地对本地存储使用返回地址寄存器。
+.sp
+.LP
+如果将 \fB-I\fR 和 \fB-s\fR 选项结合使用，则中断的 PC 通常不会显示在栈中的任何位置，因为中断处理程序是以异步方式进入的，而不是通过该 \fBPC\fR 发出函数调用进入的。
+.sp
+.LP
+\fBlockstat\fR 技术是按原样提供的。\fBlockstat\fR 输出的格式和内容反映了当前的 Solaris 内核实现情况，因此在未来发行版中可能会更改。

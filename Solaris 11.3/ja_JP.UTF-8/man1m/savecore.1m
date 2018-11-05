@@ -1,0 +1,168 @@
+'\" te
+.\" Copyright (c) 2004, 2013, Oracle and/or its affiliates. All rights reserved.
+.\" Copyright (c) 1983 Regents of the University of California. All rights reserved. The Berkeley software License Agreement specifies the terms and conditions for redistribution.
+.TH savecore 1M "2011 年 12 月 6 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+savecore \- オペレーティングシステムのクラッシュダンプの保存
+.SH 形式
+.LP
+.nf
+\fB/usr/bin/savecore\fR [\fB-Lvd\fR] [\fB-f\fR \fIdumpfile\fR] [\fIdirectory\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBsavecore\fR ユーティリティーは、カーネルのクラッシュダンプを (作成されたことを前提として) 保存し、シャットダウンログにリブートメッセージを書き込みます。システムがブートするたびに、\fBdumpadm\fR サービスによって呼び出されます。
+.sp
+.LP
+\fBdumpadm\fR(1M) によって、圧縮形式または非圧縮形式でクラッシュダンプデータを保存するように \fBsavecore\fR を構成できます。圧縮形式の場合、\fBsavecore\fR は \fB\fIdirectory\fR/vmdump.\fIN\fR\fR ファイルにクラッシュダンプデータを保存します。ここで、パス名の \fIN\fR は \fBsavecore\fR が \fIdirectory\fR で実行されるたびに 1 ずつ増分する数値で置き換えられます。圧縮ファイルは、\fB-f\fR \fIdumpfile\fR オプションを使用して別の手順で圧縮解除できます。非圧縮形式の場合、\fBsavecore\fR は \fB\fIdirectory\fR/vmcore.\fIN\fR\fR ファイルにクラッシュダンプデータを保存し、\fB\fIdirectory\fR/unix.\fIN\fR\fR にカーネルの名前リストを保存します。
+.sp
+.LP
+\fBvmcore-*.N\fR ファイルに対して抽出を実行すると、リモートシステムから \fBvmdump-*.N\fR ファイルの整合性検証が行われます。これは、\fB-V\fR オプションを使用して抽出なしで別個に実行できます。検証が失敗した場合、\fBsavecore\fR はそのファイルを不完全としてマークします。
+.sp
+.LP
+\fBsavecore\fR は、クラッシュダンプを書き出す前に \fIdirectory\fR\fB/minfree\fR ファイルから数値を読み取ります。これは、\fIdirectory\fR を含むファイルシステム上で空けておく必要がある最大キロバイト数です。クラッシュダンプの保存後に \fIdirectory\fR を含むファイルシステムの空き領域が \fBminfree\fR で指定されたキロバイト数を下回ると、クラッシュダンプは保存されません。\fBminfree\fR ファイルが存在しない場合、\fBsavecore\fR は \fBminfree\fR の値を 1M バイトと見なします。
+.sp
+.LP
+\fBsavecore\fR ユーティリティーは、\fBLOG_AUTH\fR (\fBsyslog\fR(3C) を参照) 機能を使用してリブートメッセージも記録します。システムがパニックの発生によってクラッシュした場合、\fBsavecore\fR はパニック文字列も記録します。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+ダンプヘッダー有効フラグを無視します。ダンプデバイスに格納されているヘッダー情報に、ダンプがすでに保存されていることが示されている場合でも、\fBsavecore\fR は強制的にクラッシュダンプを保存しようとします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIdumpfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+システムの現在のダンプデバイスではなく、指定されたファイルからクラッシュダンプを保存します。\fB\fIdirectory\fR/vmdump.\fIN\fR\fR が指定された場合は、そのファイルを \fBvmcore.\fIN\fR\fR と \fBunix.\fIN\fR\fR に圧縮解除します。ここで、\fIN\fR は圧縮形式の名前と同じ数値です。
+.sp
+このオプションは、ダンプデバイスに格納された情報が \fBdd\fR(1M) コマンドによってディスク上のファイルにコピーされている場合にも役立つことがあります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR\fR
+.ad
+.sp .6
+.RS 4n
+システムを実際にはリブートしたり変更したりせずに、実行中の Solaris システムのクラッシュダンプを保存します。このオプションを使用すると、\fBsavecore\fR はシステムの実行中のスナップショットをダンプデバイスに強制的に保存し、ただちにデータを取り出して、それを指定されたディレクトリ内の新しいクラッシュダンプファイルのセットに書き出します。実行中のシステムのクラッシュダンプは、\fBdumpadm\fR(1M) を使用して専用のダンプデバイスを備えたシステムを構成した場合にのみ実行できます。
+.sp
+\fBsavecore\fR \fB-L\fR を使用してもシステムは中断されないため、ダンプの保存中もメモリーの内容は変化し続けます。つまり、実行中のクラッシュダンプに自己矛盾がまったくないとはいえません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+冗長。\fBsavecore\fR の詳細なエラーメッセージを有効にします。
+.RE
+
+.SH オペランド
+.sp
+.LP
+次のオペランドがサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdirectory\fR\fR
+.ad
+.sp .6
+.RS 4n
+クラッシュダンプファイルを指定されたディレクトリに保存します。\fIdirectory\fR が指定されていない場合、\fBsavecore\fR はクラッシュダンプファイルを \fBdumpadm\fR(1M) によって構成されたデフォルトの \fBsavecore\fR \fIディレクトリ\fRに保存します。
+.RE
+
+.SH ファイル
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fIdirectory\fR\fB/vmcore.\fR\fIN\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fIdirectory\fR\fB/unix.\fR\fIN\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fIdirectory\fR\fB/bounds\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fIdirectory\fR\fB/minfree\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/var/crash/`uname -n`\fR (デフォルトのクラッシュダンプファイルディレクトリ)
+.RE
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBadb\fR(1), \fBmdb\fR(1), \fBsvcs\fR(1), \fBdd\fR(1M), \fBdumpadm\fR(1M), \fBsvcadm\fR(1M), \fBsyslog\fR(3C), \fBattributes\fR(5), \fBsmf\fR(5)
+.SH 注意事項
+.sp
+.LP
+システムクラッシュダンプサービスは、サービス管理機構 \fBsmf\fR(5) によって、次のサービス識別子の下で管理されます。
+.sp
+.in +2
+.nf
+svc:/system/dumpadm:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有効化、無効化、または再起動要求など、このサービスに関する管理操作は、\fBsvcadm\fR(1M) を使用して実行できます。サービスステータスを照会するには、\fBsvcs\fR(1) コマンドを使用します。
+.sp
+.LP
+ダンプデバイスがスワップデバイスとしても使用されている場合は、クラッシュダンプを含むスワップ領域が現在実行されているプログラムによって上書きされないように、ブート後すぐに \fBsavecore\fR を実行する必要があります。
+.sp
+.LP
+\fBsavecore\fR は、ファイルを作成すると、その末尾に接尾辞 \fB\&.partial\fR を追加します。ファイルが完成すると、この接尾辞が付かないファイル名に変更されます。この接尾辞が付いたファイルがダンプディレクトリに見つかった場合は、\fBsavecore\fR がまだビジー状態であるか、またはファイルの書き込みが完了する前に処理が中断されたことを意味します。前者の場合は、\fBps\fR(1) を使用して実行中の \fBsavecore\fR プロセスの PID を見つけ、それが完了するまで待機します。後者の場合は、不完全なファイルを削除し、\fBsavecore\fR \fB-d\fR を実行してファイルを再作成します。

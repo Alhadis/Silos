@@ -1,0 +1,414 @@
+'\" te
+.\" To view license terms, attribution, and copyright for OpenSSH, the default path is /var/sadm/pkg/SUNWsshdr/install/copyright.If the Solaris operating environment has been installed anywhere other than the default, modify the given path to access the file at the installed location.
+.\" Portions Copyright (c) 2009, 2015, Oracle and/or its affiliates. All rights reserved.
+.TH ssh-keygen 1 "2015 年 3 月 6 日" "SunOS 5.11" "ユーザーコマンド"
+.SH 名前
+ssh-keygen \- 認証鍵の生成
+.SH 形式
+.LP
+.nf
+\fBssh-keygen\fR [\fB-q\fR] [\fB-b\fR \fIbits\fR ] \fB-t\fR \fItype\fR [\fB-N\fR \fInew_passphrase\fR] 
+     [\fB-C\fR \fIcomment\fR] [\fB-f\fR \fIoutput_keyfile\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-p\fR [\fB-P\fR \fIold_passphrase\fR] [\fB-N\fR \fInew_passphrase\fR] 
+     [\fB-f\fR \fIkeyfile\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-i\fR [\fB-f\fR \fIinput_keyfile\fR | \fIPKCS#11-URI\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-e\fR [\fB-f\fR \fIinput_keyfile\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-y\fR [\fB-f\fR \fIinput_keyfile\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-c\fR [\fB-P\fR \fIpassphrase\fR] [\fB-C\fR \fIcomment\fR] [\fB-f\fR \fIkeyfile\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-l\fR [\fB-f\fR \fIinput_keyfile\fR | \fIPKCS#11-URI\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-B\fR [\fB-f\fR \fIinput_keyfile\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-F\fR \fIhostname\fR [\fB-f\fR \fIknown_hosts_file\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-H\fR [\fB-f\fR \fIknown_hosts_file\fR]
+.fi
+
+.LP
+.nf
+\fBssh-keygen\fR \fB-R\fR \fIhostname\fR [\fB-f\fR \fIknown_hosts_file\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBssh-keygen\fR ユーティリティーは、\fBssh\fR(1) の認証鍵を生成、管理、および変換します。\fBssh-keygen\fR は、SSH プロトコルバージョン 1 で使用される RSA 鍵、および SSH プロトコルバージョン 2 で使用される RSA または DSA 鍵を作成できます。生成される鍵のタイプは、\fB-t\fR オプションで指定されます。\fBssh-keygen\fR はまた、フィンガープリントを生成したり、PKCS#11 URI として指定された X.509v3 証明書の公開鍵を変換したりすることもできます。
+.sp
+.LP
+通常、\fBRSA\fR または \fBDSA\fR 認証に \fBSSH\fR を使用しようとしている各ユーザーは、これを 1 回実行して \fB$HOME/.ssh/identity\fR、\fB$HOME/.ssh/id_dsa\fR、または \fB$HOME/.ssh/id_rsa\fR 内に認証鍵を作成します。また、システム管理者は、これを使用してホスト鍵も生成できます。
+.sp
+.LP
+通常、このプログラムは鍵を生成して、秘密鍵を格納するためのファイルの入力を求めます。公開鍵は、同じ名前のあとに「\fB\&.pub\fR」拡張子が付加されたファイル内に格納されます。このプログラムはまた、パスフレーズの入力も求めます。パスフレーズは、パスフレーズがないことを示すために空にすることも (ホスト鍵のパスフレーズも空である必要があります)、任意の長さの文字列にすることもできます。適切なパスフレーズは、長さが 10 から 30 文字、単純な文章やその他の方法で推測しやすい文字列ではなく、さらに大文字と小文字の英字、数字、および英数字以外の文字が混在して含まれています。(英語の散文には単語あたり 1 から 2 ビットのエントロピしか含まれておらず、非常に劣ったパスフレーズが提供されます。)パスフレーズが設定されている場合は、少なくとも 4 文字の長さが必要です。
+.sp
+.LP
+パスフレーズは、\fB-p\fR オプションを使用してあとで変更できます。
+.sp
+.LP
+失われたパスフレーズを回復する方法はありません。パスフレーズを失ったり忘れたりした場合は、新しい鍵を生成し、対応する公開鍵をほかのマシンにコピーする必要があります。
+.sp
+.LP
+\fBRSA\fR の場合は、鍵ファイル内に、鍵の識別に役立つユーザーの便宜のためだけのコメントフィールドも存在します。\fIcomment\fR は、鍵の目的や、その他の役立つあらゆる内容を伝えることができます。このコメントは、鍵が作成されると「\fBuser@host\fR」に初期化されますが、\fB-c\fR オプションを使用して変更できます。
+.sp
+.LP
+鍵が生成されたあと、その鍵をどこに配置して有効にするかについて次に詳細に示します。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR \fIbits\fR\fR
+.ad
+.sp .6
+.RS 4n
+作成する鍵内のビット数を指定します。最小数は 512 ビットです。一般には、2048 ビットで十分と考えられます。これを超えるキーサイズではもうセキュリティーは向上せず、処理が遅くなります。デフォルトは 2048 ビットです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-B\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された非公開または公開鍵ファイルの bubblebabble ダイジェストを示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.sp .6
+.RS 4n
+非公開および公開鍵ファイル内のコメントの変更を要求します。プログラムは、秘密鍵を含むファイル、パスフレーズ (鍵にパスフレーズがある場合)、および新しいコメントの入力を求めます。
+.sp
+このオプションは、\fBrsa1\fR (\fBSSHv1\fR) 鍵にのみ適用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR \fIcomment\fR\fR
+.ad
+.sp .6
+.RS 4n
+新しいコメントを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションは非公開または公開の OpenSSH 鍵ファイルを読み取り、その鍵を「SECSH」公開鍵ファイル形式で標準出力に表示します。このオプションを使用すると、ほかのいくつかの SSH 実装で使用するために鍵をエクスポートできます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+鍵ファイルのファイル名を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBknown_hosts\fR ファイル内の指定された \fIhostname\fR を検索し、見つかったものをすべて一覧表示します。このオプションは、ハッシュされたホスト名またはアドレスの検索に有効なほか、見つかった鍵をハッシュされた形式で表示するために \fB-H\fR オプションと組み合わせて使用することもできます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-H\fR \fR
+.ad
+.sp .6
+.RS 4n
+\fBknown_hosts\fR ファイルをハッシュします。これは、すべてのホスト名とアドレスを、指定されたファイル内のハッシュされた表現に置き換えます。元の内容は、\fB\&.old\fR の接尾辞を持つファイルに移動されます。これらのハッシュは \fBssh\fR や \fBsshd\fR で正常に使用できますが、ファイルの内容が公表されても、識別情報は明らかにされません。このオプションは既存のハッシュされたホスト名を変更しないため、ハッシュされた名前とハッシュされていない名前が混在したファイルでも安全に使用できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションは、SSH2 と互換性のある形式の暗号化されていない非公開 (または公開) 鍵ファイルを読み取り、OpenSSH と互換性のある非公開 (または公開) 鍵を標準出力に表示します。\fBssh-keygen\fR はまた、「SECSH」公開鍵ファイル形式も読み取ります。このオプションを使用すると、ほかのいくつかの SSH 実装から鍵をインポートできます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された非公開または公開鍵ファイルのフィンガープリントを示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR \fInew_passphrase\fR\fR
+.ad
+.sp .6
+.RS 4n
+新しいパスフレーズを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+新しい秘密鍵の作成ではなく、秘密鍵ファイルのパスフレーズの変更を要求します。プログラムは、秘密鍵を含むファイルと古いパスフレーズの入力を求めたあと、新しいパスフレーズを 2 回入力するよう求めます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIpassphrase\fR\fR
+.ad
+.sp .6
+.RS 4n
+(古い) パスフレーズを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBssh-keygen\fR を休止します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fItype\fR\fR
+.ad
+.sp .6
+.RS 4n
+鍵に使用されるアルゴリズムを指定します。ここで、\fItype\fR は \fBrsa\fR、\fBdsa\fR、\fBrsa1\fR のいずれかです。タイプ \fBrsa1\fR は、SSHv1 プロトコルにのみ使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIhostname\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBknown_hosts\fR ファイルから \fIhostname\fR に属するすべての鍵を削除します。このオプションは、ハッシュされたホストを削除する場合に役立ちます。\fB-H\fR を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.sp .6
+.RS 4n
+廃止。\fB-e\fR オプションによって置き換えられました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-X\fR \fR
+.ad
+.sp .6
+.RS 4n
+廃止。\fB-i\fR オプションによって置き換えられました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-y\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションは非公開の OpenSSH 形式ファイルを読み取り、OpenSSH 公開鍵を標準出力に表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-8\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBssh-keygen\fR が鍵を PKCS#8 形式で生成することを指定します。生成されるサポート対象の鍵のタイプは \fBrsa\fR または \fBdsa\fR です。
+.RE
+
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+正常終了。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+エラーが発生した。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.ssh/identity\fR\fR
+.ad
+.sp .6
+.RS 4n
+このファイルには、SSHv1 プロトコルの RSA 秘密鍵が含まれています。このファイルは、このユーザー以外のだれからも読み取り可能であってはいけません。鍵を生成するときにパスフレーズを指定できます。そのパスフレーズは、3DES を使用してこのファイルのプライベートな部分を暗号化するために使用されます。このファイルは \fBssh-keygen\fR から自動的にはアクセスされませんが、秘密鍵のためのデフォルトファイルとして提供されます。このファイルは、ログインが試行されたときに \fBsshd\fR(1M) によって読み取られます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.ssh/identity.pub\fR\fR
+.ad
+.sp .6
+.RS 4n
+このファイルには、SSHv1 プロトコルの RSA 公開鍵が含まれています。このファイルの内容を、\fBRSA\fR 認証を使用してログインするすべてのマシン上の \fB$HOME/.ssh/authorized_keys\fR に追加するようにしてください。このファイルのシークレットの内容を保管する必要はありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.ssh/id_dsa\fR\fR
+.ad
+.br
+.na
+\fB\fB$HOME/.ssh/id_rsa\fR\fR
+.ad
+.sp .6
+.RS 4n
+これらのファイルには、それぞれ、SSHv2 プロトコルの DSA 秘密鍵または RSA 秘密鍵が含まれています。これらのファイルは、このユーザー以外のだれからも読み取り可能であってはいけません。鍵を生成するときにパスフレーズを指定できます。そのパスフレーズは、128 ビット AES を使用してこのファイルのプライベートな部分を暗号化するために使用されます。これらのいずれのファイルも \fBssh-keygen\fR から自動的にはアクセスされませんが、秘密鍵のためのデフォルトファイルとして提供されます。このファイルは、ログインが試行されたときに \fBsshd\fR(1M) によって読み取られます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.ssh/id_dsa.pub\fR\fR
+.ad
+.br
+.na
+\fB\fB$HOME/.ssh/id_rsa.pub\fR\fR
+.ad
+.sp .6
+.RS 4n
+これらのファイルには、それぞれ、SSHv2 プロトコルの DSA 公開鍵または RSA 公開鍵が含まれています。これらのファイルの内容を、それぞれ、DSA または RSA 認証を使用してログインするすべてのマシン上の \fB$HOME/.ssh/authorized_keys\fR に追加するようにしてください。これらのファイルのシークレットの内容を保管する必要はありません。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件network/ssh/ssh-key
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBssh\fR(1), \fBssh-add\fR(1), \fBssh-agent\fR(1), \fBsshd\fR(1M), \fBattributes\fR(5) 

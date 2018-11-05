@@ -1,0 +1,179 @@
+'\" te
+.\" Copyright (c) 2014, Oracle and/or its affiliates. All rights reserved.
+.TH elfcompress 1 "23 April 2014" "SunOS 5.11" "User Commands"
+.SH NAME
+elfcompress \- compress/decompress debug sections of an object file
+.SH SYNOPSIS
+.LP
+.nf
+\fBelfcompress\fR [\fB-fV\fR] [\fB-t\fR \fItype\fR] \fIfilename\fR...
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBelfcompress\fR command is used to compress or decompress debug sections in \fBELF\fR object files. Unless otherwise specified, all debug and annotate sections are manipulated.
+.sp
+.LP
+If the input file is an archive (see \fBar.h\fR(3HEAD)), the archive is treated as a set of individual files. If the archive member is not an object file, then it is left unchanged.
+.sp
+.LP
+\fBelfcompress\fR cannot modify a section that is contained within a segment. Such allocable sections have their \fBSHF_ALLOC\fR section flag set. \fBelfcompress\fR cannot modify sections of type \fBSHT_NOBITS\fR. The compression operation specified with the\fB-t\fR option may place additional limits on candidate sections. See the \fB-t\fR option, and NOTES.
+.sp
+.LP
+When the \fB-n\fR option is used to specify one or more sections to process, only the specified sections are processed, and all other sections are left unmodified. When the \fB-n\fR option is not used, \fBelfcompress\fR selects all sections that are compatible with the compression operation specified with the \fB-t\fR option.
+.SH OPTIONS
+.sp
+.LP
+The following options are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+By default, \fBelfcompress\fR will only compress sections if their resulting size is equal to or smaller than the original data. Specify \fB-f\fR to force compression even when the resulting size is larger than the original.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the name of the section to process. \fBelfcompress\fR can take multiple \fB-n\fR options to allow for specification of multiple sections. If \fB-n\fR is not used, \fBelfcompress\fR selects all debug sections that are compatible with the specified compression operation. See the \fB-t\fR option, and NOTES.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fItype\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the compression operation to be performed. The following compression types are recognized.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnone\fR\fR
+.ad
+.sp .6
+.RS 4n
+Compressed sections are decompressed.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzlib\fR\fR
+.ad
+.sp .6
+.RS 4n
+Compress debug sections with \fBZLIB\fR compression. Candidate sections must be non-allocable (\fBSHF_ALLOC\fR flag not set) and have a section type of \fBSHT_PROGBITS\fR, \fBSHT_SUNW_DEBUG\fR, \fBSHT_SUNW_DEBUGSTR\fR, or \fBSHT_SUNW_ANNOTATE\fR. The resulting sections will have the \fBSHF_COMPRESSED\fR section flag set to identify the use of compression.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzlib-gnu\fR\fR
+.ad
+.sp .6
+.RS 4n
+Compress debug sections with \fBZLIB\fR compression, using the \fBGNU\fR section compression format. Candidate sections must be non-allocable (\fBSHF_ALLOC\fR flag not set), cannot have type \fBSHT_NOBITS\fR, and must have a name that begins with \fB\&.debug\fR. The resulting section will be renamed to start with \fB\&.zdebug\fR, to identify the use of compression.
+.RE
+
+If the \fB-t\fR option is not specified, the effect is equivalent to specifying \fB-t\fR \fBzlib\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR\fR
+.ad
+.sp .6
+.RS 4n
+Prints a message on standard error giving information about the version of \fBelfcompress\fR.
+.RE
+
+.SH NOTES
+.sp
+.LP
+The \fBzlib-gnu\fR compression format is limited to sections with names that start with \fB\&.debug\fR, while the default \fBzlib\fR compression format can be applied to sections with arbitrary names. When \fB-t\fR \fBzlib-gnu\fR is specified, and the \fB-n\fR option is not, any previously compressed sections with names that are incompatible with the \fBzlib-gnu\fR format are decompressed.
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRApply \fBzlib\fR compression to all debug sections
+.sp
+.in +2
+.nf
+% \fBelfcompress file\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRDecompress all debug sections
+.sp
+.in +2
+.nf
+% \fBelfcompress -t none file\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRCompress the \fB\&.debug_info\fR section, using the \fBGNU\fR-style format
+.sp
+.in +2
+.nf
+% \fBelfcompress -t zlib-gnu -n .debug_info file\fR
+.fi
+.in -2
+.sp
+
+.SH FILES
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/tmp/elfcompress*\fR\fR
+.ad
+.RS 21n
+.rt  
+temporary files
+.RE
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitydeveloper/base-developer-utilities
+_
+Interface StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBar\fR(1), \fBas\fR(1), \fBld\fR(1), \fBmcs\fR(1), \fBstrip\fR(1), \fBar.h\fR(3HEAD), \fBelf\fR(3ELF), \fBzlib\fR(3), \fBa.out\fR(4), \fBattributes\fR(5)
+.sp
+.LP
+\fIOracle Solaris 11.3 Linkers and Libraries         Guide\fR

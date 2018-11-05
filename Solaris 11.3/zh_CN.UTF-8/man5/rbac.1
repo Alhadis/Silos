@@ -1,0 +1,164 @@
+'\" te
+.\" Copyright (c) 2002, 2013, Oracle and/or its affiliates.All rights reserved.
+.TH rbac 5 "2012 年 3 月 14 日" "SunOS 5.11" "标准、环境和宏"
+.SH 名称
+rbac, RBAC \- 基于角色的访问控制
+.SH 描述
+.sp
+.LP
+基于角色的访问控制允许系统管理员将部分系统的管理控制委托给用户。可以通过以下两种方式使用户能够以附加特权运行命令：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+将配置文件直接分配给用户，在此情况下无需进行其他验证
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+创建角色并将配置文件分配给角色。此外，还可用于针对用户构建限制性环境，使用户无法运行通常允许其运行的命令。
+.RE
+.SS "配置文件"
+.sp
+.LP
+配置文件是命令和授权的命名集合，其中的命令和授权是以附加特权和/或真实有效的特定 UID 与 GID 运行的。例如，大部分打印机系统可通过运行带 UID 的 \fBlp\fR 命令或通过 \fBlp\fR 命令进行管理。某些命令需要 \fBprivileges\fR(5) 中定义的特权方可运行。例如，“Process Management”（进程管理）配置文件允许用户以 \fBproc_owner\fR 特权运行 \fBkill\fR 命令，以便其将信号发送给它并不拥有的进程。
+.sp
+.LP
+有关管理员如何扩展系统提供的配置文件并创建自己的配置文件的信息，请参见 \fBexec_attr\fR(4) 和 \fBprof_attr\fR(4)。配置文件配置可存储在任何当前支持的名称服务中（文件、NIS、LDAP）。
+.sp
+.LP
+配置文件还可搭配服务管理工具 (Service Management Facility, SMF) 使用，以控制运行服务时所使用的特权和 UID/GID。有关更多信息，请参见 \fBsmf_security\fR(5)。
+.SS "角色"
+.sp
+.LP
+角色是一种特殊的共享帐户，无法直接登录系统，而该系统只能由授权用户使用 \fBsu\fR(1M) 命令或以 \fBssh\fR(1) 通过网络（使用基于主机的验证或 GSS-API 验证时）进行访问。角色无法以 \fBrlogin\fR(1)、\fBtelnet\fR(1) 或 \fBgdm\fR 进行登录。 
+.sp
+.LP
+角色与普通用户一样具有 UID、口令和起始目录。可以使用用户自己的口令或按角色的口令（\fBuser_attr\fR(4) 中的 \fBroleauth\fR 关键字控制基于角色的行为）对角色进行验证。通常，角色的登录 shell 是授予其一个或多个配置文件的配置文件 shell 之一（\fBpfsh\fR(1)、\fBpfksh\fR(1)、\fBpfcsh\fR(1)），从而允许角色始终以特权执行命令。
+.sp
+.LP
+一般情况下，只有在需要共享帐户环境时才需要角色。通常将配置文件直接分配给用户即可。
+.sp
+.LP
+可使用 \fBusermod\fR(1M) 命令将 root 用户配置为角色。这样可确保即使 root 口令更广为人知，也只有授权用户才能成为 root 用户。
+.sp
+.in +2
+.nf
+# usermod -K type=role root
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+将 root 设置为角色不会限制对单一用户模式的访问。应使用其他方法保护系统控制台，如使用 \fBeeprom\fR(1M) 设置安全口令。
+.SS "授权"
+.sp
+.LP
+授权是一个唯一字符串，代表用户执行某些操作或某类操作的权限。通常只有始终以某些特权运行的程序会检查授权，例如 \fBsetuid\fR(2) 程序（如 \fBcdrw\fR(1) 或系统 \fBcron\fR(1M) 守护进程）。
+.sp
+.LP
+授权定义存储在 \fBauth_attr\fR(4) 数据库中。对于编程授权检查，只有授权名称才很重要。
+.sp
+.LP
+\fBauth_attr\fR 数据库中部分典型值如下所示：
+.sp
+.in +2
+.nf
+solaris.jobs.:::Cron and At Jobs::help=JobHeader.html
+solaris.jobs.grant:::Delegate Cron & At \e
+    Administration::help=JobsGrant.html
+solaris.jobs.admin:::Manage All Jobs::help=AuthJobsAdmin.html
+solaris.jobs.user:::Cron & At User::help=JobsUser.html
+.fi
+.in -2
+
+.sp
+.LP
+以 \fBgrant\fR 后缀结尾的授权名称字符串为特殊授权，可让用户将具有相同前缀和功能区域的授权委托给其他用户。
+.sp
+.LP
+所有以 \fBsolaris\fR 开头的授权名称均会保留以供操作系统供应商进行分配。开发人员和管理员可以创建自己的顶层名称空间；建议使用唯一标识符，如公司名称、DNS 域名或应用程序名称。
+.SS "授权检查"
+.sp
+.LP
+要通过 C 代码检查授权，开发人员应使用 \fBchkauthattr\fR(3C) 库函数，该函数将会验证用户是否具有给定的授权。
+.sp
+.LP
+可在 Shell 脚本中明确检查授权，方法是检查 \fBauths\fR(1) 实用程序的输出。例如，
+.sp
+.in +2
+.nf
+for auth in `auths      | tr , " "` NOTFOUND
+do
+    ["$auth" = "solaris.date" ] && break      # authorization found
+done
+
+if [ "$auth" != "solaris.date" ]
+then
+    echo >&2 "$PROG: ERROR: you are not authorized to set the date"
+    exit 1
+fi
+.fi
+.in -2
+
+.sp
+.LP
+授权还可供服务管理工具 (Service Management Facility, SMF) 用于控制可更改服务状态或重新配置服务的用户。有关更多信息，请参见 \fBsmf_security\fR(5)。
+.SS "与 sudo(1M) 进行比较"
+.sp
+.LP
+Solaris 中的 RBAC 可提供一组与 \fBsudo\fR(1M) 类似的功能，该命令通常随 UNIX 或 UNIX 型系统一起提供。它是在 Solaris 的配套 CD 上提供的。
+.sp
+.LP
+Solaris RBAC 和 \fBsudo\fR 之间最显著的区别之一就是验证模型。在 \fBsudo\fR 中，用户以自身身份重新进行验证。在 Solaris RBAC 中，无需进行其他验证（当配置文件直接分配给用户时），或用户针对称为角色的共享帐户进行验证。
+.sp
+.LP
+使用 \fBsudo\fR 中的 \fBNOPASSWD\fR 功能类似于将配置文件分配给用户并让用户使用 \fBpfexec\fR(1) 执行命令。例如，如果 \fBsudoers\fR(4) 允许用户以 UID 0 身份运行 \fBkill\fR(1) 但不进行验证 (\fBNOPASSWD\fR)，则用户可运行：
+.sp
+.in +2
+.nf
+$ sudo kill -HUP 1235
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+在 Solaris RBAC 中，如果用户使用的是常规登录 shell（即，无配置文件），则通过向用户分配 “Process Management”（进程管理）配置文件，用户可执行等效操作并使用 \fBpfexec\fR，如下所示：
+.sp
+.in +2
+.nf
+$ pfexec kill -HUP 1235
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果用户将某个配置文件 shell（如 \fBpfsh\fR）作为登录 shell，则 \fBkill\fR 始终会使用附加特权来运行，而不需要“前缀”。例如，
+.sp
+.in +2
+.nf
+$ kill -HUP 1235
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+RBAC 角色在概念上与 \fBsudoers\fR(4) 中的 \fBUser_Alias\fR 类似，只是需要角色口令而不是用户口令。
+.sp
+.LP
+RBAC 中的执行配置文件 \fBexec_attr\fR(4) 条目与 \fBsudoers\fR 中的 \fBCmnd_Alias\fR 类似。
+.sp
+.LP
+目前，Solaris RBAC 中并没有 \fBHost_Alias\fR\fBsudo\fR(1M) 功能的等效项。
+.SH 另请参见
+.sp
+.LP
+\fBauths\fR(1)、\fBld.so.1\fR(1)、\fBpfcsh\fR(1)、\fBpfexec\fR(1)、\fBpfksh\fR(1)、\fBpfsh\fR(1)、\fBroles\fR(1)、\fBsudo\fR(1M)、\fBexec_attr\fR(4)、\fBprof_attr\fR(4)、\fBuser_attr\fR(4)、\fBsmf_security\fR(5)
+.sp
+.LP
+\fI《Securing Users and Processes in Oracle Solaris 11.3》\fR

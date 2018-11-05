@@ -1,0 +1,838 @@
+'\" te
+.\" Copyright (c) 2007, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH logadm 1M "2015 年 4 月 6 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+logadm \- 無限に拡大するログファイルの管理
+.SH 形式
+.LP
+.nf
+\fBlogadm\fR 
+.fi
+
+.LP
+.nf
+\fBlogadm\fR [\fB-\fIoptions\fR\fR] \fIlogname\fR...
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBlogadm\fR は、\fBcron\fR(1M) から実行するのに適した一般的なログローテーションツールです。
+.sp
+.LP
+引数がない場合、\fBlogadm\fR は \fB/etc/logadm.conf\fR ファイルを読み取り、そのファイルで見つかったエントリごとに、対応するログファイルをローテーションするべきかどうかを確認します。通常、この確認はルートの \fBcrontab\fR 内のエントリによって毎朝実行されます。
+.sp
+.LP
+\fIlogname\fR 引数が指定されている場合、\fBlogadm \fR は対応するログファイルの名前に接尾辞を追加して、最新のログファイルが \fB\&.0\fR で終わり (つまり、\fIlogfile \fR\fB\&.0\fR)、その次に新しいものが \fB\&.1\fR で終わる (つまり、\fIlogfile\fR\fB\&.1\fR)、などとなるように変更します。デフォルトでは、古いログファイルが 10 バージョン保持されます (つまり、\fIlogfile \fR\fB\&.0\fR から \fIlogfile\fR\fB .9\fR まで)。11 番目のログファイルが記録される時点で、\fBlogadm\fR はもっとも古いバージョンを自動的に削除して、ファイル数を 10 に保ちます。
+.sp
+.LP
+\fBlogadm\fR はいくつかの \fIoptions\fR をとります。これらのオプションは、コマンド行または \fB/etc/logadm.conf\fR ファイルで指定できます。\fBlogadm\fR コマンドは、\fB/etc/logadm.conf\fR で \fIlogname\fR \fI options\fR という形式の行を検索します 
+.sp
+.ne 2
+.mk
+.na
+\fB\fIlogname\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB/etc/logadm.conf\fR 内のエントリを指定します。これには、名前またはログファイルのパス名を指定できます。このフィールドに名前ではなくログファイルを指定する場合は、完全修飾パス名でなければいけません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIoptions\fR\fR
+.ad
+.sp .6
+.RS 4n
+コマンド行で入力されるものとまったく同じコマンド行オプションを指定します。これにより、一般的に使用されるログローテーションポリシーを \fB/etc/logadm.conf\fR ファイルに格納できるようになります。「\fB使用例\fR」を参照してください。 
+.sp
+\fB/etc/logadm.conf\fR とコマンド行の両方に \fIoptions\fR が指定されている場合は、\fB/etc/logadm.conf\fR ファイル内のものが最初に適用されます。したがって、\fB/etc/logadm.conf\fR 内のオプションはコマンド行のオプションによってオーバーライドされます。 
+.sp
+\fB/etc/logadm.conf\fR 内に指定するログファイル名には、\fBcsh\fR(1) でサポートされている \fB*\fR や \fB?\fR などのファイル名置換文字を含めることができます。
+.RE
+
+.sp
+.LP
+ログファイルがいつローテーションされるかは、2 つのオプションで制御されます。それは \fB-s\fR size \fB-p\fR period です。
+.sp
+.LP
+これらのオプションを同時に複数使用する場合は、それらの間に\fB論理積\fRが存在すると見なされます。つまり、ログがローテーションされるには、すべての条件が満たされる必要があります。
+.sp
+.LP
+これら 2 つのオプションがどちらも指定されていない場合、ログファイルのローテーションのデフォルト条件は \fB\fR\fB-s\fR \fB1b\fR \fB- p\fR \fB1w\fR で、これは、サイズが 0 以外で、かつ最後のローテーションから少なくとも 1 週間が経過した場合のみ、ログファイルがローテーションされることを意味します。
+.sp
+.LP
+ローテーション条件として \fB\fR\fB-p\fR \fBnever\fR を指定すると、ほかのローテーション条件はすべて無視され、\fBlogadm\fR は古いログファイルの期限切れに進みます。ローテーション条件として \fB\fR\fB-p\fR \fBnow\fR を指定すると、ログが強制的にローテーションされます。
+.sp
+.LP
+\fB-o\fR、\fB-g\fR、または \fB-m\fR オプションで指定されている場合を除き、\fBlogadm\fR は元のファイルと同じ所有者、グループ ID、およびアクセス権を持つ空のファイルを作成して、ログファイルを置き換えます (名前を変更したあと)。 
+.sp
+.LP
+ログファイルがいつ期限切れになるかは、\fB-A\fR age \fB- C\fR count \fB-S\fR size の 3 つのオプションで制御されます。これらのオプションは、特定の条件が満たされるまで、もっとも古いログファイルを期限切れにします。たとえば、\fB\fR\fB-C\fR \fB5\fR および \fB\fR\fB-S\fR \fB10m\fR オプションを組み合わせると、ファイル数が 5 以下\fBかつ\fRそれらの合計のディスク使用量が 10 メガバイト以下になるまで、古いログファイルが期限切れにされます。これらのオプションがどれも指定されていない場合、デフォルトの期限切れは \fB\fR\fB-C\fR \fB 10\fR であり、これによって 10 個の古いログファイルが保持されます。どのファイルも期限切れにならないようにするには、デフォルトによる期限切れを回避するために \fB\fR\fB-C\fR \fB0\fR を使用します。
+.sp
+.LP
+\fBlogadm\fR はタイムスタンプをファイル \fB/var/logadm/timestamps\fR に格納します。ユーザーが以前のバージョンの \fBlogadm\fR を使用していた場合、このユーティリティーは、ユーザーの以前のリポジトリ \fB/etc/logadm.conf\fR から \fB/var/logadm/timestamps\fR にタイムスタンプを自動的に移動します。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fIpost_command\fR\fR
+.ad
+.sp .6
+.RS 4n
+ログファイル名の変更後に \fIpost_command\fR を実行します。\fIpost_command\fR は \fBsh\fR \fB-c\fR に渡されます。
+.sp
+\fIpost_command\fR には、有効なシェルコマンドを指定します。\fIpost_command\fR 内の空白やシェルのメタキャラクタを保護するには、引用符を使用します。 
+.sp
+このオプションを使用して、ファイルに書き込んでいるデーモンを再起動できます。1 つの \fBlogadm\fR コマンドで複数のログがローテーションされる場合は、ローテーションされるログごとに 1 回ではなく、すべてのログがローテーションされたあとに 1 回だけ \fIpost_command\fR が実行されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fIage\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIage\fR で指定された時間だけ変更されていないバージョンをすべて削除します。
+.sp
+\fIage\fR には、数値に続いて \fBh\fR (時間)、\fBd\fR (日)、\fBw\fR (週)、\fBm\fR (月)、または \fBy\fR (年) を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR \fIpre_command\fR\fR
+.ad
+.sp .6
+.RS 4n
+ログファイル名の変更前に \fIpre_command\fR を実行します。\fIpre_command\fR は \fBsh\fR \fB-c\fR に渡されます。 
+.sp
+\fIpre_command\fR には、有効なシェルコマンドを指定します。\fIpre_command\fR 内の空白やシェルのメタキャラクタを保護するには、引用符を使用します。 
+.sp
+このオプションを使用して、ファイルに書き込んでいるデーモンを停止できます。1 つの \fBlogadm\fR コマンドで複数のログがローテーションされる場合は、ローテーションされるログごとに 1 回ではなく、すべてのログがローテーションされる前に 1 回だけ \fIpre_command\fR が実行されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.sp .6
+.RS 4n
+ファイル名を変更するのではなく、ログファイルをコピーし、元のログファイルを長さ 0 に切り詰めることによって、ログファイルをローテーションします。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR \fIcount\fR\fR
+.ad
+.sp .6
+.RS 4n
+残っているファイルの数が \fIcount\fR 以下になるまで、もっとも古いバージョンを削除します。
+.sp
+期限切れオプション (\fB-A\fR、\fB-C\fR、または \fB-S\fR) が指定されていない場合は、\fB\fR\fB-C\fR \fB10\fR がデフォルトです。デフォルトの期限切れルールが自動的に追加されることを回避するには、\fB\fR\fB-C\fR \fB0\fR を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fImail_addr\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fImail_addr\fR にエラーメッセージを電子メールで送信します。 
+.sp
+通常 \fBlogadm\fR は \fBcron\fR(1M) から実行されるため、エラーメッセージは \fBcron\fR によって取得され、\fBcrontab\fR の所有者にメールで送信されます。
+.sp
+このオプションは、エラーメッセージに関するメールを代わりに別のアドレスに送信する場合に役立ちます。エラーが発生しなかった場合、メールメッセージは生成されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-E\fR \fIcmd\fR\fR
+.ad
+.sp .6
+.RS 4n
+古いログファイルを削除して期限切れにするのではなく、\fIcmd\fR を実行してファイルを期限切れにします。
+.sp
+\fIcmd\fR は \fBsh\fR \fB-c\fR に渡されます。\fIcmd\fR の完了後、ファイルは期限切れと見なされます。\fIcmd\fR によって古いログファイルの削除または名前の変更が行われない場合、\fBlogadm\fR では、指定のログファイルに対する次回の実行時に古いログファイルが期限切れになると見なされます。指定されている場合、キーワード \fB$file\fR は、指定された \fIcmd\fR 内で期限切れにされるファイルの名前に展開されます。
+.sp
+このオプションは、古いログファイルを管理者にメールで送信したり、古いログファイルを長期ストレージにコピーしたりするタスクに役立ちます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIconf_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB/etc/logadm.conf \fR の代わりに \fIconf_file\fR を使用します。 
+.sp
+このオプションを使用すると、root 以外のユーザーが独自の \fBlogadm\fR 構成ファイルを保持できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR \fItimestamp_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB/var/logadm/timestamps\fR の代わりに \fItimestamp_file\fR を使用して、\fBlogadm\fR のタイムスタンプを格納します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR \fIgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+ログファイルのグループ \fBID\fR を保持する代わりに、\fIgroup\fR で指定された \fBID\fR を使用して、新しい空のファイルを作成します。 
+.sp
+\fIgroup\fR には、\fBchgrp\fR(1) で受け入れられる名前または数値グループ \fBID\fR を指定します。
+.sp
+このオプションには、\fBchgrp\fR(1) コマンドを使用してファイルのグループ所有権を変更する権限が必要です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBlogadm\fR のオプションを説明するヘルプメッセージを表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+ローテーションされたログファイルに名前を付けるときに、協定世界時 (UTC) ではなくローカル時間を使用します (\fB-t\fR オプションに指定されるテンプレート内のパーセントシーケンスに関する説明を参照)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fImode\fR\fR
+.ad
+.sp .6
+.RS 4n
+ログファイルのモードを保持する代わりに、\fImode\fR で指定されたモードを使用して、新しい空のファイルを作成します。 
+.sp
+\fImode\fR は、\fBchmod\fR(1) コマンドで受け入れられるいずれかの形式で指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR \fIcmd\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIcmd\fR を使用してログファイルの名前を変更します。キーワード \fB$file\fR が指定されている場合、それはログファイルの名前に展開されます。同様に、キーワード \fB$nfile\fR はログファイルの新しい名前に展開されます。\fB$nfile\fR は、\fB-M\fR オプションに指定されるコマンドでのみ使用できます。コマンドの完了後、ローテーションされたファイルによってログファイルが置き換えられます。デフォルトの \fIcmd\fR は「\fB/bin/mv\fR \fB $file\fR\fB\fR\fB$nfile\fR」です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR \fI\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBlogadm\fR コマンドが実行するアクションを、実際には実行せずに表示します。
+.sp
+このオプションは、システムに変更を加える前に引数を確認する場合に役立ちます。
+.sp
+ただし、このオプションではログのローテーションアクションが表示されるだけなので、\fBlogadm\fR では期限切れにする必要のあるファイルが見つからないことがありますが、\fB-n\fR なしで \fBlogadm\fR で実行すると、ログのローテーションアクションが実行されて、期限切れにする必要のあるファイルが作成される場合があることに注意してください。したがって、\fB-n\fR オプションを指定すると期限切れになるファイルが表示されない場合でも、指定しないとファイルが期限切れになる場合もあります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたログファイルが存在しない場合にエラーメッセージを回避します。通常、\fBlogadm\fR はログファイルが見つからない場合にエラーメッセージを生成します。\fB-N\fR を指定すると、ログファイルが存在しない場合、\fBlogadm\fR は期限切れルール (もしあれば) に進み、それから次のログファイル (もしあれば) に進み、空の置換ログファイルは作成しません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIowner\fR\fR
+.ad
+.sp .6
+.RS 4n
+ログファイルの所有者を保持する代わりに、\fIowner\fR を使用して、新しい空のファイルを作成します。
+.sp
+\fIowner\fR は、\fBchown\fR(1) コマンドで受け入れられるいずれかの形式で指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIperiod\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された期間 (\fIperiod\fR) のあとでログファイルをローテーションします。
+.sp
+\fIperiod\fR には、数値に続いて \fBd\fR (日)、\fBh\fR (時間)、\fBw\fR (週)、\fBm\fR (月) (30 日)、または \fBy\fR (年) を指定します。period には 2 つの特別な値 \fBnow\fR と \fBnever\fR もあります。「\fB\fR\fB-p\fR \fBnow\fR」は強制的にログローテーションを行います。「\fB\fR\fB-p\fR \fBnever\fR」はログローテーションを強制的に行いません。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fItimestamp\fR\fR
+.ad
+.sp .6
+.RS 4n
+ログが最後にローテーションされた時間を \fB/var/logadm/timestamps\fR に記録するために \fBlogadm\fR で使用されます。
+.sp
+このオプションは、ログのローテーション期間が経過したかどうかを判定するために \fItimestamp\fR を使用します。\fItimestamp\fR の形式は \fBctime\fR(3C) によって生成される形式と同じで、埋め込まれた空白を保護するために引用符で囲まれます。\fItimestamp\fR は常に協定世界時 (UTC) タイムゾーンで記録されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fIlogname\fR に対応するすべてのエントリを \fB/etc/logadm.conf\fR から削除します。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIcmd\fR\fR
+.ad
+.sp .6
+.RS 4n
+ログのローテーションによって古いログファイルが作成されるときに \fIcmd\fR を実行します。指定されたコマンドにキーワード \fB$file\fR が埋め込まれている場合、それはログのローテーションによって作成されたばかりの古いログファイルの名前に展開されます。 
+.sp
+このオプションは、ログのローテーションのあとでログファイルの内容を処理する場合に役立ちます。\fIcmd\fR は \fBsh\fR \fB-c\fR に渡されて実行されます。1 つの logadm コマンドで複数のログがローテーションされる場合は、ログがローテーションされるたびに 1 回、\fB-R\fR で指定されたコマンドが実行されます。これはログファイルの後処理に役立ちます (ソート、関心を引かない行の削除、など)。ログのローテーションのあとでデーモンを再起動するには、\fB-a\fR オプションの方が適しています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIsize\fR\fR
+.ad
+.sp .6
+.RS 4n
+ログファイルのサイズが \fIsize\fR 以上の場合のみ、そのファイルをローテーションします。 
+.sp
+\fIsize\fR には、数値に続いて文字 \fBb\fR (バイト)、\fBk\fR (K バイト)、\fBm\fR (M バイト)、または \fBg\fR (G バイト) を指定します。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR \fIsize\fR\fR
+.ad
+.sp .6
+.RS 4n
+古いログファイルで使用されている合計ディスク容量が指定されたサイズ未満になるまで、もっとも古いバージョンを削除します。
+.sp
+\fIsize\fR には、数値に続いて文字 \fBb\fR (バイト)、\fBk\fR (K バイト)、\fBm\fR (M バイト)、または \fBg\fR (G バイト) を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fItemplate\fR\fR
+.ad
+.sp .6
+.RS 4n
+ログファイルの名前を変更するときに使用するテンプレートを指定します。 
+.sp
+\fItemplate\fR には、\fB/var/adm/oldfile\fR などの単純な名前を指定するか、\fBlogadm\fR で展開される \fB$\fR\fI word\fR 形式の特殊なキーワードを含めることができます。使用できるシーケンスは次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIbasename\fR\fR
+.ad
+.sp .6
+.RS 4n
+ディレクトリ名を含まないログファイル名
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIdirname\fR\fR
+.ad
+.sp .6
+.RS 4n
+ローテーションするファイルのディレクトリ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIdomain\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBdomainname\fR の出力に展開されます
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+ローテーションするファイルのフルパス名
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIisa\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBuname\fR \fB-p\fR の出力に展開されます
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fImachine\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBuname\fR \fB-m\fR の出力に展開されます
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIn\fR\fR
+.ad
+.sp .6
+.RS 4n
+バージョン番号で、最新が \fB0\fR、その次に新しいものが \fB 1\fR などとなります
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIN\fR\fR
+.ad
+.sp .6
+.RS 4n
+$\fIn\fR と同じですが、0 ではなく \fB1\fR から始まります
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fInodename\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBuname\fR \fB-n\fR の出力に展開されます
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIplatform\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBuname\fR \fB-i\fR の出力に展開されます
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIrelease\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBuname\fR \fB-r\fR の出力に展開されます
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIsecs\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB1970 年 1 月 1 日の 00:00:00 UTC\fR から数えた秒数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$\fIzonename\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBzonename\fR(1) の出力に展開されます。
+.RE
+
+実際のドル記号文字をファイル名に含めるには、\fB$$\fR を使用します。\fBstrftime\fR(3C) で使用できるパーセントシーケンスもすべて使用でき、たとえば、\fB%d\fR は月の日付に展開されます。実際のパーセント記号文字をファイル名に含めるには、\fB%%\fR を使用します。ドル記号キーワードとパーセントシーケンスの両方を、テンプレートの任意の場所に含めることができます。テンプレートから結果として得られたパス名に存在しないディレクトリが含まれている場合、それらはログファイルのローテーション時に必要に応じて作成されます。
+.sp
+\fB-t\fR オプションが指定されていない場合、デフォルトのテンプレートは \fB$file.$n\fR です。ログファイルの実際の\fBローテーション\fR は \fB$n\fR キーワードを使用して実行され、各バージョンが期限切れになるまで上へシフトされます。テンプレートに \fB$n\fR キーワードが含まれていない場合は、単にログファイルの名前が新しい名前に変更されたあと、期限切れルールがあればそれらが適用されます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fIpattern\fR\fR
+.ad
+.sp .6
+.RS 4n
+通常、\fBlogadm\fR はテンプレート (\fB-t\fR オプションで指定) をパターンに変換し、そのパターンに一致する名前を持つ既存ファイルを見つけることによって、古いログファイルのリストを探します。\fB-T\fR オプションにより、指定のパターンが代わりに使用されるようになります。
+.sp
+このオプションは、時間の経過とともに \fBcron\fR ジョブで圧縮する場合など、別のプログラムが古いログファイルの名前を操作する場合に役立ちます。パターンは、\fBcsh\fR(1) のファイル名置換でサポートされている \fB*\fR や \fB?\fR などの特殊文字をパス名に付加した形式です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+実行されるアクションに関する情報を冗長モードで表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR \fR
+.ad
+.sp .6
+.RS 4n
+構成ファイルを検証します。 
+.sp
+このオプションは、指定された \fIlogname\fR に対応するエントリが \fB/etc/logadm.conf\fR ファイルに存在することと、構文的に正しいことを検証します。\fIlogname\fR が指定されていない場合は、構成ファイル内のすべてのエントリが検証されます。\fBlogname\fR 引数が指定されている場合、このコマンドはそのエントリの構文を検証します。エントリが見つかった場合は、それが表示され、コマンドの終了値は true になります。それ以外の場合、終了値は false です。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-w\fR \fIentryname\fR\fR
+.ad
+.sp .6
+.RS 4n
+現在のコマンド行引数に対応するエントリを構成ファイル (つまり、\fB/etc/logadm.conf\fR) に書き込みます。指定された \fIentryname\fR に対応するエントリがすでに存在する場合は、まずそれが削除されます。構文エラーが回避されるため、\fB/etc/logadm.conf\fR の更新にはこの方法をお勧めします。\fIentryname\fR は \fBlogadm\fR の呼び出しの引数です。\fIentryname\fR には、覚えやすい名前を選択するか、ログファイルのパス名を指定できます。名前ではなくパス名を使用する場合は、完全修飾パス名でなければいけません。
+.sp
+\fBlogadm\fR コマンド行にログファイル名が指定されていない場合、エントリ名はログファイル名と同じであると見なされます。たとえば、次の 2 行で達成されることは同じで、ローテーションされたログファイルのコピーが 2 つ保持されます。
+.sp
+.in +2
+.nf
+% logadm -C2 -w mylog /my/really/long/log/file/name
+% logadm -C2 -w /my/really/long/log/file/name
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fIcount\fR\fR
+.ad
+.sp .6
+.RS 4n
+ほかのすべてのコマンドが実行されたあと、古いログファイルを圧縮します。\fIcount\fR 個の最新ログファイルは圧縮されないため、\fIcount\fR 個の最新ファイルはより簡単に調査できます。\fIcount\fR として 0 を使用すると、すべての古いログが圧縮されます。
+.sp
+圧縮は \fBgzip\fR(1) で実行され、結果として得られるログファイルの接尾辞は \fB\&.gz\fR になります。
+.sp
+0 のカウントを使用すると、まだファイルにロギングしているデーモンと、すでにそのファイルを圧縮している gzip の間で競合状態が発生する可能性があることに注意してください。この状況は、たとえば、デーモンが \fB-a post_command\fR から、開かれているログファイルをリフレッシュするよう指示された場合に発生する可能性があります。
+.sp
+.in +2
+.nf
+logadm -z 0 -a 'kill -HUP <pid>'
+.fi
+.in -2
+.sp
+
+圧縮は、デーモンが HUP シグナルの処理を完了する前であっても開始される可能性があります。この場合、ユーザーはログファイルで次のメッセージを確認できます。
+.sp
+.in +2
+.nf
+gzip: /var/adm/messages.0: file size changed while zipping
+.fi
+.in -2
+.sp
+
+回避方法としては、\fB-z\fR 1 を使用するか、または HUP シグナルを送信したあとに十分に長い遅延 (「sleep 10」など) を設定します。
+.RE
+
+.SH オペランド
+.sp
+.LP
+次のオペランドがサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIlogname\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB/etc/logadm.conf\fR 内のエントリの名前を指定します。\fIlogname\fR フィールドにログファイル名が指定されている場合、\fIlogname\fR は実際のログファイル名と同じであると見なされます。 
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRファイルをローテーションし、以前のバージョンを保持する
+.sp
+.LP
+次の例は、\fB/var/adm/exacct/proc\fR ファイルをローテーションし、以前のバージョン 10 個を \fB/var/adm/exacct/proc.0\fR から \fB/var/adm/exacct/proc.9\fR に保持します。
+
+.sp
+.LP
+ファイルをコピーして切り詰めるように \fBlogadm\fR に指示します。
+
+.sp
+.in +2
+.nf
+ % logadm -c /var/adm/exacct/proc
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRsyslog をローテーションする
+.sp
+.LP
+次の例は、\fBsyslog\fR をローテーションし、8 個のログファイルを保持します。古いログファイルはディレクトリ \fB/var/log\fR ではなく \fB/var/oldlogs\fR に置かれます。
+
+.sp
+.in +2
+.nf
+% logadm -C8 -t'/var/oldlogs/syslog.$n' /var/log/syslog
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fR/var/adm/sulog をローテーションし、経過時間に基づいて期限切れにする
+.sp
+.LP
+\fB/etc/logadm.conf\fR ファイル内の次のエントリは、\fB/var/adm/sulog\fR ファイルをローテーションし、30 日より古いコピーをすべて期限切れにします。
+
+.sp
+.in +2
+.nf
+/var/adm/sulog -A 30d
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fRファイルをローテーションし、ディスク使用量に基づいて期限切れにする
+.sp
+.LP
+\fB/etc/logadm.conf\fR ファイル内の次のエントリは、\fB/var/adm/sulog\fR ファイルをローテーションし、ローテーションされたすべてのログファイルで使用されている合計が 100 M バイトを超えると、古いログファイルを期限切れにします。 
+
+.sp
+.in +2
+.nf
+/var/adm/sulog -S 100m
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 5 \fRログファイル名を格納するエントリを作成する
+.sp
+.LP
+この例では、ログファイル名を格納するエントリを作成し、20 個のコピーを \fB/etc/logadm.conf\fR に保持したいのですが、\fB\fR\fB-p\fR \fBnever\fR により、ルートの crontab から毎朝実行される通常の \fBlogadm\fR ではこのエントリが無視されます。
+
+.sp
+.in +2
+.nf
+% logadm -w locallog /usr/local/logfile -C20 -p never
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+コマンド行で次のエントリを使用して \fB\fR\fB- p\fR \fBnever\fR オプションをオーバーライドします。
+
+.sp
+.in +2
+.nf
+ % logadm -p now locallog
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 6 \fRapache エラーログおよびアクセスログをローテーションする
+.sp
+.LP
+次の例は、apache エラーログおよびアクセスログを毎月ローテーションして、現在の年と月に基づくファイル名にします。24 個の最新コピーを保持し、ログの名前を変更したあとで再起動するように apache に指示します。 
+
+.sp
+.LP
+このコマンドは 1 回実行され、\fB-w\fR オプションが指定されているため、今後 apache のログがローテーションされるようにするエントリが \fB/etc/logadm.conf\fR 内に作成されます。
+
+.sp
+.in +2
+.nf
+ % logadm -w apache -p 1m -C 24\e
+     -t '/var/apache/old-logs/$basename.%Y-%m'\e
+     -a '/usr/apache/bin/apachectl graceful'\e
+     '/var/apache/logs/*{access,error}_log'
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+この例は、\fB-w\fR オプションで指定されるエントリ名はログファイル名に一致する必要がないことも示しています。この例では、エントリ名は \fBapache\fR であり、この行が実行されたあとで次のコマンドを実行すると、\fB/etc/logadm.conf\fR 内のこのエントリが強制的に実行されるようになります。 
+
+.sp
+.in +2
+.nf
+% logadm -p now apache
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+apache ログファイル名を照合する表現は引用符で囲まれていたため、それを展開したファイルのリストではなく、表現が \fB/etc/logadm.conf\fR ファイルに格納されます。つまり、\fBlogadm\fR は \fBcron\fR から実行されるたびに、その表現を展開し、結果として得られたリスト内のすべてのログファイルについて、ローテーションが必要かどうかを確認します。 
+
+.sp
+.LP
+次のコマンドは、ログ名の表現を引用符で囲まない例です。シェルによって、最後の引数がコマンドの入力時に存在していたログファイルのリストに展開され、それらのファイルをローテーションするエントリが \fB/etc/logadm.conf\fR に書き込まれます。
+
+.sp
+.in +2
+.nf
+logadm -w apache /var/apache/logs/*_log
+.fi
+.in -2
+.sp
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/logadm.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBlogadm\fR コマンドの構成ファイル
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/logadm/timestamps\fR\fR
+.ad
+.sp .6
+.RS 4n
+タイムスタンプを記録するためのリポジトリ
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBchgrp\fR(1)、\fBchmod\fR(1)、\fBchown\fR(1)、\fBcsh\fR(1)、\fBgzip\fR(1)、\fBcron\fR(1M)、\fBctime\fR(3C)、\fBstrftime\fR(3C)、\fBlogadm.conf\fR(4)、\fBattributes\fR(5)
+.SH 注意事項
+.sp
+.LP
+\fBlogadm\fR は、期限切れ条件 (\fB-A\fR、\fB-C\fR、および \fB-S\fR オプションで指定) を適用する場合、条件が満たされるまで、もっとも古いものから順にファイルを削除します。古いログの名前付けに使用されるテンプレートに \fB$n\fR または \fB$N\fR が含まれていた場合、\fBlogadm\fR は、古いログファイルの名前で見つかったもっとも大きい \fB$n\fR 値または \fB$N\fR 値を最初に選択します。ほかのテンプレートが使用されている場合、\fBlogadm\fR は変更時間を使用して、最初に期限切れにするファイルを判定します。古いログファイルがローテーション後に変更されている場合、これは予期しない動作になることがあります。
+.sp
+.LP
+ログファイルのサイズとログファイルの数によっては、ログファイルのローテーションに非常に長い時間がかかる可能性があります。
+.sp
+.LP
+デフォルトでは、\fBlogadm\fR は \fBUTC\fR で動作します。したがって、\fB/etc/logadm.conf\fR ファイル (\fBlogadm.conf\fR(4) を参照) に書き込まれるすべてのエントリに \fBUTC\fR タイムスタンプが付加されます。ユーザーは \fB-l\fR オプションを使用して \fBlogadm\fR をローカル時間に設定できます。
+.sp
+.LP
+\fB-f\fR および \fB-F\fR オプションで同じファイルを指定することができ、その場合、\fBlogadm\fR は以前のリリースと同じ動作に戻ります。つまり、タイムスタンプは構成ファイルに書き込まれます。

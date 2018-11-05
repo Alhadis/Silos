@@ -1,0 +1,930 @@
+'\" te
+.\" Copyright (c) 2012, 2014, Oracle and/or its affiliates.All rights reserved.
+.TH hotplug 1M "2014 年 2 月 25 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+hotplug \- 配置热插拔连接器和端口
+.SH 用法概要
+.LP
+.nf
+\fBhotplug\fR list [\fB-c\fR] [\fB-d\fR] [\fB-l\fR] [\fB-v\fR] [\fIpath\fR [\fIconnection\fR]]
+.fi
+
+.LP
+.nf
+\fBhotplug\fR online \fIpath\fR \fIport\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR offline [\fB-f\fR] [\fB-q\fR] \fIpath\fR \fIport\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR enable [\fB-f\fR] [\fIpath\fR] \fIconnector\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR disable [\fB-f\fR] [\fB-q\fR] [\fIpath\fR] \fIconnector\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR poweron [\fIpath\fR] \fIconnector\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR poweroff [\fB-f\fR] [\fB-q\fR] [\fIpath\fR] \fIconnector\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR set \fB-o\fR \fIoptions\fR [\fIpath\fR] \fIconnector\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR get \fB-o\fR\fIoptions\fR [\fIpath\fR] \fIconnector\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR install \fIpath\fR \fIport\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR uninstall [\fB-f\fR] [\fB-q\fR] \fIpath\fR \fIport\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR \fB-?\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBhotplug\fR 命令用于管理热插拔连接。连接可以是连接器或端口。热插拔连接器表示系统中的一个物理点，在此处可以插入或移除组件。热插拔端口表示系统设备树中的一个的逻辑点，在此处可以管理设备与系统之间的连接。
+.sp
+.LP
+\fBhotplug\fR 命令仅支持在特定热插拔连接器上执行热插拔操作，即实施标准 PCI 热插拔功能的 PCI Express 总线和 PCI 总线上的热插拔连接器。还支持系统中采用 PCI Expresss 光纤结构的 PCI Express 总线和 PCI 总线上的热插拔端口。今后可能会支持其他总线。
+.sp
+.LP
+可以对以下对象类型运行 \fBhotplug\fR 命令：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+热插拔连接器和端口已集成到 Solaris 设备树中。连接器和端口名称仅在其总线控制器范围内是唯一的。要唯一地引用连接器，需要指定设备路径；要唯一地引用端口，需要指定设备的父路径。
+.sp
+\fBhotplug\fR 命令可以接受以下使用方式：用户在状态更改操作子命令中仅指定了物理热插拔连接器。如果不存在此类连接器，该命令将失败。如果系统中存在同名的多个连接器，状态更改操作将与用户交互，以确定需要在哪一个连接器上执行操作。请参见下文的“示例”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconnector\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果某硬件组件支持物理插入或移除，那么热插拔连接器代表了可以执行此操作的位置。如果连接器存在，它即具有依赖于它的端口和设备节点分层结构。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBport\fR\fR
+.ad
+.sp .6
+.RS 4n
+可以对所有设备节点执行虚拟热插拔操作，即使其硬件不支持物理热插拔也是如此。在系统设备树中，热插拔端口存在于设备节点与其父节点之间。它代表可以管理设备节点及其依赖项的位置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconnection\fR\fR
+.ad
+.sp .6
+.RS 4n
+热插拔连接是一个用于指代热插拔连接器或热插拔端口的通用术语。
+.RE
+
+.sp
+.LP
+热插拔连接器和端口根据状态模型进行管理。\fBhotplug\fR 命令可以列出关于系统中热插拔连接的信息，也可以在特定热插拔连接上启动状态更改操作。
+.sp
+.LP
+热插拔连接器可具有以下状态：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBempty（空）\fR\fR
+.ad
+.sp .6
+.RS 4n
+从物理上而言，组件未插入连接器。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpresent（存在）\fR\fR
+.ad
+.sp .6
+.RS 4n
+从物理上而言，组件已插入连接器，但组件处于断电状态。组件未在使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpowered（通电）\fR\fR
+.ad
+.sp .6
+.RS 4n
+从物理上而言，组件已插入连接器，并且组件处于通电状态。但组件处于禁用状态并且未在使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBenabled（已启用）\fR\fR
+.ad
+.sp .6
+.RS 4n
+从物理上而言，组件已插入连接器。组件处于通电状态并且已经过探测和测试。而且组件处于启用状态，代表其功能的设备可以使用。
+.RE
+
+.sp
+.LP
+热插拔端口可具有以下状态：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBport-empty（端口空）\fR\fR
+.ad
+.sp .6
+.RS 4n
+热插拔端口不存在任何设备。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBport-present（端口存在）\fR\fR
+.ad
+.sp .6
+.RS 4n
+热插拔端口存在设备，但是设备尚未经过探测并且没有关联的设备驱动程序。设备未在使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBoffline（脱机）\fR\fR
+.ad
+.sp .6
+.RS 4n
+热插拔端口存在设备，并且设备已经过探测。但未关联设备驱动程序，并且设备未在使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBonline（联机）\fR\fR
+.ad
+.sp .6
+.RS 4n
+热插拔端口存在设备，并且已完整关联其设备驱动程序。而且设备在使用中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmaintenance（维护）\fR\fR
+.ad
+.sp .6
+.RS 4n
+热插拔端口存在设备，并且已完整关联其设备驱动程序。设备在使用中，但是无法完全正常运行。维护或故障管理操作影响了设备。导致设备进入维护状态的原因不尽相同。维护状态下的子状态说明了原因。目前仅定义了一种子状态：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmaintenance-suspended（维护暂停）\fR\fR
+.ad
+.sp .6
+.RS 4n
+设备暂停。
+.RE
+
+.RE
+
+.sp
+.LP
+\fBhotplug\fR 命令还可以访问每个热插拔连接器的总线专用属性。可以显示总线专用属性的当前值。可以直接为每个总线专用属性设置新值。
+.SH 子命令
+.sp
+.LP
+支持以下子命令：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlist\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示关于热插拔连接器、端口及其关联设备的信息。由于热插拔连接器和热插拔端口已集成到 Solaris 设备树分层结构中。因此，\fBlist\fR 子命令还显示设备节点的分层结构以及热插拔连接器和热插拔端口位置等其他信息。热插拔连接器的名称括在方括号中，热插拔端口的名称括在尖括号中。每个热插拔连接的当前状态在其名称旁边显示。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBonline\fR\fR
+.ad
+.sp .6
+.RS 4n
+将热插拔端口的状态更改为 \fBonline\fR 状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBoffline\fR\fR
+.ad
+.sp .6
+.RS 4n
+将热插拔端口的状态更改为 \fBoffline\fR 状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBenable\fR\fR
+.ad
+.sp .6
+.RS 4n
+将热插拔连接器的状态更改为 \fBenabled\fR 状态。将自动对所有热插拔连接器的依赖端口进行探测并将其初始化为 \fBonline\fR 状态。
+.sp
+如果在探测连接的设备时出现硬件错误，则系统会将错误详细信息报告至 Solaris Fault Manager 以供诊断。可以通过强制操作忽略错误（使用 \fB-f\fR 选项），能否这样操作取决于具体错误类型。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdisable\fR\fR
+.ad
+.sp .6
+.RS 4n
+将热插拔连接器的状态从 \fBenabled\fR 状态更改为 \fBpowered\fR 状态。处于 \fBonline\fR 状态的所有依赖端口将首先转换到 \fBport-present\fR 状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpoweron\fR\fR
+.ad
+.sp .6
+.RS 4n
+将热插拔连接器的状态从 \fBpresent\fR 状态更改为 \fBpowered\fR 状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpoweroff\fR\fR
+.ad
+.sp .6
+.RS 4n
+将热插拔连接器的状态从 \fBpowered\fR 或 \fBenabled\fR 状态更改为 \fBpresent\fR 状态。处于 \fBonline\fR 状态的所有依赖端口将首先转换到 \fBport-present\fR 状态，然后将被删除。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset\fR\fR
+.ad
+.sp .6
+.RS 4n
+为热插拔连接器设置特定于总线的属性。指定的选项字符串是一个特定于总线的字符串，由名称和值对组成，可以通过 \fBgetsubopt\fR(3C) 进行解析。名称和值将直接传递给管理指定热插拔连接器的总线控制器，以执行特定于总线的功能。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBget\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示热插拔连接器的特定于总线的属性的当前值。指定的选项字符串是一个特定于总线的字符串，由指定属性组成，可以通过 \fBgetsubopt\fR(3C) 进行解析。名称将直接传递给总线控制器，以指定应返回哪些属性。然后，将显示每个指定属性的当前值。
+.RE
+
+.sp
+.LP
+\fBinstall\fR 和 \fBuninstall\fR 子命令可安装和卸载端口的驱动程序所支持的服务。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstall\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBinstall\fR 子命令可安装热插拔端口设备的驱动程序所支持的服务。
+.sp
+例如，该子命令可以应用到 PCIe IO 虚拟化设备的物理功能端口。它将端口升级到 \fBONLINE\fR 状态（如果端口尚未处于该状态），然后安装物理功能（驱动程序）所支持的虚拟功能。将创建新的热插拔端口，以代表作为指定物理功能的依赖项的每个虚拟功能。新创建的端口将启动为 \fBOFFLINE\fR 状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuninstall\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBuninstall\fR 子命令可卸载热插拔端口设备的驱动程序所支持的服务。
+.sp
+该子命令可以应用到 PCIe IO 虚拟化设备的物理功能端口。如果指定的热插拔端口具有任何包含虚拟功能的依赖端口，则将删除这些依赖端口和相应的虚拟功能节点。
+.RE
+
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR, \fB--list-path\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示连接和设备节点的完整路径。缺省情况下，\fBlist\fR 子命令以树形式显示热插拔连接器、端口和设备。该选项支持显示每个连接和设备节点的完整路径。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR, \fB--connectors\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示一个表格，其中汇总了所有物理热插拔连接器的当前状态。但不包括设备拓扑和分层结构信息。一般而言，物理热插拔连接器的名称应该是唯一的。如果系统中存在同名的多个连接器，\fBhotplug\fR 将显示一条消息，指出同名的热插拔连接器，并提示您输入信息对这些连接器进行区分。请参见下文的“示例”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR, \fB--drivers\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示绑定驱动程序的名称和设备节点的实例数量。缺省情况下，\fBlist\fR 子命令仅显示热插拔连接器、端口和设备。该选项支持显示绑定驱动程序的名称和设备节点的实例数量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR，\fB--verbose\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示详细的使用情况信息。缺省情况下，\fBlist\fR 子命令仅显示热插拔连接器、端口和设备。该选项支持显示关于当前设备使用情况的详细信息。例如，与各个设备相关联的已挂载的文件系统或已激活的网络接口。
+.sp
+请注意，\fB-v\fR 选项不显示关于 ZFS 控制下的磁盘的信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR、\fB--force\fR\fR
+.ad
+.sp .6
+.RS 4n
+强制执行操作。一些会影响当前正在使用的资源的更改状态操作将失败，并显示警告。强制执行的操作会试图忽略这些警告并继续。
+.sp
+请慎用此选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR, \fB--non-interactive\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁用交互功能。如果指定了该标志并且输入不明确，则该命令将立即退出，并返回一个唯一的退出状态来指出问题。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR, \fB--query\fR\fR
+.ad
+.sp .6
+.RS 4n
+查询操作。执行一个测试来预测更改状态操作是成功还是失败，而不是实际执行操作。如果失败，则显示实际尝试该操作时会显示的错误消息。
+.sp
+不可能预测出每一种失败。对于在查询期间报告能成功执行的操作，在实际尝试时仍然可能会出于其他原因而失败。
+.sp
+该选项实际上并不会更改系统的状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIoptions\fR、\fB- -\fR=\fIoptions\fR\fR
+.ad
+.sp .6
+.RS 4n
+针对 \fBset\fR 或 \fBget\fR 命令指定特定于总线的属性。选项字符串遵循 \fBgetsubopt\fR(3C) 语法约定。
+.sp
+对于 \fBget\fR 子命令，有两个特殊选项可以使用。\fBhelp\fR 特殊选项值将显示所有支持的属性及其可能值。\fBall\fR 特殊选项值将显示所有支持的属性的当前值。
+.sp
+对于 \fBset\fR 子命令，有一个特殊选项可以使用。\fBhelp\fR 特殊选项值将显示可以设置的所有支持的属性及其可能值。
+.sp
+有关总线控制器支持的属性，请参见“附注”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-?\fR, \fB--help\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示关于正确使用命令的简短帮助信息。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR显示所有热插拔连接
+.sp
+.LP
+以下命令可显示所有热插拔连接：
+
+.sp
+.in +2
+.nf
+# \fBhotplug list -v\fR
+pci@0,0
+pci108e,534a@2,1 <pci.2,1> ONLINE
+        [pci30] EMPTY
+pci10de,5d@e <pci.e,0> ONLINE
+        display@b <pci.b,0> ONLINE
+        [NEM0] ENABLED
+        pci108e,534a@a,0 <pci.a,0> ONLINE
+                { Network interface nge0 }
+                { nge0: hosts IP addresses: 10.0.0.1 }
+        pci108e,534a@a,1 <pci.a,1> (MAINTENANCE)
+                            [NEM1] (EMPTY)
+pci108e,534a@c <pci.c,0> OFFLINE
+pci108e,534a@d <pci.d,0> ONLINE
+                          pci1028,40d@0 <pci.0,0> (MAINTENANCE-SUSPENDED,
+"activities=dma+pio+intr,reason=resource-rebalance")
+                                 { Network interface bge0 }
+                                 { bge0: hosts IP addresses: 10.0.1.1 }
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+要显示热插拔连接和设备的完整路径，请输入以下命令：
+
+.sp
+.in +2
+.nf
+# \fBhotplug list -l\fR
+/pci@0,0
+/pci@0,0  <pci.0,0>  OFFLINE
+/pci@0,0/pci108e,4341
+/pci@0,0  <pci.1,0>  OFFLINE
+/pci@0,0/pci8086,3408
+/pci@0,0  <pci.3,0>  ONLINE
+/pci@0,0/pci8086,340a@3
+/pci@0,0/pci8086,340a@3 [Slot2]  EMPTY
+/pci@0,0  <pci.5,0>  ONLINE
+/pci@0,0/pci8086,340c@5
+/pci@0,0/pci8086,340c@5 [Slot1]  ENABLED
+/pci@0,0/pci8086,340c@5  <pci.0,0>  ONLINE
+/pci@0,0/pci8086,340c@5/pci111d,8018@0
+/pci@0,0  <pci.7,0>  ONLINE
+/pci@0,0/pci8086,340e@7
+/pci@0,0/pci8086,340e@7 [pcie4]  ENABLED
+/pci@0,0  <pci.9,0>  ONLINE
+/pci@0,0/pci8086,3410@9
+/pci@0,0/pci8086,3410@9 [pcie3]  ENABLED
+/pci@0,0  <pci.13,0>  OFFLINE
+/pci@0,0/pci8086,342d
+/pci@0,0  <pci.14,0>  OFFLINE
+/pci@0,0/pci8086,342e
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+要显示绑定驱动程序名称和设备的实例数，请输入以下命令：
+
+.sp
+.in +2
+.nf
+# \fBhotplug list -d\fR
+pci@0,0  npe#0
+    pci108e,4341  <pci.0,0>  OFFLINE  #0
+    pci8086,3408  <pci.1,0>  OFFLINE  pcieb#0
+    pci8086,340a@3  <pci.3,0>  ONLINE  pcieb#1
+        [Slot2]  EMPTY
+    pci8086,340c@5  <pci.5,0>  ONLINE  pcieb#2
+        [Slot1]  ENABLED
+        pci111d,8018@0  <pci.0,0>  ONLINE  pcieb#0
+            pci111d,8018@2  <pci.2,0>  ONLINE  pcieb#6
+                pci108e,f1bc@0  <pci.0,0>  ONLINE  e1000g#0
+                pci108e,f1bc@0,1  <pci.0,1>  OFFLINE  e1000g#1
+    pci8086,340e@7  <pci.7,0>  ONLINE  pcieb#3
+        [pcie4]  ENABLED
+    pci8086,3410@9  <pci.9,0>  ONLINE  pcieb#4
+        [pcie3]  ENABLED
+    pci8086,342d  <pci.13,0>  OFFLINE  #0
+    pci8086,342e  <pci.14,0>  OFFLINE  #0
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+要显示所有物理热插拔连接器的状态，请输入以下命令：
+
+.sp
+.in +2
+.nf
+# \fBhotplug list -c\fR
+Connection             State         Description
+---------------------------------------------------------
+NEM0                   ENABLED       PCIe-Native
+PCI-EM0                ENABLED       PCIe-Native
+NEM1                   ENABLED       PCIe-Native
+PCI-EM1                ENABLED       PCIe-Native
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+系统中存在同名的多个连接器的情况下显示的表格：
+
+.sp
+.in +2
+.nf
+# \fBhotplug list -c\fR
+Connection   Note      State         Description
+----------------------------------------------------------
+NEM0                   ENABLED       PCIe-Native
+PCI-EM0      *1        ENABLED       PCIe-Native
+PCI-EM0      *2        ENABLED       PCIe-Native
+NEM1                   ENABLED       PCIe-Native
+
+Note:
+Multiple connectors with the same name exist:
+
+  [1] PCI-EM0   /pci@0,0/pci108e,4341@1a,2
+  [2] PCI-EM0   /pci@1,0/pci108e,4341@1a,2
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR在执行状态更改操作期间报告失败
+.sp
+.LP
+如果状态更改操作失败，系统将显示一条解释，对失败进行说明。尝试使带有系统当前正在使用的依赖设备的热插拔端口脱机可能会失败，如下所示：
+
+.sp
+.in +2
+.nf
+# \fBhotplug offline /pci@0,0/pci10de,5d@e pci.a,0\fR
+ERROR: devices or resources are busy.
+pci108e,534a@a,0:
+    { Network interface nge0 }
+    { nge0: hosts IP addresses: 10.0.0.1 }
+    { Plumbed IP Address }
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR在执行状态更改操作期间启用用户交互
+.sp
+.LP
+如果系统中存在同名的多个连接器，状态更改操作将与用户交互，以便用户指定需要在哪一个连接器上执行操作。
+
+.sp
+.in +2
+.nf
+# \fBhotplug enable PCI-EM0\fR
+Multiple connectors with the same name exist:
+
+   [1] PCI-EM0  /pci@0,0/pci108e,4341@1a,2
+   [2] PCI-EM0  /pci@1,0/pci108e,4341@1a,2
+
+Please select a connector, then press ENTER:
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR显示特定于总线的属性和值
+.sp
+.LP
+以下命令可显示所有支持的特定于总线的属性及其可能值：
+
+.sp
+.in +2
+.nf
+# \fBhotplug get -o help /pci@0,0 pci.2,1\fR
+power_led=<on|off|blink>
+fault_led=<on|off|blink>
+active_led=<on|off|blink>
+attn_led=<on|off|blink>
+card_type=<type description>
+board_type=<type description>
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR显示特定于总线的选项
+.sp
+.LP
+以下命令可显示 PCI 热插拔连接器的卡类型以及电源 LED 指示灯的当前状态：
+
+.sp
+.in +2
+.nf
+# \fBhotplug get -o card_type,power_led /pci@0,0 pci.2,1\fR
+card_type=fibre
+power_led=on
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR设置特定于总线的属性
+.sp
+.LP
+以下命令可打开 PCI 热插拔连接器的警示 LED 指示灯：
+
+.sp
+.in +2
+.nf
+# \fBhotplug set -o attn_led=on /pci@0,0 pci.2,1\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR安装端口依赖项
+.sp
+.LP
+以下命令可安装 IOV 物理功能的依赖端口，然后显示探测到的 IOV 虚拟功能。
+
+.sp
+.in +2
+.nf
+# \fBhotplug install /pci@400/pci@1/pci@0/pci@4 pci.0,1\fR
+
+# \fBhotplug list -v /pci@400/pci@1/pci@0/pci@4 pci.0,1\fR
+<pci.0,1>  (ONLINE)
+     { IOV physical function }
+     { IOV virtual function 'pci.0,81' }
+     { IOV virtual function 'pci.0,83' }
+     { IOV virtual function 'pci.0,85' }
+     { IOV virtual function 'pci.0,87' }
+<pci.0,81>  (OFFLINE)
+ethernet@0,81
+<pci.0,83>  (OFFLINE)
+ethernet@0,83
+<pci.0,85>  (OFFLINE)
+ethernet@0,85
+<pci.0,87>  (OFFLINE)
+ethernet@0,87
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 8 \fR卸载端口依赖项
+.sp
+.LP
+以下命令尝试卸载 IOV 物理功能的依赖端口，但是失败，因为依赖 IOV 虚拟功能正忙。
+
+.sp
+.in +2
+.nf
+# \fBhotplug uninstall /pci@400/pci@1/pci@0/pci@4 pci.0,0\fR
+ERROR: devices or resources are busy.
+ethernet@0,81:
+    { Network interface igvbf1 }
+    { igvbf1: hosts IP addresses: 10.0.0.1 }
+    { Plumbed IP Address }
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定的命令行选项无效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定的路径或连接不存在。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.sp .6
+.RS 4n
+发生了致命错误。会在标准错误输出中显示一条或多条错误消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR\fR
+.ad
+.sp .6
+.RS 4n
+热插拔服务不可用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB5\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定的连接器名称指代多个端口。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBcfgadm\fR(1M)、\fBhotplugd\fR(1M)、\fBgetsubopt\fR(3C)、\fBattributes\fR(5)
+.SH 诊断
+.sp
+.LP
+在不具有任何支持的 IO 总线的系统上将显示以下错误消息：
+.sp
+.in +2
+.nf
+ERROR: there are no connections to display.
+(See hotplug(1m) for more information.)
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果显示此错误消息，请注意，系统可能仍然具有其他支持热插拔的 IO 设备（通过 \fBcfgadm\fR(1M) 命令，而不是 \fBhotplug\fR 进行管理的设备）。
+.sp
+.LP
+如果在处理启用操作期间出现硬件错误，将显示以下错误消息：
+.sp
+.in +2
+.nf
+ERROR: hardware or driver specific failure.
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果显示此错误消息，请注意，关于硬件错误的其他详细信息可能已经报告至 Solaris Fault Manager 以供诊断。
+.SH 附注
+.sp
+.LP
+必须先启用 \fBhotplug\fR 服务 (FMRI \fBsvc:/system/hotplug\fR)，才能使用 \fBhotplug\fR 命令。缺省情况下将启用该服务。请参见\fBhotplugd\fR(1M)。 
+.sp
+.LP
+必须授予 \fBsolaris.hotplug.modify\fR 授权，才能执行状态更改操作或安装和卸载依赖端口。也可以授予权限配置文件 "Hotplug Management"（热插拔管理），其中包括该授权。
+.sp
+.LP
+详细使用情况信息是从 RCM 框架收集的。其格式和内容可能随时会有变化。
+.sp
+.LP
+在 PCI 总线控制器中支持以下特定于总线的属性：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpower_led\fR | \fBfault_led\fR | \fB attn_led\fR | \fBactive_led\fR\fR
+.ad
+.sp .6
+.RS 4n
+插槽的某特定 LED 指示灯的状态。值可以为 \fBon\fR、\fBoff\fR 或 \fBblink\fR。
+.sp
+这些属性全都可以与 \fBget\fR 子命令一起使用，但是只有属性 \fBattn_led\fR 可以与 \fBset\fR 子命令一起使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcard_type\fR | \fBboard_type\fR\fR
+.ad
+.sp .6
+.RS 4n
+卡类型或插槽板。
+.sp
+这些属性全都可以与 \fBget\fR 子命令一起使用，但都不能与 \fBset\fR 子命令一起使用。
+.RE
+

@@ -1,0 +1,332 @@
+'\" te
+.\" Copyright (c) 2008, 2011, Oracle and/or its affiliates.All rights reserved.
+.TH syslogd 1M "2011 年 11 月 14 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+syslogd \- システムメッセージのログ
+.SH 形式
+.LP
+.nf
+\fB/usr/sbin/syslogd\fR [\fB-d\fR] [\fB-f\fR \fIconfigfile\fR] [\fB-m\fR \fImarkinterval\fR] 
+     [\fB-p\fR \fIpath\fR] [\fB-t\fR | \fB-T\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBsyslogd\fR はシステムメッセージを読み取り、メッセージの優先順位とそれを生成したシステム機能に応じて、適切なログファイルまたはユーザーに転送します。構成ファイル \fB/etc/syslog.conf\fR (\fBsyslog.conf\fR(4) を参照) はメッセージの転送先を制御します。\fBsyslogd\fR は \fImarkinterval\fR 分 (デフォルト \fB 20\fR) ごとに、優先順位 \fBLOG_INFO\fR でマーク (タイムスタンプ) メッセージを \fBsyslog.conf\fR ファイル内の \fBmark\fR と名前が付けられている機能に対して、記録します。
+.sp
+.LP
+システムメッセージは 1 行のテキストで構成され、山括弧 (\fB< >\fR) で囲まれた優先順位コード番号が前に付けられることがあります。優先順位は \fB<sys/syslog.h>\fR に定義されます。
+.sp
+.LP
+\fBsyslogd\fR は \fBSTREAMS\fR ログドライバ \fB/dev/log\fR、および \fB/etc/netconfig\fR、\fB/etc/net/transport/hosts\fR、\fB/etc/net/transport/services\fR に指定されているトランスポートプロバイダから読み取ります。
+.sp
+.LP
+\fBsyslogd\fR は、起動時および \fBHUP\fR 信号 (\fBsignal.h\fR(3HEAD) を参照) を受信したときに再度、構成ファイルを読み取ります。さらに、そのときに、開いていたすべてのファイルを閉じ、その構成ファイルを再読み取りし、そのファイルに一覧表示されているログファイルのみを開きます。\fBsyslogd\fR は \fBTERM\fR 信号を受信したときに終了します。
+.sp
+.LP
+起動すると、\fBsyslogd\fR は可能であればそのプロセス識別子 (\fBPID\fR) を格納するファイル \fB/var/run/syslog.pid\fR を作成します。
+.sp
+.LP
+メッセージ \fBID\fR の生成が有効にされている (\fBlog\fR(7D) を参照) 場合、各メッセージの前に \fB[ID\fR \fI msgid facility\fR\fB\&.\fR\fIpriority\fR\fB]\fR の形式の識別子が付けられます。\fImsgid\fR は \fBmsgid\fR(1M) に説明されているメッセージの数値の識別子です。\fIfacility\fR および \fIpriority\fR については \fBsyslog.conf\fR(4) で説明しています。\fB[ID 123456 kern.notice]\fR はメッセージ \fBID\fR の生成が有効にされている場合の識別子の例です。 
+.sp
+.LP
+メッセージがロード可能カーネルモジュールまたはドライバで生成された場合、\fBunix\fR の代わりにカーネルモジュールの名前 (\fBufs\fR など) が表示されます。メッセージ \fB ID\fR の生成が有効にされている場合と、有効にされていない場合の \fBsyslogd\fR からのサンプル出力については、「\fB使用例\fR」を参照してください。
+.sp
+.LP
+表示が乱雑にならないように、コンソールへ書き込む際にメッセージ \fBID\fR は表示されません。メッセージ \fBID\fR はログファイルにのみ書き込まれます。「\fB使用例\fR」を参照してください。
+.sp
+.LP
+\fB/etc/default/syslogd\fR ファイルにはデフォルトのパラメータ設定が格納されます。これは \fB-t\fR オプションも \fB-T\fR オプションも選択されていない場合に有効になります。
+.sp
+.LP
+メッセージのロギングを許可するか、許可しないかの推奨される方法は、サービス管理機能 (\fBsmf\fR(5)) プロパティーを使用することです。
+.sp
+.in +2
+.nf
+svc:/system/system-log/config/log_from_remote
+.fi
+.in -2
+
+.sp
+.LP
+このプロパティーはリモートメッセージをログに記録するかどうかを指定します。\fBlog_from_remote=true\fR は \fB-t\fR コマンド行オプションと同等で、\fBfalse\fR は \fB-T\fR コマンド行オプションと同等です。\fB-log_from_remote \fR のデフォルト値は \fBfalse\fR です。下の「注意事項」を参照してください。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLOG_FROM_REMOTE\fR\fR
+.ad
+.sp .6
+.RS 4n
+リモートメッセージがログに記録されるかどうかを指定します。\fBLOG_FROM_REMOTE=NO\fR は \fB-t\fR コマンド行オプションと同等です。\fBLOG_FROM_REMOTE\fR のデフォルト値は \fBYES\fR です。
+.RE
+
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+デバッグを有効にします。このオプションは、システムがマルチユーザーモードになったら、ルートシェルで対話形式でのみ使用してください。これを起動スクリプトで使用\fBしない\fRでください。\fBsyslogd\fR が起動した時点で、システムがハングアップします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIconfigfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+代替構成ファイルを指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fImarkinterval\fR\fR
+.ad
+.sp .6
+.RS 4n
+メッセージをマークする間隔を分単位で指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+代替ログデバイス名を指定します。デフォルトは \fB/dev/log\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fR
+.ad
+.sp .6
+.RS 4n
+\fBsyslogd\fR \fBUDP\fR ポートを有効にして、リモートメッセージのロギングを有効にします。これはデフォルトの動作です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsyslogd\fR \fBUDP\fR ポートを無効にして、リモートメッセージのロギングを無効にします。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRメッセージ ID の生成が有効にされていない場合の \fBsyslogd\fR の出力
+.sp
+.LP
+次の例に、メッセージ \fBID\fR の生成が有効に\fBされていない\fR場合の \fBsyslogd\fR からの出力を示します。 
+
+.sp
+.in +2
+.nf
+Sep 29 21:41:18 cathy unix: alloc /: file system full
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRID の生成が有効にされている場合の \fBsyslogd\fR の出力
+.sp
+.LP
+次の例に、メッセージ \fBID\fR の生成が有効に\fBされている\fR場合の \fBsyslogd\fR からの出力を示します。メッセージ \fBID\fR はログファイル \fB/var/adm/messages\fR への書き込み時に表示されます。
+
+.sp
+.in +2
+.nf
+Sep 29 21:41:18 cathy ufs: [ID 845546 kern.notice] 
+                                    alloc /: file system full
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fRID の生成が有効にされている場合の \fBsyslogd\fR の出力
+.sp
+.LP
+次の例に、コンソールへの書き込み時にメッセージ \fBID\fR の生成が有効に\fBされている\fR場合の \fBsyslogd\fR からの出力を示します。メッセージ ID が有効にされていても、メッセージ \fBID\fR はコンソールに表示されません。
+
+.sp
+.in +2
+.nf
+Sep 29 21:41:18 cathy ufs: alloc /: file system full
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fRリモートシステムからの UDP メッセージの受け入れの有効化
+.sp
+.LP
+次のコマンドは \fBsyslogd\fR を有効にして、リモートシステムからのエントリを受け入れます。
+
+.sp
+.in +2
+.nf
+# \fBsvccfg -s svc:/system/system-log setprop config/log_from_remote = true\fR
+# \fBsvcadm restart svc:/system/system-log\fR
+.fi
+.in -2
+.sp
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/syslog.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+構成ファイル
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/run/syslog.pid\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセス \fBID\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/default/syslogd\fR\fR
+.ad
+.sp .6
+.RS 4n
+デフォルトの設定を格納しています。コマンド行オプションによって設定の一部をオーバーライドできます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/dev/log\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBSTREAMS\fR ログドライバ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/netconfig\fR\fR
+.ad
+.sp .6
+.RS 4n
+システムで使用可能なトランスポートプロバイダ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/net/transport/hosts\fR\fR
+.ad
+.sp .6
+.RS 4n
+各トランスポートのネットワークホスト
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/net/transport/services\fR\fR
+.ad
+.sp .6
+.RS 4n
+各トランスポートのネットワークサービス
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBlogger\fR(1), \fBsvcs\fR(1), \fBmsgid\fR(1M), \fBsvcadm\fR(1M), \fBsvccfg\fR(1M), \fBsyslog\fR(3C), \fBsyslog.conf\fR(4), \fBattributes\fR(5), \fBsignal.h\fR(3HEAD), \fBsmf\fR(5), \fBlog\fR(7D)
+.SH 注意事項
+.sp
+.LP
+\fBmark\fR メッセージはシステムタイムスタンプであるため、\fBsyslogd\fR が実行しているシステムに対してのみ定義されます。ほかのシステムに転送できません。 
+.sp
+.LP
+\fBsyslogd\fR は \fBHUP\fR 信号を受信すると、保留メッセージの出力を完了しようと試み、現在メッセージをロギングしているすべてのログファイルを閉じます。何らかの理由で、これらのファイルの 1 つ (または複数) が十分な猶予期間内に閉じない場合、\fBsyslogd\fR は保留中のメッセージを破棄し、これらのファイルを強制的に閉じて、再構成を開始します。このシャットダウン手順が予期しないエラーで妨げられ、\fBsyslogd\fR が再構成を完了できない場合、\fBsyslogd\fR はシャットダウンし、終了することを示したメールメッセージを現在のシステムのスーパーユーザーに送ります。
+.sp
+.LP
+\fBsyslogd\fR によって転送されたメッセージを表示する各ウィンドウ (特にコンソールウィンドウ) がシステムのデフォルトロケール (これは \fBsyslogd\fR のロケール) で実行していることを確認する場合は注意してください。このアドバイスに従わないと、\fBsyslog\fR メッセージがそのウィンドウの端末設定を変更し、そのウィンドウからの任意のコマンドのリモート実行を許可する可能性もあります。
+.sp
+.LP
+\fBsyslogd\fR サービスは、次のサービス識別子で、サービス管理機能 \fBsmf\fR(5) によって管理します。
+.sp
+.in +2
+.nf
+svc:/system/system-log:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有効化、無効化、または再起動要求など、このサービスに関する管理操作は、\fBsvcadm\fR(1M) を使用して実行できます。サービスステータスを照会するには、\fBsvcs\fR(1) コマンドを使用します。
+.sp
+.LP
+\fBsyslogd\fR が \fBsvcadm\fR(1M) を使用して起動されると、\fB/etc/defaults/syslogd \fR ファイル内の \fBLOG_FROM_REMOTE\fR に値が指定されている場合に、SMF プロパティー \fBsvc:/system/system-log/config/log_from_remote\fR が \fBLOG_FROM_REMOTE\fR 値に対応して設定され、\fB/etc/default/syslogd\fR ファイルが次のコメントで \fBLOG_FROM_REMOTE\fR 仕様を置き換えるように変更されます。
+.sp
+.in +2
+.nf
+# LOG_FROM_REMOTE is now set using svccfg(1m), see syslogd(1m).
+.fi
+.in -2
+
+.sp
+.LP
+\fBLOG_FROM_REMOTE\fR も \fBsvc:/system/system-log/config/log_from_remote\fR も定義されていない場合、デフォルトはリモートメッセージをログに記録することです。
+.sp
+.LP
+インストール時に、\fBsvc:/system/system-log/config/log_from_remote\fR の初期値は \fBfalse\fR です。

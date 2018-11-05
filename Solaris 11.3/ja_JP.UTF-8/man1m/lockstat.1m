@@ -1,0 +1,845 @@
+'\" te
+.\" Copyright (c) 2008, 2011, Oracle and/or its affiliates. All rights reserved.
+.TH lockstat 1M "2011 年 8 月 16 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+lockstat \- カーネルロックおよびプロファイル統計情報の報告
+.SH 形式
+.LP
+.nf
+\fBlockstat\fR [\fB-ACEHI\fR] [\fB-e\fR \fIevent_list\fR] [\fB-i\fR \fIrate\fR] 
+     [\fB-b\fR | \fB-t\fR | \fB-h\fR | \fB-s\fR \fIdepth\fR] [\fB-n\fR \fInrecords\fR] 
+     [\fB-l\fR \fIlock\fR [, \fIsize\fR]] [\fB-d\fR \fIduration\fR] 
+     [\fB-f\fR \fIfunction\fR [, \fIsize\fR]] [\fB-T\fR] [\fB-ckgwWRpP\fR] [\fB-D\fR \fIcount\fR] 
+     [\fB-o\fR \fIfilename\fR] [\fB-x\fR \fIopt\fR [=val]] \fIcommand\fR [\fIargs\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBlockstat\fR ユーティリティーは、カーネルのロックとプロファイルの統計情報を収集して表示します。\fBlockstat\fR では、監視するイベント (たとえば、適応型相互排他ロックでのスピン、書き込み待機による読み取り書き込みロックへの読み取りアクセスのブロックなど)、イベントごとに収集するデータ量、およびデータの表示方法を指定できます。デフォルトでは、\fBlockstat\fR はすべてのロック競合イベントをモニターし、それらのイベント関する頻度とタイミングのデータを収集して、もっとも一般的なイベントが最初に表示されるように頻度の高い順にデータを表示します。
+.sp
+.LP
+\fBlockstat\fR は、指定されたコマンドが完了するまでデータを収集します。たとえば、決まった時間間隔の統計情報を収集するには、次のようにコマンドとして \fBsleep\fR(1) を使用します。
+.sp
+.LP
+\fBexample#\fR \fBlockstat\fR \fBsleep\fR \fB5\fR
+.sp
+.LP
+\fB-I\fR オプションを指定すると、\fBlockstat\fR はプロセッサ単位で高レベルの定期割り込みソースを設定し、プロファイルデータを収集します。この割り込みハンドラは、呼び出し元が割り込まれた PC (プログラムカウンタ) である \fBlockstat\fR イベントを生成するだけです。プロファイルイベントはほかの \fBlockstat\fR イベントとほぼ同じなので、\fBlockstat\fR の通常のオプションがすべて適用可能です。
+.sp
+.LP
+\fBlockstat\fR は、DTrace を利用して実行中のカーネルのテキストを変更し、対象となるイベントを傍受します。これにより、すべてのシステムアクティビティーに対してわずかながら測れるほどのパフォーマンスオーバーヘッドが発生するため、\fBlockstat\fR へのアクセスはデフォルトでスーパーユーザーに限定されています。システム管理者は、ほかのユーザーに追加の DTrace 特権を付与することで、\fBlockstat\fR の使用を許可できます。DTrace のセキュリティー機能の詳細は、『\fISolaris 動的トレースガイド\fR』を参照してください。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。 
+.SS "イベントの選択"
+.sp
+.LP
+イベント選択オプションが指定されていない場合、デフォルトは \fB-C\fR です。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.sp .6
+.RS 4n
+すべてのロックイベントを監視します。\fB-A\fR は \fB-CH\fR と同等です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR\fR
+.ad
+.sp .6
+.RS 4n
+競合イベントを監視します。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-E\fR\fR
+.ad
+.sp .6
+.RS 4n
+エラーイベントを監視します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-e\fR \fIevent_list\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたイベントのみを監視します。\fIevent\fR \fIlist\fR は、コンマで区切られたイベントまたはイベントの範囲のリストです (例: 1,4-7,35)。引数なしで \fBlockstat\fR を実行すると、すべてのイベントの簡単な説明が表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-H\fR \fR
+.ad
+.sp .6
+.RS 4n
+保持イベントを監視します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロファイル割り込みイベントを監視します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-i\fR \fIrate\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-I\fR の割り込みレート (秒単位)。プロファイルが (100 Hz で実行される) クロック割り込みと完全に連動して実行されないように、デフォルトは 97 Hz です。
+.RE
+
+.SS "データの収集"
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR \fIarg\fR[=\fIval\fR]\fR
+.ad
+.sp .6
+.RS 4n
+DTrace の実行時オプションまたは D コンパイラオプションを有効化または変更します。オプションのリストについては、\fBdtrace\fR(1M) を参照してください。ブール型のオプションを有効にするときは、その名前を指定します。値を持つオプションを設定するには、オプションの名前と値を等号 (=) で分離します。
+.RE
+
+.SS "データの収集 (相互排他)"
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.sp .6
+.RS 4n
+基本的な統計情報: ロック、呼び出し元、イベント数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.sp .6
+.RS 4n
+ヒストグラム: タイミングおよび時間分布ヒストグラム。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-s\fR \fIdepth\fR\fR
+.ad
+.sp .6
+.RS 4n
+スタックトレース: ヒストグラムおよびスタックトレース (最大 \fIdepth\fR フレームまで)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+タイミング: すべてのイベントの基本データおよびタイミング (デフォルト)。
+.RE
+
+.SS "データのフィルタ処理"
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-d\fR \fIduration\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIduration\fR より長いイベントのみを監視します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-f\fR \fIfunc[,size]\fR\fR
+.ad
+.sp .6
+.RS 4n
+シンボリック名または 16 進アドレスとして指定できる \fIfunc\fR によって生成されたイベントのみを監視します。\fIsize\fR のデフォルトは、\fBELF\fR シンボルが利用可能な場合はそのサイズ、利用可能でない場合は \fB1\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-l\fR \fIlock[,size]\fR\fR
+.ad
+.sp .6
+.RS 4n
+シンボリック名または 16 進アドレスとして指定できる \fIlock\fR のみを監視します。\fBsize\fR のデフォルトは、\fBELF\fR シンボルが利用可能な場合はそのサイズ、利用可能でない場合は \fB1\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-n\fR \fInrecords\fR\fR
+.ad
+.sp .6
+.RS 4n
+データレコードの最大数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fR
+.ad
+.sp .6
+.RS 4n
+イベントを (サンプリングではなく) トレースします (デフォルトではオフ)。
+.RE
+
+.SS "データの報告"
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.sp .6
+.RS 4n
+ロック配列 (たとえば、\fBpse_mutex[]\fR) のロックデータを 1 つにまとめます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-D\fR \fIcount\fR\fR
+.ad
+.sp .6
+.RS 4n
+各タイプの上位 \fIcount\fR 個のイベントのみを表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR\fR
+.ad
+.sp .6
+.RS 4n
+関数によって生成されたイベントの総数を表示します。たとえば、\fBfoo()\fR がループ内で \fBbar()\fR を呼び出す場合、\fBbar()\fR によって実行された処理は (\fBfoo()\fR 自体によって実行された処理とともに) \fBfoo()\fR によって生成された処理としてカウントされます。\fB-g\fR オプションを使用すると、各関数が現れるスタックフレームの総数がカウントされます。これは、2 つのことを意味します: (1) スタックトレースの深さが十分でない場合、\fB-g\fR によって報告されるデータは正しくない可能性があります。(2) 再帰的に呼び出される関数では、100% を超えるアクティビティーが表示される可能性があります。(1) を考慮して、\fB-g\fR を使用する場合のデフォルトのデータ収集モードは \fB-s\fR \fB50\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR\fR
+.ad
+.sp .6
+.RS 4n
+関数内の PC を 1 つにまとめます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-o\fR \fIfilename\fR\fR
+.ad
+.sp .6
+.RS 4n
+出力を \fIfilename\fR に送ります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR\fR
+.ad
+.sp .6
+.RS 4n
+(\fI数 * 時間\fR) の積でデータをソートします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+解析可能な出力形式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR\fR
+.ad
+.sp .6
+.RS 4n
+数ではなくレート (1 秒あたりのイベント数) を表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-W\fR\fR
+.ad
+.sp .6
+.RS 4n
+任意の対象: イベントをロックではなく呼び出し元でのみ区別します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-w\fR\fR
+.ad
+.sp .6
+.RS 4n
+任意の場所: イベントを呼び出し元ではなくロックでのみ区別します。
+.RE
+
+.SH 表示書式
+.sp
+.LP
+各種のデータ列に対して次のヘッダーが表示されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCount\fR または \fBops/s\fR\fR
+.ad
+.sp .6
+.RS 4n
+このイベントが発生した回数。\fB-R\fR が指定された場合はレート (1 秒あたりの回数)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBindv\fR\fR
+.ad
+.sp .6
+.RS 4n
+この特定のイベントで表されるすべてのイベントの割合。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBgenr\fR\fR
+.ad
+.sp .6
+.RS 4n
+この関数によって生成されたすべてのイベントの割合。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcuml\fR\fR
+.ad
+.sp .6
+.RS 4n
+累積率 (現在までの個別の合計)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrcnt\fR\fR
+.ad
+.sp .6
+.RS 4n
+平均参照数。これは、排他ロック (相互排他ロック、スピンロック、書き込みとして保持されている読み取り書き込みロック) では常に \fB1\fR になりますが、共有ロック (読み取りとして保持されている読み取り書き込みロック) では \fB1\fR より大きくなることがあります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnsec\fR\fR
+.ad
+.sp .6
+.RS 4n
+イベントのナノ秒単位の平均期間 (イベントに適する場合)。プロファイルイベントの場合、期間は割り込みの待機時間を意味します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLock\fR\fR
+.ad
+.sp .6
+.RS 4n
+可能な場合にシンボルで表示される、ロックのアドレス。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCPU+PIL\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBCPU\fR とプロセッサ割り込みレベル (\fBPIL\fR)。たとえば、\fBPIL\fR 6 の最中に \fBCPU\fR 4 が割り込まれた場合、これは \fBcpu[4]+6\fR として報告されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCaller\fR\fR
+.ad
+.sp .6
+.RS 4n
+可能な場合にシンボルで表示される、呼び出し元のアドレス。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRカーネルのロック競合の測定
+.sp
+.in +2
+.nf
+example# \fBlockstat sleep 5\fR
+Adaptive mutex spin: 2210 events in 5.055 seconds (437 events/sec)
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+Count indv cuml rcnt     nsec Lock                Caller
+------------------------------------------------------------------------
+  269  12%  12% 1.00     2160 service_queue       background+0xdc
+  249  11%  23% 1.00       86 service_queue       qenable_locked+0x64
+  228  10%  34% 1.00      131 service_queue       background+0x15c
+   68   3%  37% 1.00       79 0x30000024070       untimeout+0x1c
+   59   3%  40% 1.00      384 0x300066fa8e0       background+0xb0
+   43   2%  41% 1.00       30 rqcred_lock         svc_getreq+0x3c
+   42   2%  43% 1.00      341 0x30006834eb8       background+0xb0
+   41   2%  45% 1.00      135 0x30000021058       untimeout+0x1c
+   40   2%  47% 1.00       39 rqcred_lock         svc_getreq+0x260
+   37   2%  49% 1.00     2372 0x300068e83d0       hmestart+0x1c4
+   36   2%  50% 1.00       77 0x30000021058       timeout_common+0x4
+   36   2%  52% 1.00      354 0x300066fa120       background+0xb0
+   32   1%  53% 1.00       97 0x30000024070       timeout_common+0x4
+   31   1%  55% 1.00     2923 0x300069883d0       hmestart+0x1c4
+   29   1%  56% 1.00      366 0x300066fb290       background+0xb0
+   28   1%  57% 1.00      117 0x3000001e040       untimeout+0x1c
+   25   1%  59% 1.00       93 0x3000001e040       timeout_common+0x4
+   22   1%  60% 1.00       25 0x30005161110       sync_stream_buf+0xdc
+   21   1%  60% 1.00      291 0x30006834eb8       putq+0xa4
+   19   1%  61% 1.00       43 0x3000515dcb0       mdf_alloc+0xc
+   18   1%  62% 1.00      456 0x30006834eb8       qenable+0x8
+   18   1%  63% 1.00       61 service_queue       queuerun+0x168
+   17   1%  64% 1.00      268 0x30005418ee8       vmem_free+0x3c
+[...]
+
+R/W reader blocked by writer: 76 events in 5.055 seconds (15 events/sec)
+
+Count indv cuml rcnt     nsec Lock                Caller
+------------------------------------------------------------------------
+   23  30%  30% 1.00 22590137 0x300098ba358       ufs_dirlook+0xd0
+   17  22%  53% 1.00  5820995 0x3000ad815e8       find_bp+0x10
+   13  17%  70% 1.00  2639918 0x300098ba360       ufs_iget+0x198
+    4   5%  75% 1.00  3193015 0x300098ba360       ufs_getattr+0x54
+    3   4%  79% 1.00  7953418 0x3000ad817c0       find_bp+0x10
+    3   4%  83% 1.00   935211 0x3000ad815e8       find_read_lof+0x14
+    2   3%  86% 1.00 16357310 0x300073a4720       find_bp+0x10
+    2   3%  88% 1.00  2072433 0x300073a4720       find_read_lof+0x14
+    2   3%  91% 1.00  1606153 0x300073a4370       find_bp+0x10
+    1   1%  92% 1.00  2656909 0x300107e7400       ufs_iget+0x198
+[...]
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fR保持回数の測定
+.sp
+.in +2
+.nf
+example# \fBlockstat -H -D 10 sleep 1\fR
+Adaptive mutex spin: 513 events
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+Count indv cuml rcnt     nsec Lock                Caller
+-------------------------------------------------------------------------
+  480   5%   5% 1.00     1136 0x300007718e8       putnext+0x40
+  286   3%   9% 1.00      666 0x3000077b430       getf+0xd8
+  271   3%  12% 1.00      537 0x3000077b430       msgio32+0x2fc
+  270   3%  15% 1.00     3670 0x300007718e8       strgetmsg+0x3d4
+  270   3%  18% 1.00     1016 0x300007c38b0       getq_noenab+0x200
+  264   3%  20% 1.00     1649 0x300007718e8       strgetmsg+0xa70
+  216   2%  23% 1.00     6251 tcp_mi_lock         tcp_snmp_get+0xfc
+  206   2%  25% 1.00      602 thread_free_lock    clock+0x250
+  138   2%  27% 1.00      485 0x300007c3998       putnext+0xb8
+  138   2%  28% 1.00     3706 0x300007718e8       strrput+0x5b8
+-------------------------------------------------------------------------
+[...]
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fR特定の関数を含むスタックトレースの保持回数の測定
+.sp
+.in +2
+.nf
+example# \fBlockstat -H -f tcp_rput_data -s 50 -D 10 sleep 1\fR
+Adaptive mutex spin: 11 events in 1.023 seconds (11
+events/sec)
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+-------------------------------------------------------------------------
+Count indv cuml rcnt     nsec Lock                   Caller
+    9  82%  82% 1.00     2540 0x30000031380          tcp_rput_data+0x2b90
+
+      nsec ------ Time Distribution ------ count     Stack
+       256 |@@@@@@@@@@@@@@@@               5         tcp_rput_data+0x2b90
+       512 |@@@@@@                         2         putnext+0x78
+      1024 |@@@                            1         ip_rput+0xec4
+      2048 |                               0         _c_putnext+0x148
+      4096 |                               0         hmeread+0x31c
+      8192 |                               0         hmeintr+0x36c
+     16384 |@@@                            1
+sbus_intr_wrapper+0x30
+[...]
+
+Count indv cuml rcnt     nsec Lock                   Caller
+    1   9%  91% 1.00     1036 0x30000055380          freemsg+0x44
+
+      nsec ------ Time Distribution ------ count     Stack
+      1024 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ 1         freemsg+0x44
+                                                     tcp_rput_data+0x2fd0
+                                                     putnext+0x78
+                                                     ip_rput+0xec4
+                                                     _c_putnext+0x148
+                                                     hmeread+0x31c
+                                                     hmeintr+0x36c
+
+sbus_intr_wrapper+0x30
+-------------------------------------------------------------------------
+[...]
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fR基本的なカーネルプロファイル
+.sp
+.LP
+基本的なプロファイルでは、プロファイル割り込みによって \fBfoo()\fR\fB+0x4c\fR と \fBfoo()\fR\fB+0x78\fR のどちらがサンプリングされたかを気にする必要はなく、\fBfoo()\fR のどこかがサンプリングされていればよいため、\fB-k\fR を使用します。特定の \fBCPU\fR や割り込みレベルではなくシステム全体を測定するので、\fBCPU\fR と \fBPIL\fR は基本的なプロファイルに関係ありません。したがって、\fB-W\fR を使用します。
+
+.sp
+.in +2
+.nf
+example# \fBlockstat -kIW -D 20 ./polltest\fR
+Profiling interrupt: 82 events in 0.424 seconds (194
+events/sec)
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+Count indv cuml rcnt     nsec Hottest CPU+PIL     Caller
+-----------------------------------------------------------------------
+    8  10%  10% 1.00      698 cpu[1]              utl0
+    6   7%  17% 1.00      299 cpu[0]              read
+    5   6%  23% 1.00      124 cpu[1]              getf
+    4   5%  28% 1.00      327 cpu[0]              fifo_read
+    4   5%  33% 1.00      112 cpu[1]              poll
+    4   5%  38% 1.00      212 cpu[1]              uiomove
+    4   5%  43% 1.00      361 cpu[1]              mutex_tryenter
+    3   4%  46% 1.00      682 cpu[0]              write
+    3   4%  50% 1.00       89 cpu[0]              pcache_poll
+    3   4%  54% 1.00      118 cpu[1]              set_active_fd
+    3   4%  57% 1.00      105 cpu[0]              syscall_trap32
+    3   4%  61% 1.00      640 cpu[1]              (usermode)
+    2   2%  63% 1.00      127 cpu[1]              fifo_poll
+    2   2%  66% 1.00      300 cpu[1]              fifo_write
+    2   2%  68% 1.00      669 cpu[0]              releasef
+    2   2%  71% 1.00      112 cpu[1]              bt_getlowbit
+    2   2%  73% 1.00      247 cpu[1]              splx
+    2   2%  76% 1.00      503 cpu[0]              mutex_enter
+    2   2%  78% 1.00      467 cpu[0]+10           disp_lock_enter
+    2   2%  80% 1.00      139 cpu[1]              default_copyin
+-----------------------------------------------------------------------
+[...]
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 5 \fR生成される負荷のプロファイル
+.sp
+.LP
+上の例では、サンプルの 5% が \fBpoll()\fR に含まれていました。これにより、\fBpoll()\fR 自体の内部で費やした時間はわかりますが、\fBpoll()\fR によってどの程度の処理が\fB生成\fRされたか、つまり、\fBpoll()\fR によって呼び出された関数内で費やした時間はわかりません。それを判定するには、\fB-g\fR オプションを使用します。次の例は、\fBpolltest\fR が \fBpoll()\fR 自体で費やした時間は 5% だけだが、\fBpoll()\fR によって引き起こされた処理は負荷の 34% を占めることを示しています。
+
+.sp
+.LP
+プロファイル割り込みを生成する関数 (\fBlockstat_intr()\fR や \fBcyclic_fire()\fR など) はどのスタックトレースにも表示されるため、負荷の 100% を生成していると見なされます。これは重要なことを示してます。生成される負荷の割合は互いに独立していないため、合計しても 100% には\fBなりません\fR。すべてのスタックトレースの 72% に \fBfoo()\fR と \fBbar()\fR の両方が含まれている場合、\fBfoo()\fR と \fBbar()\fR の両方が 72% の負荷を生成することになります。
+
+.sp
+.in +2
+.nf
+example# \fBlockstat -kgIW -D 20 ./polltest\fR
+Profiling interrupt: 80 events in 0.412 seconds (194 events/sec)
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+Count genr cuml rcnt     nsec Hottest CPU+PIL     Caller
+-------------------------------------------------------------------------
+   80 100% ---- 1.00      310 cpu[1]              lockstat_intr
+   80 100% ---- 1.00      310 cpu[1]              cyclic_fire
+   80 100% ---- 1.00      310 cpu[1]              cbe_level14
+   80 100% ---- 1.00      310 cpu[1]              current_thread
+   27  34% ---- 1.00      176 cpu[1]              poll
+   20  25% ---- 1.00      221 cpu[0]              write
+   19  24% ---- 1.00      249 cpu[1]              read
+   17  21% ---- 1.00      232 cpu[0]              write32
+   17  21% ---- 1.00      207 cpu[1]              pcache_poll
+   14  18% ---- 1.00      319 cpu[0]              fifo_write
+   13  16% ---- 1.00      214 cpu[1]              read32
+   10  12% ---- 1.00      208 cpu[1]              fifo_read
+   10  12% ---- 1.00      787 cpu[1]              utl0
+    9  11% ---- 1.00      178 cpu[0]              pcacheset_resolve
+    9  11% ---- 1.00      262 cpu[0]              uiomove
+    7   9% ---- 1.00      506 cpu[1]              (usermode)
+    5   6% ---- 1.00      195 cpu[1]              fifo_poll
+    5   6% ---- 1.00      136 cpu[1]              syscall_trap32
+    4   5% ---- 1.00      139 cpu[0]              releasef
+    3   4% ---- 1.00      277 cpu[1]              polllock
+-------------------------------------------------------------------------
+[...]
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 6 \fR特定のモジュールに関するロック競合およびプロファイルデータの収集
+.sp
+.LP
+この例では、\fB-f\fR オプションを使用しますが、単独の関数を指定せずに \fBsbus\fR モジュールのテキスト空間全体を指定します。ロック競合とプロファイルの両方の統計情報を収集して、競合をモジュールの全体的な負荷と関係付けることができるようにします。 
+
+.sp
+.in +2
+.nf
+example# \fBmodinfo | grep sbus\fR
+ 24 102a8b6f   b8b4  59   1  sbus (SBus (sysio) nexus driver)
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+example# \fBlockstat -kICE -f 0x102a8b6f,0xb8b4 sleep 10\fR
+Adaptive mutex spin: 39 events in 10.042 seconds (4 events/sec)
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+Count indv cuml rcnt     nsec Lock               Caller
+-------------------------------------------------------------------------
+   15  38%  38% 1.00      206 0x30005160528      sync_stream_buf
+    7  18%  56% 1.00       14 0x30005160d18      sync_stream_buf
+    6  15%  72% 1.00       27 0x300060c3118      sync_stream_buf
+    5  13%  85% 1.00       24 0x300060c3510      sync_stream_buf
+    2   5%  90% 1.00       29 0x300060c2d20      sync_stream_buf
+    2   5%  95% 1.00       24 0x30005161cf8      sync_stream_buf
+    1   3%  97% 1.00       21 0x30005161110      sync_stream_buf
+    1   3% 100% 1.00       23 0x30005160130      sync_stream_buf
+[...]
+
+Adaptive mutex block: 9 events in 10.042 seconds (1 events/sec)
+
+Count indv cuml rcnt     nsec Lock               Caller
+-------------------------------------------------------------------------
+    4  44%  44% 1.00   156539 0x30005160528      sync_stream_buf
+    2  22%  67% 1.00   763516 0x30005160d18      sync_stream_buf
+    1  11%  78% 1.00   462130 0x300060c3510      sync_stream_buf
+    1  11%  89% 1.00   288749 0x30005161110      sync_stream_buf
+    1  11% 100% 1.00  1015374 0x30005160130      sync_stream_buf
+[...]
+
+Profiling interrupt: 229 events in 10.042 seconds (23 events/sec)
+
+Count indv cuml rcnt     nsec Hottest CPU+PIL    Caller
+ 
+-------------------------------------------------------------------------
+   89  39%  39% 1.00      426 cpu[0]+6           sync_stream_buf
+   64  28%  67% 1.00      398 cpu[0]+6           sbus_intr_wrapper
+   23  10%  77% 1.00      324 cpu[0]+6           iommu_dvma_kaddr_load
+   21   9%  86% 1.00      512 cpu[0]+6           iommu_tlb_flush
+   14   6%  92% 1.00      342 cpu[0]+6           iommu_dvma_unload
+   13   6%  98% 1.00      306 cpu[1]             iommu_dvma_sync
+    5   2% 100% 1.00      389 cpu[1]             iommu_dma_bindhdl
+-------------------------------------------------------------------------
+[...]
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 7 \fRCPU の平均 PIL (プロセッサ割り込みレベル) の判定
+.sp
+.in +2
+.nf
+example# \fBlockstat -Iw -l cpu[3] ./testprog\fR
+
+Profiling interrupt: 14791 events in 152.463 seconds (97 events/sec)
+
+Count indv cuml rcnt     nsec CPU+PIL             Hottest Caller
+
+-----------------------------------------------------------------------
+13641  92%  92% 1.00      253 cpu[3]              (usermode)
+  579   4%  96% 1.00      325 cpu[3]+6            ip_ocsum+0xe8
+  375   3%  99% 1.00      411 cpu[3]+10           splx
+  154   1% 100% 1.00      527 cpu[3]+4            fas_intr_svc+0x80
+   41   0% 100% 1.00      293 cpu[3]+13           send_mondo+0x18
+    1   0% 100% 1.00      266 cpu[3]+12           zsa_rxint+0x400
+-----------------------------------------------------------------------
+[...]
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 8 \fRシステムをビジー状態にしているサブシステムの特定
+.sp
+.in +2
+.nf
+example# \fBlockstat -s 10 -I sleep 20\fR
+
+Profiling interrupt: 4863 events in 47.375 seconds (103 events/sec)
+
+Count indv cuml rcnt     nsec CPU+PIL          Caller
+
+-----------------------------------------------------------------------
+1929   40%  40% 0.00     3215 cpu[0]           usec_delay+0x78
+  nsec ------ Time Distribution ------ count   Stack
+  4096 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  1872    ata_wait+0x90
+  8192 |                               27      acersb_get_intr_status+0x34     
+ 16384 |                               29      ata_set_feature+0x124
+ 32768 |                               1       ata_disk_start+0x15c
+                                               ata_hba_start+0xbc
+                                               ghd_waitq_process_and \e
+                                               _mutex_hold+0x70
+                                               ghd_waitq_process_and \e
+                                               _mutex_exit+0x4
+                                               ghd_transport+0x12c
+                                               ata_disk_tran_start+0x108
+-----------------------------------------------------------------------
+[...]
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/dtrace
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBdtrace\fR(1M), \fBplockstat\fR(1M), \fBattributes\fR(5), \fBlockstat\fR(7D), \fBmutex\fR(9F), \fBrwlock\fR(9F)
+.sp
+.LP
+『\fISolaris 動的トレースガイド\fR』
+.SH 注意事項
+.sp
+.LP
+古い (文書化されていない) \fB/usr/bin/kgmon\fR および \fB/dev/profile\fR は、\fBlockstat\fR \fB-I\fR で提供されるプロファイルサポートによって置き換えられます。
+.sp
+.LP
+末尾呼び出しの削除は、呼び出し側に影響する可能性があります。たとえば、\fBfoo()\fR\fB+0x50\fR が \fBbar()\fR を呼び出し、\fBbar()\fR が最後に実行する処理が \fBmutex_exit()\fR の呼び出しである場合、コンパイラは \fBbar()\fR が \fBfoo()\fR\fB+0x58\fR という戻りアドレスで \fBmutex_exit()\fR に分岐するように設定する可能性があります。したがって、\fBbar()\fR 内の \fBmutex_exit()\fR は \fBfoo()\fR\fB+0x58\fR で発生したかのように表示されます。
+.sp
+.LP
+コンパイラは関数呼び出しの間にローカルストレージの戻りアドレスレジスタを自由に使用できるため、割り込みが発生するスタックフレーム内の \fBPC\fR は不正である可能性があります。
+.sp
+.LP
+\fB-I\fR オプションと \fB-s\fR オプションを同時に使用すると、割り込みハンドラがその \fBPC\fR からの関数呼び出しではなく非同期で実行を開始するため、割り込まれた PC は通常スタックのどこにも表示されません。
+.sp
+.LP
+\fBlockstat\fR テクノロジーは現状のまま提供されます。\fBlockstat\fR の出力形式と出力内容は、最新の Solaris カーネル実装を反映するため、将来のリリースで変更される場合があります。

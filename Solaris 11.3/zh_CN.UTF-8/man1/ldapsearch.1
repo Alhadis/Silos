@@ -1,0 +1,876 @@
+'\" te
+.\" Copyright © 1990, Regents of the University of Michigan.All Rights Reserved.
+.\" Portions Copyright © 2006, Sun Microsystems, Inc. All Rights Reserved.
+.TH ldapsearch 1 "2006 年 1 月 6 日" "SunOS 5.11" "用户命令"
+.SH 名称
+ldapsearch \- ldap 搜索工具
+.SH 用法概要
+.LP
+.nf
+\fBldapsearch\fR [\fB-n\fR] [\fB-u\fR] [\fB-v\fR] [\fB-t\fR] [\fB-A\fR] [\fB-B\fR] [\fB-L\fR] [\fB-R\fR] [\fB-H\fR] 
+     [\fB-?\fR] [\fB-t\fR] [\fB-T\fR] [\fB-B\fR] [\fB-E\fR] [\fB-J\fR] [\fB-e\fR] [\fB-l\fR] [\fB-Z\fR] [\fB-r\fR] 
+     [\fB-M\fR] [\fB-d\fR \fIdebuglevel\fR] [\fB-F\fR \fIsep\fR] [\fB-f\fR \fIfile\fR] [\fB-D\fR \fIbindDN\fR] 
+     [\fB-j\fR \fIfilename\fR] [\fB-V\fR \fIversion\fR] [\fB-Y\fR \fIproxyDN\fR] [\fB-O\fR \fIhopLimit\fR] 
+     [\fB-i\fR \fIlocale\fR] [\fB-k\fR \fIpath\fR] [\fB-S\fR [\fB-\fR] \fIattribute\fR] [\fB-C\fR \fIpattern\fR] 
+     [\fB-c\fR \fIauthzid\fR] [\fB-P\fR \fIpath\fR] [\fB-N\fR \fIcertificate\fR] [\fB-w\fR \fIpasswd\fR] 
+     [\fB-h\fR \fIldaphost\fR] [\fB-p\fR \fIldapport\fR] [\fB-o\fR \fIattributename\fR=\fIvalue\fR] 
+     [\fB-b\fR \fIsearchbase\fR] [\fB-s\fR \fIscope\fR] [\fB-a\fR \fIderef\fR] [\fB-l\fR \fItimelimit\fR] 
+     [\fB-z\fR \fIsizelimit\fR] \fIfilter\fR [\fIattrs\fR]...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBldapsearch\fR 实用程序可打开与 LDAP 服务器的连接，使用过滤器 \fIfilter\fR 绑定并执行搜索。
+.sp
+.LP
+如果 \fBldapsearch\fR 找到一个或多个条目，则会检索由 \fIattrs\fR 指定的属性并且会将条目和值输出到标准输出。如果没有列出 \fIattrs\fR，则会返回所有属性。
+.SS "输出格式"
+.sp
+.LP
+如果找到一个或多个条目，则会按以下格式将每个条目写入到标准输出：
+.sp
+.in +2
+.nf
+dn: Distinguished Name (DN)
+        attributename: value
+        attributename: value
+        attributename: value
+\&...
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+多个条目以单个空行分隔。如果使用 \fB-F\fR 选项指定一个不同的分隔符字符，则会改用该字符而不使用 \fB:\fR 字符。如果使用 \fB-t\fR 选项，则会返回临时文件的名称而不是实际值。如果给定了 \fB-A\fR 选项，则只会返回 “attributename” 而不返回属性值。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅检索属性（不检索值）。如果只想了解条目中是否存在某个属性而对具体值不感兴趣，则该选项非常有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fIderef\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定如何执行别名引用解除。\fIderef\fR 的可能值有 \fBnever\fR、\fBalways\fR、\fBsearch\fR 或 \fBfind\fR，分别指定从不解除别名引用、始终解除别名引用、在搜索时解除别名引用，或只在查找要搜索的基对象时解除别名引用。缺省行为是从不解除别名引用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-B\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示非 ASCII 值并使用旧的非 LDIF 格式。此选项禁用缺省的 \fB-L\fR 选项。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR \fIsearchbase\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fIsearchbase\fR 而非缺省值作为搜索的起点。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR \fIpattern\fR\fR
+.ad
+.sp .6
+.RS 4n
+持久性搜索。执行搜索时使连接保持打开状态，并且每当添加、修改或删除与搜索的范围或过滤器匹配的条目时都显示结果。使用此选项，\fBldapsearch\fR 工具将无限期运行，必须通过键入 Ctrl-c 来停止它。pattern 采用以下格式：
+.sp
+.in +2
+.nf
+ps:changeType[:changesOnly[:entryChangeControls]]
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIauthzid\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定 \fBgetEffectiveRights\fR 控件 \fIauthzid\fR。例如：
+.sp
+.in +2
+.nf
+dn:uid=bjensen,dc=example,dc=com
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR \fIbindDN\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用标识名 \fIbindDN\fR 绑定到目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdebuglevel\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置 \fBLDAP\fR 调试级别。适用于 \fBldapsearch\fR 的有用调试级别包括： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 7n
+.rt  
+跟踪
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 7n
+.rt  
+包
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR\fR
+.ad
+.RS 7n
+.rt  
+参数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB32\fR\fR
+.ad
+.RS 7n
+.rt  
+过滤器
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB128\fR\fR
+.ad
+.RS 7n
+.rt  
+访问控制
+.RE
+
+要请求多个类别的调试信息，请将掩码相加。例如，要请求跟踪和过滤器信息，请将 debuglevel 指定为 33。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-E\fR\fR
+.ad
+.sp .6
+.RS 4n
+通过验证响应控制，要求服务器公开（报告）绑定标识。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.sp .6
+.RS 4n
+最小化值的 base-64 编码。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR \fIsep\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fIsep\fR 作为属性名称与值之间的字段分隔符。如果指定了此选项，则会忽略 \fB-L\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+从 \fIfile\fR 中读取一系列行，针对每行执行一次 \fBLDAP\fR 搜索。在这种情况下，在命令行上给定的 \fIfilter\fR 将被视为一个模式，其中，\fB%s\fR 的第一个实例将被替换为 \fIfile\fR 中的一行。如果 \fIfile\fR 是单个 \fI-\fR 字符，则会从标准输入中读取行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-G\fR \fIpattern\fR\fR
+.ad
+.sp .6
+.RS 4n
+虚拟列表视图。仅检索所有结果的一部分，具体由搜索目标的索引或值和在目标前后要返回的条目数目来确定。此选项始终要求使用 \fB-S\fR 和 \fB-x\fR 选项来指定服务器上的排序顺序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-?\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示简要描述所有选项的用法帮助文本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-H\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示简要描述所有选项的用法帮助文本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR \fIldaphost\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定运行安全 LDAP 服务器的备用主机。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fIlocale\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定用于命令行输入的字符集。缺省值是在 \fBLANG\fR 环境变量中指定的字符集。您可能希望使用此选项执行从指定的字符集到 UTF8 的转换，从而覆盖 \fBLANG\fR 设置。使用此参数，可以采用指定的字符集输入绑定 DN、基 DN 和搜索过滤器模式。\fBldapsearch\fR 工具在处理搜索请求之前基于这些参数转换输入。例如，\fB-i\fR \fBno\fR 指示将以挪威语提供绑定 DN、基 DN 和搜索过滤器。此参数仅影响命令行输入。如果指定了包含搜索过滤器的文件（通过 \fB-f\fR 选项），则 \fBldapsearch\fR 不会转换文件中的数据。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-j\fR \fIfilename\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定绑定 DN 的口令或 SSL 客户机密钥数据库的口令所在的文件。要保护口令，请在脚本中使用此选项，并将口令存放在安全文件中。此选项与 \fB-w\fR 和 \fB-W\fR 选项互斥。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-J\fR [:\fIcriticality\fR[:\fIvalue\fR|::\fIb64value\fR|\fIb64value\fR|:\fIfileurl\fR]]\fR
+.ad
+.sp .6
+.RS 4n
+Criticality 是一个布尔值（缺省值是 \fBfalse\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定包含转换例程的目录路径。如果要指定目录服务器缺省情况下不支持的语言环境，则需要使用这些例程。这用于 NLS 支持。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR\fR
+.ad
+.sp .6
+.RS 4n
+ 以 LDIF 格式显示搜索结果。此选项还会打开 \fB-B\fR 选项。此行为是缺省行为。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fItimelimit\fR\fR
+.ad
+.sp .6
+.RS 4n
+最多等待 \fItimelimit\fR 秒后搜索完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR\fR
+.ad
+.sp .6
+.RS 4n
+管理智能引用。当它们是操作的目标时，将搜索包含引用的条目而不是搜索通过跟踪引用获取的条目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR \fIcertificate\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定用于基于证书的客户端验证的证书名称。例如：\fB-N\fR \fB“Directory-Cert”\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示应执行的操作，但不实际执行搜索。可以与 \fB-v\fR 和 \fB-d\fR 一起用于调试。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-O\fR \fIhopLimit\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定在查找要修改的条目时要遵循的引用跳数的最大数目。缺省情况下，没有任何限制。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIattributename\fR=\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+用于 SASL 机制和其他选项，例如安全属性、运行模式、授权 ID、验证 ID 等。
+.sp
+各种属性名称及其值如下所示：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsecProp\fR=\fI“number”\fR\fR
+.ad
+.RS 24n
+.rt  
+用于定义 SASL 安全属性。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrealm\fR=\fI“value”\fR\fR
+.ad
+.RS 24n
+.rt  
+指定 SASL 领域（缺省值为 \fBrealm=none\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauthzid\fR=\fI“value”\fR\fR
+.ad
+.RS 24n
+.rt  
+指定用于 SASL 绑定的授权 ID 名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauthid\fR=\fI“value”\fR\fR
+.ad
+.RS 24n
+.rt  
+指定用于 SASL 绑定的验证 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmech\fR=\fI“value”\fR\fR
+.ad
+.RS 24n
+.rt  
+指定各种 SASL 机制。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定客户端证书数据库的路径和文件名。例如：
+.sp
+.in +2
+.nf
+-P /home/uid/.netscape/cert7.db
+.fi
+.in -2
+.sp
+
+在与目录服务器相同的主机上使用命令时，可以使用服务器自己的证书数据库。例如：
+.sp
+.in +2
+.nf
+-P \fIinstallDir\fR/lapd-serverID/alias/cert7.db
+.fi
+.in -2
+.sp
+
+单独使用 \fB-P\fR 选项将仅指定服务器验证。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIldapport\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定安全 LAPD 服务器侦听的备用 TCP 端口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR\fR
+.ad
+.sp .6
+.RS 4n
+不自动跟踪在搜索时返回的引用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+以旧格式显示 \fBldapsearch\fR 命令的输出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR [-]\fIattribute\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定用于对搜索返回的条目进行排序的属性。排序条件按照属性值的字母顺序排序或按照格式 \fB-attribute\fR 的反向字母顺序排序。您可以给定多个 \fB-S\fR 选项来细化排序，例如：
+.sp
+.in +2
+.nf
+-S sn -S \fIgivenname\fR
+.fi
+.in -2
+.sp
+
+缺省情况下，这些条目未排序。使用 \fB-x\fR 选项执行服务器端排序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIscope\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定搜索的范围。\fIscope\fR 的可能值有 \fBbase\fR、\fBone\fR 或 \fBsub\fR，分别用来指定基对象、一层或子树搜索。缺省值为 \fBsub\fR。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置搜索结果的输出格式，以便在各个属性值内不使用换行符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+将检索到的值写入到一组临时文件。这对于处理非 ASCII 值（例如 jpegPhoto 或 audio）非常有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-U\fR\fR
+.ad
+.sp .6
+.RS 4n
+URL 格式（仅在与 \fB-t\fR 选项一起使用时有效）。当使用临时文件输出时，该工具的标准输出包括文件的 URL 而不是属性值。例如：
+.sp
+.in +2
+.nf
+jpegPhoto:< file:/tmp/ldapsearch-jpegPhoto-YzaOMh
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+在输出中包括标识名 (Distinguished Name, DN) 的用户友好形式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR \fIversion\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定要用于删除操作的 LDAP 协议版本号，2 或 3。LDAP v3 为缺省值。当连接到不支持 v3 的服务器时，请指定 LDAP v2。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+在详细模式下运行，将诊断信息写入到标准输出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-W\fR \fIpassword\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定在 \fB-P\fR 选项中给出的客户端密钥数据库的口令。对于基于证书的客户端验证，此选项是必需的。在命令行上指定 \fIpassword\fR 会有安全问题，因为系统上的其他人可以通过 \fBps\fR 命令看到口令。请改用 \fB-j\fR 从文件中指定口令。此选项与 \fB-j\fR 互斥。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-w\fR \fIpasswd\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fIpasswd\fR 作为用于对目录进行验证的口令。当使用 \fB-w\fR \fIpasswd\fR 指定用于验证的口令时，系统的其他用户可以通过 \fBps\fR 命令在脚本文件中或者在 shell 历史记录中看到口令。如果在不使用此选项的情况下使用 \fBldapsearch\fR 命令，则该命令将提示输入口令并从标准输入中读取口令。当不与 \fB-w\fR 选项一起使用时，其他用户将看不到口令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.sp .6
+.RS 4n
+与 \fB-S\fR 选项一起使用以指定搜索结果在服务器上进行排序而不是由在客户端上运行的 \fBldapsearch\fR 命令进行排序。如果希望根据某个匹配规则进行排序（例如使用国际搜索时），这非常有用。如果受支持，在服务器上进行排序通常比在客户端上进行排序更快。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Y\fR \fIproxyDN\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定要用于修改操作的代理 DN（被代理的授权 id），在 shell 中通常置于双引号 ("") 中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Z\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定要用于提供基于证书的客户端验证的 SSL。此选项需要 \fB-N\fR 和 SSL 口令以及识别证书和密钥数据库所需的任何其他 SSL 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fIsizelimit\fR\fR
+.ad
+.sp .6
+.RS 4n
+最多检索 \fIsizelimit\fR 个条目后搜索完成。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR执行子树搜索
+.sp
+.LP
+以下命令执行子树搜索（使用缺省的搜索基）来查找 commonName 为 “mark smith” 的条目。将检索 commonName 和 telephoneNumber 值并将其输出到标准输出。使用 \fB-r\fR 选项将以旧格式显示此输出。
+
+.sp
+.in +2
+.nf
+example% ldapsearch "cn=mark smith" cn telephoneNumber
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+输出结果看起来类似于以下内容：
+
+.sp
+.in +2
+.nf
+dn: Mark D Smith, ou=Sales, ou=Atlanta, ou=People, o=XYZ, c=US
+cn: Mark Smith
+cn: Mark David Smith
+cn: Mark D Smith 1
+cn: Mark D Smith
+telephoneNumber: +1 123 456-7890
+
+dn: Mark C Smith, ou=Distribution, ou=Atlanta, ou=People, o=XYZ, c=US
+cn: Mark Smith
+cn: Mark C Smith 1
+cn: Mark C Smith
+telephoneNumber: +1 123 456-9999
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR使用缺省搜索基执行子树搜索
+.sp
+.LP
+以下命令使用 \fB-r\fR 选项通过缺省搜索基执行子树搜索来以旧格式显示用户 id 为 \fBmcs\fR 的条目。将在包含 DN 本身的行后输出条目 DN 的用户友好形式，并且将检索 \fBjpegPhoto\fR 和 \fBaudio\fR 值并将其写入到临时文件中。
+
+.sp
+.in +2
+.nf
+ldapsearch -r -u -t "uid=mcs" -r jpegPhoto audio
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果找到了对于所请求的每个属性都有一个值的一个条目，则输出结果可能看起来类似于以下内容：
+
+.sp
+.in +2
+.nf
+cn=Mark C Smith, ou=Distribution, ou=Atlanta, ou=People, o=XYZ, c=US
+Mark C Smith, Distribution, Atlanta, People, XYZ, US
+audio=/tmp/ldapsearch-audio-a19924
+jpegPhoto=/tmp/ldapsearch-jpegPhoto-a19924
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR执行单层搜索
+.sp
+.LP
+以下命令在 organizationName 以 XY 开头的所有组织的 c=US 层执行单层搜索。
+
+.sp
+.in +2
+.nf
+example% ldapsearch -s one -b "c=US" "o=XY*" o description
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+将检索 \fBorganizationName\fR 和 \fBdescription\fR 属性值并将其输出到标准输出，最后所得到的输出结果类似于以下内容：
+
+.sp
+.in +2
+.nf
+dn: o=XYZ    c=US
+     o: XYZ
+     description: XYZ Corporation
+
+     dn: o="XY Trading Company", c=US
+     o: XY Trading Company
+     description: Import and export specialists
+
+     dn: o=XYInternational, c=US
+     o: XYInternational
+     o: XYI
+     o: XY International
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR在 IPv6 服务器上执行子树搜索
+.sp
+.LP
+以下命令使用缺省搜索基在 IPv6（即 \fB-h\fR）服务器上执行子树搜索来查找用户 id 为 \fBmcs\fR 的条目。
+
+.sp
+.in +2
+.nf
+example% ldapsearch -u -h '['fec0::111:a00:20ff:fea3:edcf']' \e
+              -t "uid=mcs" jpegPhoto audio
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功完成。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB>\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。向标准错误写入一条诊断消息。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关以下属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBldapadd\fR(1)、\fBldapdelete\fR(1)、\fBldapmodify\fR(1)、\fBldapmodrdn\fR(1)、\fBattributes\fR(5)

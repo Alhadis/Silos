@@ -1,0 +1,257 @@
+'\" te
+.\" Copyright (c) 2003, 2012, Oracle and/or its affiliates.All rights reserved.
+.TH audit_warn 1M "2012 年 5 月 3 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+audit_warn \- 审计服务警告脚本
+.SH 用法概要
+.LP
+.nf
+\fB/etc/security/audit_warn\fR \fIoption\fR [\fIarguments\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBaudit_warn\fR 脚本用于处理审计服务的警告和错误消息。遇到问题时，审计服务将使用相应的参数调用 \fBaudit_warn\fR。选项参数指定问题的类型。
+.sp
+.LP
+系统管理员可以指定发生 \fBaudit_warn\fR 情况时要通知的邮件接收者的列表，方法是在 \fBaliases\fR(4) 中定义名为 \fBaudit_warn\fR 的邮件别名。构成 \fBaudit_warn\fR 别名的用户通常是 \fBaudit\fR 和 \fBroot\fR 用户。
+.sp
+.LP
+缺省操作是将邮件发送到 \fBaudit_warn\fR 别名并将邮件消息（优先级为 \fBdaemon.alert\fR）发送到系统日志。
+.sp
+.LP
+系统管理员可以定制 \fBaudit_warn\fR 脚本以满足站点的特定需求。更新到新发行版时应谨慎解决发行版中发生的任何更改。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBallhard\fR \fIcount\fR\fR
+.ad
+.sp .6
+.RS 4n
+指出所有 \fBaudit_binfile\fR(5) 目录文件系统的硬限制已超过 \fIcount\fR 次。为避免占用邮件假脱机目录，仅在计数为 \fB1\fR 时发送邮件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBallsoft\fR\fR
+.ad
+.sp .6
+.RS 4n
+指出已超过所有 \fBaudit_binfile\fR(5) 目录文件系统的软限制。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBars message\fR\fR
+.ad
+.sp .6
+.RS 4n
+指示审计远程服务器发生错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauditoff\fR\fR
+.ad
+.sp .6
+.RS 4n
+指出内核审计子系统已失败而审计服务仍在运行。这种情况下审计服务将退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig message\fR\fR
+.ad
+.sp .6
+.RS 4n
+指示审计服务检测到配置错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhard\fR \fIdirectory\fR\fR
+.ad
+.sp .6
+.RS 4n
+指出已超过 \fBaudit_binfile\fR(5) 目录文件系统的硬限制。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhostname\fR\fR
+.ad
+.sp .6
+.RS 4n
+指出审计服务找不到要与本地主机名相关联的 IP 地址。它已退而使用“回送”地址。审计迹转换工具可能未正确转换主机名。有关更多信息，请参见 \fB/var/audit/debug\fR。可以刷新 (\fBaudit\fR \fB-s\fR) 审计服务以重试查找 IP 地址。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnostart\fR\fR
+.ad
+.sp .6
+.RS 4n
+指出由于审计子系统的系统调用报告失败而无法启动审计。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBplugin\fR \fIname\fR \fIerror\fR \fIcount\fR \fItext\fR\fR
+.ad
+.sp .6
+.RS 4n
+指出执行审计服务插件 \fIname\fR 期间发生错误。为避免占用邮件假脱机目录，仅在计数为 \fB1\fR 时发送邮件。会为每个错误类型单独计数。\fItext\fR 字段提供从该插件传递的详细错误消息。\fIerror\fR 字段为以下字符串之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBload_error\fR\fR
+.ad
+.sp .6
+.RS 4n
+无法装入插件 \fIname\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsys_error\fR\fR
+.ad
+.sp .6
+.RS 4n
+插件 \fIname\fR 由于缺乏资源等系统错误而未执行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig_error\fR\fR
+.ad
+.sp .6
+.RS 4n
+由于配置错误而未装入任何插件，包括二进制文件插件 \fBaudit_binfile\fR(5)（请参见 \fBauditconfig\fR(1M) 命令的 \fB-setplugin\fR 选项）。name 字符串为 \fB--\fR，表示未应用任何插件名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBretry\fR\fR
+.ad
+.sp .6
+.RS 4n
+插件 \fIname\fR 报告它遇到了临时故障。例如，\fBaudit_binfree.so\fR 插件使用 \fBretry\fR 来指出所有目录已满。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBno_memory\fR\fR
+.ad
+.sp .6
+.RS 4n
+插件 \fIname\fR 报告由于内存不足而导致出现故障。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinvalid\fR\fR
+.ad
+.sp .6
+.RS 4n
+插件 \fIname\fR 报告它收到了无效输入。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfailure\fR\fR
+.ad
+.sp .6
+.RS 4n
+插件 \fIname\fR 报告了 \fItext\fR 中所述的错误。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsoft\fR \fIdirectory\fR\fR
+.ad
+.sp .6
+.RS 4n
+指示已超过 \fBaudit_binfile\fR(5) 目录文件系统的软限制。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性请参见下文
+.TE
+
+.sp
+.LP
+命令为 Committed（已确定）。脚本内容为 Uncommitted（未确定）。存在的 \fB/var/audit/debug\fR 的内容为 Not-an-Interface（不是接口）。系统日志和邮件输出为 Not-an-Interface（不是接口）。
+.SH 另请参见
+.sp
+.LP
+\fBlogger\fR(1)、\fBmailx\fR(1)、\fBaudit\fR(1M)、\fBauditconfig\fR(1M)、\fBauditd\fR(1M)、\fBaliases\fR(4)、\fBaudit.log\fR(4)、\fBsyslog.conf\fR(4)、\fBattributes\fR(5)、\fBaudit_binfile\fR(5)
+.sp
+.LP
+请参见\fI《Securing Systems and Attached Devices in Oracle Solaris 11.3》\fR中有关审计的部分。
+.SH 附注
+.sp
+.LP
+仅当启用了审计服务时此功能才可用。
+.sp
+.LP
+硬限制和软限制与 \fBaudit_binfile\fR(5) 的列表和审计远程服务器目录以及所配置的空闲空间有关。当前活动目录的使用量超过配置的空闲空间时，将达到“软限制”，随后将尝试列表中的下一个目录。当前活动目录的空间全部耗尽时，将达到“硬限制”，随后将尝试列表中的下一个目录。
+.sp
+.LP
+有关如何解决发行版更新所带来的更改的指导，请参见 pkg(5) 手册页（不属于 SunOS 手册页）。
+.sp
+.LP
+如果设置了 \fBperzone\fR 审计策略，或者没有设置 \fBperzone\fR 且启用了审计远程服务器，则会将本地区域的 \fB/etc/security/audit_warn\fR 脚本用于来自审计服务的本地区域实例的通知。在本地区域中，如果没有设置 \fBperzone\fR 策略且没有启用审计远程服务器，则所有审计服务错误将由 \fB/etc/security/audit_warn\fR 的全局区域副本生成。

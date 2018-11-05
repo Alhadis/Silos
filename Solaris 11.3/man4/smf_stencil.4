@@ -1,0 +1,737 @@
+'\" te
+.\" Copyright (c) 2014, Oracle and/or its affiliates. All rights reserved.
+.TH smf_stencil 4 "21 Apr 2014" "SunOS 5.11" "File Formats"
+.SH NAME
+smf_stencil \- defines the relationship between SMF properties and a flat configuration file
+.SH DESCRIPTION
+.sp
+.LP
+A stencil file defines a mapping between SMF properties and flat text files. The Service Management Facility, described in \fBsmf\fR(5), uses stencil files in conjunction with the \fBsvcio\fR(1) utility, to generate text-based configuration files from SMF properties by invoking \fBsvcio\fR(1). It must be invoked before the \fBstart()\fR and \fBrefresh()\fR methods of a property configured service are run.
+.sp
+.LP
+The language understood by \fBsvcio\fR(1) is comprised of a small set of expressions that can be combined to concisely describe the structure of a configuration file and how to populate that file with data from the SMF repository. The expressions comprising the language are listed below:
+.sp
+.ne 2
+.mk
+.na
+\fB$%{\fBproperty_fmri\fR[:<\fItransform\fR><\fItransform_expression\fR>]}\fR
+.ad
+.sp .6
+.RS 4n
+Retrieve and emit the values associated with a property.
+.sp
+\fItransform\fR can be one of the following characters, which define how to handle \fItransform_expression\fR:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-\fR\fR
+.ad
+.RS 8n
+.rt  
+Emit \fItransform_expression\fR if the property is not defined.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB+\fR\fR
+.ad
+.RS 8n
+.rt  
+Emit \fItransform_expression\fR if the property is defined.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB?\fR\fR
+.ad
+.RS 8n
+.rt  
+The \fItransform_expression\fR is of the form \fB<true>[/<false>]\fR\&. If the boolean property is true, then emit \fB<true>\fR, otherwise emit \fB<false>\fR\&.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB,\fR\fR
+.ad
+.RS 8n
+.rt  
+Emit \fItransform_expression\fR as a delimiter between values in multi-valued properties.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB^\fR\fR
+.ad
+.RS 8n
+.rt  
+The \fItransform_expression\fR is of the form \fB<p>[/<s>]\fR where \fB<p>\fR is used as a prefix and \fB<s>\fR is used as a suffix when emitting property values.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB^*\fR\fR
+.ad
+.RS 8n
+.rt  
+Same as \fB^\fR, but nothing is emitted if the property is undefined or empty.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\&'\fR\fR
+.ad
+.RS 8n
+.rt  
+The \fItransform_expression\fR takes the form \fB<pattern>\fR/\fB<replace>\fR, where \fB<pattern>\fR is a shell pattern style glob (for details, see the File Name Generation section of \fBsh\fR(1)). The first substring to match \fB<pattern>\fR is replaced with \fB<replace>\fR\&.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\&''\fR\fR
+.ad
+.RS 8n
+.rt  
+Same as \fB\&'\fR, but every substring that matches \fB<pattern>\fR is replaced with \fB<replace>\fR\&.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$%/regular_expression/ { <sub_elements> }\fR
+.ad
+.sp .6
+.RS 4n
+Process \fIsub_elements\fR for each property FMRI and property group FMRI that matches \fIregular_expression\fR. As the property group and property is specified as an FMRI they must be encoded if they contain reserved characters (see \fBsmf\fR(5)).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$%<number>\fR
+.ad
+.sp .6
+.RS 4n
+Retrieve a marked sub-expression from a regular expression.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$%define name /regular_expression/ { <sub_elements> }\fR
+.ad
+.sp .6
+.RS 4n
+Name a regular expression such that it can be used else where in the stencil.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$%[regex_name[:<transform><transform_expression]]\fR
+.ad
+.sp .6
+.RS 4n
+Recall a previously defined regular expression \fB$ %define name /regular_expression/ { <sub_elements> }\fR. In this case, the set of transform characters is limited to \fB^\fR, \fB\&'\fR and \fB"\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$%define name arg 1 arg 2 ... argN { <sub_elements> }\fR
+.ad
+.sp .6
+.RS 4n
+Name a macro such that it can be used elsewhere in the stencil.
+.LP
+Note - 
+.sp
+.RS 2
+In the text above, \fB[\fR and \fB]\fR denote the macro delimiters rather than optional parameters as they do in expression \fB$%{property_fmri[:<transform><transform_expression>]}\fR and \fB$%[regex_name[:<transform><transform_expression]]\fR.
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$%<arg_name>\fR
+.ad
+.sp .6
+.RS 4n
+Retrieve the text associated with a macro argument.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$%[name foo bar ... baz]\fR
+.ad
+.sp .6
+.RS 4n
+Recall a previously defined macro (as in VI).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB$%<method_token>\fR
+.ad
+.sp .6
+.RS 4n
+Retrieve the value of an environment variable represented by a method token described in \fBsmf_method\fR(5).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBLiteral Text\fR
+.ad
+.sp .6
+.RS 4n
+Arbitrary text can be freely interspered throught the stencil without any denotative markers.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB;comments\fR
+.ad
+.sp .6
+.RS 4n
+A line that starts with a \fB;\fR, ignoring leading whitespace, is considered a comment and not processed along with the rest of the file.
+.RE
+
+.sp
+.LP
+Any of the special characters above can be escaped by preceding them with a backslash (\) character. Also, the \fB\n\fR and \fB\t\fR sequences are expanded into endlines and tab characters respectively. Any non-special character preceded by \fB\\fR (backslash) will emit only the character following the slash. Thus \fB\g\fR will be translated to \fBg\fR.
+.SH DETAILS
+.SS "Expression 1"
+.sp
+.LP
+\fB$%{property_fmri[:<transform><transform_string>]}\fR
+.sp
+.LP
+For example,
+.sp
+.in +2
+.nf
+$%{general/enabled:?on/off}
+$%{svc:/srv:inst/:properties/pg/prop}
+.fi
+.in -2
+
+.sp
+.LP
+This element will fetch the value (or values) of a property and emit a string subject to the transform, the transform string, and the values themselves. \fItransform\fR is a one- or two- character identifier that indicates how to modify a property value before emitting it, subject to \fItransform_string\fR, as explained above.
+.sp
+.LP
+Nesting is allowed. If you want to print the value of \fBfoo/b\fR if \fBfoo/a\fR is defined, but 'blueberry' if it is not. This could be accomplished using the following:
+.sp
+.in +2
+.nf
+$%{foo/a:?$%{foo/b}/blueberry}
+.fi
+.in -2
+
+.sp
+.LP
+For the purposes of resolving FMRIs into values, a few shortcuts are allowed. Since \fBsvcio\fR command is always run against a specific instance, properties from that instance can be shortened to \fIpg\fR or \fIprop\fR rather than a fully qualified FMRI. To reference properties that are not part of the instance, the full \fBsvc:/service:instance/:properties/pg/prop\fR is required.
+.SS "Expression 2"
+.sp
+.LP
+\fB$%/regular_expression/ { <sub_elements> }\fR
+.sp
+.LP
+For example,
+.sp
+.in +2
+.nf
+$%/pg/(.*)/ {lorem ipsum}
+.fi
+.in -2
+
+.sp
+.LP
+This element defines a regular expression to match against the entire set of property FMRIs on a system. For each property FMRI that matches, the subelements are evaluated. When evaluating subelements, \fBsvcio\fR(1) iterates over matching properties in lexicographical order. \fBsvcio\fR(1) uses the POSIX extended regular expression set (see \fBregex\fR(5)), and supports saving subexpressions via parentheses. Finally, as a convenience svcio will surround the regular expression with ^ and $ characters. If you want your expression to match the middle of strings, prepend and append \fB\&.*\fR.
+.sp
+.LP
+Since both properties associated with the operating instance as well as properties from other services or instances, regular expressions are only matched against a subset of FMRIs on the system. If a regular expression includes the substring \fB:properties\fR, the expression is parsed for the service and/or instance where those properties reside. Once those properties are fetched, the regu- lar expression is matched only against that set. If the regular expression does not contain that substring, the only properties matched are those associated with the operating instance.
+.LP
+Note - 
+.sp
+.RS 2
+The end of a regular expression is denoted by \fB/ {\fR so it is not necessary to escape slash characters within the regular expression.
+.RE
+.SS "Expression 3"
+.sp
+.LP
+\fB$%<number>\fR
+.sp
+.LP
+For example,
+.sp
+.in +2
+.nf
+$%3
+.fi
+.in -2
+
+.sp
+.LP
+This element emits the value from a stored subexpression in a preceding regular expression. Using this element outside the context of a regular expression is an error. A valid use would be as follows:
+.sp
+.in +2
+.nf
+$%/foo/(.*)/ {
+$%1 = $%{foo/$%1}
+}
+.fi
+.in -2
+
+.sp
+.LP
+In the preceding example, every property in property group \fBfoo\fR would be emitted as \fIproperty_name\fR = \fIproperty_value\fR.
+.sp
+.LP
+Since arbitrary subelements are allowed within a regular expression block, nested regular expressions have their subexpression indices adjusted relative to the index of the last subexpression of the containing expression. For example:
+.sp
+.in +2
+.nf
+;([a-zA-Z_-]*) is $%1
+$%/([a-zA-Z_-]*)/ {
+     [$%1]
+     ;(.*) becomes $%2
+     $%/$%1/(.*)/ {
+         $%2 = $%{$%1/$%2}
+     }
+}
+.fi
+.in -2
+
+.sp
+.LP
+In the preceding example, every property group for an instance would be emitted in blocks as follows:
+.sp
+.in +2
+.nf
+[property_group]
+     prop1 = <prop1_value>
+     prop2 = <prop2_value>
+     ...
+.fi
+.in -2
+
+.SS "Expression 4"
+.sp
+.LP
+\fB$%define name /regular_expression/ { <sub_elements> }\fR
+.sp
+.LP
+For example,
+.sp
+.in +2
+.nf
+$%define getProp //(.*)/ {dolor sit amet}
+.fi
+.in -2
+
+.sp
+.LP
+This element follows the same basic rules as in the expression \fB$%/regular_expression/ { <sub_elements> }\fR, but stores the element as a named regular expression that can be invoked later in the stencil file. Named regular expressions are not matched unless they are referenced as per expression \fB$%[regex_name:<transform><transform_string>]\fR, which immediately follows. Additionally, This element cannot be a child to any other.
+.SS "Expression 5"
+.sp
+.LP
+\fB$%[regex_name:<transform><transform_string>]\fR
+.sp
+.LP
+For example,
+.sp
+.in +2
+.nf
+$%[getProp:^restarter]
+.fi
+.in -2
+
+.sp
+.LP
+This inserts a previously defined regular expression, along with all its subelements into the stencil as though the definition were copy and pasted. Since the insertion is performed literally, there are some special rules that govern how the insertion is done in order to allow such an element to be meaningful at many levels of expression nesting. First of all, all subexpression indices are interally adjusted so that they do not collide with the outer regular expression context. Second, a subset of the transformations from expression \fB$%{property_fmri[:<transform><transform_string>]}\fR are allowed. These transforms operate on relative FMRIs within the inserted element. Absolute FMRIs are left untouched. This allows a stencil author to do useful things like prepend to the FMRI in order to express logical property nesting. Here's an example:
+.sp
+.in +2
+.nf
+$%define PROPERTY /(.*)/ { $%1 = $%{$%1} }
+$%/([a-zA-Z_-]*)/ {
+    [$%1]
+         $%[PROPERTY:^$%1/]
+}
+.fi
+.in -2
+
+.sp
+.LP
+When the insertion is done, the expression will function as follows:
+.sp
+.in +2
+.nf
+ $%/([a-zA-Z_-]*)/ {
+      [$%1]
+      $%/$%1/(.*)/ {
+           $%2 = $%{$%1/$%2}
+      }
+}
+.fi
+.in -2
+
+.sp
+.LP
+This is equivalent to the example for the expression \fB$%<number>\fR.
+.sp
+.LP
+It ends up this way because the rebasing during substitution changes the $%1 to $%2, since $%1 occurs in the outer expression. And as a result of the prepend transform applied during substitution, the string \fB$%1/\fR is prepended to both the regular expression (since regular expressions match FMRIs) as well as to the element of the expression \fB$%/regular_expression/ { <sub_elements> }\fR, allowing it resolve to a full \fIpg\fR/\fIproperty\fR specifier. The subset of allowed transforms is ^, ', and ''. Using other transforms is an error.
+.SS "Expression 6"
+.sp
+.LP
+\fB$%define macroName arg1 arg2 ... argN { <sub_elements> }\fR
+.sp
+.LP
+For example,
+.sp
+.in +2
+.nf
+$%define defaultHost { myMachine }
+$%define getGeneral prop { $%{general/$%prop} }
+.fi
+.in -2
+
+.sp
+.LP
+Macros provide simple text substitution with respect to the arguments defined for the macro. When called subsequent to definition, the text of the sub-elements is emitted with the text of the arguments substituted where appropriate. See the elements below for more details.
+.SS "Expression 7"
+.sp
+.LP
+\fB$%<argName>\fR
+.sp
+.LP
+For example,
+.sp
+.in +2
+.nf
+$%prop
+.fi
+.in -2
+
+.sp
+.LP
+This element emits the corresponding value passed into the macro that uses \fIargName\fR as an argument. For example:
+.sp
+.in +2
+.nf
+$%define someMacro someArg someOtherArg {
+$%someArg = $%{pg/$%someOtherArg}
+}
+.fi
+.in -2
+
+.SS "Expression 8"
+.sp
+.LP
+\fB$%[macroName arg1 arg2 ... argN]\fR
+.sp
+.LP
+For example,
+.sp
+.in +2
+.nf
+$%[getGeneral enabled]
+.fi
+.in -2
+
+.sp
+.LP
+After a macro has been defined, the sub-elements it contains can be substituted into other parts of the stencil by using the form above. When invoking a macro, spaces are used to delimit arguments. In order to use a space within the value of an argument, it is necssary to escape that space with a ''. For example, if we have the macro:
+.sp
+.in +2
+.nf
+$%define theMacro variable value {
+$%variable = $%value
+}
+.fi
+.in -2
+
+.sp
+.LP
+We can then use this form to substitute that text else where in the stencil. For example, we can call it as follows:
+.sp
+.in +2
+.nf
+$%[theMacro ciphers elGamal\ 3DES\ AES\ Blowfish]
+.fi
+.in -2
+
+.sp
+.LP
+And the resulting text in the output file would be:
+.sp
+.in +2
+.nf
+ciphers = elGamal 3DES AES Blowfish
+.fi
+.in -2
+.sp
+
+.SS "Expression 9"
+.sp
+.LP
+\fB$%<method_token>\fR
+.sp
+.LP
+For example,
+.sp
+.in +2
+.nf
+$%s
+.fi
+.in -2
+
+.sp
+.LP
+Each of the single-character method tokens described in \fBsmf_method\fR(5) are available in stencils. In particular $%r, $%m, $%s, $%i, $%f, and $%% are understood and expanded. Due to the high chance of collision with macro variables (in the experssion \fB$%define name /regular_expression/ { <sub_elements> }\fR), macro variables have precedence over method tokens when expansion occurs. This means that if the macro variable $%someVar is encountered, it will be expaned to the value of $%someVar rather than \fBservice- nameomeVar\fR. If output such as \fBservice-nameomeVar\fR is desired, simply escape a character in the macro variable as in $%s\omeVar.
+.SS "Expression 10"
+.sp
+.LP
+\fBLiteral text\fR
+.sp
+.LP
+For example,
+.sp
+.in +2
+.nf
+Lorem ipsum dolor sit amet, consectetur adipisic-
+ing  elit,  sed  do  eiusmod tempor incididunt ut
+labore et dolore magna aliqua.
+.fi
+.in -2
+
+.sp
+.LP
+Literal text can be freely interspersed within the stencil and is emitted without modification. The examples above make limited use of literal text. Text appearing inside a regular expression is emitted for each match, but is not emitted if there are no matches. Text appearing outside all the preceding expression types is emitted in all cases.
+.SS "Expression 11"
+.sp
+.LP
+\fBComments\fR
+.sp
+.LP
+For example,
+.sp
+.in +2
+.nf
+;this is a comment
+   ;so is this
+\;this text will appear in the output file
+so will this, even with the ';' character
+.fi
+.in -2
+
+.sp
+.LP
+To begin a comment, start the line with a ';' character (not including whitespace). The comment continues until the end of the line. If having comments in the resulting output file is desired, simply escape the ';' with a '' character
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRCreating a configuration file that lists some details of the service
+.sp
+.LP
+The following example creates a configuration file that lists some details of the service
+
+.sp
+.in +2
+.nf
+;The following example creates a 'configuration file'
+;that lists some details of the service
+$%define author {Alice}
+$%define reviewer {Bob}
+.fi
+.in -2
+
+.sp
+.LP
+This file was written by \fB$%[author]\fR and verified by \fB$%[reviewer]\fR.
+
+.sp
+.LP
+Preferences are:
+
+.sp
+.in +2
+.nf
+$%{preferences/validated:+validated!}
+.fi
+.in -2
+
+.sp
+.LP
+The following is a \fB\&.ini\fR style listing of all the properties of service \fB$%s\fR and instance \fB$%i\fR:
+
+.sp
+.in +2
+.nf
+;display a property in the form
+;'   prop_name = prop_value'
+$%define display_property prop
+{\t$%prop = $%{/$%prop}\n}
+
+;invokes display_property macro for each
+;property matched
+$%define property //(.*)/ {$%[display_property $%1]}
+
+;matches all property groups (lack of '/' prevents
+;matching properties) and emits the property group
+;name in brackets, with each property listed underneath.
+;The expression '^$%1' means prepend all relative FMRIS
+;in the regular expression named 'property' with the
+;property group that satisfies this regular expression
+$%/([a-zA-Z0-9_-]*)/ {
+[$%1]
+$%[property:^$%1]
+}
+.fi
+.in -2
+
+.sp
+.LP
+Suppose we have a service \fBFoo\fR with just the default instance and the following properties:
+
+.sp
+.in +2
+.nf
+       pg1/prop1 = val1
+       pg1/prop2 = va2
+       pg2/prop1 = val3 val4
+       pg2/prop2 = val5
+       preferences/validated = yes
+.fi
+.in -2
+
+.sp
+.LP
+Using \fBsvcio\fR(1) to the exmaple stencil with service \fBFoo\fR would result in the following text:
+
+.sp
+.in +2
+.nf
+This file was written by Alice and verified by Bob
+
+Preferences are validated!
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The following is a \fB\&.ini\fR style listing of all the properties of service \fBFoo\fR and instance default:
+
+.sp
+.in +2
+.nf
+       [pg1]
+            prop1 = val1
+            prop2 = val2
+
+       [pg2]
+            prop1 = val3 val4
+            prop2 = val5
+
+       [properties]
+            validated = yes
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+It is also possible to rewrite the example stencil more tersely, as shown below:
+
+.sp
+.in +2
+.nf
+$%define author {Alice}
+$%define reviewer {Bob}
+.fi
+.in -2
+
+.sp
+.LP
+This file was written by \fB$%[author]\fR and verified by \fB$%[reviewer]\fR.
+
+.sp
+.LP
+Preferences are:
+
+.sp
+.in +2
+.nf
+$%{preferences/validated:+validated!}
+.fi
+.in -2
+
+.sp
+.LP
+The following is a \fB\&.ini\fR style listing of all the properties of service \fB$%s\fR and instance \fB$%i\fR:
+
+.sp
+.in +2
+.nf
+$%/([a-zA-Z0-9_-]*)/ {
+[$%1]
+$%/$%1/(.*)/ {\t$%2 = $%{$%1/$%1}\n}
+}
+.fi
+.in -2
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/core-os
+_
+StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBsvcio\fR(1), \fBsh\fR(1), \fBregex\fR(5), \fBsvcs\fR(1), \fBsvcprop\fR(1), \fBsvcadm\fR(1M), \fBsvccfg\fR(1M), \fBsvc.startd\fR(1M), \fBlibscf\fR(3LIB), \fBsmf\fR(5)

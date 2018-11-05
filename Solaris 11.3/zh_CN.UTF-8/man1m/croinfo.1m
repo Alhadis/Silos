@@ -1,0 +1,617 @@
+'\" te
+.\" Copyright (c) 2012, Oracle and/or its affiliates.All rights reserved
+.TH croinfo 1M "2012 年 5 月 10 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+croinfo, diskinfo \- 查询并显示以下项目的信息：1) 机箱、插口和插卡或 2) 托架插口的磁盘插卡
+.SH 用法概要
+.LP
+.nf
+\fBcroinfo\fR [\fB-h\fR] [\fB-v\fR] [\fB-I\fR \fIcro_db\fR] [\fB-o\fR \fIfields\fR] [\fB-O\fR \fIfields\fR]
+        [\fB-P\fR \fIproduct-id\fR] [\fB-C\fR \fIchassis-id\fR] [\fB-A\fR \fIalias-id\fR]
+        [\fB-R\fR \fIreceptacle-name\fR] [\fB-T\fR \fIreceptacle-type\fR] [\fB-t\fR \fIoccupant-type\fR]
+        [\fB-D\fR \fIdevchassis-path\fR] [\fB-d\fR \fIoccupant-devices\fR] [\fB-p\fR \fIoccupant-paths\fR]
+        [\fB-c\fR \fIoccupant-compdev\fR] [\fB-i\fR \fIoccupant-devid\fR] [\fB-m\fR \fIoccupant-mfg\fR]
+        [\fB-e\fR \fIoccupant-model\fR] [\fB-n\fR \fIoccupant-part\fR] [\fB-s\fR \fIoccupant-serial\fR]
+        [\fB-f\fR \fIoccupant-firm\fR] [\fB-1\fR \fIoccupant-misc-1\fR] [\fB-2\fR \fIoccupant-misc-2\fR]
+        [\fB-3\fR \fIoccupant-misc-3\fR]
+.fi
+
+.LP
+.nf
+\fBdiskinfo\fR [\fB-h\fR] [\fB-v\fR] [\fB-I\fR \fIcro_db\fR] [\fB-o\fR \fIfields\fR] [\fB-O\fR \fIfields\fR]
+        [\fB-P\fR \fIproduct-id\fR] [\fB-C\fR \fIchassis-id\fR] [\fB-A\fR \fIalias-id\fR]
+        [\fB-R\fR \fIreceptacle-name\fR] [\fB-T\fR \fIreceptacle-type\fR] [\fB-t\fR \fIoccupant-type\fR]
+        [\fB-D\fR \fIdevchassis-path\fR] [\fB-d\fR \fIoccupant-devices\fR] [\fB-p\fR \fIoccupant-paths\fR]
+        [\fB-c\fR \fIoccupant-compdev\fR] [\fB-i\fR \fIoccupant-devid\fR] [\fB-m\fR \fIoccupant-mfg\fR]
+        [\fB-e\fR \fIoccupant-model\fR] [\fB-n\fR \fIoccupant-part\fR] [\fB-s\fR \fIoccupant-serial\fR]
+        [\fB-f\fR \fIoccupant-firm\fR] [\fB-1\fR \fIoccupant-misc-1\fR] [\fB-2\fR \fIoccupant-misc-2\fR]
+        [\fB-3\fR \fIoccupant-misc-3\fR]
+.fi
+
+.LP
+.nf
+\fBcroinfo\fR \fB-?\fR
+.fi
+
+.LP
+.nf
+\fBdiskinfo\fR \fB-?\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBdiskinfo\fR 和 \fBcroinfo\fR 实用程序共享同一个二进制可执行文件。在运行时，该实用程序会检查其调用方式，并调整缺省设置。
+.sp
+.LP
+通过 \fBcroinfo\fR 实用程序，用户可查询并显示系统配置的特定方面。查询针对一个面向记录的数据集执行，该数据集捕获物理位置和当前处于该物理位置的设备的各方面间的关系。此关系通过机箱 (Chassis)、插口 (Receptacle) 和插卡 (Occupant)（即 \fBcro\fR 前缀）来体现。
+.sp
+.LP
+CRO 数据集中的记录由多个具名字段组成，每条记录有一个潜在的唯一字段值。一个尖括号引用（如 \fIproduct-id\fR ）引用一个特定的 \fIfield-name\fR。对于给定的记录，字段值或者未定义（为空），或者定义有一组带索引的字符串值。所定义的某些字段值仅有一个字符串值，某些可以有多个字符串值。
+.sp
+.LP
+所定义的每个 \fIfield-name\fR 均与一个单独的 \fIfield-char\fR 字符相关联。按照惯例，大写 \fIfield-char\fR 字符与机箱和插口信息字段相关联，小写 \fIfield-char\fR 字符与插卡信息字段相关联。针对每个 \fIfield-char\fR 字符，都提供了一个单独的 \fB-field-char field-name-RE\fR 标志正则表达式过滤器选项。这样，用户可以定制查询，以显示特定配置方面的信息。按数据集顺序选择与所有正则表达式匹配的记录予以显示。对于多字符串值，只需匹配一个索引值，字段即可匹配。
+.sp
+.LP
+缺省情况下，仅显示最少数量的缺省输出字段。可以使用 \fB-o\fR \fIfields\fR（用户可读输出）或 \fB-O\fR \fIfields\fR（可解析输出）覆盖缺省设置。这两种情况下，均可以使用 \fIfield-char\fR[...] 速记表示法或描述更详细的 \fIfield-name\fR[,...] 表示法来指定输出字段。
+.sp
+.LP
+对于用户可读用途，用户可通过使用 \fB-o\fR \fIfields\fR 选项覆盖缺省字段，并按指定顺序以列对齐空格分隔格式输出任何字段。一般来说，每个匹配的记录对应一行输出，其中未定义的（空）\fIfield-name\fR 值显示为连字符 (\fB—\fR)。但是，如果显示的记录包含多字符串 \fIvalue\fR 字段，将生成多行输出，所有次级的非多字符串值字段显示一个冒号 (\fB:\fR)。
+.sp
+.LP
+对于脚本，用户可通过使用 \fB-O\fR\fIfields\fR 选项覆盖缺省输出字段，并按指定顺序以可解析的冒号分隔格式（删除空格且不显示列标题）输出任何字段。每个匹配的记录对应一行输出，其中未定义的（空）字段名称值显示为不具有任何值。如果所显示的记录 \fIfield-name\fR 包含多字符串 \fIvalue\fR 字段，则所有的值将串连起来，以分号分隔。值中出现的任何冒号或分号都将采用前导反斜杠 (\fB\\fR) 进行转义。为使脚本更清晰，建议使用 \fB-O\fR \fIfield-name\fR[,...] 表示法。
+.sp
+.LP
+\fB-o\fR 和 \fB-O\fR 选项互斥。
+.sp
+.LP
+如果使用了 \fB-h\fR 选项，或通过使用 \fB-o\fR 请求了脚本输出格式，将不显示输出字段的列标题。
+.sp
+.LP
+机箱是由特定的 \fIproduct-id\fR 和 \fIchassis-id\fR 进行标识的。\fIproduct-id\fR 涉及特定的机箱级产品，如系统机箱 Sun-Fire-X4200-M2 或存储器机箱 SUN-Storage-J4410。对于给定的 \fIproduct-id\fR 值，\fIchassis-id\fR 定义一个唯一的序列号。
+.sp
+.LP
+特定的 \fIproduct-id\fR.\fIchassis-id\fR 组合可以具有一个面向位置的“受管理”\fIalias-id\fR，该 alias-id 由管理员使用 \fBfmadm\fR(1M) 定义，用于提供有关机箱物理位置的特定于安装的位置信息。其中可能包括组装、空间、机架以及机架内的 U 数范围。
+.sp
+.LP
+除使用 \fBfmadm\fR(1M) 定义的面向位置的受管理 \fIalias-id\fR 外，系统机箱还始终具有一个众所周知的别名 - \fBSYS\fR，该别名可用于标识系统机箱内部的插口。
+.sp
+.LP
+在机箱内，每个插口都具有一个唯一的 \fIreceptacle-name\fR，该名称应该与为插口指定的物理丝网印刷标签匹配。每个插口都还具有一个 \fIreceptacle-type\fR，用于帮助定义可接受的 \fIoccupant-types\fR。
+.sp
+.LP
+当某个插口被占用时，将 \fB-f\fR 标志定义用于可用的 \fIoccupant-information\fR。尤其需要关注的是 \fB-c\fR \fIoccupant-compdev\fR 插卡信息：它描述与插卡设备关联的公共 \fB/dev\fR 名称的通用组件。对于磁盘，这是整个磁盘的 \fBc\fR\fI#\fR\fBt\fR\fI#\fR\fBd\fR\fI#\fR 名称。
+.sp
+.LP
+CRO 数据集顺序与记录的 \fIdevchassis-path\fR 关联，后者对应于由 \fBdevchassisd\fR(1M) 维护的 \fB/dev/chassis\fR 名称空间。通过该顺序，首先放置与众所周知的 \fBSYS\fR 内部别名关联的记录，而 \fBSYS\fR 中首先放置具有 \fBBOOT\fR receptacle-name 的记录。这样做可确保在适用时首先提供典型引导设备的信息。
+.sp
+.LP
+对于 \fBcroinfo\fR，缺省输出采用 \fB-o\fR \fIDtc\fR 格式，且显示所有 CRO 记录。
+.sp
+.LP
+对于 \fBdiskinfo\fR，缺省输出采用 \fB-o\fR \fIDc\fR 格式，且应用 \fB-T\fR \fIbay\fR \fIreceptacle-type\fR 过滤器。\fIoccupant-misc-#\fR 字段的含义还具有特定于磁盘的解释：\fImisc-1\fR 为容量，\fImisc-2\fR 为目标端口信息。通过这些缺省值，\fBdiskinfo\fR 命令可查询机箱、\fIbay\fR 插口及其 \fIdisk\fR 插卡的关系，而忽略其他 CRO 信息。
+.SH 选项
+.sp
+.LP
+对于 \fIfield-name\fR 定义的每个记录，可以指定一个单独的 \fI-field-char field-name-RE\fR 标志正则表达式过滤器。对于给定的 \fIfield-name\fR，如果未定义特定的 \fI-field-char field-name-RE\fR 过滤器，所有 CRO 记录都将匹配。
+.sp
+.LP
+这样，用户可以定制查询，以显示特定配置方面的信息。与所有指定的 \fIfield-name\fR 正则表达式（如\fBregex\fR(3C) 中所示）匹配的 CRO 记录将被选中予以显示，具体的字段输出由 \fB-o\fR、\fB-O\fR 或缺省值控制。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIproduct-id\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIproduct-id\fR 指定枚举的机箱的产品标识符。\fIproduct-id\fR 可以在 \fB/dev/chassis\fR 名称空间中公开。对于不具有既定 \fBfmadm\fR(1M) 受管理 \fIalias-id\fR 的存储产品，\fIproduct-id\fR 在 \fBdevchassis\fR(7FS) \fB/dev/chassis\fR 名称空间中可见。
+.sp
+系统 \fIproduct-id\fR 值示例：\fBSun-Fire-X4200-M2\fR
+.sp
+存储 \fIproduct-id\fR 值示例：\fBSUN-Storage-J4410\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR \fIchassis-id\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIchassis-id\fR 指定产品机箱的序列号。\fIchassis-id\fR 可以在 \fB/dev/chassis\fR 名称空间中公开。对于不具有既定 \fBfmadm\fR(1M) 受管理 \fIalias-id\fR 的存储产品，\fIproduct-id\fR 在 \fBdevchassis\fR(7FS) \fB/dev/chassis\fR 名称空间中可见。
+.sp
+\fIchassis-id\fR 值示例：\fB0818QAJ002\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fIalias-id\fR\fR
+.ad
+.sp .6
+.RS 4n
+对于系统内部的设备，\fIalias-id\fR 值可以是众所周知的别名值 \fBSYS\fR。此外，\fIalias-id\fR 也可以是由管理员使用 \fBfmadm\fR(1M) 定义的受管理别名。使用受管理别名的目的是为了定义 \fIproduct-id\fR.\fIchassis-id\fR 的物理位置。\fIalias-id \fR 是在 \fB/dev/chassis\fR 名称空间中公开的。
+.sp
+已知 \fIalias-id\fR 值示例：\fBSYS\fR
+.sp
+受管 \fIalias-id\fR 值示例：\fBRACK29.U01-04\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIreceptacle-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+对于特定 \fIproduct-id\fR，唯一的 \fIreceptacle-name\fR 定义了机箱中特定插口的位置。\fIreceptacle-name\fR 应该与物理机箱上的丝网印刷标签相同，并且应与产品文档匹配。\fIreceptacle-name\fR 可以具有多路径组件，例如 \fBSYS/HD0\fR。receptacle-name 是在 \fB/dev/chassis\fR 名称空间中公开的。
+.sp
+\fIreceptacle-name\fR 值示例：\fBSYS/HD0\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fIreceptacle-type\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIreceptacle-type\fR 值示例：\fBbay\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fIoccupant-type\fR\fR
+.ad
+.sp .6
+.RS 4n
+未安装插卡的插口具有未定义的（空） \fIoccupant-type\fR 值，显示为一个连字符 (\fB—\fR)。
+.sp
+\fIoccupant-type\fR 值示例：\fBdisk\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR \fIdevchassis-path\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIdevchassis-path\fR 值示例：\fB/dev/chassis/SYS/HD0/disk\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIoccupant-devices\fR\fR
+.ad
+.sp .6
+.RS 4n
+未安装插卡的插口具有未定义的（空） \fIoccupant-devices\fR 值，显示为一个连字符 (\fB—\fR)。
+.sp
+\fIoccupant-devices\fR 值示例：
+.sp
+.in +2
+.nf
+/devices/scsi_vhci/disk@g5000c500101ba0a3
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIoccupant-paths\fR\fR
+.ad
+.sp .6
+.RS 4n
+未安装插卡的插口具有未定义的（空） \fIoccupant-paths\fR 值，显示为一个连字符 (\fB—\fR)。
+.sp
+occupant-paths 值示例：
+.sp
+.in +2
+.nf
+devices/pci@0,0/pci10de,5d@d/pci11f8,8001@0/iport@f/disk@w5000c500101ba0a1,0
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIoccupant-compdev\fR\fR
+.ad
+.sp .6
+.RS 4n
+未安装插卡的插口具有未定义的（空） \fIoccupant-compdev\fR 值，显示为一个连字符 (\fB—\fR)。
+.sp
+\fIoccupant-compdev\fR 值示例：\fBc0t5000C500101BA0A3d0\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fIoccupant-devid\fR\fR
+.ad
+.sp .6
+.RS 4n
+未安装插卡的插口具有未定义的（空） \fIoccupant-devid\fR 值，显示为一个连字符 (\fB—\fR)。
+.sp
+\fIoccupant-devid\fR 值示例：\fBid1,sd@n5000c500101ba0a3\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fIoccupant-mfg\fR\fR
+.ad
+.sp .6
+.RS 4n
+未安装插卡的插口具有未定义的（空） \fIoccupant-mfg\fR 值，显示为一个连字符 (\fB—\fR)。
+.sp
+\fIoccupant-mfg\fR 值示例：\fBSEAGATE\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fIoccupant-model\fR\fR
+.ad
+.sp .6
+.RS 4n
+没有插卡的插口具有未定义（空）的 \fIoccupant-model\fR，显示为连字符 (\fB—\fR)。
+.sp
+\fIoccupant-model\fR 值示例：\fBST32000SSSUN2.0T\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR \fIoccupant-part\fR\fR
+.ad
+.sp .6
+.RS 4n
+未安装插卡的插口具有未定义的（空） \fIoccupant-part\fR 值，显示为一个连字符 (\fB—\fR)。
+.sp
+\fIoccupant-part\fR 值示例：\fBSEAGATE-ST32000SSSUN2.0T\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIoccupant-serial\fR\fR
+.ad
+.sp .6
+.RS 4n
+未安装插卡的插口具有未定义的（空） \fIoccupant-serial\fR 值，显示为一个连字符 (\fB—\fR)。
+.sp
+\fIoccupant-serial\fR 值示例：\fB000949L09C8L________9WM09C8L\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIoccupant-firm\fR\fR
+.ad
+.sp .6
+.RS 4n
+未安装插卡的插口具有未定义的（空） \fIoccupant-firm\fR 值，显示为一个连字符 (\fB—\fR)。
+.sp
+\fIoccupant-firm\fR 值示例：\fB0313\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-1\fR \fIoccupant-misc-1\fR\fR
+.ad
+.sp .6
+.RS 4n
+未安装插卡的插口具有未定义的（空） \fIoccupant-misc-1\fR 值，显示为一个连字符 (\fB—\fR)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-2\fR \fIoccupant-misc-2\fR\fR
+.ad
+.sp .6
+.RS 4n
+未安装插卡的插口具有未定义的（空） \fIoccupant-misc-2\fR 值，显示为一个连字符 (\fB—\fR)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-3\fR \fIoccupant-misc-3\fR\fR
+.ad
+.sp .6
+.RS 4n
+未安装插卡的插口具有未定义的（空） \fIoccupant-misc-3\fR 值，显示为一个连字符 (\fB—\fR)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-?\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示用法信息。
+.RE
+
+.SS "输出 \fIfield-name\fR 控制选项"
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIfields\fR\fR
+.ad
+.sp .6
+.RS 4n
+以用户可读的格式按顺序输出指定的字段
+.sp
+对于 \fBcroinfo\fR，缺省输出采用 \fB-o\fR \fIDtc\fR 格式。对于 \fBdiskinfo\fR，缺省输出采用 \fB-O\fR \fIDc\fR 格式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-O\fR \fIfields\fR\fR
+.ad
+.sp .6
+.RS 4n
+以可解析的格式按顺序输出指定字段。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.sp .6
+.RS 4n
+不输出 \fIfield-name\fR 列标题。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示详细标题，其中包括创建 CRO 数据集时的各种信息。此选项专与 \fB-I\fR 一起使用，用于指定非标准 CRO 数据集源。
+.RE
+
+.SS "数据集选择选项"
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR \fIcro_db\fR\fR
+.ad
+.sp .6
+.RS 4n
+从中获取 CRO 数据集信息的数据文件。
+.RE
+
+.SH 示例
+.sp
+.LP
+在以下一些示例中，示例输出在显示到 80 个字符的宽度时换行。
+.LP
+\fB示例 1 \fR确定磁盘位置
+.sp
+.LP
+以下命令确定磁盘位置：
+
+.sp
+.in +2
+.nf
+# \fBcroinfo -c c0t5000C500101BA0A3d0\fR
+D:devchassis-path                        t:occupant-type
+---------------------------------------  ---------------
+/dev/chassis/RACK29.U01-04/DISK_00/disk  disk
+
+c:occupant-compdev
+------------------
+c0t5000C500101BA0A3d0
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR报告内部磁盘
+.sp
+.LP
+以下命令报告内部磁盘（与众所周知的 \fBSYS\fR 别名关联的磁盘）的 \fIreceptacle-name\fR 和 \fIoccupant-compdev\fR。
+
+.sp
+.in +2
+.nf
+# \fBdiskinfo -A SYS -o Rc\fR
+R:receptacle-name  c:occupant-compdev
+-----------------  ------------------
+SYS/HD0            c8t0d0
+SYS/HD1            c8t1d0
+SYS/HD2            -
+SYS/HD3            -
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+请注意，\fBSYS/HD2\fR 和 \fBSYS/HD3\fR 插口为空。
+
+.sp
+.LP
+采用脚本输出模式时，该同一命令将生成：
+
+.sp
+.in +2
+.nf
+# \fBdiskinfo -A SYS -O receptacle-name,occupant-compdev\fR
+SYS/HD0:c8t0d0
+SYS/HD1:c8t1d0
+SYS/HD2:
+SYS/HD3:
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR报告特定机壳中的磁盘
+.sp
+.LP
+以下命令报告具有特定 \fIproduct-id\fR 和 \fIchassis-id\fR 值的机箱中的所有磁盘。
+
+.sp
+.in +2
+.nf
+# \fBdiskinfo -P SUN-Storage-J4410 -C SUN-Storage-J4410 -o Rc\fR
+R:receptacle-name  c:occupant-compdev
+-----------------  ---------------------
+DISK_00            c0t5000C500101BA0A3d0
+DISK_01            c0t5000C500101B95BBd0
+DISK_02            -
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR报告物理路径信息
+.sp
+.LP
+以下命令报告特定磁盘的物理路径信息。
+
+.sp
+.in +2
+.nf
+# \fBcroinfo -c c0t5000C500101BA0A3d0 -o cp\fR
+c:occupant-compdev
+------------------
+c0t5000C500101BA0A3d0
+
+p:occupant-paths
+--------------------------------------------------
+/devices/pci@0,0/pci10de,5d@d/pci11f8,8001@0/iport@f/disk@w5000c500101ba0a1,0
+/devices/pci@7b,0/pci10de,5d@d/pci11f8,8001@0/iport@f/disk@w5000c500101ba0a2,0
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+注意，\fIoccupant-paths\fR 具有多个字符串值。
+
+.LP
+\fB示例 5 \fR清点磁盘
+.sp
+.LP
+以下示例使用 \fIoccupant-part\fR 报告可用的特定磁盘类型的数量。
+
+.sp
+.in +2
+.nf
+# \fBfor i in `croinfo -h -o n  | sort -u`\fR
+> \fBdo\fR
+> \fBecho $i "\et\ec";croinfo -h -n $i | wc -l\fR
+> \fBdone\fR
+SEAGATE-ST330055SSUN300G               3
+SEAGATE-ST330056SSUN300G              19
+SEAGATE-ST345056SSUN450G               5
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR定位特定类型的磁盘
+.sp
+.LP
+以下命令报告特定类型的磁盘的位置、其 \fBctd\fR 名称（通过 \fIoccupant-compdev\fR）及其固件级别。
+
+.sp
+.in +2
+.nf
+# \fBcroinfo -n SEAGATE-ST330055SSUN300G -o Dcf\fR
+D:Devchassis                                     c:component
+-----------------------------------------------  ---------------------
+/dev/chassis/RACK29.U29-32/SCSI_Device__11/disk  c0t5000C50007DD49F7d0
+/dev/chassis/RACK29.U33-36/SCSI_Device__18/disk  c0t5000C50008F7FB4Fd0
+/dev/chassis/RACK29.U33-36/SCSI_Device__19/disk  c0t5000C50007DD412Fd0
+
+f:firm
+------
+0892
+0892
+0892
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性请参见下文
+.TE
+
+.sp
+.LP
+\fBcroinfo\fR 和 \fBdiskinfo\fR 的接口稳定性为 "Committed"（已确定）。命令输出的接口稳定性是 "Not-an-Interface"（不是接口）。
+.SH 另请参见
+.sp
+.LP
+\fBdevchassisd\fR(1M)、\fBfmadm\fR(1M)、\fBfmd\fR(1M)、\fBattributes\fR(5)、\fBdevchassis\fR(7FS)
+.sp
+.LP
+SCSI 存储接口委员会网站 \fBhttp://www.t10.org\fR
+.sp
+.LP
+\fISCSI Primary Commands-4, SPC4\fR；\fISCSI Enclosure Services-2\fR；\fISES2, Serial Attached SCSI-2, SAS2\fR
+.SH 附注
+.sp
+.LP
+\fBcroinfo\fR 表示依赖于 \fBfmd\fR(1M) 的功能来枚举系统拓扑并准确地表示关联的机箱、插口和插卡。这些依赖项可通过 \fBfmd\fR(1M) 进行扩展并要求连接的硬件及其关联的固件符合特定要求。对于磁盘托架，这要求存储器机箱的行为符合 T10 标准（SPC4 和 SES2）。不能作出适当反应的存储器机箱可能不能正确地报告机箱、托架或磁盘节点。具体地，\fBdiskinfo\fR 要求机箱支持 SES 诊断页 \fB0xa\fR（附加元素状态）并将目前元素指标 (Element Index Present, EIP) 位设为 \fB1\fR。不符合此标准的机壳将不会被完全枚举，因而将得不到正确的表示。

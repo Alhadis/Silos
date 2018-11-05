@@ -1,0 +1,338 @@
+'\" te
+.\"  Copyright (c) 2006, Sun Microsystems, Inc. All Rights Reserved
+.TH setfacl 1 "2006 年 12 月 19 日" "SunOS 5.11" "用户命令"
+.SH 名称
+setfacl \- 修改一个或多个文件的访问控制列表 (Access Control List, ACL)
+.SH 用法概要
+.LP
+.nf
+\fBsetfacl\fR [\fB-r\fR] \fB-s\fR \fIacl_entries\fR \fIfile\fR
+.fi
+
+.LP
+.nf
+\fBsetfacl\fR [\fB-r\fR] \fB-md\fR \fIacl_entries\fR \fIfile\fR
+.fi
+
+.LP
+.nf
+\fBsetfacl\fR [\fB-r\fR] \fB-f\fR \fIacl_file\fR \fIfile\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+对于指定的每个文件，\fBsetfacl\fR 将替换其整个 \fBACL\fR（包括目录上的缺省 \fBACL\fR），或者将添加、修改或删除一个或多个 \fBACL\fR 条目（包括目录上的缺省条目）。
+.sp
+.LP
+使用 \fBsetfacl\fR 命令时，会导致对文件权限位发生更改。文件所有者的用户 \fBACL\fR 条目发生更改时，将会修改文件所有者类权限位。文件组类的组 \fBACL\fR 条目发生更改时，将会修改文件组类权限位。其他 \fBACL\fR 条目发生更改时，将会修改文件的其他类权限位。
+.sp
+.LP
+如果您使用 \fBchmod\fR(1) 命令更改含有 \fBACL\fR 条目的文件的文件组所有者权限，则会同时将文件组所有者权限和 \fBACL\fR 掩码更改为新的权限。请注意，对于文件中有其 \fBACL\fR 条目的附加用户和组，新的 \fBACL\fR 掩码权限可能会更改其有效权限。
+.sp
+.LP
+目录可以包含缺省 \fBACL\fR 条目。如果某个文件或目录是在包含缺省 \fBACL\fR 条目的目录中创建的，则该新创建的文件具有根据缺省 \fBACL\fR 条目的交集生成的权限以及创建时请求的权限。如果目录包含缺省 \fBACL\fR 条目，则不会应用 \fBumask\fR(1)。如果为某个特定用户（或多个用户）指定了缺省 \fBACL\fR，该文件会创建一个常规 \fBACL\fR。否则，将根据上面所述的交集初始化模式位。缺省 \fBACL\fR 应当被看作可以授予的最大自主访问权限。
+.sp
+.LP
+可使用 \fBsetfacl\fR 命令对 UFS 文件系统中的文件设置 ACL，UFS 文件系统支持 POSIX 式 ACL（或 \fBaclent_t\fR 式 ACL）。可使用 \fBchmod\fR 命令对 ZFS 文件系统中的文件设置 ACL，ZFS 文件系统支持 NFSv4 式 ACL（或 \fBace_t\fR 式 ACL）。
+.SS "\fIacl_entries\fR 语法"
+.sp
+.LP
+对于 \fB-m\fR 和 \fB-s\fR 选项，\fIacl_entries\fR 是一个或多个以逗号分隔的 \fBACL\fR 条目。
+.sp
+.LP
+\fBACL\fR 条目包含以下以冒号分隔的字段：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIentry_type\fR\fR
+.ad
+.RS 15n
+.rt  
+设置文件权限时所基于的 \fBACL\fR 条目的类型。例如，\fIentry_type\fR 可以是 \fBuser\fR（文件的所有者）或 \fBmask\fR（\fBACL\fR 掩码）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIuid\fR 或 \fIgid\fR\fR
+.ad
+.RS 15n
+.rt  
+用户名或用户标识号。或者，组名或组标识号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIperms\fR\fR
+.ad
+.RS 15n
+.rt  
+表示对 \fIentry_type\fR 设置的权限。\fIperms\fR 可以由符号字符 \fBrwx\fR 或数字指示（随 \fBchmod\fR 命令使用的相同权限编号）。
+.RE
+
+.sp
+.LP
+下表列出了有效的 \fBACL\fR 条目（只能为目录指定缺省条目）：
+.sp
+
+.sp
+.TS
+tab();
+cw(2i) cw(3.5i) 
+lw(2i) lw(3.5i) 
+.
+\fBACL\fR 条目说明
+_
+u[ser]::\fIperms\fR 文件所有者权限。
+g[roup]::\fIperms\fR 文件组所有者权限。
+o[ther]:\fIperms\fR T{
+文件所有者或文件组所有者成员以外的其他用户的权限。
+T}
+m[ask]:\fIperms\fR T{
+\fBACL\fR 掩码。掩码条目指示允许供用户（所有者除外）和组使用的最大权限。可以通过掩码快速更改所有用户和组的权限。
+T}
+u[ser]:\fIuid:perms\fRT{
+特定用户的权限。对于 \fIuid\fR，可以指定用户名或数字 UID。
+T}
+g[roup]:\fIgid:perms\fRT{
+特定组的权限。对于 \fIgid\fR，可以指定组名或数字 GID。
+T}
+d[efault]:u[ser]::\fIperms\fR 缺省文件所有者权限。
+d[efault]:g[roup]::\fIperms\fR 缺省文件组所有者权限。
+d[efault]:o[ther]:\fIperms\fR T{
+文件所有者或文件组所有者成员以外的其他用户的缺省权限。
+T}
+d[efault]:m[ask]:\fIperms\fR 缺省 \fBACL\fR 掩码。
+d[efault]:u[ser]:\fIuid\fR:\fIperms\fRT{
+特定用户的缺省权限。对于 \fIuid\fR，可以指定用户名或数字 UID。
+T}
+d[efault]:g[roup]:\fIgid\fR:\fIperms\fRT{
+特定组的缺省权限。对于 \fIgid\fR，可以指定组名或数字 GID。
+T}
+.TE
+
+.sp
+.LP
+对于 \fB-d\fR 选项，\fIacl_entries\fR 是一个或多个以逗号分隔的没有权限的 \fBACL\fR 条目。请注意，无法删除文件所有者、文件组所有者、\fBACL\fR 掩码和其他用户的条目。
+.SH 选项
+.sp
+.LP
+这些选项的含义如下所示：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIacl_entries\fR\fR
+.ad
+.RS 18n
+.rt  
+从文件中删除一个或多个条目。无法从 \fBACL\fR 中删除文件所有者、文件组所有者和其他用户的条目。请注意，删除条目不一定与从条目中删除所有权限具有相同的效果。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIacl_file\fR\fR
+.ad
+.RS 18n
+.rt  
+使用名为 \fIacl_file\fR 的文件中包含的 \fBACL\fR 条目设置文件的 \fBACL\fR。对指定条目所具有的约束与 \fB-s\fR 选项相同。不要求条目在文件中采用任何特定顺序。此外，如果为 \fIacl_file\fR 指定了短划线 (\fB-\fR)，则会使用标准输入来设置文件的 \fBACL\fR。
+.sp
+\fIacl_file\fR 中的字符 \fB#\fR 可用来指示注释。以 \fB#\fR 开头的所有字符（直至行尾）都将被忽略。请注意，如果 \fIacl_file\fR 已作为 \fBgetfacl\fR(1) 命令的输出而创建，则会忽略 \fB#\fR 之后的任何有效权限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR \fIacl_entries\fR\fR
+.ad
+.RS 18n
+.rt  
+将一个或多个新 \fBACL\fR 条目添加到文件，和/或修改文件中的一个或多个现有 \fBACL\fR 条目。如果对于指定的 \fIuid\fR 或 \fIgid\fR 已经存在一个条目，则指定的权限会替换当前权限。如果对于指定的 \fIuid\fR 或 \fIgid\fR 不存在条目，则会创建一个条目。使用 \fB-m\fR 选项修改缺省 \fBACL\fR 时，第一次必须指定完整的缺省 \fBACL\fR（用户、组、其他、掩码和任何附加条目）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.RS 18n
+.rt  
+重新计算 \fBACL\fR 掩码条目的权限。在 \fBACL\fR 掩码条目中指定的权限将被忽略，并由对 \fBACL\fR 中所有其他用户、文件组所有者和其他组条目授予访问权限所需的最大权限替换。其他用户、文件组所有者和其他组条目中的权限保持不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIacl_entries\fR\fR
+.ad
+.RS 18n
+.rt  
+设置文件的 \fBACL\fR。所有旧 \fBACL\fR 条目将被删除，并替换为新指定的 \fBACL\fR。相应条目不需要采用任何特定顺序。在应用于文件之前，将由该命令对其进行排序。
+.sp
+必需的条目：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+只为文件所有者指定一个 \fBuser\fR 条目。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+只为文件组所有者指定一个 \fBgroup\fR 条目。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+只指定一个 \fBother\fR 条目。
+.RE
+如果存在其他用户和组条目：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+只为指示用户（所有者除外）和组允许使用的最大权限的 \fBACL\fR 掩码指定一个 \fBmask\fR 条目。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+不得存在 \fIuid\fR 相同的重复 \fBuser\fR 条目。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+不得存在 \fIgid\fR 相同的重复 \fBgroup\fR 条目。
+.RE
+如果 \fIfile\fR 是一个目录，则可以指定以下缺省 \fBACL\fR 条目：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+只为文件所有者指定一个 \fBdefault user\fR 条目。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+只为文件组所有者指定一个 \fBdefault group\fR 条目。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+只为 \fBACL\fR 掩码指定一个 \fBdefault mask\fR 条目。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+只指定一个 \fBdefault other\fR 条目。
+.RE
+可以指定其他 \fBdefault user\fR 条目和其他 \fBdefault group\fR 条目，但不能指定 \fIuid\fR 相同的重复其他 \fBdefault user\fR 条目，或 \fIgid\fR 相同的重复 \fBdefault group\fR 条目。 
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR只添加读取权限
+.sp
+.LP
+以下示例将一个 \fBACL\fR 条目添加到文件 \fBabc\fR，这将只为用户 \fBshea\fR 授予读取权限。
+
+.sp
+.in +2
+.nf
+\fBsetfacl -m user:shea:r\(mi\(mi abc\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR替换文件的整个 \fBACL\fR
+.sp
+.LP
+以下示例替换文件 \fBabc\fR 的整个 \fBACL\fR，这将授予 \fBshea\fR 读取访问权限，授予文件所有者所有访问权限，授予文件组所有者只读访问权限，授予 \fBACL\fR 掩码只读访问权限，而不授予其他用户任何访问权限。
+
+.sp
+.in +2
+.nf
+\fBsetfacl -s user:shea:rwx,user::rwx,group::rw-,mask:r--,other:--- abc\fR 
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+请注意，执行此命令后，文件权限位是 \fBrwxr-----\fR。虽然为文件组所有者设置了读取/写入权限，但 \fBACL\fR 掩码条目将其限制为只具有读取权限。该掩码条目还指定可用于所有其他用户和组 \fBACL\fR 条目的最大权限。同样，虽然为用户 \fBshea\fR 设置了所有访问权限，但掩码会将其限制为只具有读取权限。通过 \fBACL\fR 掩码条目，可以快速限制或开放对 \fBACL\fR 中所有用户和组条目的访问权限。例如，通过将掩码条目更改为读取/写入，文件组所有者和用户 \fBshea\fR 均将被授予读取/写入访问权限。
+
+.LP
+\fB示例 3 \fR对两个文件设置相同的 \fBACL\fR
+.sp
+.LP
+以下示例对文件 \fBabc\fR 设置与文件 \fBxyz\fR 相同的 \fBACL\fR。
+
+.sp
+.in +2
+.nf
+\fBgetfacl xyz | setfacl -f \(mi abc\fR
+.fi
+.in -2
+.sp
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/passwd\fR\fR
+.ad
+.RS 15n
+.rt  
+口令文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/group\fR\fR
+.ad
+.RS 15n
+.rt  
+组文件
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBchmod\fR(1)、\fBgetfacl\fR(1)、\fBumask\fR(1)、\fBaclcheck\fR(3SEC)、\fBaclsort\fR(3SEC)、\fBgroup\fR(4)、\fBpasswd\fR(4)、\fBattributes\fR(5)

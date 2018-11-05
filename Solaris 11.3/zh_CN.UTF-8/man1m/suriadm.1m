@@ -1,0 +1,587 @@
+'\" te
+.\" Copyright (c) 2012, 2015, Oracle and/or its affiliates.All rights reserved
+.TH suriadm 1M "2015 年 4 月 7 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+suriadm \- 基于存储 URI 管理存储对象
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/suriadm\fR \fIcommand\fR [\fIoptions\fR] [\fIoperands\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/suriadm\fR parse [\fB-H\fR] [\fB-o\fR <\fIp\fR>,<\fIp\fR>,...] <\fIURI\fR>
+\fB/usr/sbin/suriadm\fR normalize <\fIURI\fR>
+/usr/sbin/suriadm map [-H] [-o <\fIp\fR>,<\fIp\fR>,...] [-p <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>
+/usr/sbin/suriadm lookup-mapping [-H] [-o <\fIp\fR>,<\fIp\fR>,...] [-p <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>
+/usr/sbin/suriadm unmap [-p <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>
+/usr/sbin/suriadm create [-H] [-o <\fIp\fR>,<\fIp\fR>,...] [-p <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>
+/usr/sbin/suriadm destroy [-p <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>
+/usr/sbin/suriadm lookup-uri [-t <\fIuri-type\fR>] <\fIdevice-path\fR>
+/usr/sbin/suriadm lookup-uri [-t <\fIuri-type\fR>] 
+    -p \fBmapped-dev\fR=<\fIdevice-path\fR>
+/usr/sbin/suriadm lookup-uri [-t <\fIuri-type\fR>] -p \fBluname\fR=<\fIluname\fR>
+/usr/sbin/suriadm lookup-uri [-t <\fIuri-type\fR>] -p \fBtarget\fR=<\fItarget\fR> 
+    -p \fBlun\fR=<\fILUN\fR>
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBsuriadm\fR 命令行管理工具允许系统用户通过存储 URI 管理存储对象。该命令可以对映射进行解析、映射和取消映射，并可查询映射的状态以及查找存储 URI。
+.SS "支持的存储 URI"
+.sp
+.LP
+支持的存储 URI 在 \fBsuri\fR(5) 手册页中进行了定义。
+.SH 子命令
+.sp
+.LP
+支持以下子命令：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBparse\fR [\fB-H\fR] [\fB-o\fR \fIp\fR,\fIp\fR,...] \fIURI\fR\fR
+.ad
+.sp .6
+.RS 4n
+解析给定的 URI，并显示缺省的属性列表。如果使用 \fB-H\fR，则输出将省略标头。如果使用 \fB-o\fR，则仅显示所提供的列表中的属性。\fB-o\fR 选项表示输出位于一行上，其中，属性值以制表符分隔，可由另一个命令进一步处理。
+.sp
+\fB-o\fR 选项允许的属性名称有：\fIcreate-size\fR、\fIcreate-supported\fR、\fIgroup\fR、\fIfile-permissions\fR、\fIhostname\fR、\fIinitiator\fR、\fIluname\fR、\fIlun\fR、\fImapped-dev\fR、\fImapped-devs\fR、\fImount-options\fR、\fImountpoint\fR、\fImountpoint-prefix\fR、\fIpath\fR、\fIport\fR、\fItarget\fR、\fIteardown-supported\fR、\fIuri\fR、\fIuri-type\fR 和 \fIuser\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnormalize\fR \fIURI\fR\fR
+.ad
+.sp .6
+.RS 4n
+基于 URI 类型的标准化规范对存储 URI 字符串进行解析和标准化。显示标准化的 URI，不接受任何选项。
+.sp
+对于 iSCSI 或逻辑单元 URI，此子命令将 URI 中的所有字母字符转换为小写字符。
+.sp
+对于 iSCSI URI，此子命令还删除 URI 中存在的缺省 iSCSI 端口 "3260"。
+.sp
+对于设备 URI 类型，所有跟随在 URI 类型名称之后的前导正斜杠和路径组件开头出现的 "\fB/dev\fR"（如果存在）将被删除。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmap\fR [\fB-H\fR] [\fB-o\fR p,p,...] [\fB-p\fR <\fIprop\fR>=<\fIvalue\fR>] \fIURI\fR\fR
+.ad
+.sp .6
+.RS 4n
+解析存储 URI，必要时配置存储子系统以实例化与所提供的 URI 对应的所有设备，并显示设备路径。如果设备已实例化，则 map 操作将仅查找设备路径。
+.sp
+对于 iSCSI URI，如果存在 URI 授权部分，则该子命令将添加一个 \fBsend-targets\fR 搜索地址，主机名将解析到该地址。
+.sp
+对于逻辑单元和 \fBdev\fR URI 类型，该子命令对系统配置没有任何影响。选项 \fB-H\fR 和 \fB-o\fR 的含义与用于 \fBparse\fR 子命令时相同。属性 \fBmapped-devs\fR 显示与提供的 URI 对应的所有设备路径，属性 \fBmapped-dev\fR 仅显示 \fBmapped-devs\fR 的前五个设备路径。
+.sp
+\fB-p\fR 选项允许的输入属性名称为：\fBcreate-size\fR、\fBfile-permissions\fR、\fBmount-options\fR、\fBmountpoint-prefix\fR、\fBmapped-dev\fR、\fBtarget\fR、\fBlun\fR 和 \fBluname\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlookup-mapping\fR [\fB-H\fR] [\fB-o\fR <\fIp\fR>,<\fIp\fR>,...]\fR
+.ad
+.br
+.na
+\fB[\fB-p\fR <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>\fR
+.ad
+.sp .6
+.RS 4n
+解析 URI 并查找存储 URI 与本地系统设备路径所表示的对象之间的现有映射。该命令将显示缺省的属性列表。选项 \fB-H\fR 和 \fB-o\fR 与在 \fBparse\fR 子命令中使用时的含义相同。选项 \fB-p\fR 的含义与用于 \fBmap\fR 子命令时相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate\fR [\fB-H\fR] [\fB-o\fR <\fIp\fR>,<\fIp\fR>,...] [\fB-p\fR <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>\fR
+.ad
+.sp .6
+.RS 4n
+为存储 URI 创建后备存储，然后对其进行映射。选项 \fB-p\fR 的含义与用于 \fBmap\fR 子命令时相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdestroy\fR [\fB-p\fR <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>\fR
+.ad
+.sp .6
+.RS 4n
+取消映射存储 URI，然后销毁后备存储。选项 \fB-p\fR 的含义与用于 \fBmap\fR 子命令时相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunmap\fR [\fB-p\fR <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>\fR
+.ad
+.sp .6
+.RS 4n
+解析假定已映射的对象，并对其取消映射。选项 \fB-p\fR 的含义与用于 \fBmap\fR 子命令时相同。
+.sp
+对于 iSCSI URI，该子命令将删除 URI 授权部分（如果有）中的主机名要解析到的搜索地址。
+.sp
+对于逻辑单元和 \fBdev\fR URI 类型，该子命令对系统配置没有任何影响。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlookup-uri\fR [\fB-t\fR \fIuri-type\fR] \fIdevice-path\fR\fR
+.ad
+.br
+.na
+\fB\fBlookup-uri\fR [\fB-t\fR \fIuri-type\fR] \fB-p\fR \fImapped-dev\fR=<\fIdevice-path\fR>\fR
+.ad
+.sp .6
+.RS 4n
+根据本地系统设备路径查找并显示 URI。\fB-t\fR 允许使用的 URI 类型包括 \fBdev\fR、\fBlu\fR 和 \fBiscsi\fR。如果未指定 \fB-t\fR 选项，则输出将包含与任何 URI 类型的设备路径匹配的所有 URI。使用属性选项 "\fB-p\fR" 是可选的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlookup-uri\fR [\fB-t\fR \fIuri-type\fR] \fB-p\fR \fIluname\fR=<\fIluname\fR>\fR
+.ad
+.sp .6
+.RS 4n
+基于逻辑单元名称查找并显示 LU 和 iSCSI URI。\fB-t\fR 允许使用的 URI 类型为 \fBlu\fR 和 \fBiscsi\fR。如果未指定 \fB-t\fR 选项，输出将包含所有标识给定逻辑单元名称匹配的逻辑单元的 URI。
+.sp
+如果逻辑单元名称没有隐式 ID 类型（例如在基于 IQN 的名称中），则必须显式说明 ID 类型。请参见“示例”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlookup-uri\fR [\fB-t\fR \fIuri-type\fR] \fB-p\fR \fItarget\fR=<\fItarget\fR> \fB-p\fR \fBlun\fR=<\fILUN\fR>\fR
+.ad
+.sp .6
+.RS 4n
+基于目标端口和 LUN 查找并显示 URI。\fB-t\fR 允许使用的 URI 类型为 \fBlu\fR 和 \fBiscsi\fR。如果未指定 \fB-t\fR 选项，输出将包含所有标识指定目标和 LUN 匹配的逻辑单元的 URI。通常，输出中仅显示一个 URI 类型，即使不使用 \fB-t\fR 选项也是如此。
+.sp
+目标必须包含一个标识符类型和标识符，二者用句点进行分隔。支持的 ID 类型为 "\fBnaa\fR" 和 "\fBiqn\fR"。光纤通道目标端口始终是基于 NAA 的名称。iSCSI 目标端口始终是基于 IQN 的名称。请参见“示例”部分。
+.sp
+LUN 是一个十进制数字。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR解析 URI 并显示属性
+.sp
+.LP
+以下命令将解析 iSCSI URI 并显示缺省的属性列表。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm parse iscsi://10.0.0.1:3260/luname.naa.0123456789abcdef\fR
+PROPERTY           VALUE
+uri-type           iscsi
+hostname           10.0.0.1
+port               3260
+luname             naa.0123456789abcdef
+target             -
+lun                -
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm parse iscsi://10.0.0.1:3260/target.iqn.1990-12.com.sun\ 
+:cng-002,lun.3\fR 
+PROPERTY           VALUE 
+uri-type           iscsi 
+hostname           10.0.0.1 
+port               3260 
+luname             - 
+target            iqn.1990-12.com.sun:cng-002 
+lun               3
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR映射 iSCSI URI 并显示设备名称
+.sp
+.LP
+以下命令将映射 iSCSI URI 并显示已映射的本地系统设备名称。此命令的作用是自动添加一个 \fBsend-targets\fR 搜索地址（如果还没有该地址）。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm map iscsi://127.0.0.1/luname.naa.\e\fR
+\fB600144F0F4977D4000004F7EC8F00001\fR
+PROPERTY        VALUE
+mapped-devs      /dev/dsk/c0t600144F0F4977D4000004F7EC8F00001d0s2
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR可以通过多个路径访问设备时映射 iSCSI URI 并显示设备名称。
+.sp
+.LP
+多个设备路径与一个 URI 对应时，以下命令显示所有设备名称。
+
+.sp
+.in +2
+.nf
+$\fBsuriadm map iscsi://localhost/luname.naa.\e\fR
+\fB600144F0F42B0A00000053BC37270001\fR
+PROPERTY        VALUE
+mapped-devs     /dev/dsk/c6t46d0
+                /dev/dsk/c6t45d0
+                /dev/dsk/c6t48d0
+                /dev/dsk/c6t47d0
+                /dev/dsk/c6t49d0
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR查找映射
+.sp
+.LP
+以下命令将查找现有的 iSCSI 映射。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-mapping iscsi://127.0.0.1/\e\fR
+\fBluname.naa.600144F0F4977D4000004F7EC8F00001\fR
+PROPERTY        VALUE
+mapped-devs      /dev/dsk/c0t600144F0F4977D4000004F7EC8F00001d0s2
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR解析逻辑单元 URI
+.sp
+.LP
+以下命令将解析 initiator/target/\fBluname\fR 逻辑单元 URI。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm parse lu:initiator.naa.2101001b32ae7ab5,\e\fR
+\fBtarget.naa.2100001d38089fb0,luname.naa.500000e012942880\fR
+PROPERTY        VALUE
+uri-type        lu
+luname          naa.500000e012942880
+initiator       naa.2101001b32ae7ab5
+target          naa.2100001d38089fb0
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR映射逻辑单元 URI，查找 URI
+.sp
+.LP
+以下命令序列将映射逻辑单元 URI，然后根据找到的设备名称查找匹配的逻辑单元 URI。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm map lu:luname.naa.5000c5000288fa25\fR
+PROPERTY        VALUE
+mapped-path     /dev/dsk/c7t26d0s2
+
+$ \fBsuriadm lookup-uri -t lu /dev/dsk/c7t26d0s2\fR
+lu:luname.naa.5000c5000288fa25
+lu:initiator.naa.500605b000ae7010,target.naa.\e
+5001636000019c11,naa.5000c5000288fa25
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR查找匹配的 URI
+.sp
+.LP
+以下命令将在不指定 URI 类型的情况下查找与特定设备名称匹配的所有 URI。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri /dev/dsk/c7t26d0s2\fR
+lu:luname.naa.5000c5000288fa25
+lu:initiator.naa.500605b000ae7010,target.naa.5001636000019c11,\e
+luname.naa.5000c5000288fa25
+dev:dsk/c7t26d0s2
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 8 \fR解析 URI，显示选定属性
+.sp
+.LP
+以下命令将解析 URI，然后仅显示选定属性，所有属性都显示在同一行中，以制表符分隔，并且没有标头。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm map -Ho uri-type,luname,mapped-path \e\fR
+\fBlu:luname.naa.5000c5000288fa25\fR
+lu      naa.5000c5000288fa25    /dev/dsk/c7t26d0s2
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 9 \fR查找逻辑单元 URI
+.sp
+.LP
+以下命令将查找可通过多个路径访问的设备的逻辑单元 URI。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri -t lu /dev/dsk/c11t2000001D38089FB0d0\fR
+lu:luname.naa.2000001d38089fb0
+lu:initiator.naa.2101001b32ae7ab5,target.naa.2100001d38089fb0,luname.\e
+naa.2000001d38089fb0
+lu:initiator.naa.2100001b328e7ab5,target.naa.2200001d38089fb0,luname.\e
+naa.2000001d38089fb0
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 10 \fR尝试解析错误的 URI
+.sp
+.LP
+以下命令将尝试解析语法错误的 URI。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm parse lu:luname.naa.0123456789\fR
+Failed to parse URI "lu:luname.naa.0123456789": \fIGUID\fR part
+in "luname.naa.\fIGUID\fR" not 16 or 32 character hexadecimal
+number: "0123456789"
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 11 \fR尝试映射无法访问 LU 的 LU URI
+.sp
+.LP
+以下命令将尝试映射无法从系统中访问逻辑单元名称的 LU URI。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm map lu:luname.naa.0123456789abcdef\fR
+Failed to map URI "lu:luname.naa.0123456789abcdef": No such
+logical unit "naa.0123456789abcdef" found
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 12 \fR查找不存在的设备路径的 URI
+.sp
+.LP
+以下命令将尝试查找不存在的设备路径的 URI。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri /dev/dsk/nonexistent\fR
+Failed to map "/dev/dsk/nonexistent" to URI: No such device:
+"/dev/dsk/nonexistent"
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 13 \fR查找 \fBdev\fR URI
+.sp
+.LP
+以下命令序列说明了这样一个事实：\fBdev\fR URI 是接受指定分片的磁盘路径名的唯一 URI 类型。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri -t dev /dev/dsk/c0t500000E012942880d0s0\fR
+dev:dsk/c0t500000E012942880d0s0
+
+$ \fBsuriadm lookup-uri -t iscsi \e\fR
+  \fB/dev/dsk/c0t600144F03E0A0C0000004FAB3B660001d0s0\fR
+Failed to look up "iscsi" URI for device: \e
+  "/dev/dsk/c0t600144F03E0A0C0000004FAB3B660001d0s0": \e
+  Device path with slice does not represent entire disk
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 14 \fR标准化 URI
+.sp
+.LP
+以下命令标准化 iSCSI URI。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm normalize iscsi://10.0.0.1:3260/luname.naa.0123456789ABCDEF 
+        iscsi://10.0.0.1/luname.naa.0123456789abcdef\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下调用标准化 dev URI。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm normalize dev:/dev/dsk/c0t0d0 dev:dsk/c0t0d0\fR
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm normalize dev:///dev/dsk/c0t0d0 dev:dsk/c0t0d0\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 15 \fR基于目标和 LUN 获取 URI
+.sp
+.LP
+以下命令显示如何基于目标和 LUN 获取 URI。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri -p target=naa.2100001d38089fb0 -p lun=0\fR
+lu:luname.naa.500000e012942880 
+lu:initiator.naa.2101001b32ae7ab5,target.naa.2100001d38089fb0,luname.naa.50000 
+0e012942880
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri -p lun=0 -p\fR
+target=iqn.1986-03.com.sun:02:9548ddf8-dc44-63a1-b773-e7ac335a760f 
+iscsi://10.0.0.1/luname.naa.600144f0a5320b470000527d66740009 
+iscsi://10.0.0.1/target.iqn.1986-03.com.sun:02:9548ddf8-dc44-63a1-b773-e7ac335 
+a760f,lun.0
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 16 \fR基于逻辑单元名称获取 LU URI
+.sp
+.LP
+以下命令显示如何基于逻辑单元名称获取 LU URI：
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri -t lu -p luname=naa.5000cca012b66e90\fR
+lu:luname.naa.5000cca012b66e90
+lu:initiator.naa.5080020000fafcf8,target.naa.5000cca012b66e91,luname.naa.5000c
+ca012b66e90
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 17 \fR设置 \fBmap\fR 的输入属性
+.sp
+.LP
+以下命令显示了如何设置 \fBmap\fR 的输入属性。
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm map -p create-size=2G file://user1:group2@/export/file1\fR
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+命令成功。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.sp .6
+.RS 4n
+命令失败。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/library/storage/suri
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBstmsboot\fR(1M)、\fBsvcadm\fR(1M)、\fBattributes\fR(5)、\fBsuri\fR(5)、\fBscsi_vhci\fR(7D)、\fBlibsuri\fR(3LIB)
+.sp
+.LP
+《\fISmall Computer System Interface-3\fR》(SCSI-3)
+.SH 附注
+.sp
+.LP
+如果使用 iSCSI URI，则必须启用 \fBsvc:/network/iscsi/initiator\fR 服务，除非正在执行解析操作。如果正在处理 iSCSI URI 而该服务已禁用，则会自动临时启用 iSCSI 启动器服务。从不通过 \fBsuriadm\fR 命令禁用该服务。

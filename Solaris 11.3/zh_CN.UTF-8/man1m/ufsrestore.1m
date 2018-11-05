@@ -1,0 +1,689 @@
+'\" te
+.\" Copyright (c) 2002, 2012, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1989 AT&T
+.TH ufsrestore 1M "2011 年 7 月 6 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+ufsrestore \- 文件系统增量恢复
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/ufsrestore\fR i | r | R | t | x [abcdfhlmostvyLT] 
+     [\fIarchive_file\fR] [\fIfactor\fR] [\fIdumpfile\fR] [\fIn\fR] [\fIlabel\fR] 
+     [\fItimeout\fR] [\fIfilename\fR]...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBufsrestore\fR 实用程序用于从 \fBufsdump\fR 命令创建的备份介质恢复文件。\fBufsrestores\fR 的操作由 \fIkey\fR 参数控制。\fIkey\fR 由一个函数字母（\fBi\fR、\fBr\fR、\fBR\fR、\fBt\fR 或 \fBx\fR）和零个或多个函数修饰符（字母）组成。\fB\fR\fI\fR\fI\fR\fIkey\fR 字符串不包含任何空格字符。\fB\fR函数修饰符参数在命令行中列出的顺序与对应函数修饰符在 \fIkey\fR 字符串中出现的顺序相同。
+.sp
+.LP
+无论是出现在命令行中还是作为交互式命令的参数，\fIfilename\fR 参数都被 \fBx\fR 和 \fBt\fR 函数视为 shell \fBglob\fR 模式；任何与这类模式匹配的文件或目录都会被选定。如果元字符 \fB*\fR、\fB?\fR 和 \fB[ ]\fR 出现在命令行中，必须确保使其不受 shell 影响。无法在文件名中引用这些元字符来进行显式匹配。 
+.sp
+.LP
+缺省情况下，临时文件 \fBrstdir*\fR 和 \fBrstmode*\fR 放置在 \fB/tmp\fR 中。如果环境变量 \fBTMPDIR\fR 定义为一个非空值，将使用该位置而不是 \fB/tmp\fR。
+.SH 选项
+.SS "函数字母"
+.sp
+.LP
+您必须指定下面列出的函数字母之一（且只能指定一个）。请注意，\fBi\fR、\fBx\fR 和 \fBr\fR 用于将文件恢复到空目录中。\fBR\fR 函数用于将文件恢复到已填充的目录中。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBi\fR\fR
+.ad
+.RS 5n
+.rt  
+交互。从介质中读取目录信息之后，\fBufsrestore\fR 将调用一个 shell 式接口，允许用户浏览转储文件的目录分层结构并选择要提取的各个文件。恢复时具有与 \fBx\fR 相同的语义（请参见下文）。有关可用命令的说明，请参见下文中的“\fB交互式命令\fR”。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBr\fR
+.ad
+.RS 5n
+.rt  
+递归。\fBr\fR 函数将相对于当前工作目录，从空目录和 0 级转储开始重新创建文件系统，使其像之前执行转储时所呈现的那样。还包含用于在完全转储的基础上恢复增量转储的信息（例如 \fBrestoresymtable\fR）。通常会有多个 \fBufsrestore\fR 运行，每个运行对应一个更高级别的转储（0、1、...、9）。在 0 级转储与后续增量转储之间删除的文件在最终恢复后将不存在。要完全恢复某个文件系统，请使用 \fBr\fR 函数恢复 0 级转储，然后再恢复每个增量转储。尽管此函数字母用于完全恢复到新文件系统（使用 \fBnewfs\fR(1M) 刚刚创建的文件系统），但如果文件系统包含不在备份介质上的文件，则会保留这些文件。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBR\fR
+.ad
+.RS 5n
+.rt  
+继续恢复。如果 \fBr\fR 模式的 \fBufsrestore\fR 被中断，此函数将提示用户提供要从其继续恢复的卷并从中断处继续恢复。其他情况下，与 \fBr\fR 相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBt\fR
+.ad
+.RS 5n
+.rt  
+目录。列出介质上出现的每个 \fIfilename\fR。如果没有给定 \fIfilename\fR 参数，将列出根目录。这会导致列出介质上的所有文件，除非使用了 \fBh\fR 函数修饰符。使用了 \fBa\fR 函数修饰符时，将从介质或指定的归档文件中提取目录。\fBa\fR 函数修饰符与 \fBx\fR 和 \fBr\fR 函数字母互斥。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBx\fR
+.ad
+.RS 5n
+.rt  
+从介质中提取指定的文件。文件将恢复到它们在原始文件系统中所处的同一相对位置。
+.sp
+如果 \fIfilename\fR 参数匹配的目录中的内容已写入到介质中，且没有使用 \fBh\fR 修饰符，则会相对于当前目录（假定为空）递归提取该目录。对于每个文件，将恢复所有者、修改时间以及模式（如果可能）。 
+.sp
+如果省略了 \fIfilename\fR 参数或指定了 \fB\&.\fR，将提取根目录。这会导致提取整个磁带，除非使用了 \fBh\fR 修饰符。使用 \fBx\fR 函数时，将覆盖现有文件并且 \fBufsrestore\fR 会显示被覆盖的文件的名称。覆盖当前运行的可执行文件可能会产生不良后果。
+.sp
+使用 \fBx\fR 选项可恢复部分文件系统转储，因为按定义它们不是整个的文件系统。
+.RE
+
+.SS "函数修饰符"
+.sp
+.ne 2
+.mk
+.na
+\fBa \fIarchive_file\fR\fR
+.ad
+.RS 19n
+.rt  
+从 \fIarchive_file\fR 中而不是从介质中读取目录。此函数修饰符可以与 \fBt\fR、\fBi\fR 或 \fBx\fR 函数字母组合使用，从而无需挂载介质即可检查文件是否位于介质中。与 \fBx\fR 和交互式 (\fBi\fR) 函数字母一起使用时，会在提取文件之前提示用户指定包含这些文件的卷。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBb \fIfactor\fR\fR
+.ad
+.RS 19n
+.rt  
+分块因子。指定用于磁带读取的分块因子。对于可变长度的 \fBSCSI\fR 磁带设备，所使用的分块因子必须至少等于写入磁带时使用的分块因子，除非写入数据时使用的是缺省分块因子；不满足上述要求，将生成错误。请注意，一个磁带块为 512 字节。有关最大分块因子的信息，请参考您的特定磁带机的手册页。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBc\fR
+.ad
+.RS 19n
+.rt  
+将采用 4.1BSD 格式的介质内容转换为新的 \fBufs\fR 文件系统格式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBd\fR
+.ad
+.RS 19n
+.rt  
+调试。开启调试输出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBf \fIdump_file\fR\fR
+.ad
+.RS 19n
+.rt  
+使用 \fIdump_file\fR 而不是 \fB/dev/rmt/0\fR 作为恢复来源文件。通常，\fIdump_file\fR 指定一个磁带机。如果将 \fIdump_file\fR 指定为 '\fB-\fR'，则 \fBufsrestore\fR 将从标准输入进行读取。这将允许在管道中使用 \fBufsdump\fR(1M) 和 \fBufsrestore\fR 来复制文件系统：
+.sp
+.in +2
+.nf
+example# ufsdump 0f \(mi /dev/rdsk/c0t0d0s7 \e
+ | (cd /home;ufsrestore xf \(mi)
+.fi
+.in -2
+.sp
+
+如果文件名采用 \fImachine\fR\fB:\fR\fIdevice\fR 格式，将使用 \fBrmt\fR(1M) 通过网络从指定的计算机执行恢复。由于 \fBufsrestore\fR 通常由 root 用户运行，因此本地计算机的名称必须出现在远程计算机的 \fB/.rhosts\fR 文件中。如果将该文件指定为 \fIuser\fR\fB@\fR\fI machine\fR\fB:\fR\fIdevice\fR，\fBufsrestore\fR 将尝试以指定用户的身份在远程计算机上执行恢复。指定用户必须在远程计算机上有一个 \fB\&.rhosts\fR 文件以允许该用户从本地计算机调用命令来访问远程计算机。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBh\fR
+.ad
+.RS 19n
+.rt  
+提取或列出实际目录，而不是该目录引用的文件。这将阻止从磁带提取完整子树进行层次化的恢复。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBl\fR
+.ad
+.RS 19n
+.rt  
+自动装入。在完成恢复之前到达了磁带结尾时，使磁带机脱机，然后等待两分钟（缺省值，请参见 \fBT\fR 函数修饰符），以便磁带机再次准备就绪。这样可以使自动装入（成堆加载器，stackloader）磁带机有机会装入新磁带。如果磁带机在两分钟内准备就绪，则继续执行操作。如果没有，则提示装入其他磁带并等待。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBL \fIlabel\fR\fR
+.ad
+.RS 19n
+.rt  
+应出现在转储文件标头中的标签。如果标签不匹配，\fBufsrestore\fR 会发出一条诊断消息并退出。磁带标签特定于 \fBufsdump\fR 磁带格式，与 \fBIBM\fR 或 \fBANSI\fR 标准的磁带标签无相似之处。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBm\fR
+.ad
+.RS 19n
+.rt  
+按 inode 编号而不是按文件名提取，以避免重新生成完整路径名。无论文件位于转储分层结构中的何处，都会将其恢复到当前目录中并使用其 inode 编号重命名。这在只提取少量文件时非常有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBo\fR
+.ad
+.RS 19n
+.rt  
+脱机。在转储完成时或到达介质结尾时，使磁带机脱机并倒带。对于某些 8mm 自动装入磁带机，将自动从磁带机中移除磁带。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBs \fIn\fR\fR
+.ad
+.RS 19n
+.rt  
+在同一磁带上有多个转储文件时跳到第 \fIn\fR 个文件。例如，命令: 
+.sp
+.in +2
+.nf
+example# ufsrestore xfs /dev/rmt/0hn 5
+.fi
+.in -2
+.sp
+
+会在读取转储的卷 1 时将您定位到磁带上的第五个文件。如果某个转储跨多个卷，则假定除第一个卷以外，其他所有卷都从位置 0 开始，无论指定的 “\fBs\fR \fIn\fR” 为何值。
+.sp
+如果指定了 “\fBs\fR \fIn\fR”，备份介质必须位于 \fBBOT\fR（beginning of tape，磁带开头）处。否则，读取目录的首次定位操作将失败，因为该操作是通过使磁带向前跳 \fIn\fR\fB -1\fR 个文件而不是通过使用绝对定位来执行的。这是因为在某些设备上执行绝对定位非常耗时。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBT timeout [hms]\fR
+.ad
+.RS 19n
+.rt  
+设置等待 autoload 命令完成的时间量。除非同时指定了 \fBl\fR 函数修饰符，否则此函数修饰符将被忽略。缺省超时期限为两分钟。时间单位可以指定为结尾 \fBh\fR（小时）、\fBm\fR（分钟）或 \fBs\fR（秒）。缺省单位为分钟。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBv\fR
+.ad
+.RS 19n
+.rt  
+详细输出。\fBufsrestore\fR 显示它恢复的每个文件的名称和 inode 编号，前面是其文件类型。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBy\fR
+.ad
+.RS 19n
+.rt  
+在遇到磁带错误时不询问是否中止恢复，\fBufsrestore\fR 将尽最大努力跳过坏磁带块并继续执行。
+.RE
+
+.SS "交互式命令"
+.sp
+.LP
+当通过 \fBi\fR 函数字母调用 \fBufsrestore\fR 时，该命令将进入交互式模式。交互式命令让人联想到 shell。对于接受参数的那些命令，缺省值为当前目录。交互式选项包括：
+.sp
+.ne 2
+.mk
+.na
+\fBadd [\fIfilename\fR]\fR
+.ad
+.RS 22n
+.rt  
+将指定的文件或目录添加到要提取文件的列表。如果指定了某个目录，会将该目录及其文件（以递归方式）添加到提取列表中（除非使用了 \fBh\fR 修饰符）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBcd \fIdirectory\fR\fR
+.ad
+.RS 22n
+.rt  
+转到 \fIdirectory\fR（在转储文件中）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdelete [\fIfilename\fR]\fR
+.ad
+.RS 22n
+.rt  
+从要提取文件的列表中删除当前目录或指定的文件或目录。如果指定了某个目录，将从提取列表中删除该目录及其所有后代（除非使用了 \fBh\fR 修饰符）。如果要提取某个目录中的大多数文件，最适宜的方式是将该目录添加到提取列表中，然后删除要忽略的特定文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBextract\fR
+.ad
+.RS 22n
+.rt  
+从转储介质中提取提取列表中的所有文件。\fBufsrestore\fR 会询问用户要挂载哪个卷。提取少量文件的最快方法是从最后一个卷开始，向第一个卷前进。如果在命令行中给定了 “\fBs\fR \fIn\fR”，在读取卷 1 时会自动定位到第 \fIn\fR 个文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBhelp\fR
+.ad
+.RS 22n
+.rt  
+显示可用命令的摘要。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBls [\fIdirectory\fR]\fR
+.ad
+.RS 22n
+.rt  
+列出 \fIdirectory\fR 或当前目录（用 '\fB\&.\fR' 句点表示）中的文件。目录均附加 '\fB/\fR'（斜杠）。标记为要提取的条目带有 '\fB*\fR'（星号）前缀。如果使用了 verbose 选项，还会列出 inode 编号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBmarked [\fIdirectory\fR]\fR
+.ad
+.RS 22n
+.rt  
+与 \fBls\fR 一样，不过只列出标记为要提取的文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBpager\fR
+.ad
+.RS 22n
+.rt  
+切换 \fBls\fR 和 \fBmarked\fR 命令输出所用的分页程序。所使用的页面调度程序由 \fBPAGER\fR 环境变量定义，或为 more(1)（如果未定义该环境变量）。\fBPAGER\fR 环境变量可能包含以空格分隔的分页程序参数。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBpwd\fR
+.ad
+.RS 22n
+.rt  
+列显当前工作目录的全路径名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBquit\fR
+.ad
+.RS 22n
+.rt  
+\fBufsrestore\fR 将立即退出，即使提取列表不为空也是如此。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBsetmodes\fR
+.ad
+.RS 22n
+.rt  
+提示：\fBset owner/mode for\fR '\fB\&.\fR'（句点）。键入 \fBy\fR 代表“是”，可将当前目录 '\fB\&.\fR'（句点），即文件所要恢复到的目录的模式（权限、所有者、时间）设置为等于转储文件来自的文件系统的根目录的模式。通常，在恢复整个文件系统或将各个文件恢复到之前转储文件时的相同位置时，需要此方式。键入 \fBn\fR 代表“否”，可使当前目录的模式保持不变。通常，在将部分转储文件恢复到其他目录（不是之前转储文件时的目录）时，需要此方式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBsetpager \fIcommand\fR\fR
+.ad
+.RS 22n
+.rt  
+设置用于输出分页的命令，而不使用缺省命令或从环境中继承的命令。\fIcommand\fR 字符串除了命令本身以外还可以包含参数。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBverbose\fR
+.ad
+.RS 22n
+.rt  
+切换 \fBv\fR 修饰符的状态。当使用了 \fBv\fR 时，\fBls\fR 命令将列出所有条目的 inode 编号，\fBufsrestore\fR 在提取每个文件时将显示其相关信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBwhat\fR
+.ad
+.RS 22n
+.rt  
+显示介质上的转储标头。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持以下操作数。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfilename\fR\fR
+.ad
+.RS 12n
+.rt  
+指定要恢复到磁盘的文件（或目录）的路径名。除非同时使用了 \fBh\fR 函数修饰符，否则目录名称将引用它所包含的文件并（以递归方式）引用其子目录和子目录中包含的文件。\fIfilename\fR 与 \fBx\fR 或 \fBt\fR 函数字母相关联，且必须位于最后。
+.RE
+
+.SH 用法
+.sp
+.LP
+有关 \fBufsrestore\fR 遇到大于或等于 2 GB（2^31 字节）文件时行为的说明，请参见 \fBlargefile\fR(5)。
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+出现错误。将显示详细消息。
+.RE
+
+.SH 环境变量
+.sp
+.ne 2
+.mk
+.na
+\fBPAGER\fR
+.ad
+.RS 10n
+.rt  
+用作输出分页过滤器的命令。还可以使用此命令来指定要使用的选项。缺省值为 \fBmore\fR(1)。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBTMPDIR\fR
+.ad
+.RS 10n
+.rt  
+选择存放临时文件的目录。如果未在环境中定义，则缺省为 \fB/tmp\fR。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/dev/rmt/0\fR\fR
+.ad
+.RS 23n
+.rt  
+缺省磁带机
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$TMPDIR/rstdir*\fR\fR
+.ad
+.RS 23n
+.rt  
+包含磁带上目录的文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$TMPDIR/rstmode*\fR\fR
+.ad
+.RS 23n
+.rt  
+目录的所有者、模式和时间戳
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\&./restoresymtable\fR\fR
+.ad
+.RS 23n
+.rt  
+在增量恢复之间传递的信息
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBmore\fR(1)、\fBmkfs\fR(1M)、\fBmount\fR(1M)、\fBrmt\fR(1M)、\fBufsdump\fR(1M)、\fBufsdump\fR(4)、\fBattributes\fR(5)、\fBlargefile\fR(5)
+.SH 诊断
+.sp
+.LP
+如果存在错误的选项字符，\fBufsrestore\fR 会进行报告。
+.sp
+.LP
+如果存在读取错误，也会进行报告。如果指定了 \fBy\fR，或者用户以 \fBy\fR 进行响应，\fBufsrestore\fR 将尝试继续恢复。
+.sp
+.LP
+如果转储跨越多个磁带，\fBufsrestore\fR 会提示用户更换磁带。如果指定了 \fBx\fR 或 \fBi\fR 函数字母，\fBufsrestore\fR 还会询问用户要挂载哪个卷。如果指定了 \fBs\fR 修饰符，且挂载了卷 1，ufsrestore 会自动定位到指定的文件。
+.sp
+.LP
+\fBufsrestore\fR 可列出许多一致性检查。大多数检查都是不需要加以说明的，或者可能永远都不会发生。以下列出了常见错误。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBConverting to new file system format\fR\fR
+.ad
+.sp .6
+.RS 4n
+装入了基于旧文件系统创建的转储磁带。其内容将自动转换为新文件系统格式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfilename\fR\fB: not found on tape\fR\fR
+.ad
+.sp .6
+.RS 4n
+在磁带目录中列出了指定的文件名，但在磁带上找不到该文件。这可能由于以下原因：查找文件时发生了磁带读取错误，使用在活动文件系统上创建的转储磁带进行恢复，或者使用 \fBr\fR 函数恢复部分转储。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexpected next file\fR \fIinumber\fR\fB, got\fR \fIinumber\fR\fR
+.ad
+.sp .6
+.RS 4n
+出现了目录中未列出的文件。使用在活动文件系统上创建的转储磁带进行恢复时可能会发生此情况。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBIncremental tape too low\fR\fR
+.ad
+.sp .6
+.RS 4n
+执行增量恢复时，装入了在上一增量磁带之前写入的磁带或增量级别过低的磁带。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBIncremental tape too high\fR\fR
+.ad
+.sp .6
+.RS 4n
+执行增量恢复时，装入了未从上一增量磁带结束处开始的磁带或者增量级别过高的磁带。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmedia\fR \fBread\fR \fBerror:\fR \fBinvalid\fR \fBargument\fR\fR
+.ad
+.sp .6
+.RS 4n
+为读取指定的分块因子小于用于写入数据的分块因子。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTape read error while restoring\fR\fR
+.ad
+.br
+.na
+\fB\fBTape read error while skipping over inode number\fR\fR
+.ad
+.br
+.na
+\fB\fBTape read error while trying to resynchronize\fR\fR
+.ad
+.br
+.na
+\fB\fBA tape read error has occurred\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果指定了文件名，其部分内容可能有错误。如果正在跳过某个 inode 或磁带正在尝试重新同步，则已提取的文件尚未损坏，但在磁带上可能找不到这些文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBresync ufsrestore, skipped\fR \fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+发生磁带读取错误后，\fBufsrestore\fR 可能必须重新同步自身。此消息列出已跳过的块数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBIncorrect tape label. Expected 'foo', got 'bar'.\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定了 \fBL\fR 选项，但其值与转储文件的标头中记录的值不匹配。 
+.RE
+
+.SH 附注
+.sp
+.LP
+如果使用在活动文件系统上创建的转储磁带执行增量恢复，\fBufsrestore\fR 执行时会发生混乱。
+.sp
+.LP
+在完全恢复后必须执行 0 级转储。\fB\fR因为 \fBufsrestore\fR 以用户模式运行，它无权控制 inode 分配。这意味着，尽管 \fBufsrestore\fR 不会更改文件内容，但它会重新放置文件。因此，必须执行完全转储以获取反映新文件位置的新目录集，以便使以后的增量转储正确。

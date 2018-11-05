@@ -1,0 +1,393 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\" Portions Copyright (c) 2007, 2010, Oracle and/or its affiliates.All rights reserved
+.\" Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/. 
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH xargs 1 "2010 年 11 月 2 日" "SunOS 5.11" "用户命令"
+.SH 名称
+xargs \- 构造参数列表并调用实用程序
+.SH 用法概要
+.LP
+.nf
+\fBxargs\fR [\fB-t\fR] [\fB-p\fR] [\fB-e\fR[\fIeofstr\fR]] [\fB-E\fR \fIeofstr\fR] 
+     [\fB-I\fR \fIreplstr\fR] [\fB-i\fR[\fIreplstr\fR]] [\fB-L\fR \fInumber\fR] [\fB-l\fR[\fInumber\fR]] 
+     [\fB-n\fR \fInumber\fR [\fB-x\fR]] [\fB-s\fR \fIsize\fR] [\fIutility\fR [\fIargument\fR...]]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBxargs\fR 实用程序可以构造一个命令行，使其包含指定的 \fIutility\fR 和 \fIargument\fR 操作数，后跟从标准输入中依次读取的符合选项所指定长度和个数限制的参数。\fBxargs\fR 实用程序随后将调用构造的命令行并等待其完成。该序列将一直重复，直到检测到标准输入中出现文件结束条件或调用构造的命令行返回退出状态 \fB255\fR 为止。
+.sp
+.LP
+标准输入中的参数必须以不带引号的空白字符、非转义空白字符或换行符分隔。零个或多个非双引号 (\fB"\fR) 和非换行符的字符串可以用双引号引起。零个或多个非撇号 (\fB\&'\fR) 和非换行符的字符串可以用撇号引起。不带引号的任何字符均可转义，方法是在前面添加一个反斜杠 (\fB\\fR)。将执行一次或多次 \fIutility\fR，直到文件结束为止。如果 \fIutility\fR 指定的实用程序尝试从标准输入中读取，则产生的结果不确定。
+.sp
+.LP
+生成的命令行长度是实用程序名称和视为字符串的每个参数（包括每个字符串的空字节结束符）的字节大小之和。\fBxargs\fR 将限制命令行长度，以使调用命令行时合并的参数和环境列表不能超过 \fB{ARG_MAX}-2048\fR 个字节。在该限制范围以内，如果 \fB-n\fR 和 \fB-s\fR 选项均未指定，则缺省命令行长度至少为 \fB{LINE_MAX}\fR。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-0\fR\fR
+.ad
+.RS 16n
+.rt  
+输入项以空字符而非空格或换行结束，引号和反斜杠不会特殊对待，即每个字符都按字面意思理解。还会禁用文件结束字符串，并将其与其他任何参数一样对待。该选项在输入项可能包含空格、引号或反斜杠时非常有用。查找 \fB-print0\fR 选项可以生成适合该模式的输入。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-e\fR\fB[\fR\fI eofstr\fR\fB]\fR\fR
+.ad
+.RS 16n
+.rt  
+将 \fIeofstr\fR 用作逻辑文件结束字符串。如果 \fB-e\fR 和 \fB-E\fR 均未使用，则假定下划线 (\fB_\fR) 为逻辑 \fBEOF\fR 字符串。如果省略了 \fIeofstr\fR 选项参数，会禁用逻辑 \fBEOF\fR 字符串功能，并且会按字面意思理解下划线。\fBxargs\fR 实用程序将读取标准输入，直到遇到文件结束或逻辑 \fBEOF\fR 字符串为止。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-E\fR \fIeofstr\fR\fR
+.ad
+.RS 16n
+.rt  
+指定要替换缺省下划线的逻辑文件结束字符串。\fBxargs\fR 将读取标准输入，直到遇到文件结束或逻辑 EOF 字符串为止。如果 \fIeofstr\fR 为空字符串，会禁用逻辑文件结束字符串功能，并且会按字面意思理解下划线。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR \fIreplstr\fR\fR
+.ad
+.RS 16n
+.rt  
+插入模式。针对标准输入中的每一行执行 \fIutility\fR，将整行视为单个参数，将其插入每次出现的 \fIreplstr\fR 的 \fIargument\fR \fIs\fR。\fIargument\fR 最多包含五个参数，其中每个参数可包含一个或多个 \fIreplstr\fR 实例。将忽略每行开头的任何空白字符。构造的参数不能超过 255 个字节。强制启用选项 \fB-x\fR。\fB-I\fR 和 \fB-i\fR 选项互斥；指定的最后一个选项有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-i\fR\fB[\fR\fI replstr\fR\fB]\fR\fR
+.ad
+.RS 16n
+.rt  
+该选项等效于 \fB-I\fR \fIreplstr\fR。如果省略了选项参数，则假定字符串 \fB{ }\fR 为 \fIreplstr\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR \fInumber\fR\fR
+.ad
+.RS 16n
+.rt  
+针对标准输入中的每 \fInumber\fR 个非空参数行执行 \fIutility\fR。最后一次调用 \fIutility\fR 时，如果剩余参数行少于 \fInumber\fR 个，则使用的参数行就会较少。除非行中的最后一个字符为空白字符，否则视为行以第一个换行符结束；结尾空白字符表示续到下一个非空行（含结尾空白字符）。\fB-L\fR、\fB-l\fR 和 \fB-n\fR 选项互斥；指定的最后一个选项有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l[\fR\fInumber\fR\fB ]\fR\fR
+.ad
+.RS 16n
+.rt  
+（字母 ell。）该选项等效于 \fB-L\fR \fInumber\fR。如果省略了 \fInumber\fR，则假定为 \fB1\fR。强制启用选项 \fB-x\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR \fInumber\fR\fR
+.ad
+.RS 16n
+.rt  
+使用尽可能多的标准输入参数调用 \fIutility\fR，最多达到 \fInumber\fR（十进制正整数）个参数的上限。如果出现以下情况，则使用较少的参数： 
+.RS +4
+.TP
+.ie t \(bu
+.el o
+累计的命令行长度超过了 \fB-s\fR 选项指定的大小，或者在未指定 \fB-s\fR 选项时超过了 \fB{LINE_MAX}\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+最后一次迭代时，剩余的操作数少于 \fInumber\fR 个，但不是零个。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 16n
+.rt  
+提示符模式。询问用户是否每次调用均执行 \fIutility\fR。启用跟踪模式 (\fB-t\fR)，以便将后跟提示符的要执行的命令实例写入标准错误。如果从 \fB/dev/tty\fR 中读取了肯定性响应（特定于用户的语言环境），则会执行命令；否则，将跳过 \fIutility\fR 的特定调用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIsize\fR\fR
+.ad
+.RS 16n
+.rt  
+使用尽可能多的标准输入参数调用 \fIutility\fR，从而生成小于 \fIsize\fR（十进制正整数）个字节的命令行长度。如果出现以下情况，则使用较少的参数： 
+.RS +4
+.TP
+.ie t \(bu
+.el o
+参数总数超过了 \fB-n\fR 选项指定的数目
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+行总数超过了 \fB-L\fR 选项指定的数目
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+累计到 \fIsize\fR 个字节之前，在标准输入中遇到了文件结束条件
+.RE
+支持至少达到 \fB{LINE_MAX}\fR 个字节的 \fIsize\fR 值，前提是符合“说明”部分指定的限制。如果指定的值大于实现程序支持的值或者超过了“说明”部分指定的限制，则不会视为错误。\fBxargs\fR 将使用限制范围以内支持的最大值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.RS 6n
+.rt  
+启用跟踪模式。在调用前将生成的每个命令行写入标准错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.RS 6n
+.rt  
+如果包含 \fInumber\fR 个参数（请参见上文的 \fB-n\fR 选项）或 \fInumber\fR 行（请参见上文的 \fB-L\fR 选项）的命令行不符合隐含或指定的大小（请参见上文的 \fB-s\fR 选项），则会终止。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIutility\fR\fR
+.ad
+.RS 12n
+.rt  
+通过使用 \fBPATH\fR 环境变量搜索路径找到的要调用的实用程序的名称。（请参见 \fBenviron\fR(5)。）如果省略了 \fIutility\fR，则缺省值为 \fBecho\fR(1) 实用程序。如果 \fIutility\fR 操作数指定了 \fBshell_builtins\fR(1) 中的任何特殊内置实用程序，则产生的结果不确定。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIargument\fR\fR
+.ad
+.RS 12n
+.rt  
+用于调用 \fIutility\fR 的初始选项或操作数。
+.RE
+
+.SH 用法
+.sp
+.LP
+如果 \fBxargs\fR 使用的实用程序知道随后没有使用当前数据流的进一步调用，则可以通过退出状态 \fB255\fR 告知 \fBxargs\fR 终止。因此，\fIutility\fR 应该以相应的值显式执行 \fBexit\fR，以避免意外返回 \fB255\fR。
+.sp
+.LP
+请注意，输入解析为行。以空白字符分隔参数。使用 \fBxargs\fR 将诸如 \fBfind\fR \fIdir\fR \fB-print\fR 或 \fBls\fR 之类的命令捆绑输出到要执行的命令时，如果任何文件名包含任何空白字符或换行符，则可能会产生异常结果。要解决该问题，可以使用 \fBfind\fR 调用脚本，将找到的每个文件转换为带引号的字符串，随后将其传输到 \fBxargs\fR。请注意，\fBxargs\fR 使用的引号规则与 shell 中使用的不同。它们在这一点上不一致，因为现有应用程序依赖于当前的规则，而 shell 语法与其并不完全兼容。要将任何字符串转换为 \fBxargs\fR 能够正确解释的带引号的格式，可以采用一个简单的规则，即在字符串中的每个字符前面添加反斜杠 (\fB\\fR)。
+.sp
+.LP
+在 \fB{ARG_MAX}\fR 值较大的实现程序上，\fBxargs\fR 生成的命令行可能会比 \fB{LINE_MAX}\fR 长。就调用实用程序而言，这不会产生问题。如果使用 \fBxargs\fR 创建文本文件，用户应该使用 \fB-s\fR 选项显式设置最大命令行长度。
+.sp
+.LP
+如果出现错误，\fBxargs\fR 实用程序将返回退出状态 \fB127\fR，以使应用程序能够区分“无法找到实用程序”与“调用的实用程序已退出并已指明错误”。之所以选择值 \fB127\fR，是因为它不常用来表示其他含义。大多数实用程序使用小值表示“常规错误情形”，大于 \fB128\fR 的值可能会与因收到信号而终止混淆。值 \fB126\fR 的选择方式类似，以表示可以找到但无法调用实用程序。
+.SH 示例
+.LP
+\fB示例 1 \fR使用 xargs 命令
+.sp
+.LP
+以下示例会将所有文件从目录 \fB$1\fR 移至目录 \fB$2\fR，并在执行前回显各个移动命令：
+
+.sp
+.in +2
+.nf
+example% \fBls $1 | xargs -I {} -t mv $1/{} $2/{}\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下命令会将用圆括号括起来的命令的输出合并到一行，随后将其写入文件结束 \fBlog\fR：
+
+.sp
+.in +2
+.nf
+example% \fB(logname; date; printf "%s\en" "$0 $*") | xargs >>log\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下命令将以最初键入为命令行参数（假定原始参数列表的元素中没有嵌入式空白字符）的后续成对参数调用 \fBdiff\fR：
+
+.sp
+.in +2
+.nf
+example% \fBprintf "%s\en" "$*" | xargs -n 2 -x diff\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+询问用户要归档当前目录中的哪些文件。文件将归档到 \fBarch\fR \fB;\fR 可以一次归档一个文件，也可以一次归档多个文件：
+
+.sp
+.in +2
+.nf
+example% \fBls | xargs -p -L 1 ar -r arch
+ls | xargs -p -L 1 | xargs ar -r arch\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下命令将以最初键入为命令行参数的后续成对参数执行：
+
+.sp
+.in +2
+.nf
+example% \fBecho $* | xargs -n 2 diff\fR
+.fi
+.in -2
+.sp
+
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBxargs\fR 执行的环境变量 \fBLANG\fR、\fBLC_ALL\fR、\fBLC_COLLATE\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR 和 \fBNLSPATH\fR 的说明，请参见 \fBenviron\fR(5)。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPATH\fR\fR
+.ad
+.RS 8n
+.rt  
+确定 \fIutility\fR 的位置。
+.RE
+
+.sp
+.LP
+肯定的回答使用为用户语言环境中 \fBLC_MESSAGES\fR 类别的 \fByesexpr\fR 关键字定义的扩展正则表达式进行处理。\fBLC_COLLATE\fR 类别中指定的语言环境定义为 \fByesexpr\fR 定义的表达式中使用的范围、等效类和多字符整理元素的行为。\fBLC_CTYPE\fR 中指定的语言环境确定文本数据字符字节序列解释的语言环境，以及为 \fByesexpr\fR 定义的表达式中使用的字符类的行为。请参见 \fBlocale\fR(5)。
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 9n
+.rt  
+调用 \fIutility\fR 全部都返回了退出状态 \fB0\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1-125\fR\fR
+.ad
+.RS 9n
+.rt  
+符合指定要求的命令行无法汇编，一次或多次调用 \fIutility\fR 返回了非零退出状态，或者发生了其他某种错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB126\fR\fR
+.ad
+.RS 9n
+.rt  
+已找到但无法调用 \fIutility\fR 指定的实用程序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB127\fR\fR
+.ad
+.RS 9n
+.rt  
+无法找到 \fIutility\fR 指定的实用程序。
+.RE
+
+.sp
+.LP
+如果符合指定要求的命令行无法汇编，则无法调用实用程序，调用实用程序将以信号终止，或者调用实用程序将以退出状态 \fB255\fR 退出，\fBxargs\fR 实用程序将写入一条诊断消息然后退出，而不会处理剩余的任何输入。
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+CSIEnabled（已启用）
+_
+接口稳定性Committed（已确定）
+_
+标准请参见 \fBstandards\fR(5)。
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBecho\fR(1)、\fBshell_builtins\fR(1)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBstandards\fR(5)

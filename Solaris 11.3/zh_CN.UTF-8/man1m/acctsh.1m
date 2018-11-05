@@ -1,0 +1,311 @@
+'\" te
+.\" Copyright (c) 2002, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1989 AT&T
+.TH acctsh 1M "2011 年 8 月 16 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+acctsh, chargefee, ckpacct, dodisk, lastlogin, monacct, nulladm, prctmp, prdaily, prtacct, shutacct, startup, turnacct \- 记帐 shell 过程
+.SH 用法概要
+.LP
+.nf
+\fB/usr/lib/acct/chargefee\fR \fIlogin-name\fR \fInumber\fR
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/ckpacct\fR [\fIblocks\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/dodisk\fR [\fB-o\fR] [\fIfilename\fR]...
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/lastlogin\fR 
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/monacct\fR \fInumber\fR
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/nulladm\fR \fIfilename\fR...
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/prctmp\fR \fIfilename\fR
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/prdaily\fR [\fB-c\fR] [\fB-l\fR] [\fImmdd\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/prtacct\fR \fIfilename\fR ['' \fIheading\fR '']
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/shutacct\fR ['' \fIreason\fR '']
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/startup\fR 
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/turnacct\fR on | off | switch
+.fi
+
+.SH 描述
+.SS "chargefee 命令"
+.sp
+.LP
+可以调用 \fBchargefee\fR 来按单位数 \fInumber\fR 向 \fIlogin-name\fR 收取费用。一条记录将写入到 \fB/var/adm/fee\fR，以便通过 \fBrunacct\fR(1M) 与其他记帐记录合并。
+.SS "ckpacct 命令"
+.sp
+.LP
+应使用 \fBcron\fR(1M) 启动 \fBckpacct\fR，以定期检查 \fB/var/adm/pacct\fR 的大小。如果大小超过 \fIblocks\fR（缺省情况下为 \fB500\fR），将使用参数 \fBswitch\fR 调用 \fBturnacct\fR。要避免与 \fBrunacct\fR 中执行的 \fBturnacct switch\fR 发生冲突，请不要同时运行 \fBckpacct\fR 和 \fBrunacct\fR。如果 \fB/var\fR 文件系统中的空闲磁盘块数低于 \fB500\fR，\fBckpacct\fR 将通过 \fBturnacct\fR 的 \fBoff\fR 参数自动停止进程记帐记录的收集。如果块数至少恢复为 \fB500\fR，在下次调用 \fBckpacct\fR 时将再次激活记帐。该功能对 \fBckpacct\fR 的执行频率非常敏感（通常通过 \fBcron\fR(1M) 命令执行 ckpacct）。
+.SS "dodisk 命令"
+.sp
+.LP
+应通过 \fBcron\fR(1M) 调用 \fBdodisk\fR，以执行磁盘记帐功能。
+.SS "lastlogin 命令"
+.sp
+.LP
+通过 \fBrunacct\fR(1M) 调用 \fBlastlogin\fR，以更新 \fB/var/adm/acct/sum/loginlog\fR（其中显示每个人员的上次登录日期）。
+.SS "monacct 命令"
+.sp
+.LP
+应当每个月或每个记帐周期调用 \fBmonacct\fR 一次。\fInumber\fR 表示相应的月份或周期。如果未指定 \fInumber\fR，则缺省为当前月份 (01-12)。如果要在每个月的第一天使用 \fBcron\fR(1M) 执行 \fBmonacct\fR，则此缺省值很有用。\fBmonacct\fR 在 \fB/var/adm/acct/fiscal\fR 中创建摘要文件并在 \fB/var/adm/acct/sum\fR 中重新启动这些摘要文件。
+.SS "nulladm 命令"
+.sp
+.LP
+\fBnulladm\fR 使用模式 664 创建 \fIfilename\fR，并确保所有者和组为 \fBadm\fR。可通过各种记帐 shell 过程调用该命令。
+.SS "prctmp 命令"
+.sp
+.LP
+\fBprctmp\fR 可用于输出会话记录文件（通常为 \fBacctcon1\fR 创建的 \fB/var/adm/acct/nite/ctmp\fR）（请参见 \fBacctcon\fR(1M)）。
+.SS "prdaily 命令"
+.sp
+.LP
+通过 \fBrunacct\fR(1M) 调用 \fBprdaily\fR，以格式化前一天的记帐数据报告。该报告位于 \fB/var/adm/acct/sum/rprt/mmdd\fR，其中 \fImmdd\fR 是报告的月份和日期。可通过键入 \fBprdaily\fR 来输出当前日常记帐报告。可以使用 \fImmdd\fR 选项并指定所需的确切报告日期来输出前几天的记帐报告。
+.SS "prtacct 命令"
+.sp
+.LP
+\fBprtacct\fR 可用于格式化和输出任何总记帐 (\fBtacct\fR) 文件。
+.SS "shutacct 命令"
+.sp
+.LP
+在系统关机过程中调用 \fBshutacct\fR，以关闭进程记帐并将 \fIreason\fR 记录附加到 \fB/var/adm/wtmpx\fR。
+.SS "startup 命令"
+.sp
+.LP
+可在系统转为多用户状态时调用 \fBstartup\fR，以打开进程记帐。
+.SS "turnacct 命令"
+.sp
+.LP
+\fBturnacct\fR 是 \fBaccton\fR（请参见 \fBacct\fR(1M)）的一个接口，用于使进程记帐转为 \fBon\fR 状态或 \fBoff\fR 状态。\fBswitch\fR 参数将当前 \fB/var/adm/pacct\fR 移动到 \fB/var/adm/pacct.\fIincr\fR\fR（其中 \fIincr\fR 是从 \fB0\fR 开始的数字，其他每个 \fBpacct\fR 文件都会依次增加一）中的下一个可用名称，然后重新打开记帐。该过程通过 \fBckpacct\fR 进行调用，因此可由 \fBcron\fR(1M) 命令进行维护，并且可用于使 \fBpacct\fR 保持合理大小。\fBshutacct\fR 使用 \fBturnacct\fR 停止进程记帐。\fBstartup\fR 使用 \fBturnacct\fR 启动进程记帐。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 6n
+.rt  
+该选项可输出命令的异常资源使用情况报告，并且仅用于当日记帐数据。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 6n
+.rt  
+该选项可输出指定日期内登录 ID 的异常使用情况报告。以前的日常报告都已被清除，因此在每次调用 \fBmonacct\fR 后不可访问。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR\fR
+.ad
+.RS 6n
+.rt  
+该选项使用 \fBacctdusg\fR（请参见 \fBacct\fR(1M)）按登录目录执行速度较慢的磁盘记帐。\fIfilename\fR 指定一个或多个将执行磁盘记帐的文件系统名称。如果使用 \fIfilename\fR，磁盘记帐将仅在这些文件系统上执行。如果使用 \fB-o\fR 选项，\fIfilename\fR 应该为已挂载文件系统的挂载点。如果省略 \fB-o\fR 选项，\fIfilename\fR 应该为可挂载文件系统的特殊文件名。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/logadm.conf\fR\fR
+.ad
+.RS 30n
+.rt  
+\fBlogadm\fR(1M) 命令的配置文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/acct\fR\fR
+.ad
+.RS 30n
+.rt  
+包含此手册 \fB1M\fR 部分所列的所有记帐命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/acct/ptecms.awk\fR\fR
+.ad
+.RS 30n
+.rt  
+包含对命令名称异常使用情况的限制
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/acct/ptelus.awk\fR\fR
+.ad
+.RS 30n
+.rt  
+包含对登录 \fBID\fR 异常使用情况的限制
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/acct/fiscal\fR\fR
+.ad
+.RS 30n
+.rt  
+会计报告目录
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/acct/nite\fR\fR
+.ad
+.RS 30n
+.rt  
+工作目录
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/acct/sum\fR\fR
+.ad
+.RS 30n
+.rt  
+包含 \fBmonacct\fR 信息的摘要目录
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/acct/sum/loginlog\fR\fR
+.ad
+.RS 30n
+.rt  
+上次登录所更新的文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/fee\fR\fR
+.ad
+.RS 30n
+.rt  
+费用累加器
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/pacct\fR\fR
+.ad
+.RS 30n
+.rt  
+用于每进程记帐的当前文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/pacct\fR\fIincr\fR\fR
+.ad
+.RS 30n
+.rt  
+如果在执行日常记帐过程期间 \fBpacct\fR 的大小变大，则使用此文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/wtmpx\fR\fR
+.ad
+.RS 30n
+.rt  
+有关用户访问和管理信息的历史记录
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/accounting/legacy-accounting
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBacctcom\fR(1)、\fBacct\fR(1M)、\fBacctcms\fR(1M)、\fBacctcon\fR(1M)、\fBacctmerg\fR(1M)、\fBacctprc\fR(1M)、\fBcron\fR(1M)、\fBfwtmp\fR(1M)、\fBlogadm\fR(1M)、\fBrunacct\fR(1M)、\fBacct\fR(2)、\fBacct.h\fR(3HEAD)、\fButmpx\fR(4)、\fBattributes\fR(5)
+.SH 附注
+.sp
+.LP
+有关主要日常记帐 shell 脚本（可每日对连接、进程、费用和磁盘记帐执行累加），请参见 \fBrunacct\fR(1M)。它还会创建命令用法的摘要。

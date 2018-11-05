@@ -1,0 +1,824 @@
+'\" te
+.\" Copyright (c) 2008, 2011, Oracle and/or its affiliates.All rights reserved.
+.TH acl 5 "2011 年 6 月 16 日" "SunOS 5.11" "标准、环境和宏"
+.SH 名称
+acl \- 访问控制列表
+.SH 描述
+.sp
+.LP
+访问控制列表 (Access control list, ACL) 是自主访问控制机制，可授予和拒绝对文件和目录的访问权限。Solaris 发行版本中支持两种不同的 ACL 模型：POSIX 样式的 ACL 和 NFSv4 ACL。 
+.sp
+.LP
+UFS 文件系统支持较早的 POSIX 样式的模型。该模型基于已撤销的从未进行标准化的 ACL POSIX 规范。POSIX 委员会后来撤销了该模型。 
+.sp
+.LP
+另一个模型基于 NFSv4 工作组的标准，是 Internet 工程任务组 (Internet Engineering Task Force, IETF) 批准的标准。ZFS 文件系统使用 NFSv4 模型，提供比 POSIX 样式的模型更丰富的语义和更精细的权限功能。 
+.SS "\fBPOSIX\fR 样式的 \fBACL\fR"
+.sp
+.LP
+POSIX 样式的 ACL 为 Solaris 发行版中的基本 UNIX 文件权限提供备用安全机制。其目的是进一步限制对文件和目录的访问或扩展特定用户的权限。ACL 可用于更改标准所有者、组和文件模式的其他类位的权限。ACL 可为其他用户和组授予对文件的访问权限。目录还可以有一种称为\fB缺省\fR ACL 的特殊 ACL，用于定义将由目录后代继承的 ACL 条目。POSIX 样式的 ACL 有一个称为\fB掩码\fR的 ACL 条目。该掩码定义可向其他用户和组条目授予的最大权限。每当创建文件或通过 \fBchmod\fR(1) 或 \fBchmod\fR(2) 更改其模式时，就会重新计算掩码。该掩码将重新计算为传递到 \fBchmod\fR(2) 的模式中定义的组权限。
+.sp
+.LP
+POSIX 样式的 ACL 模型使用传统 UNIX 权限的标准 \fBrwx\fR 模型。
+.sp
+.LP
+ACL 的表示方式如下： 
+.sp
+.in +2
+.nf
+\fIacl_entry\fR[,\fIacl_entry\fR]...
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+每个 \fIacl_entry\fR 都包含一个 ACL 条目。ACL 条目由两个或三个冒号分隔的 (\fB:\fR) 字段表示。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fIuser\fR:[\fIuid\fR]:\fIperms\fR\fR
+.ad
+.RS 21n
+.rt  
+如果 \fIuid\fR 为空，则它表示文件所有者。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIgroup\fR:[\fIgid\fR]:\fIperms\fR\fR
+.ad
+.RS 21n
+.rt  
+如果 \fIgid\fR 为空，则它表示所属组。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIother\fR:\fIperms\fR\fR
+.ad
+.RS 21n
+.rt  
+表示文件的其他类。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fImask\fR:\fIperms\fR\fR
+.ad
+.RS 21n
+.rt  
+定义要分发的\fB最大\fR权限。
+.RE
+
+.sp
+.LP
+例如，要为用户授予 \fBjoe\fR 读写权限，则 ACL 条目应指定为：
+.sp
+.in +2
+.nf
+user:joe:rw-
+.fi
+.in -2
+.sp
+
+.SS "\fBNFS\fRv4 \fBACL\fR"
+.sp
+.LP
+NFSv4 ACL 总体上基于 Windows NT ACL 模型。NFSv4 ACL 提供比 POSIX 样式的 ACL 更丰富的 ACL 模型。 
+.sp
+.LP
+NFSv4 和 POSIX 样式的 ACL 之间的主要区别如下：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+NFSv4 ACL 提供比 \fBrwx\fR 模型更精细的权限。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+NFSv4 ACL 允许同时有 \fBALLOW\fR 和 \fBDENY\fR 条目。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+NFSv4 ACL 提供一组丰富的继承语义。POSIX ACL 也具有继承性，但使用 NFSv4 模型，您可以控制以下继承功能：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+继承同时级联到文件和目录还是仅级联到文件和目录之一。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+对于目录，您可以指示将继承应用于目录本身，应用于一个级别的子目录或级联到目录的所有子目录。
+.RE
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+NFSv4 ACL 提供用于挂钩到系统的审计迹的机制。目前，Solaris 不支持此机制。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+NFSv4 ACL 使管理员能够指定检查 ACL 条目的顺序。使用 POSIX 样式的 ACL 时，文件系统会按照明确定义且访问控制严格的检查顺序对 ACL 条目进行重新排序。
+.RE
+.sp
+.LP
+POSIX 样式的 ACL 语义可通过 NFSv4 ACL 来实现。但是，只有一些 NFSv4 ACL 可以转换为等效的 POSIX 样式的 ACL。
+.sp
+.LP
+可采用三种不同 \fBchmod\fR ACL 格式指定权限：详细、紧凑或位置。详细格式使用字词指示用正斜杠 (\fB/\fR) 字符分隔权限。紧凑格式使用权限字母标识权限，位置格式使用权限字母标识权限，或使用连字符 (\fB-\fR) 标识没有任何权限。
+.sp
+.LP
+详细模式的权限以及其括号中的缩写形式（紧凑和位置模式）如下所述：
+.sp
+.ne 2
+.mk
+.na
+\fBread_data (\fBr\fR)\fR
+.ad
+.RS 24n
+.rt  
+读取文件数据的权限
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBlist_directory (\fBr\fR)\fR
+.ad
+.RS 24n
+.rt  
+列出目录内容的权限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBwrite_data (\fBw\fR)\fR
+.ad
+.RS 24n
+.rt  
+在文件的偏移范围中的任意位置修改文件数据的权限。这包括增加文件大小或写入任意偏移的能力。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBadd_file (\fBw\fR)\fR
+.ad
+.RS 24n
+.rt  
+向目录中添加新文件的权限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBappend_data (\fBp\fR)\fR
+.ad
+.RS 24n
+.rt  
+修改文件数据的能力，但仅从 EOF 开始。当前不支持此权限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBadd_subdirectory (\fBp\fR)\fR
+.ad
+.RS 24n
+.rt  
+在目录中创建子目录的权限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBread_xattr (\fBR\fR)\fR
+.ad
+.RS 24n
+.rt  
+读取文件的扩展属性或在扩展的属性目录中执行查找的能力。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBwrite_xattr (\fBW\fR)\fR
+.ad
+.RS 24n
+.rt  
+创建扩展属性或向扩展属性目录进行写入的能力。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBexecute (\fBx\fR)\fR
+.ad
+.RS 24n
+.rt  
+执行文件的权限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBread_attributes (\fBa\fR)\fR
+.ad
+.RS 24n
+.rt  
+读取文件的基本属性（非 ACL）的能力。基本属性将视为 stat 级别属性。允许此访问掩码位意味着实体可以执行 \fBls\fR(1) 和 \fBstat\fR(2)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBwrite_attributes (\fBA\fR)\fR
+.ad
+.RS 24n
+.rt  
+将与文件或目录关联的时间更改为任意值的权限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdelete (\fBd\fR)\fR
+.ad
+.RS 24n
+.rt  
+删除文件的权限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdelete_child (\fBD\fR)\fR
+.ad
+.RS 24n
+.rt  
+删除目录中的文件的权限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBread_acl (\fBc\fR)\fR
+.ad
+.RS 24n
+.rt  
+读取 ACL 的权限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBwrite_acl (\fBC\fR)\fR
+.ad
+.RS 24n
+.rt  
+写入 ACL 的权限，或执行 \fBchmod\fR(1) 或 \fBsetfacl\fR(1) 的能力。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBwrite_owner (\fBo\fR)\fR
+.ad
+.RS 24n
+.rt  
+更改所有者的权限，或执行 \fBchown\fR(1) 或 \fBchgrp\fR(1) 的能力。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBsynchronize (\fBs\fR)\fR
+.ad
+.RS 24n
+.rt  
+在具有同步读写的服务器上本地访问文件的权限。当前不支持此权限。
+.RE
+
+.sp
+.LP
+NFSv4 支持以下继承标志：
+.sp
+.ne 2
+.mk
+.na
+\fBfile_inherit (\fBf\fR)\fR
+.ad
+.RS 26n
+.rt  
+继承到目录中所有新创建的文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdir_inherit (\fBd\fR)\fR
+.ad
+.RS 26n
+.rt  
+继承到目录中所有新创建的目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBinherit_only (\fBi\fR)\fR
+.ad
+.RS 26n
+.rt  
+放置到目录中，但不应用于目录自身，只应用于新创建的文件和目录。此标志需要 file_inherit 和/或 dir_inherit 以指示要继承的内容。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBno_propagate (\fBn\fR)\fR
+.ad
+.RS 26n
+.rt  
+放置在目录中并指示只能继承一个树级别的 ACL 条目。此标志需要 file_inherit 和/或 dir_inherit 以指示要继承的内容。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBsuccessful_access (\fBS)\fR)\fR
+.ad
+.RS 26n
+.rt  
+指示在访问成功时是否应该启动报警或审计记录。与审计/报警 ACE 类型一起使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBfailed_access (\fBF\fR)\fR
+.ad
+.RS 26n
+.rt  
+指示在访问失败时是否应该启动报警或审计记录。与审计/报警 ACE 类型一起使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBinherited (\fBI\fR)\fR
+.ad
+.RS 26n
+.rt  
+继承了 ACE。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-\fR\fR
+.ad
+.RS 26n
+.rt  
+未授予权限。
+.RE
+
+.sp
+.LP
+使用以下语法表示 NFSv4 ACL：
+.sp
+.in +2
+.nf
+\fIacl_entry\fR[,\fIacl_entry\fR]...
+
+    owner@:<perms>[:inheritance flags]:<allow|deny>
+    group@:<perms>[:inheritance flags]:<allow|deny>
+    everyone@:<perms>[:inheritance flags]:<allow|deny>
+    user:<username>[:inheritance flags]:<allow|deny>
+    group:<groupname>[:inheritance flags]:<allow|deny>
+.fi
+.in -2
+
+.sp
+.ne 2
+.mk
+.na
+\fBowner@\fR
+.ad
+.RS 10n
+.rt  
+文件所有者
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBgroup@\fR
+.ad
+.RS 10n
+.rt  
+组所有者
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBuser\fR
+.ad
+.RS 10n
+.rt  
+特定用户的权限
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBgroup\fR
+.ad
+.RS 10n
+.rt  
+特定组的权限
+.RE
+
+.sp
+.LP
+权限和继承标志由 \fB/\fR 字符分隔。
+.sp
+.LP
+ACL 规范示例： 
+.sp
+.in +2
+.nf
+user:fred:read_data/write_data/read_attributes:file_inherit:allow 
+owner@:read_data:allow,group@:read_data:allow,user:tom:read_data:deny
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+使用紧凑 ACL 格式时，将通过使用指示权限的 14 个唯一字母来指定权限。
+.sp
+.LP
+使用位置 ACL 格式时，将权限指定为类似于 \fBls -V\fR 格式的位置参数。连字符 (\fB-\fR) 指示在该位置未授予任何权限，可以忽略它，只需指定必需的字母。 
+.sp
+.LP
+将按照位置表示法中指定的顺序列出上面的字母。 
+.sp
+.LP
+使用这些字母，您可以按以下等效方式指定权限。 
+.sp
+.in +2
+.nf
+user:fred:rw------R------:file_inherit:allow
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+也可以删除 \fB-\fR 使权限紧挨在一起。 
+.sp
+.in +2
+.nf
+user:fred:rwR:file_inherit:allow
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+还可按更紧凑的方式指定继承标志，如下所示：
+.sp
+.in +2
+.nf
+user:fred:rwR:f:allow
+user:fred:rwR:f------:allow
+.fi
+.in -2
+.sp
+
+.SS "Shell 级别 Solaris \fBAPI\fR"
+.sp
+.LP
+Solaris 命令接口支持对 ACL 进行操作。以下 Solaris 实用程序适应两种 ACL 模型：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchmod\fR\fR
+.ad
+.RS 12n
+.rt  
+\fBchmod\fR 实用程序已得到增强，允许设置和删除 ACL。通过扩展 symbolic-mode 参数以支持 ACL 操作可实现此目的。有关详细信息，请参见 \fBchmod\fR(1)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcompress\fR\fR
+.ad
+.RS 12n
+.rt  
+压缩文件时，与原始文件关联的任何 ACL 将与压缩文件一起保留。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcp\fR\fR
+.ad
+.RS 12n
+.rt  
+缺省情况下，\fBcp\fR 将忽略 ACL，除非指定了 \fB-p\fR 选项。指定 \fB-p\fR 时，将保留所有者和组 ID、权限模式、修改和访问时间、ACL 和扩展属性（如果适用）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcpio\fR\fR
+.ad
+.RS 12n
+.rt  
+指定 \fB-P\fR 选项时将保留 ACL。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfind\fR\fR
+.ad
+.RS 12n
+.rt  
+指定 \fB-acl\fR 标志时查找包含 ACL 的文件。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBls\fR\fR
+.ad
+.RS 12n
+.rt  
+缺省情况下，\fBls\fR 不显示 ACL 信息。指定 \fB-v\fR 选项时，将显示文件的 ACL。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmv\fR\fR
+.ad
+.RS 12n
+.rt  
+移动文件时，将随重命名的文件携带所有属性。跨文件系统边界移动文件时，将复制 ACL。如果不能复制 ACL 信息，移动将失败，并且不会删除源文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpack\fR\fR
+.ad
+.RS 12n
+.rt  
+打包文件时，与原始文件关联的任何 ACL 将与打包文件一起保留。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrcp\fR\fR
+.ad
+.RS 12n
+.rt  
+\fBrcp\fR 已增强为支持复制。仅当远程主机支持 ACL 时，才保留文件的 ACL。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtar\fR\fR
+.ad
+.RS 12n
+.rt  
+指定 \fB-p\fR 选项时将保留 ACL。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunpack\fR\fR
+.ad
+.RS 12n
+.rt  
+解压缩包含 ACL 的文件时，解压缩的文件会保留 ACL 信息。
+.RE
+
+.SS "应用程序级别 \fBAPI\fR"
+.sp
+.LP
+在程序级别访问文件系统 ACL 所需的主要接口是 \fBacl_get()\fR 和 \fBacl_set()\fR 函数。这些函数同时支持 POSIX 样式的 ACL 和 NFSv4 ACL。
+.SS "检索文件的 \fBACL\fR"
+.sp
+.in +2
+.nf
+int acl_get(const char *path, int flag, acl_t **aclp);
+int facl_get(int fd, int flag, acl_t **aclp);
+.fi
+.in -2
+
+.sp
+.LP
+\fBacl_get\fR(3SEC) 和 \fBfacl_get\fR(3SEC) 函数可在其名称由路径给定或由打开文件描述符 fd 引用的文件上检索 ACL。标志参数指定是否应检索普通 ACL。如果标志参数等于 \fBACL_NO_TRIVIAL\fR，则将仅检索非普通 ACL。将在 \fBaclp\fR 参数中返回 ACL。 
+.SS "释放 \fBACL\fR 结构"
+.sp
+.in +2
+.nf
+void acl_free(acl_t *aclp)s;
+.fi
+.in -2
+
+.sp
+.LP
+\fBacl_free()\fR 函数可释放为参数 \fBaclp;\fR 分配的内存。
+.SS "在文件上设置 \fBACL\fR"
+.sp
+.in +2
+.nf
+int acl_set(const char *path, acl_t *aclp);
+int facl_set(int fd, acl_t *aclp);
+.fi
+.in -2
+
+.sp
+.LP
+\fBacl_set\fR(3SEC) 和 \fBfacl_get\fR(3SEC) 函数用于在其名称由路径给定或由打开文件描述符 \fBfd\fR 引用的文件上设置 ACL。\fBaclp\fR 参数指定要设置的 ACL。在目标文件系统支持 NFSv4 ACL 时，\fBacl_set\fR(3SEC) 可将 POSIX 样式的 ACL 转换为 NFSv4 ACL。当尝试在 POSIX 样式的 ACL 支持的文件系统上设置 NFSv4 ACL 时，将不执行任何转换。
+.SS "确定 \fBACL\fR 的普通程度"
+.sp
+.in +2
+.nf
+int acl_trivial(const char *path);
+.fi
+.in -2
+
+.sp
+.LP
+\fBacl_trivial()\fR 函数用于确定文件是否具有普通 ACL。ACL 是否普通取决于 ACL 的类型。如果 POSIX 样式的 ACL 具有的条目数多于 \fBMIN_ACL_ENTRIES\fR，则它是非普通的。如果 NFSv4/ZFS 样式的 ACL 具有除 \fBowner@\fR、\fBgroup@\fR 和 \fBeveryone@\fR 之外的条目，具有继承标志集，或未按照符合 POSIX 访问控制要求的方式进行排序，则它是非普通的。
+.SS "从文件中删除所有 \fBACL\fR"
+.sp
+.in +2
+.nf
+int acl_strip(const char *path, uid_t uid, gid_t gid, mode_t mode);
+.fi
+.in -2
+
+.sp
+.LP
+\fBacl_strip()\fR 函数可从文件中删除所有 ACL，并将其替换为基于传入的参数模式的普通 ACL。在替换 ACL 后，文件所有者和组将设置为 uid 和 gid 参数中指定的值。
+.SS "在 \fBACL\fR 与外部表示形式之间转换"
+.sp
+.in +2
+.nf
+int acl_fromtext(const char *path, acl_t **aclp);
+char *acl_totext(acl_t *aclp, int flags);
+.fi
+.in -2
+
+.sp
+.LP
+\fBacl_text()\fR 函数可将 aclp 指向的内部 ACL 表示形式转换为外部表示形式。有关外部表示形式的详细信息，请参见“说明”部分\fB\fR。
+.sp
+.LP
+\fBacl_fromtext()\fR 函数可将外部表示形式转换为内部表示形式。有关外部表示形式的详细信息，请参见“说明”部分\fB\fR。
+.SH 示例
+.sp
+.LP
+以下示例演示 API 如何用于对 ACL 执行基本操作。
+.LP
+\fB示例 1 \fR检索和设置某个 ACL
+.sp
+.LP
+使用以下命令可检索某个 ACL 并在另一个文件上设置它：
+
+.sp
+.in +2
+.nf
+error = acl_get("file", ACL_NO_TRIVIAL, &aclp);
+
+if (error == 0 && aclp != NULL) {
+error = acl_set("file2", aclp)
+acl_free(aclp);
+}
+\&...
+.fi
+.in -2
+
+.LP
+\fB示例 2 \fR检索和设置任何 ACL
+.sp
+.LP
+使用以下命令可检索任何 ACL（包括普通 ACL），并在另一个文件上设置它：
+
+.sp
+.in +2
+.nf
+error = acl_get("file3", 0, &aclp);
+if (error == 0) {
+error = acl_set("file4", aclp)
+acl_free(aclp);
+}
+\&...
+.fi
+.in -2
+
+.LP
+\fB示例 3 \fR确定文件是否具有普通 ACL
+.sp
+.LP
+使用以下命令可确定文件是否具有普通 ACL：
+
+.sp
+.in +2
+.nf
+istrivial = acl_trivial("file")
+
+if (istrivial == 0)
+printf("file %s has a trivial ACL\en", file);
+else
+printf("file %s has a NON-trivial ACL\en", file);
+\&...
+.fi
+.in -2
+
+.LP
+\fB示例 4 \fR从文件中删除所有 ACL
+.sp
+.LP
+使用以下命令可从文件中删除所有 ACL，并设置新模式、所有者和组： 
+
+.sp
+.in +2
+.nf
+error = acl_strip("file", 10, 100, 0644);
+\&...
+.fi
+.in -2
+
+.SH 另请参见
+.sp
+.LP
+\fBchgrp\fR(1)、\fBchmod\fR(1)、\fBchown\fR(1)、\fBcp\fR(1)、\fBcpio\fR(1)、\fBfind\fR(1)、\fBls\fR(1)、\fBmv\fR(1)、\fBtar\fR(1)、\fBsetfacl\fR(1)、\fBchmod\fR(2)、\fBacl\fR(2),\fBstat\fR(2),\fBacl_get\fR(3SEC)、\fBaclsort\fR(3SEC)、\fBacl_fromtext\fR(3SEC)、\fBacl_free\fR(3SEC)、\fBacl_strip\fR(3SEC)、\fBacl_trivial\fR(3SEC)

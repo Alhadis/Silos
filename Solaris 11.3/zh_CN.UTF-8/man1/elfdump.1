@@ -1,0 +1,727 @@
+'\" te
+.\"  Copyright (c) 1998, 2014, Oracle and/or its affiliates.All rights reserved.
+.TH elfdump 1 "2014 年 4 月 23 日" "SunOS 5.11" "用户命令"
+.SH 名称
+elfdump \- 转储目标文件的所选部分
+.SH 用法概要
+.LP
+.nf
+\fBelfdump\fR [\fB-cCdegGhHiklmnPrsSuvy\fR] [\fB-p | -w file\fR]
+     [\fB-F\fR \fIfmtopt1\fR,\fIfmtopt2\fR,...] [\fB-I\fR \fIindex-expr\fR]
+     [\fB-N\fR \fIname\fR] [\fB-O\fR \fIosabi\fR] [\fB-T\fR \fItype\fR] \fIfilename\fR...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBelfdump\fR 实用程序以符号方式转储指定目标文件的所选部分。相应选项允许显示文件的特定部分。
+.sp
+.LP
+\fBelfdump\fR 实用程序在功能方面与 \fBdump\fR(1) 实用程序类似。与 \fBelfdump\fR 相比，\fBdump\fR 实用程序提供的界面较旧且用户友好性较差，尽管 \fBdump\fR 可能更适合于特定用途（例如用于 shell 脚本中）。
+.sp
+.LP
+还可以使用 \fBelfdump\fR 检查 \fBar\fR(1) 生成的归档文件。在这种情况下，使用提供的选项处理归档文件中的每个目标文件。
+.sp
+.LP
+\fBelfdump\fR 可以显示任何 ELF 目标文件的 ELF 头、程序头数组和节头数组。它还能够显示以下类型的节中找到的数据：
+.sp
+.in +2
+.nf
+Category                   Option     ELF Section Type
+Dynamic                     -d        SHT_DYNAMIC
+Global Offset Table (GOT)   -G        Special, see below.
+Group                       -g        SHT_GROUP
+Capabilities                -H        SHT_SUNW_cap
+Hash Table                  -h        SHT_HASH
+Interpreter                 -i        Special, see below.
+Move                        -m        SHT_SUNW_move
+Note                        -n        SHT_NOTE
+Relocation                  -r        SHT_RELA
+                                      SHT_REL
+Stack Unwind/Exceptions     -u        Special, see below.
+Syminfo                     -y        SHT_SUNW_syminfo
+Symbol Sort                 -S        SHT_SUNW_symsort
+                                      SHT_SUNW_tlssort
+Symbol Table                -s        SHT_SYMTAB
+                                      SHT_DYNSYM
+                                      SHT_SUNW_LDYNSYM
+                                      SHT_SUNW_versym
+Versioning                  -v        SHT_SUNW_verdef
+                                      SHT_SUNW_verneed
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+解释器和全局偏移表节不具有特殊的 ELF 节类型，而是使用众所周知的名称（分别为 \fB\&.interp\fR 和 \fB\&.got\fR）实现为 \fBSHT_PROGBITS\fR 节。\fBelfdump\fR 能够识别和显示这些特殊节。
+.sp
+.LP
+用于堆栈展开和异常处理的节可能具有 ELF 节类型 \fBSHT_PROGBITS\fR 或 \fBSHT_AMD64_UNWIND\fR，具体取决于所涉及的编译器和平台。可按名称 \fB\&.eh_frame\fR、\fB\&.eh_frame_hdr\fR 和 \fB\&.exception_ranges\fR 识别这些节。
+.sp
+.LP
+在不带用于缩小所显示信息范围的选项的情况下运行时，\fBelfdump\fR 会显示每个目标文件的所有可用信息。
+.sp
+.LP
+有关所显示信息的完整说明，请参阅\fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储节头信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR\fR
+.ad
+.sp .6
+.RS 4n
+等效于 \fB-F\fR \fBdemangle\fR。请参见 \fB-F\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储 \fB\&.dynamic\fR 节的内容。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储 \fBELF\fR 头。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR \fIfmtopt1\fR, \fI fmtopt2\fR,...\fR
+.ad
+.sp .6
+.RS 4n
+可使用一个或多个下列项的逗号分隔列表指定备用输出格式选项。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdemangle\fR\fR
+.ad
+.sp .6
+.RS 4n
+取消改编 C++ 符号名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfileprefix\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用对象的名称作为每个输出行的前缀。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfixhextab\fR\fR
+.ad
+.sp .6
+.RS 4n
+在表格输出中显示十六进制值作为计算机字大小的零填充值。缺省情况下，\fBelfdump\fR 以自然格式显示此类值，该格式不包括前导零。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnotrunc\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示未截断的长节名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshndx\fR\fR
+.ad
+.sp .6
+.RS 4n
+包括具有节名称的节索引，使用格式 [\fIindex\fR]\fIname\fR。缺省情况下，\fB elfdump\fR 仅显示节名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshndxonly\fR\fR
+.ad
+.sp .6
+.RS 4n
+按节索引显示节，使用格式 [\fI index\fR]。缺省情况下，\fB elfdump\fR 仅显示节名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储 \fB\&.group\fR 节的内容。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-G\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储 \fB\&.got\fR 节的内容。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储 \fB\&.hash\fR 节的内容。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-H\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储 \fB\&.SUNW_cap\fR 功能节的内容。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储 \fB\&.interp\fR 节的内容。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR \fIindex-expr\fR\fR
+.ad
+.sp .6
+.RS 4n
+通过特定的索引或索引范围来限定要检查的节或程序头。例如，可使用以下命令显示某个文件中的第三个节头：
+.sp
+.in +2
+.nf
+example% \fBelfdump -c -I 3 \fIfilename\fR\fR
+.fi
+.in -2
+.sp
+
+\fIindex-expr\fR 可以是指定一个特定项的单个非负整数值，如上一示例中所示。另外，\fIindex-expr\fR 还可以包含两个这样的值，以冒号 (:) 分隔，指示相应项的范围。以下示例显示文件中的第三、第四和第五个程序头：
+.sp
+.in +2
+.nf
+example% \fBelfdump -p -I 3:5 \fIfilename\fR\fR
+.fi
+.in -2
+.sp
+
+在指定索引范围时，可以省略第二个值以指示文件中的最后一项。例如，以下语句列出从第十个到最后的所有节头：
+.sp
+.in +2
+.nf
+example% \fBelfdump -c -I 10: \fIfilename\fR\fR
+.fi
+.in -2
+.sp
+
+有关匹配选项 (\fB-I\fR, \fB-N\fR, \fB-T\fR) 的更多信息，请参见“匹配选项”。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR\fR
+.ad
+.sp .6
+.RS 4n
+计算 \fBELF\fR 校验和。请参见 \fBgelf_checksum\fR(3ELF)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+等效于 \fB-F\fR \fBnotrunc\fR。请参见 \fB-F\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储 \fB\&.SUNW_move\fR 节的内容。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储 \fB\&.note\fR 节的内容。缺省情况下，\fBelfdump\fR 以十六进制形式显示此数据（没有解释）。核心文件属于例外情况。\fBcore\fR(4) 中描述的核心文件附注的子集由 \fBelfdump\fR 进行解释并以较高级别的格式进行显示：NT_PRSTATUS、NT_PRPSINFO、NT_PLATFORM、NT_AUXV、NT_ASRS、NT_PSTATUS、NT_PSINFO、NT_PRCRED、NT_UTSNAME、NT_LWPSTATUS、NT_LWPSINFO、NT_PRPRIV、NT_PRPRIVINFO、NT_CONTENT 和 NT_ZONENAME。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+通过特定的名称来限定要检查的节或程序头。例如，在包含多个符号表的文件中，可使用以下命令自行显示 \fB\&.dynsym\fR 符号表：
+.sp
+.in +2
+.nf
+example% \fBelfdump -N .dynsym \fIfilename\fR\fR
+.fi
+.in -2
+.sp
+
+ELF 程序头没有名称。如果指定 \fB-p\fR 选项，则 \fIname\fR 引用程序头类型，\fB-N\fR 选项的行为与 \fB-T\fR 选项的行为相同。例如，可使用以下命令显示标识解释器的程序头：
+.sp
+.in +2
+.nf
+example% \fBelfdump -p -N PT_INTERP \fIfilename\fR\fR
+.fi
+.in -2
+.sp
+
+有关匹配选项 (\fB-I\fR, \fB-N\fR, \fB-T\fR) 的更多信息，请参见“匹配选项”。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-O\fR \fIosabi\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定解释目标文件时要应用的操作系统 ABI。\fIosabi\fR 可以是 \fB/usr/include/sys/elf.h\fR 中找到的任何 \fBELFOSABI_\fR 常量的名称或值。为了方便起见，可以从这些名称中省略 \fBELFOSABI_\fR 前缀。完全支持两个 \fIosabi\fR 值：\fBsolaris\fR 是 Solaris 操作系统的本机 ABI。\fBnone\fR 是通用 ELF ABI。对其他操作系统 ABI 的支持可能不完整或缺失。以数字形式显示字符串不可用的项。
+.sp
+如果不使用 \fB-O\fR，且目标文件 ELF 头指定非通用 ABI，则使用目标文件指定的 ABI。如果目标文件指定通用 ELF ABI，则 \fBelfdump\fR 会搜索 \fB\&.note.ABI-tag\fR 节，如果找到，会将该目标文件标识为具有 \fBlinux\fR ABI。另一方面，指定通用 ELF ABI 的目标文件假定为符合 \fBsolaris\fR ABI。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储程序头。可以使用匹配选项 (\fB-I\fR, \fB-N\fR, \fB-T\fR) 指定各个程序头。有关其他信息，请参见“匹配选项”。
+.sp
+\fB-p\fR 和 \fB-w\fR 选项互斥。在给定的 \fBelfdump\fR 调用中只能使用其中一个选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR\fR
+.ad
+.sp .6
+.RS 4n
+根据程序头中的信息生成并使用替代节头信息，忽略文件中包含的任何节头信息。如果文件没有节头，将列显一条警告消息，并且将自动选择此选项。节头未被系统用来执行程序。因此，恶意程序可能会剥离或更改其节头以提供误导性信息。相比之下，程序头必须准确，程序才可运行。使用源自程序头的合成节头信息，允许检查包含更改后节头的文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储 \fB\&.rel\fR[\fBa\fR] 重定位节的内容。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储 \fB\&.SUNW_ldynsym\fR、\fB\&.dynsym\fR 和 \fB\&.symtab\fR 符号表节的内容。对于归档文件，还将转储归档符号表。可以使用匹配选项 (\fB-I\fR, \fB-N\fR, \fB-T\fR) 指定各个节。可以使用特殊节名称 \fB-N\fR \fBARSYM\fR 指定归档符号表。
+.sp
+对于核心文件，\fBshndx\fR 字段具有值 "\fBunknown\fR"，因为该字段不包含有效值。
+.sp
+除了标准符号表信息外，还会在 \fBver\fR 标题下提供符号的版本定义索引。
+.sp
+有关匹配选项 (\fB-I\fR, \fB-N\fR, \fB-T\fR) 的更多信息，请参见“匹配选项”。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储 \fB\&.SUNW_ldynsym\fR 和 \fB\&.dynsym\fR 符号表节（按 \fB\&.SUNW_dynsymsort\fR 和 \fB\&.SUNW_dyntlssort\fR 符号排序节给定的顺序排序）的内容。线程本地存储 (Thread Local Storage, TLS) 符号按偏移进行排序。常规符号按地址进行排序。不显示未按排序节引用的符号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fItype\fR\fR
+.ad
+.sp .6
+.RS 4n
+通过特定的类型来限定要检查的节或程序头。例如，在包含多个符号表的文件中，可使用以下命令自行显示 \fB\&.dynsym\fR 符号表：
+.sp
+.in +2
+.nf
+example% \fBelfdump -T SHT_DYNSYM \fIfilename\fR\fR
+.fi
+.in -2
+.sp
+
+\fItype\fR 的值可以是数值，或 \fB/usr/include/sys/elf.h\fR 中定义的任何 \fBSHT_\fR 符号名称。\fBSHT_\fR 前缀是可选的，\fItype\fR 不区分大小写。因此，以上示例也可以写为：
+.sp
+.in +2
+.nf
+example% \fBelfdump -T dynsym \fIfilename\fR\fR
+.fi
+.in -2
+.sp
+
+如果指定 \fB-p\fR 选项，则 \fItype\fR 引用程序头类型，这将允许显示特定的程序头。例如，可使用以下命令显示标识解释器的程序头：
+.sp
+.in +2
+.nf
+example% \fBelfdump -p -T PT_INTERP \fIfilename\fR\fR
+.fi
+.in -2
+.sp
+
+\fItype\fR 的值可以是数值，或 \fB/usr/include/sys/elf.h\fR 中定义的任何 \fBPT_\fR 符号名称。\fBPT_\fR 前缀是可选的，\fItype\fR 不区分大小写。因此，以上示例也可以写为：
+.sp
+.in +2
+.nf
+example% \fBelfdump -p -T interp \fIfilename\fR\fR
+.fi
+.in -2
+.sp
+
+有关匹配选项 (\fB-I\fR, \fB-N\fR, \fB-T\fR) 的更多信息，请参见“匹配选项”。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储用于栈帧展开和异常处理的节的内容。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储 \fB\&.SUNW\fR\fI_version\fR 版本节的内容。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-w\fR \fIfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+将使用匹配选项 (\fB-I\fR, \fB-N\fR, \fB-T\fR) 指定的节内容写入到指定的文件。例如，可以使用以下命令执行对文件的 \fB\&.text\fR 节的提取：
+.sp
+.in +2
+.nf
+example% \fBelfdump -w text.out -N .text \fIfilename\fR\fR
+.fi
+.in -2
+.sp
+
+有关匹配选项 (\fB-I\fR, \fB-N\fR, \fB-T\fR) 的更多信息，请参见“匹配选项”。
+.sp
+\fB-p\fR 和 \fB-w\fR 选项互斥。在给定的 \fBelfdump\fR 调用中只能使用其中一个选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-y\fR\fR
+.ad
+.sp .6
+.RS 4n
+转储 \fB\&.SUNW_syminfo\fR 节的内容。通过字符标记传递符号属性。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBA\fR\fR
+.ad
+.RS 13n
+.rt  
+符号定义可用作辅助过滤器。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBB\fR\fR
+.ad
+.RS 13n
+.rt  
+与 \fBD\fR 一起指定，符号引用应当直接绑定到关联的依赖项定义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBC\fR\fR
+.ad
+.RS 13n
+.rt  
+符号定义通过副本重定位生成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBD\fR\fR
+.ad
+.RS 13n
+.rt  
+符号引用与包含定义的依赖项直接关联。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBF\fR\fR
+.ad
+.RS 13n
+.rt  
+符号定义可用作标准过滤器。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBI\fB\fR\fR
+.ad
+.RS 13n
+.rt  
+符号定义可用作插入项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBL\fR\fR
+.ad
+.RS 13n
+.rt  
+符号引用指向应延迟装入的依赖项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBN\fR\fR
+.ad
+.RS 13n
+.rt  
+外部引用不能直接绑定到此符号定义。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBP\fR\fR
+.ad
+.RS 13n
+.rt  
+符号与延迟（推迟）依赖项关联。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBS\fR\fR
+.ad
+.RS 13n
+.rt  
+符号与功能相关联。
+.RE
+
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfilename\fR\fR
+.ad
+.RS 12n
+.rt  
+指定的目标文件的名称。
+.RE
+
+.SH 用法
+.SS "匹配选项"
+.sp
+.LP
+\fB-I\fR、\fB-N\fR 和 \fB-T\fR 选项统称为\fB匹配选项\fR。这些选项用于通过索引、名称或类型来缩小要检查的程序头或节的范围。
+.sp
+.LP
+匹配选项的确切解释取决于所用的其他选项：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+与 \fB-p\fR 选项一起使用时，匹配选项引用程序头。\fB-I\fR 引用程序头索引。\fB-T\fR 引用程序头类型。因为程序头没有名称，所以，对于程序头，\fB-N\fR 选项的行为方式与 \fB-T\fR 相同。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+与以下任何选项一起使用时，匹配选项用于通过索引、名称或类型选择节：\fB-c\fR、\fB-g\fR、\fB-m\fR、\fB-n\fR、\fB-r\fR、\fB-s\fR、\fB-S\fR、\fB-u\fR 或 \fB-w\fR。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+如果单独使用匹配选项而不使用以下任何选项：\fB-c\fR、\fB-g\fR、\fB-m\fR、\fB-n\fR、\fB-p\fR\fB-r\fR、\fB-s\fR、\fB-S\fR、\fB-u\fR 或 \fB-w\fR，则 \fBelfdump\fR 会检查每个目标文件，并显示所匹配的任何节的内容。
+.RE
+.sp
+.LP
+在一个给定的 \fBelfdump\fR 调用中，可以混合使用任意数量和类型的匹配选项。在这种情况下，\fBelfdump\fR 显示与所使用的任何匹配选项匹配的所有项的超集。使用此功能，可以通过用于指定每个项目的最简便形式来选择复杂的项目分组。
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fBliblddbg.so\fR\fR
+.ad
+.RS 15n
+.rt  
+链接程序调试库
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/linker
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBar\fR(1)、\fBdump\fR(1)、\fBelffile\fR(1)、\fBfile\fR(1)、\fBnm\fR(1)、\fBpvs\fR(1)、\fBelf\fR(3ELF)、\fBcore\fR(4)、\fBattributes\fR(5)
+.sp
+.LP
+\fI《Oracle Solaris 11.3 Linkers and Libraries         Guide》\fR

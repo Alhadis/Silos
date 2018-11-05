@@ -1,0 +1,630 @@
+'\" te
+.\" Copyright (c) 2013, Oracle and/or its affiliates. All rights reserved.
+.TH numatop 1M "24 June 2013" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+numatop \- A tool for memory access locality characterization and analysis.
+.SH SYNOPSIS
+.LP
+.nf
+\fBnumatop\fR [\fB-s\fR \fIsampling_precision\fR]
+        [\fB-l\fR \fIlog_level\fR] [\fB-f\fR \fIlog_file\fR] [\fB-d\fR \fIdump_file\fR] [\fB-h\fR]
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+Most modern systems use Non-Uniform Memory Access (NUMA) design for multiprocessing.  In NUMA systems, memory and processors are organized in such a way that some parts of memory are closer to a given processor while other parts are farther from it. A processor can access memory that is closer to it, much faster than the memory that is farther from it.  Hence, the latency between the processors and different portions of the memory in a NUMA machine may be significantly different.
+.sp
+.LP
+\fBnumatop\fR is an observation tool for the runtime memory locality characterization and analysis of processes and threads running on a NUMA system. It helps the user characterize the NUMA behavior of processes and threads and identify where the NUMA-related performance bottlenecks reside. The tool can be used to:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Characterize the locality of all running processes and threads to identify those with the poorest locality in the system.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Identify the 'hot' memory areas, report average memory access latency, and provide the location where accessed memory is allocated.  A 'hot' memory area is where process/thread(s) accesses are most frequent. \fBnumatop\fR has a metric called \fBACCESS%\fR that specifies what percentage of memory accesses are attributable to each memory area.
+.LP
+Note - 
+.sp
+.RS 2
+\fBnumatop\fR records only the memory accesses which have latencies greater than a predefined threshold.
+.RE
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Provide the call-chain(s) when the process/thread generates certain counter events, such as Remote Memory Access (RMA), Local Memory Access (LMA), Instruction Retired (IR), and CPU cycles (CYCLE). The call-chains help the user locate the source code that generates the events.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Provide per-node statistics for memory and CPU utilization. A node is a region of memory in which every byte has the same distance from each CPU.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Show, using a user-friendly interface, the list of processes/threads sorted by some metrics (by default, sorted by CPU utilization), with the top process having the highest CPU utilization in the system and the bottom one having the lowest CPU utilization. Users can also use hotkeys to resort the output by these metrics: RMA, LMA, RMA/LMA, CPU cycle per Instruction (CPI), and CPU Utilization (CPU%).
+.RE
+.sp
+.LP
+\fBnumatop\fR is a GUI tool that periodically tracks and analyzes the NUMA activity of processes and threads and displays useful metrics. Users can scroll up/down by using the up or down key to navigate in the current window and can use several hot keys shown at the bottom of the window, to switch between windows or to change the running state of the tool.  For example, hotkey \fBR\fR refreshes the data in the current window.
+.sp
+.LP
+The tool supports the Intel Westmere-EX and Sandy Bridge-EP platforms.
+.sp
+.LP
+Below is a detailed description of the various display windows and the data items that \fBnumatop\fR displays:
+.sp
+.ne 2
+.mk
+.na
+\fBWIN1 - Monitoring processes and threads\fR
+.ad
+.sp .6
+.RS 4n
+Get the locality characterization of all processes. This is the first window upon startup and numatop's Home window. This window displays a list processes. The top process has the highest system CPU utilization 	(CPU%), while the bottom process has the lowest CPU% in the system. Generally, the memory-intensive process is also CPU-intensive, so the processes shown in WIN1 are sorted by CPU% by default.  The user can use hotkeys \fB1\fR, \fB2\fR, \fB3\fR, \fB4\fR, or \fB5\fR to resort the output by \fBRMA, LMA, RMA/LMA, CPI\fR, or \fBCPU%\fR respectively.
+.sp
+.in +2
+.nf
+[KEY METRICS]: 
+RMA(K): number of Remote Memory Access (unit is 1000).
+RMA(K) = RMA / 1000
+LMA(K): number of Local Memory Access (unit is 1000).
+LMA(K) = LMA / 1000
+RMA/LMA: ratio of RMA / LMA.
+CPI: CPU cycles per instruction.
+CPU%: System CPU utilization (busy time across all CPUs).
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': WIN1 refresh.
+\&'R': Refresh to show the latest data.
+\&'I': Show the normalized data.
+\&'N': Show the per-node statistics
+<Enter>: Switch to WIN3 for the selected process.
+\&'1': Sort by 'RMA'.
+\&'2': Sort by 'LMA'.
+\&'3': Sort by 'RMA/LMA'.
+\&'4': Sort by 'CPI'.
+\&'5': Sort by 'CPU%'
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN2 - Monitoring processes and threads (normalized)\fR
+.ad
+.sp .6
+.RS 4n
+Get the normalized locality characterization of all processes.
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+RPI(K): RMA normalized by 1000 instructions.
+RPI(K) = RMA / (IR / 1000);
+LPI(K): LMA normalized by 1000 instructions.
+LPI(K) = LMA / (IR / 1000);
+Other metrics remain the same.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+\&'N': Show the per-node statistics.
+<Enter>: Switch to WIN3 for the selected process.
+\&'1': Sort by 'RPI'.
+\&'2': Sort by 'LPI'.
+\&'3': Sort by 'RMA/LMA'.
+\&'4': Sort by 'CPI'.
+\&'5': Sort by 'CPU%'
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN3 - Monitoring the process\fR
+.ad
+.sp .6
+.RS 4n
+Get the locality characterization with node affinity of a specified process.
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+NODE: the node ID.
+	CPU%: per-node CPU utilization.
+	Other metrics remain the same.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+	'N': Show the per-node statistics.
+\&'L': Show the latency information.
+	'C': Show the call-chain.
+	<Enter>: Switch to WIN4 for the specified process.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN4 - Monitoring all threads\fR
+.ad
+.sp .6
+.RS 4n
+Get the locality characterization of all threads in a specified process.
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+CPU%: per-CPU CPU utilization
+	Other metrics remain the same.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+	'N': Show the per-node statistics.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN5 - Monitoring the thread\fR
+.ad
+.sp .6
+.RS 4n
+Get the locality characterization with node affinity of a specified thread.
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+CPU%: per-CPU CPU utilization.
+	Other metrics remain the same.
+        
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+\&'N': Show the per-node statistics.
+\&'L': Show the latency information.
+\&'C': Show the call-chain.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN6 - Monitoring memory areas\fR
+.ad
+.sp .6
+.RS 4n
+Get the memory area use with the associated accessing latency of a specified process/thread.
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+ADDR: starting address of the memory area.
+SIZE: size of memory area (K/M/G bytes)
+ACCESS%: percentage of memory accesses are to this memory area.
+LAT(ns): the average latency (nanosecond) of memory accesses.
+DESC: description of memory area (from /proc/<pid>/maps).
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+\&'D': Show the memory access node distribution.
+\&'M': Recalculate the address mapping.
+	<Enter>: Show break down the memory area into physical memory on node.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN7 - Memory access node distribution overview\fR
+.ad
+.sp .6
+.RS 4n
+Get the percentage of memory accesses originated from the process/thread to each node.
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+NODE: the node ID.
+	ACCESS%: percentage of memory accesses are to this node.
+	LAT(ns): the average latency (nanoseconds) of memory accesses
+         to this node.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+\&'M': Recalculate the address mapping.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN8 - Break down the memory area into physical memory on node\fR
+.ad
+.sp .6
+.RS 4n
+Break down the memory area into the physical mapping on node with the associated accessing latency of a process/thread.
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+NODE: the node ID.
+	Other metrics remain the same.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+\&'M': Recalculate the address mapping.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN9 - Call-chain when process/thread generates the specified event\fR
+.ad
+.sp .6
+.RS 4n
+Shows the call-chains when the process generates RMA, LMA, CYCLE, or IR.
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+Call-chain list: a list of call-chains.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+	'1': Show the call-chain for RMA
+	'2': Show the call-chain for LMA
+	'3': Show the call-chain for CYCLE
+	'4': Show the call-chain for IR
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN10 - Node Overview\fR
+.ad
+.sp .6
+.RS 4n
+Shows the basic per-node statistics for this system.
+.sp
+.in +2
+.nf
+[KEY METRICS]:
+LG: node id of this node.
+MEM.ALL: total physical memory in this node.
+	MEM.FREE: free physical memory in this node.
+	CPU%: per-node CPU utilization
+	Other metrics remain the same
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window (WIN).
+\&'R': Refresh to show the latest data.
+	<Enter>: Show the information of the specified node.
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBWIN11 - Information of the node\fR
+.ad
+.sp .6
+.RS 4n
+Shows the memory use and CPU utilization for the specified node.
+.sp
+.in +2
+.nf
+CPU: array of logical CPUs which belong to this node.
+	CPU%: per-node CPU utilization
+	Other metrics remain the same.
+
+[HOTKEY]:
+\&'Q': Quit the application.
+\&'H': Switch to WIN1.
+\&'B': Back to previous window.
+\&'R': Refresh to show the latest data.
+.fi
+.in -2
+
+.RE
+
+.SH OPTIONS
+.sp
+.LP
+The following options are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIsampling_precision\fR\fR
+.ad
+.RS 25n
+.rt  
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnormal\fR\fR
+.ad
+.RS 10n
+.rt  
+Balance the precision and overhead (default)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhigh\fR\fR
+.ad
+.RS 10n
+.rt  
+High sampling precision (high overhead)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlow\fR\fR
+.ad
+.RS 10n
+.rt  
+Low sampling precision, suitable for high load system
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIlog_level\fR\fR
+.ad
+.RS 25n
+.rt  
+Specifies the level of logging in the log file. The valid values are:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+None (default)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+Unknown (reserved)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 5n
+.rt  
+All
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIlog_file\fR\fR
+.ad
+.RS 25n
+.rt  
+Specifies the log file where output will be written.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdump_file\fR\fR
+.ad
+.RS 25n
+.rt  
+Specifies the dump file where the screen data will be written.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.RS 25n
+.rt  
+Displays the command's usage.
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRLaunching \fBnumatop\fR With Default Behavior
+.sp
+.LP
+The following command launches the tool with default values for the supported options:
+
+.sp
+.in +2
+.nf
+# \fBnumatop\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRLaunching \fBnumatop\fR With High Sampling Precision
+.sp
+.LP
+The following command launches the tool with high sampling precision:
+
+.sp
+.in +2
+.nf
+# \fBnumatop -s high\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRSpecifying a log File
+.sp
+.LP
+The following command sets the log file to \fB/tmp/numatop.log\fR and dumps all warning messages into it.
+
+.sp
+.in +2
+.nf
+# \fBnumatop -l 2 -o /tmp/numatop.log\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 4 \fRSpecifying a Dump File
+.sp
+.LP
+The following command sets the dump file to \fB/tmp/dump.log\fR and dumps all screen data into it. 
+
+.sp
+.in +2
+.nf
+# \fBnumatop -d /tmp/dump.log\fR
+.fi
+.in -2
+.sp
+
+.SH EXIT STATUS
+.sp
+.LP
+The following exit values are returned:
+.sp
+.ne 2
+.mk
+.na
+\fB0\fR
+.ad
+.RS 15n
+.rt  
+Successful operation.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBOther Value\fR
+.ad
+.RS 15n
+.rt  
+An error occurred.
+.RE
+
+.SH USAGE
+.sp
+.LP
+You must have root privileges to run \fBnumatop\fR.
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Architecturex86
+_
+Availabilitydiagnostic/numatop
+_
+Interface StabilityCommitted
+.TE
+

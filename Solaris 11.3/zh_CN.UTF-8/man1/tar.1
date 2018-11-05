@@ -1,0 +1,1056 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 2006, 2012, Oracle and/or its affiliates.All rights reserved.
+.\" Portions Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\" Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH tar 1 "2012 年 5 月 7 日" "SunOS 5.11" "用户命令"
+.SH 名称
+tar \- 创建磁带归档文件以及添加或提取文件
+.SH 用法概要
+.LP
+.nf
+\fBtar\fR c[BDEFhijlnopPTvwzZ@/[0-7]][bf][X...] [\fIblocksize\fR] 
+     [\fItarfile\fR] [\fIsize\fR] [\fIexclude-file\fR]... 
+     {\fIfile\fR | -I \fIinclude-file\fR | -C \fIdirectory\fR \fIfile\fR}...
+.fi
+
+.LP
+.nf
+\fBtar\fR r[BDEFhijlnTvwzZ@/[0-7]][bf] [\fIblocksize\fR] [\fItarfile\fR] 
+     [\fIsize\fR] 
+     {\fIfile\fR | -I \fIinclude-file\fR | -C \fIdirectory\fR \fIfile\fR}...
+.fi
+
+.LP
+.nf
+\fBtar\fR t[BFhijlnTvzZ[0-7]][f][X...] [\fItarfile\fR] [\fIsize\fR] 
+     [\fIexclude-file\fR]... {\fIfile\fR | -I \fIinclude-file\fR}...
+.fi
+
+.LP
+.nf
+\fBtar\fR u[BDEFhijlnTvwzZ@/[0-7]][bf] [\fIblocksize\fR] [\fItarfile\fR] 
+     [\fIsize\fR] \fIfile\fR...
+.fi
+
+.LP
+.nf
+\fBtar\fR x[BFhilmnjopTvwzZ@/[0-7]][f][X...] [\fItarfile\fR] [\fIsize\fR] 
+     [\fIexclude-file\fR]... [\fIfile\fR]...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBtar\fR 命令将文件归档到名为 \fItarfile\fR 的单个文件以及从中提取文件。tarfile 通常是磁带，但也可以是任意文件。\fBtar\fR 的操作受 \fIkey\fR 参数控制。\fIkey\fR 是一个恰好包含一个函数字母（\fBc\fR、\fBr\fR、\fBt\fR、\fBu\fR 或 \fBx\fR）和零个或多个函数修饰符（字母或数字）的字符串，具体取决于使用的函数字母。\fIkey\fR 字符串不包含任何 SPACE 字符。函数修饰符参数在命令行中列出的顺序与对应函数修饰符在 \fIkey\fR 字符串中出现的顺序相同。
+.sp
+.LP
+\fB-I\fR \fIinclude-file\fR、\fB-C\fR \fIdirectory file\fR 和 \fIfile\fR 参数指定要归档或提取哪些文件或目录。在所有情况下，出现的目录名称指其中的文件和该目录的子目录（以递归方式）。用大括号 (\fB{ }\fR) 括起的参数表明必须指定其中一个参数。
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR \fIdirectory file\fR\fR
+.ad
+.sp .6
+.RS 4n
+在 \fIdirectory\fR 上执行 \fBchdir\fR 操作（请参见 \fBcd\fR(1)），并在 \fIfile\fR 中执行 \fBc\fR（创建）或 \fBr\fR（替换）操作。\fIfile\fR 应使用短的相对路径名称。如果 \fIfile\fR 是 “\fB\&.\fR”，则将所有文件归档到 \fIdirectory\fR 中。通过此操作数，可以从多个不存在相关的临近公共父目录的目录进行文件归档。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR \fIinclude-file\fR\fR
+.ad
+.sp .6
+.RS 4n
+打开含有一个文件列表的 \fIinclude-file\fR（每行一个文件），将其视同每个文件单独出现在命令行中那样处理。请注意结尾空格。还应注意开头的空格，因为对于包含的文件中的每一行，整行（新行除外）都用来与要包含的文件的初始字符串匹配。如果还指定了排除的文件（请参见 \fBX\fR 函数修饰符），则其优先级高于所有包含的文件。如果 \fIexclude-file \fR 和 \fIinclude-file\fR（或者在命令行中）中同时指定了一个文件，则会排除该文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+要归档（当指定 \fBc\fR、\fBr\fR 或 \fBu\fR 函数时）、提取 (\fBx\fR) 或列出 (\fBt\fR) 的常规文件或目录的路径名称。当 \fIfile\fR 是目录的路径名称时，该操作应用于该目录的所有文件并（以递归方式）应用于子目录。
+.sp
+归档文件和未指定 \fBE\fR 标志（请参见\fB\fR“函数修饰符”部分）时，文件名不得超过 256 个字符。另外，必须可以将该名称分开放在父目录名称中，使前缀的长度不超过 155 个字符，名称不超过 100 个字符。如果指定了 \fBE\fR，可以指定长度最多为 \fIPATH_MAX\fR 个字符的名称。
+.sp
+例如，如果不使用 \fBE\fR 标志，则无法归档基名长度超过 100 个字符的文件。如果字符位置 151-156 中某处的目录名称中出现斜杠，则其目录部分为 200 个字符且其基名为 50 个字符的文件可以归档（未使用 \fBE\fR）。
+.RE
+
+.SS "函数字母"
+.sp
+.LP
+key 参数的函数部分由下面字符之一指定：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBc\fR\fR
+.ad
+.sp .6
+.RS 4n
+创建。从 tarfile 的开头而不是末尾开始写入。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBr\fR\fR
+.ad
+.sp .6
+.RS 4n
+替换。指定 \fIfile\fR 在 tarfile 的末尾处写入。用扩展文件头创建的文件必须用扩展文件头来更新（请参见\fB\fR“函数修饰符”下方的 \fBE\fR 标志）。不是用扩展文件头创建的文件无法用扩展文件头进行修改。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBt\fR\fR
+.ad
+.sp .6
+.RS 4n
+目录。每当指定文件出现在 tarfile 中时，就列出其名称。如果未指定 \fIfile\fR 参数，tarfile 中所有文件的名称及任何关联的扩展属性都会列出。通过 \fBv\fR 函数修饰符，可以显示指定文件的更多信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBu\fR\fR
+.ad
+.sp .6
+.RS 4n
+更新。如果指定的 \fIfile\fR 原先不在 tarfile 中，或者它们自上次写入该 tarfile 后进行了修改，则指定文件被写入到 tarfile 的末尾。更新可能会非常慢。在 5.x 系统上创建的 tarfile 无法在 4.x 系统上更新。用扩展文件头创建的文件必须用扩展文件头来更新（请参见\fB\fR“函数修饰符”下方的 \fBE\fR 标志）。不是用扩展文件头创建的文件无法用扩展文件头进行修改。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBx\fR\fR
+.ad
+.sp .6
+.RS 4n
+提取或恢复。指定 \fIfile\fR 从 tarfile 中提取出来并写入 tarfile 中相对当前目录指定的目录。使用要提取的文件和目录的相对路径名称。
+.sp
+tar 归档文件中包含的绝对路径名称使用绝对路径名称进行解压缩，即\fB不\fR删除开头的正斜杠 (\fB/\fR)。
+.sp
+缺省情况下，绝对路径名（那些以 \fB/\fR 字符开头的路径名）已删除开头的斜杠，因此应相对于当前目录提取这些文件和目录。
+.sp
+如果与指定文件匹配的目录的内容已写入 tarfile，则会以递归方式提取此目录的内容。如果可能的话，会恢复所有者、修改时间和模式。否则，必须是超级用户才能恢复所有者。字符特殊设备和块特殊设备（由 \fBmknod\fR(1M) 创建）只能由超级用户提取。如果未指定 \fIfile\fR 参数，则提取 tarfile 的整个内容。如果 tarfile 包含多个相同名称的文件，每个文件将被写入相应的目录，并覆盖原来的文件。文件名替换通配符不能用来从归档文件中提取文件。而应使用以下形式的命令：
+.sp
+.in +2
+.nf
+\fBtar xvf ... /dev/rmt/0 \(gatar tf ... /dev/rmt/0 | \e
+     grep '\fIpattern\fR' \(ga\fR
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.LP
+当提取使用 \fBr\fR 或 \fBu\fR 函数创建的磁带时，无法正确设置目录修改时间。由于受磁带机的限制（例如没有退格或附加功能），这些相同的函数无法供许多磁带机使用。
+.sp
+.LP
+当使用 \fBr\fR、\fBu\fR 或 \fBx\fR 函数或 \fBX\fR 函数修饰符时，指定文件必须与 \fItarfile\fR 中对应的文件完全匹配。例如，要提取 \fB\&./\fR\fI thisfile\fR，您必须指定 \fB\&./\fR\fIthisfile\fR 而不是 \fIthisfile\fR。\fBt\fR 函数显示每个文件的归档方式。
+.SS "函数修饰符"
+.sp
+.LP
+以下字符可以与选择所需函数的字母结合使用。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBb\fR \fIblocksize\fR\fR
+.ad
+.sp .6
+.RS 4n
+分块因子。当读取或写入原始磁性归档文件时使用（请参见下面的 \fBf\fR）。\fIblocksize\fR 参数指定要包含在 tarfile 上执行的每个读取或写入操作中的 512 字节磁带块数。最小值是 \fB1\fR，缺省值是 \fB20\fR。最大值是可用内存量及有关特定磁带设备的分块要求（有关详细信息，请参见 \fBmtio\fR(7I)）的函数。最大值不能超过 \fBINT_MAX\fR/512 (\fB4194303\fR)。
+.sp
+读取磁带归档文件时，将自动检测其实际分块因子，前提是它小于等于名义分块因子（\fIblocksize\fR 参数的值，或缺省值（未指定 \fBb\fR 修饰符时））。如果实际分块因子子大于名义分块因子，则发生读取错误。请参见“示例”部分中的示例 5。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBB\fR\fR
+.ad
+.sp .6
+.RS 4n
+块。强制 \fBtar\fR 执行多次读取（如有必要），以恰好读取足以填入块中的字节数。此函数修饰符使得 \fBtar\fR 可以在整个以太网中使用，因为即使有更多数据送入，管道和套接字也只是返回部分块。当从标准输入 “\fB-\fR” 读取时，此函数修饰符在缺省情况下处于选中状态，以确保 \fBtar\fR 能从短时间读取中恢复。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBD\fR\fR
+.ad
+.sp .6
+.RS 4n
+数据更改警告。与 \fBc\fR、\fBr\fR 或 \fBu\fR 函数字母结合使用。使用 \fBt\fR 或 \fBx\fR 函数字母忽略。如果文件大小在文件归档过程中发生更改，则将此情况作为警告而不是错误处理。警告消息仍在写入，但是退出状态不受影响。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBE\fR\fR
+.ad
+.sp .6
+.RS 4n
+将扩展文件头写入 tarfile。（与 \fBc\fR、\fBr\fR 或 \fBu\fR 函数字母结合使用。使用 \fBt\fR 或 \fBx\fR 函数字母忽略。）在 tarfile 中写入扩展文件头时，修改时间的维护粒度是微秒而不是秒。此外，支持长度不超过 \fBPATH_MAX\fR 个字符且不使用 \fBE\fR 就无法归档的文件名和超过 \fB8GB\fR 的文件大小。当归档更大的文件和/或名称更长的文件或其 \fBUID/GID\fR 超过 \fB2097151\fR 时，或者如果要求使用微秒时间粒度时，需要使用 \fBE\fR 标志。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBf\fR\fR
+.ad
+.sp .6
+.RS 4n
+文件。使用 \fItarfile\fR 参数作为 tarfile 的名称。如果指定 \fBf\fR 则不会搜索 \fB/etc/default/tar\fR。如果忽略 \fBf\fR，\fBtar\fR 将使用\fBTAPE\fR 环境变量（如设置）指示的设备。否则，\fBtar\fR 使用 \fB/etc/default/tar\fR 中定义的缺省值。与 \fBarchive\fR\fIN\fR 字符串匹配的数字用作输出设备（使用文件中指定的块和大小设置）。例如，
+.sp
+.in +2
+.nf
+\fBtar -c 2/tmp/*\fR
+.fi
+.in -2
+.sp
+
+将输出写入到在 \fB/etc/default/tar\fR 中指定为 \fBarchive2\fR 的设备。
+.sp
+如果 tarfile 的名称是 “\fB-\fR”，\fBtar\fR 会相应地写入标准输出或从标准输入读取。\fBtar\fR 可用作管道的头部或尾部。\fBtar\fR 还可用来通过以下命令移动分层结构：
+.sp
+.in +2
+.nf
+example% \fBcd fromdir; tar cf \(mi .| (cd todir; tar xfBp \(mi)\fR
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBF\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果使用一个 \fBF\fR 参数，\fBtar\fR 可排除所有名为 \fBSCCS\fR 的目录并从 tarfile 中排除 \fBRCS\fR。如果使用两个参数 \fBFF\fR，\fBtar\fR 可排除名为 SCCS 和 RCS 的所有目录、以 \fB\&.o\fR 作为后缀的所有文件及所有名为 \fBerrs\fR、\fBcore\fR 和 \fBa.out\fR 的文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBh\fR\fR
+.ad
+.sp .6
+.RS 4n
+像处理普通文件或目录那样跟踪符号链接。通常，\fBtar\fR 不跟踪符号链接。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBi\fR\fR
+.ad
+.sp .6
+.RS 4n
+忽略目录校验和错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBj\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅限 c 模式。使用 \fBbzip2\fR 对生成的归档文件进行压缩。在提取或列表模式下，此选项被忽略。读取归档文件时，本实现自动识别 \fBbzip2\fR 压缩类型。升级/替换首先解压缩，然后应用相同的机制自动压缩归档文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBl\fR\fR
+.ad
+.sp .6
+.RS 4n
+链接。如果无法解析所有指向被归档文件的链接，则输出错误消息。如果未指定 \fBl\fR，则不打印错误消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBm\fR\fR
+.ad
+.sp .6
+.RS 4n
+修改。文件的修改时间是其提取时间。此函数修饰符仅对 \fBx\fR 函数有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBn\fR\fR
+.ad
+.sp .6
+.RS 4n
+所读取的文件是非磁带设备。由于 \fBtar\fR 能够随机查找归档文件，因此归档文件的读取速度较快。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBo\fR\fR
+.ad
+.sp .6
+.RS 4n
+所有权。将运行程序的用户（而非 tarfile 中的用户）的用户和组标识符指定给提取的文件。这是非 root 用户的缺省行为。如果未设置 \fBo\fR 函数标识符且用户是 root 用户，则提取的文件采用 tarfile 中文件的组和用户标识符（有关更多信息，请参见 \fBchown\fR(1)）。\fBo\fR 函数修饰符仅对 \fBx\fR 函数有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp\fR\fR
+.ad
+.sp .6
+.RS 4n
+将指定文件恢复到其原始模式和 \fBACL\fR（如果适用），并忽略现在的 \fBumask\fR(1)。如果以超级用户身份使用指定的 \fBx\fR 函数字母进行调用，则此行为是缺省行为。如果还提取超级用户、\fBSETUID\fR 和粘性信息，则使用文件的原始所有者和权限而不是以 root 用户身份来恢复这些文件。当此函数修饰符与 \fBc\fR 函数结合使用时，\fBACL\fR 在 tarfile 文件中创建时可生成其他信息。当带有 \fBACL\fR 的 tarfile 使用以前版本的 \fBtar\fR 提取时，会发生错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBP\fR\fR
+.ad
+.sp .6
+.RS 4n
+创建归档文件时，禁止在归档文件中的目录条目中添加结尾 \fB/\fR。 
+.sp
+提取归档文件时，应保留路径名。缺省情况下，当提取归档文件时，绝对路径名中（以 \fB/\fR 字符开头的那些路径名）会删除开头的斜杠。同时，\fBtar\fR 拒绝提取路径名包含双点 (\fB\&..\fR) 的归档文件条目。 
+.sp
+此选项禁止这些行为。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBT\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅当系统配置有 Trusted Extensions 时，此修饰符才可用。 
+.sp
+当此修饰符与函数字母 \fBc\fR、\fBr\fR 或 \fBu\fR 结合用来创建、替换或更新 tarfile 时，每个归档文件和目录关联的敏感标签将存储在 tarfile 中。 
+.sp
+指定 \fBT\fR 将隐式指定函数修饰符 \fBp\fR。
+.sp
+当与函数字母 \fBx\fR 结合用来提取 tarfile 时，tar 程序将验证归档文件中指定的文件敏感标签是否等于目标目录的敏感标签。如果不相等，则不会恢复文件。此操作必须从全局区域进行调用。如果归档文件有一个相对路径名，则会将其恢复到有相同标签的对应目录（如果可用的话）中。此过程通过以下方式完成：即将标签等于该文件的区域的根路径名添加到当前的目标目录。如果不存在这样的区域，则不会恢复文件。 
+.sp
+Trusted Solaris 8 对提取有标签的归档文件提供有限支持。仅解释敏感标签和多级别目录的设置。会不经提示直接忽略特权设置和审计属性标志。如果有相同标签的区域可用，多级别目录设置（包括指向单级别目录的符号链接）会映射到区域相关的路径名。此支持的目的在于方便起始目录的迁移。体系结构差异能阻止将任意有标签的文件从 Trusted Solaris 8 提取到 Trusted Extensions 中相同的路径名。除非文件的归档标签与目标标签匹配，否则无法提取文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBv\fR\fR
+.ad
+.sp .6
+.RS 4n
+详细模式。输出开头是该函数字母的每个文件的名称。通过 \fBt\fR 函数，\fBv\fR 可提供关于 tarfile 条目的更多信息。该列表与 \fBls\fR(1) 命令的 \fB-l\fR 选项生成的格式相似。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBw\fR\fR
+.ad
+.sp .6
+.RS 4n
+条件。输出要采用的操作和文件名称，然后等待用户的确认。如果响应是肯定的，则执行操作；否则不执行操作。此函数修饰符不能与 \fBt\fR 函数结合使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBX\fR\fR
+.ad
+.sp .6
+.RS 4n
+排除。使用函数 \fBc\fR、\fBx\fR 或 \fBt\fR 时，可以使用 \fIexclude-file\fR 参数作为包含要从 tarfile 排除的文件（或目录）相对路径名列表的文件。请注意结尾空格。同时应注意前导空格，因为对于排除文件的每一行而言，整行（新行除外）都会用来与要排除文件的初始字符串进行匹配。排除文件中的行会进行完全匹配，所以如果 \fBtar\fR 正在备份相对路径名时，像 “\fB/var\fR” 这样的条目\fB不会\fR排除 \fB/var\fR 目录。该条目应在这些情况下读取 “\fB\&./var\fR”。\fBtar\fR 命令不会扩展排除文件中的 shell 元字符，所以指定像 “\fB*.o\fR” 这样的条目对于排除所有名称以 “\fB\&.o\fR” 为后缀的文件不会起作用。如果要排除复杂的文件列表，排除文件应通过某些方式生成，如具有相应条件的 \fBfind\fR(1) 命令。
+.sp
+可以使用多个 \fBX\fR 参数，其中每个参数一个 \fIexclude-file\fR。如果同时指定了包含文件（请参见 \fB-I\fR \fIinclude-file\fR 操作数），则排除文件优先于所有包含文件。如果 \fIexclude-file \fR 和 \fIinclude-file\fR（或者在命令行中）中同时指定了一个文件，则会排除该文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBz\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅限 c 模式。使用 \fBgzip\fR 对生成的归档文件进行压缩。在提取或列表模式下，会忽略此选项。读取归档文件时，本实现自动识别 \fBgzip\fR 压缩类型。升级/替换首先解压缩，然后应用相同的机制自动压缩归档文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBZ\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅限 c 模式。使用 \fBcompress\fR 对生成的归档文件进行压缩。请参见 \fBcompress\fR(1)。在提取或列表模式下，此选项被忽略。读取归档文件时，本实现自动识别 \fBcompress\fR 压缩类型。升级/替换首先解压缩，然后应用相同的机制自动压缩归档文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB@\fR\fR
+.ad
+.sp .6
+.RS 4n
+在归档文件中包括扩展属性。缺省情况下，\fBtar\fR 不会在归档文件中放入扩展属性。\fBtar\fR 通过此标志寻找要放入归档文件中文件的扩展属性，并将其添加到归档文件。扩展属性以特殊文件的形式加入归档文件，并采用特殊的类型标签。当此修饰符与 \fBx\fR 函数结合使用时，会从磁带中同时提取扩展属性和普通文件数据。只能作为常规文件提取操作的一部分从归档中提取扩展属性文件。显式提取属性记录的尝试将被忽略。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/\fR\fR
+.ad
+.sp .6
+.RS 4n
+在归档文件中包括扩展系统属性。缺省情况下，\fBtar\fR 不会在归档文件中放入扩展系统属性。\fBtar\fR 通过此标志寻找要放入归档文件中文件的扩展系统属性，并将其添加到归档文件。扩展系统属性以特殊文件的形式加入归档文件，并采用特殊的类型标签。当此修饰符与 \fBx\fR 函数结合使用时，会从磁带中同时提取扩展系统属性和普通文件数据。只能作为常规文件提取操作的一部分从归档中提取扩展系统属性文件。显式提取属性记录的尝试将被忽略。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB[0-7]\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择备用驱动器用来挂载磁带。在 \fB/etc/default/tar\fR 中指定缺省条目。如果未指定数字或 \fBf\fR 函数修饰符，\fB/etc/default/tar\fR 中带数字 “\fB0\fR” 的条目将作为缺省值。
+.RE
+
+.SH 用法
+.sp
+.LP
+有关 \fBtar\fR 遇到大于或等于 2 GB（2^31 字节）文件时行为的说明，请参见 \fBlargefile\fR(5)。
+.sp
+.LP
+当从管道或套接字读取时，自动确定实际分块因子可能会被骗过（请参见下面的 \fBB\fR 函数）。
+.sp
+.LP
+1/4 英寸流磁带有一个 512 字节块的固有分块因子。它可以使用任何分块因子读取或写入。
+.sp
+.LP
+此函数修饰符可用于磁盘文件和块特殊设备等设备中的归档文件，但主要用于磁带设备。
+.sp
+.LP
+有关 \fBtar\fR 文件头格式的信息，请参见 \fBarchives.h\fR(3HEAD)。
+.SH 示例
+.LP
+\fB示例 1 \fR创建起始目录的归档文件
+.sp
+.LP
+下面是使用 \fBtar\fR 在驱动器 \fB/dev/rmt/0\fR 挂载的磁带中创建起始目录归档文件的示例：
+
+.sp
+.in +2
+.nf
+example% \fBcd\fR
+example% \fBtar cvf /dev/rmt/0\fR .
+\fImessages from\fR tar 
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBc\fR 函数字母表示创建归档文件。\fBv\fR 函数修饰符输出解释 \fBtar\fR 当前处理的消息。\fBf\fR 函数修饰符表示正在指定 tarfile（本示例中是 \fB/dev/rmt/0\fR）。命令行末尾的点 (\fB\&.\fR) 表示当前目录并且是 \fBf\fR 函数修饰符的参数。
+
+.sp
+.LP
+使用以下命令显示 tarfile 的目录：
+
+.sp
+.in +2
+.nf
+example% \fBtar tvf /dev/rmt/0\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+POSIX 语言环境的输出如下所示：
+
+.sp
+.in +2
+.nf
+rw\(mir\(mi\(mir\(mi\(mi   1677/40    2123    Nov  7 18:15 1985    ./test.c
+\&...
+example%
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+这些列具有以下含义：
+
+.RS +4
+.TP
+.ie t \(bu
+.el o
+列 1 是对 \fB\&./test.c\fR 的访问权限
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+列 2 是 \fB\&./test.c\fR 的\fI用户 ID\fR/\fI组 ID\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+列 3 是 \fB\&./test.c\fR 的大小（以字节为单位）
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+列 4 是 \fB\&./test.c\fR 的修改日期。当 \fBLC_TIME\fR 类别未设为 POSIX 语言环境时，可以使用不同的格式和日期顺序字段。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+列 5 是 \fB\&./test.c\fR 的名称。
+.RE
+.sp
+.LP
+要从归档文件中提取文件，请执行以下操作：
+
+.sp
+.in +2
+.nf
+example% \fBtar xvf /dev/rmt/0\fR
+\fImessages from\fR tar
+example%
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果一个磁带上有多个归档文件，在每个文件与后一个文件之间用 EOF 标记隔开。要使 \fBtar\fR 从内含多个归档文件的磁带中读取第一和第二个归档文件，磁带设备名称的\fI非倒带\fR版本必须与 \fBf\fR 函数修饰符结合使用，如下所示：
+
+.sp
+.in +2
+.nf
+example% \fBtar xvfp /dev/rmt/0n \fIread first archive from tape\fR\fR
+\fImessages from\fR tar
+example% \fBtar xvfp /dev/rmt/0n \fIread second archive from tape\fR\fR
+\fImessages from\fR tar
+example%
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+请注意，在一些较早的版本中，上述情况无法正常使用，需使用 \fBmt\fR(1) 在 \fBtar\fR 调用中间进行干预。要模拟旧的行为，可使用包含指示 BSD 行为的字母 \fBb\fR 的非倒带设备名称。请参见 \fBmtio\fR(7I) 手册页的\fB\fR“关闭操作”部分。
+
+.LP
+\fB示例 2 \fR从 /usr/include 和 /etc 将文件归档到缺省磁带机 0
+.sp
+.LP
+要将文件从 \fB/usr/include\fR 和 \fB/etc\fR 归档到缺省磁带设备 \fB0\fR：
+
+.sp
+.in +2
+.nf
+example% \fBtar c -C /usr include -C /etc .\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+所得 tarfile 的目录将生成如下输出：
+
+.sp
+.in +2
+.nf
+include/ 
+include/a.out.h
+\fIand all the other files in\fR \fB/usr/include ...\fR
+\&./chown \fIand all the other files in\fR /etc 
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+要提取 \fBinclude\fR 目录中的所有文件：
+
+.sp
+.in +2
+.nf
+example% \fBtar xv include
+x include/, 0 bytes, 0 tape blocks \e 
+    \fIand all files under\fR include ...\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR在网络中传输文件
+.sp
+.LP
+下面是一个使用 \fBtar\fR 在网络中传输文件的示例。首先介绍如何从本地计算机 (\fBexample\fR) 将文件归档到远程系统 (\fBhost\fR) 的磁带中：
+
+.sp
+.in +2
+.nf
+example% \fBtar cvfb \(mi 20 \fIfiles\fR| \e
+    ssh \fIhost\fR dd of=/dev/rmt/0 obs=20b\fR
+\fImessages from\fR tar
+example%
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+在上面的示例中，我们使用 \fBc\fR 关键字母\fI创建\fR一个 \fItarfile\fR，使用 \fBv\fR 函数修饰符指示从 \fBtar\fR 提供 \fIverbose\fR 输出，使用 \fBf\fR 函数修饰符指定输出 \fItarfile\fR 的名称（标准输出是 \fItarfile\fR 出现的位置，用 `\fB-\fR' 符号表示），并使用 \fBb\fR 函数修饰符指定块大小 (\fB20\fR)。如果要更改块大小，必须同时更改 \fBtar\fR 命令\fI和\fR \fBdd\fR 命令上的块大小参数。
+
+.LP
+\fB示例 4 \fR将文件从远程系统上的磁带中检索回到本地系统
+.sp
+.LP
+下面是使用 \fBtar\fR 将文件从远程系统上的磁带中检索回到本地系统的示例：
+
+.sp
+.in +2
+.nf
+example% \fBssh -n host dd if=/dev/rmt/0 bs=20b | \e
+    tar xvBfb \(mi 20 \fIfiles\fR\fR
+\fImessages from\fR tar
+example%
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+在上面的示例中，我们用 \fBx\fR 关键字母从 \fItarfile\fR \fI提取\fR文件，使用 \fBv\fR 函数修饰符指示\fI从\fR \fBtar\fR 提供 \fIverbose\fR \fI输出\fR，告诉 \fBtar\fR 它正使用 \fBB\fR 函数修饰符从管道读取文件，使用 \fBf\fR 函数修饰符指定输入 \fItarfile\fR 的名称（标准输入是 \fItarfile\fR 出现的位置，用 “\fB-\fR” 符号表示），并使用 \fBb\fR 函数修饰符指定块大小 (\fB20\fR)。
+
+.LP
+\fB示例 5 \fR创建起始目录的归档文件
+.sp
+.LP
+以下示例介绍如何使用实际分块因子 \fB19\fR 在 \fB/dev/rmt/0\fR 上创建起始目录的归档文件：
+
+.sp
+.in +2
+.nf
+example% \fBtar cvfb /dev/rmt/0 19 $HOME\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+要不使用 \fBb\fR 函数修饰符识别此归档文件的实际分块因子：
+
+.sp
+.in +2
+.nf
+example% \fBtar tvf /dev/rmt/0\fR
+tar: blocksize = 19
+\&...
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+要使用较大的名义分块因子识别此归档文件的实际分块因子：
+
+.sp
+.in +2
+.nf
+example% \fBtar tvf /dev/rmt/0 30\fR
+tar: blocksize = 19
+\&...
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+尝试使用一个太小的名义分块因子识别此归档文件的实际分块因子：
+
+.sp
+.in +2
+.nf
+example% \fBtar tvf /dev/rmt/0 10\fR
+tar: tape read error
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR创建压缩归档文件
+.sp
+.LP
+以下示例使用 \fBbzip\fR 创建压缩归档文件：
+
+.sp
+.in +2
+.nf
+example% \fBtar cjf tarfile /tmp/*\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+压缩文件名是 \fBtarfile.bz2\fR。 
+
+.sp
+.LP
+在此情况下，如果改用以下命令序列，将创建相同的压缩归档文件：
+
+.sp
+.in +2
+.nf
+example% \fBtar cf tarfile /tmp/*\fR
+example% \fBbzip2 tarfile\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+但是，会取消中间文件的创建和删除操作。虽然函数修饰符 \fBz\fR 和 \fBZ\fR 表现相似，但却分别使用 \fBgzip\fR 和 \fBcompress\fR。
+
+.sp
+.LP
+以下示例使用 \fBcompress\fR 创建压缩归档文件：
+
+.sp
+.in +2
+.nf
+example% \fBtar cZf tarfile /tmp/*\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+压缩文件名是 \fBtarfile.Z\fR。
+
+.sp
+.LP
+以下示例使用 \fBgzip\fR 创建压缩归档文件：
+
+.sp
+.in +2
+.nf
+example% \fBtar czf tarfile /tmp/*\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+压缩文件名是 \fBtarfile.gz\fR。
+
+.LP
+\fB示例 7 \fR从压缩归档文件中提取文件
+.sp
+.LP
+以下示例从压缩归档文件中提取文件：对于使用 \fBbzip2\fR 压缩模式压缩的归档文件：
+
+.sp
+.in +2
+.nf
+example% \fBtar xvf tarfile.bz2\fR
+example% \fBtar xvfj tarfile.bz2\fR
+example% \fBbzcat tarfile.bz2 | tar xvf -\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+对于使用 \fBcompress\fR 压缩模式压缩的归档文件：
+
+.sp
+.in +2
+.nf
+example% \fBtar xvf tarfile.Z\fR
+example% \fBtar xvfZ tarfile.Z\fR
+example% \fBzcat tarfile.Z | tar xvf -\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+对于使用 \fBgzip\fR 压缩模式压缩的归档文件：
+
+.sp
+.in +2
+.nf
+example% \fBtar xvf tarfile.gz\fR
+example% \fBtar xvfz tarfile.gz\fR
+example% \fBgzcat tarfile.gz | tar xvf -\fR
+.fi
+.in -2
+.sp
+
+.SH 环境变量
+.sp
+.ne 2
+.mk
+.na
+\fB\fBTMPDIR\fR\fR
+.ad
+.sp .6
+.RS 4n
+缺省情况下在 \fB/tmp\fR 中创建临时文件。否则，\fBtar\fR 使用 \fBTMPDIR\fR 指定的目录。
+.RE
+
+.sp
+.LP
+有关影响 \fBtar\fR 执行的以下环境变量的说明，请参见 \fBenviron\fR(5)：\fBLC_COLLATE\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR、\fBLC_TIME\fR、\fBTZ\fR 和 \fBNLSPATH\fR。
+.sp
+.LP
+肯定的回答使用为用户语言环境中 \fBLC_MESSAGES\fR 类别的 \fByesexpr\fR 关键字定义的扩展正则表达式进行处理。\fBLC_COLLATE\fR 类别中指定的语言环境定义为 \fByesexpr\fR 定义的表达式中使用的范围、等效类和多字符整理元素的行为。\fBLC_CTYPE\fR 中指定的语言环境确定文本数据字符字节序列解释的语言环境，以及为 \fByesexpr\fR 定义的表达式中使用的字符类的行为。请参见 \fBlocale\fR(5)。
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.sp .6
+.RS 4n
+出现错误。
+.RE
+
+.SH 文件
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/dev/rmt/[0-7][b][n]\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/dev/rmt/[0-7]l[b][n]\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/dev/rmt/[0-7]m[b][n]\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/dev/rmt/[0-7]h[b][n]\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/dev/rmt/[0-7]u[b][n]\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/dev/rmt/[0-7]c[b][n]\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/etc/default/tar\fR
+.RE
+.sp
+.LP
+\fB/etc/default/tar\fR 的设置如下所示：
+.sp
+.in +2
+.nf
+archive0=/dev/rmt/0
+archive1=/dev/rmt/0n
+archive2=/dev/rmt/1
+archive3=/dev/rmt/1n
+archive4=/dev/rmt/0
+archive5=/dev/rmt/0n
+archive6=/dev/rmt/1
+archive7=/dev/rmt/1n
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+CSIEnabled（已启用）
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBar\fR(1)、\fBbasename\fR(1)、\fBcd\fR(1)、\fBchown\fR(1)、\fBcompress\fR(1)、\fBcpio\fR(1)、\fBcsh\fR(1)、\fBdirname\fR(1)、\fBfind\fR(1)、\fBls\fR(1)、\fBmt\fR(1)、\fBpax\fR(1)、\fBsetfacl\fR(1)、\fBumask\fR(1)、\fBmknod\fR(1M)、\fBarchives.h\fR(3HEAD)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBfsattr\fR(5)、\fBlargefile\fR(5)、\fBmtio\fR(7I)
+.SH 诊断
+.sp
+.LP
+如果有错误的关键字符和磁带读/写错误以及出现内存不足以存放链接表的问题，将输出诊断消息。
+.SH 附注
+.sp
+.LP
+无法访问第 \fIn\fR 次出现的文件。
+.sp
+.LP
+会强行处理磁带错误。
+.sp
+.LP
+\fBtar\fR 归档格式允许在归档文件头中存储的 \fBUID\fR 和 \fBGID\fR 最大为 \fB2097151\fR。\fBUID\fR 和 \fBGID\fR 大于该值的文件使用值为 \fB60001\fR 的 \fBUID\fR 和 \fB GID\fR 进行归档。
+.sp
+.LP
+如果归档文件创建时包含这样的文件：其名称通过运行于多个语言环境的进程创建，则创建归档文件和从归档文件中提取文件时，均应使用采用全 8 位代码集的单个语言环境（例如 \fBen_US\fR 语言环境）。
+.sp
+.LP
+\fBr\fR 函数字母和 \fBu\fR 函数字母均不能使用四分之一英寸归档磁带，因为此类磁带机无法退格。
+.sp
+.LP
+由于 \fBtar\fR 没有选项，因此，不需要使用通常在其他实用程序中用来终止选项识别功能的标准 “\fB--\fR” 参数。如果使用，它仅能作为第一个参数被识别，然后被忽略。
+.sp
+.LP
+由于 \fB-C\fR \fIdirectory\fR \fIfile\fR 和 \fB-I\fR \fIinclude-file\fR 是多参数操作数，因此可使用以下任何一种方式来归档或提取名为 \fB-C \fR 或 \fB-I\fR 的文件。
+.RS +4
+.TP
+1.
+使用在命令行中包含 \fB/\fR 字符的文件操作数来指定它们（例如 \fB/home/joe/-C\fR 或 \fB\&./-I\fR）。
+.RE
+.RS +4
+.TP
+2.
+使用 \fB-I\fR \fIinclude-file\fR 在包含文件中加入它们。
+.RE
+.RS +4
+.TP
+3.
+指定文件驻留的目录：
+.sp
+.in +2
+.nf
+\fB-C \fIdirectory\fR -C\fR
+.fi
+.in -2
+.sp
+
+或
+.sp
+.in +2
+.nf
+\fB-C \fIdirectory\fR -I\fR
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+4.
+指定文件驻留的整个目录：
+.sp
+.in +2
+.nf
+\fB-C \fIdirectory\fR .\fR
+.fi
+.in -2
+.sp
+
+.RE

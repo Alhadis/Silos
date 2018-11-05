@@ -1,0 +1,594 @@
+'\" te
+.\" Copyright (c) 2012, 2014, Oracle and/or its affiliates. All rights reserved
+.TH in.ikev2d 1M "2 Jan 2014" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+in.ikev2d \- daemon for Internet Key Exchange Version 2 (IKEv2)
+.SH SYNOPSIS
+.LP
+.nf
+\fB/usr/lib/inet/in.ikev2d\fR [\fB-d\fR] [\fB-f\fR \fIfilename\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/inet/in.ikev2d\fR \fB-c\fR [\fB-f\fR \fIfilename\fR]
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBin.ikev2d\fR daemon performs automated key management for IPsec using the Internet Key Exchange Version 2 (IKEv2) protocol as defined in RFC 5996.
+.sp
+.LP
+\fBin.ikev2d\fR supports the following:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+IKE authentication with either pre-shared keys, DSS signatures, RSA signatures, or Elliptic Curve Digital Signature Algorithm (ECDSA). Both self-signed and CA-signed certificates are supported.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Diffie-Hellman key derivation using MODP groups 1, 2, 5, 14, 15, 16, 22, 23, and 24 and ECP groups 19, 20, 21, 25, and 26 as defined in RFC 3526, RFC 5114, RFC 5903 and RFC 5996.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Secure IKEv2 exchange protection using authenticated encryption algorithms.
+.sp
+Encryption algorithms: AES, 3DES.
+.sp
+Authentication algorithms: HMAC-MD5, HMAC-MD5-128, HMAC-SHA-1, HMAC-SHA1-160, HMAC-SHA256, HMAC-SHA384, or HMAC-SHA512.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Encryption in \fBin.ikev2d\fR is limited to the IKEv2 authentication and key exchange. See \fBipsecesp\fR(7P) for information regarding IPsec protection choices.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Note that the algorithms defined above are used by \fBin.ikev2d\fR to protect its exchanges with a peer. The algorithms used to protect the actual IPsec traffic (ESP/AH) and the associated keys are negotiated as part of these IKEv2 exchanges. The actual algorithms chosen for IPsec are not defined in the \fBin.ikev2d\fR configuration files described in this man page because they are actually defined in the IPsec policy. The algorithms used by \fBin.ikev2d\fR and IPsec may be different. For more details on the IPsec policy, see \fBipsecconf\fR(1M) and \fBipsecalgs\fR(1M).
+.RE
+.sp
+.LP
+\fBin.ikev2d\fR is managed by the \fBikev2\fR instance of the \fBike\fR \fBsmf\fR(5) service:
+.sp
+.in +2
+.nf
+svc:/network/ipsec/ike:ikev2
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+This service is delivered disabled because the configuration file needs to be created before the service can be enabled. See \fBikev2.config\fR(4) for the format of this file. In general, this service is used in conjunction with the svc:/network/ipsec/policy service, which must also be configured and enabled. See \fBipsecconf\fR(1M) for details on that service.
+.sp
+.LP
+See \fBsmf\fR(5) for information on the Service Management Facility.
+.sp
+.LP
+\fBin.ikev2d\fR sends and processes IKEv2 protocol exchanges with peer systems that use the IKEv2 protocol. This is done using a UDP socket on port 500 or 4500. \fBin.ikev2d\fR also processes requests for keying information that come from the IPsec module in the kernel. These messages are sent by means of a special socket described in \fBpf_key\fR(7P).
+.sp
+.LP
+The \fBPF_KEY\fR interface is also used by \fBin.ikev2d\fR to add negotiated SAs into the kernels SADB, and to check that incoming requests match the local IPsec policy.
+.sp
+.LP
+In the case of an already running \fBin.iked\fR(1M) IKEv1 daemon, the \fBin.ikev2d\fR daemon runs in coexistence mode. \fBin.iked\fR listens for IKEv1 and IKEv2 traffic and forwards any IKEv2 traffic on to \fBin.ikev2d\fR. \fBin.ikev2d\fR will detect if the IKEv1 daemon exits and will go back into standalone mode in that case. Coexistence mode is necessary since both daemons use the same UDP ports (500 and 4500) for network traffic.
+.sp
+.LP
+\fBin.ikev2d\fR will manage all IKE exchanges using the IKEv2 protocol as defined by RFC 5996. It can coexist with \fBin.iked\fR(1M), which will manage IKE exchanges using the version of the IKE protocol defined by RFC 2409.
+.sp
+.LP
+The configuration for \fBin.iked\fR(1M) is defined in \fBike.config\fR(4). Configuration for \fBin.ikev2d\fR is defined in \fBikev2.config\fR(4). Each daemon has its own set of configuration files.
+.sp
+.LP
+If both daemons are enabled at the same time, care should be taken to avoid overlapping configuration rules; that is, rules that would allow both daemons to initiate sessions for the same pair of local and remote addresses. Particular caution is required when prefix or wildcard \fIremote_addr\fR/\fIlocal_addr\fR values are used inside IKE(v2) rules in a mixed IKE/IKEv2 environment.
+.sp
+.LP
+In order to satisfy the principle of least privilege, all administrative tasks for IKEv2 should be done under the Network IPsec Management rights profile. See \fBrbac\fR(5). Configuration files should be modified using \fBpfedit\fR(1M) in order to preserve proper file permissions and ownership.
+.sp
+.LP
+For example:
+.sp
+.in +2
+.nf
+$ \fBpfedit /etc/inet/ike/ikev2.config\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBin.ikev2d\fR runs as \fBikeuser\fR and all of its configuration, logs, and key and certificate store are owned by this userid. It is imperative that the ownership and permissions stay this way or the running \fBin.ikev2d\fR daemon will not be able to read its configuration or keystore contents.
+.sp
+.LP
+The \fBikeadm\fR(1M) command can  manage the running \fBin.ikev2d\fR daemon. See the \fBikeadm\fR(1M) man page for details and examples.
+.sp
+.LP
+\fBpktool\fR(1) is used to manage X.509 certificates and associated private keys for local certificates for users on Solaris. IKEv2 uses \fBikev2cert\fR(1M) as its certificate management interface to the keystore for \fBikeuser\fR, which is the user id for the running \fBin.ikev2d\fR daemon. \fBikev2cert\fR(1M) is just a wrapper around \fBpktool\fR(1) that causes it to run as \fBikeuser\fR and write to and access the IKEv2 keystore.
+.sp
+.LP
+Certificate policy is controlled by the Solaris Key Management Framework (KMF). In order to change the default policy supplied for \fBin.ikev2d\fR, one must run \fBkmfcfg\fR(1) on the KMF configuration file for IKEv2 role. For example, to ignore unknown Extended Key Usage extensions in certificates, one would issue the following command:
+.sp
+.in +2
+.nf
+$ \fBpfexec kmfcfg modify \e
+dbfile=/etc/inet/ike/kmf-policy.xml policy=default \e
+ignore-unknown-eku=true\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+See \fBkmfcfg\fR(1) for valid configuration options.
+.sp
+.LP
+The \fBin.ikev2d\fR daemon may be notified of any changes to its configuration, including pre-shared keys and certificates, by issuing the following command:
+.sp
+.in +2
+.nf
+# \fBsvcadm refresh network/ipsec/ike:ikev2\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+An alternative to the preceding command is to use one of the \fBikeadm\fR(1M) commands, such as \fBread rules\fR or \fBread preshared\fR.
+.SS "Service Management Facility"
+.sp
+.LP
+The IKE daemon (\fBin.ikev2d\fR) is managed by the service management facility, \fBsmf\fR(5). The following group of services manage the components of IPsec:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsvc:/network/ipsec/ipsecalgs\fR (see \fBipsecalgs\fR(1M))
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsvc:/network/ipsec/policy\fR (see \fBipsecconf\fR(1M))
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsvc:/network/ipsec/manual-key\fR (see \fBipseckey\fR(1M))
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsvc:/network/ipsec/ike:ikev2\fR (see this man page)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBsvc:/network/ipsec/ike:default\fR (see \fBin.iked\fR(1M))
+.RE
+.sp
+.LP
+The \fBmanual-key\fR and \fBike\fR services are delivered disabled because the system administrator must create configuration files for each service, as described in the respective man pages listed above.
+.sp
+.LP
+The correct administrative procedure is to create the configuration file for the set of services relevant to the site's security policy, then enable each service using \fBsvcadm\fR(1M).
+.sp
+.LP
+The \fBike\fR service has a dependency on the \fBipsecalgs\fR and \fBpolicy\fR services. These services should be enabled before the \fBike\fR service.
+.sp
+.LP
+The section below describes a number of \fBsmf\fR(5) properties that are used by \fBin.ikev2d\fR. These properties should rarely need to be changed from their default values. If any of these properties are changed, the \fBike:ikev2\fR service needs to be refreshed in order for the values updated in the \fBsmf\fR(5) database.
+.sp
+.LP
+Because the daemon \fBin.ikev2d\fR reads these properties only at startup time, the \fBike:ikev2\fR service will also need to be restarted after a property has been modified. For example:
+.sp
+.in +2
+.nf
+example# \fBsvcadm refresh ike:ikev2\fR
+example# \fBsvcadm restart ike:ikev2\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Please refer to the specific properties below for additional instructions.
+.sp
+.LP
+Most common configuration changes can be applied to the running daemon by using \fBikeadm\fR(1M).
+.sp
+.LP
+Note that restarting the daemon will tear down any existing IKEv2 SAs along with their associated CHILD SAs. Delete notifications will be sent to each peer and SAs must all be reestablished.
+.sp
+.LP
+The following properties are defined for the \fBikev2\fR instance of the \fBike\fR service:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/config_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+Defines the configuration file to use. The default value is \fB/etc/inet/ike/ikev2.config\fR. See \fBikev2.config\fR(4) for the  format of this file. This property has the same effect as the \fB-f\fR flag. See the description of \fB-f\fR in OPTIONS. Note that this file must be owned by the userid \fBikeuser\fR.
+.sp
+To have the running daemon read an alternative file, see \fBikeadm\fR(1M).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/debug_level\fR\fR
+.ad
+.sp .6
+.RS 4n
+Defines the amount of debug output that is written to the \fBdebug_logfile\fR file, described below. The default value for this is \fBop\fR or \fBoperator\fR. This property controls the recording of information on events such as rereading the  configuration file. Acceptable value for \fBdebug_level\fR are listed in the \fBikeadm\fR(1M) man page. The value \fBverbose\fR is suitable for general protocol troubleshooting.
+.sp
+For example:
+.sp
+.in +2
+.nf
+example# \fBsvccfg -s ike:ikev2 setprop config/debug_level = verbose\fR
+.fi
+.in -2
+.sp
+
+Startup error messages are recorded by the \fBsmf\fR(5) framework and recorded in a service-specific log file. Use the command \fBsvcs -xv ike:ikev2\fR to determine the name of the SMF startup log.
+.sp
+To change the debug level on the running daemon for debugging purposes, see \fBikeadm\fR(1M).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/debug_logfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+Defines where debug output should be written. The messages written here are from debug code within \fBin.ikev2d\fR. It is important that this parameter is set to a directory owned by the user \fBikeuser\fR or the daemon will fail to start. Use the following command to examine the \fBlogfile\fR property:
+.sp
+.in +2
+.nf
+example# \fBsvccfg -s ike:ikev2 listprop config/debug_logfile\fR
+.fi
+.in -2
+.sp
+
+Both the SMF log file and the debug log file should be inspected for errors.
+.sp
+To redirect the debugging output of the running daemon, see \fBikeadm\fR(1M).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/ignore_errors\fR\fR
+.ad
+.sp .6
+.RS 4n
+A boolean value that controls \fBin.ikev2d\fR's behavior should the configuration files have syntax errors, configuration errors, missing per-shared keys, missing certificates and the like. The default value is \fBfalse\fR, which causes \fBin.ikev2d\fR to enter maintenance mode if the configuration is invalid.
+.sp
+Setting this value to true causes the IKE service to stay online, but correct operation requires the  administrator to configure the running daemon with \fBikeadm\fR(1M).
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/min_threads\fR\fR
+.ad
+.sp .6
+.RS 4n
+Enforces a minimum number of threads for the daemon's dynamically sized thread pools. This value is set heuristically and should normally not need to be changed.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/max_threads\fR\fR
+.ad
+.sp .6
+.RS 4n
+Limit the maximum number of threads in the daemon's dynamically sized thread pools. This value is set heuristically and should normally not need to be changed. A handful of threads in the \fBin.ikev2d\fR process are not counted against this limit, so it is possible that the total number of threads in the running daemon will exceed \fBmax_threads\fR. The total number of concurrent outstanding CRL and OCSP retrieval operations is limited by \fBmax_threads\fR. This should be given careful consideration before adjusting \fBmax_threads\fR when these PKI features are in use.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfig/response_wait_time\fR\fR
+.ad
+.sp .6
+.RS 4n
+Number of seconds for IKEv2 to wait for a response from the peer for any of its requests. This value should normally not have to be tuned. This value should not be viewed simply as a worst case value for network round-trip time, as the peer system may need to perform time consuming operations such as CRL retrieval in order to respond to a request.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkcs11_token/uri\fR\fR
+.ad
+.sp .6
+.RS 4n
+Hardware token in PKCS#11 URI format, for example:
+.sp
+.in +2
+.nf
+# \fBsvccfg -s ike:ikev2 setprop pkcs11_token/uri = \e
+\&'pkcs11:token=Hardware Token Name'\fR
+.fi
+.in -2
+.sp
+
+This value defaults to Metaslot, which means that keys and certificates will be stored in the softtoken keystore for the user \fBikeuser\fR, protected by a pin. Change this value to specify a PKCS#11 hardware token. See \fBpkcs11_softtoken\fR(5) for details on the softtoken keystore.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkcs11_token/pin\fR\fR
+.ad
+.sp .6
+.RS 4n
+The pin for the PKCS#11 softtoken keystore.
+.sp
+This pin must be set for unattended startup of \fBin.ikev2d\fR. Without this pin, \fBin.ikev2d\fR will not be able to access any private keys in its keystore. By default, the pin is unconfigured and the keystore uninitialized. The administrator must run \fBikev2cert\fR(1M) to set the pin and initialize the keystore. For automated startup, the pin value must be stored in a special \fBsmf\fR(5) property.
+.sp
+For soft token (the default):
+.sp
+.in +2
+.nf
+# \fBikev2cert setpin\fR
+.fi
+.in -2
+.sp
+
+The current state of the token can be viewed with:
+.sp
+.in +2
+.nf
+# \fBikev2cert tokens\fR
+.fi
+.in -2
+.sp
+
+For a hardware tokens, \fBikev2cert\fR(1M) is not used because the hardware token is not part of a filesystem and does not have permissions or ownership. The \fBpktool\fR(1) can be used to manipulate the hardware directly:
+.sp
+.in +2
+.nf
+# \fBpktool setpin token=\fItoken_name\fR\fR
+.fi
+.in -2
+.sp
+
+Then store the value of the pin in a special \fBsmf\fR(5) property that requires special authorizations to read from or write to. See \fBsmf_security\fR(5).
+.sp
+.in +2
+.nf
+# \fBsvccfg -s ike:ikev2 editprop\fR
+.fi
+.in -2
+.sp
+
+In the editor:
+.sp
+.in +2
+.nf
+setprop pkcs11_token/pin = \fIpin_value\fR
+refresh
+.fi
+.in -2
+.sp
+
+If security policy dictates that the pin cannot be stored in SMF, this property may be left blank and the administrator may run the following command to interactively unlock the softtoken in the running daemon:
+.sp
+.in +2
+.nf
+# \fBikeadm -v2 token login "Sun Metaslot"\fR
+.fi
+.in -2
+.sp
+
+For a hardware token, substitute the token label name in the above command.
+.sp
+To retroactively log into the token with the daemon still running, use the following sequence:
+.RS +4
+.TP
+1.
+Initialize the token if you have not already done so. The default pin for the uninitialized token is \fBchangeme\fR. Set this pin to a strong passphrase when prompted.
+.sp
+.in +2
+.nf
+# \fBikev2cert setpin\fR
+.fi
+.in -2
+.sp
+
+.RE
+.RS +4
+.TP
+2.
+Set the pin property using \fBsvccfg\fR(1M).
+.sp
+.in +2
+.nf
+# \fBsvccfg -s ike:ikev2 editprop\fR
+.fi
+.in -2
+.sp
+
+Pass the pin to the running daemon to unlock the token.
+.sp
+.in +2
+.nf
+# \fBikeadm -v2 token login "Sun Metaslot"\fR
+.fi
+.in -2
+.sp
+
+See discussion of token login authorizations below.
+.RE
+These properties can be modified using \fBsvccfg\fR(1M) by users who have been assigned the Network IPsec Management rights profile.  See the \fBprof_attr\fR(4) man page.
+.sp
+Additional properties can be viewed using the \fBsvcprop\fR(1) command. Their function is undefined and their modification unsupported.
+.sp
+PKCS#11 token objects can be unlocked or locked by using \fBikeadm\fR token login and \fBikeadm\fR token logout, respectively. The Network IPsec Management rights profile allows users to log into and out of PKCS#11 token objects. See the \fBprof_attr\fR(4) man page.
+.sp
+See \fBauths\fR(1), \fBikeadm\fR(1M), \fBuser_attr\fR(4), \fBrbac\fR(5), \fBikev2cert\fR(1M).
+.RE
+
+.sp
+.LP
+The service needs to be refreshed using \fBsvcadm\fR(1M) before a new property value is effective. General, non-modifiable properties can be viewed with the \fBsvcprop\fR(1) command.
+.sp
+.in +2
+.nf
+# \fBsvccfg -s ipsec/ike:ikev2 setprop config/config_file = \e
+/new/config_file\fR
+       # \fBsvcadm refresh ike:ikev2\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Administrative actions on this service, such as enabling, disabling, refreshing, and requesting restart can be  performed using \fBsvcadm\fR(1M). A user who has been assigned the Network IPsec Management rights profile can perform these actions.
+.sp
+.LP
+The service's status can be queried using the \fBsvcs\fR(1) command.
+.sp
+.LP
+The \fBin.ikev2d\fR daemon is designed to be run under \fBsmf\fR(5) management. While the \fBin.ikev2d\fR command can be run from the command line, this is discouraged. If the \fBin.ikev2d\fR command is to be run from the command line, the \fBike\fR \fBsmf\fR(5) service should be disabled first. See \fBsvcadm\fR(1M).
+.SH OPTIONS
+.sp
+.LP
+The following options are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.sp .6
+.RS 4n
+Check the syntax of a configuration file.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+Use debug mode. The process stays attached to the controlling terminal and produces large amounts of debugging output.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfilename\fR\fR
+.ad
+.sp .6
+.RS 4n
+Use filename instead of \fB/etc/inet/ike/ikev2.config\fR. See \fBikev2.config\fR(4) for the format of this file.
+.RE
+
+.SH SECURITY
+.sp
+.LP
+This program has sensitive private keying information in its image. Care should be taken with any core dumps or system dumps of a running \fBin.ikev2d\fR daemon, as these files contain sensitive keying information. Use the \fBcoreadm\fR(1M) command to limit any core files produced by the running \fBin.ikev2d\fR daemon.
+.SH FILES
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ike/ikev2.config\fR\fR
+.ad
+.sp .6
+.RS 4n
+Default configuration file.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ike/ikev2.preshared\fR\fR
+.ad
+.sp .6
+.RS 4n
+Default IKEv2 pre-shared secrets file for IKE SA authentication.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ike/kmf-policy.xml\fR\fR
+.ad
+.sp .6
+.RS 4n
+Default IKEv2 KMF policy configuration file.
+.RE
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitynetwork/ike
+_
+Interface StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBauths\fR(1), \fBkmfcfg\fR(1), \fBpktool\fR(1), \fBsvcprop\fR(1), \fBsvcs\fR(1), \fBcoreadm\fR(1M), \fBikeadm\fR(1M), \fBikev2cert\fR(1M), \fBin.iked\fR(1M), \fBipsecalgs\fR(1M), \fBipsecconf\fR(1M), \fBipseckey\fR(1M), \fBpfedit\fR(1M), \fBsvcadm\fR(1M), \fBsvccfg\fR(1M), \fBike.config\fR(4), \fBikev2.config\fR(4), \fBikev2.preshared\fR(4), \fBprof_attr\fR(4), \fBuser_attr\fR(4), \fBattributes\fR(5), \fBpkcs11_softtoken\fR(5), \fBrbac\fR(5), \fBsmf\fR(5), \fBsmf_security\fR(5), \fBipsecesp\fR(7P), \fBpf_key\fR(7P)
+.sp
+.LP
+Harkins, Dan and Carrel, Dave. RFC 2409, Internet Key Exchange (IKE). Network Working Group. November 1998.
+.sp
+.LP
+Maughan, Douglas, Schertler, M., Schneider, M., Turner, J. RFC 2408, Internet Security Association and Key Management Protocol (ISAKMP). Network Working Group. November 1998.
+.sp
+.LP
+Piper, Derrell, RFC 2407, The Internet IP Security Domain of Interpretation for ISAKMP. Network Working Group. November 1998.
+.sp
+.LP
+Fu, D.; Solinos, J., RFC 4753, ECP Groups for IKE and IKEv2. Network Working Group. January 2007.
+.sp
+.LP
+Lepinski, M.; Kent, S., RFC 5114, Additional Diffie-Hellman Groups for Use with IETF Standards. Network Working Group. January 2008.
+.sp
+.LP
+Kaufman, C., Hoffman, P., Nir, Y., and P. Eronen, RFC 5996, Internet Key Exchange Protocol Version 2 (IKEv2). September 2010.

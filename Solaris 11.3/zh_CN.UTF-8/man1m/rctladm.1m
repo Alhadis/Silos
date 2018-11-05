@@ -1,0 +1,184 @@
+'\" te
+.\" Copyright (c) 2003, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH rctladm 1M "2015 年 5 月 21 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+rctladm \- 显示或修改系统资源控制的全局状态
+.SH 用法概要
+.LP
+.nf
+\fBrctladm\fR [\fB-lu\fR] [\fB-e\fR \fIaction\fR] [\fB-d\fR \fIaction\fR] [\fIname\fR...]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBrctladm\fR 命令允许检查和修改正在运行的系统上的活动资源控制。资源控制的实例称为 \fBrctl\fR。有关 \fBrctl\fR 的说明，请参见 \fBsetrctl\fR(2)；有关 Solaris 操作系统的当前发行版中支持的 \fBrctl\fR 的列表，请参见 \fBresource-controls \fR(5)。可以在系统范围内激活或取消禁用对 \fBrctl\fR 违规的记录，并且可以列出活动的 \fBrctl\fR（及其状态）。
+.sp
+.LP
+不带任何选项的 \fBrctladm\fR 命令等效于带 \fB-l\fR 选项的 \fBrctladm\fR。请参见下文中对 \fB-l\fR 的说明。
+.SH 选项
+.sp
+.LP
+支持以下选项： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIaction\fR\fR
+.ad
+.br
+.na
+\fB\fB-e\fR \fIaction\fR\fR
+.ad
+.sp .6
+.RS 4n
+在指定的 \fBrctl\fR 上禁用 (\fB-d\fR) 或启用 (\fB-e\fR) 全局操作。如果未指定 \fBrctl\fR，则不会采取操作并且将返回一个错误状态。您可以将特殊标记 \fBall\fR 与禁用选项一起使用来取消激活某个资源控制上的所有全局操作。
+.sp
+您可以通过分配严重性级别将 \fBsyslog\fR 操作设置为特定的程度。要执行此操作，请指定 \fBsyslog=\fIlevel\fR\fR，其中，\fIlevel\fR 是在 \fBsyslog\fR(3C) 中作为有效的严重性级别给定的字符串标记之一。您可以省略严重性级别上共有的 \fBLOG_\fR 前缀。请注意，不是所有的 \fBrctl\fR 都支持 \fBsyslog\fR 操作。请参见 \fBresource-controls \fR(5)。
+.sp
+如果为某个 rctl 启用 \fBsyslog\fR 操作导致所记录的消息连续成流，则日志输出将被限制为每五秒一条消息。在这种情况下，可能会丢弃某些消息。不需要采取更正操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+列出关于 \fBrctl\fR 的信息。将显示名称、全局事件操作和状态，以及全局标志。如果指定了一个或多个 name 操作数，则只会显示与 name 匹配的那些 \fBrctl\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR\fR
+.ad
+.sp .6
+.RS 4n
+基于 \fB/etc/rctladm.conf\fR 的内容配置资源控制。将忽略任何 name 操作数。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+要对其进行操作的 \fBrctl\fR 的名称。可以指定多个 \fBrctl\fR 名称。如果未指定任何名称，并且已经指定了列出操作，则会列出所有 \fBrctl\fR。如果指定了启用或禁用操作，则必须指定一个或多个 \fBrctl\fR 名称。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR为特定的违规激活系统日志记录
+.sp
+.LP
+以下命令激活所有 \fBtask.max-lwps\fR 违规的系统日志记录。
+
+.sp
+.in +2
+.nf
+# rctladm -e syslog task.max-lwps
+#
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR检查特定资源的当前状态
+.sp
+.LP
+以下命令检查 \fBtask.max-lwps\fR 资源的当前状态。
+
+.sp
+.in +2
+.nf
+$ rctladm -l task.max-lwps
+task.max-lwps               syslog=DEBUG
+$
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+发生了致命错误。向标准错误写入了一条消息来指示对其操作失败的所有资源控制。对指定为操作数的任何其他资源控制的操作已成功。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定的命令行选项无效。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/rctladm.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+每次执行 \fBrctladm\fR 时，它都使用当前配置更新 \fBrctladm.conf\fR 的内容。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBsetrctl\fR(2)、\fBgetrctl\fR(2)、\fBprctl\fR(1)、\fBrctlblk_get_global_flags\fR(3C)、\fBrctlblk_get_global_action\fR(3C)、\fBattributes\fR(5)、\fBresource-controls \fR(5)
+.SH 附注
+.sp
+.LP
+缺省情况下，不会对 \fBrctl\fR 违规执行全局日志记录。

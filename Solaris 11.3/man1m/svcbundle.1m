@@ -1,0 +1,591 @@
+'\" te
+.\" Copyright (c) 2012, 2015, Oracle and/or its affiliates. All rights    reserved
+.TH svcbundle 1M "02 Jun 2015" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+svcbundle \- create an SMF service bundle
+.SH SYNOPSIS
+.LP
+.nf
+\fBsvcbundle\fR [\fB-i\fR | \fB-o\fR \fIoutput_file\fR] \fB-s\fR \fIname\fR=\fIvalue\fR...
+.fi
+
+.LP
+.nf
+\fBsvcbundle\fR help [\fIname\fR]
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBsvcbundle\fR command is used to generate SMF manifests. The manifest is specified by multiple \fB-s\fR options. To generate a manifest, you must specify \fBservice-name\fR and \fBstart-method\fR. The other NV pairs are optional and allow the user to specify more details of the service. The \fBsvccfg\fR(1M) validate command will be run on the generated manifest to detect any templating conflicts.
+.sp
+.LP
+You can also use \fBsvcbundle\fR to generate profiles. See \fIbundle-type\fR below.
+.sp
+.LP
+The second synopsis prints a help message on standard out listing all legal names. Alternatively, you can specify help and a name to see a discussion of legal values for that name.
+.sp
+.LP
+In order to reduce the burden on the user, \fBsvcbundle\fR makes several simplifying assumptions when generating a manifest. You can edit the generated manifest if these assumptions are not correct for your application:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+The generated manifest is intended to be used with the master restarter, \fBsvc.startd\fR(1M).
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+A dependency on \fBsvc:/milestone/multi-user\fR will be generated to keep the service from starting too early. See \fBrc-script\fR below for an exception to this. In order to have a service start earlier, the manifest may be edited to depend on any specific services or any of the milestones described in \fBsmf\fR(5).
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+The bundle name will be the same as the value provided for \fBservice-name\fR.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Timeouts for all \fBexec_methods\fR will be 60 seconds.
+.RE
+.sp
+.LP
+By using the \fB-i\fR option, you can get \fBsvcbundle\fR to do much of the work of installing the service. It will automatically save the generated manifest in \fB/lib/svc/manifest/site\fR or the profile in \fB/etc/svc/profile/site\fR. The name of the generated file will be the basename of the service name that is specified with \fB-s\fR \fIservice-name\fR, and the file will have an \fB\&.xml\fR extension. Warning: \fBsvcbundle\fR will overwrite any existing file with that name.
+.sp
+.LP
+\fBsvcbundle\fR will then restart the \fBmanifest-import\fR service to process the newly created file and incorporate it into SMF. In the manifest case, \fBsvcbundle\fR will then wait for the service to enter a final state -- one of online, disabled, or maintenance. At the start of this wait period, \fBsvcbundle\fR will print:
+.sp
+.in +2
+.nf
+svcbundle: waiting for service to reach \fIfinal_state\fR state
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\&...where \fIfinal_state\fR is enabled or disabled. It is safe to interrupt \fBsvcbundle\fR after this message appears.
+.sp
+.LP
+Clearly, to use the \fB-i\fR option, you need sufficient authorizations to create the file in these restricted directories and to restart the \fBmanifest-import\fR service. See \fBsmf_security\fR(5).
+.SH EXTENDED DESCRIPTION
+.sp
+.LP
+This section discusses name/value (NV) pairs.
+.sp
+.LP
+The generated bundle is entirely defined by the use of multiple -s options on the command line. Each NV pair is of the form \fIname\fR=\fIvalue\fR where \fIname\fR and \fIname\fR come from this list:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbundle-type\fR\fR
+.ad
+.sp .6
+.RS 4n
+Type of service bundle to generate. Legal values are \fBmanifest\fR and \fBprofile\fR. \fBmanifest\fR is the default.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBduration\fR\fR
+.ad
+.sp .6
+.RS 4n
+Synonym for model.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBenabled\fR\fR
+.ad
+.sp .6
+.RS 4n
+Indicates whether or not the instance should be enabled. Legal values are \fBtrue\fR and \fBfalse\fR. The default value is \fBtrue\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmodel\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the service model. This is the value of the \fBstartd\fR/\fBduration\fR property. Refer to \fBsvc.startd\fR(1M). Model can be set to one of the following values:
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBcontract\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBdaemon\fR \(em synonym for \fBcontract\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBchild\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBwait\fR \(em synonym for \fBchild\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBtransient\fR
+.RE
+The default is \fBtransient\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstance-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+Name of the instance. The default value is \fBdefault\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstance-property\fR=\fIpg_name\fR:\fIprop_name\fR:\fIprop_type\fR:\fIvalue\fR\fR
+.ad
+.br
+.na
+\fB\fBservice-property\fR=\fIpg_name\fR:\fIprop_name\fR:\fIprop_type\fR:\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+These options are used to create a property group named \fIpg_name\fR in the instance or service, and it will have a type of application. The PG will have a single property named \fIprop_name\fR with a single value that is of type \fIprop_type\fR. Property groups with multiple properties can be created by invoking \fB*-property\fR multiple times. Zero or more \fB*-property=\fR declarations can be used.
+.sp
+The property type can be defaulted by using two consecutive colons. See "Examples," below. For manifests, a default property type of \fBastring\fR will be used. Profiles do not require that the property be specified, since it can usually be determined from other sources of information.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrc-script\fR=\fIscript_path\fR:\fIrun_level\fR\fR
+.ad
+.sp .6
+.RS 4n
+This NV pair causes \fBsvcbundle\fR to emit a manifest that facilitates conversion of a legacy \fBrc\fR script to an SMF service. \fIscript_path\fR is the path to the \fBrc\fR script and \fIrun_level\fR is the run level (see \fBinit\fR(1M)) where the \fBrc\fR script runs. \fIscript_path\fR is used to generate the start and stop \fBexec_method\fR elements in the manifest. The exec attribute will be set to:
+.sp
+.in +2
+.nf
+\fIscript_path\fR %m
+.fi
+.in -2
+.sp
+
+\fIrun_level\fR is used to generate dependencies, so that the script runs at the appropriate time during booting.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrefresh-method\fR\fR
+.ad
+.sp .6
+.RS 4n
+The command to execute when a service is refreshed.  Whitespace is allowed in the value.  The value can include method  tokens introduced by a percent sign (\fB%\fR), as  documented in \fBsmf_method\fR(5). The default value is \fB:true\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBservice-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+Name of the service. This NV pair is required.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstart-method\fR\fR
+.ad
+.sp .6
+.RS 4n
+The command to execute when the service is started. Whitespace is allowed in the value. The method tokens that are introduced by \fB%\fR as documented in \fBsmf_method\fR(5) are allowed and will be placed in the manifest for expansion by the restarter. \fB:true\fR is allowed. This NV pair is required for manifests unless the \fIrc-script\fR NV pair is specified. It is not required for profiles.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstop-method\fR\fR
+.ad
+.sp .6
+.RS 4n
+The command to execute when the service is stopped. It accepts values like start-method and also accepts \fB:kill\fR. \fB:true\fR is the default value for transient services and \fB:kill\fR for contract and child services.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBperiod\fR\fR
+.ad
+.sp .6
+.RS 4n
+This NV pair, along with the\fB periodic-method\fR pair, is used to create a manifest for a periodic service. The value of this pair is used for the period of the periodic service. If this pair is specified, it is required that \fBperiodic-method\fR be specified as well, and vice-versa.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBperiodic-method\fR\fR
+.ad
+.sp .6
+.RS 4n
+This NV pair, along with the \fBperiodic\fR pair, is used to create a manifest for a periodic service. The value of this pair specifies the command to be run each period. If this pair is specified, it is required that period be specified as well, and vice-versa.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBday\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the 'day' constraint when creating a scheduled service. Refer to \fBsvc.periodicd\fR(1M) for detailed information regarding scheduled services.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBday_of_month\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the 'day_of_month' constraint when creating a scheduled service.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfrequency\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the frequency when creating a scheduled service.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBminute\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the 'minute' constraint when creating a scheduled service.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmonth\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the 'month' constraint when creating a scheduled service.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhour\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the 'hour' constraint when creating a scheduled service.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinterval\fR\fR
+.ad
+.sp .6
+.RS 4n
+This NV pair, along with the \fBstart-method\fR pair, is used to create a manifest for a scheduled service. The value of this pair determines how frequently the scheduled service should be run. If this pair is specified, it is required that \fBstart-method\fR be specified as well. The value of the \fBstart-method\fR pair will be used for the exec attribute of the\fB       scheduled_method\fR element. Refer to \fBsvc.periodicd\fR(1M) for detailed information regarding scheduled services.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtimezone\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the 'timezone' value when creating a scheduled service.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBweekday_of_month\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the 'weekday_of_month' constraint when creating a scheduled service.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBweek_of_year\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the 'week_of_year' constraint when creating a scheduled service.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fByear\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the 'year' constraint when creating a scheduled service.
+.RE
+
+.SH OPTIONS
+.sp
+.LP
+The following command-line options are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.sp .6
+.RS 4n
+Install the generated file. See "Description" for details.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIoutput_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies the name of the file to be created.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIname\fR=\fIvalue\fR\fR
+.ad
+.sp .6
+.RS 4n
+Specifies a name/value pair. See "Extended Description" for details.
+.RE
+
+.sp
+.LP
+If neither \fB-i\fR nor \fB-o\fR are specified, the generated file will be written to stdout.
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRCreating Manifest for Transient Service
+.sp
+.LP
+The following command creates a manifest for a simple transient service. Since transient services are the default for \fBsvcbundle\fR, you can specify the manifest with just two options.
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s service-name=site/sneezy \e
+-s start-method=/lib/svc/method/sneezy\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRCreating Manifest for Daemon Service
+.sp
+.LP
+The following command creates a manifest for a daemon service.
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s service-name=site/sneezy \e
+-s start-method=/lib/svc/method/sneezy \e\fR
+\fB-s model=daemon\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRCreating Manifest for Daemon Service with Stop and Refresh Commands
+.sp
+.LP
+The following command creates a manifest for a daemon service with stop and refresh commands.
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s service-name=site/sleepy \e
+-s start-method="/lib/svc/method/sleepy %m" \e
+-s stop-method="/lib/svc/method/sleepy %m" \e
+-s refresh-method="/lib/svc/method/sleepy %m" \e\fR
+\fB-s model=daemon\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 4 \fRCreating Manifest with Instance Properties
+.sp
+.LP
+The following command creates a manifest with instance properties.
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s service-name=system/happy \e
+-s start-method=/lib/svc/method/happy \e
+-s instance-property=config:velocity:count:50 \e
+-s instance-property=config:color:astring:red\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The generated manifest will create a service instance with a config property group containing two properties, \fBvelocity\fR and \fBcolor\fR.
+
+.LP
+\fBExample 5 \fRCreating Manifest for \fBrc\fR Script Conversion
+.sp
+.LP
+The following command creates a manifest to assist in converting an \fBrc\fR script. This example assumes that the \fBrc\fR script runs at the multiuser level and does not start a daemon.
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s service-name=doc \e
+-s rc-script=/etc/init.d/doc:2\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The conscientious user will modify the \fBrc\fR script to include \fB/lib/svc/share/smf_include.sh\fR.
+
+.LP
+\fBExample 6 \fRGenerating Profile to Modify Service Property
+.sp
+.LP
+The following command generates a profile to set the \fBnfsmapid_domain\fR property of the \fBgrumpy\fR service.
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s bundle-type=profile \e
+-s service-name=network/nfs/grumpy \e
+-s service-property=nfs-props:nfsmapid_domain:astring:grumpy\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 7 \fRUsing the Default Property Type
+.sp
+.LP
+The following command sets the property type for config/color defaults to \fBastring\fR.
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -s service-name=system/happy \e
+-s start-method=/lib/svc/method/happy \e
+-s instance-property=config:color::red\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 8 \fRInstalling the Manifest
+.sp
+.LP
+The following command uses the -i option to install the manifest. In this example the generated manifest will be written to \fB/lib/svc/manifest/site/bashful.xml\fR, since \fBbashful\fR is the basename of the service name.
+
+.sp
+.in +2
+.nf
+# \fBsvcbundle -i -s service-name=application/bashful \e
+-s start-method=/opt/bashful/start\fR
+svcbundle: waiting for application/bashful to reach enabled state
+.fi
+.in -2
+.sp
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/
+_
+Interface StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBsvcs\fR(1), \fBinit\fR(1M), \fBsvc.startd\fR(1M), \fBsvccfg\fR(1M), \fBsvc.periodicd\fR(1M),  \fBservice_bundle\fR(4), \fBattributes\fR(5), \fBsmf_method\fR(5), \fBsmf_security\fR(5), \fBsmf_template\fR(5), \fBsmf\fR(5)

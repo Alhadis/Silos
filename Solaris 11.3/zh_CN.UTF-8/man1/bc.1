@@ -1,0 +1,509 @@
+'\" te
+.\"  Copyright 1989 AT&T Copyright (c) 2003, Sun Microsystems, Inc. All Rights Reserved Portions Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\"  Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase"this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard,the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH bc 1 "2003 年 8 月 29 日" "SunOS 5.11" "用户命令"
+.SH 名称
+bc \- 任意精度算术语言
+.SH 用法概要
+.LP
+.nf
+\fB/usr/bin/bc\fR [\fB-c\fR] [\fB-l\fR] [\fIfile\fR]...
+.fi
+
+.LP
+.nf
+\fB/usr/xpg6/bin/bc\fR [\fB-c\fR] [\fB-l\fR] [\fIfile\fR]...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBbc\fR 实用程序实现了一个任意精度计算器。它接受来自任意给定文件的输入，然后从标准输入进行读取。如果 \fBbc\fR 的标准输入和标准输出连接到某个终端，则 \fBbc\fR 调用是\fI交互式\fR的，其行为约束如以下各节中所述。\fBbc\fR 处理一种类似于 C 语言的语言并且是桌面计算器程序 \fBdc\fR 的预处理器，该桌面计算器程序会自动调用 bc，除非指定了 \fB-c\fR 选项。在这种情况下，\fBdc\fR 输入被发送到标准输出。
+.SH 用法
+.sp
+.LP
+\fBbc\fR 程序的语法如下所示：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIL\fR\fR
+.ad
+.RS 5n
+.rt  
+表示字母 \fBa\fR-\fBz\fR，
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIE\fR\fR
+.ad
+.RS 5n
+.rt  
+表示一个表达式：一个（数学或逻辑）值、一个接受某个值的操作数，或计算结果为某个值的操作数和运算符的组合，
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIS\fR\fR
+.ad
+.RS 5n
+.rt  
+表示一个语句。
+.RE
+
+.SS "注释"
+.sp
+.LP
+括在 \fB/*\fR 和 \fB*/\fR 中。
+.SS "名称（操作数）"
+.br
+.in +2
+简单变量：\fIL\fR。 
+.in -2
+.br
+.in +2
+数组元素：\fIL\fR [ \fIE\fR ]（最多 \fBBC_DIM_MAX\fR 个维）。
+.in -2
+.br
+.in +2
+单词 \fBibase\fR、\fBobase\fR（限于 \fBBC_BASE_MAX\fR）和 \fBscale\fR（限于 \fBBC_SCALE_MAX\fR）。
+.in -2
+.SS "其他运算符"
+.sp
+.LP
+带有符号和小数点（可选）的任意长度的数字。少于 \fBBC_STRING_MAX\fR 个字符的字符串，位于双引号 (") 之间。\fB(\fR \fIE\fR \fB)\fR
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsqrt ( \fR\fIE\fR\fB )\fR\fR
+.ad
+.RS 21n
+.rt  
+平方根
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlength ( \fR\fIE\fR\fB )\fR\fR
+.ad
+.RS 21n
+.rt  
+有效小数位的位数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBscale ( \fR\fIE\fR\fB )\fR\fR
+.ad
+.RS 21n
+.rt  
+小数点右侧的位数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIL \fR\fB( \fR\fIE\fR , ... , \fIE\fR\fB )\fR\fR
+.ad
+.RS 21n
+.rt  
+ 
+.RE
+
+.SS "运算符"
+.sp
+.ne 2
+.mk
+.na
+\fB\fB+ - * / % ^\fR\fR
+.ad
+.RS 23n
+.rt  
+（\fB%\fR 是余数；\fB^\fR 是幂）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB++ -- \fR\fR
+.ad
+.RS 23n
+.rt  
+（前缀和后缀；应用于名称）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB== <= >= != < >\fR\fR
+.ad
+.RS 23n
+.rt  
+ 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB= =+ =- =* =/ =% =^\fR\fR
+.ad
+.RS 23n
+.rt  
+ 
+.RE
+
+.SS "语句"
+.br
+.in +2
+\fIE\fR 
+.in -2
+.br
+.in +2
+\fB{\fR \fIS\fR \fB;\fR. . . \fB;\fR \fIS\fR \fB}\fR 
+.in -2
+.br
+.in +2
+\fBif (\fR \fIE\fR \fB)\fR \fIS\fR 
+.in -2
+.br
+.in +2
+\fBwhile (\fR \fIE\fR \fB)\fR \fIS\fR 
+.in -2
+.br
+.in +2
+\fBfor (\fR \fIE\fR \fB;\fR \fIE\fR \fB;\fR \fIE\fR \fB)\fR \fIS\fR 
+.in -2
+.br
+.in +2
+null 语句
+.in -2
+.br
+.in +2
+\fBbreak\fR 
+.in -2
+.br
+.in +2
+\fBquit\fR 
+.in -2
+.sp
+.LP
+\&.string
+.SS "函数定义"
+.br
+.in +2
+\fBdefine\fR \fIL\fR \fB(\fR \fIL\fR \fB,\fR. . . \fB,\fR \fIL\fR \fB) {\fR 
+.in -2
+.br
+.in +2
+\fB auto\fR \fIL\fR \fB,\fR. . . \fB,\fR \fIL\fR
+.in -2
+.br
+.in +2
+\fI S\fR \fB;\fR. . .\fIS\fR 
+.in -2
+.br
+.in +2
+\fB return (\fR \fIE\fR \fB)\fR 
+.in -2
+.br
+.in +2
+\fB}\fR 
+.in -2
+.SS "\fB-l\fR 数学库中的函数"
+.sp
+.ne 2
+.mk
+.na
+\fB\fBs(\fR\fIx\fR\fB)\fR\fR
+.ad
+.RS 10n
+.rt  
+正弦
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBc(\fR\fIx\fR\fB)\fR\fR
+.ad
+.RS 10n
+.rt  
+余弦
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBe(\fR\fIx\fR\fB)\fR\fR
+.ad
+.RS 10n
+.rt  
+指数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBl(\fR\fIx\fR\fB)\fR\fR
+.ad
+.RS 10n
+.rt  
+对数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBa(\fR\fIx\fR\fB)\fR\fR
+.ad
+.RS 10n
+.rt  
+余切
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBj(\fR\fIn\fR\fB,\fR\fIx)\fR\fR
+.ad
+.RS 10n
+.rt  
+贝塞尔函数
+.RE
+
+.sp
+.LP
+所有函数参数都是通过值传递的。
+.sp
+.LP
+对于是表达式的语句，将列显值，除非主运算符是赋值运算符。可以使用分号或换行符分隔各个语句。对 \fBscale\fR 的赋值影响在以 \fBdc\fR 方式执行的算术运算中要保留的位数。对 \fBibase\fR 或 \fBobase\fR 的赋值分别设置输入和输出数字基数。
+.sp
+.LP
+同一个字母可以同时用作数组、函数和简单变量。所有变量对程序都是全局性的。在函数调用期间 \fBauto\fR 变量将入栈。当使用数组作为函数参数或将其定义为自动变量时，在数组名称后必须跟有空的方括号。
+.SH 选项
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.RS 6n
+.rt  
+仅进行编译。输出是发送到标准输出的 \fBdc\fR 命令。
+.RE
+
+.SS "/usr/bin/bc"
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 6n
+.rt  
+定义数学函数并将 \fBscale\fR 初始化为 \fB20\fR 而非缺省值 0。
+.RE
+
+.SS "/usr/xpg6/bin/bc"
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.RS 6n
+.rt  
+定义数学函数并将 \fBscale\fR 初始化为 \fB20\fR 而非缺省值 0。所有数学结果都具有数量级 \fB20\fR。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfile\fR\fR
+.ad
+.RS 8n
+.rt  
+包含 \fBbc\fR 程序语句的文本文件的路径名。在读取 \fIfile\fR 的所有实例后，\fBbc\fR 将读取标准输入。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR设置变量的精度
+.sp
+.LP
+在 shell 中，以下代码将 \fBn\fR 的前十位数的近似值赋予变量 \fIx\fR：
+
+.sp
+.in +2
+.nf
+\fBx=$(printf "%s\en" 'scale = 10; 104348/33215' | bc)\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR定义计算函数
+.sp
+.LP
+定义一个函数来计算指数函数的近似值：
+
+.sp
+.in +2
+.nf
+\fBscale = 20
+define e(x){
+	auto a, b, c, i, s
+	a = 1
+	b = 1
+	s = 1
+	for(i=1; 1==1; i++){
+		a = a*x
+		b = b*i
+		c = a/b
+		if(c == 0) return(s)
+		s = s+c
+	}
+}\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR列显函数的近似值
+.sp
+.LP
+列显指数函数的前十个整数的近似值：
+
+.sp
+.in +2
+.nf
+\fBfor(i=1; i<=10; i++) e(i)\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+或
+
+.sp
+.in +2
+.nf
+\fBfor (i = 1; i <= 10; ++i) {         e(i) }\fR
+.fi
+.in -2
+.sp
+
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBbc\fR 执行的以下环境变量的说明，请参见 \fBenviron\fR(5)：\fBLANG\fR、\fBLC_ALL\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR 和 \fBNLSPATH\fR。
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 15n
+.rt  
+所有输入文件均已成功处理。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunspecified\fR\fR
+.ad
+.RS 15n
+.rt  
+出现错误。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/lib.b\fR\fR
+.ad
+.RS 25n
+.rt  
+数学库
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/include/limits.h\fR\fR
+.ad
+.RS 25n
+.rt  
+定义 BC_ 参数
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+_
+标准请参见 \fBstandards\fR(5)。
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBdc\fR(1)、\fBawk\fR(1)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBstandards\fR(5)
+.SH 附注
+.sp
+.LP
+\fBbc\fR 命令不能识别逻辑运算符 \fB&&\fR 和 \fB| |\fR。
+.sp
+.LP
+\fBfor\fR 语句必须具有所有三个表达式（\fIE\fR）。

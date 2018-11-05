@@ -1,0 +1,197 @@
+'\" te
+.\" Copyright (c) 2000, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1989 AT&T
+.TH acct 1M "2011 年 8 月 16 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+acct, acctdisk, acctdusg, accton, acctwtmp, closewtmp, utmp2wtmp \- 计帐和其他计帐命令概述
+.SH 用法概要
+.LP
+.nf
+\fB/usr/lib/acct/acctdisk\fR 
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/acctdusg\fR [\fB-u\fR \fIfilename\fR] [\fB-p\fR \fIfilename\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/accton\fR [\fIfilename\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/acctwtmp\fR \fIreason\fR \fIfilename\fR
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/closewtmp\fR 
+.fi
+
+.LP
+.nf
+\fB/usr/lib/acct/utmp2wtmp\fR 
+.fi
+
+.SH 描述
+.sp
+.LP
+计帐软件构造为可用于构建计帐系统的一组工具（由 C 程序和 shell 过程组成）。\fBacctsh\fR(1M) 介绍了基于 C 程序构建的 shell 过程集。
+.sp
+.LP
+连接时间计帐由将记录写入 \fB/var/adm/wtmpx\fR 的各种程序处理，如 \fButmpx\fR(4) 中所述。\fBacctcon\fR(1M) 中介绍的程序将此文件转换为会话和收费记录，\fBacctmerg\fR(1M) 然后会汇总这些记录。
+.sp
+.LP
+进程计帐由系统内核执行。进程终止时，会针对每个进程在文件（通常为 \fB/var/adm/pacct\fR）中写入一条记录。\fBacctprc\fR(1M) 中的程序汇总此数据以用于收费；\fBacctcms\fR(1M) 用于汇总命令使用情况。可以使用 \fBacctcom\fR(1) 检查当前的进程数据。
+.sp
+.LP
+进程计帐记录和连接时间计帐记录（具有 \fBacct.h\fR(3HEAD) 中所述的 \fBtacct\fR 格式的任何计帐记录）可以由 \fBacctmerg\fR 合并和汇总为总计帐记录（请参见 \fBacct.h\fR(3HEAD) 中的 \fBtacct\fR 格式）。\fBprtacct \fR（请参见 \fBacctsh\fR(1M)）用于格式化任何或所有计帐记录。
+.sp
+.LP
+\fBacctdisk\fR 读取包含用户 \fBID\fR、登录名、磁盘块数的行并将其转换为可与其他计帐记录合并的总计帐记录。如果输入文件损坏或格式不正确，则 \fBacctdisk\fR 将返回错误。
+.sp
+.LP
+\fBacctdusg\fR 读取其标准输入（通常来自 \fBfind\fR \fB/\fR \fB-\fR\fBprint\fR），并按登录计算磁盘资源消耗情况（包括间接块）。
+.sp
+.LP
+不带任何参数的 \fBaccton\fR 会禁用进程计帐。如果指定了 \fIfilename\fR，则它必须为现有文件的名称，内核会将进程计帐记录附加到此文件（请参见 \fBacct\fR(2) 和 \fBacct.h\fR(3HEAD)）。
+.sp
+.LP
+\fBacctwtmp\fR 将 \fButmpx\fR(4) 记录写入 \fIfilename\fR。记录包含当前时间和描述 \fIreason\fR 的字符串。系统会分配记录类型 \fBACCOUNTING\fR（请参见 \fButmpx\fR(4)）。\fI reason\fR 必须为由 11 个以下的字符、数字、\fB$\fR 或空格组成的字符串。例如，以下建议分别适用于重新引导和关闭过程： 
+.sp
+.in +2
+.nf
+acctwtmp "acctg on" /var/adm/wtmpx
+acctwtmp "acctg off" /var/adm/wtmpx
+.fi
+.in -2
+
+.sp
+.LP
+对于当前已登录的每位用户，\fBclosewtmp\fR 会在 \fB/var/adm/wtmpx\fR 文件中设置一条伪 \fBDEAD_PROCESS\fR 记录。\fBrunacct\fR（请参见 \fBrunacct\fR(1M)）使用此伪 \fBDEAD_PROCESS\fR 记录，以便连接计帐过程可以跟踪调用 \fBrunacct\fR 之前已登录用户使用了多长时间。
+.sp
+.LP
+对于当前已登录的每位用户，\fBrunacct\fR 会使用 \fButmp2wtmp\fR 在 \fB/var/adm/wtmpx\fR 文件中创建一个条目（由 \fBrunacct\fR 创建）。\fB/var/adm/wtmpx\fR 中的条目允许对 \fBrunacct \fR 进行后续调用，以将当前已登录用户的连接时间入帐。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR \fIfilename\fR\fR
+.ad
+.RS 15n
+.rt  
+\fIfilename\fR 记录中包含 \fBacctdusg\fR 对所有人都不计费的文件名的位置（对于查找尝试避免磁盘收费的用户，这是潜在的源）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIfilename\fR\fR
+.ad
+.RS 15n
+.rt  
+指定口令文件 \fIfilename\fR。如果口令文件为 \fB/etc/passwd\fR，则不需要此选项。
+.RE
+
+.SH 环境变量
+.sp
+.LP
+如果未在环境中设置任何 \fBLC_*\fR 变量（\fBLC_TYPE\fR、\fBLC_MESSAGES\fR、\fBLC_TIME\fR、\fBLC_COLLATE\fR、\fBLC_NUMERIC\fR 和 \fBLC_MONETARY\fR）（请参见 \fBenviron\fR(5)），则每个相应语言环境类别的 \fBacct\fR 运行行为由 \fBLANG\fR 环境变量的值确定。如果设置了 \fBLC_ALL \fR，将使用其内容覆盖 \fBLANG\fR 和其他 \fBLC_*\fR 变量。如果未在环境中设置上述任何变量，则由 "C"（美式）语言环境确定 \fBacct\fR 的行为方式。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_CTYPE\fR\fR
+.ad
+.RS 12n
+.rt  
+确定 \fBacct\fR 如何处理字符。如果 \fBLC_CTYPE\fR 设置为有效值，则 \fBacct\fR 可以显示和处理包含该语言环境的有效字符的文本和文件名。\fB acct\fR 可以显示和处理扩展 Unix 代码 (Extended Unix Code, EUC) 字符，其中任何字符的宽度可以为 1、2 或 3 个字节。\fBacct\fR 还可以处理宽度为 1、2 或更多列的 EUC 字符。在 "C" 语言环境中，仅 ISO 8859-1 中的字符是有效字符。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLC_TIME\fR\fR
+.ad
+.RS 12n
+.rt  
+确定 \fBacct\fR 如何处理日期和时间格式。在 "C" 语言环境中，日期和时间处理遵循美式规则。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/passwd\fR\fR
+.ad
+.RS 18n
+.rt  
+用于将登录名转换为用户 \fBID\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/acct\fR\fR
+.ad
+.RS 18n
+.rt  
+包含此手册 1M 子类所列的所有记帐命令。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/pacct\fR\fR
+.ad
+.RS 18n
+.rt  
+当前进程计帐文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/adm/wtmpx\fR\fR
+.ad
+.RS 18n
+.rt  
+有关用户访问和管理信息的历史记录。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/accounting/legacy-accounting
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBacctcom\fR(1)、\fBacctcms\fR(1M)、\fBacctcon\fR(1M)、\fBacctmerg\fR(1M)、\fBacctprc\fR(1M)、\fBacctsh\fR(1M)、\fBfwtmp\fR(1M)、\fBrunacct\fR(1M)、\fBacct\fR(2)、\fBacct.h\fR(3HEAD)、\fBpasswd\fR(4)、\fButmpx\fR(4)、\fBattributes\fR(5)、\fBenviron\fR(5)
+.sp
+.LP
+\fIIntroduction to Oracle Solaris 11.3                 Administration\fR

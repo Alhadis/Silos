@@ -1,0 +1,238 @@
+'\" te
+.\" Copyright (c) 2003, 2012, Oracle and/or its affiliates. All rights reserved.
+.TH in.ndpd 1M "2012 年 5 月 11 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+in.ndpd \- IPv6 自動構成のデーモン
+.SH 形式
+.LP
+.nf
+\fB/usr/lib/inet/in.ndpd\fR [\fB-adt\fR] [\fB-f\fR \fIconfig_file\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBin.ndpd\fR は、IPv6 の近傍検索および IPv6 のステートレスおよびステートフルアドレス自動構成のホストとルーター両方の自動構成コンポーネントを提供します。特に、\fBin.ndpd\fR には次が実装されています。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ルーター検索
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+接頭辞検索
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+パラメータ検索 
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ステートフルアドレス自動構成の呼び出し
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ステートレスアドレス自動構成
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ステートレスアドレス自動構成のプライバシ拡張機能
+.RE
+.sp
+.LP
+次を含む近傍探索のその他の特性は、\fBip6\fR(7P) によって実装されています。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+アドレス解決
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+近傍不到達検出 
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+リダイレクト
+.RE
+.sp
+.LP
+重複アドレス検出機能は、システムカーネルによって実装されています。
+.sp
+.LP
+\fBin.ndpd\fR は、サービス管理機能 (SMF) により、サービス識別子を使用して管理されます。
+.sp
+.in +2
+.nf
+svc:/network/routing/ndp:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fB/etc/inet/ndpd.conf\fR ファイルが存在しないか、またはこのファイルでネットワークインタフェースの \fBAdvSendAdvertisements\fR 変数が true に設定されていない場合、\fBin.ndpd\fR はノードをそのインタフェースのホストにします (つまり、ルーター要請メッセージを送信し、受信したルーター通知メッセージを使用してノードを自動構成します)。\fBin.ndpd\fR は、接頭辞通知からグローバルスコープまたはサイトローカルスコープのアドレスを自動構成するだけです。
+.sp
+.LP
+インタフェースの \fBAdvSendAdvertisements\fR が true に設定されている場合、\fBin.ndpd\fR はそのインタフェースのルーター機能を実行します (つまり、接続されているホストを自動構成するためにルーター通知メッセージを送信します) が、受信した通知を自動構成に使用しません。ただし、\fBin.ndpd\fR は通知を送信するときに、自身に送信した通知を使用してその接頭辞を自動構成します。
+.sp
+.LP
+ステートレス自動構成では、ホストを手動で構成する必要はなく、ルーターの構成は (もしあれば) 最小限であり、追加のサーバーも必要ありません。ステートレスメカニズムでは、ホストが固有のアドレスを生成でき、ローカルの情報とともにルーターによって通知されたローカルでない情報を使用してアドレスが生成されます。\fBin.ndpd\fR は、これらの各アドレスの論理インタフェースを plumb します。
+.sp
+.LP
+ステートフル自動構成には、\fBdhcpagent\fR(1M) デーモンと DHCPv6 プロトコルの使用が関係します。\fBdhcpagent\fR デーモンは、取得したアドレスの論理インタフェースの plumb、リースの維持、および重複アドレスの処理を担当します。\fBin.ndpd\fR は、\fBdhcpagent\fR デーモンを自動的に起動し、DHCPv6 を起動すべきときにシグナルを送信します。また、\fBin.ndpd\fR は \fBdhcpagent\fR が論理インタフェースを構成したときにそれを検出し、受信したルーティング通知メッセージに従ってそれぞれに対して適切な接頭辞長を設定します。\fBin.ndpd\fR は \fBdhcpagent\fR を停止しません。必要に応じて \fBdhcpagent\fR を制御するには、\fBifconfig\fR(1M) を使用します。
+.sp
+.LP
+インタフェースに自動構成された一時アドレスを実装することもできます。一時アドレストークンは、ホスト上の 1 つ以上のインタフェースに対して有効にできます。ただし、標準の自動構成された IPv6 アドレスとは異なり、一時アドレスはサイト接頭辞とランダムに生成された 64 ビット数から構成されます。このランダムな数は、IPv6 アドレスのインタフェース ID 部分になります。リンクローカルアドレスの生成では、一時アドレスがインタフェース ID として使用されません。
+.sp
+.LP
+カーネルが重複した一時アドレスを検出すると、\fBin.ndpd\fR は自動的に別のアドレスを選択します。
+.sp
+.LP
+ルーターは、リンクに割り当てられているすべての接頭辞を通知します。IPv6 ホストは、近傍検索を使用してローカルルーターからサブネット接頭辞を取得します。ホストは、インタフェースの MAC アドレスから生成されたインタフェース ID とサブネット接頭辞を組み合わせることによって、自動的に IPv6 アドレスを作成します。ルーターが存在しない場合、ホストはリンクローカルアドレスだけを生成できます。リンクローカルアドレスは、同じリンク上のノード間の通信でのみ使用できます。
+.sp
+.LP
+IPv6 アドレス自動構成を有効にする方法については、\fI『Managing IP Quality of Service in Oracle Solaris 11.3 』\fRを参照してください。
+.SH オプション
+.sp
+.LP
+サポートされているオプションおよび同等の SMF サービスプロパティーを以下に示します。SMF サービスプロパティーは、次の形式のコマンドを使用して設定されます。
+.sp
+.in +2
+.nf
+# \fBrouteadm -m ndp:default \fIkey\fR=\fIvalue\fR\fR
+.fi
+.in -2
+.sp
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+ステートレスおよびステートフルアドレス自動構成をオフに設定します。設定すると、デーモンはアドレスの自動構成もアドレスの再採番も行いません。このオプションには、\fBndpd.conf\fR(4) の次の行と同じ効果があります。
+.sp
+.in +2
+.nf
+ifdefault StatefulAddrConf off
+ifdefault StatelessAddrConf off
+.fi
+.in -2
+
+このオプションの使用は、\fBstateless_addr_conf\fR プロパティーを false に設定することと同じです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBstdout\fR に対する大量のデバッグ出力をオンに設定します。設定すると、このプログラムがフォアグラウンドで実行され、制御端末に接続されたままになります。このオプションの使用は、\fBdebug\fR プロパティーを true に設定することと同じです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR  \fIconfig_file\fR\fR
+.ad
+.sp .6
+.RS 4n
+構成情報としてデフォルトの \fB/etc/inet/ndpd.conf\fR の代わりに \fIconfig_file\fR を使用します。このオプションの使用は、\fBconfig_file\fR プロパティーを使用する構成ファイルに設定することと同じです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+すべての送受信パケットの \fBstdout\fR への記録 (出力) をオンに設定します。設定すると、このプログラムがフォアグラウンドで実行され、制御端末に接続されたままになります。そのため、このオプションは SMF の下では実行できません。
+.RE
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ndpd.conf\fR\fR
+.ad
+.RS 23n
+.rt  
+構成ファイル。このファイルは、ホスト上に配置する必要はありませんが、\fBin.ndpd\fR がホストに自動構成情報を通知できるようにするため、ルーター上に配置する必要があります。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBdhcpagent\fR(1M), \fBifconfig\fR(1M), \fBrouteadm\fR(1M), \fBsvcadm\fR(1M), \fBndpd.conf\fR(4), \fBattributes\fR(5), \fBicmp6\fR(7P),\fBip6\fR(7P), \fBattributes\fR(5), \fBsmf\fR(5)
+.sp
+.LP
+\fI『Managing IP Quality of Service in Oracle Solaris 11.3 』\fR
+.sp
+.LP
+Narten, T.、Nordmark, E.、Simpson, W. 著、『\fIRFC 2461, Neighbor Discovery for IP Version 6 (IPv6)\fR』、The Internet Society 発行。1998 年 12 月
+.sp
+.LP
+Thomson, S.、Narten, T. 著、『\fIRFC 2462, IPv6 Stateless Address Autoconfiguration\fR』、The Internet Society 発行。1998 年 12 月
+.sp
+.LP
+Narten, T. および Draves, R. 著、『RFC 3041, Privacy Extensions for Stateless Address Autoconfiguration in IPv6』、The Internet Society 発行。2001 年 1 月
+.SH 診断
+.sp
+.LP
+\fBSIGHUP\fR シグナルを受信すると、\fBin.ndpd\fR が再起動し、\fB/etc/inet/ndpd.conf\fR が再度読み取られます。 
+.SH 注意事項
+.sp
+.LP
+\fBin.ndpd\fR デーモンサービスは、サービス管理機能 \fBsmf\fR(5) により、サービス識別子の下で管理されます。
+.sp
+.in +2
+.nf
+svc:/network/routing/ndp:default
+.fi
+.in -2
+
+.sp
+.LP
+有効化、無効化、再起動要求など、このサービスに対する管理操作は、\fBsvcadm\fR(1M) または \fBrouteadm\fR(1M) を使用して実行できます。

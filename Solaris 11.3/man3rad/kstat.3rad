@@ -1,0 +1,510 @@
+'\" t
+.\"     Title: kstat
+.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\"      Date: 08/20/2015
+.\"    Manual: RAD Module Definitions
+.\"    Source: SunOS 5.11
+.\"  Language: English
+.\"
+.TH "KSTAT" "3rad" "08/20/2015" "SunOS 5.11" "RAD Module Definitions"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+kstat
+.SH "SYNOPSIS"
+.SS "interface Kstat"
+.sp
+.nf
+Kstatinfo\ \&info\ \&;
+.
+boolean\ \&stale\ \&;
+.
+Snapshot\ \&snapshot\ \&;
+.fi
+.sp
+.nf
+Snapshot\ \&fresh_snapshot();
+.fi
+.SS "interface Control"
+.sp
+.nf
+.fi
+.sp
+.nf
+update();
+.fi
+.SH "DESCRIPTION"
+.PP
+\fBapi com\&.oracle\&.solaris\&.rad\&.kstat\fR
+.PP
+This API exposes kernel statistics, or kstats, to
+\fBrad(1m)\fR
+clients\&.
+.PP
+Two core interfaces are provided:
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  1." 4.2
+.\}
+Kstat
+\- an object that represents a kstat
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  2." 4.2
+.\}
+Control
+\- an administration object
+.RE
+.PP
+\fBPython kstat wrapper\fR. 
+.SH "INTERFACES"
+.SS "interface Kstat"
+.PP
+.PP
+The
+Kstat
+interface represents a kernel statistic\&. Handles to this type of object can be retrieved from the RAD server using a kstat proxy object\&. To retrieve a specific instance, be aware of these additional keys:
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  1." 4.2
+.\}
+a key named "class" paired with a kstat class
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  2." 4.2
+.\}
+a key named "module" paired with a kstat module
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 3.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  3." 4.2
+.\}
+a key named "instance" paired with a kstat module (integer) instance
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 4.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  4." 4.2
+.\}
+a key named "name" paired with a kstat name
+.RE
+.PP
+For example, to print statistics about a particular CPU on a system:
+.PP
+\fBExample\ \&1.\ \&Kstat interface (Python)\fR
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+import rad\&.client as radcli
+import rad\&.connect as radcon
+import rad\&.bindings\&.com\&.oracle\&.solaris\&.rad\&.kstat_1 as kbind
+
+# Create a connection
+con = radcon\&.connect_unix()
+
+# Retrieve a particular kstat
+pat = radcli\&.ADRGlobPattern({"\fBclass\fR" : "misc", "\fBmodule\fR" : "cpu_info", "\fBinstance\fR" : "2", "\fBname\fR" : "cpu_info2"})
+# Get a native\-looking python object that throws RAD exceptions
+kstat = con\&.get_object(kbind\&.Kstat(), pat)
+
+# Do something with our kstat
+data = kstat\&.fresh_snapshot()\&.data
+assert data\&.discriminant == kbind\&.Kstype\&.NAMED
+for named in data\&.NAMED:
+    print "%s: %s" % (named\&.name, getattr(named\&.value,
+        str(named\&.value\&.discriminant)))
+      
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBKstat Properties\fR
+.RS 4
+.PP
+\fBKstatinfo\fR\ \&\fBinfo\fR
+(\fIread\-only\fR) \(em static kstat information
+.PP
+\fBboolean\fR\ \&\fBstale\fR
+(\fIread\-only\fR) \(em true if the kstat doesn\'t exist
+.RS 4
+.PP
+kstats are often associated with parts of the system that can come and go over time, and likewise will come and go\&. To simplify consumers, a kstat object once referenced will remain but be marked stale when the underlying kstat object goes away\&.
+.RE
+.PP
+\fBSnapshot\fR\ \&\fBsnapshot\fR
+(\fIread\-only\fR) \(em a snapshot of the kstat as of the last update
+.RS 4
+.PP
+\fBRead Error:\fR
+\fI(no type)\fR
+\(em the kstat doesn\'t currently exist
+.RE
+.RE
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBKstat Methods\fR
+.RS 4
+.PP
+\fBSnapshot\fR
+\fBfresh_snapshot\fR()
+.RS 4
+.PP
+obtains a fresh snapshot of the kstat
+.PP
+\fBResult:\fR
+.PP
+\fBSnapshot\fR
+.PP
+\fBError:\fR
+.PP
+\fI(no type)\fR
+\(em the kstat doesn\'t currently exist
+.RE
+.RE
+.SS "interface Control"
+.PP
+.PP
+The
+Control
+interface is an administrative API into the kstats subsystem\&. Handles to this type of object can be retrieved from the RAD server using a simple object proxy\&.
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBControl Methods\fR
+.RS 4
+.PP
+\fBupdate\fR()
+.RS 4
+.PP
+update the kstat chain
+.PP
+Updates the kstat chain\&. All referenced kstats\' snapshots are updated\&. After
+update, the set of available kstats may change\&.
+.RE
+.RE
+.SH "ENUMERATED TYPES"
+.PP
+\fBenum Ksdtype\fR
+\(em a named kstat data value type
+.RS 4
+.PP
+CHAR
+(0) \(em a string (of up to a fixed size)
+.PP
+INT32
+(1) \(em a signed 32\-bit integer
+.PP
+UINT32
+(2) \(em an unsigned 32\-bit integer
+.PP
+INT64
+(3) \(em a signed 64\-bit integer
+.PP
+UINT64
+(4) \(em an unsigned 64\-bit integer
+.PP
+FLOAT
+(5) \(em a 32\-bit floating point number
+.PP
+DOUBLE
+(6) \(em a 64\-bit floating point number
+.PP
+STRING
+(7) \(em an arbitrary lengthed string
+.RE
+.PP
+\fBenum Kstype\fR
+\(em kstat type
+.RS 4
+.PP
+RAW
+(0) \(em raw data, can be anything
+.PP
+NAMED
+(1) \(em name/value pairs
+.PP
+INTR
+(2) \(em interrupt statistics
+.PP
+IO
+(3) \(em I/O statistics
+.PP
+TIMER
+(4) \(em event timers
+.PP
+UNKNOWN
+(5)
+.RE
+.SH "STRUCTURE TYPES"
+.PP
+\fBstruct Ksvalue\fR
+\(em a named kstat data value
+.RS 4
+.PP
+This is a struct representing a named kstat data value\&. Use the discriminant enum to determine what type of data the value holds\&.
+.RE
+.RS 4
+.PP
+\fBFields:\fR
+.PP
+\fBKsdtype\fR\ \&\fIdiscriminant\fR
+.PP
+\fBstring\fR\ \&\fICHAR\fR
+(\fInullable\fR)
+.PP
+\fBinteger\fR\ \&\fIINT32\fR
+.PP
+\fBuinteger\fR\ \&\fIUINT32\fR
+.PP
+\fBlong\fR\ \&\fIINT64\fR
+.PP
+\fBulong\fR\ \&\fIUINT64\fR
+.PP
+\fBfloat\fR\ \&\fIFLOAT\fR
+.PP
+\fBdouble\fR\ \&\fIDOUBLE\fR
+.PP
+\fBstring\fR\ \&\fISTRING\fR
+(\fInullable\fR)
+.RE
+.PP
+\fBstruct Kstat_named\fR
+\(em a named kstat name/value pair
+.RS 4
+.PP
+\fBFields:\fR
+.PP
+\fBstring\fR\ \&\fIname\fR
+\(em counter name
+.PP
+\fBKsvalue\fR\ \&\fIvalue\fR
+\(em counter value
+.RE
+.PP
+\fBstruct Kstat_intr\fR
+\(em interrupt statistics
+.RS 4
+.PP
+Counters for various types of interrupts\&.
+.RE
+.RS 4
+.PP
+\fBFields:\fR
+.PP
+\fBuinteger\fR\ \&\fIhard\fR
+\(em hardware interrupts
+.PP
+\fBuinteger\fR\ \&\fIsoft\fR
+\(em soft interrupts
+.PP
+\fBuinteger\fR\ \&\fIwatchdog\fR
+\(em watchdog interrupts
+.PP
+\fBuinteger\fR\ \&\fIspurious\fR
+\(em spurious interrupts
+.PP
+\fBuinteger\fR\ \&\fImultsvc\fR
+\(em multiple\-service interrupts
+.RE
+.PP
+\fBstruct Kstat_timer\fR
+\(em a timer kstat statistic
+.RS 4
+.PP
+Provides basic counting and timing information\&.
+.RE
+.RS 4
+.PP
+\fBFields:\fR
+.PP
+\fBstring\fR\ \&\fIname\fR
+\(em event name
+.PP
+\fBulong\fR\ \&\fInum_events\fR
+\(em number of events
+.PP
+\fBulong\fR\ \&\fIelapsed_time\fR
+\(em cumulative elapsed time
+.PP
+\fBulong\fR\ \&\fImin_time\fR
+\(em shortest event duration
+.PP
+\fBulong\fR\ \&\fImax_time\fR
+\(em longest event duration
+.PP
+\fBulong\fR\ \&\fIstart_time\fR
+\(em previous event start time
+.PP
+\fBulong\fR\ \&\fIstop_time\fR
+\(em previous event stop time
+.RE
+.PP
+\fBstruct Kstat_io\fR
+\(em I/O statistics
+.RS 4
+.PP
+\fBFields:\fR
+.PP
+\fBulong\fR\ \&\fInread\fR
+\(em number of bytes read
+.PP
+\fBulong\fR\ \&\fInwritten\fR
+\(em number of bytes written
+.PP
+\fBuinteger\fR\ \&\fIreads\fR
+\(em number of read operations
+.PP
+\fBuinteger\fR\ \&\fIwrites\fR
+\(em number of write operations
+.PP
+\fBulong\fR\ \&\fIwtime\fR
+\(em cumulative wait time
+.PP
+\fBulong\fR\ \&\fIwlentime\fR
+\(em cumulative wait length*time product
+.PP
+\fBulong\fR\ \&\fIwlastupdate\fR
+\(em last time wait queue changed
+.PP
+\fBulong\fR\ \&\fIrtime\fR
+\(em cumulative run time
+.PP
+\fBulong\fR\ \&\fIrlentime\fR
+\(em cumulative run length*time product
+.PP
+\fBulong\fR\ \&\fIrlastupdate\fR
+\(em last time run queue changed
+.PP
+\fBuinteger\fR\ \&\fIwcnt\fR
+\(em count of elements in wait state
+.PP
+\fBuinteger\fR\ \&\fIrcnt\fR
+\(em count of elements in run state
+.RE
+.PP
+\fBstruct Ksdata\fR
+\(em typed kernel statistics data
+.RS 4
+.PP
+Use the discriminant enum to determine what type of data the structure holds\&.
+.RE
+.RS 4
+.PP
+\fBFields:\fR
+.PP
+\fBKstype\fR\ \&\fIdiscriminant\fR
+.PP
+\fBopaque\fR\ \&\fIRAW\fR
+(\fInullable\fR)
+.PP
+\fBKstat_named\fR\fB[]\fR\ \&\fINAMED\fR
+(\fInullable\fR)
+.PP
+\fBKstat_intr\fR\ \&\fIINTR\fR
+(\fInullable\fR)
+.PP
+\fBKstat_io\fR\ \&\fIIO\fR
+(\fInullable\fR)
+.PP
+\fBKstat_timer\fR\fB[]\fR\ \&\fITIMER\fR
+(\fInullable\fR)
+.PP
+\fBstring\fR\ \&\fIUNKNOWN\fR
+(\fInullable\fR)
+.RE
+.PP
+\fBstruct Snapshot\fR
+\(em a snapshot in time of a kernel statistic
+.RS 4
+.PP
+\fBFields:\fR
+.PP
+\fBulong\fR\ \&\fIsnaptime\fR
+\(em when this snapshot was taken
+.PP
+\fBKsdata\fR\ \&\fIdata\fR
+\(em statistic snapshot data
+.RE
+.PP
+\fBstruct Kstatinfo\fR
+\(em static kstat information
+.RS 4
+.PP
+\fBFields:\fR
+.PP
+\fBstring\fR\ \&\fImodule\fR
+\(em module name
+.PP
+\fBstring\fR\ \&\fIname\fR
+\(em kstat name
+.PP
+\fBstring\fR\ \&\fIklass\fR
+\(em kstat class
+.PP
+\fBinteger\fR\ \&\fIinstance\fR
+\(em module\'s instance
+.PP
+\fBKstype\fR\ \&\fItype\fR
+\(em kstat data type
+.PP
+\fBulong\fR\ \&\fIcrtime\fR
+\(em kstat creation time
+.RE
+.PP
+\fBVersion:\fR
+(1\&.0)

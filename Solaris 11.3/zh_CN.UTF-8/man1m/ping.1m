@@ -1,0 +1,415 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Portions Copyright (c) 2011, 2013, Oracle and/or its affiliates.All rights reserved.
+.TH ping 1M "2013 年 11 月 28 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+ping \- 向网络主机发送 ICMP (ICMP6) ECHO_REQUEST 包
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/ping\fR \fIhost\fR [\fItimeout\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ping\fR \fB-s\fR [\fB-l\fR | \fB-U\fR] [\fB-abdlLnrRv\fR] [\fB-A\fR \fIaddr_family\fR] 
+     [\fB-c\fR \fItraffic_class\fR] [\fB-g\fR \fIgateway\fR [\fB-g\fR \fIgateway\fR...]] 
+     [\fB-N\fR \fInext_hop_router\fR] [\fB-F\fR \fIflow_label\fR] [\fB-I\fR \fIinterval\fR] 
+     [\fB-i\fR \fIinterface\fR] [\fB-P\fR \fItos\fR] [\fB-p\fR \fIport\fR] [\fB-t\fR \fIttl\fR] \fIhost\fR 
+     [\fIdata_size\fR] [\fInpackets\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBping\fR 实用程序利用 \fBICMP\fR（在 IPv6 中是 \fBICMP6\fR）协议的 \fBECHO_REQUEST\fR 数据报从指定的 \fIhost\fR 或网络 \fIgateway\fR 请求 \fBICMP\fR (\fBICMP6\fR) \fBECHO_RESPONSE\fR。如果 \fIhost\fR 进行了响应，则 \fBping\fR 将在标准输出中显示以下内容：
+.sp
+.in +2
+.nf
+\fIhost\fR is alive
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\&...然后退出。否则，在 \fItimeout\fR 秒后，它将写入以下内容：
+.sp
+.in +2
+.nf
+no answer from \fIhost\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fItimeout\fR 的缺省值为 \fB20\fR 秒。
+.sp
+.LP
+当您指定了 \fBs\fR 标志时，将每秒发送一个数据报（可通过 \fB-I\fR 进行调整）并为它收到的每个 \fBECHO_RESPONSE\fR 输出一行输出。如果没有响应，则 \fBping\fR 不会产生输出。在此第二种形式中，\fBping\fR 将计算往返时间和包丢失统计信息，并在终止或达到超时时显示该信息的摘要。缺省 \fIdata_size\fR 为 \fB56\fR 字节，您还可以通过 \fIdata_size\fR 命令行参数指定一个大小。如果您指定了可选的 \fInpackets\fR，则 \fBping\fR 将一直发送 \fBping\fR 请求，直到它发送了 \fInpackets\fR 个请求或收到了 \fInpackets\fR 个响应。
+.sp
+.LP
+当使用 \fBping\fR 进行故障隔离时，请首先对本地主机执行 \fBping\fR 命令以验证本地网络接口正在运行。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR\ \fIaddr_family\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定目标主机的地址族。\fIaddr_family\fR 可以是 \fBinet\fR 或 \fBinet6\fR。地址族确定要使用哪个协议。对于参数 \fBinet\fR，将使用 IPv4。对于 \fBinet6\fR，将使用 IPv6。
+.sp
+缺省情况下，如果提供了主机名，而不是字面值 \fBIP\fR 地址，并且名称服务数据库中存在一个有效的 IPv6 地址，则 \fBping\fR 将使用该地址。否则，如果名称服务数据库包含一个 IPv4 地址，则它将尝试该 IPv4 地址。
+.sp
+指定地址族 \fBinet\fR 或 \fBinet6\fR 以覆盖缺省行为。如果指定的参数为 \fBinet\fR，则 \fBping\fR 将使用与主机名关联的 IPv4 地址。如果不存在该地址，则 \fBping\fR 将指出主机未知，然后退出。它不会尝试确定名称服务数据库中是否存在 IPv6 地址。
+.sp
+如果指定的参数为 \fBinet6\fR，则 \fBping\fR 将使用与主机名关联的 IPv6 地址。如果不存在该地址，则 \fBping\fR 将指出主机未知，然后退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\ \fIflow_label\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定探测器数据包的流标签。该值必须是介于 0 和 1048575 之间的一个整数。此选项仅对 IPv6 有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁用分段。对于 IPv4，这意味着设置“不要分段”位。对于 IPv4 和 IPv6，这意味着当发送数据报时不允许分段。如果 \fIdata_size\fR 超出了 MTU，则 \fBping\fR 可能会报告因为消息太长而导致发送失败。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR \fIinterval\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用统计信息模式并指定连续两次传输之间的时间间隔。缺省值是一秒。请参见关于 \fB-s\fR 选项的论述。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR\fR
+.ad
+.sp .6
+.RS 4n
+禁用多播包的回送。通常，成员在外发接口上的主机组中，将向本地计算机发送多播包的一个副本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR \fInext_hop_router\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定一个下一中继路由器，使探测器数据包在前往目标主机时经过指定的路由器。此选项实际上将绕过系统路由表并使探测器数据包标头保持不变。只能指定一个下一中继路由器。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR\ \fItos\fR\fR
+.ad
+.sp .6
+.RS 4n
+将探测器数据包中的服务类型 (\fItos\fR) 设置为指定的值。缺省值为零。该值必须是介于 0 和 255 之间的一个整数。路径中的网关也可以根据探测器数据包中设置的 \fItos\fR 值以不同的方式来路由探测器数据包。此选项仅对 IPv4 有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR\fR
+.ad
+.sp .6
+.RS 4n
+记录路由。设置 IPv4 记录路由选项，这会将包的路由存储在 IPv4 标头内。只有指定了 \fB-v\fR 和 \fB-s\fR 选项时，才会输出记录路由的内容。只有目标主机在各次回显之间保留了记录路由选项，或者指定了 \fB-l\fR 选项时，才会在返回包上设置它们。此选项仅对 IPv4 有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-U\fR\fR
+.ad
+.sp .6
+.RS 4n
+发送 \fBUDP\fR 包而不是 \fBICMP\fR (\fBICMP6\fR) 包。\fBping\fR 将向预期会从目标主机收到 \fBICMP\fR (\fBICMP6\fR) \fBPORT_UNREACHABLE \fR 的后续端口发送 \fBUDP\fR 包。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+对多宿主目标的所有地址（包括 IPv4 和 IPv6）运行 \fBping\fR 命令。其输出看起来就像是针对目标的每个 \fBIP\fR 地址运行了一次 \fBping\fR 命令。如果此选项与 \fB-A\fR 一起使用，则 \fBping\fR 仅探测属于指定地址族的地址。当与 \fB-s\fR 选项一起使用并且未指定 \fInpackets\fR 时，\fBping\fR 将以循环方式连续探测目标地址。如果指定了 \fInpackets\fR，则 \fBping\fR 将向目标的每个 \fBIP\fR 地址发送 \fInpackets\fR 个探测器，然后退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅为此连接绕过全局 IPsec 策略并以明文发送和接收包。使用此选项可以在不依赖 IPsec 的情况下排除网络连接故障。因为此选项将为此连接绕过系统范围内的策略，因此只有超级用户或被授予了 sys_net_config 特权的用户可以使用此选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\ \fItraffic_class\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定探测器数据包的通信流量类。该值必须是介于 0 和 255 之间的一个整数。路径上的网关也可以根据探测器数据包中设置的 \fItraffic_class\fR 值以不同的方式来路由探测器数据包。此选项仅对 IPv6 有效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置 \fBSO_DEBUG\fR 套接字选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR\ \fIgateway\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定一个宽松源路由网关，使探测器数据包在前往目标主机时经过指定的主机。对于 IPv4，最大网关数为 8，对于 IPv6，则为 127。请注意，对于 IPv6，某些因素（例如链路 \fBMTU\fR）可能会进一步限制网关的数目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fIinterface_address\fR\fR
+.ad
+.sp .6
+.RS 4n
+对于 IPv4，指定用于多播包的外发接口地址；对于 IPv6，指定用于多播包和单播包的外发接口地址。多播包的缺省接口地址是基于（单播）路由表确定的。\fIinterface_address\fR 可以是字面值 \fBIP\fR 地址（例如 \fB10.123.100.99\fR）或接口名称（例如 \fBeri0\fR）或接口索引（例如 \fB2\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+用来使用宽松源路由将探测器数据包发送到指定的主机并再次发送回来。通常与 \fB-R\fR 选项一起指定。如果使用 \fB-g\fR 指定了任何网关，则这些网关将被访问两次（前往和离开目标时都访问）。如果使用了 \fB-U\fR 选项，则此选项将被忽略。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+将网络地址显示为数字。\fBping\fR 通常情况下会对它从收到的包提取的 IP 地址执行反向名称查找。\fB-n\fR 选项会阻止反向查找，因此 \fBping\fR 将输出 IP 地址而非主机名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\ \fIport\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置在探测器中使用的基 \fBUDP\fR \fIport\fR 号。此选项与 \fB-U\fR 选项一起使用。缺省的基 \fIport\fR 号为 33434。\fBping\fR 实用程序最开始将 \fBUDP\fR 包的目标端口号设置为此基编号，并针对每个探测器将其递增 1。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.sp .6
+.RS 4n
+绕过常规路由表，直接发送到所连接网络上的某台主机。如果该主机不在直接连接的网络上，则会返回一个错误。此选项可用来通过已被路由器守护进程丢弃的某个接口来对本地主机执行 \fBping\fR 命令。请参见 \fBin.routed\fR(1M)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.sp .6
+.RS 4n
+每秒发送一个数据报并收集统计信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\ \fIttl\fR\fR
+.ad
+.sp .6
+.RS 4n
+为单播包和多播包指定 IPv4 生存时间或 IPv6 跳数限制。可以通过 \fBipadm\fR(1M) \fBset-prop\fR 子命令设置单播包的缺省生存时间（跳数限制），对于 IPv4，请使用 \fBicmp_ipv4_ttl\fR 属性；对于 IPv6，请使用 \fBicmp_ipv6_hoplimit\fR 属性。多播包的缺省生存时间（跳数限制）是一个中继器。请参见\fB\fR“示例”部分。有关更多信息，请参见 \fBipadm\fR(1M)。
+.LP
+注 - 
+.sp
+.RS 2
+您可能看到某些属性名称以 "\fB_\fR"（下划线）开头。这些属性专用于某个协议，并且可能会被更改或删除。请参见 \fBipadm\fR(1M)。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+详细输出。除了来自目标主机的响应外，还列出任何 \fBICMP\fR (\fBICMP6\fR) 包。
+.RE
+
+.SH 操作数
+.sp
+.ne 2
+.mk
+.na
+\fB\fIhost\fR\fR
+.ad
+.sp .6
+.RS 4n
+网络主机
+.RE
+
+.SH 环境变量
+.sp
+.LP
+如果 MACHINE_THAT_GOES_PING 设置为非空值，ping(1M) 会像提供了 \fB--s\fR 选项那样处理此设置。在脚本中使用此设置时应谨慎。
+.SH 示例
+.LP
+\fB示例 1 \fR对 IPv6 使用 \fBping\fR
+.sp
+.LP
+此示例显示 \fBping\fR 向主机 \fBxyz\fR 的所有 IPv6 地址（一次一个）发送探测器数据包。它每秒发送一个 \fBICMP6\fR \fBECHO_REQUEST\fR，直到用户中断它。
+
+.sp
+.in +2
+.nf
+istanbul% \fBping -s -A inet6 -a xyz\fR
+PING xyz: 56 data bytes
+64 bytes from xyz (4::114:a00:20ff:ab3d:83ed): icmp_seq=0. time=0.479 ms
+64 bytes from xyz (fec0::114:a00:20ff:ab3d:83ed): icmp_seq=1. time=0.843 ms
+64 bytes from xyz (4::114:a00:20ff:ab3d:83ed): icmp_seq=2. time=0.516 ms
+64 bytes from xyz (fec0::114:a00:20ff:ab3d:83ed): icmp_seq=3. time=4.943 ms
+64 bytes from xyz (4::114:a00:20ff:ab3d:83ed): icmp_seq=4. time=0.485 ms
+64 bytes from xyz (fec0::114:a00:20ff:ab3d:83ed): icmp_seq=5. time=2.201 ms
+^C     
+----xyz PING Statistics----     
+6 packets transmitted, 6 packets received, 0% packet loss     
+round-trip (ms)  min/avg/stddev = 0.479/1.583/4.943/1.823
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR使用 \fBipadm\fR 设置跳数限制
+.sp
+.LP
+以下命令使用 \fBipadm\fR(1M) 设置 IPv4 和 IPv6 跳数限制。
+
+.sp
+.in +2
+.nf
+# \fBipadm set-prop -p _ipv6_hoplimit=100 icmp\fR
+# \fBipadm set-prop -p _ipv4_ttl=100 icmp\fR
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+操作成功；计算机处于活动状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB非零\fR
+.ad
+.sp .6
+.RS 4n
+出现错误。指定了的参数格式错误，或者计算机未处于活动状态。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性network/ping
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBifconfig\fR(1M)、\fBin.routed\fR(1M)、\fBipadm\fR(1M)、\fBndd\fR(1M)、\fBnetstat\fR(1M)、\fBrpcinfo\fR(1M)、\fBtraceroute\fR(1M)、\fBattributes\fR(5)、\fBicmp\fR(7P)、\fBicmp6\fR(7P)

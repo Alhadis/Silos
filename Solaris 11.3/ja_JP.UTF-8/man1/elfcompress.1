@@ -1,0 +1,179 @@
+'\" te
+.\" Copyright (c) 2014, Oracle and/or its affiliates.All rights reserved.
+.TH elfcompress 1 "2014 年 4 月 23 日" "SunOS 5.11" "ユーザーコマンド"
+.SH 名前
+elfcompress \- オブジェクトファイルのデバッグセクションの圧縮/圧縮解除
+.SH 形式
+.LP
+.nf
+\fBelfcompress\fR [\fB-fV\fR] [\fB-t\fR \fItype\fR] \fIfilename\fR...
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBelfcompress\fR コマンドは、\fBELF\fR オブジェクトファイルのデバッグセクションを圧縮または圧縮解除するために使用します。特に指定しないかぎり、すべてのデバッグおよび注釈セクションが操作されます。
+.sp
+.LP
+入力ファイルがアーカイブである場合 (\fBar.h\fR(3HEAD) を参照)、アーカイブは一連の個別のファイルとして扱われます。アーカイブメンバーがオブジェクトファイルではない場合は変更されません。
+.sp
+.LP
+\fBelfcompress\fR はセグメント内に含まれているセクションを変更できません。そのような割り当て可能なセクションには \fBSHF_ALLOC\fR セクションフラグが設定されています。\fBelfcompress\fR は \fBSHT_NOBITS\fR タイプのセクションを変更できません。\fB-t\fR オプションが指定された圧縮操作では、候補セクションに追加の制限が課されることがあります。\fB-t\fR オプションおよび注を参照してください。
+.sp
+.LP
+\fB-n\fR オプションを使用して 1 つ以上のセクションをプロセスに指定した場合、指定したセクションのみが処理され、ほかのすべてのセクションは変更されません。\fB-n\fR オプションを使用しない場合、\fBelfcompress\fR は \fB-t\fR オプションに指定された圧縮操作と互換性があるすべてのセクションを選択します。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+デフォルトでは、\fBelfcompress\fR は圧縮後のサイズが元のデータと同じか小さくなる場合にのみセクションを圧縮します。圧縮後のサイズが元より大きくても圧縮を強制的に実行する場合は、\fB-f\fR を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+処理するセクションの名前を指定します。\fBelfcompress \fR では複数の \fB-n\fR オプションが受け入れられ、複数のセクションを指定できます。\fB-n\fR を使用しない場合、\fBelfcompress\fR は指定された圧縮操作と互換性があるすべてのデバッグセクションを選択します。\fB-t\fR オプションおよび注を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR \fItype\fR\fR
+.ad
+.sp .6
+.RS 4n
+実行する圧縮操作を指定します。次の圧縮タイプが認識されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnone\fR\fR
+.ad
+.sp .6
+.RS 4n
+圧縮されたセクションが圧縮解除されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzlib\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBZLIB\fR 圧縮でデバッグセクションを圧縮します。候補セクションは、割り当て不可能 (\fBSHF_ALLOC\fR フラグが設定されていない) でセクションタイプが \fBSHT_PROGBITS\fR、\fBSHT_SUNW_DEBUG\fR、\fBSHT_SUNW_DEBUGSTR\fR、または \fBSHT_SUNW_ANNOTATE\fR である必要があります。結果のセクションには、\fBSHF_COMPRESSED\fR セクションフラグが設定され、圧縮が使用されたことが示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzlib-gnu\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBGNU\fR セクション圧縮形式を使用して、\fBZLIB\fR 圧縮でデバッグセクションを圧縮します。候補セクションは、割り当て不可能 (\fBSHF_ALLOC\fR フラグが設定されていない) でタイプ \fBSHT_NOBITS\fR ではなく、名前が \fB\&.debug\fR で始まる必要があります。結果のセクションは、名前が \fB\&.zdebug\fR で始まるように変更され、圧縮が使用されたことが示されます。
+.RE
+
+\fB-t\fR オプションを指定しない場合の結果は、\fB-t\fR \fBzlib\fR を指定した場合と同じです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR \fR
+.ad
+.sp .6
+.RS 4n
+メッセージを標準エラー出力に出力し、\fBelfcompress\fR のバージョンについての情報を表示します。
+.RE
+
+.SH 注意事項
+.sp
+.LP
+\fBzlib-gnu\fR 圧縮形式は名前が \fB\&.debug\fR で始まるセクションに制限されますが、デフォルトの \fBzlib\fR 圧縮形式は任意の名前のセクションに適用できます。\fB-t\fR \fBzlib-gnu\fR を指定して \fB-n\fR オプションを指定しない場合、名前が \fBzlib-gnu\fR 形式と互換性がない以前に圧縮されたセクションが圧縮解除されます。
+.SH 使用例
+.LP
+\fB例 1 \fR\fBzlib\fR 圧縮をすべてのデバッグセクションに適用します
+.sp
+.in +2
+.nf
+% \fBelfcompress file\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRすべてのデバッグセクションの圧縮解除
+.sp
+.in +2
+.nf
+% \fBelfcompress -t none file\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fR\fBGNU\fR スタイル形式を使用して、\fB\&.debug_info\fR セクションを圧縮します
+.sp
+.in +2
+.nf
+% \fBelfcompress -t zlib-gnu -n .debug_info file\fR
+.fi
+.in -2
+.sp
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/tmp/elfcompress*\fR\fR
+.ad
+.RS 21n
+.rt  
+一時ファイル
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件developer/base-developer-utilities
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBar\fR(1), \fBas\fR(1), \fBld\fR(1), \fBmcs\fR(1), \fBstrip\fR(1), \fBar.h\fR(3HEAD), \fBelf\fR(3ELF), \fBzlib\fR(3), \fBa.out\fR(4), \fBattributes\fR(5)
+.sp
+.LP
+\fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fR

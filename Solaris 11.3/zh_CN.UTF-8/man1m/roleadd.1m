@@ -1,0 +1,737 @@
+'\" te
+.\" Copyright 1989 AT&T All Rights Reserved.
+.\" Portions Copyright (c) 1989, 2014, Oracle and/or its affiliates. All rights reserved.
+.TH roleadd 1M "2014 年 2 月 27 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+roleadd \- 管理系统中的新角色帐户
+.SH 用法概要
+.LP
+.nf
+\fBroleadd\fR [\fB-c\fR \fIcomment\fR] [\fB-b\fR \fIbase_dir\fR | \fB-d\fR \fIdir\fR] [\fB-e\fR \fIexpire\fR] [\fB-f\fR \fIinactive\fR] 
+     [\fB-g\fR \fIgroup\fR] [\fB-G\fR \fIgroup\fR [, \fIgroup\fR...]] [\fB-m\fR [\fB-k\fR \fIskel_dir\fR]] 
+     [\fB-u\fR \fIuid\fR [\fB-o\fR]] [\fB-s\fR \fIshell\fR] [\fB-S\fR \fIrepository\fR]
+     [\fB-A\fR \fIauthorization\fR [,\fIauthorization...\fR]] [\fB-K\fR \fIkey=value\fR] \fIrole\fR
+.fi
+
+.LP
+.nf
+\fBroleadd\fR \fB-D\fR [\fB-b\fR \fIbase_dir\fR | \fB-d\fR \fIdir\fR] [\fB-e\fR \fIexpire\fR] [\fB-f\fR \fIinactive\fR] 
+     [\fB-g\fR \fIgroup\fR] [\fB-A\fR \fIauthorization\fR [,\fIauthorization...\fR]] 
+     [\fB-P\fR \fIprofile\fR [,\fIprofile...\fR] [\fB-K\fR \fIkey=value\fR]]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBroleadd\fR 将角色条目添加到 \fB-S\fR 选项指定的 \fBpasswd\fR、\fBshadow\fR 和 \fBuser_attr\fR 数据库中。缺省的系统信息库为 \fBfiles\fR。\fB-A\fR 和 \fB-P\fR 选项分别向角色分配授权和配置文件。不能将角色指定给其他角色。\fB-K\fR 选项将 \fIkey=value\fR 对添加到角色的 \fBuser_attr\fR。多次使用 \fB-K\fR 选项可添加多个 \fIkey=value\fR 对。
+.sp
+.LP
+如果请求的话，\fBroleadd\fR 还可为角色创建补充组成员关系（\fB-G\fR 选项）以及为角色创建起始目录（\fB-m\fR 选项）。在 \fBpasswd\fR(1) 命令执行之前，新角色帐户将一直保持锁定状态。
+.sp
+.LP
+指定带有 \fB-g\fR、\fB-b\fR、\fB-f\fR、\fB-e\fR 或 \fB-K\fR 选项（或这些选项的任意组合）的 \fBroleadd\fR \fB-D\fR 可设置各个字段的缺省值。请参见 \fB-D\fR 选项。不带有 \fB-D\fR 选项的后续 \fBroleadd\fR 命令将使用这些参数。
+.sp
+.LP
+使用此命令创建的系统文件条目每行最多允许有 512 个字符。为多个选项指定长参数可能会超出此限制。
+.sp
+.LP
+角色 (\fBrole\fR) 字段接受由以下字符组成的长度不超过八字节的字符串：字母字符、数字字符、句点 (\fB\&.\fR)、下划线 (\fB_\fR) 和连字符 (\fB-\fR)。第一个字符应为字母且字段应至少包含一个小写字母字符。如果不满足这些限制，将写入一条警告消息。将来的 Solaris 发行版可能拒绝接受不满足这些要求的角色字段。 
+.sp
+.LP
+\fBrole\fR 字段必须至少包含一个字符且不能包含冒号 (\fB:\fR) 或换行符 (\fB\n\fR)。
+.sp
+.LP
+管理员必须具有 "User Management"（用户管理）配置文件才能创建新角色。在 \fBpasswd\fR、\fBshadow\fR 和 \fBuser_attr\fR 中设置各种字段所需的授权可以在 \fBpasswd\fR(4)、\fBshadow\fR(4) 和 \fBuser_attr\fR(4) 中找到。分配组所需的授权可以在 \fBgroup\fR(4) 中找到。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fIauthorization\fR\fR
+.ad
+.sp .6
+.RS 4n
+一个或多个以逗号分隔的在 \fBauth_attr\fR(4) 中定义的授权。只有对授权具有授予权限的用户或角色才能将授权分配给帐户。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR \fIbase_dir\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果未指定 \fB-d\fR \fIdir\fR，则为系统的缺省基目录。\fIbase_dir\fR 与帐户名串联在一起用于定义起始目录。如果未使用 \fB-m\fR 选项，则必须存在 \fIbase_dir\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIcomment\fR\fR
+.ad
+.sp .6
+.RS 4n
+任意文本字符串。它通常为角色的简短说明。该信息存储在角色的 \fBpasswd\fR 条目中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdir\fR | \fIserver\fR:\fIdir\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定新角色的起始目录路径。如果未指定任何服务器名称，则在 \fBpasswd\fR(4) 数据库中维护指定的目录。
+.sp
+可选服务器名称指定起始目录所在的主机。采用此格式的条目依赖于自动挂载程序，并在 \fBauto_home\fR 映射中进行维护。\fB/home/\fIusername\fR\fR 路径在 \fBpasswd\fR(4) 数据库中维护。用户随后引用 \fB/home/\fIusername\fR\fR 时，自动挂载程序将在 \fB/home/\fIusername\fR\fR 中挂载指定的目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示 \fIgroup\fR、\fIbase_dir\fR、\fIskel_dir\fR、\fIshell\fR、\fIinactive\fR、\fIexpire\fR 和 \fIkey=value\fR 对的缺省值。与 \fB-g\fR、\fB-b\fR、\fB-f\fR 或 \fB-K\fR 选项结合使用时，\fB-D\fR 选项设置指定字段的缺省值。缺省值包括：
+.sp
+.ne 2
+.mk
+.na
+\fBgroup\fR
+.ad
+.sp .6
+.RS 4n
+\fBother\fR（\fBGID\fR 为 1）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBbase_dir\fR
+.ad
+.sp .6
+.RS 4n
+\fB/export/home\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBskel_dir\fR
+.ad
+.sp .6
+.RS 4n
+\fB/etc/skel\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBshell\fR
+.ad
+.sp .6
+.RS 4n
+\fB/bin/pfsh\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBinactive\fR
+.ad
+.sp .6
+.RS 4n
+\fB0\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBexpire\fR
+.ad
+.sp .6
+.RS 4n
+Null
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBauths\fR
+.ad
+.sp .6
+.RS 4n
+Null
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBprofiles\fR
+.ad
+.sp .6
+.RS 4n
+Null
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBkey=value（在 \fBuser_attr\fR(4) 中定义的键/值对）\fR
+.ad
+.sp .6
+.RS 4n
+不存在
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fIexpire\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定角色的失效日期。此日期过后，没有任何用户能够访问此角色。到期选项参数是使用模板文件 \fB/etc/datemsk\fR 中包含的日期格式之一输入的日期。请参见 \fBgetdate\fR(3C)。
+.sp
+如果所选日期包含空格，必须将其放在引号中。例如，您可以输入 \fB10/6/90\fR 或 \fBOctober 6, 1990\fR。Null 值 (\fB" "\fR) 会使到期日期处于无效状态。此选项对创建临时角色非常有用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIinactive\fR\fR
+.ad
+.sp .6
+.RS 4n
+在声明角色 ID 无效之前，允许该 ID 在连续两次使用之间间隔的最大天数。正常值为正整数。\fB0\fR 值会使此状态无效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-g\fR \fIgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+现有组的整数 ID 或字符串名称。如果不带 \fB-D\fR 选项，它将定义新角色的主组成员关系并成为缺省组。可通过调用 \fBroleadd\fR \fB-D\fR \fB-g\fR \fIgroup\fR 重置此缺省值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-G\fR \fIgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+现有组的整数 \fBID\fR 或字符串名称。它定义新角色的补充组成员关系。使用 \fB-g\fR 和 \fB-G\fR 选项指定的 \fIgroup\fR 之间的重复项将被忽略。指定的组数不能大于 \fBNGROUPS_MAX\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR \fIskel_dir\fR\fR
+.ad
+.sp .6
+.RS 4n
+包含可复制到新角色起始目录中的框架信息（例如 \fB\&.profile\fR）的目录。该目录必须已存在。系统提供的 \fB/etc/skel\fR 目录可用于此用途。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-K\fR \fIkey=value\fR\fR
+.ad
+.sp .6
+.RS 4n
+要添加到角色的属性中的 \fIkey=value\fR 对。可使用多个 \fB-K\fR 选项添加多个 \fIkey=value\fR 对。可以使用通用 \fB-K\fR 选项以及相应键来代替特定的隐式键选项（\fB-A\fR 和 \fB-P\fR）。有关有效的 \fIkey=value\fR 对列表，请参见 \fBuser_attr\fR(4)。对于此选项，“type” 键不是有效键。键不能重复。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果新角色的起始目录不存在，则创建该目录。如果该目录已存在，\fIgroup\fR 必须对其具有读取、写入和执行权限，其中 \fIgroup\fR 为角色的主组。如果指定给 \fB-d\fR 选项的服务器名称是远程主机，系统将不尝试创建起始目录。
+.sp
+如果该目录不存在且父目录是 ZFS 数据集的挂载点，则创建该数据集的子项，并将其挂载到指定位置。授予角色创建 ZFS 快照并对其进行提升的权限。新创建的数据集将继承其父项的加密设置。如果该数据集已加密，将授予角色更改其包装密钥的权限。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR\fR
+.ad
+.sp .6
+.RS 4n
+此选项允许 \fBUID\fR 重复（不唯一）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIprofile\fR\fR
+.ad
+.sp .6
+.RS 4n
+一个或多个由逗号分隔的在 \fBprof_attr\fR(4) 中定义的的执行配置文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIshell\fR\fR
+.ad
+.sp .6
+.RS 4n
+程序的全路径名，登录时可用作用户的 shell。其缺省值为一个空字段，这将使系统使用 \fB/bin/pfsh\fR 作为缺省值。\fIshell\fR 的值必须为一个有效的可执行文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR \fIrepository\fR\fR
+.ad
+.sp .6
+.RS 4n
+有效的系统信息库包括 \fBfiles\fR 和 \fBldap\fR。系统信息库指定将更新哪个名称服务。缺省的系统信息库为 \fBfiles\fR。系统信息库为 \fBfiles\fR 时，授权、配置文件和角色可存在于其他名称服务系统信息库中，并可以分配给 \fBfiles\fR 系统信息库中的用户。当系统信息库是 \fBldap\fR 时，LDAP 服务器和客户机都必须配置 \fBEnableShadowUpdate=true\fR。另外，所有可分配的属性都必须存在于 \fBldap\fR 系统信息库中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR \fIuid\fR\fR
+.ad
+.sp .6
+.RS 4n
+新角色的 \fBUID\fR。此 \fBUID\fR 必须是一个小于 \fB<sys/param.h>\fR 中定义的 \fBMAXUID\fR 的非负十进制整数。\fBUID\fR 缺省为高于当前分配的最大编号的下一个可用（唯一）编号。例如，如果分配了 \fBUID\fR 100、105 和 200，则下一个缺省 \fBUID\fR 号为 201。（\fBUID\fR \fB0\fR-\fB99\fR 为保留值，供将来的应用程序使用。）
+.RE
+
+.SH 退出状态
+.sp
+.LP
+如果出现错误，\fBroleadd\fR 命令将输出一条错误消息并以下列值之一退出。如果错误是因为 LDAP 配置不当而发生的，下列值的前面会附有 "LDAP configuration problem"（LDAP 配置问题）：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 6n
+.rt  
+无权执行尝试的操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.RS 6n
+.rt  
+命令语法无效。将显示 \fBusermod\fR 命令的用法消息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.RS 6n
+.rt  
+为选项提供的参数无效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR\fR
+.ad
+.RS 6n
+.rt  
+使用 \fB-u\fR 选项指定的 \fIgid\fR 或 \fIuid\fR 已在使用中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB5\fR\fR
+.ad
+.RS 6n
+.rt  
+\fBpassword\fR 和 \fBshadow\fR 文件相互不一致。可使用 \fBpwconv\fR(1M) 更正可能的错误。请参见 \fBpasswd\fR(4) 和 \fBshadow\fR(4)。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB6\fR\fR
+.ad
+.RS 6n
+.rt  
+要修改的登录项不存在，\fIgid\fR 或 \fIuid\fR 不存在。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB7\fR\fR
+.ad
+.RS 6n
+.rt  
+\fBgroup\fR、\fBpasswd\fR 或 \fBshadow\fR 文件缺失。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB9\fR\fR
+.ad
+.RS 6n
+.rt  
+组名或用户名已在使用中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB10\fR\fR
+.ad
+.RS 6n
+.rt  
+无法更新 \fBpasswd\fR、\fBshadow\fR 或 \fBuser_attr\fR 文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB11\fR\fR
+.ad
+.RS 6n
+.rt  
+空间不足，无法移动起始目录（\fB-m\fR 选项）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB12\fR\fR
+.ad
+.RS 6n
+.rt  
+无法创建、删除或移动新的起始目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB13\fR\fR
+.ad
+.RS 6n
+.rt  
+请求的登录名已在使用中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB14\fR\fR
+.ad
+.RS 6n
+.rt  
+意外失败。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB16\fR\fR
+.ad
+.RS 6n
+.rt  
+无法更新组数据库。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB17\fR\fR
+.ad
+.RS 6n
+.rt  
+无法更新项目数据库。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB18\fR\fR
+.ad
+.RS 6n
+.rt  
+授权不足。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB19\fR\fR
+.ad
+.RS 6n
+.rt  
+没有角色。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB20\fR\fR
+.ad
+.RS 6n
+.rt  
+没有配置文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB21\fR\fR
+.ad
+.RS 6n
+.rt  
+没有特权。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB22\fR\fR
+.ad
+.RS 6n
+.rt  
+没有标签。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB23\fR\fR
+.ad
+.RS 6n
+.rt  
+没有组。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB24\fR\fR
+.ad
+.RS 6n
+.rt  
+系统未运行 Trusted Extensions。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB25\fR\fR
+.ad
+.RS 6n
+.rt  
+没有项目。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB26\fR\fR
+.ad
+.RS 6n
+.rt  
+无法更新 \fBauto_home\fR。
+.RE
+
+.SH 文件
+.sp
+.LP
+\fB/etc/datemsk\fR
+.sp
+.LP
+\fB/etc/passwd\fR
+.sp
+.LP
+\fB/etc/shadow\fR
+.sp
+.LP
+\fB/etc/group\fR
+.sp
+.LP
+\fB/etc/skel\fR
+.sp
+.LP
+\fB/usr/include/limits.h\fR
+.sp
+.LP
+\fB/etc/user_attr\fR
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBauths\fR(1)、\fBpasswd\fR(1)、\fBpfexec\fR(1)、\fBprofiles\fR(1)、\fBroles\fR(1)、\fBusers\fR(1B)、\fBgroupadd\fR(1M)、\fBgroupdel\fR(1M)、\fBgroupmod\fR(1M)、\fBgrpck\fR(1M)、\fBlogins\fR(1M)、\fBpwck\fR(1M)、\fBuserdel\fR(1M)、\fBusermod\fR(1M)、\fBgetdate\fR(3C)、\fBauth_attr\fR(4)、\fBgroup\fR(4)、\fBpasswd\fR(4)、\fBprof_attr\fR(4)、\fBshadow\fR(4)、\fBuser_attr\fR(4)、\fBattributes\fR(5) 
+.sp
+.LP
+\fI《Working With Oracle Solaris 11.3 Directory and         Naming Services: LDAP》\fR
+.SH 诊断
+.sp
+.LP
+如果出现错误，\fBroleadd\fR 将输出错误消息并以非零状态退出。
+.sp
+.LP
+以下情况表示指定的 \fBlogin\fR 已在使用中：
+.sp
+.in +2
+.nf
+UX: roleadd: ERROR: login is already in use. Choose another.
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下情况表示使用 \fB-u\fR 选项指定的 \fIuid\fR 不唯一：
+.sp
+.in +2
+.nf
+UX: roleadd: ERROR: uid \fIuid\fR is already in use. Choose another. 
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下情况表示使用 \fB-g\fR 选项指定的 \fIgroup\fR 已在使用中：
+.sp
+.in +2
+.nf
+UX: roleadd: ERROR: group \fIgroup\fR does not exist. Choose another. 
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下情况表示使用 \fB-u\fR 选项指定的 \fIuid\fR 处于保留的 \fBUID\fR 范围 (\fB0\fR-\fB99\fR) 之内：
+.sp
+.in +2
+.nf
+UX: roleadd: WARNING: uid \fIuid\fR is reserved.
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下情况表示使用 \fB-u\fR 选项指定的 \fIuid\fR 大于 \fB<sys/param.h>\fR 中定义的 \fBMAXUID\fR：
+.sp
+.in +2
+.nf
+UX: roleadd: ERROR: uid \fIuid\fR is too big. Choose another.
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下情况表示 \fB/etc/passwd\fR 或 \fB/etc/shadow\fR 文件不存在：
+.sp
+.in +2
+.nf
+UX: roleadd: ERROR: Cannot update system files - login cannot be created.
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下情况表示执行此命令的用户没有足够的授权来执行操作：
+.sp
+.in +2
+.nf
+UX: roleadd: ERROR: Permission denied.
+.fi
+.in -2
+.sp
+

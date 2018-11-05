@@ -1,0 +1,2800 @@
+'\" te
+.\" Copyright (c) 2008, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH ai_manifest 4 "2014 年 3 月 25 日" "SunOS 5.11" "ファイル形式"
+.SH 名前
+ai_manifest \- 自動インストールマニフェストファイル形式
+.SH 形式
+.LP
+.nf
+/usr/share/install/ai.dtd.1
+.fi
+
+.SH 機能説明
+.sp
+.LP
+Automated Installer (AI) は、カスタマイズ可能でハンズフリーの Oracle Solaris のインストールメカニズムを提供し、インストールパラメータの説明として XML ベースのファイル形式を使用します。このインストールパラメータファイルは AI マニフェストと呼ばれます。インストールは、ディスクの配置やシステムにインストールされるソフトウェアなど、さまざまな方法でカスタマイズできます。
+.sp
+.LP
+AI マニフェストには、次のセクションがあります。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+自動インストール設定。インストール時に使用される設定を指定します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ディスクの配置。インストールのディスクの配置を指定します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ソフトウェア。インストールするソフトウェアパッケージを指定します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ブート構成 (x86 のみ)。GRUB ブートメニューの構成方法を指定します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+その他の構成。システムにインストールするその他の構成コンポーネントを指定します。
+.RE
+.sp
+.LP
+これらのセクションについて、次により詳しく説明します。
+.sp
+.LP
+新しい AI マニフェストを作成するには、テンプレートまたは関連インストールサービスイメージからのデフォルトのマニフェストのコピーを使用します。たとえば、インストールサービスイメージが \fIimagepath\fR にある場合、次のファイルを使用できます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fIimagepath\fR/auto_install/manifest/default.xml \fR\fR
+.ad
+.sp .6
+.RS 4n
+このインストールサービスの元のデフォルトの AI マニフェスト。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fIimagepath\fR/auto_install/manifest/ai_manifest.xml \fR\fR
+.ad
+.sp .6
+.RS 4n
+カスタマイズの例を含む注釈付きのサンプル AI マニフェスト。
+.RE
+
+.sp
+.LP
+\fBinstalladm export\fR コマンドを使用して、インストールサービスにすでに存在するマニフェストのコピーを取得できます。
+.sp
+.LP
+AI マニフェストは、\fBzoneadm install\fR コマンドを使用した非大域ゾーンのインストールにも使用されます。このコマンドに AI マニフェストファイルを渡して、ゾーンのインストールをカスタマイズできます。非大域ゾーンのインストールには、AI マニフェストの指定のサブセットのみが適用されます。これらの指定について、次のセクションで説明します。
+.sp
+.LP
+AI マニフェストを補足して、Service Management Facility (SMF) 構成プロファイルがあります。これらのプロファイルは、ホスト名、ネットワーク、ルートおよび初期ユーザーアカウント設定などのインストールされるシステムのシステム構成を指定します。
+.sp
+.LP
+インストールサービス、AI マニフェスト、および構成プロファイルの詳細は、\fBinstalladm\fR(1M) のマニュアルページおよびPart\ III, \fI「Installing Using an Install Server,」\fR in \fI『Installing Oracle Solaris 11.3 Systems』\fRを参照してください。構成プロファイルのファイル形式については、\fBsmf\fR(5) を参照してください。
+.SH 自動インストール設定
+.sp
+.LP
+\fBai_instance\fR 要素には次の属性があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.sp .6
+.RS 4n
+このマニフェストインスタンスの名前。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBhttp_proxy\fR\fR
+.ad
+.sp .6
+.RS 4n
+インストール時にリモートファイルにアクセスするために使う HTTP プロキシ。インストール時にアクセスされるリモートファイルの例には、Image Packaging System (IPS) パッケージリポジトリ内のソフトウェアパッケージがあります。\fBhttp_proxy\fR の値は、\fBhttp://myproxy.mycompany.com:8080/\fR などの HTTP URI です。
+.sp
+この属性は、非大域ゾーンのインストール時に適用できず、指定した場合には無視されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauto_reboot\fR\fR
+.ad
+.sp .6
+.RS 4n
+インストール後に自動的にリブートするかどうかを指定するフラグ。\fBauto_reboot\fR のデフォルト値は \fBfalse\fR です。\fBauto_reboot\fR が \fBfalse\fR の場合、インストールは、手動のリブートを待機します。
+.sp
+\fBauto_reboot\fR が \fBtrue\fR の場合、インストールの成功時に、新しくインストールされたブート環境でマシンが自動的にリブートします。
+.sp
+この属性は、非大域ゾーンのインストール時に適用できず、指定した場合には無視されます。
+.RE
+
+.sp
+.LP
+次の例では、\fBai_instance\fR 要素の使用方法を示します。
+.sp
+.in +2
+.nf
+<auto_install>
+  <ai_instance name='default' auto_reboot='true'
+    http_proxy='http://myproxy.mycompany.com:8080/'>
+  <!-- target and software sections -->
+  </ai_instance>
+</auto_install>
+.fi
+.in -2
+
+.SH ディスクの配置
+.sp
+.LP
+AI では、インストール先の完全な自動選択から、ディスクの配置の詳細な制御まで、幅広くディスクを指定できます。
+.sp
+.LP
+\fBtarget\fR 要素はディスクの配置を指定します。\fBtarget\fR 要素を指定していない場合のデフォルトのディスクの配置は、次の特性があります。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+1 つのディスク全体が、Oracle Solaris OS のインストールに使われます。このディスクは通常ブートディスクまたは最初のディスクです。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+GPT 認識ソフトウェアを使用する x86 および SPARC では、ディスク全体の内容を消費する GPT パーティションが割り当てられます。\fBzpool\fR(1M) マニュアルページで \fBzpool create\fR コマンドの \fB-B\fR オプションを参照してください。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+GPT を使用できない SPARC システムの場合、ディスク全体のサイズである単一のスライス 0 が作成されます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+完全なスライス 0 または完全な GPT パーティションのいずれかを使用する単一のルートプールが作成されます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+領域を使用できる場合、スワップボリュームとダンプボリュームがルートプールに作成されます。
+.RE
+.sp
+.LP
+\fBtarget\fR 要素は次の構造になります。
+.sp
+.in +2
+.nf
+<!-- zero or one target element -->
+<target>
+  <!-- zero or more disk elements -->
+  <disk ...>
+    <!-- One of the following elements:
+             disk_name
+             disk_prop
+             disk_keyword
+             iscsi
+         Zero or more of the following elements:
+             gpt_partition
+             partition
+             slice
+         gpt_partition can have zero or one size element.
+         partition can have zero or one size element
+             followed by zero or more slice elements.
+         slice can have zero or one size element.
+    -->
+  </disk>
+  <!-- zero or one logical element -->
+  <logical ...>
+    <!-- zero or more zpool elements -->
+    <zpool ...>
+      <!-- zero or more vdev elements -->
+      <vdev ...>
+      </vdev>
+      <!-- zero or more filesystem elements
+           with zero or one options element
+      -->
+      <filesystem>
+        <options>
+          <option .../>
+        </options>
+      <!-- zero or more zvol elements
+           with zero or one options element
+           and one size element
+      -->
+      <zvol ...>
+        <options>
+          <option .../>
+        </options>
+        <size val="..."/>
+      </zvol>
+      <!-- zero or one pool_options element
+           with one or more option elements
+      -->
+      <pool_options>
+        <option .../>
+      </pool_options>
+      <!-- zero or one dataset_options element
+           with one or more option elements
+      -->
+      <dataset_options>
+        <option .../>
+      </dataset_options>
+      <!-- zero or one be element
+           with zero or one options elements
+      -->
+      <be>
+        <options>
+          <option .../>
+        </options>
+      </be>
+    </zpool>
+  </logical>
+</target>
+.fi
+.in -2
+
+.sp
+.LP
+\fBtarget\fR 要素の子要素を使用して、ディスクと論理配置を指定できます。
+.sp
+.LP
+ディスクの指定は、非大域ゾーンのインストール時に適用できず、指定した場合には無視されます。
+.sp
+.LP
+一部のディスクの配置要素には、size サブ要素があります。\fBsize\fR 要素の形式は次のとおりです。
+.sp
+.in +2
+.nf
+<size val="\fIsize\fR" start_sector="\fIstart_sector\fR"/>
+.fi
+.in -2
+
+.sp
+.LP
+\fIstart_sector\fR 値は、新しいパーティションやスライスの目的の開始セクターを指定する数値です。\fIstart_sector\fR 属性が省略されている場合、インストーラは指定された \fIsize\fR を格納するために十分な大きさの最初の場所を検索します。
+.sp
+.LP
+\fIsize\fR の値は、次のいずれかの接尾辞の付いた数値です。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBs\fR または \fBsec\fR: セクター
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBb\fR: バイト
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBk\fR または \fBkb\fR: K バイト (2^10)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBm\fR または \fBmb\fR: M バイト (2^20)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBg\fR または \fBgb\fR: G バイト (2^30)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBt\fR または \fBtb\fR: T バイト (2^40)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBp\fR または \fBpb\fR: P バイト (2^50)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBe\fR または \fBeb\fR: E バイト (2^60)
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBz\fR または \fBzb\fR: ゼタバイト (2^70)
+.RE
+.sp
+.LP
+このセクションの残りでは、\fBdisk\fR 要素と \fB logical\fR 要素について詳しく説明します。
+.SS "インストールの場所"
+.sp
+.LP
+Oracle Solaris OS をインストールするクライアント上の場所を指定しない場合、AI はそのクライアントのデフォルトの場所を選択します。
+.sp
+.LP
+インストールのデフォルトの場所は、各クライアント上で見つかった、サイズの要件を満たす最初のディスクです。ディスクのサイズが必要なサイズ以上である場合、インストーラは、そのディスクをインストールの場所として選択します。ディスクのサイズが必要なサイズ未満である場合、インストーラは、次のディスクをチェックします。サイズの要件を満たすディスクが見つからない場合、そのクライアントに対する自動インストールは失敗します。\fB/system/volatile/install_log\fR にあるインストールログに、そのシステムのディスク選択プロセスの詳細が示されます。
+.sp
+.LP
+\fBtarget\fR セクションの \fBdisk\fR セクションはインストールの場所を指定します。
+.sp
+.LP
+ディスクの指定は、非大域ゾーンのインストール時に適用できず、指定した場合には無視されます。
+.sp
+.LP
+ディスクは、次のいずれかの選択条件のタイプを使用して選択できます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+グループ 1: ディスク名または IP アドレスなどの決定的条件。次の「ターゲットデバイス名」で説明するように \fB<disk_name>\fR サブ要素を使用するか、次の「ISCSI ターゲットデバイス」で説明するように \fB<iscsi>\fR サブ要素を使用します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+グループ 2: ディスクサイズやベンダーなどの非決定的条件。次の「ターゲットデバイスのプロパティー」で説明するように \fB<disk_prop>\fR サブ要素を使用します。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+グループ 3: \fBboot_disk\fR キーワードなどのキーワード条件。次の「ターゲットデバイスのキーワード」で説明するように \fB<disk_keyword>\fR サブ要素を使用します。
+.RE
+.sp
+.LP
+これら 3 つのグループのうち 1 つのグループからの条件だけを指定できます。グループ 2 選択条件を使用する場合、複数の条件を指定できます。たとえば、サイズとベンダーの両方を指定できます。グループ 1 選択条件を使用する場合、それらの条件のうち 1 つだけを指定できます。
+.SS "ターゲットデバイス名"
+.sp
+.LP
+\fBdisk_name\fR 要素を使用して、iSCSI デバイスでないデバイスのターゲットデバイス名を指定します。\fBdisk_name\fR 要素には、次の属性があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBname\fR 属性はターゲットデバイスの名前を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname_type\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBname_type\fR 属性はターゲットデバイス名のタイプを指定します。\fBname_type\fR 属性は次のいずれかの値を持ちます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBctd\fR: コントローラターゲットディスク名\fR
+.ad
+.sp .6
+.RS 4n
+これは、\fBc0t0d0\fR や \fB c0t2000002037CD9F72d0\fR などの CTD 名です。この名前のタイプは、一般に \fBformat\fR(1M) コマンドを実行するときに見られます。
+.sp
+.in +2
+.nf
+<disk_name name="c0t0d0" name_type="ctd"/>
+.fi
+.in -2
+
+これは、\fBname_type\fR 属性が省略された場合のデフォルトのターゲットデバイス名のタイプです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvolid\fR: ボリューム識別子\fR
+.ad
+.sp .6
+.RS 4n
+これは、\fBformat \fR(1M) コマンドによって設定可能なボリューム識別子です。
+.sp
+.in +2
+.nf
+<disk_name name="MY_BOOT_DISK" name_type="volid"/>
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdevpath\fR: デバイスパス\fR
+.ad
+.sp .6
+.RS 4n
+これは、\fB/devices\fR ディレクトリに相対的なデバイスパスです。
+.sp
+.in +2
+.nf
+<disk_name
+  name="/pci@0,0/pci10de,375@f/pci108e,286@0/disk@0,0"
+  name_type="devpath"/>
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdevid\fR: デバイス識別子\fR
+.ad
+.sp .6
+.RS 4n
+これは、\fB-iEn\fR オプションを使用した \fBiostat\fR(1M) コマンドからの出力の「Device Id」にあるデバイス識別子です。
+.sp
+.in +2
+.nf
+<disk_name
+  name="id1,sd@TSun_____STK_RAID_INT____F0F0F0"
+  name_type="devid"/>
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreceptacle\fR: 受容体識別子\fR
+.ad
+.sp .6
+.RS 4n
+これは、\fB-ocR\fR オプションを指定した \fBdiskinfo\fR(1M) コマンドからの出力にある CRO (シャーシ、受容体、占有装置) 構成の受容体値です。
+.sp
+.in +2
+.nf
+<disk_name name="SYS/HDDO" name_type="receptacle"/>
+.fi
+.in -2
+
+.RE
+
+.RE
+
+.SS "iSCSI ターゲットデバイス"
+.sp
+.LP
+インストールターゲットとして iSCSI ディスクを指定するには、\fBiscsi\fR 要素を使用します。\fBiscsi\fR 要素には次の属性があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsource\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBsource\fR 属性は、iSCSI 構成データのソースを指定します。\fBsource\fR 属性は、次のいずれかの値を持ちます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmanifest\fR\fR
+.ad
+.sp .6
+.RS 4n
+この値は、この AI マニフェストを示します。これは、\fBsource\fR 属性に値が指定されていない場合のデフォルトです。
+.sp
+\fBsource\fR 属性が省略されているか、\fBsource\fR 属性の値が \fBmanifest\fR である場合、\fBtarget_lun\fR 属性と \fBtarget_ip\fR 属性が指定されている必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdhcp\fR\fR
+.ad
+.sp .6
+.RS 4n
+この値は、DHCP \fBrootpath\fR パラメータに情報を指定して、iSCSI 情報が提供される DHCP の使用を示します。
+.sp
+\fBsource\fR 属性の値が \fBdhcp\fR の場合、ほかの \fBiscsi\fR 属性を指定しないでください。
+.sp
+.in +2
+.nf
+<iscsi source="dhcp"/>
+.fi
+.in -2
+
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtarget_ip\fR\fR
+.ad
+.sp .6
+.RS 4n
+この属性の値は iSCSI ターゲットの IP アドレスです。この IP アドレスのターゲットがオンラインであり、このシステムからアクセス可能である必要があります。この属性は必須です。
+.sp
+.in +2
+.nf
+<iscsi target_lun="0" target_ip="192.168.1.34"/>
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtarget_lun\fR\fR
+.ad
+.sp .6
+.RS 4n
+iSCSI ターゲットで複数の LUN を提供している場合、\fBtarget_lun\fR に整数値を指定して、使用する LUN を指定します。LUN 番号は 0 からインデックス付けされます。最初の LUN を指定するには、0 の \fBtarget_lun\fR 値を指定します。
+.sp
+提供されている LUN が 1 つだけの場合は、この属性を省略できます。iSCSI ターゲットによって複数の LUN が提供される場合、この属性は必須です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtarget_name\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBtarget_name\fR 属性は、次の例に示すように、iSCSI ターゲットの IQN (iSCSI Qualified Name) または EUI (Extended Unique Identifier) を指定します。
+.sp
+.in +2
+.nf
+iqn.1986-03.com.sun:02:a4a694bc-6de2-ee50-8979-e25ba29acb86
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtarget_port\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定しない場合、デフォルトの 3260 (iSCSI 標準ポート) の \fBtarget_port\fR が使用されます。この属性を使用して、代替のポート番号を指定できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinitiator_name\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBinitiator_name\fR 属性は、ISCSI イニシエータの IQN または EUI を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBCHAP 認証\fR
+.ad
+.sp .6
+.RS 4n
+次の 2 つの属性は、CHAP (チャレンジハンドシェーク認証プロトコル) 認証を提供します:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchap_name\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBchap_name\fR 属性は、認証に使用する CHAP ユーザー名を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBchap_password\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBchap_password\fR 属性は、認証に使用する CHAP パスワードを指定します。
+.RE
+
+SPARC クライアントは、オープンブート PROM (\fBok\fR) プロンプトでオプションで \fBchap-user\fR と \fB chap-password\fR を設定できます。詳細は、\fBboot\fR(1M) のマニュアルページにある「iSCSI ブート」を参照してください。
+.RE
+
+.sp
+.LP
+\fBiscsi\fR 要素には、\fBaction\fR 属性はありません。AI は iSCSI デバイスを使用しますが、これらのデバイス上で直接動作しません。
+.sp
+.LP
+\fBtarget_name\fR 属性が指定されていない場合、AI は\fBiscsiadm\fR(1M) を \fBsendtargets\fR モードで使用します。
+.sp
+.LP
+\fBtarget_name\fR 属性が指定されていない場合、AI は静的検出を使用します。
+.sp
+.LP
+この情報がある場合、iSCSI デバイスをインストールに使用できます。
+.sp
+.LP
+iSCSI デバイス用のネットワークインタフェースがクライアントのブートプロセスの初期段階で構成されるため、このインストールではシステム構成プロファイルファイルに、このインタフェース用の \fBnetwork/install\fR サービスを構成する必要がありません。
+.SS "ターゲットデバイスプロパティー"
+.sp
+.LP
+ターゲットデバイスのプロパティーを指定するには、\fBdisk_prop\fR 要素を指定します。複数のプロパティーを指定できます。AI は指定された条件に基づいて、もっとも一致するものを見つけようとします。
+.sp
+.LP
+\fBdisk_prop\fR 要素の属性を使用して、ターゲットプロパティーを指定します。\fBdisk_prop\fR 要素には次の属性があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdev_type\fR: デバイスタイプ\fR
+.ad
+.sp .6
+.RS 4n
+ターゲットディスクのタイプ。取り得る値には、SCSI、ATA、および USB があります。この値では、大文字と小文字は区別されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdev_vendor\fR: デバイスベンダー\fR
+.ad
+.sp .6
+.RS 4n
+\fBformat\fR(1M) コマンドの \fBinquiry\fR メニューオプションによって表示されるベンダー。
+.sp
+.in +2
+.nf
+<disk_prop dev_vendor="Sun"/>
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdev_chassis\fR: デバイスシャーシ\fR
+.ad
+.sp .6
+.RS 4n
+\fB-ocA\fR オプションを指定した \fBcroinfo\fR(1M) コマンドからの出力にある CRO (シャーシ、受容体、占有装置) 構成の受容体値。
+.sp
+.in +2
+.nf
+<disk_prop dev_chassis="SYS"/>
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdev_size\fR: デバイスサイズ\fR
+.ad
+.sp .6
+.RS 4n
+ディスクの最小サイズ。値は数字とサイズの単位です。
+.sp
+.in +2
+.nf
+<disk_prop dev_size="100gb"/>
+.fi
+.in -2
+
+.RE
+
+.sp
+.LP
+\fBdisk_prop\fR 要素を使用して、ディスク検索をさらに制限するために、複数の属性を同時に指定できます。次の例では、ディスクの選択を 100G バイト以上のサイズの Hitachi ドライブに制限しています。
+.sp
+.in +2
+.nf
+<disk_prop dev_vendor="HITACHI" dev_size="100gb"/>
+.fi
+.in -2
+
+.SS "ターゲットデバイスのキーワード"
+.sp
+.LP
+\fBdisk_keyword\fR 要素を使用して、システムのブートディスクをターゲットディスクとして指定できます。
+.sp
+.in +2
+.nf
+<disk_keyword key="boot_disk"/>
+.fi
+.in -2
+
+.sp
+.LP
+\fBkey\fR 属性でサポートされている値は \fBboot_disk\fR のみです。
+.SS "ディスク、パーティション、スライス全体"
+.sp
+.LP
+ディスクを配置するもっとも簡単な方法は、\fBwhole_disk\fR 属性を \fBtrue\fR に設定して、インストールにディスク全体を使用することです。
+.sp
+.LP
+もっと複雑なディスクの配置の場合は、パーティション (x86 システムの場合のみ) とスライスを指定できます。
+.sp
+.LP
+\fBdisk\fR 要素には次の属性があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBwhole_disk\fR\fR
+.ad
+.sp .6
+.RS 4n
+この属性のデフォルト値は \fBfalse\fR です。\fBwhole_disk\fR が \fBfalse\fR の場合、パーティションまたはスライスを定義する必要があります。既存のパーティションまたはスライスの \fBaction\fR 属性に \fBdelete\fR 値を指定して、それらを削除しないかぎり、パーティションまたはスライスが保持されます。
+.sp
+\fBwhole_disk\fR が \fBtrue\fR の場合、既存のパーティションまたはスライスはすべて削除されます。
+.sp
+次の例では、インストールにディスク全体を使用することを指定しています。
+.sp
+.in +2
+.nf
+<disk whole_disk="true">
+  <disk_name name="c0t0d0" name_type="ctd"/>
+</disk>
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin_zpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBin_zpool\fR 属性は、AI マニフェストの \fBlogical\fR セクションに定義されている ZFS プールにこのディスクをリンクします。\fBin_zpool\fR 属性の値は、対応する \fBzpool\fR 要素の \fBname\fR 属性の値に一致している必要があります。
+.sp
+ここで、\fBin_zpool\fR 属性を指定した場合、下位パーティションまたはスライスに \fBin_zpool\fR を指定しないでください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin_vdev\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBin_vdev\fR 属性は、AI マニフェストの \fBlogical\fR セクションに定義されている仮想デバイスにこのディスクをリンクします。\fBin_vdev\fR 属性の値は、対応する \fBvdev\fR 要素の \fBname\fR 属性の値に一致している必要があります。
+.sp
+ここで、\fBin_vdev\fR 属性を指定した場合、下位パーティションまたはスライスに \fBin_vdev\fR を指定しないでください。
+.RE
+
+.SS "GPT パーティション"
+.sp
+.LP
+GUID パーティションテーブルのパーティションは、x86 および SPARC の望ましいパーティション分割方法です。GPT パーティションは、スライスがなくても ZFS で直接使用可能です。\fBgpt_partition\fR 要素には次の属性があります:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBname\fR 属性は GPT パーティション番号です。値 0-7 は Oracle Solaris で有効です。
+.sp
+\fBname\fR 属性は必須です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaction\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBaction\fR 属性は、次のいずれかの値を持ちます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate\fR\fR
+.ad
+.sp .6
+.RS 4n
+これはパーティションのデフォルトのアクションです。\fBcreate\fR アクションは、指定された名前でパーティションを作成するようインストーラに指示します。同じ名前のパーティションがすでに存在する場合、その既存のパーティションが最初に削除されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBdelete\fR アクションは、名前付きのパーティションを削除するようにインストーラに指示します。指定されたパーティションが存在しない場合、\fBdelete\fR アクションはスキップされ、警告メッセージが出力されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpreserve\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpreserve\fR アクションは、名前付きパーティションを変更しないでおくようにインストーラに指示します。このアクションは、一般に、別のオペレーティングシステムが同じディスク上の別の場所にインストールされている場合に使われます。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpart_type\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpart_type\fR 属性は GUID パーティションタイプを指定します。この値には、\fBsolaris\fR などのサポートされる GUID 別名か、または明示的な GUID 16 進文字列値を指定できます。
+.sp
+\fBpart_type\fR 属性は必須です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin_zpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBin_zpool\fR 属性は、AI マニフェストの \fBlogical\fR セクションに定義されている ZFS プールにこのパーティションをリンクします。\fBin_zpool\fR 属性の値は、対応する \fBzpool\fR 要素の \fBname\fR 属性の値に一致している必要があります。
+.sp
+\fBin_zpool\fR 属性が指定されている場合は、関連付けられた \fBdisk\fR 要素またはいずれかの下位の \fBslice\fR 要素に \fBin_zpool\fR を指定しないでください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin_vdev\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBin_vdev\fR 属性は、AI マニフェストの \fBlogical\fR セクションに定義されている仮想デバイスにこのパーティションをリンクします。\fBin_vdev\fR 属性の値は、対応する \fBvdev\fR 要素の \fBname\fR 属性の値に一致している必要があります。
+.sp
+\fBin_vdev\fR 属性が指定されている場合は、関連付けられた \fBdisk\fR 要素またはいずれかの下位の \fBslice\fR 要素に \fBin_vdev\fR を指定しないでください。
+.RE
+
+.sp
+.LP
+GPT パーティションには、パーティションのサイズを指定する \fBsize\fR サブ要素を指定できます。\fBsize\fR 要素の使用方法の詳細については、「ディスクの配置」の初めを参照してください。パーティションのサイズを指定する場合は、\fBpartition\fR 要素内で \fBsize\fR サブ要素をどの \fBslice\fR サブ要素よりも前に指定する必要があります。
+.SS "レガシーパーティション"
+.sp
+.LP
+レガシー \fBfdisk\fR パーティションは、x86 システムにインストールするときに限り指定できます。SPARC システムで \fBfdisk\fR パーティションを指定すると、インストールが失敗します。\fBpartition\fR 要素は、\fBfdisk\fR パーティションに使用されます。\fBpartition\fR 要素には次の属性があります:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBname\fR 属性は、\fBfdisk\fR パーティション番号です。値 1、2、3、および 4 はプライマリパーティションです。いずれかのプライマリパーティションが拡張パーティションの場合、値 5 から 32 を論理パーティションに指定できます。
+.sp
+指定された \fBaction\fR が \fBuse_existing_solaris2\fR でないかぎり、\fBname\fR 属性が必要です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaction\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBaction\fR 属性は、次のいずれかの値を持ちます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate\fR\fR
+.ad
+.sp .6
+.RS 4n
+これはパーティションのデフォルトのアクションです。\fBcreate\fR アクションは、指定された名前でパーティションを作成するようインストーラに指示します。同じ名前のパーティションがすでに存在する場合、その既存のパーティションが最初に削除されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBdelete\fR アクションは、名前付きのパーティションを削除するようにインストーラに指示します。指定されたパーティションが存在しない場合、\fBdelete\fR アクションはスキップされ、警告メッセージが出力されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpreserve\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpreserve\fR アクションは、名前付きパーティションを変更しないでおくようにインストーラに指示します。このアクションは、一般に、別のオペレーティングシステムが同じディスク上の別の場所にインストールされている場合に使われます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuse_existing_solaris2\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBuse_existing_solaris2\fR アクションは、既存の Solaris2 パーティションを使うようにインストーラに指示します。インストーラは、既存の Solaris2 パーティションを検索します。
+.sp
+\fBuse_existing_solaris2\fR が指定されている場合、\fBname\fR および \fBpart_type\fR 属性は無視されます。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpart_type\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpart_type\fR は \fBfdisk\fR パーティションタイプです。デフォルト値は 191 で、Solaris2 パーティションのパーティションタイプです。可能なパーティションタイプの詳細は、\fBfdisk\fR(1M) マニュアルページを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin_zpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBin_zpool\fR 属性は、AI マニフェストの \fBlogical\fR セクションに定義されている ZFS プールにこのパーティションをリンクします。\fBin_zpool\fR 属性の値は、対応する \fBzpool\fR 要素の \fBname\fR 属性の値に一致している必要があります。
+.sp
+\fBin_zpool\fR 属性が指定されている場合は、関連付けられた \fBdisk\fR 要素またはいずれかの下位の \fBslice\fR 要素に \fBin_zpool\fR を指定しないでください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin_vdev\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBin_vdev\fR 属性は、AI マニフェストの \fBlogical\fR セクションに定義されている仮想デバイスにこのパーティションをリンクします。\fBin_vdev\fR 属性の値は、対応する \fBvdev\fR 要素の \fBname\fR 属性の値に一致している必要があります。
+.sp
+\fBin_vdev\fR 属性が指定されている場合は、関連付けられた \fBdisk\fR 要素またはいずれかの下位の \fBslice\fR 要素に \fBin_vdev\fR を指定しないでください。
+.RE
+
+.sp
+.LP
+パーティションには、パーティションのサイズを指定する \fBsize\fR サブ要素を指定できます。\fBsize\fR 要素の使用方法の詳細については、「ディスクの配置」の初めを参照してください。パーティションのサイズを指定する場合は、\fBpartition\fR 要素内で \fBsize\fR サブ要素をどの \fBslice\fR サブ要素よりも前に指定する必要があります。
+.sp
+.LP
+次の例では、デフォルトの属性値を使用して、10G バイトの Solaris2 パーティションを作成しています。
+.sp
+.in +2
+.nf
+<disk>
+  <disk_name name="c0t0d0" name_type="ctd"/>
+  <partition name="1">
+    <size val="10gb"/>
+  </partition>
+</disk>
+.fi
+.in -2
+
+.sp
+.LP
+サイズを指定しない場合、親要素のサイズが使われます。
+.sp
+.LP
+\fBpreserve\fR、\fBdelete\fR、および \fBuse_existing_solaris2\fR アクションには、\fBsize\fR の指定は必要ありません。
+.SS "スライス"
+.sp
+.LP
+x86 システムの場合、パーティション定義内に、スライスが含まれている必要があります。
+.sp
+.LP
+\fBslice\fR 要素には次の属性があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBname\fR 属性はスライス番号です。値は 0 - 7 です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaction\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBaction\fR 属性は、次のいずれかの値を持ちます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate\fR\fR
+.ad
+.sp .6
+.RS 4n
+これはスライスのデフォルトのアクションです。\fBcreate\fR アクションは、指定された名前でスライスを作成するようインストーラに指示します。同じ名前のスライスがすでに存在する場合、その既存のスライスが最初に削除されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBdelete\fR アクションは、名前付きのスライスを削除するようにインストーラに指示します。指定されたスライスが存在しない場合、\fBdelete\fR アクションはスキップされ、警告メッセージが出力されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpreserve\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpreserve\fR アクションは、名前付きスライスを変更しないでおくようにインストーラに指示します。このアクションは、一般にデータが前のインストールから存在する場合に使用します。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuse_existing\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBuse_existing\fR アクションは、既存のスライスの大きさ (開始セクターおよびサイズ) を使うようにインストーラに指示します。これは、スライス上に存在するすべてのデータを破壊する \fBzpool\fR の一部として使用されることがあるという点で、\fBpreserve\fR アクションとは異なります。
+.sp
+\fBcreate\fR アクションと同様、スライスが既存の \fBzpool\fR の一部である場合、強制オプションを \fBtrue\fR に指定する必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBis_swap\fR\fR
+.ad
+.sp .6
+.RS 4n
+この属性のデフォルト値は \fBfalse\fR です。\fBis_swap\fR が \fBfalse\fR の場合、インストーラはルートプールにスワップボリュームを作成します。
+.sp
+\fBis_swap\fR が \fBtrue\fR の場合、名前付きスライスがスワップデバイスとして使われます。\fBis_swap\fR が \fBtrue\fR の場合は、\fBin_zpool\fR または \fBin_vdev\fR 属性を使用しないでください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBforce\fR\fR
+.ad
+.sp .6
+.RS 4n
+この属性のデフォルト値は \fBfalse\fR です。
+.sp
+\fBforce\fR が \fBtrue\fR の場合、インストーラはすでに使用中の可能性があるスライス (たとえば、既存の ZFS ストレージプールで使われているスライスなど) を無視して、名前付きのスライスに指定されたアクションを実行し続けます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin_zpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBin_zpool\fR 属性は、AI マニフェストの \fBlogical\fR セクションに定義されている ZFS プールにこのスライスをリンクします。\fBin_zpool\fR 属性の値は、対応する \fBzpool\fR 要素の \fBname\fR 属性の値に一致している必要があります。
+.sp
+\fBin_zpool\fR 属性が指定されている場合は、関連付けられた \fBpartition\fR または \fBdisk\fR 要素に \fBin_zpool\fR を指定しないでください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin_vdev\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBin_vdev\fR 属性は、AI マニフェストの \fBlogical\fR セクションに定義されている仮想デバイスにこのスライスをリンクします。\fBin_vdev\fR 属性の値は、対応する \fBvdev\fR 要素の \fBname\fR 属性の値に一致している必要があります。
+.sp
+\fBin_vdev\fR 属性が指定されている場合は、関連付けられた \fBpartition\fR または \fBdisk\fR 要素に \fBin_vdev\fR を指定しないでください。
+.RE
+
+.sp
+.LP
+スライスには、スライスのサイズを指定する \fBsize\fR サブ要素を指定できます。\fBsize\fR 要素の使用方法の詳細については、「ディスクの配置」の初めを参照してください。サイズを指定しない場合、親要素のサイズが使われます。
+.sp
+.LP
+次の例では、SPARC システムに、デフォルトの属性値を使用した 20G バイトのスライスと、4G バイトのスワップスライスを作成しています。
+.sp
+.in +2
+.nf
+<disk>
+  <disk_name name="c0t0d0" name_type="ctd"/>
+  <slice name="0">
+    <size val="20gb"/>
+  </slice>
+  <slice name="1" is_swap="true">
+    <size val="4gb"/>
+  </slice>
+</disk>
+.fi
+.in -2
+
+.sp
+.LP
+次の例は、x86 システムの例と同じです。
+.sp
+.in +2
+.nf
+<disk>
+  <disk_name name="c0t0d0" name_type="ctd"/>
+  <partition name="1">
+    <slice name="0">
+      <size val="20gb"/>
+    </slice>
+    <slice name="1" is_swap="true">
+      <size val="4gb"/>
+    </slice>
+  </partition>
+</disk>
+.fi
+.in -2
+
+.SS "スワップとダンプ"
+.sp
+.LP
+スワップスライスは、上述の「スライス」に示すように、\fBslice\fR 要素の \fBis_swap\fR 属性を \fBtrue\fR に設定することによって明示的に定義できます。
+.sp
+.LP
+プール内のボリュームは、下記の「ZFS ボリューム」に示すように、\fBzvol\fR 要素の \fBuse\fR 属性を \fBswap\fR または \fBdump\fR に設定することによって、スワップボリュームまたはダンプボリュームとして明示的に定義できます。
+.sp
+.LP
+デフォルトで、スワップボリュームとダンプボリュームは、領域が使用できれば自動的に作成されます。
+.sp
+.LP
+メモリーが少ないシステムでは、ボリュームは少量のメモリーオーバーヘッドが発生するため、スワップスライスの方がスワップボリュームより好ましい場合があります。
+.sp
+.LP
+スワップまたはダンプを明示的に指定するが、スワップまたはダンプボリュームが自動的に作成されないようにする場合は、\fBlogical\fR 要素の次の属性を \fBtrue\fR に設定します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoswap\fR\fR
+.ad
+.sp .6
+.RS 4n
+この属性のデフォルト値は \fBfalse\fR です。\fBnoswap\fR が \fBfalse\fR の場合、領域があれば、インストーラは自動的にルートプールにスワップボリュームを作成します。
+.sp
+\fBnoswap\fR が \fBtrue\fR の場合、スワップボリュームは自動的に作成されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnodump\fR\fR
+.ad
+.sp .6
+.RS 4n
+この属性のデフォルト値は \fBfalse\fR です。\fBnodump\fR が \fBfalse\fR の場合、領域があれば、インストーラは自動的にルートプールにダンプボリュームを作成します。
+.sp
+\fBnodump\fR が \fBtrue\fR の場合、ダンプボリュームは自動的に作成されません。
+.RE
+
+.SS "ZFS ストレージプール"
+.sp
+.LP
+\fBtarget\fR セクションの \fBlogical\fR セクションを使用して、任意の数の ZFS ストレージプールを指定します。
+.sp
+.LP
+\fBlogical\fR 要素の \fBzpool\fR サブ要素を使用して、複数のプールを定義できます。これらのプールのうち 1 つだけをルートプールにできます。複数のルートプールを定義すると、インストールが失敗します。
+.sp
+.LP
+\fBzpool\fR 要素で、AI マニフェストにルートプールを定義し、ターゲットディスク、パーティション (GPT または \fBfdisk\fR)、またはスライスを指定しない場合、上述の「インストールの場所」で説明されているとおりに、インストーラがターゲットを選択します。この選択は自動的にルートプールに割り当てられます。
+.sp
+.LP
+ターゲットディスク、パーティション (GPT または \fBfdisk\fR)、あるいはスライスが AI マニフェストに指定されている場合は、\fBzpool\fR をこれらのディスク、パーティション (GPT または \fBfdisk\fR)、あるいはスライスの少なくとも 1 つに関連付ける必要があります。この関連付けを作成するには、\fBdisk\fR 要素、\fBgpt_partition\fR 要素、\fBpartition\fR 要素、または \fBslice\fR 要素の \fBin_zpool\fR 属性を使用します。
+.sp
+.LP
+ルートプールが、ファームウェアでブートできないターゲットデバイス (IPoIB 経由の iSCSI ディスクなど) に関連付けられている場合は、別のブートプールが必要です。ブートプールが定義されていない場合は、インストーラがブートプールを自動的に定義します。ブートプールがどのターゲットディスクにも関連付けられていない場合、インストーラはシステムに専用のブートプールデバイスが含まれているかどうかを確認し、それらをブートプールとして自動的に選択して、ミラー化された冗長性で構成します。システムに専用のブートプールデバイスが含まれていない場合は、ブートプールのためのデバイスをマニフェストで定義する必要があります。
+.sp
+.LP
+\fBzpool\fR 要素には次の属性があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは新しいプールの名前です。この値は、\fBzpool create\fR コマンドに渡すことができる名前にする必要があります。
+.sp
+この名前を \fBdisk\fR、\fBgpt_partition\fR、\fBpartition\fR、または \fBslice\fR 要素の \fBin_zpool\fR 属性の値として使用すると、そのディスク、GPT パーティション、\fBfdisk\fR パーティション、またはスライスを \fBzpool\fR 内のコンポーネントデバイスとして定義できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaction\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBaction\fR 属性は、次のいずれかの値を持ちます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは、\fBzpool\fR のデフォルトのアクションです。\fBcreate\fR アクションは、指定した名前でプールを作成するようにインストーラに指示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBdelete\fR アクションは、名前付きのプールを削除するようにインストーラに指示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpreserve\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpreserve\fR アクションは、名前付きプールを変更しないでおくようにインストーラに指示します。このアクションは、非ルートプールにのみ指定できます。
+.sp
+.LP
+次の場合は、\fBaction\fR 属性の値を \fBpreserve\fR にする必要があります。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+下位のいずれかの \fBfilesystem\fR の \fBaction\fR 属性の値が \fBpreserve\fR である。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+下位のいずれかの \fBzvol\fR の \fBaction\fR 属性の値が \fBpreserve\fR である。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+下位のいずれかの \fBzvol\fR の \fBaction\fR 属性の値が \fBuse_existing\fR である。
+.RE
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuse_existing\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBuse_existing\fR アクションは、既存のルートプールをインストールするようにインストーラに指示します。既存のボリュームまたはファイルシステム (データセット) が保持されます。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBis_root\fR\fR
+.ad
+.sp .6
+.RS 4n
+この属性のデフォルト値は \fBfalse\fR です。\fBis_root\fR が \fBtrue\fR である場合は、名前付きプールにルートプールが作成され、このプールに新しいブート環境が作成されます。
+.sp
+\fBis_root\fR が \fBfalse\fR であり、かつ \fBis_boot\fR が \fBfalse\fR である場合は、データプールが定義されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBis_boot\fR
+.ad
+.sp .6
+.RS 4n
+この属性のデフォルト値は \fBfalse\fR です。\fBis_boot\fR が \fBtrue\fR である場合は、名前付きプールにブートプールが作成されます。ブートプールでは、子サブ要素が定義されていない可能性があります。また、ブートプールはシステムによって管理され、マウントされたままにはならないため、\fBmountpoint\fR 属性は無視されます。
+.sp
+\fBis_boot\fR が \fBfalse\fR であり、かつ \fBis_root\fR が \fBfalse\fR である場合は、データプールが定義されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmountpoint\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBmountpoint\fR 属性は、プールの最上位ファイルシステムのマウントポイントを指定します。デフォルトのマウントポイントは \fB/\fIpoolname\fR\fR です。マウントポイントは絶対パスにする必要があります。
+.RE
+
+.sp
+.LP
+新しいプールの ZFS プロパティーを設定するには、\fBpool_options\fR 要素を使用します。同様に、自動作成された ZFS データセットの ZFS プロパティーを設定するには、\fBdataset_options\fR 要素を使用します。\fBpool_options\fR と \fBdataset_options\fR のどちらの要素にも、\fBoption\fR サブ要素があります。各 \fBoption\fR 要素には、\fBname\fR 属性と \fBvalue\fR 属性があります。これらの名前と値のペアで設定されたプロパティーは、\fBzpool\fR(1M) コマンドで適用されるものと同じ制限を受けます。次の例に、これらのプロパティーの設定方法を示します。
+.sp
+.in +2
+.nf
+<logical>
+  <zpool name="rpool" is_root="true">
+    <pool_options>
+      <option name="listsnaps" value="on"/>
+      <option name="delegation" value="off"/>
+    </pool_options>
+    <dataset_options>
+      <option name="atime" value="on"/>
+      <option name="compression" value="on"/>
+    </dataset_options>
+  </zpool>
+</logical>
+.fi
+.in -2
+
+.sp
+.LP
+プールには、任意の数の仮想デバイス冗長グループ (\fBvdev\fR 要素)、ZFS データセット (\fBfilesystem\fR 要素)、または ZFS ボリューム (\fBzvol\fR 要素) を定義できます。プールにブート環境 (\fBbe\fR 要素) を指定できます。次のセクションで、\fBvdev\fR、\fBfilesystem\fR、\fBzvol\fR、および \fBbe\fR 要素について説明します。
+.SS "仮想デバイス冗長グループ"
+.sp
+.LP
+\fBzpool\fR のサイズまたは構造を定義するには、\fBvdev\fR 要素を使用します。それぞれ異なる冗長タイプの複数の \fBvdev\fR 要素を指定できます。
+.sp
+.LP
+\fBzpool\fR に複数の \fBvdev\fR 要素が含まれている場合は、\fBin_zpool\fR 属性で定義されている任意の \fBdisk\fR、\fBgpt_partition\fR、\fBpartition\fR、または \fBslice\fR 要素で \fBin_vdev\fR 属性を使用する必要があります。
+.sp
+.LP
+\fBvdev\fR 名が AI マニフェスト全体で一意の場合は、ディスク、GPT パーティション、\fBfdisk\fR パーティション、またはスライスの \fBin_zpool\fR 属性を省略できます。
+.sp
+.LP
+\fBzpool\fR に含まれる \fBvdev\fR 要素が 1 つだけの場合、\fBdisk\fR、\fBgpt_partition\fR、\fBpartition\fR、または \fBslice\fR の \fBin_vdev\fR 属性を省略できます。
+.sp
+.LP
+\fBvdev\fR 要素には次の属性があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは新しい \fBvdev\fR の名前です。
+.sp
+この名前を \fBdisk\fR、\fBgpt_partition\fR、\fBpartition\fR、または \fBslice\fR 要素の \fBin_vdev\fR 属性の値として使用し、そのディスク、パーティション (GPT または \fBfdisk\fR)、またはスライスを \fBvdev\fR 内のコンポーネントデバイスとして定義してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBredundancy\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBredundancy\fR 属性は、次のいずれかの値を持ちます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmirror\fR\fR
+.ad
+.sp .6
+.RS 4n
+これがデフォルト値です。\fBredundancy\fR が \fB mirror\fR であるか、指定されていない場合、含まれるすべてのデバイスが相互にミラーであるとみなされます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBraidz\fR、\fBraidz1\fR、\fBraidz2\fR、\fBraidz3\fR\fR
+.ad
+.sp .6
+.RS 4n
+これらのいずれかの値を持つグループ内のデバイスは、RAIDZ グループの定義に使われます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBspare\fR\fR
+.ad
+.sp .6
+.RS 4n
+このグループ内のデバイスは、障害発生時のホットスペアとみなされます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcache\fR\fR
+.ad
+.sp .6
+.RS 4n
+このグループ内のデバイスは、プールのキャッシュを提供します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlog\fR、\fBlogmirror\fR\fR
+.ad
+.sp .6
+.RS 4n
+このグループ内のデバイスはログに使用されます。\fBlogmirror\fR を指定した場合、デバイスはミラーです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnone\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBredundancy\fR が \fBnone\fR の場合、冗長性は定義されません。複数のデバイスがこのグループに含まれている場合、これらのデバイスはストライプ化されます。
+.RE
+
+ルートプールは、次のいずれかの構成としてのみ定義できます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+デバイスが 1 つで \fBredundancy\fR タイプが \fBnone\fR。この構成では、複数のデバイスがサポートされません。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+デバイスが複数で \fBredundancy\fR タイプが \fBmirror\fR。
+.RE
+.RE
+
+.sp
+.LP
+\fBvdev\fR にデバイスを追加するには、\fBdisk\fR、\fBgpt_partition\fR、\fBpartition\fR、または \fBslice\fR 要素の \fBin_zpool\fR および \fBin_vdev\fR 属性を使用します。次の例では、2 つのディスクでミラー化される \fBrpool\fR というルートプールを指定します。
+.sp
+.in +2
+.nf
+<disk whole_disk="true" in_zpool="rpool" in_vdev="mirrored">
+  <disk_name name="c0t0d0" name_type="ctd"/>
+</disk>
+<disk whole_disk="true" in_zpool="rpool" in_vdev="mirrored">
+  <disk_name name="c1t0d0" name_type="ctd"/>
+</disk>
+<logical>
+  <zpool name="rpool" is_root="true">
+    <vdev name="mirrored" redundancy="mirror"/>
+  </zpool>
+</logical>
+.fi
+.in -2
+
+.sp
+.LP
+参照しているプールまたは仮想デバイスが明確な場合は、\fBin_zpool\fR 属性または \fBin_vdev\fR 属性のいずれかを省略できます。
+.SS "ファイルシステム (データセット)"
+.sp
+.LP
+ZFS プール内に ZFS ファイルシステムまたはデータセットを定義するには、\fBfilesystem\fR 要素を使用します。
+.sp
+.LP
+\fBfilesystem\fR 要素には次の属性があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは、\fBzpool\fR に対して相対的な、新しい \fBfilesystem\fR の名前です。たとえば、\fBrpool\fR という名前の \fBzpool\fR 内の \fBfilesystem\fR の名前が \fBexport\fR である場合、ZFS データセット名は \fBrpool/export\fR になります。
+.sp
+\fBfilesystem\fR の \fBin_be\fR 属性が \fBtrue\fR に設定されている場合、この名前は、ブート環境のルートデータセットに関連しています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaction\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBaction\fR 属性は、次のいずれかの値を持ちます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは、\fBfilesystem\fR のデフォルトのアクションです。\fBcreate\fR アクションは、指定した名前でファイルシステムを作成するようにインストーラに指示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBdelete\fR アクションは、名前付きのファイルシステムを削除するようにインストーラに指示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpreserve\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpreserve\fR アクションは、名前付きファイルシステムを変更しないでおくようにインストーラに指示します。\fBfilesystem\fR に \fBpreserve\fR を指定する場合、関連付けられた \fBzpool\fR に \fBpreserve\fR を指定する必要があります。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmountpoint\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBmountpoint\fR 属性は、新しいファイルシステムのマウントポイントを指定します。マウントポイントを指定しない場合、ファイルシステムはその親からマウントポイントを継承します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin_be\fR\fR
+.ad
+.sp .6
+.RS 4n
+この属性のデフォルト値は \fBfalse\fR です。\fBin_be\fR が \fBfalse\fR の場合、新しいデータセットがすべてのブート環境で共有されます。
+.sp
+\fBin_be\fR が \fBtrue\fR の場合、各ブート環境内にこの新しいデータセットの個別のコピーが作成されます。\fBin_be\fR が \fBtrue\fR の場合、\fBname\fR 属性の値は、ブート環境のルートデータセットに関連しています。
+.RE
+
+.sp
+.LP
+\fBfilesystem\fR に ZFS データセットプロパティーを設定するには、\fBoptions\fR サブ要素を使用します。編集可能な任意の ZFS ファイルシステムプロパティーを設定できます。次の例に示すように、\fBfilesystem\fR での \fBoptions\fR 要素の使用は、\fBzpool\fR での \fBdataset_options\fR 要素の使用に似ています。
+.sp
+.in +2
+.nf
+<logical>
+  <zpool name="rpool" is_root="true">
+    <filesystem name="export">
+      <options>
+        <option name="compression" value="off"/>
+        <option name="dedup" value="on"/>
+      </options>
+    </filesystem>
+  </zpool>
+</logical>
+.fi
+.in -2
+
+.sp
+.LP
+子 \fBfilesystem\fR は親 \fBfilesystem\fR に設定されているプロパティーが明らかに異なって設定されていないかぎり、そのプロパティーを継承します。これは ZFS ファイルシステムのデフォルトの動作です。
+.SS "ZFS ボリューム"
+.sp
+.LP
+ZFS プール内に ZFS ボリュームを定義するには、\fBzvol\fR 要素を使用します。\fBzvol\fR は一般に、スワップデバイスまたはダンプデバイスに使用しますが、ほかの用途もあります。
+.sp
+.LP
+\fBzvol\fR 要素には次の属性があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは、新しい ZFS ボリュームの名前です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaction\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBaction\fR 属性は、次のいずれかの値を持ちます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは、\fBzvol\fR のデフォルトのアクションです。\fBcreate\fR アクションは、指定した名前で ZFS ボリュームを作成するようにインストーラに指示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdelete\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBdelete\fR アクションは、名前付きのボリュームを削除するようにインストーラに指示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpreserve\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBpreserve\fR アクションは、名前付き \fBzvol\fR を変更しないでおくようにインストーラに指示します。\fBzvol\fR に対して \fBpreserve\fR が指定されている場合は、関連付けられた \fBzpool\fR に対して \fBpreserve\fR を指定する必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuse_existing\fR\fR
+.ad
+.sp .6
+.RS 4n
+この値をスワップデバイスまたはダンプデバイスに指定した場合、既存のボリュームが再利用されます。\fBzvol\fR に \fBuse_existing\fR を指定する場合、関連付けられた \fBzpool\fR に \fBpreserve\fR を指定する必要があります。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuse\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBuse\fR 属性は、次のいずれかの値を持ちます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnone\fR\fR
+.ad
+.sp .6
+.RS 4n
+これがデフォルト値です。\fBuse\fR が \fBnone\fR の場合、\fBzvol\fR が作成されますが、インストール時には使用されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBswap\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBuse\fR が \fBswap\fR の場合は、\fBzvol\fR はスワップデバイスとして作成されて使用されます。\fBzvol\fR はインストール時にもスワップデバイスとして使用されます。\fBzvol\fR 要素の \fBsize\fR サブ要素には、値 \fBmax\fR を指定できます。\fBmax\fR キーワードを指定すると、ボリュームのサイズは、ボリュームが作成されるプールの空き容量の 90% になります。プールの 1 つのボリュームのみでサイズ \fBmax\fR を指定できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdump\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBuse\fR が \fBdump\fR の場合は、\fBzvol\fR はダンプデバイスとして作成されて使用されます。\fBzvol\fR はインストール時にもダンプデバイスとして使用されます。
+.RE
+
+.RE
+
+.sp
+.LP
+ボリュームのサイズを指定するには、\fBsize\fR サブ要素を使用します。\fBsize\fR 要素の使用方法の詳細については、「ディスクの配置」の初めを参照してください。ボリュームのサイズを指定する場合は、次の例に示すように、\fBzvol\fR 要素内で \fBsize\fR サブ要素をどの \fBoptions\fR サブ要素よりもあとに指定する必要があります。
+.sp
+.LP
+\fBzvol\fR に ZFS ボリュームオプションを設定するには、\fBoptions\fR サブ要素を使用します。\fBzvol\fR の \fBoptions\fR 要素の使い方は、下の例に示すように、\fBzpool\fR の \fBdataset_options\fR 要素の使い方に似ています。
+.sp
+.in +2
+.nf
+<logical>
+  <zpool name="rpool" is_root="true">
+    <zvol name="swap">
+      <options>
+        <option name="compression" value="off"/>
+      <options>
+      <size val="8gb"/>
+    </zvol>
+  </zpool>
+</logical>
+.fi
+.in -2
+
+.SS "ブート環境"
+.sp
+.LP
+インストール時のブート環境の作成方法を指定するには、\fBbe\fR 要素を使用します。
+.sp
+.LP
+\fBbe\fR 要素には、1 つの属性があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.RS 8n
+.rt  
+これは、インストーラによって作成される新しいブート環境の名前です。\fBbe\fR 要素が指定されていない場合、このブート環境のデフォルト名は \fBsolaris\fR です。
+.RE
+
+.sp
+.LP
+インストーラはブート環境サブシステムによって提供されている自動名前付け機能を利用します。既存のターゲット領域にインストールする場合 (たとえば、ゾーンをインストールする場合) は、\fBbe\fR 要素の \fBname\fR 属性で指定された名前を持つブート環境がすでに存在する可能性があります。指定したブート環境名がすでに存在する場合、この名前は新しい名前を生成するためのベースとして使われます。たとえば、\fBbe\fR を指定せず、\fBsolaris\fR という名前のブート環境がすでに存在する場合、新しいブート環境には、\fBsolaris-\fIn\fR\fR という名前が付けられます。ここで、\fIn\fR は、すでに存在していないブート環境名を形成するためのカウント順の先頭の整数です。
+.sp
+.LP
+ブート環境は、ZFS データセットとして作成され、ZFS プロパティーを設定できます。ブート環境に ZFS プロパティーを設定するには、次の例に示すように、\fBoptions\fR サブ要素を使用します。
+.sp
+.in +2
+.nf
+<logical>
+  <zpool name="rpool" is_root="true">
+    <be name="installed_be">
+      <options>
+        <option name="compression" value="on"/>
+        <option name="dedup" value="on"/>
+      <options>
+    </be>
+  </zpool>
+</logical>
+.fi
+.in -2
+
+.SH ソフトウェア
+.sp
+.LP
+\fBsoftware\fR 要素はインストールするソフトウェアを指定します。\fBsoftware\fR セクションは、次の情報を指定します。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ソフトウェアソースのタイプ
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ソースの場所
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+インストールまたはアンインストールするソフトウェアパッケージの名前
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+インストールするオプションのソフトウェアのコンポーネント
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+イメージプロパティー
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+IPS リポジトリまたは統合されたアーカイブにアクセスするために必要な SSL 鍵と証明書
+.RE
+.sp
+.LP
+\fBsoftware\fR 要素には次の属性があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.RS 8n
+.rt  
+これは \fBsoftware\fR インスタンスの名前です。この名前はこの AI マニフェストのすべての \fBsoftware\fR インスタンスの中で一意である必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtype\fR\fR
+.ad
+.RS 8n
+.rt  
+これは、ソフトウェアソースのタイプです。
+.sp
+.LP
+\fBtype\fR 属性は、次のいずれかの値を持ちます。\fBtype\fR が指定されていない場合のデフォルト値は \fBIPS\fR です。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBIPS\fR: IPS パッケージリポジトリ
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBP5I\fR: IPS パッケージファイル
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBSVR4\fR: SVR4 パッケージ
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBCPIO\fR: \fBcpio\fR アーカイブ
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBARCHIVE\fR: 統合されたアーカイブ
+.RE
+.RE
+
+.sp
+.LP
+\fBsoftware\fR 要素には次の属性があります。
+.sp
+.in +2
+.nf
+<!-- one or more software elements -->
+<software>
+  <!-- zero or one destination element
+       Only used when type is IPS or P5I.
+  -->
+  <destination>
+    <!-- image properties and
+         optional software components
+    -->
+  </destination>
+  <!-- zero or one source element -->
+  <source>
+    <!-- one or more publisher, dir or file elements
+         IPS, P5I, and SVR4 types:
+             one or more publisher/origin elements
+         CPIO types: one or more dir elements
+				ARCHIVE types: one file element
+        -->
+  </source>
+  <!-- zero or more software_data elements
+       At least one software_data element must have
+           an action of install.
+       P5I type: zero software_data elements
+  -->
+  <software_data>
+    <!-- one or more name elements 
+				ARCHIVE type: one name element-->
+    <name>...</name>
+  </software_data>
+</software>
+.fi
+.in -2
+
+.SS "IPS インストール"
+.sp
+.LP
+\fBtype\fR 属性を指定しない場合のデフォルトのインストールタイプは \fBIPS\fR です。
+.sp
+.LP
+\fBsource\fR 要素を使用して、パッケージのインストールに使用するパブリッシャーを指定します。\fBpublisher\fR 要素では \fBname\fR 属性が必須であり、少なくとも 1 つの \fBorigin\fR サブ要素が必要です。\fBpublisher\fR はそれぞれ複数の起点およびミラーと、1 つの \fBcredentials\fR サブ要素と、複数の \fBcmd_options\fR サブ要素を持つことができます。
+.sp
+.LP
+1 つの \fBsource\fR 要素に複数の発行元を指定できます。AI マニフェストに発行元が定義されている順番で、インストールする IPS パッケージの発行元が検索され、インストールされたイメージに発行元が設定されます。
+.sp
+.LP
+\fBpublisher\fR 要素の \fBcmd_options\fR サブ要素を使用して、\fBpublisher\fR で実行される \fBpkg\fR(1) \fBset-publisher\fR コマンドに渡される options 文字列を指定します。この要素は、\fBpublisher\fR のプロパティー、属性、またはその他のオプションを設定するために使用できます。\fBset-publisher\fR サブコマンドの詳細については、\fBpkg\fR(1) マニュアルページを参照してください。インストールのコンテキストで、すべてのオプションがパブリッシャーへの設定に適用できるわけではありません。
+.sp
+.LP
+次の例では、非固定的属性を \fBpublisher\fR に設定し、パブリッシャーの署名ポリシープロパティーを ignore に設定する 2 つの \fBcmd_options\fR を持つ \fBpublisher\fR を指定します。
+.sp
+.in +2
+.nf
+<software type="IPS">
+           <source>
+               <publisher name="solaris">
+                   <origin name="http://pkg.oracle.com/solaris/release"/>
+                   <mirror name="http://localpkg.mycompany.com/solaris"/>
+               </publisher>
+               <publisher name="internal-software">
+                   <origin name="http://internalsoft.mycompany.com/"/>
+                   <cmd_options>--non-sticky</cmd_options>
+                   <cmd_options>--set-property signature-policy=ignore</cmd_options>
+               </publisher>
+           </source>
+       </software>
+.fi
+.in -2
+
+.sp
+.LP
+非大域ゾーンをインストールする場合、ゾーンによってシステムリポジトリが使用されます。AI マニフェストに指定されたパブリッシャーは、システムリポジトリによって提供されたパブリッシャーの後に、AI マニフェスト内の順番で追加されます。システムリポジトリの詳細は、\fBpkg\fR(1) および \fBpkg.sysrepo\fR(1M) のマニュアルページを参照してください。
+.sp
+.LP
+次の例では、複数のパブリッシャーを指定しており、そのうちの 1 つにミラーと起点があります。
+.sp
+.in +2
+.nf
+<software type="IPS">
+  <source>
+    <publisher name="solaris">
+      <origin name="http://pkg.oracle.com/solaris/release"/>
+      <mirror name="http://localpkg.mycompany.com/solaris"/>
+    </publisher>
+    <publisher name="internal-software">
+      <origin name="http://internalsoft.mycompany.com/"/>
+    </publisher>
+  </source>
+</software>
+.fi
+.in -2
+
+.sp
+.LP
+\fBsoftware_data\fR 要素を使用して、インストール、拒否、回避、回避解除、またはアンインストールするパッケージを指定します。\fBsoftware_data\fR 要素の \fBaction\fR 属性には、次の値のいずれかを指定できます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstall\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBname\fR サブ要素に指定されている IPS パッケージをインストールします。\fBaction\fR 属性が指定されていない場合は、これがデフォルトになります。少なくとも 1 つの \fBsoftware_data\fR 要素に、\fBinstall\fR の \fBaction\fR が必要です。
+.sp
+デフォルトでは、指定されたソースから使用可能で、イメージ内のほかのパッケージと互換性のある名前付きパッケージの最新バージョンがインストールされます。他のバージョンのパッケージをインストールするには、パッケージの FMRI でバージョン文字列を使用します。たとえば、\fBpkg:/mypkg@0.5.11-0.175.0.0.0.2.1\fR は \fBpkg:/mypkg\fR より正確です。指定されたバージョンにイメージ内の他のパッケージとの互換性がない場合、インストールは失敗します。指定されたバージョンが指定されたソースから入手可能ではない場合、インストールは失敗します。イメージ内のほかのパッケージと互換性のある、指定されたソースから入手可能な最新バージョンをインストールするには、キーワード \fBlatest\fR (たとえば、\fBpkg:/mypkg@latest\fR) を使用します。
+.sp
+\fBname\fR サブ要素で指定されたパッケージによって、明示的に指定されていない他のパッケージがインストールされることがあります。これらのパッケージのいずれかがインストールしたくないパッケージである場合は、インストールしたくないパッケージの名前を \fBreject\fR サブ要素に指定できます。
+.sp
+\fBreject\fR サブ要素は、\fBreject\fR サブ要素が表示される \fBinstall\fR セクションにのみ適用されます。パッケージが、いずれかの \fBinstall\fR セクション内の \fBreject\fR サブ要素の値であっても、別の \fBinstall\fR セクションにのみインストールされる場合、そのパッケージはインストールされ、拒否されません。
+.sp
+グループ依存関係のターゲットである拒否対象パッケージは回避リストに登録されます。次の \fBavoid\fR アクションを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBavoid\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBname\fR サブ要素内の IPS パッケージを回避リストに追加します。
+.sp
+回避リストのパッケージは、グループ依存関係.のターゲットである場合、インストールされません。
+.sp
+回避リストのパッケージは、必要な依存関係.のターゲットである場合、インストールされます。その必要な依存関係が削除される (たとえば、必要な依存関係が含まれるパッケージがアンインストールされる) と、回避されたパッケージはアンインストールされます。
+.sp
+現在インストールされていないパッケージのみを回避できます。そのため、\fBavoid\fR セクションは、回避したいパッケージに対する依存関係を持つパッケージをインストールする \fBinstall\fR セクションの前に指定する必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunavoid\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBname\fR サブ要素内の IPS パッケージを回避リストから削除します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuninstall\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBname\fR サブ要素に指定されている IPS パッケージを削除します。グループ依存関係のターゲットであるアンインストール済みパッケージは回避リストに登録されます。上の \fBavoid\fR アクションを参照してください。
+.RE
+
+.sp
+.LP
+インストール中に作成される回避リストは、インストール済みイメージに引き続き存在します。
+.sp
+.LP
+次は、\fBsoftware_data\fR セクションを、タイプ IPS の \fBsoftware\fR セクション内の異なる \fBaction\fR 値とともに使用する例を示しています。
+.sp
+.in +2
+.nf
+<software_data action="avoid">
+  <name>pkg:/to/avoid</name>
+</software_data>
+<software_data action="install">
+  <name>pkg:/to/install</name>
+  <reject>pkg:/to/reject</reject>
+</software_data>
+<software_data action="uninstall">
+  <name>pkg:/unwanted/pkg</name>
+</software_data>
+.fi
+.in -2
+
+.SS "P5I インストール"
+.sp
+.LP
+\fB\&.p5i\fR ファイルは、IPS パブリッシャー、パッケージ、ミラーなどを記述するファイルです。
+.sp
+.LP
+1 つ以上の \fB\&.p5i\fR ファイルを処理するように指定するには、次の例に示すように、\fBpublisher\fR 要素に起点としてファイルを指定します。
+.sp
+.in +2
+.nf
+<software type="P5I">
+  <source>
+    <publisher>
+      <origin name="/somewhere/image1.p5i"/>
+      <origin name="/somewhere/image2.p5i"/>
+    </publisher>
+  </source>
+</software>
+.fi
+.in -2
+
+.sp
+.LP
+この AI マニフェストに、IPS タイプソフトウェアセクションもない場合、\fB\&.p5i\fR ファイルに起点が指定されていることを確認してください。
+.sp
+.LP
+インストールするパッケージの指定は、P5I インストールでサポートされていません。そのため、\fBsoftware_data\fR 要素は、タイプ \fBP5I\fR の \fBsoftware\fR 要素ではサポートされません。
+.SS "SVR4 インストール"
+.sp
+.LP
+SVR4 転送の場合、SVR4 パッケージサブディレクトリまたは SVR4 パッケージデータストリームファイルを格納するディレクトリを、ファイルディレクトリパスまたは FILE URI を使用して指定する必要があります。SVR4 パッケージデータストリームファイルは HTTP URI を使用して指定することもできます。 
+.sp
+.in +2
+.nf
+<software type="SVR4">
+  <source>
+    <publisher>
+      <origin name="/somedir"/>
+    </publisher>
+  </source>
+</software>
+.fi
+.in -2
+
+.sp
+.LP
+\fBsoftware_data\fR 要素は、実行されるアクションを指定するために使用します。\fBaction\fR 属性は、次の 2 つのうちいずれかの値を持ちます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstall\fR\fR
+.ad
+.sp .6
+.RS 4n
+ソースからファイルを新しいブート環境にコピーします。\fBaction\fR 属性が指定されていない場合は、これがデフォルトになります。少なくとも 1 つの \fBsoftware_data\fR 要素に、インストールのアクションが必要です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuninstall\fR\fR
+.ad
+.sp .6
+.RS 4n
+新しいブート環境からファイルを削除します。
+.RE
+
+.sp
+.LP
+次の例に示すように、これらのアクションごとに、\fBname\fR 要素に 1 つ以上のパッケージを指定できます。
+.sp
+.in +2
+.nf
+<software type="SVR4">
+  <source>
+    <publisher>
+      <origin name="/somedir"/>
+    </publisher>
+  </source>
+  <software_data> <!-- defaults to install action -->
+    <name>ORGpackage1</name>
+    <name>ORGpackage2</name>
+  </software_data>
+  <software_data action="uninstall">
+    <name>ORGpackage8</name>
+  </software_data>
+</software>
+.fi
+.in -2
+
+.SS "CPIO インストール"
+.sp
+.LP
+CPIO 転送の場合、ソースディレクトリを指定する必要があります。転送先ディレクトリは、インストール時の新しいブート環境のマウントポイントに設定されます。
+.sp
+.in +2
+.nf
+<software type="CPIO">
+  <source>
+    <dir path="/somedir"/>
+  </source>
+</software>
+.fi
+.in -2
+
+.sp
+.LP
+\fBsoftware_data\fR 要素は、実行されるアクションを指定するために使用します。\fBaction\fR 属性は、次のいずれかの値を持ちます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstall\fR\fR
+.ad
+.sp .6
+.RS 4n
+ソースからファイルを新しいブート環境にコピーします。\fBaction\fR 属性が指定されていない場合は、これがデフォルトになります。少なくとも 1 つの \fBsoftware_data\fR 要素に、インストールのアクションが必要です。
+.sp
+\fBname\fR 要素を使用して、コピー元のファイルまたはディレクトリを指定します。\fBname\fR 要素に指定されるパスは、ソースに相対的になります。
+.sp
+.in +2
+.nf
+<software_data>
+  <!-- defaults to install action -->
+  <name>path/relative/to/source</name>
+  <name>another/path/relative/to/source</name>
+</software_data>
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuninstall\fR\fR
+.ad
+.sp .6
+.RS 4n
+新しいブート環境からファイルを削除します。
+.sp
+\fBname\fR 要素を使用して、削除されるファイルまたはディレクトリを指定します。\fBname\fR 要素に指定されるパスは、宛先に相対的になります。
+.sp
+.in +2
+.nf
+<software_data action="uninstall">
+  <name>path/relative/to/destination</name>
+</software_data>
+.fi
+.in -2
+
+.RE
+
+.SS "ARCHIVE インストール"
+.sp
+.LP
+ARCHIVE 転送の場合、ソースファイルの URI を指定する必要があります。URI 値は HTTP、HTTPS、または FILE URI で指定できます。
+.sp
+.in +2
+.nf
+<software type="ARCHIVE">
+<source>
+ <file uri="http://mycompany.com/myarchive.ua"/>
+</source>
+</software>
+.fi
+.in -2
+
+.sp
+.LP
+\fBsoftware_data\fR 要素は、実行されるアクションを指定するために使用します。アクションの \fBattribname\fR 要素の値は、統合されたアーカイブに含まれているいずれかの配備可能システムの名前にする必要があります。それぞれの配備可能システムの名前は、非大域ゾーンまたは大域ゾーンの名前に一致します。
+.sp
+.in +2
+.nf
+<software_data action="install">
+	  <name>myzonename</name>
+</software_data>
+.fi
+.in -2
+
+.sp
+.LP
+復旧用の統合されたアーカイブは、システムの復旧にのみ使用できるもので、復旧用の統合されたアーカイブ内から配備可能システムの選択を行うことはできません。
+.sp
+.LP
+復旧用の統合アーカイブでは、name 要素の値を \fB*\fR にする必要があります。
+.sp
+.in +2
+.nf
+<software_data action="install">
+		<name>*</name>
+</software_data>
+.fi
+.in -2
+
+.SS "オプションのソフトウェアコンポーネントとイメージプロパティー"
+.sp
+.LP
+\fBdestination\fR 要素と \fBimage\fR サブ要素を使用して、次の情報を指定します。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+インストールするオプションのソフトウェアのコンポーネント
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+イメージプロパティー
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+SSL キーおよび証明書
+.RE
+.sp
+.LP
+\fBdestination\fR セクションは、IPS および P5I インストールタイプにのみ適用されます。\fBdestination\fR 要素には \fBimage\fR サブ要素を 1 つだけ指定できます。
+.SS "SSL キーおよび証明書"
+.sp
+.LP
+\fBimage\fR 要素の属性を使用して、クライアント SSL 認証を使用するパブリッシャーに必要な SSL キーおよび証明書を指定します。ここに指定したキーと証明書は、AI マニフェストに最初に定義されているパブリッシャーに適用されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBssl_key\fR\fR
+.ad
+.sp .6
+.RS 4n
+この属性は、次の \fBpkg\fR コマンドにマップします。
+.sp
+.in +2
+.nf
+pkg set-publisher -k \fIssl_key\fR
+.fi
+.in -2
+
+\fBssl_key\fR 属性の値は \fIssl_key\fR です。\fBpkg set-publisher\fR コマンドの詳細については、\fBpkg\fR(1) マニュアルページを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBssl_cert\fR\fR
+.ad
+.sp .6
+.RS 4n
+この属性は、次の \fBpkg\fR コマンドにマップします。
+.sp
+.in +2
+.nf
+pkg set-publisher -c \fIssl_cert\fR
+.fi
+.in -2
+
+\fBssl_cert\fR 属性の値は \fIssl_cert\fR です。
+.RE
+
+.SS "オプションのソフトウェアコンポーネント"
+.sp
+.LP
+インストールするオプションのソフトウェアコンポーネントを指定するには、\fBimage\fR 要素の \fBfacet\fR サブ要素を使用します。ファセットは、個別のソフトウェアパッケージではありませんが、ロケール、ドキュメント、デバッグ情報を含むファイルなどの開発ファイルなど、特定のソフトウェアパッケージのオプションのコンポーネントです。たとえば、1 つか 2 つの言語のみをインストールするように指定することで、領域を節約できます。IPS ファセットの詳細については、\fBpkg\fR(1) マニュアルページを参照してください。
+.sp
+.LP
+\fBfacet\fR 要素には、ブール型の \fBset\fR 属性と IPS ファセットの名前の値があります。
+.sp
+.in +2
+.nf
+<facet set="true|false">\fIfacet_name\fR</facet>
+.fi
+.in -2
+
+.sp
+.LP
+次の例では、パッケージのドイツ語と英語のファセットのみをインストールするように指定しています。例では、まずロケールをインストールしないように指定し、次に、ドイツ語と英語のロケールをインストールするように指定しています。
+.sp
+.in +2
+.nf
+<destination>
+  <image>
+    <!-- de-select all locales -->
+    <facet set="false">facet.locale.*</facet>
+    <!-- specify specific locales to install -->
+    <!-- install German and English only -->
+    <facet set="true">facet.locale.de</facet>
+    <facet set="true">facet.locale.de_DE</facet>
+    <facet set="true">facet.locale.en</facet>
+    <facet set="true">facet.locale.en_US</facet>
+  </image>
+</destination>
+.fi
+.in -2
+
+.SS "イメージプロパティー"
+.sp
+.LP
+このインストールによって作成される新しいイメージの IPS イメージプロパティーを指定するには、\fBimage\fR 要素の \fBproperty\fR サブ要素を使用します。
+.sp
+.LP
+\fBproperty\fR 要素には、ブール型の \fBval\fR 属性とプロパティーの名前の値があります。
+.sp
+.in +2
+.nf
+<property val="true|false">\fIproperty_name\fR</property>
+.fi
+.in -2
+
+.sp
+.LP
+設定できるプロパティーについては、\fBpkg\fR(1) マニュアルページの「イメージプロパティー」セクションを参照してください。
+.SH ブート構成 (X86 のみ)
+.sp
+.LP
+AI マニフェストを使用して、インストール先のシステムの GRUB ブートメニューの構成方法を変更できます。
+.sp
+.LP
+このセクションは、ゾーンのインストールには適用されず、非大域ゾーンのインストール時に無視されます。
+.sp
+.LP
+GRUB ブートメニューを変更するには、\fBboot_mods\fR 要素と \fBboot_entry\fR サブ要素を使用します。
+.sp
+.LP
+\fBboot_mods\fR 要素には次の属性があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtitle\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBtitle\fR 属性の値は、この \fBboot_mods\fR 要素の \fBboot_entry\fR サブ要素で指定されたブートエントリのベースタイトルです。この属性値は、\fB/etc/release\fR の最初の行またはインストールメディアから自動的に生成された名前をオーバーライドします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtimeout\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBtimeout\fR 属性の値は、この \fBboot_mods\fR 要素のデフォルトの \fBboot_entry\fR が選択されるまで待つ秒数です。
+.RE
+
+.sp
+.LP
+SPARC システムでは、\fBtitle\fR 属性のみを設定できます。SPARC システムでは、このセクションのその他のすべての設定が無視されます。
+.sp
+.LP
+ブートメニューに 1 つ以上のメニュー項目を追加するには、\fBboot_entry\fR サブ要素を使用します。これらのメニュー項目は、インストーラによって自動的に生成されるメニュー項目に追加されます。\fBboot_entry\fR からのメニュー項目が存在する場合、アクティブな BE 用のデフォルトのメニュー項目は存在しません。
+.sp
+.LP
+\fBboot_entry\fR 要素には次の属性があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdefault_entry\fR\fR
+.ad
+.sp .6
+.RS 4n
+ブール値が \fBtrue\fR に設定されている場合、このメニュー項目がブート時にデフォルトで選択されるオプションになります。この属性のデフォルト値は \fBfalse\fR です。
+.sp
+複数の \fBboot_entry\fR 要素の \fBdefault_entry \fR が \fBtrue\fR に設定されている場合、それらの最後のエントリがブート時にデフォルトで選択されるオプションになります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinsert_at\fR\fR
+.ad
+.sp .6
+.RS 4n
+この属性には、次の 2 つのうちいずれかの値を設定できます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBend\fR\fR
+.ad
+.RS 9n
+.rt  
+生成されるブートメニューの末尾にエントリを配置します。これがデフォルトの配置です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstart\fR\fR
+.ad
+.RS 9n
+.rt  
+生成されるブートメニューの先頭にエントリを配置します。
+.RE
+
+.RE
+
+.sp
+.LP
+\fBboot_entry\fR メニュー項目は、次のサブ要素によって定義されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtitle_suffix\fR\fR
+.ad
+.sp .6
+.RS 4n
+この要素は必須です。この要素は、\fBboot_mods\fR 要素に指定されたタイトルの末尾に追加されるテキストを定義します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBkernel_args\fR\fR
+.ad
+.sp .6
+.RS 4n
+この要素はオプションです。この要素は、ブートローダーによってカーネルに渡される一連の値です。
+.RE
+
+.sp
+.LP
+次の例では、メニューの最後のエントリで、20 秒後に自動的に選択される「Boot Testing Default Boot Entry」というブートメニューエントリを指定しています。
+.sp
+.in +2
+.nf
+<boot_mods title="Boot Testing" timeout="20">
+  <boot_entry default_entry="true">
+    <title_suffix>Default Boot Entry</title_suffix>
+  </boot_entry>
+</boot_mods>
+.fi
+.in -2
+
+.SH その他の構成
+.sp
+.LP
+\fBconfiguration\fR 要素は、非大域ゾーンの構成をサポートします。大域ゾーンシステムをインストールする場合、大域ゾーンのインストール後に、AI マニフェストに指定されたゾーン構成を使用して、非大域ゾーンがシステムにインストールされます。
+.sp
+.LP
+\fBconfiguration\fR 要素には次の属性があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtype\fR\fR
+.ad
+.RS 10n
+.rt  
+インストールする構成のタイプ。AI によってサポートされるタイプは \fBzone\fR のみです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBname\fR\fR
+.ad
+.RS 10n
+.rt  
+構成に指定される名前。この名前は、AI マニフェストのすべてのコンポーネントで一意である必要があります。タイプ \fBzone\fR の構成の場合、この名前は、ゾーンの \fBzonename\fR としても使われます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsource\fR\fR
+.ad
+.RS 10n
+.rt  
+AI がこのコンポーネントの構成ファイルをダウンロードする場所。値は HTTP または FILE URI の指定です。タイプ \fBzone\fR の構成の場合、この値は、\fBzonecfg export\fR コマンドから生成されるゾーン構成ファイルを示している必要があります。
+.RE
+
+.sp
+.LP
+次の指定では、\fBzone1\fR をインストールクライアントにインストールします。
+.sp
+.in +2
+.nf
+<configuration type="zone" name="zone1"
+  source="http://myserver.com/configs/zone1/config"/>
+.fi
+.in -2
+
+.sp
+.LP
+次の同等の指定では、\fBzone1\fR をインストールクライアントにインストールしますが、\fBmyzone\fR という名前のアーカイブされたゾーン構成を含む統合されたアーカイブを使用します。
+.sp
+.in +2
+.nf
+<configuration type="zone" name="zone1"
+source="archive:myzone"
+archive="http://myserver.com/archives/mysystem.uar"/>
+.fi
+.in -2
+
+.sp
+.LP
+ゾーンの構成とインストールの詳細については、Chapter 12, \fI「Installing and Configuring Zones,」\fR in \fI『Installing Oracle Solaris 11.3 Systems』\fRを参照してください。
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/auto_install/manifest/default.xml \fR\fR
+.ad
+.sp .6
+.RS 4n
+カスタマイズなしのデフォルトのシステムインストールの指定。この AI マニフェストは、参考用にのみシステムに提供されています。新しい AI マニフェストを作成するには、関連インストールサービスイメージからこのファイルのコピーを使用します。インストールサービスからこのファイルをコピーする方法については、「説明」セクションを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/auto_install/manifest/zone_default.xml \fR\fR
+.ad
+.sp .6
+.RS 4n
+カスタマイズなしのデフォルトのゾーンインストール。このファイルは、\fBzoneadm install\fR コマンドによって、非大域ゾーンをインストールするためのデフォルトのマニフェストとして使われます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/share/auto_install/manifest/ai_manifest.xml \fR\fR
+.ad
+.sp .6
+.RS 4n
+詳細がコメントアウトされているテンプレート AI マニフェスト。このファイルは、実行可能ないくつかのカスタマイズの例を提供しています。このファイルは、参考用にのみシステムに提供されています。新しい AI マニフェストを作成するには、関連インストールサービスイメージからこのファイルのコピーを使用します。インストールサービスからこのファイルをコピーする方法については、「説明」セクションを参照してください。
+.RE
+
+.SH 属性
+.sp
+.LP
+次の属性については、\fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(1.38i) |cw(4.13i) 
+lw(1.38i) |lw(4.13i) 
+.
+属性タイプ属性値
+_
+使用条件T{
+\fBsystem/install/auto-install/auto-install-common\fR
+T}
+_
+インタフェースの安定性不確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBpkg\fR(1), \fBbeadm\fR(1M), \fBboot\fR(1M), \fBcroinfo\fR(1M), \fBfdisk\fR(1M), \fBformat\fR(1M), \fBinstalladm\fR(1M), \fBiostat\fR(1M), \fBiscsiadm\fR(1M), \fBpkg.sysrepo\fR(1M), \fBprtconf\fR(1M), \fBzfs\fR(1M), \fBzoneadm\fR(1M), \fBzonecfg\fR(1M), \fBzpool\fR(1M), \fBgrub\fR(5), \fBsmf\fR(5)
+.sp
+.LP
+Part\ III, \fI「Installing Using an Install Server,」\fR in \fI『Installing Oracle Solaris 11.3 Systems』\fR
+.SH 注意事項
+.sp
+.LP
+SPARC システムのデュアルパス FC ディスクに Oracle Solaris OS をインストールするように指定した場合、次のエラーでインストールが失敗します。
+.sp
+.in +2
+.nf
+17:22:08    Error occurred during execution of 'target-selection' checkpoint.
+17:22:08    100% None
+17:22:09    Failed Checkpoints:
+17:22:09
+17:22:09    target-selection
+17:22:09
+17:22:09    Checkpoint execution error:
+17:22:09
+17:22:09    Unable to locate the disk '[devpath='/pci@0,600000/pci@0/pci@8/pci@0,1/SUNW,emlxs@1,1/fp@0,0/ssd@w20350080e517b4da,6']' on the system.
+17:22:09
+17:22:09    Automated Installation Failed.  See install log at /system/volatile/install_log
+Automated Installation failed
+Please refer to the /system/volatile/install_log file for details
+.fi
+.in -2
+
+.sp
+.LP
+この問題の回避策は、デュアルパス SAS JBOD ケーブルのいずれか 1 つを切り離すことです。
+.sp
+.LP
+ユーザーによって指定された \fBname_type\fR 属性 (\fBvol-id\fR および \fBvolid\fR) が、インストールされるシステムの複数のディスクに存在する場合、どのディスクが選択されるかは保証されません。たとえば、ユーザーが \fBai-disk\fR という \fBvolname\fR をシステム上の 2 つのディスクに割り当て、\fBname_type\fR を \fBvolid\fR に指定した場合、どのディスクが選択されるかは保証されません。
+.sp
+.LP
+次の例では、\fBformat\fR コマンドによって、\fBvolid\fR が \fBai-disk\fR として選択可能な 2 つのディスクが表示されています。
+.sp
+.in +2
+.nf
+# \fBformat\fR
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+Searching for disks...done
+
+AVAILABLE DISK SELECTIONS:
+       0. c1t0d0 <SUN72G cyl 14087 alt 2 hd 24 sec 424>
+          /pci@780/pci@0/pci@9/scsi@0/sd@0,0
+       1. c1t1d0 <SUN72G cyl 14087 alt 2 hd 24 sec 424>  ai-disk
+          /pci@780/pci@0/pci@9/scsi@0/sd@1,0
+       2. c1t2d0 <HITACHI-H101473SCSUN72G-SA23-68.37GB>
+          /pci@780/pci@0/pci@9/scsi@0/sd@2,0
+       3. c1t3d0 <HITACHI-H101473SCSUN72G-SA23-68.37GB>  ai-disk
+          /pci@780/pci@0/pci@9/scsi@0/sd@3,0
+Specify disk (enter its number):
+.fi
+.in -2
+
+.sp
+.LP
+たとえば、マニフェストが \fBname_type\fR \fBai-disk\fR を介してディスクを選択しようとした場合、AI インストーラでは使用するディスクが認識されず、1 つを選択します。
+.sp
+.in +2
+.nf
+<target>
+<disk>
+<disk_name name="ai-disk" name_type="volid"/>
+\&...
+</target>
+.fi
+.in -2
+
+.sp
+.LP
+\fBformat\fR コマンドによって一覧表示された、\fBai-disk\fR のラベルが付いた最初の \fBvolid\fR が選択される保証はありません。
+.sp
+.LP
+この状態は、\fBname_type\fR が \fBwwn\fR に設定され、マニフェスト内で指定されたデバイスが、RAID システムにある場合にも発生します。このシナリオでは、RAID システムからエクスポートされるすべてのデバイスの WWN が、固有でない場合もあります。
+.sp
+.LP
+マニフェスト内で \fBname_type\fR を使用する場合は、インストールされるすべてのデバイスで固有の名前を使用することが重要です。

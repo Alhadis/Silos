@@ -1,0 +1,2090 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 1998, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH ld 1 "2015 年 1 月 14 日" "SunOS 5.11" "ユーザーコマンド"
+.SH 名前
+ld \- オブジェクトファイル用リンカー
+.SH 形式
+.LP
+.nf
+\fBld\fR [\fB-32\fR | \fB-64\fR] [\fB-B\fR direct | nodirect] [\fB-B\fR dynamic | static]
+[\fB-B\fR eliminate[=\fImode\fR] | local[=\fImode\fR]] [\fB-B\fR reduce] [\fB-c\fR \fIname\fR]
+[\fB-C\fR] [\fB-D\fR [\fB!\fR]\fItoken1\fR,[\fB!\fR]\fItoken2\fR,...] [\fB-e\fR \fIepsym\fR]
+[\fB-f\fR \fIname\fR | \fB-F\fR \fIname\fR] [\fB-G\fR] [\fB-h\fR \fIname\fR] [\fB-i\fR] [\fB-l\fR \fIx\fR] [\fB-L\fR \fIpath\fR]
+[\fB-m\fR] [\fB-M\fR \fImapfile\fR] [\fB-N\fR \fIstring\fR] [\fB-o\fR \fIoutfile\fR] [\fB-p\fR \fIauditlib\fR]
+[\fB-P\fR \fIauditlib\fR] [\fB-Q\fR y | n] [\fB-r\fR] [\fB-R\fR \fIpath\fR] [\fB-s\fR]
+[\fB-S\fR \fIsupportlib\fR] [\fB-u\fR \fIsymname\fR] [\fB-V\fR]
+[\fB-z\fR allextract | defaultextract | weakextract ]
+[\fB-z\fR ancillary[=\fIoutfile\fR]] [\fB-z\fR aslr[=\fImode\fR]]
+[\fB-z\fR assert-deflib[=\fIlibname\fR]] [\fB-z\fR compress-sections[=\fIcmp-type\fR]]
+[\fB-z\fR deferred | nodeferred] [\fB-z\fR defs | nodefs] 
+[\fB-z\fR direct | nodirect] [\fB-z\fR discard-unused=\fIitem1\fR,\fIitem2\fR,...]
+[\fB-z\fR endfiltee] [\fB-z\fR fatal-warnings | nofatal-warnings]
+[\fB-z\fR finiarray=\fIfunction\fR] [\fB-z\fR globalaudit]
+[\fB-z\fR guidance[=\fIitem1\fR,\fIitem2\fR,...]] [\fB-z\fR help]
+[\fB-z\fR ignore | record] [\fB-z\fR initarray=\fIfunction\fR] [\fB-z\fR initfirst]
+[\fB-z\fR interpose] [\fB-z\fR lazyload | nolazyload]
+[\fB-z\fR ld32=\fIarg1\fR,\fIarg2\fR,...] [\fB-z\fR ld64=\fIarg1\fR,\fIarg2\fR,...]
+[\fB-z\fR loadfltr] [\fB-z\fR mapfile-add=\fIname\fR] [\fB-z\fR nodelete]
+[\fB-z\fR nodlopen] [\fB-z\fR nxheap[=\fImode\fR]] [\fB-z\fR nxstack[=\fImode\fR]]
+[\fB-z\fR parent=\fIobject\fR] [\fB-z\fR preinitarray=\fIfunction\fR]
+[\fB-z\fR rescan-now] [\fB-z\fR rescan-start ... \fB-z\fR rescan-end]
+[\fB-z\fR strip-class=[\fB!\fR]\fIclass1\fR,[\fB!\fR]\fIclass2\fR,...] [\fB-z\fR stub]
+[\fB-z\fR symbolcap] [\fB-z\fR target=sparc | x86]
+[\fB-z\fR text | textwarn | textoff] [\fB-z\fR type=\fIobject-type\fR]
+[\fB-z\fR verbose] [\fB-z\fR wrap=\fIsymbol\fR]
+\fIfilename\fR ...
+.fi
+
+.SH 機能説明
+.sp
+.LP
+リンカー \fBld\fR は、シンボル定義へのシンボル参照を解決し、再配置を実行することによって再配置可能オブジェクトファイルを結合します。いずれの場合も、リンカーのデフォルトの出力は \fBa.out\fR ファイルとなります。「注意事項」を参照してください。
+.sp
+.LP
+リンカーには多数のオプションがあります。現代的なプログラミング習慣に関連するオプションは「形式」で定義され、以降のセクションで説明されています。その他のオプションは一般にはあまり使用されず、「セカンダリオプション」セクションで説明されています。
+.sp
+.LP
+リンカーはさまざまな入力ファイルを受け取りますが、それらは通常、コンパイラやアセンブラ、あるいは以前のリンカー呼び出しによって生成されたものです。リンカーは、これら入力ファイル内のデータを連結および解釈して、出力ファイルを生成します。生成される出力ファイルは次のいずれかの基本タイプになります。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB動的実行可能ファイル\fR – 入力再配置可能オブジェクトを連結したもの。実行可能なプロセスを生成するために実行時リンカー \fBld.so.1\fR(1) の関与が必要となります。動的実行可能ファイルは、通常共有オブジェクトの形で 1 つ以上の依存関係を持っています。
+.sp
+動的実行可能ファイルは、\fB-z\fR \fBtype=exec\fR オプションが使用された場合に作成され、出力ファイルタイプを制御するオプションがほかに指定されていない場合のデフォルトになります。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB位置独立実行可能ファイル\fR – 共有オブジェクトの特殊な場合。インタプリタを指定します。位置独立実行可能ファイルは位置独立コードから作成すべきです。位置独立時可能ファイルは、実行時に固定されたアドレス空間を必要とする動的実行可能ファイルと違い、\fBexec\fR(2) によって選択された任意のアドレスにロードできます。
+.sp
+位置独立実行可能ファイルが作成されるのは、\fB-z\fR \fBtype=pie\fR オプションが使用された場合です。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB再配置可能オブジェクト\fR – 入力再配置可能オブジェクトを連結したもの。後続のリンク編集フェーズで使用できます。
+.sp
+再配置可能オブジェクトが作成されるのは、\fB-z\fR \fBtype=reloc\fR オプションまたは \fB-r\fR オプションが使用された場合です。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB共有オブジェクト\fR – サービスを提供する入力再配置可能オブジェクトを連結したもの。実行時に動的実行可能ファイルにバインドできます。共有オブジェクトは位置独立コードから作成すべきです。また、共有オブジェクトの中にも、ほかの共有オブジェクトに依存する依存関係がある場合もあります。
+.sp
+共有オブジェクトが作成されるのは、\fB-z\fR \fBtype=shared\fR オプションまたは \fB-G\fR オプションが使用された場合です。
+.RE
+.sp
+.LP
+リンカーは、動的または静的の 2 つのモードのどちらかで動作します。デフォルトは動的リンク処理モードであり、このモードでは動的実行可能ファイル、共有オブジェクト、および位置独立実行可能ファイルを作成できます。この動的リンク環境では、リンカーと実行時リンカー \fBld.so.1\fR(1) の作業が密接に結び付けられます。これらのユーティリティーはどちらも、関連テクノロジおよびユーティリティーと合わせて\fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRで広範囲にわたり説明されています。
+.sp
+.LP
+静的リンク処理モードでは、再配置可能オブジェクトを作成できます。Oracle Solaris オペレーティングシステムの最新のバージョンは、静的実行可能ファイルの作成をサポートしていません。\fBStatic Executables\fRを参照してください。このセクションのすべての説明は動的リンク、あるいは \fB-ztype=reloc\fR または \fB-r\fR オプションを指定した静的リンクを前提にしています。
+.sp
+.LP
+いずれかの引数がライブラリである場合、リンカーはデフォルトでは、コマンド行でそのライブラリが検出された時点でそのライブラリを 1 回だけ検索します。ライブラリとして指定できるのは、共有オブジェクトまたは再配置可能アーカイブのどちらかです。\fBar\fR(1) を参照してください。
+.sp
+.LP
+共有オブジェクトは不可分の完全なユニットで、1 つ以上の入力ファイルをリンクすることによって生成されます。リンカーが共有オブジェクトを処理すると、共有オブジェクトの全内容は、その結果作成された出力ファイルイメージの論理的な部分になります。共有オブジェクトが実際に取り込まれるのはプロセスの実行時であるため、リンク処理中に物理的なコピー処理が行われることはありません。この論理的な組み込みは、リンク編集プロセスにとって共有オブジェクト内に定義されたすべてのシンボルエントリが利用可能になることを意味しています。Chapter 4, \fI「Shared Objects,」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.sp
+.LP
+アーカイブライブラリの場合、リンカーはデフォルトでは、未解決の外部参照を定義しているアーカイブメンバーのみをロードします。リンカーは、アーカイブライブラリのシンボルテーブル内を順番に検索し、アーカイブメンバーで解決可能な外部参照を解決します。この検索は、アーカイブで外部参照を解決できなくなるまで繰り返されます。そのため、同じ外部シンボルを定義する複数のアーカイブメンバーが存在しないかぎり、ライブラリ内のメンバーの順序は機能的に重要ではありません。\fB-z\fR \fBallextract\fR オプションも参照してください。相互依存関係を持つアーカイブライブラリでは、複数のコマンド行定義、またはいずれかの \fB-z rescan\fR オプションの使用が必要になる場合があります。\fI「Archive Processing」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.sp
+.LP
+このリンカーは SPARC または x86 を対象とした\fBクロス\fRリンカーで、32 ビットオブジェクトまたは 64 ビットオブジェクトにリンクできます。リンカーは、コマンド行の最初の入力再配置可能オブジェクトの \fBELF\fR クラスおよび機械タイプを使用して、操作するモードを制御します。32 ビットオブジェクトと 64 ビットオブジェクトを混在させることはできません。同様に、1 つの機械タイプのオブジェクトのみが許可されます。\fB-32\fR、\fB-64\fR、および \fB-z target\fR オプションを参照してください。
+.SS "静的実行可能ファイル"
+.sp
+.LP
+静的実行可能ファイルは、多くのリリースで作成しないように勧められています。実際、Solaris では、64 ビットのシステムアーカイブライブラリが提供されたことはありません。静的実行可能ファイルは、システムアーカイブライブラリに反して構築されるので、実行可能ファイルにはシステム実装の詳細が含まれます。この自己内包には、多数の欠点があります。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+この実行可能ファイルは、共有オブジェクトとして提供されるシステムパッチの恩恵を受けることができません。したがって、多くのシステムの改良を利用するには、この実行可能ファイルを再構築する必要があります。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+将来のリリースでこの実行可能ファイルを実行できなくなる可能性があります。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+システム実装の詳細を複製すると、システムのパフォーマンスに悪影響を与えます。
+.RE
+.sp
+.LP
+Oracle Solaris 10 から、32 ビットのシステムアーカイブライブラリは提供されなくなりました。これらのライブラリ (特に \fBlibc.a\fR) を入手できないため、ドキュメントに記載されていない、変更される可能性のあるシステム詳細にアクセスしないかぎり、静的実行可能ファイルの作成は不可能となりました。ただし、静的リンクオプションを処理するリンカーの機能とアーカイブライブラリの処理に変更はありません。
+.SS "オプションの処理"
+.sp
+.LP
+通常、リンカーはコマンド行オプションを使って完全に指定されます。ただし、コマンド行処理を強化する目的でさまざまな環境変数が用意されています。これらの変数を使えば、コンパイラオプションと衝突する可能性のあるオプションを指定できます。これらの変数を使えば、スクリプト内やビルド環境内に埋め込まれたコマンド行オプションの上書きまたは設定解除も行えます。
+.sp
+.LP
+各コマンド行オプションの間に 1 つでも矛盾があると、致命的エラーの状態になります。環境変数から提供されたオプションに関する不整合が検出されると、警告が発行され、最初のオプションが優先されます。
+.sp
+.LP
+環境やコマンド行からのオプションは、次の順番で解釈されます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBLD_OPTIONS\fR 環境変数から。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+コマンド行から。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBLD_UNSET\fR 環境変数から。
+.RE
+.sp
+.LP
+これら 3 つのコンポーネントから出力オブジェクトのタイプが決まります。次にそのオブジェクトタイプに基づいて \fBLD_{object-type}_UNSET\fR および \fBLD_{object-type}_OPTIONS\fR 環境変数が調査され、構築中のオブジェクトタイプに固有のオプションが削除または追加されます。\fIobject-type\fR は、\fB-z type\fR オプションによって定義されるタイプ (大文字) であり、\fBEXEC\fR、\fBPIE\fR、\fBRELOC\fR、\fBSHARED\fR のいずれかになります。たとえば、出力ファイルのタイプが動的実行可能ファイルであれば、\fBLD_EXEC_OPTIONS \fR のオプションが解釈されます。これらの環境変数は次の順番で処理されます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBLD_{object-type}_UNSET\fR 環境変数から。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBLD_{object-type}_OPTIONS\fR 環境変数から。
+.RE
+.sp
+.LP
+この出力オブジェクトタイプと矛盾するコマンド行オプションが含まれていると、致命的エラーの状態になります。環境変数から提供されたオプションで不整合が検出されると、警告が発行され、そのオプションは無視されます。
+.sp
+.LP
+\fBUNSET\fR 操作時には必ず警告が通知されます。オプション処理のその他のすべての警告を致命的エラー状態に昇格させるには、\fB-z fatal-warnings\fR オプションを設定します。
+.SH オプション
+.sp
+.LP
+以下のオプションがサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-32\fR | \fB-64\fR\fR
+.ad
+.br
+.na
+\fB\fB-m32\fR | \fB-m64\fR\fR
+.ad
+.sp .6
+.RS 4n
+32 ビットまたは 64 ビットオブジェクトを作成します。
+.sp
+デフォルトでの生成されるオブジェクトのクラスは、コマンド行から処理される最初の \fBELF\fR オブジェクトによって決まります。オブジェクトを指定してしない場合、クラスは、コマンド行から処理される最初のアーカイブ内で検出された最初のオブジェクトによって決まります。オブジェクトもアーカイブもない場合、リンカーは 32 ビットオブジェクトを作成します。
+.sp
+\fB-64\fR オプションは、64 ビットオブジェクトを \fBmapfile\fR からのみ作成する場合に必要です。
+.sp
+\fB-32\fR または \fB-64\fR オプションは、32 ビットと 64 ビットのオブジェクトが混在するアーカイブからすべてをリンクするというごくまれな場合にも使用できます。アーカイブの最初のオブジェクトが、作成される必要のあるオブジェクトのクラスではない場合、\fB-32\fR または \fB-64\fR オプションを使用してリンカーに指示できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-B\fR \fBdirect\fR | \fBnodirect\fR\fR
+.ad
+.sp .6
+.RS 4n
+これらのオプションで直接結合を制御します。\fB-B\fR \fBdirect\fR は、シンボル参照と、シンボル定義を提供する依存関係との間の関係を記録することによって、直接結合情報を確立します。さらに、直接結合情報は、シンボル参照と、作成されるオブジェクト内の関連付けられた定義の間で確立できます。実行時リンカーは、デフォルトのシンボル検索を行わずに、この情報を使用して、関連付けられたオブジェクト中のシンボルを直接検索します。
+.sp
+直接結合情報は、リンク編集で指定される依存関係に対してのみ確立されます。したがって、\fB-z\fR \fBdefs\fR オプションも追加すべきです。直接結合環境でシンボルに対して割り込もうとするオブジェクトは、\fB-z\fR \fBinterpose\fR オプションにより、自身をインターポーザーとして識別するべきです。\fB-B\fR \fBdirect\fR を使用すると、\fB-z\fR \fBlazyload\fR もすべての依存関係に対して有効になります。
+.sp
+\fB-B\fR \fBnodirect\fR オプションは、作成されているオブジェクトによって提供されるインタフェースとの直接結合をすべて回避させます。\fB-z\fR \fBdirect\fR オプションを指定すると、作成されているオブジェクトは外部インタフェースと直接結合を続けられます。Chapter 6, \fI「Direct Bindings,」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-B\fR \fBdynamic\fR | \fBstatic\fR\fR
+.ad
+.sp .6
+.RS 4n
+これらのオプションによって、ライブラリの取り込みが管理されます。\fB-B\fR \fBdynamic\fR は、\fB-l\fR オプションのライブラリ検索が共有オブジェクトとアーカイブライブラリ名に展開されるように許可します。このオプションはデフォルトであり、動的モードでのみ有効です。\fB-B\fR \fBstatic\fR は、\fB-l\fR オプションのライブラリ検索がアーカイブライブラリ名にのみ展開されるように制限します。これらのオプションは、トグルとしてコマンド行で何回でも指定できます。\fB-B\fR \fBstatic\fR オプションが指定されている場合は、\fB-B\fR \fBdynamic\fR が見つかるまで、共有オブジェクトは受け入れられません。\fB-l\fR オプションを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-B\fR \fBeliminate[=\fImode\fR] \fR | \fBlocal[=\fImode\fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+デフォルトではグローバル結合になるシンボルがすべて、シンボルテーブルから削除されるか、またはローカルな可視性に削減されます。\fBSTV_DEFAULT\fR 可視性を持つグローバルシンボルは、リンカーによって、より制限的な可視性に削減される場合があります。その他のすべての \fBSTV_\fR 可視性を持つグローバルシンボルは、明示的な可視性を持っているとみなされます。明示的な可視性はリンカーによって尊重され、変更することはできません。\fI「Symbol Visibility」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。シンボルの可視性は、コンパイラ指令を使用して、あるいはバージョンまたはインタフェース定義を定義する \fBmapfiles\fR を使用して明示的に定義できます。
+.sp
+\fBMapfile\fR バージョンおよびインタフェース定義には、\fIauto-elimination\fR または \fIauto-reduction\fR 指令を含めることができます。\fI「SYMBOL_SCOPE and SYMBOL_VERSION Directives」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。これらの指令を指定すると、\fBmapfile\fR で明示的に定義されていないシンボル、または明示的な可視性を定義していないシンボルがそれぞれ、削除されるか、またはローカルに削減されます。以降の段落で説明されているように、シンボルの削除または削減は、すべての明示的なシンボル定義に加えて、生成されるオブジェクトのタイプによっても影響を受けます。\fB-B\fR \fBeliminate\fR オプションは、\fBmapfile\fR \fIauto-elimination\fR ディレクティブと同じシンボル削除を要求します。\fB-B\fR \fBlocal\fR オプションは、\fBmapfile\fR \fIauto-reduction\fR 指令と同じシンボル削減を要求します。
+.sp
+どちらのオプションも、削除または削減されるグローバルシンボルの選択を制御するために、\fBexternal\fR または \fBnoexternal\fR のモードで修飾できます。リンカーはデフォルトで、生成されるオブジェクトのタイプに適したモード (実行可能ファイルの場合は \fBexternal\fR、共有オブジェクトの場合は \fBnoexternal\fR) になるため、この微調整は通常は必要ありません。
+.sp
+動的オブジェクトを構築するときは、一部のシンボルを確実にグローバルのままにして、外部の依存関係から参照可能にすることが必要になる場合があります。これは特に、動的実行可能ファイルの場合に当てはまります。実行可能ファイルを構築するときは、実行時のプロセス初期化を可能にするコンパイル環境によって再配置可能オブジェクトが提供されます。これらの再配置可能オブジェクトには、システムの依存関係から参照されるグローバルシンボルを含めることができます。これらのシンボルは、実行時の実行を損なわないように、シンボルの自動削除または自動削減手法には関係なくグローバルのままになるようにするべきです。
+.sp
+\fBmode\fR を \fBexternal\fR として定義すると、外部の依存関係からのいずれかのシンボル参照が、構築されるオブジェクト内のシンボル定義に結合される可能性があるかどうかを判定するために、外部のすべての依存関係が分析されます。このような結合を満たすグローバルシンボルが削除されたり、ローカルに削減されたりすることはありません。動的実行可能ファイルを生成する場合は、このモードがデフォルトです。
+.sp
+\fBmode\fR を \fBnoexternal\fR として定義すると、外部のすべての依存関係の分析が回避され、\fBmapfile\fR で明示的に定義されていない、または明示的な可視性を定義していないすべてのシンボルが削減されます。共有オブジェクトを生成する場合は、このモードがデフォルトです。
+.sp
+\fB-B\fR \fBreduce\fR オプションも参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-B\fR \fBreduce\fR\fR
+.ad
+.sp .6
+.RS 4n
+再配置可能オブジェクトを生成している場合は、いずれかのシンボル可視性属性によって、あるいはバージョンまたはインタフェース定義を定義する \fBmapfiles\fR を使用して定義されたシンボル情報が削減されます。デフォルトでは、再配置可能オブジェクトが生成される場合、可視性属性、バージョン定義、またはインタフェース定義は出力イメージにのみ記録されます。動的実行可能ファイルまたは共有オブジェクトを作成する場合は、可視性属性、あるいは \fBmapfile\fR バージョンまたはインタフェース定義は常に、すべてのシンボル情報に適用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+実行時に使用する構成ファイル \fIname\fR を記録します。構成ファイルは、デフォルト検索パスの変更やディレクトリキャッシュの提供に使用されるほか、代替オブジェクトの依存関係を提供します。\fBcrle\fR(1) を参照してください。このオプションを使用できるのは、動的実行可能ファイルまたは位置独立実行可能ファイルを作成する場合だけです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR\fR
+.ad
+.sp .6
+.RS 4n
+診断メッセージに表示される C++ シンボル名を復号化します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR [\fB!\fR]\fItoken1\fR,[\fB!\fR]\fItoken2\fR,...\fR
+.ad
+.sp .6
+.RS 4n
+\fItoken\fR に指定したデバッグ情報を標準エラーに出力します。\fBhelp\fR は、使用可能なトークンをすべて指定した場合と同じ意味を持つ特殊なトークンです。\fI「Debugging Aids」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fIepsym\fR\fR
+.ad
+.br
+.na
+\fB\fB--entry\fR \fIepsym\fR\fR
+.ad
+.sp .6
+.RS 4n
+出力ファイルのエントリポイントのアドレスとして、シンボル \fIepsym\fR に設定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIname\fR\fR
+.ad
+.br
+.na
+\fB\fB--auxiliary\fR \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有オブジェクトを構築するときにのみ使用されます。このオプションを指定すると、共有オブジェクトのシンボルテーブルが、\fIname\fR に指定した共有オブジェクトのシンボルテーブルで、補助フィルタとして使用されるようになります。このオプションは複数回指定できますが、本オプションは \fB-F\fR と同時に指定することはできません。\fI「Generating Auxiliary Filters」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR \fIname\fR\fR
+.ad
+.br
+.na
+\fB\fB--filter\fR \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有オブジェクトを構築するときにのみ使用されます。このオプションを指定すると、共有オブジェクトのシンボルテーブルが、\fIname\fR に指定した共有オブジェクトのシンボルテーブルで、フィルタとして使用されるようになります。このオプションは複数回指定できますが、本オプションは \fB-f\fR と同時に指定することはできません。\fI「Generating Standard Filters」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-G\fR\fR
+.ad
+.br
+.na
+\fB\fB-shared\fR\fR
+.ad
+.sp .6
+.RS 4n
+動的モード専用です。共有オブジェクトを生成します。未定義のシンボルも許容されます。\fB-ztype=shared\fR オプションも参照してください。Chapter 4, \fI「Shared Objects,」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR \fIname\fR\fR
+.ad
+.br
+.na
+\fB\fB-soname\fR \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+動的モード専用です。共有オブジェクトの作成時、\fIname\fR をオブジェクトの動的セクションに記録します。ファイルシステムにおけるオブジェクトの名前ではなく、\fIname\fR がこのオブジェクトにリンクされた任意の動的オブジェクトに記録されます。このため、実行時リンカーは、実行時に検索する共有オブジェクト名として \fIname\fR を使用します。\fI「Recording a Shared Object Name」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBLD_LIBRARY_PATH\fR の設定を無視します。\fBLD_LIBRARY_PATH\fR の設定がリンク処理の妨げになる場合は、このオプションを使用して、実行時のライブラリ検索への影響を防ぎます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR \fIx\fR\fR
+.ad
+.br
+.na
+\fB\fB--library\fR \fIx\fR\fR
+.ad
+.sp .6
+.RS 4n
+ライブラリ \fBlib\fR\fIx\fR\fB\&.so\fR (共有オブジェクトの慣例的な名前) または \fBlib\fR\fIx\fR\fB\&.a\fR (アーカイブライブラリの慣例的な名前) を検索します。動的モードでは、\fB-B\fR \fBstatic\fR オプションが有効になっている場合を除けば、ライブラリ検索パスに指定された各ディレクトリ内で、\fBlib\fR\fIx\fR\fB\&.so\fR ファイルまたは \fBlib\fR\fIx\fR\fB\&.a\fR ファイルが検索されます。いずれかを含む最初のディレクトリでディレクトリ検索は停止します。\fB-l\fR\fIx\fR が、\fBlib\fR\fIx\fR\fB\&.so\fR と \fBlib\fR\fIx\fR\fB\&.a\fR という形式の名前を持つ 2 つのファイルに展開される場合、リンカーは \fB\&.so\fR で終わるファイルを選択します。\fBlib\fR\fIx\fR\fB\&.so\fR が見つからない場合は \fBlib\fR\fIx\fR\fB\&.a\fR が選択されます。静的モードの場合や \fB-B\fR \fBstatic\fR オプションが有効になっている場合には、リンカーは \fB\&.a\fR で終わるファイルのみを選択します。リンカーはライブラリが検出された時点でライブラリの検索を行うので、\fB-l\fR の位置が重要になります。\fI「Linking With Additional Libraries」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR \fIpath\fR\fR
+.ad
+.br
+.na
+\fB\fB--library-path\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+ライブラリ検索ディレクトリに \fIpath\fR を追加します。リンカーはライブラリの検索を、まず \fB-L\fR オプションで指定されたすべてのディレクトリ内で行い、次に標準ディレクトリ内で行います。このオプションは、同一コマンド行の \fB-l\fR オプションより前に指定した場合のみ有効です。\fB-\fR\fI「Directories Searched by the Link-Editor」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.sp
+環境変数 \fBLD_LIBRARY_PATH\fR はライブラリ検索パスの補完に使用できますが、実行時環境によっても解釈されるため、\fB-L\fR オプションを使用することをお勧めします。「環境変数」の「\fBLD_LIBRARY_PATH\fR」を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.sp .6
+.RS 4n
+メモリーマップ (入出力セクションのリスト) と、致命的ではない多重定義シンボルを生成し、標準出力に出力します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-M\fR \fImapfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+マップファイル \fImapfile\fR を、リンカーへの指令が記述されているテキストファイルとして読み取ります。このオプションは複数回指定できます。\fImapfile\fR がディレクトリの場合、\fBstat\fR(2) で定義されるように、そのディレクトリ内のすべての通常ファイルが処理対象になります。Chapter 9, \fI「Mapfiles,」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。\fBマップファイル\fRの例は、\fB/usr/lib/ld\fR にあります。「ファイル」も参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR \fIstring\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションを指定すると、作成されるオブジェクトの \fB\&.dynamic\fR セクションに \fBDT_NEEDED\fR エントリが追加されます。\fBDT_NEEDED\fR 文字列の値はコマンド行で指定した \fIstring\fR です。このオプションは位置に依存します。このため、\fBDT_NEEDED\fR \fB\&.dynamic\fR エントリはリンク行にあるほかの動的な依存オブジェクトに対して相対的になります。デバイスドライバの再配置可能オブジェクト間の依存関係を指定するときに、このオプションをオプション \fB-dy\fR および \fB-r\fR と組み合わせて使用すると便利です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIoutfile\fR\fR
+.ad
+.br
+.na
+\fB\fB--output\fR \fIoutfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIoutfile\fR という名前の出力オブジェクトファイルを生成します。デフォルトのオブジェクトファイル名は、\fBa.out\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR \fIauditlib\fR\fR
+.ad
+.sp .6
+.RS 4n
+監査ライブラリ \fIauditlib\fR を識別します。このライブラリは、作成されたオブジェクトの実行時に行われる監査に使用されます。自分自身の監査を行うような共有オブジェクトと依存関係にあるオブジェクトは、この共有オブジェクトの性質を継承し、自分自身の監査を行います\fB-\fR (\fB-P\fR オプションを参照)。\fI「Runtime Linker Auditing Interface」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRも参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIauditlib\fR\fR
+.ad
+.sp .6
+.RS 4n
+監査ライブラリ \fIauditlib\fR を識別します。このライブラリは、作成されたオブジェクトの実行時に行われる依存関係の監査に使用されます。この監査は、このオブジェクトと依存関係にあり、監査を行う必要があるオブジェクトから継承される場合もあります\fB-p\fR オプションと \fB-z\fR \fBglobalaudit\fR オプションを参照してください。\fI「Runtime Linker Auditing Interface」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRも参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Q\fR \fBy\fR | \fBn\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-Q\fR \fBy\fR を指定すると、\fBident\fR 文字列が、出力ファイルの \fB\&.comment\fR セクションに追加されます。この文字列は、ファイル作成に使用されたリンカーのバージョンを識別します。このため、リンカーの \fB-ztype=reloc\fR または \fB-r\fR オプションを使用する場合のように、リンク処理のステップが複数存在した場合には、リンカーの \fBident\fR が複数追加されます。この識別は、\fBcc\fR コマンドのデフォルト時のアクションと同じです。\fB-Q\fR \fBn\fR は、バージョンの識別を抑止します。\fB\&.comment\fR セクションは \fBmcs\fR(1) ユーティリティーで操作できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.br
+.na
+\fB\fB--relocatable\fR\fR
+.ad
+.sp .6
+.RS 4n
+複数の再配置可能オブジェクトを組み合わせて 1 つの再配置可能オブジェクトファイルを生成します。リンカーは、未解決の参照に関する警告を発しません。このオプションは、\fB-a\fR と同時には使用できません。\fB-ztype=reloc\fR オプションも参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-R\fR \fIpath\fR\fR
+.ad
+.br
+.na
+\fB\fB-rpath\fR \fIpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+複数のディレクトリをコロンで区切って指定します。このリストは、実行時リンカーにライブラリ検索ディレクトリを指定する際に使用されます。NULL 以外の文字列は、出力オブジェクトファイルに記録され、実行時リンカーに渡されます。このオプションを複数回指定する場合と、コロンで区切って \fIpath\fR を指定する場合の結果は同じになります。\fI「Directories Searched by the Runtime Linker」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.sp
+関連オブジェクト内で runpath を使用する方が、\fBLD_LIBRARY_PATH\fR 環境変数を使用するなどの方法でグローバル検索パスを設定するよりも適切です。オブジェクトの依存関係を探すために必要な runpath のみ記録するようにしてください。\fBldd\fR(1) を \fB-U\fR オプションとともに使用すると、動的オブジェクト内の未使用の runpath を探すこともできます。
+.sp
+また、runpath で提供されるさまざまなトークンを使用すると、システムの機能やオブジェクトの位置を柔軟に識別できます。Chapter 11, \fI「Establishing Dependencies with Dynamic String Tokens,」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。\fB$ORIGIN\fR トークンは、動的オブジェクトをファイルシステム内の別の場所に再配置できるようにする場合に特に役立ちます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.br
+.na
+\fB\fB--strip-all\fR\fR
+.ad
+.sp .6
+.RS 4n
+出力ファイルからシンボル情報をすべて取り除きます。このオプションは、\fB-z strip-class\fR オプションを \fBdebug\fR と \fBsymbol\fR クラス識別子とともに使用することと同等です。\fB-z\fR \fBredlocsym\fR および \fB-z\fR \fBnoldynsym\fR オプションも参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR \fIsupportlib\fR\fR
+.ad
+.sp .6
+.RS 4n
+リンカーによって共有オブジェクト \fIsupportlib\fR がロードされ、リンクプロセスに関する情報が提供されます。\fB-S\fR オプションを使用して定義された共有オブジェクトは、\fBSGS_SUPPORT\fR 環境変数を使用して提供することもできます。\fI「Link-Editor Support Interface」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-u\fR \fIsymname\fR\fR
+.ad
+.br
+.na
+\fB\fB--undefined\fR \fIsymname\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIsymname\fR を、未定義シンボルとしてシンボルテーブルに入力します。このオプションは、すべてのルーチンをアーカイブライブラリから読み込む場合に便利です。これは、最初のルーチンを読み込むために、未解決の参照が必要になるからです。コマンド行内でのこのオプションの位置は重要な意味を持ち、シンボルを定義するライブラリより前に配置する必要があります。\fI「Defining Additional Symbols with the -u                                         option」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR\fR
+.ad
+.br
+.na
+\fB\fB--version\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用するリンカーのバージョン情報を示すメッセージを出力します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBallextract\fR | \fBdefaultextract\fR | \fBweakextract\fR\fR
+.ad
+.br
+.na
+\fB\fB--whole-archive\fR | \fB--no-whole-archive \fR\fR
+.ad
+.sp .6
+.RS 4n
+後続のすべてのアーカイブのオブジェクトの抽出条件を変更します。デフォルトでは、アーカイブメンバーは、未定義の参照を解決し、データ定義による仮の定義を行うために抽出されます。弱いシンボル参照は抽出を行いません。\fB-z\fR \fBallextract\fR または \fB--whole-archive\fR オプションでは、すべてのアーカイブメンバーがアーカイブから抽出されます。\fB-z\fR \fBweakextract\fR を指定すると、弱い参照によってアーカイブの抽出が行われます。\fB-z\fR \fBdefaultextract\fR または \fB--no-whole-archive\fR オプションを指定すると、すでに指定されている抽出オプションを無効にし、デフォルトの状態に戻すことができます。\fI「Archive Processing」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBancillary[=\fIoutfile\fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+通常は出力オブジェクトに追加される割り当て不可能なすべてのセクションを受信する補助的な出力ファイルを指定します。割り当て不可能なセクションは実行時には必要なく、主にデバッガやその他の可観測性ツールで使用されます。\fIoutfile\fR が存在する場合は、指定された名前を使用して補助的なファイルが作成されます。\fIoutfile\fR が存在しない場合、補助的なファイルにはプライマリ出力ファイルと同じ名前が与えられ、\fB\&.anc\fR 接尾辞が追加されます。\fI「Ancillary Objects」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.sp
+\fB-z\fR \fBancillary\fR オプションは、\fB-z\fR \fBstub\fR オプションと組み合わせて使用されている場合、何も出力せずに無視されます。また、\fIoutfile\fR なしで指定され、\fB-o\fR オプションで指定された出力ファイルが \fB/dev/null\fR などのデバイス特殊ファイルである場合の \fB-z\fR \fBancillary\fR オプションも無視されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBaslr[=\fImode\fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスのアドレス空間配置のランダム化 (ASLR) 動作を指定します。モード値は、\fBenable\fR または \fBdisable\fR に設定できます。モードを省略した場合、ASLR は有効になります。このオプションを使用できるのは、動的実行可能ファイルまたは位置独立実行可能ファイルを作成する場合だけです。\fBsxadm\fR(1M) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBassert-deflib[=\fIlibname\fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-l\fR コマンド行オプションで指定したライブラリに対して、リンカーで指定したデフォルト検索パスの検査によって検出される警告メッセージを有効にします。\fIlibname\fR の値を指定するとデフォルトのライブラリ警告機能が有効になり、指定したライブラリが、警告を出力しないライブラリの一覧に追加されます。複数の \fB-z\fR \fBassert-deflib\fR オプションを指定すると、警告を出力してはいけないライブラリを複数指定できます。
+.sp
+\fIlibname\fR の値は、リンカーで検出されたときのように、パスコンポーネントのないライブラリファイル名にする必要があります。たとえば、次のように指定すると、デフォルトのライブラリ警告が有効になり、標準 C ライブラリが除外されます。
+.sp
+.in +2
+.nf
+$ \fBld ... -z assert-deflib=libc.so ...\fR
+.fi
+.in -2
+.sp
+
+\fB-z\fR \fBassert-deflib\fR は、同名のオブジェクトが複数存在し、使用ライブラリを厳密に管理する必要がある構築環境を主に対象とした特殊なオプションです。このオプションは、一般的な用途向けではありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBcompress-sections[=\fIcmp-type\fR]\fR\fR
+.ad
+.br
+.na
+\fB\fB--compress-debug-sections\fR \fIcmp-type\fR\fR
+.ad
+.sp .6
+.RS 4n
+注釈およびデバッグ出力セクションの圧縮を有効にします。\fIcmp-type\fR では次の値が認識されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnone\fR\fR
+.ad
+.sp .6
+.RS 4n
+圧縮は行われません。これは、\fB-z\fR \fBcompress-sections\fR オプションを指定しないのと同等です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzlib\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBZLIB\fR 圧縮を使って候補セクションを圧縮します。結果の出力セクションでは、圧縮を使用していることがわかるように、\fBSHF_COMPRESSED\fR セクションフラグが設定されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzlib-gnu\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBZLIB\fR 圧縮を使ってすべての候補セクションを圧縮します (\fBGNU\fR セクション圧縮形式が使用される)。この形式の場合、候補セクションの名前は \fB\&.debug\fR で始まっている必要があります。結果となるセクションの名前は、圧縮を使用していることがわかるように、\fB\&.zdebug\fR で始まる名前に変更されます。
+.RE
+
+\fIcmp-type\fR を省略した場合は \fBzlib\fR スタイルが使用されます。圧縮すると元の非圧縮データよりサイズが大きくなるようなセクションでは、リンカーは何の警告もなしに圧縮をスキップします。
+.sp
+あるセクションが圧縮の候補となるためには、そのセクションは割り当て不可能であり、かつ次のいずれかのクラスに属している必要があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBannotate\fR\fR
+.ad
+.sp .6
+.RS 4n
+注釈セクションは、メモリーアクセスツールや、カバレージ関連のツールによって使用される情報を提供します。これらのセクションは、\fBSHT_SUNW_ANNOTATE\fR セクションタイプを指定することで識別します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdebug\fR\fR
+.ad
+.sp .6
+.RS 4n
+デバッグセクションは、\fB\&.compcom\fR、\fB\&.line\fR、\fB\&.stab*\fR、\fB\&.debug*\fR、または \fB\&.zdebug*\fR セクション名を指定することで識別します。また、これらのセクションは、\fBSHT_PROGBITS\fR または \fBSHT_SUNW_DEBUG*\fR セクションタイプを指定することでも識別されます。
+.RE
+
+\fBzlib-gnu\fR 圧縮タイプは、\fB\&.debug\fR で始まる名前を持つセクションに制限されます。\fBzlib-gnu\fR を使用する場合、そうでなければ圧縮の候補となったであろうセクションは圧縮されません。ベースとなる \fBZLIB\fR 圧縮は \fBzlib\fR スタイルと \fBzlib-gnu\fR スタイルとで同じなので、どちらの形式でも特定の入力セクションの圧縮量は同じになります。2 つのスタイルの違いは、候補セクションの選択、圧縮ヘッダーの形式、および圧縮セクションの識別方法、にあります。\fI「Compressed Debug Sections」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。\fBzlib-gnu\fR スタイルを使用する必要性が特にないかぎり、より一般的なデフォルトの \fBzlib\fR スタイルをお勧めします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBdeferred\fR | \fBnodeferred\fR\fR
+.ad
+.sp .6
+.RS 4n
+動的依存関係への遅延の印の付加を有効または無効にします。遅延の印を付けられた動的依存関係にはレイジー読み込み可能の印も付けられ、初期プロセスの起動では読み込まれません。\fB\fR遅延依存関係の読み込みは、そのレイジー参照への結合がはじめて行われたときに行われます。基本的なレイジーロード可能な依存関係とは異なり、遅延依存関係は \fBLD_BIND_NOW\fR プロセスの一部として、または \fBRTLD_NOW\fR フラグが設定された \fBdlopen\fR(3C) を介して処理されることはありません。\fI「Testing for Functionality」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.sp
+遅延依存関係を \fBdlsym\fR(3C) および \fBRTLD_PROBE\fR ハンドルとともに使用すると、自然なコーディングスタイルを使用して柔軟なメカニズムで機能テストを実行できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBdefs\fR | \fBnodefs\fR\fR
+.ad
+.br
+.na
+\fB\fB--no-undefined\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-z\fR \fBdefs\fR オプションと \fB--no-undefined\fR オプションは、リンク終了時に未定義のシンボルがあると、致命的エラーを強制的に出力します。これは、実行可能オブジェクトを作成する場合のデフォルトの設定です。歴史的経緯から、このモードは共有オブジェクトを作成する場合にはデフォルトでは\fBありません\fR。共有オブジェクト作成時に、そのオブジェクトが自己完結していることを確認できるため、\fB-z\fR \fBdefs\fR オプションを使用することをお勧めします。自己完結しているオブジェクトでは、シンボル参照がそのオブジェクト内またはそのオブジェクトの依存関係の中で解決されています。
+.sp
+\fB-z\fR \fBnodefs\fR オプションは、未定義のシンボルを許可します。歴史的経緯から、共有オブジェクトを作成する場合には、この動作がデフォルトになっています。このオプションを実行可能ファイルに対して指定した場合の、未定義のシンボルに対する参照の動作は不確定です。\fB-z\fR \fBnodefs\fR オプションを使用することは、お勧めしません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBdirect\fR | \fBnodirect\fR\fR
+.ad
+.sp .6
+.RS 4n
+コマンド行であとに続くすべての依存関係への直接結合を有効または無効にします。このオプションにより、対応するグローバルなオプション \fB-B\fR \fBdirect\fR よりも直接結合を効率よく制御できます。\fB-z\fR \fBdirect\fR オプションは、次の点で \fB-B\fR \fBdirect\fR オプションとも異なります。直接結合の情報は、シンボル参照と作成されたオブジェクト内で関連付けられた定義の間では確立されません。レイジー読み込みは無効です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBdiscard-unused=\fR\fIitem1\fR\fB,\fR\fIitem2\fR\fB,...\fR\fR
+.ad
+.sp .6
+.RS 4n
+デフォルトでは、リンカーは、未使用の空のセクションを破棄します。その他のカテゴリの入力素材は、リンク編集中に、未使用であると判定できます。\fB-z discard-unused\fR オプションを使用すると、このような項目の自動削除が可能になります。次の \fIitem\fR トークンが認識されます。
+.sp
+.ne 2
+.mk
+.na
+\fBセクション\fR
+.ad
+.sp .6
+.RS 4n
+未使用のセクションは、リンク編集から作成された出力ファイルから破棄されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBファイル\fR
+.ad
+.sp .6
+.RS 4n
+未使用の再配置可能オブジェクトファイルは、リンク編集から作成された出力ファイルから破棄されます。
+.sp
+入力の再配置可能オブジェクトファイルは、その再配置可能オブジェクトによって提供されるすべての割り当て可能セクションが未使用である場合に、未使用であると判定されます。\fB-z guidance\fR オプションの「必須でない再配置可能オブジェクトファイル」の説明も参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB依存関係\fR
+.ad
+.sp .6
+.RS 4n
+未使用の、明示的な、共有オブジェクトの依存関係は、リンク編集から作成された出力ファイル内に記録されません。
+.sp
+明示的な依存関係とは、パス名を使用して、またはより一般には \fB-l\fR オプションを使用してコマンド行で定義された依存関係のことです。明示的な依存関係がほかのオブジェクトに依存する場合があり、これを暗黙の依存関係と呼びます。明示的な依存関係は、2 つの条件が満たされた場合に、未使用であると判定されます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+この依存関係によって提供されるグローバルシンボルが、構築されるオブジェクトから参照されていない。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+この依存関係が、どの暗黙の依存関係の要件も補償していない。
+.RE
+\fB-z guidance\fR オプションの「必須でない、または補償している依存関係」の説明も参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBnone\fR
+.ad
+.sp .6
+.RS 4n
+未使用の処理 (未使用の空のセクションを削除するデフォルトのアクションを含む) をすべて無効にします。
+.RE
+
+\fI「Removing Unused Material」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRも参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBendfiltee\fR\fR
+.ad
+.sp .6
+.RS 4n
+フィルタ処理の対象オブジェクトに印をつけます。フィルタによる検索処理は、このオブジェクトを検出した時点で終了します。\fI「Reducing Capability Filtee Searches」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBfatal-warnings\fR | \fBnofatal-warnings\fR\fR
+.ad
+.br
+.na
+\fB\fB--fatal-warnings\fR | \fB--no-fatal-warnings\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-z\fR \fBfatal-warnings\fR と \fB--fatal-warnings\fR オプションを指定すると、リンカーは警告を致命的エラーとして扱います。
+.sp
+\fB-z\fR \fBnofatal-warnings\fR と \fB--no-fatal-warnings\fR オプションを指定すると、リンカーは警告を致命的でないエラーとして扱います。これはデフォルトの動作です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBfiniarray=\fR\fIfunction\fR\fR
+.ad
+.sp .6
+.RS 4n
+構築するオブジェクトの \fB\&.fini_array\fR セクションにエントリを追加します。\fB\&.fini_array\fR セクションが存在しない場合は、1 つのセクションを新たに作成します。追加されたエントリは \fIfunction\fR を指すように初期化されます。\fI「Initialization and Termination Sections」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBglobalaudit\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションは、\fB-P\fR オプションを使用して記録された監査ライブラリの定義を補足します。このオプションを使用できるのは、動的実行可能ファイルまたは位置独立実行可能ファイルを作成する場合だけです。\fB-P\fR オプションを使用してオブジェクト内で定義された監査ライブラリを使用すると、通常、そのオブジェクトの直接の依存関係を監査できます。 \fB-z\fR \fBglobalaudit\fR は、監査者をグローバルな監査者に昇格させることによって、すべての依存関係を監査できるようにします。\fI「Invoking the Auditing Interface」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.sp
+\fB-P\fR オプションと \fB-z\fR \fBglobalaudit\fR オプションを使用して確立された監査者は、\fBLD_AUDIT\fR 環境変数を使用して確立された監査者と同等です。\fBld.so.1\fR(1) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBguidance[=\fR\fIitem1\fR\fB,\fR\fIitem2\fR\fB,...]\fR\fR
+.ad
+.sp .6
+.RS 4n
+生成されるオブジェクトの品質を高めるか、それ以外のメリットがあると考えられるリンカーオプションを提案するガイダンスメッセージを表示します。提供される個々のガイダンスは、システムの進化に伴って変更される可能性があります。古いバージョンのリンカーで提供されていた廃止済みのガイダンスは、新しいバージョンでは削除されることがあります。同様に、新しいガイダンスが新しいバージョンのリンカーに追加されることがあります。したがって、ガイダンスには常に最新のベストプラクティスが表示されます。
+.sp
+ガイダンスを有効にすると同時に特定のガイダンスメッセージが表示されないようにするには、表示しないガイダンスのクラスを示す \fIitem\fR トークンの一覧を指定します。これにより、不要なアドバイスは表示されなくなりますが、それ以外のガイダンスは活用できます。リンカーは認識されない \fIitem\fR トークンを何も出力せずに無視するため、指定したコマンド行を新旧さまざまなバージョンの Solaris で実行できます。
+.sp
+現在のバージョンのリンカーで提供されるガイダンスと、これらのメッセージを無効にするために使用する \fIitem\fR トークンは次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB必要な依存関係を指定する\fR
+.ad
+.sp .6
+.RS 4n
+動的実行可能ファイルと共有オブジェクトでは、必要とする依存関係をすべて明示的に定義する必要があります。ガイダンスでは、動的オブジェクトの作成時にシンボル参照が不十分な場合には、\fB-z\fR \fBdefs\fR オプションの使用を推奨しています。このガイダンスは、\fB-z\fR \fBguidance=nodefs\fR で無効にできます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB必須でない、または補償している依存関係を指定しない\fR
+.ad
+.sp .6
+.RS 4n
+動的実行可能ファイルおよび共有オブジェクトは、動的オブジェクトによって作成されたシンボル参照を満たさない明示的な依存関係を定義してはいけません。ガイダンスでは、必須でない、または未使用の依存関係を削除するよう推奨しています。未使用の依存関係は、2 つのカテゴリのいずれかに分類できます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+シンボル参照を満たさない明示的な依存関係。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+構築される動的オブジェクトからのシンボル参照を満たさないが、暗黙の依存関係を補償している明示的な依存関係。\fB-z discard-unused\fR オプションの「依存関係」の説明を参照してください。
+.RE
+これらのどちらのカテゴリのガイダンスも、\fB-z guidance=nounused-dependencies\fR または同義語の \fB-z guidance=nounused\fR で無効にできます。補償している依存関係のガイダンスは、\fB-z guidance=nounused-compensators\fR で無効にできます。
+.sp
+\fI「Removing Unused Material」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRも参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB必須でない再配置可能オブジェクトファイルを指定しない\fR
+.ad
+.sp .6
+.RS 4n
+作成される出力ファイルには、リンク編集に関与しているその他のオブジェクトによって割り当て可能セクションが参照されない再配置可能オブジェクトからのどのような情報も含まれていてはいけません。ガイダンスでは、未使用の再配置可能オブジェクトを削除するよう推奨しています。このガイダンスは、\fB-z guidance=nounused-files\fR で無効にできます。
+.sp
+\fI「Removing Unused Material」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRも参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBレイジー読み込み\fR
+.ad
+.sp .6
+.RS 4n
+レイジー読み込みでは依存関係を識別する必要があります。ガイダンスでは、\fB-z\fR \fBlazyload\fR または \fB-z\fR \fBnolazyload\fR オプションが出現する前にすべての依存関係が処理される場合、\fB-z\fR \fBlazyload\fR オプションの使用を推奨しています。このガイダンスは、\fB-z\fR \fBguidance=nolazyload\fR で無効にできます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB直接結合\fR
+.ad
+.sp .6
+.RS 4n
+直接結合を使用して依存関係を参照する必要があります。ガイダンスでは、\fB-B\fR \fBdirect\fR と \fB-z\fR \fBdirect\fR オプションのどちらか、または \fB-z\fR \fBnodirect\fR オプションが出現する前に依存関係が処理される場合、B direct と z direct のどちらかのオプションの使用を推奨しています。このガイダンスは、\fB-z\fR \fBguidance=nodirect\fR で無効にできます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBピュアテキストセグメント\fR
+.ad
+.sp .6
+.RS 4n
+動的オブジェクトでは、書き込み不可で割り当て可能なセクションに再配置を行なってはいけません。ガイダンスでは、テキストセグメントに対して再配置が残っていて、\fB-z\fR \fBtextwarn\fR オプションも \fB-z\fR \fBtextoff\fR オプションも検出されない場合、位置独立コード (PIC) でのオブジェクトのコンパイルを推奨しています。このガイダンスは、\fB-z\fR \fBguidance=notext\fR で無効にできます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBMapfile の構文\fR
+.ad
+.sp .6
+.RS 4n
+すべての \fBmapfile\fR は、バージョン 2 の \fBmapfile\fR 構文を使用する必要があります。ガイダンスでは、バージョン 1 の構文を使用する \fBmapfile\fR が検出された場合、バージョン 2 の構文の使用を推奨しています。このガイダンスは \fB-z\fR \fBguidance=nomapfile\fR で無効にできます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBライブラリ検索パス\fR
+.ad
+.sp .6
+.RS 4n
+リンカーによって不適切な依存関係が検出されると、何も出力されずに無視されます。たとえば、64 ビットのオブジェクト生成時に検出された 32 ビットの依存関係は無視されます。このような依存関係は、誤った \fB-L\fR オプションが設定されるなど、検索パスの設定が正しくないことから生じる可能性があります。この依存関係があっても問題ではありませんが、この依存関係を処理する必要はなく、解決の必要がある作成時の問題が隠れてしまうおそれがあります。ガイダンスでは、不適切な依存関係はすべて削除することを推奨しています。このガイダンスは、\fB-z\fR \fBguidance=nolibpath\fR で無効にできます。
+.RE
+
+また、\fB-z\fR \fBguidance=noall\fR でガイダンス機能をすべて無効にできます。より適切なオブジェクトを構築するためのガイダンスとアドバイスについての詳細は、Chapter 5, \fI「Link-Editor Quick Reference,」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBhelp\fR\fR
+.ad
+.br
+.na
+\fB\fB--help\fR\fR
+.ad
+.sp .6
+.RS 4n
+標準出力にコマンド行オプションのサマリーを出力して終了します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBignore\fR | \fBrecord\fR\fR
+.ad
+.br
+.na
+\fB\fB--as-needed\fR | \fB--no-as-needed\fR\fR
+.ad
+.sp .6
+.RS 4n
+リンク編集の一部として参照されない共有オブジェクトの依存関係を無視または記録します。これらのオプションは定位置オプションであり、コマンド行で見つかった参照されない依存関係をリンカーが処理する方法を切り替えるために使用されます。\fB-z\fR \fBignore\fR が検出されると、以降の参照されない依存関係はすべて、何も出力せずに無視されます。\fB-z\fR \fBrecord\fR が検出されると、依存関係が参照されるかどうかには関係なく、すべての依存関係が記録されます。
+.sp
+デフォルトでは、依存関係が参照されるかどうかには関係なく、リンカーはすべての依存関係を記録します。定位置でない \fB-z\fR \fBdiscard-unused=dependencies\fR オプションを使用すると、この初期のデフォルトを変更できます。初期設定が確立されたあとは、\fB-z\fR \fBignore\fR および \fB-z\fR \fBrecord\fR を使用してデフォルトの動作を変更できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBinitarray=\fR\fIfunction\fR\fR
+.ad
+.sp .6
+.RS 4n
+構築するオブジェクトの \fB\&.init_array\fR セクションにエントリを追加します。\fB\&.init_array\fR セクションが存在しない場合は、1 つのセクションを新たに作成します。追加されたエントリは \fIfunction\fR を指すように初期化されます。\fI「Initialization and Termination Sections」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBinitfirst\fR\fR
+.ad
+.sp .6
+.RS 4n
+オブジェクトの実行時初期設定が完了してから、ほかのオブジェクトの実行時初期設定を同時処理します。また、同時プロセスから除去されたほかのすべてのオブジェクトの実行時最終設定が完了してから、オブジェクトの実行時最終設定が行われるようにします。このオプションは共有オブジェクトの作成時にのみ有用です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBinterpose\fR\fR
+.ad
+.sp .6
+.RS 4n
+直接結合よりも優先して検索するオブジェクトを指定します。実行時に、\fB-z interpose\fR オプションでオブジェクトにタグが付けられている場合、そのオブジェクトは明示的な割り込みとして識別されます。明示的な割り込みは、オブジェクトが \fBLD_PRELOAD\fR 環境変数を使用して読み込まれたときにも設定されます。\fBld.so.1\fR(1) を参照してください。オブジェクトの読み込み順序が原因で暗黙的な割り込みが発生することがありますが、この暗黙的な割り込みは実行時リンカーにとっては未知のものです。明示的な割り込みでは、オブジェクトの読み込み順序にかかわらず割り込みを発生させることができます。また、直接結合が有効な場合には、明示的な割り込みによって、実行時リンカーが任意の明示的な割り込み内でシンボルを検索できるようになります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBlazyload\fR | \fBnolazyload\fR\fR
+.ad
+.sp .6
+.RS 4n
+遅延して読み込まれる動的な依存オブジェクトの指定を有効または無効にします。\fBlazyload\fR と指定された動的な依存オブジェクトは、初期プロセスの起動では読み込まれません。オブジェクトの読み込みは、はじめてこのオブジェクトへの結合が行われたときに行われます。\fB注:\fR レイジー読み込みには、正しい依存宣言と、プロセス内で使用される動的オブジェクトごとに関連する runpaths が必要です。\fI「Lazy Loading of Dynamic Dependencies」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBld32\fR=\fIarg1\fR,\fIarg2\fR,...\fR
+.ad
+.br
+.na
+\fB\fB-z\fR \fBld64\fR=\fIarg1\fR,\fIarg2\fR,...\fR
+.ad
+.sp .6
+.RS 4n
+\fB-z\fR \fB32\fR および \fB-z\fR \fB64\fR オプションは、それぞれ 32 ビットまたは 64 ビットのリンカーの実行時にのみ解釈するオプションを指定するために使用されます。
+.sp
+たとえば、サポートするライブラリがクラスに固有のものである場合に、そのライブラリに正しいクラスを指定するには、次のようにします。
+.sp
+.in +2
+.nf
+$ \fBld ... -z ld32=-Saudit32.so.1 -z ld64=-Saudit64.so.1 ...\fR
+.fi
+.in -2
+.sp
+
+Solaris 12 より前は、実行されるリンカーのクラスは、作成される \fBELF\fR オブジェクトのクラスによって決まっていました。現在では、実行されるリンカーのクラスは常に 64 ビットになります。これらのオプションは、旧バージョンの Solaris との下位互換性を保つために残されています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBloadfltr\fR\fR
+.ad
+.sp .6
+.RS 4n
+フィルタ対象が実行時ただちに処理されることを要求するように、フィルタに指定します。通常、フィルタ処理は、シンボル参照がフィルタに結合されたときにはじめて行われます。このフラグを持つオブジェクトの実行時プロセスは、環境変数 \fBLD_LOADFLTR\fR が設定されている場合と同じように動作します。\fBld.so.1\fR(1) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBmapfile-add=\fR\fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIname\fR を既知の \fBmapfile\fR 条件入力式の述部の一覧に追加します。このオプションは、リンカーによって読み取られる最初の \fBmapfile\fR の先頭に次の行を挿入することと同等です。
+.sp
+.in +2
+.nf
+$mapfile_version 2
+$add \fIname\fR
+.fi
+.in -2
+
+\fB-z mapfile-add\fR で入力された名前を \fBmapfile\fR \fB$if\fR および \fB$elif\fR ディレクティブとともに使用すると、\fBmapfile\fR 入力を条件に応じて処理できます。Chapter 9, \fI「Mapfiles,」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnodelete\fR\fR
+.ad
+.sp .6
+.RS 4n
+実行時に削除できないように、オブジェクトに指定します。このモードは、\fBdlopen\fR(3C) を \fBRTLD_NODELETE\fR モードとともに使用してプロセスにオブジェクトを追加する場合と同様です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnodlopen\fR\fR
+.ad
+.sp .6
+.RS 4n
+オブジェクトを \fBdlopen\fR(3C) では利用できないように指定します。そのオブジェクトは、\fBdlopen()\fR に指定されたオブジェクトとしても、\fBdlopen()\fR に指定されたオブジェクトに必要などのような形式の依存関係としても、利用できなくなります。このオプションは共有オブジェクトの作成時にのみ有用です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnxheap[=\fImode\fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスの実行不能ヒープ (NXHEAP) の要件を指定します。モード値は、\fBenable\fR または \fBdisable\fR に設定できます。モードを省略した場合、NXHEAP は有効になります。このオプションを使用できるのは、動的実行可能ファイルまたは位置独立実行可能ファイルを作成する場合だけです。\fBsxadm\fR(1M) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnxstack[=\fImode\fR]\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセスの実行不能スタック (NXSTACK) の要件を指定します。モード値は、\fBenable\fR または \fBdisable\fR に設定できます。モードを省略した場合、NXSTACK は有効になります。このオプションを使用できるのは、動的実行可能ファイルまたは位置独立実行可能ファイルを作成する場合だけです。\fBsxadm\fR(1M) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBparent=\fIobject\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+出力オブジェクトのリンク先の\fI親\fR オブジェクト (実行可能ファイルまたは共有オブジェクト) を指定します。通常、このオプションを使用するのは \fIplugin\fR 共有オブジェクトの作成時で、このオブジェクトは実行可能ファイルにより実行時に \fBdlopen ()\fR 関数を介してロードされます。親オブジェクトからのシンボルテーブルは、\fBplugin\fR オブジェクトからの参照を満たすために使用されます。\fI「Parent Objects」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBpreinitarray=\fR\fIfunction\fR\fR
+.ad
+.sp .6
+.RS 4n
+構築するオブジェクトの \fB\&.preinit_array\fR セクションにエントリを追加します。\fB\&.preinit_array\fR セクションが存在しない場合は、1 つのセクションを新たに作成します。追加されたエントリは \fIfunction\fR を指すように初期化されます。\fI「Initialization and Termination Sections」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBrescan-now\fR\fR
+.ad
+.sp .6
+.RS 4n
+これらのオプションは、リンカーに渡されたアーカイブファイルを再走査します。デフォルトでは、アーカイブの検索は、コマンド行に指定されたときに一度だけ処理されます。通常アーカイブは、そのシンボル定義でアーカイブの前に指定されている参照を解決できるように、コマンド行の最後に指定します。ただし、実際には、アーカイブ間での相互依存関係を解決するために、アーカイブ自体を複数回指定しなければならないことがあります。
+.sp
+\fB-z\fR \fBrescan-now\fR は位置オプションで、コマンド行上で検出されるとただちにリンカーによって処理されます。コマンド行上でそのポイントに達したすべてのアーカイブはただちに処理され、シンボル参照を解決する追加のアーカイブメンバーを見つけ出そうとします。アーカイブ全体を走査しても新しい再配置可能オブジェクトが抽出されないと、アーカイブの再走査は終了します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBrescan-start\fR ... \fB-z\fR \fBrescan-end\fR\fR
+.ad
+.br
+.na
+\fB\fB--start-group\fR ... \fB--end-group\fR\fR
+.ad
+.br
+.na
+\fB\fB-(\fR ... \fB-)\fR\fR
+.ad
+.sp .6
+.RS 4n
+アーカイブ再走査グループを定義します。これは位置構成で、終端区切りオプションが検出されるとリンカーによってただちに処理されます。グループ区切りオプション内で見つかったアーカイブはグループとして再処理され、シンボル参照を解決する追加のアーカイブメンバーを見つけ出そうとします。アーカイブ全体を走査しても新しい再配置可能オブジェクトが抽出されないと、アーカイブの再走査は終了します。アーカイブ再走査グループを入れ子にすることはできません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBstrip-class=\fR[\fB!\fR]\fIclass1\fR\fB,\fR[\fB!\fR]\fIclass2\fR\fB ,...\fR\fR
+.ad
+.sp .6
+.RS 4n
+特定のクラスのセクションがすべての入力オブジェクトから削除されるため、これらのセクションは出力ファイルに追加されなくなります。このオプションを使用すると、出力ファイルから省略できるセクションに対してきめ細かな制御ができます。
+.sp
+以降の strip クラスの説明は、割り当て不可能なセクションにのみ適用されます。
+.sp
+各クラスのトークンを '\fB!\fR' の前に追加して、そのクラスの削除が禁止されていることを示すことができます。この定義は、\fBnonalloc\fR クラスと組み合わせる場合に役立つことがあります。たとえば、'\fB-z\fR \fBstrip-class=nonalloc,!note\fR' を使用すると、注意のセクションを除くすべての割り当て不可能なセクションが削除されます。
+.sp
+取り除かれたセクションは、出力オブジェクトから完全に削除されます。\fB-z\fR \fBancillary\fR オプションを使用すると、動的でないシンボルテーブル \fB\&.symtab\fR に関するこの動作と、それに関連したセクションが変更されます。デフォルトでは、シンボルテーブルは、プライマリオブジェクトと補助的なオブジェクトの両方に書き込まれます。取り除かれた場合、シンボルテーブルは補助的なオブジェクトにのみ書き込まれ、プライマリオブジェクト内に存在しないとしてマークされます。\fB\&.symtab\fR が \fB-z\fR \fBancillary\fR を使用せずにオブジェクトから取り除かれた場合、このセクションは通常の方法で完全に削除されます。
+.sp
+次のクラスのセクションを定義できます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnonalloc\fR\fR
+.ad
+.sp .6
+.RS 4n
+割り当て不可のセクションをすべて削除します。これらのセクションは、\fBSHF_ALLOC\fR セクションフラグを含んでいないとものとして識別されます。このクラスは、\fBsymbol\fR クラスを除く、ほかのすべてのクラスをカプセル化します。\fBnonalloc\fR クラスは多くの場合、単独で十分であり、不要なすべてのセクションを削除できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBannotate\fR\fR
+.ad
+.sp .6
+.RS 4n
+すべての注釈セクションを削除します。これらのセクションは、メモリーアクセスツールや、カバレージ関連のツールによって使用される情報を提供します。これらのセクションは、\fBSHT_SUNW_ANNOTATE\fR セクションタイプを指定することで識別します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcomment\fR\fR
+.ad
+.sp .6
+.RS 4n
+すべてのコメントセクションを削除します。これらのセクションは、\fB\&.comment\fR セクション名を指定することで識別します。あるいは、コメントセクションの操作には \fBmcs\fR(1) ユーティリティーが一般的に使用されています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdebug\fR\fR
+.ad
+.sp .6
+.RS 4n
+デバッグデータを含めるためによく使用されるセクションを削除します。これらのセクションは、\fB\&.compcom\fR、\fB\&.line\fR、\fB\&.stab*\fR、\fB\&.debug*\fR、または \fB\&.zdebug*\fR セクション名を指定することで識別します。また、これらのセクションは、\fBSHT_SUNW_DEBUG*\fR セクションタイプを指定することで識別します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexclude\fR\fR
+.ad
+.sp .6
+.RS 4n
+実行可能セクションをすべて削除します。これらのセクションは、\fBSHF_EXCLUDE\fR セクションフラグを指定することで識別します。このクラスは、再配置可能オブジェクトを作成する場合に役立ちます。デフォルトでは、このようなセクションは、動的実行可能ファイルまたは共有オブジェクトの作成時には自動的に除外され、再配置可能オブジェクトの作成時には保持されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnote\fR\fR
+.ad
+.sp .6
+.RS 4n
+ノートセクションを削除します。これらのセクションは、\fBSHT_NOTE\fR セクションタイプを指定することで識別します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsymbol\fR\fR
+.ad
+.sp .6
+.RS 4n
+出力ファイルが再配置可能オブジェクトでない場合に、割り当て不可のシンボルテーブルセクションと文字列テーブルセクションをすべて削除します。これらのセクションは、\fBSHT_SYMTAB\fR セクションタイプを指定することで識別します。関連する文字列テーブルもすべて削除されます。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBstub\fR\fR
+.ad
+.sp .6
+.RS 4n
+スタブ共有オブジェクトを生成します。スタブオブジェクトは共有オブジェクトで、\fBmapfiles\fR からすべて作成されます。また、コードやデータを持ちませんが、本物のオブジェクト同じリンクインタフェースを提供します。スタブオブジェクトは、実行時には使用できません。ただし、スタブオブジェクトに対してアプリケーションを作成できます。その場合、スタブオブジェクトは、実行時に使用される本物のオブジェクトの名前を提供し、実行時に本物のオブジェクトを使用します。
+.sp
+スタブオブジェクトは共有オブジェクト用に対してのみ作成でき、エクスポートされる大域シンボルを定義する \fBmapfile\fR を提供する必要があります。そのため、\fB-ztype=shared\fR または \fB-G\fR オプションと、\fB-M\fR オプションが、\fB-z\fR \fBstub\fR の使用時に必要となります。スタブオブジェクトの作成時には、リンカーはコマンド行で指定されているオブジェクトとライブラリファイルをすべて無視するため、スタブを作成するためにこれらのファイルが存在している必要はありません。コンパイル手順が省略でき、リンカーの作業が比較的少ないため、スタブオブジェクトはすぐに作成できます。
+.sp
+『\fI『リンカーとライブラリガイド』\fR』の「\fI「スタブオブジェクト」\fR」を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBsymbolcap\fR\fR
+.ad
+.sp .6
+.RS 4n
+オブジェクトの機能を定義する再配置可能オブジェクトを、シンボルの機能を定義する再配置可能オブジェクトに変換します。\fI「Converting Object Capabilities to Symbol Capabilities」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBtarget=sparc | x86\fR \fI\fR\fR
+.ad
+.sp .6
+.RS 4n
+出力オブジェクトの機械タイプを指定します。サポートされるターゲットは、SPARC と x86 です。\fB-64\fR オプションも存在していて、対応する 64 ビット機械タイプが使用されている場合を除き、指定されたターゲット用の 32 ビット機械タイプが使用されます。デフォルトでは、生成されるオブジェクトの機械タイプは、コマンド行から処理される最初の \fBELF\fR オブジェクトによって決まります。オブジェクトを指定していない場合、機械タイプは、コマンド行から処理される最初のアーカイブ内で検出された最初のオブジェクトによって決まります。オブジェクトもアーカイブもない場合、リンカーはネイティブマシンを仮定します。このオプションは、\fBmapfile\fR からの入力のみでリンカーを使用してオブジェクトを直接作成するときに便利です。 (\fB-M\fR の説明を参照)。また、最初のオブジェクトが目的の機械タイプのオブジェクトではない、異なる機械タイプのオブジェクトを含むアーカイブからすべてをリンクするというごくまれな場合にも便利です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBtext\fR | \fBtextoff\fR | \fBtextwarn\fR\fR
+.ad
+.sp .6
+.RS 4n
+これらのオプションは、動的モードでのみ使用できます。\fB-z\fR \fBtext\fR オプションは、書き込み不可能な割り当て可能セクションに対する再配置が残っていた場合、強制的に致命的エラーを発生させます。歴史的理由から、この動作は、実行可能オブジェクトまたは共有オブジェクトを作成するときのデフォルトではありません。ただし、作成される動的オブジェクトのテキスト部分を実行中の複数のプロセス間で共有可能にするため、このオプションを使用することをお勧めします。オブジェクトをメモリーに読み込むときの再配置オーバーヘッドが最低限に抑えられることを共有テキストセグメントは保証します。\fI「Position-Independent Code」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.sp
+\fB-z\fR \fBtextoff\fR オプションは、すべての割り当て可能セクション (書き込み不可能なセクションを含む) に対する再配置を許可します。共有オブジェクト作成時のデフォルトの設定です。
+.sp
+\fB-z\fR \fBtextwarn\fR オプションは、書き込み不可能な割り当て可能セクションに対する再配置が残っていた場合、警告を表示します。実行可能オブジェクト作成時のデフォルトの設定です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBtype=\fIobject-type\fR\fR\fR
+.ad
+.sp .6
+.RS 4n
+作成するオブジェクトのタイプを指定します。次のオブジェクトタイプを指定できます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexec\fR\fR
+.ad
+.sp .6
+.RS 4n
+動的実行可能ファイル。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpie\fR\fR
+.ad
+.sp .6
+.RS 4n
+位置独立実行可能ファイル。このオプションは \fB-ztext\fR オプションの表明も行います。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreloc\fR\fR
+.ad
+.sp .6
+.RS 4n
+再配置可能オブジェクト。これは、\fB-r\fR オプションを指定する場合と同じです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshared\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有オブジェクト。これは、\fB-G\fR オプションを指定する場合と同じです。このオプションは \fB-ztext\fR オプションの表明も行います。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBverbose\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションはリンクエディット時、警告診断を追加します。現在、このオプションによって次の警告が有効になります。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+再配置の置き換えの疑わしい使用。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+共有オブジェクト作成時の静的 \fBTLS\fR 再配置の制限された使用。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+シンボルの可視性の不一致。
+.RE
+将来、このオプションは、デフォルトで生成される詳細な診断を提供するように拡張される予定です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR\fBwrap=\fR\fIsymbol\fR\fR
+.ad
+.br
+.na
+\fB\fB-wrap=\fR\fIsymbol\fR\fR
+.ad
+.br
+.na
+\fB\fB--wrap=\fR\fIsymbol\fR\fR
+.ad
+.sp .6
+.RS 4n
+ソースコードを変更しなくてもラッパーコードを出力オブジェクトにリンクできるようにするため、\fIsymbol\fR への未定義の参照の名前を変更します。 \fB-z wrap\fR オプションが指定されている場合、\fIsymbol\fR への未定義の参照はすべて \fB__wrap_\fR\fIsymbol\fR 参照に変更され、\fB__real_\fR\fIsymbol\fR への参照はすべて \fIsymbol\fR 参照に変更されます。ユーザーは、\fB__wrap_\fR\fIsymbol\fR 関数を含むオブジェクトを提供するものと想定されています。ラッパー関数では、ラップされる実際の関数を参照するために、\fB__real_\fR\fIsymbol\fR を呼び出すことができます。
+.sp
+次に、\fBmalloc\fR(3C) 関数のラッパーの例を示します。
+.sp
+.in +2
+.nf
+void *
+__wrap_malloc(size_t c)
+{
+        (void) printf("malloc called with %zu\en", c);
+        return (__real_malloc(c));
+}
+.fi
+.in -2
+
+すべてのオブジェクトをコンパイルするために \fB-z\fR \fBwrap=malloc\fR を使用してほかのコードがこのファイルとリンクされる場合、\fBmalloc\fR へのすべての呼び出しは \fB__wrap_malloc\fR 関数を代わりに呼び出します。\fB__real_malloc\fR への呼び出しは、本物の \fBmalloc\fR 関数を呼び出します。
+.sp
+本物の関数とラップされた関数は別々のソースファイルで保持するようにしてください。そうしないと、コンパイラまたはアセンブラが呼び出しの解決をリンカーに任せずに自分で行うため、ラップの発生が妨げられることがあります。
+.RE
+
+.SH セカンダリオプション
+.sp
+.LP
+次のオプションは、一般にはあまり使用されません。これらのオプションは、下位互換性、非常に特殊な機能、または機能強化されたバリエーションに置き換えられたオプションを提供します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+静的モードでのみ、静的実行可能ファイルを生成します。未定義の参照があるとエラーを発行します (静的モードのデフォルトの動作)。\fB-a\fR オプションを \fB-ztype=reloc\fR オプションや \fB-r\fR オプションと一緒に使用することはできません。「機能説明」の「\fB静的実行可能ファイル\fR」を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.sp .6
+.RS 4n
+動的モード専用です。動的実行可能ファイルに対して、共有オブジェクト内のシンボルを参照するような特殊な再配置処理を行いません。\fB-b\fR オプションを指定しない場合、リンカーは、テキストセグメントが読み取り専用のままになるように動的実行可能ファイル内でいくつかの方法を適用します。1 つの方法は、共有オブジェクトで定義されている関数への参照に対して位置独立型の特別な再配置を作成することです。もう 1 つの方法は、共有オブジェクト内に定義されているデータオブジェクトが実行時に実行可能ファイルのメモリーイメージにコピーされるように設定することです。
+.sp
+このオプションは、特殊化された動的オブジェクトを対象としているため、一般的な用途に使用することはお勧めしません。\fB-\fRこのオプションを使用すると、オブジェクトを共有可能にするために必要な特殊処理がすべて無効になります。また、64 ビット実行可能オブジェクトの再配置を妨げることもあります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-B\fR \fBgroup\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有オブジェクトとその依存オブジェクトを 1 つのグループにまとめます。グループ内のオブジェクトは、実行時に、グループ内のほかのメンバーに結合されます。このモードは、\fBdlopen\fR(3C) を \fBRTLD_GROUP\fR モードとともに使用してプロセスにオブジェクトを追加する場合と同様です。あるグループに属しているオブジェクトに対して明示的な依存関係を持つオブジェクトは、自分自身もそのグループのメンバーになります。
+.sp
+グループは自己完結している必要があるため、\fB-B\fR \fBgroup\fR オプションの使用は \fB-z\fR \fBdefs\fR オプションも表明します。
+.sp
+グループを確立すると、オブジェクトのグループの結合を制御するための基本的な手段が提供されます。ただし、より適切な制御は、直接結合で実現できます。\fB-B\fR \fBdirect\fR オプションを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-B\fR \fBsymbolic\fR\fR
+.ad
+.sp .6
+.RS 4n
+動的モード専用です。共有オブジェクトを作成する際、可能であれば、大域シンボルへの参照を共有オブジェクト内の参照定義に結合します。通常、共有オブジェクト内の大域シンボルへの参照は、定義が使用可能でも実行時まで結合されません。このモデルでは、実行可能ファイルやほかの共有オブジェクトに含まれる同じシンボルの定義で、そのオブジェクト自体の定義をオーバーライドすることができます。\fB-z\fR \fBdefs\fR でオーバーライドしないかぎり、リンカーは未定義シンボルに対して警告を発行します。
+.sp
+このオプションは、特殊化された動的オブジェクトを対象としているため、一般的な用途に使用することはお勧めしません。\fB-\fR\fB\fRオブジェクトに必要な実行時の再配置処理を削減するには、直接結合の使用とともに、バージョン定義の作成をお勧めします。\fB-B\fR \fBdirect\fR オプションを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fBy\fR | \fBn\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-d\fR \fBy\fR が指定されている場合 (デフォルト)、リンカーは動的リンクを使用します。\fB-d\fR \fBn\fR が指定されている場合、リンカーは静的リンクを使用します。「機能説明」の\fB「静的実行可能ファイル」\fRおよび \fB-B\fR \fBdynamic\fR | \fBstatic\fR の項目を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR \fIname\fR\fR
+.ad
+.br
+.na
+\fB\fB--dynamic-linker\fR \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+実行可能オブジェクトの作成時、プログラムヘッダーに書き込まれるインタプリタのパス名として \fIname\fR を使用します。静的モードのデフォルトの設定では、インタプリタは使用されません。動的モードのデフォルトの設定では、実行時リンカー \fBld.so.1\fR(1) の名前が使用されます。どちらの場合も、\fB-I\fR \fIname\fR でデフォルトの設定を無効にできます。\fBexec\fR(2) は、\fBa.out\fR をロードする際にこのインタプリタをロードし、\fBa.out\fR ではなくインタプリタに制御を渡します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+サイズやアラインメントの異なる多重定義の暫定的な (共通ブロック) データシンボルを検出した場合の警告の出力を抑止します。このオプションは、\fB-z\fR \fBrelax=common\fR オプションを指定する場合と同じです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Wl,\fR\fIoption\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-Wl,\fR オプションを使えば、コンパイラドライバ経由でリンカーにオプションを渡すことができます。コンパイラドライバは通常、\fB-Wl,\fR を取り除き、残りのオプションをリンカーに渡します。リンカーが \fB-Wl,\fR オプション全体で直接呼び出されることがありました (特に複雑な移植性のあるソフトウェアを構築する場合)。そのような状況でも柔軟に対応できるよう、リンカーは \fB-Wl,\fR を除去して残りのオプションを解釈します。そうしたオプションは通常ユーザーの制御下にないため、認識されない \fB-W\fR オプションが見つかるたびに、致命的なエラーではなく警告が発行され、そのオプションは無視されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-Y\fR \fBP,\fR\fIdirlist\fR\fR
+.ad
+.sp .6
+.RS 4n
+ライブラリ検索に使用するデフォルトのディレクトリを変更します。\fIdirlist\fR には、複数のパスをコロンで区切って指定します。デフォルトの検索パスを変更する必要はないはずです。デフォルトの検索パスは、新しいリリースのオペレーティングシステムでは変わる可能性があります。このオプションを使って完全な検索パスを明示的に指定すると、新しいリリースのオペレーティングシステムとの互換性がなくなる危険性があります。このオプションが維持されているのは、いくつかのコンパイラドライバの歴史的な使用法をサポートするためです。サポートされてはいますが、そのような使用法はお勧めできません。リンク編集で必要となる追加の検索パスは、\fB-L\fR オプションで提供すべきです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBabsexec\fR\fR
+.ad
+.sp .6
+.RS 4n
+動的実行可能ファイルを構築するときにのみ使用されます。このオプションは、外部の絶対的シンボルへの参照を、実行時ではなく今すぐに解決するよう指示します。これによって、ある条件が整った場合には、動的オブジェクトがスワップ領域を大量に消費する可能性のあるテキストの再配置を行わなくなります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBaltexec64\fR\fR
+.ad
+.sp .6
+.RS 4n
+64 ビットのリンカーを実行します。Solaris 11 より前は、実行されるリンカーのクラスは、作成される \fBELF\fR オブジェクトのクラスによって決まっていました。現在では、実行されるリンカーのクラスは常に 64 ビットになります。このオプションは、旧バージョンの Solaris との下位互換性を保つために残されています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBcombreloc\fR | \fBnocombreloc\fR\fR
+.ad
+.sp .6
+.RS 4n
+デフォルトでは、リンカーは、実行可能ファイルまたは共有オブジェクトを作成するときに複数の再配置セクションを結合します。このセクション結合は再配置可能オブジェクトとは異なるもので、再配置可能セクションでは、再配置の適用が必要なセクションと 1 対 1 の関係が維持されます。\fB-z\fR \fBnocombreloc\fR オプションは、この再配置セクションのマージを無効にし、元の再配置可能オブジェクトで見つかった 1 対 1 の関係を保持します。
+.sp
+リンカーは、データ再配置セクションのエントリを、そのシンボル参照に従ってソートします。これにより、実行時のシンボル参照を最低限に抑えます。複数の再配置セクションが結合されている場合は、これにより、オブジェクトがメモリーに読み込まれるときの再配置オーバーヘッドを最低限に抑え、動的オブジェクトの実行時の読み込みを速くします。
+.sp
+これまでは、個々の再配置セクションはすべての実行可能ファイルまたは共有オブジェクトに引き継がれ、前述した再配置セクションのマージを有効にするには \fB-z\fR \fBcombreloc\fR オプションが必要でした。現在では、再配置セクションのマージはデフォルトになっています。\fB-z\fR \fBcombreloc\fR オプションは古い構築環境のために受け入れられますが、このオプションは不必要で効果はありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBgroupperm\fR | \fBnogroupperm\fR\fR
+.ad
+.sp .6
+.RS 4n
+一意のグループにつながる依存関係の割り当て、または割り当ての解除を行います。グループに対して依存関係の割り当てを行うと、\fB-B\fR \fBgroup\fR オプションを使って依存関係を構築した場合と同じ効果が得られます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBmuldefs\fR\fR
+.ad
+.br
+.na
+\fB\fB--allow-multiple-definition\fR\fR
+.ad
+.sp .6
+.RS 4n
+グローバルなシンボル定義の重複を許容します。デフォルトでは、再配置可能オブジェクト間で重複したシンボル定義が発生すると、致命的なエラーになります。このオプションを指定すると、エラーにはならずに、最初の定義が有効な定義として使用されます。特殊なコンパイラオプションまたはコンパイラの高度な最適化を使用することで、このオプションの使用を回避できます。\fI「Fatal Resolutions」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnocompstrtab\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBELF\fR 文字列テーブルおよびコメントセクションの圧縮を無効にします。デフォルトでは、文字列の圧縮は、\fBSHT_STRTAB\fR セクション、\fBSHF_MERGE\fR と \fBSHF_STRINGS\fR のセクションフラグが設定されている \fBSHT_PROGBITS\fR セクション、およびコメントセクションに適用されます。
+.sp
+\fBmcs\fR(1) ユーティリティーを \fB-c\fR オプションとともに使用すると、オブジェクトが構築されたあとにコメントセクションを圧縮できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnodefaultlib\fR\fR
+.ad
+.sp .6
+.RS 4n
+オブジェクトが、実行時デフォルトライブラリ検索パス (\fBLD_LIBRARY_PATH\fR や実行パスの後に使用) を無視するように指定します。このように指定すると、すべての依存オブジェクトが実行パスを使用することになります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnodump\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションは従来、オブジェクトを \fBdldump\fR(3C) では利用できないように指定するために使用されていました。\fB-z\fR \fBnodump\fR オプションは受け入れられますが、このオプションは不必要で効果はありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnoldynsym\fR\fR
+.ad
+.sp .6
+.RS 4n
+動的実行可能ファイルまたは共有オブジェクトに \fB\&.SUNW_ldynsym\fR セクションが含まれないようにします。\fB\&.SUNW_ldynsym\fR セクションは、ローカル関数用のシンボルを提供することで \fB\&.dynsym \fR セクションを拡張します。ローカル関数のシンボルを使用すると、デバッガで、シンボル名などが削除されたプログラムからスタックトレースにローカル関数名を表示できるようになります。同様に、\fBdladdr\fR(3C) では、より正確な結果を出力できます。
+.sp
+\fB-z\fR \fBnoldynsym\fR オプションも、\fB\&.SUNW_ldynsym\fR セクションに関連する 2 つのシンボルソートセクションが含まれないようにします。\fB\&.SUNW_dynsymsort\fR セクションでは、通常の関数と変数シンボルにソートアクセスできます。\fB\&.SUNW_dyntlssort\fR セクションでは、スレッドローカルストレージ (\fBTLS\fR) 変数シンボルにソートアクセスできます。
+.sp
+\fB\&.SUNW_ldynsym\fR、\fB\&.SUNW_dynsymsort\fR、および \fB\&.SUNW_dyntlssort\fR セクションは、結果ファイルの割り当て可能なテキストセグメントの一部となりますが、\fBstrip\fR(1) によって削除することはできません。したがって、これらのセクションが含まれないようにする唯一の方法は、\fB-z\fR \fBnoldynsym\fR オプションを使用することです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnopartial\fR\fR
+.ad
+.sp .6
+.RS 4n
+部分的に初期化されたシンボルが、再配置可能なオブジェクト内に定義されている場合、このシンボルは、生成される出力ファイルで展開されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnoversion\fR\fR
+.ad
+.sp .6
+.RS 4n
+バージョン管理情報を削除します。バージョンセクションまたは関連する \fB\&.dynamic\fR セクションのエントリは、出力イメージ内に生成されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnow\fR\fR
+.ad
+.sp .6
+.RS 4n
+オブジェクトがレイジーでない実行時結合を要求するように指定します。このモードは、\fBdlopen\fR(3C) を \fBRTLD_NOW\fR モードとともに使用してプロセスにオブジェクトを追加する場合と同様です。また、このモードは、\fBLD_BIND_NOW\fR 環境変数を有効にする場合と同様です。\fBld.so.1\fR(1) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBorigin\fR\fR
+.ad
+.sp .6
+.RS 4n
+実行時ただちに \fB$ORIGIN\fR を処理することを要求するように、オブジェクトに指定します。この動作は現在はデフォルトです。このオプションは、従来機能との互換性のためにのみ残されています。\fB\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBredlocsym\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBSHT_SYMTAB\fR シンボルテーブルから、\fISECT\fR シンボル以外のすべてのローカルシンボルを削除します。ローカルシンボルを参照する配置はすべて更新され、\fISECT\fR シンボルを参照するようになります。このオプションを使用すると、特殊なオブジェクトのシンボルテーブルのサイズを大幅に削減できます。\fB-z\fR \fBstrip-class\fR および \fB-z\fR \fBnoldynsym\fR オプションも参照してください。
+.sp
+\fB-z\fR \fBredlocsym\fR オプションは、オペレーティングシステムカーネル内部で使用されるような特殊なオブジェクトに対して有用ですが、一般的な用途には推奨されません。シンボルテーブル \fBSHT_SYMTAB\fR のサイズは実行時動作に影響を与えず、ローカルシンボルの削除はプロセスの可観測性に悪影響を与える場合があります。ローカルシンボルを削除すると、コンパイラドライバ \fB-g\fR オプションを使用して生成されるデバッグ情報が少なくなる可能性があります。また、ローカルシンボルを削除すると、通常は \fB\&.SUNW_ldynsym\fR セクションに書き込まれる情報も削除されるため、\fBpstack\fR(1) や \fBtruss\fR(1) などのデバッガやツールの有効性が低下します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBrelax=\fR\fIitem1\fR\fB,\fR\fIitem2\fR\fB,...\fR\fR
+.ad
+.sp .6
+.RS 4n
+リンカーは、結果となる出力オブジェクトが有効で実行時に使用可能であることを確認するために、有効性チェックを実行します。さらにリンカーは、さまざまな再配置を遷移させることでより最適な命令シーケンスを生成することもできます。
+.sp
+\fB-z\fR \fBrelax\fR オプションを使えば、これらの操作を緩和させることで、拒否されるはずだった出力オブジェクトを生成できます。
+.LP
+注 - 
+.sp
+.RS 2
+有効性チェックを無効にすると、破損したオブジェクトや使用不能なオブジェクトが作成されることがあります。\fB-z\fR \fBrelax\fR オプションは、主にコンパイラの作成者が使用する特殊なオプションであり、一般的な用途向けではありません。
+.RE
+次の \fBitem\fR トークンが認識されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcomdat\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBCOMDAT\fR セクションの一部として削除されたシンボルに対する再配置が残っていると、致命的なエラーが発生します。\fB-z\fR \fBrelax=comdat\fR オプションを指定すると、そのような再配置は、保持されている \fBCOMDAT\fR セクション内の同等のシンボルにリダイレクトされます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcommon\fR\fR
+.ad
+.sp .6
+.RS 4n
+サイズやアラインメントの異なる多重定義の暫定的なデータシンボルがあると、警告が生成されます。一般に、このような状況は Fortran の共通ブロックから発生します。\fB-z\fR \fBrelax=common\fR オプションは、この警告を無効にします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsecadj\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBELF\fR オブジェクトでは、出力オブジェクト内の特定のセクションが指定された順序で互いに隣接している必要があります。この自動レイアウトは、セクションのレイアウトを明示的に変更するリンカー \fBmapfiles\fR によって阻害される可能性があります。無効なレイアウトがあると、致命的なエラーが発生します。\fB-z\fR \fBrelax=secadj\fR オプションは、レイアウト検証を抑止します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsymbound\fR\fR
+.ad
+.sp .6
+.RS 4n
+シンボルがその関連セクションの境界を越えるデータを参照すると、無効なメモリーアクセスになることがあります。そのようなシンボルがあると、致命的なエラーが発生します。\fB-z\fR \fBrelax=symbound\fR オプションは、このエラー条件を抑制します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtransdisp\fR\fR
+.ad
+.sp .6
+.RS 4n
+SPARC 上のある \fBGOTDATA\fR 再配置ファミリでは、Global Offset Table (\fBGOT\fR) を基準にしてデータにアクセスできます。ローカルにバインドされたデータ項目により、リンカーは関連するコードシーケンスを遷移させ、より最適なアクセスモデルを提供することができます。ただしこのモデルでは、\fBGOT\fR アドレスの前後 2G バイト以内のデータへのアクセスのみがサポートされます。この制限を超える再配置は致命的なエラーとなります。データ参照がこの制限を超えるようなまれな場合は、\fB-z\fR \fBrelax=transdisp\fR オプションを使って \fBGOTOP\fR アクセスモデル遷移を調整できます。この緩和により、アドレス範囲の制限はなくなりますが、代わりにコードシーケンスの最適化の度合いが若干低下します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtranstls\fR\fR
+.ad
+.sp .6
+.RS 4n
+スレッドローカルストレージ (\fBTLS\fR) アクセスでは、データアクセス用のモデルが多数提供されています。\fI「Thread-Local Storage Access Models」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。リンカーは、作成中の出力ファイルやシンボルの可視性に基づいて関連コードシーケンスを遷移させることができます。\fB-z\fR \fBrelax=transtls\fR オプションは、\fBTLS\fR アクセスモデルの遷移を抑制します。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBrelaxreloc\fR\fR
+.ad
+.sp .6
+.RS 4n
+このオプションは、\fB-z\fR \fBrelax=comdat\fR オプションを指定する場合と同じです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBrescan\fR\fR
+.ad
+.sp .6
+.RS 4n
+リンク編集に提供されたアーカイブファイルの再スキャンを起動する位置独立オプション。リンカーは、コマンド行全体の処理を完了するまで再走査作業を延期し、コマンド行上にあるすべてのアーカイブに対して最後の再走査作業を開始します。\fB-z\fR \fBrescan\fR の再走査作業では、初期化 (\&.init) セクションまたは最終設定 (\&.fini) セクションを含むオブジェクトが誤って処理され、それらのセクションのコードが動作しないことがあります。このため、\fB-z\fR \fBrescan\fR ではなく、\fB-z\fR \fBrescan-now\fR を使用することを推奨します。
+.RE
+
+.SH 環境
+.sp
+.LP
+リンカーでは、次の環境変数が認識されます。実行時リンカーでは、\fBLD_\fR という接頭辞の付いた追加の環境変数も使用できます。\fBld.so.1\fR(1) を参照してください。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLD_ALTEXEC\fR\fR
+.ad
+.sp .6
+.RS 4n
+代替リンカーのパス名。リンカーは実行後、この代替リンカーに制御を渡します。この環境変数により、さまざまなコンパイルドライバから呼び出されるデフォルトのリンカーを上書きする汎用的な手段が提供されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLD_LIBRARY_PATH\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-l\fR オプションで指定されたライブラリを検索するディレクトリのリストを指定します。複数のディレクトリを指定する場合は、ディレクトリとディレクトリの間をコロンで区切ります。2 つのディレクトリをセミコロンで区切る方式がもっとも一般的です。
+.sp
+.in +2
+.nf
+\fIdirlist1\fR\fB;\fR\fIdirlist2\fR
+.fi
+.in -2
+.sp
+
+次のようにリンカーの呼び出し時に \fB-L\fR が複数回指定されている場合、
+.sp
+.in +2
+.nf
+$ \fBld ... -L\fIpath1\fR ... -L\fIpathn\fR ...\fR
+.fi
+.in -2
+.sp
+
+検索の順番は、次のようになります。
+.sp
+.in +2
+.nf
+\fB\fIdirlist1 path1\fR ... \fIpathn dirlist2\fR LIBPATH\fR
+.fi
+.in -2
+.sp
+
+ディレクトリリストにセミコロンが含まれていない場合、\fIdirlist2\fR と解釈されます。
+.sp
+\fBLD_LIBRARY_PATH\fR 環境変数も、動的な依存関係を検索する実行時リンカーに影響を及ぼします。
+.sp
+この環境変数には、_32 または _64 という接尾辞を指定できます。この接尾辞を追加することで、LD_LIBRARY_PATH 環境変数は 32 ビットのプロセスまたは 64 ビットのプロセス専用になり、接尾辞のない LD_LIBRARY_PATH 環境変数が有効な場合でも、優先的に使用されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLD_NOEXEC_64\fR\fR
+.ad
+.sp .6
+.RS 4n
+Solaris 12 より前は、実行されるリンカーのクラスは、ベースとなるシステムのクラスによって 32 ビットか 64 ビットに決まっていました。64 ビットのリンカーが自動的には実行されないようにするには、\fBLD_NOEXEC_64\fR 環境変数を使用していました。現在のシステムでは、リンカーは常に 64 ビットになり、\fBLD_NOEXEC_64\fR は無視され、効果はありません。この変数は、旧バージョンの Solaris との下位互換性を保つために残されています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLD_OPTIONS\fR、\fBLD_UNSET\fR、\fBLD_{object-type}_UNSET\fR、\fBLD_{object-type}_OPTIONS\fR\fR
+.ad
+.sp .6
+.RS 4n
+これらの環境変数を使えば、リンカーコマンド行に対して別のオプションの追加や既存オプションの削除を行えます。\fIobject-type\fR は、\fB-z type\fR オプションによって定義されるタイプ (大文字) であり、\fBEXEC\fR、\fBPIE\fR、\fBRELOC\fR、\fBSHARED\fR のいずれかになります。これらの変数を使えば、スクリプト内やビルド環境内に埋め込まれたコマンド行オプションの上書きまたは設定解除を行えます。「オプションの処理」を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLD_RUN_PATH\fR\fR
+.ad
+.sp .6
+.RS 4n
+リンカーに実行パスを指定する代替手段です (\fB-R\fR オプションを参照)。\fBLD_RUN_PATH\fR と \fB-R\fR オプションを両方指定すると、\fB-R\fR オプションが優先されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSGS_SUPPORT\fR\fR
+.ad
+.sp .6
+.RS 4n
+リンカーによって読み込まれ、リンクプロセスの情報を与えられた共有オブジェクトを、コロンで区切った形式で一覧します。この環境変数には、_32 または _64 という接尾辞を指定できます。こうすることで、この環境変数を、リンカーの 32 ビットクラスまたは 64 ビットクラスのどちらか専用にできます。この指定は、現在有効になっている接尾辞の付いていないバージョンの環境変数の指定がオーバーライドされます。\fB-S\fR オプションを参照してください。
+.RE
+
+.sp
+.LP
+文字列 \fBLD_\fR で始まる環境変数名は、\fBld\fR と \fBld.so.1\fR(1) の拡張用として予約されています。
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlib\fIx\fR.so\fR\fR
+.ad
+.RS 15n
+.rt  
+共有オブジェクトライブラリ。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlib\fIx\fR.a\fR\fR
+.ad
+.RS 15n
+.rt  
+アーカイブライブラリ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBa.out\fR\fR
+.ad
+.RS 15n
+.rt  
+デフォルトの出力ファイル。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fILIBPATH\fR\fR
+.ad
+.RS 15n
+.rt  
+32 ビットライブラリの場合、デフォルトの検索パスは、順番に、\fB/lib\fR、そして \fB/usr/lib\fR です。64 ビットライブラリの場合、デフォルトの検索パスは、順番に、\fB/lib/64\fR、そして \fB/usr/lib/64\fR です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/lib/ld\fR\fR
+.ad
+.RS 15n
+.rt  
+リンク編集時に使用可能な複数の \fBmapfiles\fR を含むディレクトリです。これらの \fBmapfiles\fR により、メモリーレイアウトの定義、bss の整列、および実行不可能なスタックの定義など、さまざまな機能が提供されます。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/linker
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBas\fR(1), \fBcrle\fR(1), \fBelfcompress\fR(1), \fBgprof\fR(1), \fBld.so.1\fR(1), \fBldd\fR(1), \fBmcs\fR(1), \fBpvs\fR(1), \fBstrip\fR(1), \fBsxadm\fR(1M), \fBexec\fR(2), \fBstat\fR(2), \fBzlib\fR(3), \fBdlopen\fR(3C), \fBdldump\fR(3C), \fBelf\fR(3ELF), \fBar.h\fR(3HEAD), \fBa.out\fR(4), \fBattributes\fR(5)
+.sp
+.LP
+\fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fR
+.SH 注意事項
+.sp
+.LP
+リンカーのデフォルト動作を指定するためのオプションは、歴史的理由から残されています。しかし、動的オブジェクトが広く使用されている現在のプログラミング環境では、従来とは異なるデフォルトの方が有効である場合が少なくありません。ただし、従来のデフォルトは、既存のプログラム開発環境との互換性を維持するために残しておく必要があります。このマニュアルでは従来のデフォルトは、可能なかぎり、そのことを明示する方法で記述します。現在の推奨されるオプションについては、Chapter 5, \fI「Link-Editor Quick Reference,」\fR in \fI『Oracle Solaris 11.3 Linkers and Libraries         Guide』\fRを参照してください。
+.sp
+.LP
+リンカーにより作成されるファイルがすでに存在する場合、そのファイルは、すべての入力ファイルが処理されたあとにリンクが解除されます。指定された名前で新しいファイルが作成されます。これにより、リンカーは、古いファイルの内容にアクセスしている既存のプロセスが実行を継続できるようにする一方で、同時にそのファイルの新しいバージョンを作成できます。古いファイルにほかにリンクが含まれていない場合は、そのファイルを参照している最後のプロセスが終了すると、その削除されたファイルのディスク領域が解放されます。
+.sp
+.LP
+Oracle Solaris 11 では、作成されるファイルがすでに存在するときのリンカーの動作が変更されました。古いバージョンでは、既存のファイルはその場所で書き換えられるため、そのファイルを使用している動作中のプロセスが壊れてしまう可能性がありました。この変更は、ファイルシステム内にハードリンクが複数ある出力ファイルに影響します。以前は、すべてのリンクがそのまま維持され、新しいファイルの内容にもアクセスしていました。新しいリンカーの動作はこのようなリンクを\fB解除\fRするため、指定された出力ファイル名だけが新しいファイルを参照します。それ以外のリンクはすべて、古いファイルを引き続き参照します。一貫性のある動作を保証するには、リンカーの出力ファイルへの複数のハードリンクに依存するアプリケーションで、そのほかのファイル名を明示的に削除し、リンクし直す必要があります。

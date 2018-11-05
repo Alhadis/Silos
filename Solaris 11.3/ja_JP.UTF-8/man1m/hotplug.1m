@@ -1,0 +1,930 @@
+'\" te
+.\" Copyright (c) 2012, 2014, Oracle and/or its affiliates.All rights reserved.
+.TH hotplug 1M "2014 年 2 月 25 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+hotplug \- ホットプラグコネクタおよびポートの構成
+.SH 形式
+.LP
+.nf
+\fBhotplug\fR list [\fB-c\fR] [\fB-d\fR] [\fB-l\fR] [\fB-v\fR] [\fIpath\fR [\fIconnection\fR]]
+.fi
+
+.LP
+.nf
+\fBhotplug\fR online \fIpath\fR \fIport\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR offline [\fB-f\fR] [\fB-q\fR] \fIpath\fR \fIport\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR enable [\fB-f\fR] [\fIpath\fR] \fIconnector\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR disable [\fB-f\fR] [\fB-q\fR] [\fIpath\fR] \fIconnector\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR poweron [\fIpath\fR] \fIconnector\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR poweroff [\fB-f\fR] [\fB-q\fR] [\fIpath\fR] \fIconnector\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR set \fB-o\fR \fIoptions\fR [\fIpath\fR] \fIconnector\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR get \fB-o\fR\fIoptions\fR [\fIpath\fR] \fIconnector\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR install \fIpath\fR \fIport\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR uninstall [\fB-f\fR] [\fB-q\fR] \fIpath\fR \fIport\fR
+.fi
+
+.LP
+.nf
+\fBhotplug\fR \fB-?\fR
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBhotplug\fR コマンドは、ホットプラグ接続を管理するために使用します。接続はコネクタまたはポートです。ホットプラグコネクタは、コンポーネントを取り付けまたは取り外しできるシステム内の物理ポイントの表現です。ホットプラグポートは、システムへのデバイス接続を管理するシステムデバイスツリー内の論理ポイントの表現です。
+.sp
+.LP
+\fBhotplug\fR コマンドは、PCI Express バスおよび標準 PCI ホットプラグ機能を実装する PCI バスのホットプラグコネクタに対するホットプラグ操作のみをサポートします。PCI Express ファブリックを備えたシステム内の PCI Express バスおよび PCI バス上のホットプラグポートもサポートされます。将来、追加のバスがサポートされる可能性があります。
+.sp
+.LP
+\fBhotplug\fR コマンドは、次の種類のオブジェクトに対して動作します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpath\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホットプラグコネクタとホットプラグポートは、Solaris のデバイスツリーに統合されています。コネクタとポートの名前は、それらのバスコントローラに対してのみ一意です。コネクタを一意に参照するにはデバイスパスが必要であり、ポートを一意に参照するにはデバイスの親のパスが必要です。
+.sp
+\fBhotplug\fR コマンドは、状態変更操作のサブコマンドでユーザーが物理的なホットプラグコネクタのみを指定した場合にも対応できます。そのようなコネクタが存在しない場合、コマンドは失敗します。システム内に同じ名前のコネクタが複数存在する場合は、状態変更操作でユーザーとの対話によって操作が必要なコネクタを決定します。後述の「使用例」のセクションを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconnector\fR\fR
+.ad
+.sp .6
+.RS 4n
+ハードウェアコンポーネントが物理的な取り付けまたは取り外しをサポートしている場合、ホットプラグコネクタはこのアクションが行われる可能性のある場所を表します。コネクタが存在する場合は、それに依存するポートとデバイスノードの階層が存在します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBport\fR\fR
+.ad
+.sp .6
+.RS 4n
+ハードウェアが物理的なホットプラグ操作をサポートしない場合でも、すべてのデバイスノードを仮想的にホットプラグで接続できます。ホットプラグポートは、システムデバイスツリー内のデバイスノードとその親ノードの間にあります。これは、デバイスノードとその依存関係を管理できる場所を表します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconnection\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホットプラグ接続は、ホットプラグコネクタまたはホットプラグポートのいずれかを指す一般名称です。
+.RE
+
+.sp
+.LP
+ホットプラグコネクタおよびポートは、状態モデルに従って管理されます。\fBhotplug\fR コマンドでは、システム内のホットプラグ接続に関する情報を一覧表示したり、特定のホットプラグ接続に対する状態変更操作を開始したりできます。
+.sp
+.LP
+ホットプラグコネクタは次の状態になる可能性があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBempty\fR\fR
+.ad
+.sp .6
+.RS 4n
+コネクタにコンポーネントが物理的に取り付けられていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpresent\fR\fR
+.ad
+.sp .6
+.RS 4n
+コネクタにコンポーネントが物理的に取り付けられていますが、コンポーネントの電源が切られています。コンポーネントが使用されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpowered\fR\fR
+.ad
+.sp .6
+.RS 4n
+コネクタにコンポーネントが物理的に取り付けられており、コンポーネントの電源が投入されています。コンポーネントが無効になっており、使用されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBenabled\fR\fR
+.ad
+.sp .6
+.RS 4n
+コネクタにコンポーネントが物理的に取り付けられています。コンポーネントの電源が投入されており、コンポーネントが検索およびテストされています。コンポーネントが有効になっており、その機能を表すデバイスが使用可能です。
+.RE
+
+.sp
+.LP
+ホットプラグポートは次の状態になる可能性があります。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBport-empty\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホットプラグポートのデバイスが存在しません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBport-present\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホットプラグポートのデバイスが存在しますが、デバイスが検索されておらず、デバイスドライバが接続されていません。デバイスが使用されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBoffline\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホットプラグポートのデバイスが存在し、デバイスが検索されています。デバイスドライバが接続されておらず、デバイスが使用されていません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBonline\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホットプラグポートのデバイスが存在し、そのデバイスドライバが完全に接続されています。デバイスが使用されています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmaintenance\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホットプラグポートのデバイスが存在し、そのデバイスドライバが完全に接続されています。デバイスが使用されていますが、完全には動作していません。保守または障害管理の操作がデバイスに影響を与えています。デバイスが保守状態に移行する理由はさまざまです。これは、保守状態の下のサブ状態によって表されます。現在は 1 つのサブ状態のみが定義されています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmaintenance-suspended\fR\fR
+.ad
+.sp .6
+.RS 4n
+デバイスがライブサスペンドしています。
+.RE
+
+.RE
+
+.sp
+.LP
+\fBhotplug\fR コマンドは、各ホットプラグコネクタのバスの非公開プロパティーにもアクセスできます。バスの非公開プロパティーの現在値を表示できます。バスの非公開プロパティーに新しい値を直接設定できます。
+.SH サブコマンド
+.sp
+.LP
+サポートされているサブコマンドは次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlist\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホットプラグコネクタ、ポート、およびそれらの関連デバイスの情報を表示します。ホットプラグコネクタとホットプラグポートは、Solaris のデバイスツリー階層に統合されています。したがって、\fBlist\fR サブコマンドでは、ホットプラグコネクタやホットプラグポートの場所を示すために挿入された追加情報とともにデバイスノードの階層が表示されます。ホットプラグコネクタの名前は角括弧で囲まれ、ホットプラグポートの名前は山括弧で囲まれています。各ホットプラグ接続の現在の状態は、その名前の横に表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBonline\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホットプラグポートの状態を \fBonline\fR 状態に変更します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBoffline\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホットプラグポートの状態を \fBoffline\fR 状態に変更します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBenable\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホットプラグコネクタの状態を \fBenabled\fR 状態に変更します。ホットプラグコネクタの依存ポートは、すべて自動的に検索され、\fBonline\fR 状態に初期化されます。
+.sp
+接続されたデバイスの検索中にエラーが発生した場合は、エラーの詳細が診断のために Solaris Fault Manager に報告されます。エラーによっては、\fB-f\fR オプションを使用した強制的な操作によってエラーを無視できる場合があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdisable\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホットプラグコネクタの状態を \fBenabled\fR 状態から \fBpowered\fR 状態に変更します。\fBonline\fR 状態になっているすべての依存ポートは、最初に \fBport-present\fR 状態に移行します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpoweron\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホットプラグコネクタの状態を \fBpresent\fR 状態から \fBpowered\fR 状態に変更します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpoweroff\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホットプラグコネクタの状態を \fBpowered\fR または \fBenabled\fR 状態から \fBpresent\fR 状態に変更します。\fBonline\fR 状態になっているすべての依存ポートは、最初に \fBport-present\fR 状態に移行し、次に削除されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホットプラグコネクタのバス固有のプロパティーを設定します。指定されるオプション文字列は、\fBgetsubopt\fR(3C) によって解析できるバス固有の名前と値ペアの文字列です。これらの名前と値は、バス固有の機能を実行するため、指定されたホットプラグコネクタを管理するバスコントローラに直接渡されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBget\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホットプラグコネクタのバス固有のプロパティーの現在値を表示します。指定されるオプション文字列は、\fBgetsubopt\fR(3C) によって解析できるバス固有の名前付きプロパティーの文字列です。これらの名前は、どのプロパティーを返すべきかを指定するためにバスコントローラに直接渡されます。その後、個々の名前付きプロパティーの現在値が表示されます。
+.RE
+
+.sp
+.LP
+\fBinstall\fR および \fBuninstall\fR サブコマンドは、ポートのドライバがサポートできるサービスをインストールおよびアンインストールします。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinstall\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBinstall\fR サブコマンドは、ホットプラグポートのデバイスのドライバがサポートできるサービスをインストールします。
+.sp
+このサブコマンドは、たとえば PCIe I/O 仮想化デバイスの物理機能のポートに対して適用できます。ポートが \fBONLINE\fR 状態に昇格し (まだその状態でない場合)、次に物理機能 (ドライバ) がサポートする仮想機能がインストールされます。個々の仮想機能を指定された物理機能の依存関係として表すために、新しいホットプラグポートが作成されます。新しく作成されたポートは、\fBOFFLINE\fR 状態で開始されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBuninstall\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBuninstall\fR サブコマンドは、ホットプラグポートのデバイスのドライバがサポートできるサービスをアンインストールします。
+.sp
+このサブコマンドは、PCIe I/O 仮想化デバイスの物理機能のポートに対して適用できます。指定されたホットプラグポートに仮想機能の依存ポートがある場合は、それらの依存ポートと対応する仮想機能ノードが削除されます。
+.RE
+
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR, \fB--list-path\fR\fR
+.ad
+.sp .6
+.RS 4n
+接続およびデバイスノードへのフルパスを表示します。デフォルトでは、\fBlist\fR サブコマンドはホットプラグコネクタ、ポート、およびデバイスをツリー形式で表示します。このオプションを使用して、個々の接続およびデバイスノードへのフルパスを表示できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR, \fB--connectors\fR\fR
+.ad
+.sp .6
+.RS 4n
+すべての物理的なホットプラグコネクタの現在のステータスをまとめた表を表示します。デバイスのトポロジと階層情報は含まれません。一般に、物理的なホットプラグコネクタの名前は一意であるべきです。システム内に同じ名前のコネクタが複数存在する場合、\fBhotplug\fR は同じ名前のホットプラグコネクタを示すメッセージを表示し、それらのコネクタを区別するための情報の入力を求めます。後述の「使用例」を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR, \fB--drivers\fR\fR
+.ad
+.sp .6
+.RS 4n
+デバイスノードの結合ドライバ名とインスタンス数を表示します。デフォルトでは、\fBlist\fR サブコマンドはホットプラグコネクタ、ポート、およびデバイスのみを表示します。このオプションを使用して、デバイスノードの結合ドライバ名とインスタンス数を表示できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR、\fB--verbose\fR\fR
+.ad
+.sp .6
+.RS 4n
+詳細な使用状況を表示します。デフォルトでは、\fBlist\fR サブコマンドはホットプラグコネクタ、ポート、およびデバイスのみを表示します。このオプションを使用して、デバイスの現在の消費状況に関する詳細情報を表示できます。例として、個々のデバイスに関連してマウントされたファイルシステムや plumb されたネットワークインタフェースなどがあります。
+.sp
+\fB-v\fR オプションでは、ZFS の制御下にあるディスクの情報は表示されません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR, \fB--force\fR\fR
+.ad
+.sp .6
+.RS 4n
+操作を強制的に実行します。現在使用されているリソースに影響を与える一部の状態変更操作は、警告とともに失敗します。強制的な操作では、これらの警告が無視され、処理が続行されます。
+.sp
+このオプションは、きわめて慎重に使用すべきです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR, \fB--non-interactive\fR\fR
+.ad
+.sp .6
+.RS 4n
+対話機能を無効にします。このフラグが指定されず、あいまいな入力が検出された場合は、コマンドがただちに終了し、問題を示す一意の終了ステータスが返されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR, \fB--query\fR\fR
+.ad
+.sp .6
+.RS 4n
+操作を照会します。状態変更操作を実際に実行せずに、操作が成功するかどうかを予測するためのテストを実行します。失敗する場合は、操作を実際に実行した場合に予期されるエラーメッセージを表示します。
+.sp
+すべての失敗を予測することはできません。照会時に成功した操作でも、実際に実行したときは別の理由で失敗する可能性があります。
+.sp
+このオプションはシステムの状態を実際には変更しません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIoptions\fR, \fB- -\fR=\fIoptions\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBset\fR または \fBget\fR コマンドのバス固有のプロパティーを指定します。options の文字列は、\fBgetsubopt\fR(3C) の構文規約に従います。
+.sp
+\fBget\fR サブコマンドの場合は、使用可能な特殊オプションが 2 つあります。特殊オプションの値 \fBhelp\fR は、サポートされているすべてのプロパティーとそれらの取り得る値を表示します。特殊オプションの値 \fBall\fR は、サポートされているすべてのプロパティーの現在値を表示します。
+.sp
+\fBset\fR サブコマンドの場合は、使用可能な特殊オプションが 1 つあります。特殊オプションの値 \fBhelp\fR は、サポートされているすべての設定可能なプロパティーとそれらの取り得る値を表示します。
+.sp
+バスコントローラによってサポートされているプロパティーについては、「注意事項」のセクションを参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-?\fR、\fB--help\fR\fR
+.ad
+.sp .6
+.RS 4n
+コマンドの正しい使用法に関する簡単なヘルプメッセージを表示します。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRすべてのホットプラグ接続を表示する
+.sp
+.LP
+次のコマンドは、すべてのホットプラグ接続を表示します。
+
+.sp
+.in +2
+.nf
+# \fBhotplug list -v\fR
+pci@0,0
+pci108e,534a@2,1 <pci.2,1> ONLINE
+        [pci30] EMPTY
+pci10de,5d@e <pci.e,0> ONLINE
+        display@b <pci.b,0> ONLINE
+        [NEM0] ENABLED
+        pci108e,534a@a,0 <pci.a,0> ONLINE
+                { Network interface nge0 }
+                { nge0: hosts IP addresses: 10.0.0.1 }
+        pci108e,534a@a,1 <pci.a,1> (MAINTENANCE)
+                            [NEM1] (EMPTY)
+pci108e,534a@c <pci.c,0> OFFLINE
+pci108e,534a@d <pci.d,0> ONLINE
+                          pci1028,40d@0 <pci.0,0> (MAINTENANCE-SUSPENDED,
+"activities=dma+pio+intr,reason=resource-rebalance")
+                                 { Network interface bge0 }
+                                 { bge0: hosts IP addresses: 10.0.1.1 }
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+ホットプラグ接続およびデバイスのフルパスを表示するには、次のコマンドを入力します。
+
+.sp
+.in +2
+.nf
+# \fBhotplug list -l\fR
+/pci@0,0
+/pci@0,0  <pci.0,0>  OFFLINE
+/pci@0,0/pci108e,4341
+/pci@0,0  <pci.1,0>  OFFLINE
+/pci@0,0/pci8086,3408
+/pci@0,0  <pci.3,0>  ONLINE
+/pci@0,0/pci8086,340a@3
+/pci@0,0/pci8086,340a@3 [Slot2]  EMPTY
+/pci@0,0  <pci.5,0>  ONLINE
+/pci@0,0/pci8086,340c@5
+/pci@0,0/pci8086,340c@5 [Slot1]  ENABLED
+/pci@0,0/pci8086,340c@5  <pci.0,0>  ONLINE
+/pci@0,0/pci8086,340c@5/pci111d,8018@0
+/pci@0,0  <pci.7,0>  ONLINE
+/pci@0,0/pci8086,340e@7
+/pci@0,0/pci8086,340e@7 [pcie4]  ENABLED
+/pci@0,0  <pci.9,0>  ONLINE
+/pci@0,0/pci8086,3410@9
+/pci@0,0/pci8086,3410@9 [pcie3]  ENABLED
+/pci@0,0  <pci.13,0>  OFFLINE
+/pci@0,0/pci8086,342d
+/pci@0,0  <pci.14,0>  OFFLINE
+/pci@0,0/pci8086,342e
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+デバイスの結合ドライバ名とインスタンス数を表示するには、次のコマンドを入力します。
+
+.sp
+.in +2
+.nf
+# \fBhotplug list -d\fR
+pci@0,0  npe#0
+    pci108e,4341  <pci.0,0>  OFFLINE  #0
+    pci8086,3408  <pci.1,0>  OFFLINE  pcieb#0
+    pci8086,340a@3  <pci.3,0>  ONLINE  pcieb#1
+        [Slot2]  EMPTY
+    pci8086,340c@5  <pci.5,0>  ONLINE  pcieb#2
+        [Slot1]  ENABLED
+        pci111d,8018@0  <pci.0,0>  ONLINE  pcieb#0
+            pci111d,8018@2  <pci.2,0>  ONLINE  pcieb#6
+                pci108e,f1bc@0  <pci.0,0>  ONLINE  e1000g#0
+                pci108e,f1bc@0,1  <pci.0,1>  OFFLINE  e1000g#1
+    pci8086,340e@7  <pci.7,0>  ONLINE  pcieb#3
+        [pcie4]  ENABLED
+    pci8086,3410@9  <pci.9,0>  ONLINE  pcieb#4
+        [pcie3]  ENABLED
+    pci8086,342d  <pci.13,0>  OFFLINE  #0
+    pci8086,342e  <pci.14,0>  OFFLINE  #0
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+すべての物理的なホットプラグコネクタのステータスを表示するには、次のコマンドを入力します。
+
+.sp
+.in +2
+.nf
+# \fBhotplug list -c\fR
+Connection             State         Description
+---------------------------------------------------------
+NEM0                   ENABLED       PCIe-Native
+PCI-EM0                ENABLED       PCIe-Native
+NEM1                   ENABLED       PCIe-Native
+PCI-EM1                ENABLED       PCIe-Native
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+システム内に同じ名前のコネクタが複数存在する場合の表は次のとおりです。
+
+.sp
+.in +2
+.nf
+# \fBhotplug list -c\fR
+Connection   Note      State         Description
+----------------------------------------------------------
+NEM0                   ENABLED       PCIe-Native
+PCI-EM0      *1        ENABLED       PCIe-Native
+PCI-EM0      *2        ENABLED       PCIe-Native
+NEM1                   ENABLED       PCIe-Native
+
+Note:
+Multiple connectors with the same name exist:
+
+  [1] PCI-EM0   /pci@0,0/pci108e,4341@1a,2
+  [2] PCI-EM0   /pci@1,0/pci108e,4341@1a,2
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fR状態変更操作中の障害を報告する
+.sp
+.LP
+状態変更操作が失敗した場合は、障害についての説明が表示されます。システムが現在使用している依存デバイスを含むホットプラグポートをオフラインにしようとすると、次のように失敗することがあります。
+
+.sp
+.in +2
+.nf
+# \fBhotplug offline /pci@0,0/pci10de,5d@e pci.a,0\fR
+ERROR: devices or resources are busy.
+pci108e,534a@a,0:
+    { Network interface nge0 }
+    { nge0: hosts IP addresses: 10.0.0.1 }
+    { Plumbed IP Address }
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fR状態変更操作中のユーザーとの対話を有効にする
+.sp
+.LP
+システム内に同じ名前のコネクタが複数存在する場合は、状態変更操作でユーザーとの対話によって操作が必要なコネクタを指定します。
+
+.sp
+.in +2
+.nf
+# \fBhotplug enable PCI-EM0\fR
+Multiple connectors with the same name exist:
+
+   [1] PCI-EM0  /pci@0,0/pci108e,4341@1a,2
+   [2] PCI-EM0  /pci@1,0/pci108e,4341@1a,2
+
+Please select a connector, then press ENTER:
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fRバス固有のプロパティーと値を表示する
+.sp
+.LP
+次のコマンドは、サポートされているすべてのバス固有のプロパティーとそれらの取り得る値を表示します。
+
+.sp
+.in +2
+.nf
+# \fBhotplug get -o help /pci@0,0 pci.2,1\fR
+power_led=<on|off|blink>
+fault_led=<on|off|blink>
+active_led=<on|off|blink>
+attn_led=<on|off|blink>
+card_type=<type description>
+board_type=<type description>
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 5 \fRバス固有のオプションを表示する
+.sp
+.LP
+次のコマンドは、PCI ホットプラグコネクタのカードタイプと電源 LED の現在の状態を表示します。
+
+.sp
+.in +2
+.nf
+# \fBhotplug get -o card_type,power_led /pci@0,0 pci.2,1\fR
+card_type=fibre
+power_led=on
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 6 \fRバス固有のプロパティーを設定する
+.sp
+.LP
+次のコマンドは、PCI ホットプラグコネクタのアテンション LED をオンに設定します。
+
+.sp
+.in +2
+.nf
+# \fBhotplug set -o attn_led=on /pci@0,0 pci.2,1\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 7 \fRポートの依存関係をインストールする
+.sp
+.LP
+次のコマンドは、IOV 物理機能の依存ポートをインストールし、探索された結果の IOV 仮想機能を表示します。
+
+.sp
+.in +2
+.nf
+# \fBhotplug install /pci@400/pci@1/pci@0/pci@4 pci.0,1\fR
+
+# \fBhotplug list -v /pci@400/pci@1/pci@0/pci@4 pci.0,1\fR
+<pci.0,1>  (ONLINE)
+     { IOV physical function }
+     { IOV virtual function 'pci.0,81' }
+     { IOV virtual function 'pci.0,83' }
+     { IOV virtual function 'pci.0,85' }
+     { IOV virtual function 'pci.0,87' }
+<pci.0,81>  (OFFLINE)
+ethernet@0,81
+<pci.0,83>  (OFFLINE)
+ethernet@0,83
+<pci.0,85>  (OFFLINE)
+ethernet@0,85
+<pci.0,87>  (OFFLINE)
+ethernet@0,87
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 8 \fRポートの依存関係をアンインストールする
+.sp
+.LP
+次のコマンドは、IOV 物理機能の依存ポートをアンインストールしようとしますが、依存する IOV 仮想機能がビジー状態の場合は失敗します。
+
+.sp
+.in +2
+.nf
+# \fBhotplug uninstall /pci@400/pci@1/pci@0/pci@4 pci.0,0\fR
+ERROR: devices or resources are busy.
+ethernet@0,81:
+    { Network interface igvbf1 }
+    { igvbf1: hosts IP addresses: 10.0.0.1 }
+    { Plumbed IP Address }
+.fi
+.in -2
+.sp
+
+.SH 終了ステータス
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+正常終了。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+無効なコマンド行オプションが指定された。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定されたパスまたは接続が存在しません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.sp .6
+.RS 4n
+致命的なエラーが発生しました。1 つ以上のエラーメッセージが標準エラーに表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB4\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホットプラグサービスが使用できません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB5\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された接続名が複数のポートを指しています。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBcfgadm\fR(1M), \fBhotplugd\fR(1M), \fBgetsubopt\fR(3C), \fBattributes\fR(5)
+.SH 診断
+.sp
+.LP
+サポートされている I/O バスがないシステムでは、次のエラーメッセージが表示されます。
+.sp
+.in +2
+.nf
+ERROR: there are no connections to display.
+(See hotplug(1m) for more information.)
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+このエラーが表示された場合は、\fBhotplug\fR ではなく \fBcfgadm\fR(1M) コマンドを介してホットプラグ操作をサポートするほかの I/O デバイスがまだシステムに存在する可能性があります。
+.sp
+.LP
+有効化操作の処理中にハードウェアエラーが発生した場合は、次のエラーメッセージが表示されます。
+.sp
+.in +2
+.nf
+ERROR: hardware or driver specific failure.
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+このエラーが表示された場合は、ハードウェアエラーの詳細が診断のために Solaris Fault Manager に報告された可能性があります。
+.SH 注意事項
+.sp
+.LP
+\fBhotplug\fR コマンドを使用するための前提条件として、\fBhotplug\fR サービス (FMRI \fBsvc:/system/hotplug\fR) を有効にする必要があります。このサービスは、デフォルトで有効になっています。\fBhotplugd\fR(1M) を参照してください。 
+.sp
+.LP
+状態変更操作、すべての依存ポートのインストール、およびアンインストールを行うには、\fBsolaris.hotplug.modify\fR 承認が付与されている必要があります。または、その承認を含む権利プロファイル「Hotplug Management」を付与する方法もあります。
+.sp
+.LP
+RCM フレームワークから使用法に関する詳細な情報が収集されます。その形式と内容は変更される可能性があります。
+.sp
+.LP
+PCI バスコントローラでは、次のバス固有のプロパティーがサポートされます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpower_led\fR | \fBfault_led\fR | \fB attn_led\fR | \fBactive_led\fR\fR
+.ad
+.sp .6
+.RS 4n
+スロットの特定の LED の状態。この値は、\fBon\fR、\fBoff\fR、\fBblink\fR のいずれかです。
+.sp
+これらはすべて \fBget\fR サブコマンドで使用できますが、\fBattn_led\fR プロパティーだけは \fBset\fR サブコマンドでも使用できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcard_type\fR | \fBboard_type\fR\fR
+.ad
+.sp .6
+.RS 4n
+スロットのカードまたはボードのタイプ。
+.sp
+これらはすべて \fBget\fR サブコマンドで使用できますが、どれも \fBset\fR サブコマンドでは使用できません。
+.RE
+

@@ -1,0 +1,147 @@
+'\" te
+.\" Copyright (c) 2004, 2012, Oracle and/or its affiliates. All rights reserved.
+.TH nodename 4 "4 Jun 2012" "SunOS 5.11" "File Formats"
+.SH NAME
+nodename \- local source for system name
+.SH SYNOPSIS
+.LP
+.nf
+\fB/etc/nodename\fR
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+When a machine is standalone or its IP address is configured locally, the \fBsvc:/system/identity:node\fR SMF service has a property, namely \fBnodename\fR, for setting the system name. 
+.sp
+.LP
+To set the name of the node permanently use the following command:
+.sp
+.in +2
+.nf
+# hostname mynodename
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+To set the name of the node temporarily use the following command:
+.sp
+.in +2
+.nf
+# hostname -t mynodename
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+To see the current effective hostname:
+.sp
+.in +2
+.nf
+$ hostname
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+To see the currently set \fBnodename\fR for the host use the following command:
+.sp
+.in +2
+.nf
+$ svcprop -p config/nodename svc:/system/identity:node
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The value of this property used to be located in the \fB/etc/nodename\fR file. If \fB/etc/nodename\fR is present and the SMF service property is not set, the SMF service reads \fB/etc/nodename\fR and populates the property. 
+.sp
+.LP
+Once the SMF service property has been set, the \fB/etc/nodename\fR file is removed and no longer consulted.
+.sp
+.LP
+The \fBconfig\fR/\fBnodename\fR service property is not the only source used by the service for configuring the system name. By default the service uses the following sources for determining the system name:
+.sp
+.LP
+If the machine's network configuration is delivered by the RPC \fBbootparams\fR protocol, neither the SMF service property nor the \fB/etc/nodename\fR file are used, as the system name is delivered by the remote service.
+.sp
+.LP
+If the machine's network configuration is delivered by the DHCP protocol, the SMF service property is used only if the DHCP server does not provide a value for the \fBHostname\fR option (DHCP standard option code \fB12\fR).
+.sp
+.LP
+If no other sources for the system name exist, then the config/nodename service property value is used. This default behavior is overridden whenever \fBhostname\fR(1) is used to manually configure a hostname. In this case, the config/nodename property value will serve as the persistent source for the system name. The \fBhostname\fR -\fBD\fR option may be used to return the system back to the default behavior. To determine whether or not the system is using the default behavior or not, use the following command:
+.sp
+.in +2
+.nf
+$ svcprop -p config/ignore_dhcp_hostname svc:/system/identity:node
+.fi
+.in -2
+
+.sp
+.LP
+A value of "false" indicates that the service will use the default behavior to determine the system name. A value of "true" means the service will use the \fBconfig\fR/\fBnodename\fR property value as the system name.
+.sp
+.LP
+Note that this default behavior may change and that the \fBconfig\fR/\fBignore_dhcp_hostname\fR property may be removed in a future Oracle Solaris release.
+.sp
+.LP
+A system name configured in the SMF service should be unique within the system's name service domain in order to ensure that any network services provided by the system operate correctly.
+.sp
+.LP
+Given a system name value, regardless of source, \fBuname\fR \fB-S\fR sets the system name of the running system.
+.sp
+.LP
+If the system is installed or configured using \fBsysconfig\fR(1M) with a manual network configuration, \fB/etc/inet/hosts\fR is updated to map the nodename to the IP Address of the configured interfaces.
+.sp
+.LP
+If the system is installed or configured with a network configuration not defined manually, \fB/etc/inet/hosts\fR is updated to map the \fBnodename\fR to the loopback entries.
+.sp
+.LP
+If the system is installed or configured with no network interfaces, \fB/etc/inet/hosts\fR is updated to map the \fBnodename\fR to the loopback entries.
+.sp
+.LP
+If the administrator chooses to prevent any of this mapping behavior, the administrator can set the \fBconfig/enable_mapping svc:/system/identity:node\fR service property to \fBfalse\fR in the AI install manifest. 
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRSyntax for the \fBnodename\fR File
+.sp
+.LP
+The syntax for \fBnodename\fR consists of a single line containing the system's name. For example, for a system named \fBmyhost\fR:
+
+.sp
+.in +2
+.nf
+myhost
+.fi
+.in -2
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/core-os
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBhostname\fR(1), \fBuname\fR(1), \fBnamed\fR(1M), \fBsysconfig\fR(1M), \fBypbind\fR(1M), \fBattributes\fR(5)
+.SH NOTES
+.sp
+.LP
+The \fBnodename\fR file is modified by Solaris installation and de-installation scripts.

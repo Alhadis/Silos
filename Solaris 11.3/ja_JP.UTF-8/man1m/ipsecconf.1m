@@ -1,0 +1,1736 @@
+'\" te
+.\" Copyright (c) 2008, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH ipsecconf 1M "2015 年 6 月 29 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+ipsecconf \- システム全体の IPsec ポリシーの構成
+.SH 形式
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR 
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR \fB-a\fR \fIfile\fR [\fB-q\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR \fB-c\fR \fIfile\fR
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR \fB-d\fR [\fB-i\fR \fItunnel-name\fR] {\fIindex\fR, \fItunnel-name\fR, \fIindex\fR}
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR \fB-f\fR [\fB-i\fR \fItunnel-name\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR \fB-F\fR
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR \fB-Fa\fR \fIfile\fR [\fB-q\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR \fB-l\fR [\fB-i\fR \fItunnel-name\fR] [\fB-n\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR \fB-L\fR [\fB-n\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/ipsecconf\fR \fB-r\fR \fIfile\fR [\fB-q\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBipsecconf\fR ユーティリティーは、ホストまたはそのいずれかのトンネルに対する IPsec ポリシーを構成します。ポリシーを構成すると、ホストまたはトンネルに出入りするすべてのアウトバウンドおよびインバウンドデータグラムがポリシー検査の対象になります。ホストポリシーについては、エントリが見つからない場合、ポリシー検査は行われず、すべてのトラフィックが通過します。トンネルについては、エントリが見つからず、そのトンネルに少なくとも 1 つのエントリがある場合、トラフィックは自動的にドロップされます。この動作の違いは、多くの実装に適用されている IPsec トンネルに関する仮定によるものです。転送中のデータグラムは、このコマンドを使用して追加されたポリシー検査の対象になりません。転送されるパケットを保護する方法については、\fBifconfig\fR(1M) および \fBdladm\fR(1M) を参照してください。ポリシーエントリの一致に応じて、特定のアクションが行われます。
+.sp
+.LP
+このコマンドは、スーパーユーザーのみが実行できます。
+.sp
+.LP
+各エントリは、どちらか一方向のトラフィックを保護するか (エントリのペアが必要)、または必要とされる対称的な \fBsadb\fR ルールを導入する 1 つのポリシーエントリによってトラフィックを保護できます。
+.sp
+.LP
+引数を付けずにこのコマンドを発行すると、読み込まれているファイルポリシーエントリの一覧が表示されます。SPD ポリシーエントリを表示するには、\fB-l\fR オプションを使用します。どちらの場合も、エントリのインデックス番号が表示されます。1 つのトンネルの SPD を指定するには、\fB-i\fR オプションを \fB-l\fR と組み合わせて使用します。すべて (ホストとすべてのトンネル) の SPD を指定するには、\fB-L\fR を使用します。
+.sp
+.LP
+1 つのファイルポリシーエントリ (\fBFPE\fR) によって複数の SPD ポリシーエントリ (\fBSPE\fR) が生成されることがあるため、FPE の一覧に実際のエントリがすべて表示されない場合があります。ただし、それでも、SPD を現在の状態にするためにどのルールが追加されたかを判定するのには役立ちます。
+.sp
+.LP
+\fB-d\fR オプションをインデックスとともに使用すると、システム内の特定のポリシーを削除できます。\fB-d\fR オプションによって複数の SPE を生成する FPE エントリを削除すると、その FPE と同じポリシーインデックスを持つ SPD のみが削除されます。これにより、FPE が存在しないのに SPE が存在するという状況が発生することがあります。
+.sp
+.LP
+\fB-l\fR と同様に、\fB-d\fR でも \fB-i\fR フラグを使用してトンネルを指定できます。代替構文では、トンネル名に続けてコンマ (\fB,\fR) とインデックスを指定します。例: \fBip.tun0,1\fR
+.sp
+.LP
+オプションなしでは、エントリが追加された順序で表示されますが、これは必ずしもトラフィックの一致が発生する順序ではありません。
+.sp
+.LP
+トラフィックの一致が発生する順序を表示するには、\fB-l\fR オプションを使用します。ルールは、最初にすべてのバイパスルール、次に ESP ルール、次に AH ルールが検査されるように順序付けられます。その後、入力された順序で検査されます。
+.sp
+.LP
+ポリシーエントリは、システムの再起動をまたいで保持されません。永続的なポリシーエントリは \fB/etc/inet/ipsecinit.conf\fR に追加するようにしてください。このファイルは、次の \fBsmf\fR(5) サービスによって読み取られます。
+.sp
+.in +2
+.nf
+svc:/network/ipsec/policy
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+IPsec セキュリティーポリシーの管理の詳細は、「\fB注意事項\fR」を参照してください。\fB/etc/inet/ipsecinit.conf\fR を保護する際の問題点については、「\fBセキュリティー\fR」を参照してください。
+.SH オプション
+.sp
+.LP
+\fBipsecconf\fR は、次のオプションをサポートします。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR \fIfile\fR \fR
+.ad
+.sp .6
+.RS 4n
+ファイル内の各エントリの指定に従って、IPsec ポリシーをシステムに追加します。IPsec 構成ファイルには、構成を指定する 1 つ以上のエントリが含まれています。ポリシーを追加すると、すべてのアウトバウンドおよびインバウンドデータグラムがポリシー検査の対象になります。
+.sp
+ファイル内のエントリは、後述のオペランドのセクションで説明します。例は、後述の使用例のセクションにあります。
+.sp
+ポリシーは、\fBconnect\fR(3SOCKET) または \fBaccept\fR(3SOCKET) が発行された TCP/UDP ソケットにラッチされます。そのため、新しいポリシーエントリを追加しても、このようなエンドポイントまたはソケットは影響を受けない可能性があります。しかし、ポリシーは既存の NULL でないポリシーがあるソケットにラッチされます。したがって、新しいポリシーエントリによる検査の対象となる既存の接続が存在しないことを確認してください。
+.sp
+前述のポリシーラッチ機能は、将来変更される可能性があります。この機能に依存することはお勧めしません。
+.sp
+デフォルトの動作では、新しいルールを既存のポリシーに追加します。新しいルールが既存のルールと競合する場合は、エラーが報告され、新しいルールが追加されません。
+.sp
+既存のルールと競合する新しいルールを追加するには、既存のルールを削除するか (下記を参照)、または既存のポリシーをフラッシュする必要があります。ポリシーがフラッシュされると、新しいポリシーが追加されるまで、IPsec はネットワークトラフィックを保護しません。
+.sp
+\fB-F\fR (フラッシュ) フラグを \fB-a\fR と組み合わせると、不可分なポリシー置換を実行できます。つまり、既存のポリシーが構成ファイルに記述された新しいポリシーに置き換えられます。フラッシュコマンドと追加コマンドを連続して実行すると、システムにポリシーが存在しない期間がわずかに発生しますが、これら 2 つのフラグを組み合わせることで、このような期間がまったく発生しなくなります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+ポリシーに変更を加えずに、構成ファイルの構文を検査し、エラーを報告します。このオプションは、構成をデバッグする場合や、\fBsmf\fR(5) によって構成エラーが報告される場合に便利です。「\fBセキュリティー\fR」を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIindex\fR\fR
+.ad
+.sp .6
+.RS 4n
+インデックスで指定されたホストポリシーを削除します。インデックスを取得するには、引数なしで、または \fB-l\fR オプションを指定して \fBipsecconf\fR を起動します。詳細は、「説明」を参照してください。エントリを削除すると、このポリシーエントリの影響を受けるすべてのアウトバウンドおよびインバウンドデータグラムがポリシー検査の対象になりません。このポリシーがラッチされている接続では、ポリシーを削除しても、同じポリシーによって引き続きパケットが送信されることに注意してください。\fB-l\fR オプションを使用して正しいポリシーインデックスを見つけることをお勧めします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIname\fR,\fIindex\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIname\fR で指定されたトンネルの \fIindex\fR で指定されたポリシーエントリを削除します。トンネルはノード外から発信された可能性があるトラフィックに影響するため、ホストポリシーの場合に適用されるラッチは適用されません。\fB-d\fR \fIindex\fR \fB-i\fR \fIname\fR と同等です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+システム内のすべてのポリシーをフラッシュします。ラッチおよびホストとトンネル単位の動作に関しては、\fB-d\fR オプションとほぼ同じ制約があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fR
+.ad
+.sp .6
+.RS 4n
+すべてのトンネルに対するすべてのポリシーをフラッシュし、すべてのホストポリシーもフラッシュします。\fB-F\fR オプションと \fB-a\fR オプションの組み合わせに関する説明 (前述の \fB-a\fR に記載) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-i\fR \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-d\fR、\fB-f\fR、または \fB-l\fR フラグで使用するトンネルインタフェース名を指定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+1 つのポリシーテーブル (デフォルトではホストポリシー) の一覧表示。引数なしで \fBipsecconf\fR をブートすると、ブート後にユーザーが追加したポリシーエントリの、インデックスを含む完全な一覧が表示されます。たとえば、マルチホームのエントリが追加された場合や、ポリシーの並べ替えが発生した場合や、1 つのルールエントリによって 2 つの \fBspd\fR ルールが生成される場合などは、現在のテーブルが以前のテーブルと異なる可能性があります。マルチホームのエントリの場合は、すべてのアドレスが明示的に一覧表示されます。マスクが事前に指定されていなくても、代わりにアドレスから推測された場合は、それがこの一覧に明示的に表示されます。このオプションは、ポリシーエントリを正しい順序で表示するために使用します。アウトバウンドとインバウンドのポリシーエントリは別々に一覧表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-L\fR\fR
+.ad
+.sp .6
+.RS 4n
+ホストポリシーとすべてのトンネルインスタンス (構成されたが plumb されていないものを含む) を含むすべてのポリシーテーブルを一覧表示します。
+.sp
+\fB-i\fR が指定された場合は、\fB-L\fR によって特定のトンネルインタフェースのポリシーテーブルが一覧表示されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+ネットワークアドレス、ポート、プロトコルを数値で表示します。\fB-n\fR オプションは、\fB-l\fR オプションでのみ使用できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR\fR
+.ad
+.sp .6
+.RS 4n
+静寂モード。ポリシーを追加したときに生成される警告メッセージを抑制します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIfile\fR の各エントリの指定に従って、システムから IPsec ポリシールールを削除します。ファイル内容の形式は、\fB-a\fR オプションで指定するものと同じです。このファイルは、\fBipsecconf\fR \fB-l\fR で作成し、エディタで修正できます。
+.RE
+
+.SH オペランド
+.sp
+.LP
+各ポリシーエントリには、次のように指定される 3 つの部分が含まれています。
+.sp
+.in +2
+.nf
+{pattern} action {properties}
+.fi
+.in -2
+
+.sp
+.LP
+または
+.sp
+.in +2
+.nf
+{pattern} action {properties} ["or" action {properties}]*
+.fi
+.in -2
+
+.sp
+.LP
+すべてのポリシーエントリは、新しい行で始まり、複数行にわたって指定できます。1 つのエントリが行の長さを超える場合は、中括弧で囲まれたセクションの内部でのみ分割するか、または中括弧で囲まれたセクションの最初の (左側の) 中括弧の直前で分割します。バックスラッシュ文字 (\) は使用しないようにします。「使用例」を参照してください。
+.sp
+.LP
+\fIpattern\fR セクションには、前述の構文に示すように、アウトバウンドおよびインバウンドデータグラムと照合するトラフィックパターンを指定します。一致がある場合は、ポリシーエントリの \fIproperties\fR に応じて、2 つ目の引数に指定された特定の \fIaction\fR が実行されます。 
+.sp
+.LP
+ルール内に \fBor\fR (指定されたパターンに対する複数のアクションとプロパティー) がある場合、送信側は機能する最初のアクションとプロパティーのペアを使用しますが、受信側は許容される任意のペアを使用します。 
+.sp
+.LP
+\fIpattern\fR と \fIproperties\fR は、名前と値のペアです (名前と値はスペース、タブ、または復帰改行で区切ります)。複数の名前と値のペアは、スペース、タブ、または復帰改行で区切ります。パターンとプロパティーの先頭と末尾は、それぞれ \fB{\fR と \fB}\fR で示します。 
+.sp
+.LP
+ファイルには複数のポリシーエントリを含めることができます。\fIpattern\fR に名前と値のペアを指定しなかった場合は、ワイルドカードとみなされます。ワイルドカードのエントリは、データグラム内の対応する任意のエントリと一致します。 
+.sp
+.LP
+留意するべき点として、UDP ポート 500 はポリシーエントリに関係なく常に省略されます。これは、\fBin.iked\fR(1M) が動作するための要件です。 
+.sp
+.LP
+ファイルにコメントを付けるには、最初の文字として \fB#\fR を使用します。コメントは、行の先頭と末尾のどちらかに挿入できます。
+.sp
+.LP
+ポリシーエントリの完全な構文は次のとおりです。
+.sp
+.in +2
+.nf
+policy ::= { <pattern1> } <action1> { <properties1> } |
+     { <pattern2> } <action2> { <properties2> } 
+     [ 'or' <action2> { <properties2>} ]*
+
+     pattern1 ::=  <pattern_name_value_pair1>*
+
+     pattern2 ::=  <pattern_name_value_pair2>*
+ 
+     action1 ::= apply | permit | bypass | pass
+     action2 ::=  bypass | pass | drop | ipsec
+
+     properties1 ::=   {<prop_name_value_pair1>}
+     properties2 ::=   {<prop_name_value_pair2>}
+
+
+     pattern_name_value_pair1 ::=
+        saddr <address>/<prefix> |
+        src  <address>/<prefix> |
+        srcaddr <address>/<prefix> |      
+        smask <mask> |
+        sport <port> |
+        daddr <address>/<prefix> |
+        dst <address>/<prefix> |
+        dstaddr <address>/<prefix> |
+        dmask <mask> |
+        dport <port> |
+        ulp <protocol> |
+        proto <protocol> |
+        type <icmp-type> |
+        type <number>-<number> |
+        code <icmp-code>
+        code <number>-<number>
+        tunnel <interface-name> |
+        negotiate <tunnel,transport> |
+        dir <dir_val2>
+
+     pattern_name_value_pair2 ::=
+        raddr <address>/<prefix> |
+        remote <address>/<prefix> |
+        rport <port> |
+        laddr <address>/<prefix> |
+        local <address>/<prefix> |
+        lport <port> |
+        ulp <protocol> |
+        type <icmp-type> |
+        type <number>-<number> |
+        code <icmp-code> |
+        code <number>-<number>
+        proto <protocol>  |
+        tunnel <interface-name> |
+        negotiate <tunnel,transport> |
+        dir <dir_val2>
+
+     address ::=  <IPv4 dot notation> | <IPv6 colon notation> |
+                  <String recognized by gethostbyname>|
+                  <String recognized by getnetbyname>
+
+     prefix ::=  <number>
+
+     mask ::= <0xhexdigit[hexdigit]> | <0Xhexdigit[hexdigit]> |
+              <IPv4 dot notation>
+
+     port ::= <number>| <String recognized by getservbyname>
+
+     protocol ::=  <number>| <String recognized by getprotobyname>
+
+     prop_name_value_pair1 ::=
+          auth_algs <auth_alg> |
+          encr_algs <encr_alg> |
+          encr_auth_algs <auth_alg> |
+          sa <sa_val> |
+          dir <dir_val1> |
+         ike_version <version>
+
+     prop_name_value_pair2 ::=
+          auth_algs <auth_alg> |
+          encr_algs <encr_alg> |
+          encr_auth_algs <auth_alg> |
+          sa <sa_val>
+
+     auth_alg ::=  <auth_algname> 
+     auth_algname ::= <auth_algname>
+
+     encr_alg ::= <encr_algname> ['(' <keylen> ')']
+     encr_algname ::= <encr_algname> ['(' <keylen> ')']
+     
+     keylen ::= <number> | <number>'..' | '..'<number> | <number>'..' \e
+     <number>
+
+     sa_val ::= shared | unique
+
+     dir_val1 ::= out | in
+     dir_val2 ::= out | in | both
+    version  ::= 1 | 2
+
+     number ::= < 0 | 1 | 2 ... 9> <number>
+     icmp-type ::= <number> | unreach | echo | echorep | squench |
+                   redir | timex | paramprob | timest | timestrep |
+                   inforeq | inforep | maskreq | maskrep | unreach6 |
+                   pkttoobig6 | timex6 | paramprob6 | echo6 | echorep6 |
+                   router-sol6 | router-ad6 | neigh-sol6 | neigh-ad6 |
+                   redir6
+
+     icmp-code ::= <number> | net-unr | host-unr | proto-unr | port-unr |
+                   needfrag | srcfail | net-unk | host-unk | isolate |
+                   net-prohib | host-prohib | net-tos | host-tos |
+                   filter-prohib | host-preced | cutoff-preced |
+                   no-route6 | adm-prohib6 | addr-unr6 | port-unr6 |
+                   hop-limex6 | frag-re-timex6 | err-head6 | unrec-head6 |
+                   unreq-opt6
+.fi
+.in -2
+
+.sp
+.LP
+ポリシーエントリの \fIpattern\fR フィールドには、次の (名前と値の) ペアを含めることができます。各 (名前と値の) ペアは、特定のポリシーエントリ内に 1 回だけ指定できます。
+.sp
+.ne 2
+.mk
+.na
+\fBladdr/plen\fR
+.ad
+.br
+.na
+\fBlocal/plen\fR
+.ad
+.sp .6
+.RS 4n
+あとに続く値は、データグラムのローカルアドレスと接頭辞長です。パケットの発信元アドレスの先頭 plen ビットだけが照合されます。plen はオプションです。ローカルは、受信パケットでは着信先、送信パケットでは発信元を意味します。発信元アドレスの値は、getaddrinfo(3SOCKET) で説明するホスト名か、\fBgetnetbyname\fR(3XNET) で説明するネットワーク名か、あるいはインターネット標準ドット表記法のホストアドレスまたはネットワークアドレスです。\fBinet_addr\fR(3XNET) を参照してください。ホスト名が指定され、getaddrinfo(3SOCKET) がそのホストのアドレスを複数返した場合は、ほかのエントリは同じ状態のままで、各アドレスのポリシーが追加されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBraddr/plen\fR
+.ad
+.br
+.na
+\fBremote/plen\fR
+.ad
+.sp .6
+.RS 4n
+あとに続く値は、データグラムのリモートアドレスと接頭辞長です。パケットのリモートアドレスの先頭 plen ビットだけが照合されます。plen はオプションです。リモートは、受信パケットでは発信元、送信パケットでは着信先を意味します。リモートアドレスの値は、\fBgetaddrinfo\fR(3SOCKET) で説明するホスト名か、\fBgetnetbyname\fR(3XNET) で説明するネットワーク名か、あるいはインターネット標準ドット表記法のホストアドレスまたはネットワークアドレスです。\fBinet_addr\fR(3XNET) を参照してください。ホスト名が指定され、\fBgetaddrinfo\fR(3SOCKET) がそのホストのアドレスを複数返した場合は、ほかのエントリは同じ状態のままで、各アドレスのポリシーが追加されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBsrc/plen\fR
+.ad
+.br
+.na
+\fBsrcaddr/plen\fR
+.ad
+.br
+.na
+\fBsaddr/plen\fR
+.ad
+.sp .6
+.RS 4n
+あとに続く値は、データグラムの発信元アドレスと接頭辞長です。パケットの発信元アドレスの先頭 \fIplen\fR ビットだけが照合されます。\fIplen\fR はオプションです。
+.sp
+発信元アドレスの値は、\fBgetaddrinfo\fR(3SOCKET) で説明するホスト名か、\fBgetnetbyname\fR(3XNET) で説明するネットワーク名か、あるいはインターネット標準ドット表記法のホストアドレスまたはネットワークアドレスです。\fBinet_addr\fR(3XNET) を参照してください。
+.sp
+ホスト名が指定され、\fBgetaddrinfo\fR(3SOCKET) がそのホストのアドレスを複数返した場合は、ほかのエントリは同じ状態のままで、各アドレスのポリシーが追加されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBdaddr/plen\fR
+.ad
+.br
+.na
+\fBdest/plen\fR
+.ad
+.br
+.na
+\fBdstaddr/plen\fR
+.ad
+.sp .6
+.RS 4n
+あとに続く値は、データグラムの着信先アドレスと接頭辞長です。パケットの着信先アドレスの先頭 \fIplen\fR ビットだけが照合されます。\fIplen\fR はオプションです。
+.sp
+指定できる有効な値については、\fIsaddr\fR を参照してください。複数の発信元および着信先アドレスが見つかった場合は、発信元アドレスと着信先アドレスの各ペアを対象とするポリシーエントリがシステムに追加されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIsmask\fR\fR
+.ad
+.sp .6
+.RS 4n
+IPv4 専用。あとに続く値は、発信元のマスクです。\fIsaddr\fR で接頭辞長を指定した場合は、これを指定するべきではありません。これは、先頭が \fB0x\fR または \fB0X\fR の 16 進数 (たとえば、\fB0xffff0000\fR、\fB0Xffff0000\fR など)、またはインターネット 10 進ドット表記法 (たとえば、\fB255.255.0.0\fR、\fB255.255.255.0\fR など) のいずれかで表現できます。このマスクは連続しているべきであり、マスクが非連続の場合の動作は定義されていません。
+.sp
+\fIsmask\fR は、\fIsaddr\fR が指定されている場合にのみ考慮されます。
+.sp
+IPv4 アドレスと IPv6 アドレスのどちらでも、同じ情報を \fIsaddr\fR パラメータに付随する \fIslen\fR の値として指定できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdmask\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIsmask\fR と同様です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIlport\fR\fR
+.ad
+.sp .6
+.RS 4n
+あとに続く値は、データグラムのローカルポートです。これは、ポート番号か、proto 引数を NULL にして検索した文字列 (getservbyname(3XNET) を参照) のどちらかです。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIrport\fR\fR
+.ad
+.sp .6
+.RS 4n
+あとに続く値は、データグラムのリモートポートです。これは、ポート番号か、proto 引数を NULL にして検索した文字列 (getservbyname(3XNET) を参照) のどちらかです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIsport\fR\fR
+.ad
+.sp .6
+.RS 4n
+あとに続く値は、データグラムの発信元ポートです。これは、ポート番号か、proto 引数を \fBNULL\fR にして検索した文字列 (\fBgetservbyname\fR(3XNET) を参照) のどちらかです。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIdport\fR\fR
+.ad
+.sp .6
+.RS 4n
+あとに続く値は、データグラムの着信先ポートです。これは、ポート番号か、proto 引数を \fBNULL\fR にして検索した文字列 (\fBgetservbyname\fR(3XNET) を参照) のどちらかです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBproto\fR \fIulp\fR\fR
+.ad
+.sp .6
+.RS 4n
+あとに続く値は、このエントリを照合する上位階層プロトコルです。これは、数値か文字列 (\fBgetprotobyname\fR(3XNET) を参照) のどちらかです。smask も plen も指定されなかった場合は、ホストを意味する 32 (IPv4 の場合) または 128 (IPv6 の場合) が plen として使用されます。\fIulp\fR が \fBicmp\fR または \fBipv6-icmp\fR である場合は、IPsec を適用するアクションがすべての \fBicmp\fR ルールで同じである必要があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtype\fR \fInum\fR または \fInum\fR-\fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+あとに続く値は、このエントリを照合する ICMP タイプです。\fBtype\fR は、0 から 255 までの数値またはいずれかの適切な \fBicmp-type\fR キーワードである必要があります。また、\fIulp\fR が存在し、\fBicmp\fR か \fBipv6-icmp\fR のいずれかに指定されている必要があります。タイプの範囲を指定するには、ハイフンで区切られた数値を使用します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcode\fR \fInum\fR または \fInum\fR-\fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+あとに続く値は、このエントリを照合する ICMP コードです。キーワード \fBcode\fR に続く値は、0 から 254 までの数値またはいずれかの適切な \fBicmp-code\fR キーワードである必要があります。また、\fBtype\fR が存在する必要があります。コードの範囲を指定するには、ハイフンで区切られた数値を使用します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtunnel\fR \fIname\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBifconfig\fR(1M) で構成されたトンネルネットワークインタフェースを指定します。\fIname\fR というトンネルがまだ存在しない場合は、ポリシーエントリがとりあえず追加され、そのトンネルが作成されたときにトンネルの状態に結合されます。トンネルが unplumb されると、そのポリシーエントリは消失します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnegotiate\fR \fItunnel\fR\fR
+.ad
+.br
+.na
+\fB\fBnegotiate\fR \fItransport\fR\fR
+.ad
+.sp .6
+.RS 4n
+トンネル単位のセキュリティーの場合に、トラフィックを保護する IPsec SA をトンネルモード SA とトランスポートモード SA のどちらにするべきかを指定します。トランスポートモード SA が指定された場合は、ポリシーエントリにアドレスを指定できません。トランスポートモードは Solaris 9 と下位互換性があり、\fBifconfig\fR(1M) で構成されたトンネル IPsec ポリシーは、ここではトランスポートモードのエントリとして指定されます。
+.RE
+
+.sp
+.LP
+ポリシーエントリの properties フィールドには、次の (名前と値の) ペアを含めることができます。各 (名前と値の) ペアは、特定のポリシーエントリ内に 1 回だけ指定できます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBauth_algs\fR\fR
+.ad
+.sp .6
+.RS 4n
+このあとに許容される値が続く場合、それはアウトバウンドデータグラムの外側の IP ヘッダーのあとに IPsec \fBAH\fR ヘッダーが存在することを意味します。\fBauth_algs\fR キーワードのあとに指定されたアルゴリズムは、元のパケットの内容に基づいて Integrity Check Value (ICV) を生成するために使用されます。次のアルゴリズムはパケットの内容を暗号化せず、パケットの内容が送信中に変更されていないことを検証するためのメカニズムのみを提供します。『\fIRFC 2402\fR』を参照してください。 
+.sp
+\fBauth_algs\fR が \fBencr_algs\fR と組み合わせて使用されている場合、元のペイロードは \fBencr_algs\fR のあとに指定されたアルゴリズムを使用して暗号化されます。この場合、AH によって生成された ICV は、暗号化されたパケットおよび暗号化のあとに挿入された ESP ヘッダーのものになります。
+.sp
+認証アルゴリズムごとに異なる長さの ICV が生成されます。一般に、ICV が長いと、それだけ認証も強力になります。通常、アルゴリズムが強力になると、パフォーマンスが低下します。
+.sp
+このエントリには文字列を含めてください。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstring\fR\fR
+.ad
+.sp .6
+.RS 4n
+次のいずれかを指定できます。
+.sp
+.in +2
+.nf
+    string value:	   Algorithm Used:	    See RFC:
+--------------------------------------------------------------------
+sha256 or hmac-sha256	  HMAC-SHA256	       4868
+sha384 or hmac-sha384	  HMAC-SHA384	       4868
+sha512 or hmac-sha512	  HMAC-SHA512	       4868
+aes-xcbc                   AES-XCBC-MAC-96       3566
+aes-gmac128                AES-GMAC              4543
+aes-gmac192                AES-GMAC              4543
+es-gmac256                 AES-GMAC              4543
+.fi
+.in -2
+
+.LP
+注 - 
+.sp
+.RS 2
+AES-GMAC アルゴリズムを使用する \fBauth_algs\fR の値はすべて、同じ長さの ICV を生成しますが、受け取る鍵の長さはそれぞれ、128、192、または 256 ビットと異なります。
+.RE
+下位互換性の理由から、次の非推奨の認証アルゴリズムも許可されます。ただし、可能になったらすぐに、管理者はこれらの廃止されたアルゴリズムから別のアルゴリズムに移行することをお勧めします。
+.sp
+.in +2
+.nf
+        string value:	   Algorithm Used:	    See RFC:
+--------------------------------------------------------------------
+md5 or hmac-md5	          HMAC-MD5	          2403
+sha1 or hmac-sha1 or sha	 HMAC-SHA1	         2404
+.fi
+.in -2
+
+認証アルゴリズムの完全な一覧を取得するには、\fBipsecalgs\fR(1M) コマンドを使用できます。
+.sp
+文字列の大文字と小文字は区別されません。
+.RE
+
+\fIauth_algs\fR が存在しない場合は、\fBAH\fR ヘッダーがアウトバウンドデータグラムに存在せず、同じものがインバウンドデータグラムで検証されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBencr_algs\fR\fR
+.ad
+.sp .6
+.RS 4n
+このキーワードのあとに許容される値が続く場合、それはアウトバウンドデータグラムに IPsec ESP ヘッダーが存在することを意味します。この値は、アウトバウンドデータグラムの元のペイロードを暗号化するために使用される暗号化アルゴリズムを示します。また、後述のアルゴリズムの中には、暗号化されたパケットおよび ESP ヘッダーの内容に基づいて Integrity Check Value (ICV) も生成するものがあります。生成された ICV はデータグラムの最後 (暗号化されたペイロードのあと) に追加されるため、受信側のシステムはこれを使用して、そのパケットが送信中に変更されていないことを検証できます。\fIRFC 2406\fR を参照してください。 
+.sp
+暗号化操作の一部として ICV を生成しないアルゴリズムは、\fBencr_auth_algs\fR キーワードで指定された認証アルゴリズムと組み合わせて使用するようにしてください。
+.sp
+次の表は、サポートされる暗号化のみのアルゴリズムおよび複合モードの暗号化アルゴリズムの一覧を示しています。
+.sp
+このエントリには文字列を含めてください。文字列の大文字と小文字は区別されません。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstring\fR\fR
+.ad
+.sp .6
+.RS 4n
+次の暗号化アルゴリズムは暗号化のみを提供し、ICV を生成するには認証アルゴリズムが必要です。これらは \fBencr_auth_algs\fR キーワードと組み合わせて使用するようにしてください。
+.sp
+次の各アルゴリズムは、128、192、または 256 ビットの鍵の長さをサポートします。
+.sp
+.in +2
+.nf
+string value:                Algorithm Used:        See RFC:
+--------------------------------------------------------------------
+aes or aes-cbc                AES-CBC	           2451
+camellia or camellia-cbc      Camellia-CBC          4312
+.fi
+.in -2
+
+次の複合モードのアルゴリズムは、暗号化と ICV の生成を 1 つの操作に結合します。これらを \fBencr_auth_algs\fR キーワードと組み合わせて使用してはいけません。
+.sp
+次の各アルゴリズムは、128、192、または 256 ビットの鍵の長さをサポートします。
+.sp
+.in +2
+.nf
+string value:            Algorithm Used:        ICV Length    See RFC:
+-----------------------------------------------------------------------
+aes-ccm or aes-ccm16        AES-CCM	         16 bytes	  4309
+aes-ccm8                    AES-CCM	         8 bytes       4309
+aes-ccm12                   AES-CCM	         12 bytes	  4309
+aes-gcm or aes-gcm16        AES-GCM	         16 bytes      4106
+aes-gcm8                    AES-GCM	         8 bytes       4106
+aes-gcm12                   AES-GCM	         12 bytes	  4106
+aes-none-gmac [*]           AES-GMAC            16 bytes	  4543
+.fi
+.in -2
+
+[*] 暗号化なしで、認証にのみ ICV を生成します。後述の「例」のセクションにある AES GMAC の使用に関する例を参照してください。
+.sp
+下位互換性の理由から、次の非推奨の暗号化のみのアルゴリズムも許可されます。ただし、可能になったらすぐに、管理者はこれらの廃止されたアルゴリズムから別のアルゴリズムに移行することをお勧めします。
+.sp
+
+.sp
+.TS
+tab();
+cw(1.83i) cw(1.83i) cw(1.83i) 
+lw(1.83i) lw(1.83i) lw(1.83i) 
+.
+文字列値:使用されるアルゴリズム:参照先の RFC:
+_
+des または des-cbcDES-CBC2405
+3des または 3des-cbc3DES-CBC2451
+blowfish または blowfish-cbcBlowfish-CBC2451
+.TE
+
+認証アルゴリズムの完全な一覧を取得するには、\fBipsecalgs\fR(1M) コマンドを使用できます。
+.sp
+この値は \fBNULL\fR にできます。これは、\fIRFC 2410\fR に基づいた \fBNULL\fR 暗号化を示します。これは、ペイロードが暗号化されないことを意味します。この文字列を、アルゴリズムを指定しないことを示す \fBANY\fR にすることもできます。デフォルトのアルゴリズムは、手動 SA の場合は現時点で使用可能な SA、自動 SA の場合は鍵ネゴシエーションデーモンに基づいてそれぞれ選択されます。文字列の大文字と小文字は区別されません。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBencr_auth_algs\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBencr_auth_algs\fR のあとに許容される値が続く場合、それはアウトバウンドデータグラムに IPsec \fBESP\fR ヘッダーが存在することを意味します。\fBencr_auth_algs\fR のあとに続く値は、アウトバウンドデータグラムに IPsec \fBESP\fR プロトコルを適用するときに使用され、インバウンドデータグラムに存在することが検証される認証アルゴリズムを示します。『\fIRFC 2406\fR』を参照してください。このエントリには文字列を含める必要があります。文字列の大文字と小文字は区別されません。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstring\fR\fR
+.ad
+.sp .6
+.RS 4n
+次のいずれかを指定できます。
+.sp
+.in +2
+.nf
+    string value:	   Algorithm Used:	    See RFC:
+--------------------------------------------------------------------
+sha256 or hmac-sha256	  HMAC-SHA256	       4868
+sha384 or hmac-sha384	  HMAC-SHA384	       4868
+sha512 or hmac-sha512	  HMAC-SHA512	       4868
+aes-xcbc                   AES-XCBC-MAC-96       3566
+.fi
+.in -2
+
+下位互換性の理由から、次の非推奨の認証アルゴリズムも許可されます。ただし、可能になったらすぐに、管理者はこれらの廃止されたアルゴリズムから別のアルゴリズムに移行することをお勧めします。
+.sp
+.in +2
+.nf
+    string value:	      Algorithm Used:	  See RFC:
+--------------------------------------------------------------------
+md5 or hmac-md5	          HMAC-MD5	       2403
+sha1 or hmac-sha1 or sha	 HMAC-SHA1	      2404
+.fi
+.in -2
+
+認証アルゴリズムの完全な一覧を取得するには、\fBipsecalgs\fR(1M) コマンドを使用できます。文字列の大文字と小文字は区別されません。
+.RE
+
+ポリシーエントリ内に \fBencr_algs\fR が存在し、\fBencr_auth_algs\fR が存在しない場合、システムは、\fBSA\fR に認証アルゴリズムが含まれているかどうかには関係なく \fBESP\fR \fBSA\fR を使用します。 
+.sp
+ポリシーエントリ内に \fBencr_algs\fR が存在せず、\fBencr_auth_algs\fR が存在する場合は、アウトバウンドおよびインバウンドデータグラムに対して NULL 暗号化が提供されます (これは、\fBNULL\fR が指定された \fBencr_algs\fR と同等です)。 
+.sp
+ポリシーエントリ内に \fBencr_algs\fR と \fBencr_auth_algs\fR の両方が存在しない場合は、\fBESP\fR ヘッダーがアウトバウンドデータグラムに存在せず、同じものがインバウンドデータグラムで検証されます。
+.sp
+ポリシーエントリ内に \fBencr_algs\fR と \fBencr_auth_algs\fR の両方が存在する場合は、整合性チェックサムを含む \fBESP\fR ヘッダーがアウトバウンドデータグラムに存在し、同じものがインバウンドデータグラムで検証されます。
+.sp
+\fBencr_algs\fR、\fBencr_auth_algs\fR、および \fBauth_algs\fR には、鍵長の指定が存在する場合があります。これは、そのアルゴリズムで唯一の有効な鍵長を指定する単一の値か、または有効な最小、最大、あるいはその両方の鍵長を指定する範囲のいずれかです。最小長または最大長は省略できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdir\fR\fR
+.ad
+.sp .6
+.RS 4n
+このあとに続く値によって、このポリシーエントリがアウトバウンドまたはインバウンドデータグラム、あるいはその両方に適用されるかどうかが決定されます。一般に、標準的なネットワークトラフィックの場合はインバウンドトラフィックとアウトバウンドトラフィックの両方に IPsec ポリシーを適用すべきであるため、この値を指定してはいけません。もっとも一般的なネットワークプロトコルは双方向です。
+.sp
+このエントリは、アクションが「apply」または「permit」であるときは、これらのアクションで暗黙的に指定されているため必要ありません。これは、アクションが「ipsec」であるときは、これにより両方向が暗黙的に指定されるため有効ではありません。
+.sp
+例外は「bypass」アクションです (これが必須であるとき)。
+.sp
+方向が指定されている場合は、一致する逆のポリシーがピアに存在することを十分に注意して確認するようにしてください。そうしないと、IKE ネゴシエーションが失敗することがあります。
+.sp
+有効な値は、次のいずれかの文字列です。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBout\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは、このポリシーエントリをアウトバウンドデータグラム専用とみなすことを意味します。これは、何も指定しないことと同等です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBin\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは、このポリシーエントリをインバウンドデータグラム専用とみなすことを意味します。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBboth\fR\fR
+.ad
+.sp .6
+.RS 4n
+これは、このポリシーエントリをインバウンドデータグラムとアウトバウンドデータグラムの両方用とみなすことを意味します。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsa\fR\fR
+.ad
+.sp .6
+.RS 4n
+このあとに続く値は、セキュリティーアソシエーションの属性を決定します。値は、一意のセキュリティーアソシエーションを使用するべきか、または既存の任意の \fBSA\fR を使用できるかを示します。ポリシー要件がある場合は、最初のアウトバウンドデータグラムに対する \fBSA\fR が鍵管理デーモンを使用して動的に作成されます。静的な \fBSA\fR を作成するには、\fBipseckey\fR(1M) を使用します。ここで使用される値は、新しい \fBSA\fR が使用または取得されるかどうかを決定します。有効な値は、次のいずれかの文字列です。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunique\fR\fR
+.ad
+.sp .6
+.RS 4n
+一意のアソシエーション。このポリシーエントリと一致するパケットに対して、新しい (未使用の) アソシエーションが取得または使用されます。以前に同じ 5 タプル (つまり、{発信元アドレス、着信先アドレス、発信元ポート、着信先ポート、プロトコル (\fBTCP\fR や \fBUDP\fR など)}) によって使用された \fBSA\fR が存在する場合は、それが再利用されます。このように、前述の 5 タプルによって一意性が表現されます。前述の 5 タプルによって使用されたセキュリティーアソシエーションは、ほかのソケットでは使用されません。インバウンドデータグラムについては、一意性は検証されません。
+.sp
+トンネルモードのトンネルでは、\fBunique\fR は無視されます。トンネルモードのトンネルでは、ルール単位で SA が割り当てられます。トランスポートモードのトンネルでは、IP 内 IPv4 または IP 内 IPv6 の外部パケットのアドレスおよびプロトコル値のみが適用対象となるため、\fBunique\fR が暗黙的に設定されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBshared\fR\fR
+.ad
+.sp .6
+.RS 4n
+共有アソシエーション。この発信元と着信先のペアに対して \fBSA\fR がすでに存在する場合は、それが使用されます。それ以外の場合は、新しい \fBSA\fR が取得されます。これはデフォルトです。
+.RE
+
+これは、アウトバウンドポリシーエントリの場合にのみ必須であり、アクションが「bypass」であるエントリに対して指定するべきではありません。このエントリがインバウンドエントリに対して指定されていない場合 (たとえば、「dir」が in で「action」が permit のとき)、それは shared であるとみなされます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBike_version\fR\fR
+.ad
+.sp .6
+.RS 4n
+IPsec SA に対する要求が特定のバージョンの IKE デーモンによってのみ処理されるようにこのポリシーを制約します。\fBin.iked\fR(1M) には ike_version 1 を、また \fBin.ikev2d\fR(1M) には ike_version 2 を指定します。このアクションがない場合はワイルドカードとして、つまり、適切に構成されたすべてのデーモンが応答できると解釈されます。
+.RE
+
+.sp
+.LP
+アクションは、パターンのあとに続き、プロパティーの前に指定するべきです。次のいずれかを指定するべきであり、このフィールドは必須です。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipsec\fR\fR
+.ad
+.sp .6
+.RS 4n
+パターンがデータグラムと一致した場合に、プロパティーの記述に従ってデータグラムに IPsec を使用します。dir を指定せずに ipsec を指定した場合は、パターンが受信および送信データグラムと照合されます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBapply\fR\fR
+.ad
+.sp .6
+.RS 4n
+パターンがデータグラムと一致した場合に、プロパティーの記述に従ってデータグラムに IPsec を適用します。\fBapply\fR が指定された場合は、パターンがアウトバウンドデータグラムとのみ照合されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpermit\fR\fR
+.ad
+.sp .6
+.RS 4n
+パターンが受信データグラムと一致し、プロパティーに記述された制約を満たす場合に、データグラムを許可します。プロパティーが満たされない場合は、データグラムを破棄します。\fBpermit\fR が指定された場合は、パターンがインバウンドデータグラムとのみ照合されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbypass\fR\fR
+.ad
+.br
+.na
+\fB\fBpass\fR\fR
+.ad
+.sp .6
+.RS 4n
+パターンがデータグラムと一致した場合に、ポリシー検査を省略します。アウトバウンドとインバウンドのどちらのデータグラムに対して検査が行われるかは、プロパティー内の \fBdir\fR によって決定されます。システム内のほかのポリシーエントリを検査する前に、すべての \fBbypass\fR エントリが検査されます。これは、ほかのすべてのエントリより優先されます。アクションが \fBbypass\fR のときは、\fBdir\fR が指定するべき唯一のフィールドです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdrop\fR\fR
+.ad
+.sp .6
+.RS 4n
+パターンと一致するすべてのパケットをドロップします。
+.RE
+
+.sp
+.LP
+たとえば、ファイルに複数のポリシーエントリが含まれる場合、それらは適用するべき順序で列挙されているとみなされます。複数のエントリがアウトバウンドおよびインバウンドデータグラムと一致する場合は、最初に一致したものが適用されます。システムは、次の場合にのみ、ポリシーエントリの順序を変更します (つまり、古いエントリの前に新しいエントリを追加します)。
+.sp
+.LP
+保護レベルが古い保護レベルより「強い」。
+.sp
+.LP
+現在のところ、強さは次のように定義されます。
+.sp
+.in +2
+.nf
+AH and ESP > ESP > AH
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBAH\fR および \fBESP\fR の標準的な使用が、この「強さ」のランクを上げる要因でした。これには欠点があります。\fBESP\fR は、認証なし (カットアンドペースト攻撃やリプレイ攻撃が可能)、または暗号化なし (\fBAH\fR と同じかやや弱くなる) で使用できます。管理者は、\fBESP\fR を適切に使用するように注意するべきです。詳細は、\fBipsecesp\fR(7P) を参照してください。
+.sp
+.LP
+新しいエントリのアクションが \fBbypass\fR である場合は、\fBbypass\fR がもっとも優先されます。これは任意の順序で追加できますが、その場合でもシステムはほかのエントリを照合する前にすべての \fBbypass\fR エントリを照合します。これは、自己のトラフィックを保護する鍵管理デーモンがこの機能を使用して IPsec を省略するのに役立ちます。
+.sp
+.LP
+\fBAH\fR (ポリシーエントリ内に \fBauth_algs\fR が存在する) と \fBESP\fR (ポリシーエントリ内に \fBencr_auth_algs\fR または \fBencr_auth_algs\fR が存在する) の両方の保護を含むエントリは、\fBAH\fR と \fBESP\fR を含むすべてのエントリの後ろで、かつすべての \fBAH\fR のみおよび \fBESP\fR のみのエントリの前に順序付けられます。それ以外の場合は、ユーザーが指定した順序は変更されません (つまり、新しいエントリはすべての古いエントリの最後に追加されます)。使用例を参照してください。
+.sp
+.LP
+古いエントリが新しいエントリと同じトラフィックパターンに一致した場合、新しいエントリは古いエントリの重複とみなされます。重複については、使用例を参照してください。
+.SH セキュリティ
+.sp
+.LP
+たとえば、\fBNFS\fR マウントされたファイルシステムからネットワーク経由でポリシーファイルが取得される場合、悪意のあるユーザーはそのファイルに含まれるデータを変更できるため、マシン上に構成されているポリシーを自分のニーズに合わせて変更できます。管理者は、ポリシーファイルのコピーをネットワーク経由で転送するときは注意するべきです。
+.sp
+.LP
+非特権ユーザーによるセキュリティーポリシーの変更を防止するには、信頼できるユーザーのみが構成ファイルに書き込めることを確認してください。
+.sp
+.LP
+構成ファイルは、\fBpolicy\fR \fBsmf\fR(5) サービスのプロパティーによって定義されます。デフォルトの構成ファイルは \fB/etc/inet/ipsecinit.conf\fR です。これは、\fBsvcprop\fR(1) コマンドを使用して変更できます。詳細は、「\fB注意事項\fR」を参照してください。
+.sp
+.LP
+ポリシー記述言語では、\fBgethostbyname\fR(3NSL) などの関数を使用してネームサービスで解決できるトークンの使用がサポートされます。これらの関数は便利ですが、システムが使用するように構成されたネームサービスとしてのみセキュリティー保護されます。セキュリティーポリシーの要素を解決するために使用する場合は、ネームサービスがセキュリティー保護されるように十分に注意するべきです。
+.sp
+.LP
+発信元アドレスがネットワーク経由で検索可能なホストである場合に、ネームシステム自体の安全性が損なわれると、使用されているすべての名前が信用できなくなります。
+.sp
+.LP
+システムに対してローカルでないネームサービスを使用するようにネームスイッチが構成されている場合は、ポリシーによってネームサービスとの通信が妨げられないようにするため、bypass ポリシーエントリが必要になることがあります。\fBnsswitch.conf\fR(4) を参照してください。
+.sp
+.LP
+ポリシーは、\fBconnect\fR(3SOCKET) または \fBaccept\fR(3SOCKET) が発行された \fBTCP/UDP\fR ソケットにラッチされます。新しいポリシーエントリを追加しても、これらには影響しません。このラッチ機能は、将来変更される可能性があります。この機能に依存することはお勧めしません。
+.sp
+.LP
+\fBipsecconf\fR コマンドは、\fBpf_key\fR(7P) ソケットを開くための十分な権限を持つユーザーのみが実行できます。Network IPsec Management プロファイルを使用して、ユーザーに適切な権限を割り当てることができます。\fBprofiles\fR(1)、\fBrbac\fR(5)、\fBprof_attr\fR(4) を参照してください。
+.sp
+.LP
+新しいポリシーエントリを追加すると、既存の接続に影響する可能性があるため、必ず通信を開始する前にポリシーを設定してください。同様に、通信の最中にポリシーを変更しないでください。 
+.sp
+.LP
+一部の \fBndd\fR 調整可能パラメータは、このツールを使用して構成されたポリシーの適用方法に影響します。詳細は、\fBipsecesp\fR(7P) を参照してください。
+.SH 使用例
+.LP
+\fB例 1 \fRESP を使用した 2 つのホスト間のすべてのトラフィックの保護
+.sp
+.LP
+次の例では、トラフィックが AES 暗号化アルゴリズムを使用して保護され、SHA256 を使用して認証されるように指定します。
+
+.sp
+.in +2
+.nf
+{ laddr spiderweb raddr arachnid } ipsec
+    { encr_algs aes encr_auth_algs sha256 }
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRAH を使用した telnet ポートへのすべてのインバウンドトラフィックの認証
+.sp
+.LP
+このエントリは、telnet ポートへのすべてのインバウンドデータグラムが AH によって保護され、SHA1 アルゴリズムで認証されるべきであることを指定します。それ以外の場合、データグラムは破棄されます。このエントリを指定しない場合、ポート番号 23 宛てのトラフィックは保護なしで許可されます。ポート 23 を使用しないトラフィックは、この規則に一致しません。これが唯一の規則である場合は、その他のすべてのトラフィックに IPsec 保護は必要ありません。
+
+.sp
+.in +2
+.nf
+#
+# All the inbound traffic to the telnet port should be
+# authenticated.
+#
+{ lport telnet dir in } ipsec { auth_algs sha1 }
+.fi
+.in -2
+
+.LP
+\fB例 3 \fRNULL 暗号化された ESP を使用したインバウンドトラフィックの検証
+.sp
+.LP
+最初のエントリによって、アドレス host-B からのすべてのパケットが IPsec 保護なしでシステムに入ることが許可されます。2 番目のエントリは、アドレスマシン (network-B 指定) からのパケットを NULL 暗号化された ESP で保護するが、認証には \fBsha512\fR を使用することを要求します。
+
+.sp
+.LP
+NULL 暗号化された ESP は、AH と同様のレベルの保護を提供します。
+
+.sp
+.in +2
+.nf
+#
+# Make sure that all inbound traffic from network-B is NULL
+# encrypted, but bypass for host-B alone from that network.
+# Add the bypass first.
+
+{ raddr host-B dir in } bypass {}
+
+# Now add for network-B.
+{ raddr network-B/16 dir in } ipsec
+     { encr_algs NULL encr_auth_algs sha512 }
+.fi
+.in -2
+
+.LP
+\fB例 4 \fRDNS トラフィックが IPsec をバイパスできるようにするためのエントリ
+.sp
+.LP
+最初の 2 つのエントリは、マシンの発信元ポート 53 から送信されるか、またはポート番号 53 に着信するすべてのデータグラムが、システム内のほかのどのポリシーエントリにも関係なく、IPsec 保護なしで通過することを許可します。したがって、あとの 2 つのエントリはポート番号 53 以外のポート専用とみなされます。
+
+.sp
+.in +2
+.nf
+#
+# Bypass traffic for port number 53
+#
+{lport 53 dir out} bypass {}
+{rport 53 dir in} bypass {}
+{raddr spiderweb } ipsec {encr_algs aes-ccm sa unique}
+.fi
+.in -2
+
+.LP
+\fB例 5 \fRアウトバウンドトラフィックを保護する
+.sp
+.in +2
+.nf
+ #
+     # Protect the outbound traffic from all interfaces.
+     #
+{raddr spiderweb dir out} ipsec {auth_algs any sa unique}
+{ laddr arachnid raddr spiderweb dir in } ipsec
+      {auth_algs sha256 sa unique}
+.fi
+.in -2
+
+.sp
+.LP
+spiderweb の \fBgethostbyname\fR(3C) 呼び出しによって複数のアドレスが返される場合は、すべての発信元アドレスに対して同じプロパティーを持つ複数のポリシーエントリが追加されます。
+
+.sp
+.in +2
+.nf
+{ 
+    laddr arachnid 
+    raddr spiderweb 
+    dir in 
+} ipsec {auth_algs any sa unique}
+.fi
+.in -2
+
+.sp
+.LP
+spiderweb の \fBgethostbyname\fR(3C) 呼び出しと arachnid の \fBgethostbyname\fR(3C) 呼び出しによって複数のアドレスが返される場合は、各 (\fBsaddr\fR \fBdaddr\fR) ペアに対して同じプロパティーを持つ複数のポリシーエントリが追加されます。追加されたすべてのポリシーエントリを表示するには、\fBipsecconf\fR \fB-l\fR を使用します。
+
+.LP
+\fB例 6 \fR未認証のトラフィックを省略する
+.sp
+.in +2
+.nf
+#
+# Protect all the outbound traffic with ESP except any traffic
+# to network-b which should be authenticated and bypass anything
+# to network-c
+#
+{raddr network-b/16 dir out} ipsec {auth_algs sha256 }
+{dir out} ipsec {encr_algs aes-ccm}
+{raddr	network-c/16 dir out} bypass {}
+.fi
+.in -2
+
+.sp
+.LP
+バイパスはどこでも指定でき、ほかのどのエントリよりも優先されることに注意してください。2 番目の規則の NULL パターンは、すべてのトラフィックに一致します。
+
+.LP
+\fB例 7 \fRCamellia と sha256 を使用した IPv6 トラフィックの暗号化
+.sp
+.LP
+\fIfe80::a00:20ff:fe21:4483\fR のアドレスを持つホストと \fIfe80::a00:20ff:felf:e346\fR のアドレスを持つホストの間のパケットが、認証に Camellia と sha256 で暗号化された ESP を使用することを要求します。
+
+.sp
+.in +2
+.nf
+{
+    laddr fe80::a00:20ff:fe21:4483
+    raddr fe80::a00:20ff:felf:e346
+    
+} ipsec {
+    encr_algs camellia
+    encr_auth_algs sha256
+}
+.fi
+.in -2
+
+.LP
+\fB例 8 \fRIPv6 トラフィックが sha384 で認証された AH を使用していることを検証する
+.sp
+.LP
+次の 2 つのエントリは、IPv6 サイトローカルネットワーク \fBfec0:abcd::0/32\fR との間で送受信されるすべての IPv6 トラフィックが sha384 で認証されていることを要求します。
+
+.sp
+.in +2
+.nf
+{raddr fec0:abcd::0/32} ipsec { auth_algs sha384 }
+.fi
+.in -2
+
+.LP
+\fB例 9 \fR鍵長
+.sp
+.in +2
+.nf
+# use aes at any key length defined my ipsecalgs(1m)
+{raddr	spiderweb} ipsec {encr_algs aes encr_auth_algs sha256}
+# This has the same effect
+{raddr spiderweb} ipsec {encr_algs aes(128..256) encr_auth_algs sha256}
+
+# Only use aes with a 192 bit key
+{raddr spiderweb} ipsec {encr_algs aes(192) encr_auth_algs sha256}
+
+# use aes with any key length up to 192 bits
+# i.e. 192 bits or less
+{raddr spiderweb} ipsec {encr_algs aes(..192) encr_auth_algs sha256}
+
+# use aes with any key length of 192 or more
+# i.e. 192 bits or more
+{raddr spiderweb} ipsec {encr_algs aes(192..) encr_auth_algs sha256}
+
+#use aes with any key from 192 to 256 bits
+{raddr spiderweb} ipsec {encr_algs aes(192..256) encr_auth_algs sha256}
+
+#use any algorithm with a key of 192 bits or longer
+{raddr spiderweb} ipsec {encr_algs any(192..) encr_auth_algs sha256}
+.fi
+.in -2
+
+.sp
+.LP
+IKE を使用する場合は、2 つ以上の鍵の長さを指定するポリシーエントリによって、そのピアへの複数の提案が生成されることに注意してください。ピアで、そのローカルの IPsec ポリシーにもっとも近い提案を選択します。
+
+.LP
+\fB例 10 \fR正しいポリシーエントリと不正なポリシーエントリ
+.sp
+.LP
+次は、正しい形式のポリシーエントリの例です。
+
+.sp
+.in +2
+.nf
+{ raddr that_system rport telnet } ipsec { encr_algs aes
+ encr_auth_algs sha256 sa shared}
+
+{
+        raddr that_system
+        rport telnet
+} ipsec {
+        encr_algs aes
+        encr_auth_algs sha256
+        sa shared
+}
+
+{ raddr that_system rport telnet } ipsec
+        { encr_algs aes encr_auth_algs sha1 sa shared}
+
+{ raddr that_system rport telnet } ipsec
+        { encr_algs 3des encr_auth_algs sha256 sa shared} or ipsec
+        { encr_algs aes encr_auth_algs sha256 sa shared}
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次は、不正な形式のエントリです。
+
+.sp
+.in +2
+.nf
+{ raddr that_system rport telnet } ipsec
+        { encr_algs 3des encr_auth_algs sha1 sa shared}
+        or ipsec { encr_algs aes encr_auth_algs sha1 sa shared}
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+直前の不正なエントリでは、3 つ目の行が「\fBor ipsec\fR」で始まっています。このようなエントリがある場合は、\fBipsecconf\fR によってエラーが返されます。
+
+.LP
+\fB例 11 \fR近傍検索で IPsec をバイパスできるようにする
+.sp
+.LP
+次の 2 つのエントリは、IPv6 サイトローカルネットワーク \fBfec0:abcd::0/32\fR との間で送受信されるすべての IPv6 トラフィックが sha256 で認証されていることを要求します。2 つ目のエントリによって、近傍発見が正常に動作するようになります。
+
+.sp
+.in +2
+.nf
+{raddr fec0:abcd::0/32} ipsec { auth_algs sha256 }
+{raddr fec0:abcd::0/32 ulp ipv6-icmp type 133-137
+   dir both } pass { }
+.fi
+.in -2
+
+.LP
+\fB例 12 \fR「or」を使用する
+.sp
+.LP
+次のエントリは、リモートマシン spiderweb からの、AES または Blowfish アルゴリズムを使用している IPsec トラフィックを許可します。これはまた、特定の状況で、spiderweb からの暗号化されていないトラフィックも許可します。
+
+.sp
+.in +2
+.nf
+{raddr spiderweb} ipsec {encr_auth_algs sha256 encr_algs aes} 
+        or ipsec {encr_algs blowfish} or pass {}
+.fi
+.in -2
+
+.sp
+.LP
+このシステムから開始された発信トラフィックの場合は、最初のパケットによって、カーネルから鍵管理デーモン (\fBin.iked\fR(1M) または \fBin.ikev2d\fR(1M)) への AQCUIRE メッセージの送信がトリガーされます。
+
+.sp
+.LP
+ACQUIRE には両方のアルゴリズムの組み合わせが含まれているため、ピアシステムは受け入れ可能なものを選択し、IPsec SA が追加されます。トラフィックは、これらの SA を使用します。
+
+.sp
+.LP
+インバウンドトラフィックの場合、IPsec で保護されたパケットは、受信側のシステム上の SA がそのパケットを復号化することを要求します。ラッチをサポートするプロトコル (TCP など) の場合、SA を使用する最初のパケットは、復号化されたあとにポリシーに対してチェックされ、次にそのポリシーがラッチされます。ラッチしないプロトコル (UDP など) の場合、パケットは常に、インバウンドポリシーに対してチェックされます。
+
+.sp
+.LP
+上の例には、3 番目のアクション「pass」が含まれています。インバウンドトラフィックの場合、このシステムは spiderweb からの IPsec パケットまたは保護されていないパケットを受け入れます。
+
+.sp
+.LP
+このシステムは、応答時に、どの IPsec アルゴリズム (存在する場合) を使用するかを決定する必要があります。この応答では、一致する SA がすでに SADB 内に存在する場合、それが使用されます。インバウンドパケットが IPsec で保護された場合は、SA を生成するための IKE 交換が存在している必要があります。IPsec SA はペアで (インバウンドとアウトバウンドが 1 つずつ) 追加されるため、すでに所定の位置に SA が存在しているべきです。アウトバウンドパケットは IPsec で保護されます。
+
+.sp
+.LP
+逆に、所定の位置に SA が存在しない場合、そのパケットは保護されずに送信されます。ここでは、パケットのラッチが重要な役割を果たしている点を理解することが重要です。
+
+.sp
+.LP
+アクションとして「pass」を使用するポリシーエントリは、システムで IPsec (使用可能な場合) を使用できるようにするための有効な移行ツールです。アクションとして「pass」を使用している規則は慎重に記述するようにしてください。 
+
+.LP
+\fB例 13 \fRSolaris 9 と下位互換になるようにトンネルを構成する
+.sp
+.LP
+次の例は、\fBifconfig\fR(1M) の「\fBencr_algs aes encr_auth_algs sha1\fR」と同等です。
+
+.sp
+.in +2
+.nf
+{tunnel ip.tun0 negotiate transport} ipsec
+                  {encr_algs aes encr_auth_algs sha1}
+.fi
+.in -2
+
+.LP
+\fB例 14 \fR割り当てられたアドレスで VPN クライアントへのトンネルを構成する
+.sp
+.LP
+次の例は、クライアントのデフォルトルートが「内部」に向かうような、独自のトポロジを持つ別個の「内部」ネットワークを前提としています。
+
+.sp
+.in +2
+.nf
+# Unlike route(1m), the default route has to be spelled-out.
+{tunnel ip.tun0 negotiate tunnel raddr client-inside/32
+laddr 0.0.0.0/0} ipsec {encr_algs aes encr_auth_algs sha256}
+.fi
+.in -2
+
+.LP
+\fB例 15 \fR2 つのトンネル化サブネットと 3 つ目のサブネット間のトランジット VPN ルーター
+.sp
+.LP
+次の例は、2 つのトンネル化サブネットとオンリンクである 3 つ目のサブネット間で経路指定する VPN ルーター用の構成を指定します。リモートサイト A、リモートサイト B、およびローカルサイト C にそれぞれ \fB/24\fR アドレスが割り当てられているとします。
+
+.sp
+.in +2
+.nf
+# ip.tun0 between me (C) and remote-site A.
+# Cover remote-site A to remote-side B.
+{tunnel ip.tun0 negotiate tunnel
+    raddr A-prefix/24 laddr B-prefix/24} ipsec
+     {encr_algs aes encr_auth_algs sha256}
+
+# Cover remote-site A traffic to my subnet.
+{tunnel ip.tun0 negotiate tunnel
+    raddr A-prefix/24 laddr C-prefix/24}
+    ipsec {encr_algs aes encr_auth_algs sha256}
+
+# ip.tun1 between me (C) and remote-site B.
+# Cover remote-site B to remote-site A.
+{tunnel ip.tun1 negotiate tunnel
+    raddr B-prefix/24 laddr A-prefix/24} ipsec
+    {encr_algs camellia encr_auth_algs sha256}
+
+# Cover remote-site B traffic to my subnet.
+{tunnel ip.tun1 negotiate tunnel
+    raddr B-prefix/24 laddr C-prefix/24} ipsec
+    {encr_algs camellia encr_auth_algs sha256}
+.fi
+.in -2
+
+.LP
+\fB例 16 \fR複合モード暗号を使用する
+.sp
+.LP
+使用されるパラメータは、ほかの encr_algs の値と同じです。どちらの例でも、アルゴリズムトークン内の数値は Integrity Check Value (ICV) の長さを示します。\fBipsecalgs\fR(1M) を参照してください。
+
+.sp
+.in +2
+.nf
+# simple example using GCM in transport mode
+{laddr 192.168.99.2 raddr 192.168.99.3} ipsec
+    {encr_algs aes-gcm sa shared}
+# simple example using CCM mode and 128 bit keys
+{laddr 192.168.99.100 raddr 192.168.99.200} ipsec
+    {encr_algs aes-ccm(128) sa shared}
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 17 \fRAES GMAC を使用する
+.sp
+.LP
+AES GMAC アルゴリズムは、メッセージ認証を提供するハッシュアルゴリズムです。Integrity Check Vector (ICV) が計算され、認証済みパケットの一部として転送されます。
+
+.sp
+.LP
+AES GMAC アルゴリズムは ESP モードで使用でき、その場合はパケットデータと ESP ヘッダーが認証されます。IPsec ESP とともに使用する場合、AES GMAC は暗号化を提供しないにもかかわらず暗号化アルゴリズムとしてしか指定できません。
+
+.sp
+.in +2
+.nf
+# \fBsimple example using AES GMAC and 128 bit keys for ESP\fR
+\fB{laddr 192.168.99.100 raddr 192.168.99.200} ipsec\fR
+    \fB{encr_algs aes-none-gmac(128) sa shared}\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+次の例は、前述の例と似ていますが、無効です。
+
+.sp
+.in +2
+.nf
+{laddr 192.168.99.100 raddr 192.168.99.200} ipsec
+    {encr_algs null encr_auth_algs aes-gmac(128) sa shared}
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBaes-none-gmac\fR アルゴリズムを ESP とともに使用する場合は、省略可能な引数として鍵長を指定できます。サポートされている鍵長は、\fBipsecalgs\fR(1M) コマンドを使用して表示できます。
+
+.sp
+.LP
+AES GMAC アルゴリズムは AH モードで使用でき、その場合は IP ヘッダーを含むパケット全体が認証されます。IPsec AH とともに使用する場合、AES GMAC は認証アルゴリズムとしてのみ指定できます。
+
+.sp
+.in +2
+.nf
+# \fBsimple example using AES GMAC and 128 bit keys for AH\fR
+\fB{laddr 192.168.99.100 raddr 192.168.99.200} ipsec\fR
+    \fB{auth_algs aes-gmac128 sa shared}\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+AH とともに使用する場合は、個々の鍵長に固有の DOI 番号があるため、鍵長を引数として指定する必要はありません。
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/run/ipsecpolicy.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBipsecconf\fR コマンドによって管理する、システムに現在構成されている IPsec ポリシーのキャッシュ。このファイルを編集しないでください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ipsecinit.conf\fR\fR
+.ad
+.sp .6
+.RS 4n
+システム再起動時に \fBpolicy\fR \fBsmf\fR(5) サービスによってインストールされる IPsec ポリシーが含まれるファイル。詳細は、「\fB注意事項\fR」を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/inet/ipsecinit.sample\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBipseconf\fR のサンプル入力ファイル。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBauths\fR(1), \fBprofiles\fR(1), \fBsvcprop\fR(1), \fBsvcs\fR(1), \fBin.iked\fR(1M), \fBinit\fR(1M), \fBifconfig\fR(1M), \fBipsecalgs\fR(1M), \fBipseckey\fR(1M), \fBnetcfg\fR(1M), \fBsvcadm\fR(1M), \fBsvccfg\fR(1M), \fBgethostbyname\fR(3NSL), \fBaccept\fR(3SOCKET), \fBconnect\fR(3SOCKET), \fBgethostbyname\fR(3XNET), \fBgetnetbyname\fR(3XNET), \fBgetprotobyname\fR(3XNET), \fBgetservbyname\fR(3XNET), \fBgetaddrinfo\fR(3SOCKET), \fBsocket\fR(3SOCKET), \fBike.config\fR(4), \fBnsswitch.conf\fR(4), \fBprof_attr\fR(4), \fBuser_attr\fR(4), \fBattributes\fR(5), \fBrbac\fR(5), \fBsmf\fR(5), \fBipsecah\fR(7P), \fBipsecesp\fR(7P), \fBpf_key\fR(7P)
+.sp
+.LP
+Glenn, R. および Kent, S.『\fIRFC 2410, The NULL Encryption Algorithm and Its Use With IPsec\fR』。The Internet Society。1998 年。
+.sp
+.LP
+Kent, S. および Atkinson, R.『\fIRFC 2402, IP Authentication Header\fR』。The Internet Society。1998 年。
+.sp
+.LP
+Kent, S. および Atkinson, R.『\fIRFC 2406, IP Encapsulating Security Payload (ESP)\fR』。The Internet Society。1998 年。
+.sp
+.LP
+Madsen, C. および Glenn, R.『\fIRFC 2403, The Use of HMAC-MD5-96 within ESP and AH\fR』。The Internet Society。1998 年。
+.sp
+.LP
+Madsen, C. および Glenn, R.『\fIRFC 2404, The Use of HMAC-SHA-1-96 within ESP and AH\fR』。The Internet Society。1998 年。
+.sp
+.LP
+Madsen, C. および Doraswamy, N.『\fIRFC 2405, The ESP DES-CBC Cipher Algorithm With Explicit IV\fR』。The Internet Society。1998 年。
+.sp
+.LP
+Pereira, R. および Adams, R.『\fIRFC 2451, The ESP CBC-Mode Cipher Algorithms\fR』。The Internet Society。1998 年。
+.sp
+.LP
+Frankel, S. および Kelly, R. Glenn、『\fIThe AES Cipher Algorithm and Its Use With IPsec\fR』。2001 年。
+.sp
+.LP
+Kelly, S. および Frankel, S.『\fIRFC 4868, Using HMAC-SHA-256, HMAC-SHA-384, and HMAC-SHA-512 with IPsec\fR』、The Internet Society。2007 年。
+.sp
+.LP
+Kato, A.、Moriai, S.、および Kanda, M.『\fIRFC 4312, The Camellia Cipher Algorithm and Its Use With IPsec\fR』、The Internet Society。2005 年。
+.sp
+.LP
+McGrew, D. および Viega, J.『\fIRFC 4543, The Use of Galois Message Authentication Code (GMAC) in IPsec ESP and AH\fR』。The Internet Society。2006 年。
+.sp
+.LP
+Frankel, S. および Herbert, H.『\fIRFC 3566, The AES-XCBC-MAC-96 Algorithm and Its Use With IPsec\fR』。The Internet Society。2003 年。 
+.SH 診断
+.sp
+.ne 2
+.mk
+.na
+\fBBad “string” on line \fIN\fR.\fR
+.ad
+.br
+.na
+\fBDuplicate “string” on line \fIN\fR.\fR
+.ad
+.sp .6
+.RS 4n
+\fIstring\fR は、パターンまたはプロパティーに含まれるいずれかの名前を指します。不正な文字列とは、引数の形式が不正であることを示します。重複する文字列とは、同じタイプの引数が複数存在すること (たとえば、複数の発信元アドレス引数など) を示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBInterface name already selected\fR
+.ad
+.sp .6
+.RS 4n
+インタフェースに関して \fB-i\fR \fIname\fR と \fIname\fR,\fIindex\fR が二重に使用されています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBError before or at line \fIN\fR.\fR
+.ad
+.sp .6
+.RS 4n
+\fIN\fR 行目またはその前の解析エラーを示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBNon-existent index\fR
+.ad
+.sp .6
+.RS 4n
+削除用の \fIindex\fR が有効なインデックスでない場合に報告されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBspd_msg return: File exists\fR
+.ad
+.sp .6
+.RS 4n
+この新しいエントリのトラフィックと一致するポリシーエントリがすでに存在する場合に報告されます。 
+.RE
+
+.SH 注意事項
+.sp
+.LP
+IPsec の手動鍵は、サービス管理機能 \fBsmf\fR(5) によって管理されます。次に示すサービスは、IPsec のコンポーネントを管理します。これらのサービスは、次のように提供されます。
+.sp
+.in +2
+.nf
+svc:/network/ipsec/policy:default (enabled)
+svc:/network/ipsec/ipsecalgs:default (enabled)
+svc:/network/ipsec/manual-key:default (disabled)
+svc:/network/ipsec/ike:default (disabled)
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+manual-key サービスは無効な状態で提供されます。システム管理者は、そのサービスを有効にする前に \fBipseckey\fR(1M) の説明に従って手動の IPsec セキュリティーアソシエーション (SA) を作成する必要があります。
+.sp
+.LP
+policy サービスは有効な状態で提供されますが、構成ファイルがないため、起動時の状態としてはパケットが IPsec で保護されません。このマニュアルページの説明に従って構成ファイル \fB/etc/inet/ipsecinit.conf\fR を作成し、サービスをリフレッシュすると (\fBsvcadm refresh\fR、後述の説明を参照)、構成ファイルに含まれるポリシーが適用されます。このファイルにエラーがある場合は、サービスが保守モードに入ります。
+.sp
+.LP
+無効な状態で提供されるサービスは、有効にする前にシステム管理者がそれらの構成ファイルを作成する必要があるため、そのような方法で提供されます。\fBike\fR サービスについては、\fBike.config\fR(4) を参照してください。
+.sp
+.LP
+\fBipsecalgs\fR サービスについては、\fBipsecalgs\fR(1M) を参照してください。
+.sp
+.LP
+正しい管理手順としては、各サービスの構成ファイルを作成してから、\fBsvcadm\fR(1M) を使用して各サービスを有効にします。
+.sp
+.LP
+構成を変更する必要がある場合は、構成ファイルを編集してから、次のようにしてサービスをリフレッシュします。
+.sp
+.in +2
+.nf
+example# \fBsvcadm refresh policy\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBsmf\fR(5) フレームワークは、サービス固有のログファイルにエラーを記録します。\fBlogfile\fR プロパティーを調べるには、次のいずれかのコマンドを使用します。
+.sp
+.in +2
+.nf
+example# \fBsvcs -l policy\fR
+example# \fBsvcprop policy\fR
+example# \fBsvccfg -s policy listprop\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBpolicy\fR サービスには次のプロパティーが定義されています。
+.sp
+.in +2
+.nf
+config/config_file
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+このプロパティーは、次の承認を割り当てられているユーザーが \fBsvccfg\fR(1M) を使用して変更できます。
+.sp
+.in +2
+.nf
+solaris.smf.value.ipsec
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBauths\fR(1)、\fBuser_attr\fR(4)、\fBrbac\fR(5) を参照してください。
+.sp
+.LP
+新しいプロパティーを有効にするには、\fBsvcadm\fR(1M) を使用してこのサービスをリフレッシュする必要があります。変更不可能な一般プロパティーは、\fBsvcprop\fR(1) コマンドを使用して表示できます。
+.sp
+.in +2
+.nf
+# \fBsvccfg -s ipsec/policy setprop config/config_file = /new/config_file\fR
+# \fBsvcadm refresh policy\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有効化、無効化、リフレッシュ、再起動要求など、このサービスに対する管理操作は、\fBsvcadm\fR(1M) を使用して実行できます。次に示す承認を割り当てられたユーザーは、これらの操作を実行できます。
+.sp
+.in +2
+.nf
+solaris.smf.manage.ipsec
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+サービスステータスを照会するには、\fBsvcs\fR(1) コマンドを使用します。
+.sp
+.LP
+\fBipsecconf\fR コマンドは、\fBpolicy\fR \fBsmf\fR(5) サービスによって管理されるように設計されています。\fBipsecconf\fR コマンドはコマンド行から実行できますが、これは推奨されていません。\fBipsecconf\fR コマンドをコマンド行から実行する場合は、まず \fBpolicy\fR \fBsmf\fR(5) サービスを無効にするようにしてください。\fBsvcadm\fR(1M) を参照してください。

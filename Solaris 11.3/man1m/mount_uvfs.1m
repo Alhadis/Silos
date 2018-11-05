@@ -1,0 +1,165 @@
+'\" te
+.\" Copyright (c) 2014, Oracle and/or its affiliates. All rights reserved.
+.TH mount_uvfs 1M "25 Feb 2014" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+mount_uvfs \- mount a UVFS file system
+.SH SYNOPSIS
+.LP
+.nf
+\fBmount\fR [\fB-F uvfs\fR] [\fBgeneric_options\fR] [\fB-o specific_options\fR] [\fB-O\fR] \fIresource\fR
+.fi
+
+.LP
+.nf
+\fBmount\fR [\fB-F uvfs\fR] [\fBgeneric_options\fR] [\fB-o specific_options\fR] [\fB-O\fR] \fImount_point\fR
+.fi
+
+.LP
+.nf
+\fBmount\fR [\fB-F uvfs\fR] [\fBgeneric_options\fR] [\fB-o specific_options\fR]
+          [\fB-O\fR] \fBresource mount_point\fR
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBmount\fR utility attaches a named resource to the file system hierarchy at the pathname location \fImount_point\fR, which must already exist. If \fImount_point\fR has any contents prior to the mount operation, the contents remain hidden until the resource is once again unmounted.
+.sp
+.LP
+UVFS is a pseudo file system that sends file system requests, such as read and write system calls to a user-level file system daemon. These requests are routed to the daemon by using \fBlibuvfs\fR.
+.sp
+.LP
+Oracle Solaris provides an implementation of \fBlibfuse\fR that is layered upon \fBlibuvfs\fR and supports the FUSE API so that you can mount open source file systems.
+.sp
+.LP
+An example of a user-level file system is one written to the libfuse API, such as the Oracle database file system (DBFS).
+.SH OPTIONS
+.sp
+.LP
+See \fBmount\fR(1M) for the list of supported generic options.
+.sp
+.LP
+You might consider using the following file system specific options by using the \fB-o\fR option with a comma-separated list and no intervening spaces.
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o specific_options\fR\fR
+.ad
+.br
+.na
+\fB\fBallow_other\fR | \fBnoallow_other\fR\fR
+.ad
+.sp .6
+.RS 4n
+By default, Oracle's DBFS file system does not allow access by other users. If the \fBallow_other\fR option is specified, users are granted standard UNIX permissions.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBforcedirectio\fR | \fBnoforcedirectio\fR\fR
+.ad
+.sp .6
+.RS 4n
+If the file system is mounted using \fBforcedirectio\fR, data is transferred directly between the client and server, with no buffering on the client. If the file system is mounted using \fBnoforcedirectio\fR, data is buffered on the client. Mounting a file system with \fBforcedirectio\fR might benefit the performance of large sequential data transfers. The default behavior is \fBnoforcedirectio\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBintr\fR | \fBnointr\fR\fR
+.ad
+.sp .6
+.RS 4n
+Allows or disallows keyboard interrupts to kill a process that is hung while waiting for a response from the driver. The default is \fBintr\fR, which makes it possible for clients to interrupt applications that can be waiting for a driver.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmax_dthreads\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the maximum number of threads to be run in the daemon that is used for servicing calls. The default value is 16.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmax_read\fR\fR
+.ad
+.br
+.na
+\fB\fBmax_write\fR\fR
+.ad
+.sp .6
+.RS 4n
+Sets the maximum number of bytes that are passed to or from the daemon for writes and reads, not counting the overhead of asking for the write or read.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmnt_timeout\fR\fR
+.ad
+.sp .6
+.RS 4n
+If the value specified in \fBmnt_timeout\fR is greater than the default timeout (30s), then the specified value will be used. Otherwise, the default value will be used.
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRMounting a DBFS File System
+.sp
+.LP
+You can mount a DBFS file system, but you will need to provide a small shell script that sets up the DBFS environment, such as setting a password, and so on. See the example below.
+
+.sp
+.in +2
+.nf
+# \fBmount -F uvfs /script-path /mount-point\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Sample shell script to set up DBFS envrionment:
+
+.sp
+.in +2
+.nf
+#! /bin/sh
+
+export ORACLE_HOME=/dbfs_path
+export ORACLE_TNS_ADMIN=/dir
+
+exec dbfs_client user@instance <<EOF
+password
+EOF
+.fi
+.in -2
+
+.SH FILES
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/mnttab\fR\fR
+.ad
+.RS 15n
+.rt  
+Table of mounted file systems
+.RE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBmount\fR(1M), \fBmountall\fR(1M), \fBmount\fR(2), \fBstat\fR(2), \fBtime\fR(2), \fBmnttab\fR(4), \fBvfstab\fR(4), \fBattributes\fR(5), \fBenviron\fR(5), \fBuvfs\fR(7FS)

@@ -1,0 +1,260 @@
+'\" te
+.\"  Copyright 1989 AT&T All Rights Reserved
+.\" Copyright (c) 1998, 2011, Oracle and/or its affiliates.All rights reserved.
+.TH automountd 1M "2010 年 8 月 23 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+automountd \- autofs 挂载/卸载守护进程
+.SH 用法概要
+.LP
+.nf
+\fBautomountd\fR [\fB-Tvn\fR] [\fB-D\fR \fIname=value\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBautomountd\fR 是一个 \fBRPC\fR 服务器，对来自 \fBautofs\fR 文件系统的文件系统挂载和卸载请求进行响应。它使用本地文件或名称服务映射来定位要挂载的文件系统。这些映射是由 \fBautomount\fR(1M) 命令描述的。
+.sp
+.LP
+如果 \fBautomount\fR 在本地或分布式自动挂载映射中发现了任何非普通条目并且守护进程已不在运行，则 \fBautomount\fR(1M) 将自动调用 \fBautomountd\fR 守护进程。如果需要执行 NFS 挂载，则 \fBautomountd \fR 将启用 \fBsvc:/network/nfs/nlockmgr\fR 服务 (\fBlockd\fR(1M)) 和 \fB svc:/network/nfs/status\fR 服务 (\fBstatd\fR(1M))。
+.SS "SMF 管理"
+.sp
+.LP
+\fBautomountd\fR 服务由服务管理工具 \fBsmf\fR(5) 管理，其服务标识符为：
+.sp
+.in +2
+.nf
+svc:/system/filesystem/autofs
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以使用 \fBsvcadm\fR(1M) 来对此服务执行管理操作（如启用、禁用或请求重新启动）。可以使用 \fBsvcs\fR(1) 来查询服务的状态。如果该服务被禁用，它将由 \fBautomount\fR(1M) 来启用，除非它的 \fBapplication/auto_enable\fR 属性设置为 \fBfalse\fR。
+.sp
+.LP
+\fBautomountd\fR 的参数的值存储在 SMF 中并且使用 \fBsharectl\fR(1M) 进行处理。下面是支持的参数。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBautomountd_verbose\fR=\fBTRUE\fR | \fB FALSE\fR\fR
+.ad
+.sp .6
+.RS 4n
+详细模式。导致状态消息被记录到以下位置：
+.sp
+.in +2
+.nf
+/var/svc/log/system-filesystem-autofs:default.log
+.fi
+.in -2
+.sp
+
+请参见 \fBsmf\fR(5)。缺省值为 \fBFALSE\fR。等效于 \fB-v\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnobrowse\fR=\fBON\fR | \fB OFF\fR\fR
+.ad
+.sp .6
+.RS 4n
+允许或禁止浏览查找所有 \fBautofs\fR 挂载点。缺省值为 \fBOFF\fR。等效于 \fB-n\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtrace\fR=\fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+扩展每个 RPC 调用并将其记录到以下位置：
+.sp
+.in +2
+.nf
+/var/svc/log/system-filesystem-autofs:default.log
+.fi
+.in -2
+.sp
+
+请参见 \fBsmf\fR(5)。缺省值 \fB0\fR 将关闭这类跟踪。从 \fB1\fR 开始，值越高，跟踪输出的详细级别越高。此属性等效于 \fB-T\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBenvironment\fR=\fIname\fR=\fI value\fR\fR
+.ad
+.sp .6
+.RS 4n
+环境变量。您可以使用逗号分隔符指定多个 \fIname \fR=\fIvalue\fR 对。如果某个名称有多个值，请使用双正斜杠指示此情况。请参见\fB\fR“示例”部分。未提供环境变量设置。此属性等效于 \fB-D\fR 选项。
+.RE
+
+.sp
+.LP
+可以使用 \fBsharectl\fR(1M) 命令更改以上所有参数。
+.SH 选项
+.sp
+.LP
+支持以下选项： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR \fIname=value\fR\fR
+.ad
+.RS 17n
+.rt  
+将 \fIvalue\fR 赋予指定的 \fBautomount\fR 映射替换变量。无法使用这些赋值来替换主映射 \fBauto_master\fR 中的变量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.RS 17n
+.rt  
+禁止浏览查找所有 \fBautofs\fR 挂载点。在本地主机上，此选项将覆盖 \fB-browse\fR \fBautofs\fR 映射选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR\fR
+.ad
+.RS 17n
+.rt  
+跟踪。扩展每个 \fBRPC\fR 调用并将其显示在标准输出上。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 17n
+.rt  
+详细模式。将状态消息记录到控制台。
+.RE
+
+.SH 用法
+.sp
+.LP
+有关 \fBautomountd\fR 遇到大于或等于 2 GB（2^31 字节）文件时行为的说明，请参见 \fBlargefile\fR(5)。
+.SH 示例
+.LP
+\fB示例 1 \fR设置详细模式
+.sp
+.LP
+以下命令将开启详细模式，导致状态消息被记录到在上文中的“SMF 管理”中指定的位置。有关在此示例和下面的示例中指定的属性的说明，请参见那一节。
+
+.sp
+.in +2
+.nf
+# \fBsharectl set -p automountd_verbose=true autofs\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR允许浏览查找挂载点
+.sp
+.LP
+以下命令将允许浏览查找所有 \fBautofs\fR 挂载点。
+
+.sp
+.in +2
+.nf
+# \fBsharectl set -p nobrowse=off autofs\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR指定和显示环境变量
+.sp
+.LP
+以下命令设置并显示名为 \fBDAY\fR 的环境变量的值。
+
+.sp
+.in +2
+.nf
+# \fBsharectl set -p environment=DAY=TUES autofs\fR
+% \fBsharectl get -p environment autofs\fR
+environment=DAY=TUES
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下命令为环境变量设置多个参数。接下来的命令显示结果。
+
+.sp
+.in +2
+.nf
+# \fBsharectl set -p environment=DAY=TUES,TIME=NOON autofs\fR
+% \fBsharectl get -p environment autofs\fR
+environment=DAY=TUES,TIME=NOON
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下命令为分配给环境变量的名称设置多个值。接下来的命令显示结果。
+
+.sp
+.in +2
+.nf
+# \fBsharectl set -p environment=DAY=MON\e\e,TUE,TIME=NOON autofs\fR
+% \fBsharectl get -p environment autofs\fR
+environment=DAY=MON\e,TUE,TIME=NOON
+.fi
+.in -2
+.sp
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/auto_master\fR\fR
+.ad
+.RS 20n
+.rt  
+自动挂载程序的主映射。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBsvcs\fR(1)、\fBautomount\fR(1M)、\fBsharectl\fR(1M)、\fBsvcadm\fR(1M)、\fBattributes\fR(5)、\fBlargefile\fR(5)、\fBsmf\fR(5)

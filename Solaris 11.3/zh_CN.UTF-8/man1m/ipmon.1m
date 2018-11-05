@@ -1,0 +1,372 @@
+'\" te
+.\" To view license terms, attribution, and copyright for IP Filter, the default path is /usr/lib/ipf/IPFILTER.LICENCE.If the Solaris operating environment has been installed anywhere other than the default, modify the given path to access the file at the installed location.
+.\" Copyright (c) 2008, 2012, Oracle and/or its affiliates.All rights reserved.
+.TH ipmon 1M "2012 年 5 月 15 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+ipmon \- 监视 /dev/ipl 中记录的包
+.SH 用法概要
+.LP
+.nf
+\fBipmon\fR [\fB-abDFhnpstvxX\fR] [\fB-N\fR \fIdevice\fR] [ [o] [NSI]] [\fB-O\fR [NSI]] 
+     [\fB-P\fR \fIpidfile\fR] [\fB-S\fR \fIdevice\fR] [\fB-f\fR \fIdevice\fR] [\fIfilename\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBipmon\fR 命令属于与 Solaris IP 过滤器功能关联的一套命令。请参见 \fBipfilter\fR(5)。
+.sp
+.LP
+\fBipmon\fR 命令可打开 \fB/dev/ipl\fR 进行读取，等待来自包过滤器的要保存数据。从设备读取的二进制数据以用户可读的格式重新输出。但是，不会将 IP 地址映射回主机名，也不会将端口映射回服务名称。输出转至标准输出（缺省设置）或者文件名（如果在命令行上指定了文件名）。如果使用 \fB-s\fR 选项，则会将输出发送至 \fBsyslogd\fR(1M)。对于通过 \fBsyslog\fR 发送的消息，会从消息中删除日、月、年信息，但是仍包括时间（包括微秒），如日志中所记录的信息。
+.sp
+.LP
+\fBipmon\fR 生成的消息由空格分隔的字段组成。所有消息通用的字段包括：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+接收包的日期。将消息发送至 \fBsyslog\fR 时隐藏此字段。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+接收包的时间。其格式为 \fIHH\fR:\fIMM\fR:\fISS\fR.\fIF\fR，表示小时、分、秒和在一秒中的比例（可以用多位数表示）。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+处理包的接口名称，例如 \fBib1\fR。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+规则的组和规则编号，例如 \fB@0:17\fR。可以使用 \fBipfstat\fR \fB-in\fR（对于输入规则）或 \fBipfstat\fR \fB-out\fR（对于输出规则）进行查看。请参见 \fBipfstat\fR(1M)。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+操作：\fBp\fR（已通过）、\fBb\fR（已阻塞）、\fBs\fR（短包）、\fBn\fR（不与任何规则匹配）或 \fBL\fR（日志规则）。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+地址。这实际上是三个字段：源地址和端口（使用逗号分隔）、符号 -> 以及目标地址和端口。例如：\fB209.53.17.22,80 -> 198.73.220.17,1722\fR。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBPR\fR 后跟协议名称或编号，例如 \fBPR tcp\fR。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBlen\fR 后跟包的标头长度和总长度，例如 \fBlen 20 40\fR。
+.RE
+.sp
+.LP
+如果包是 TCP 包，那么会有一个额外字段，以连字符开始，后跟与设置的标志对应的字母。有关字母及其标志的列表，请参见 \fBipf.conf\fR(4)。
+.sp
+.LP
+如果包是 ICMP 包，那么末尾会有两个字段，第一个始终为 \fBicmp\fR，后一个为 ICMP 消息和子消息类型，使用斜杠分隔。例如，\fBicmp 3/3\fR 指端口不可访问消息。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+打开所有设备日志文件读取日志条目。所有条目都显示到相同的输出设备（stderr 或 syslog）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.sp .6
+.RS 4n
+对于记录包主体的规则，生成表示标头后的包内容的十六进制输出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-D\fR\fR
+.ad
+.sp .6
+.RS 4n
+导致 \fBipmon\fR 将自身转变为守护进程。\fBipmon\fR 将自身转变成孤立进程不需要使用子 shell 或后台处理，因而其可以无限期运行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIdevice\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定其他设备/文件来读取常规 IP 过滤器日志记录的日志信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fR
+.ad
+.sp .6
+.RS 4n
+刷新当前的包日志缓冲区。显示刷新的字节数，即使结果为零也显示。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-h\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示用法信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR\fR
+.ad
+.sp .6
+.RS 4n
+在可能的情况下，将 IP 地址和端口号映射回主机名和服务名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-N\fR \fIdevice\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置从 \fIdevice\fR 读取或向其输出 NAT 日志记录所要打开的日志文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIletter\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定实际从哪些日志文件读取数据。\fBN\fR，NAT 日志文件；\fBS\fR，状态日志文件；\fBI\fR，常规 IP 过滤器日志文件。\fB-a\fR 选项等效于使用 \fB-o\fR \fBNSI\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-O\fR \fIletter\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定不希望从中读取数据的日志文件。此选项最常与 \fB-a\fR 结合使用。可用作参数的字母与用于 \fB-o\fR 的相同。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+导致日志消息中的端口号始终输出为编号，并且从不尝试对其进行查找。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIpidfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+将 \fBipmon\fR 进程的 PD 写入文件。缺省情况下该文件是 \fB/var/run/ipmon.pid\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.sp .6
+.RS 4n
+读取的包信息将通过 \fBsyslogd\fR 发送，而不是保存到文件。编译和安装时的缺省工具为 \fBlocal0\fR。使用以下级别：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLOG_INFO\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fBlog\fR 关键字（而非 \fBpass\fR 或 \fBblock\fR）作为操作的已记录的包。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLOG_NOTICE\fR\fR
+.ad
+.sp .6
+.RS 4n
+已记录且已通过的包。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLOG_WARNING\fR\fR
+.ad
+.sp .6
+.RS 4n
+已记录且已阻塞的包。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLOG_ERR\fR\fR
+.ad
+.sp .6
+.RS 4n
+已记录且可视为“短包”的包。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR \fIdevice\fR\fR
+.ad
+.sp .6
+.RS 4n
+设置从 \fIdevice\fR 读取或向其输出状态日志记录所要打开的日志文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+按照 \fBtail\fR(1) 的执行方式读取输入文件/设备。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示 TCP \fBwindow\fR、\fBack\fR 和 \fBsequence\fR 字段
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.sp .6
+.RS 4n
+以十六进制显示包数据。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-X\fR\fR
+.ad
+.sp .6
+.RS 4n
+以十六进制显示日志标头记录数据。
+.RE
+
+.SH 文件
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/dev/ipl\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/dev/ipnat\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB/dev/ipstate\fR
+.RE
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性network/ipfilter
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBipf\fR(1M)、\fBipfstat\fR(1M)、\fBipnat\fR(1M)、\fBattributes\fR(5)、\fBipfilter\fR(5)
+.sp
+.LP
+\fI《Managing IP Quality of Service in Oracle Solaris 11.3》\fR
+.SH 诊断
+.sp
+.LP
+\fBipmon\fR 要求读取的数据符合其保存数据时的方式，如果因在记录的数据中检测到异常而未符合某个声明，则 ipmon 会中止。

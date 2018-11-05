@@ -1,0 +1,110 @@
+'\" te
+.\" Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
+.TH pfexec 1 "15 Mar 2012" "SunOS 5.11" "User Commands"
+.SH NAME
+pfexec, pfbash, pfcsh, pfksh, pfsh, pftcsh, pfzsh \- execute a command in a profile
+.SH SYNOPSIS
+.LP
+.nf
+\fB/usr/bin/pfexec\fR \fIcommand\fR
+.fi
+
+.LP
+.nf
+\fB/usr/bin/pfexec\fR \fB-P\fR \fIprivspec\fR \fIcommand\fR [ \fIarg\fR ]...
+.fi
+
+.LP
+.nf
+\fB/usr/bin/pfsh\fR [ \fIoptions\fR ] [ \fIargument\fR ]...
+.fi
+
+.LP
+.nf
+\fB/usr/bin/pfcsh\fR [ \fIoptions\fR ] [ \fIargument\fR ]...
+.fi
+
+.LP
+.nf
+\fB/usr/bin/pfksh\fR [ \fIoptions\fR ] [ \fIargument\fR ]...
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBpfexec\fR program sets the \fBPRIV_PFEXEC\fR process flag and marks the current process as a profile shell. It then executes the specified command. The kernel queries the \fBexec_attr\fR(4) database and executes with the appropriate attributes.
+.sp
+.LP
+Profiles are searched in the order specified in the user's entries in the \fBuser_attr\fR(4) database and \fBpolicy.conf\fR(4). For each user, there are two sets of profiles, an authenticated set, and an unauthenticated set. The user is required to re-authenticate prior to executing commands which match an entry in the\fBexec_attr\fR(4) database corresponding to the authenticated profiles set. If the command is executed from a terminal, the authentication state is cached for the current user and tty, subject to the timeout option set for \fBpam_tty_tickets\fR(5) in the PAM stack \fB/etc/pam.d/pfexec\fR. If there is no current tty, but there is an active X11 session, the user is prompted to authenticate through a zenity dialog. This authentication state is cached for the current user and DISPLAY environment setting. Processes that have been successfully re-authenticated, including those that were implicitly authenticated within the timeout value of the cache, are marked with an additional process flag, \fBPRIV_PFEXEC_AUTH\fR, which exempts child process from subsequent re-authentication. Both the \fBPRIV_PFEXEC\fR and \fBPRIV_PFEXEC_AUTH\fR flags are inherited by child processes unless the real uid is changed. Commands that match the set of unauthenticated profiles do not require re-authentication, but have lower precedence than commands in the set of authenticated profiles. If the same command appears in more than one profile, the profile shell uses the first matching entry.
+.sp
+.LP
+The second form, \fBpfexec\fR \fB-P\fR \fIprivspec\fR, allows a user to obtain the additional privileges awarded to the user's profiles in \fBprof_attr\fR(4). The privileges specification on the commands line is parsed using \fBpriv_str_to_set\fR(3C). The resulting privileges are intersected with the union of the privileges specified using the \fBprivs\fR keyword in \fBprof_attr\fR(4) for all the user's profiles and added to the inheritable set before executing the command.
+.SH USAGE
+.sp
+.LP
+\fBpfexec\fR is used to execute commands with predefined process attributes, such as specific user or group \fBID\fRs.
+.sp
+.LP
+Refer to the \fBsh\fR(1), \fBcsh\fR(1), and \fBksh\fR(1) man pages for complete usage descriptions of the profile shells.
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRObtaining additional user privileges
+.sp
+.in +2
+.nf
+example% \fBpfexec -P all chown user file\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+This command runs \fBchown user file\fR with all privileges assigned to the current user, not necessarily all privileges.
+
+.SH EXIT STATUS
+.sp
+.LP
+The following exit values are returned:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 5n
+.rt  
+Successful completion.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 5n
+.rt  
+An error occurred.
+.RE
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/core-os
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBbash\fR(1), \fBcsh\fR(1), \fBksh\fR(1), \fBksh88\fR(1), \fBprofiles\fR(1), \fBsh\fR(1), \fBtcsh\fR(1), \fBzsh\fR(1), \fBexec_attr\fR(4), \fBprof_attr\fR(4), \fBuser_attr\fR(4), \fBattributes\fR(5)

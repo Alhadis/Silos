@@ -1,0 +1,175 @@
+'\" te
+.\" Copyright (c) 2004, 2015, Oracle and/or its affiliates.All rights reserved.
+.TH rcapd 1M "2015 年 3 月 20 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+rcapd \- 资源上限执行守护进程
+.SH 用法概要
+.LP
+.nf
+\fBrcapd\fR [\fB-d\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBrcapd\fR 守护进程会对进程集合强制执行资源上限。支持按项目和按区域设置物理内存上限。有关项目信息，请参见 \fBproject\fR(4)。有关区域信息，请参见 \fBzones\fR(5)
+.sp
+.LP
+进程集合的驻留集大小 (resident set size, RSS) 超出其上限时，\fBrcapd\fR 会采取操作并减小该集合的 RSS。
+.sp
+.LP
+虚拟内存系统将物理内存分为多个段，这些段称为页面。要将文件中的数据读取到内存，虚拟内存系统会在各个页面中执行读取操作。为减少资源占用，守护进程可以对不常用的页面执行页出操作或将其重新定位到物理内存以外的区域。
+.sp
+.LP
+在 \fBproject\fR 文件中，为其中以下项目属性的值为正值的项目定义上限： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrcap.max-rss\fR\fR
+.ad
+.RS 16n
+.rt  
+项目的成员进程可用的物理内存总量（以字节为单位）
+.RE
+
+.sp
+.LP
+有关项目属性说明，请参见 \fBproject\fR(4)。
+.sp
+.LP
+对于具有一个或多个区域的系统，可使用 \fBrcapadm\fR(1M) 为区域动态设置 \fBrcap.max-rss\fR 值。要对区域内的内存使用量设置持久性上限，可使用 \fBzonecfg\fR(1M)。
+.sp
+.LP
+通过使用 \fBrcapadm\fR(1M) 对 \fBrcapd\fR 进行配置。可以使用 \fBrcapstat\fR(1) 监视该守护进程。通过向 \fBrcapd\fR 发送 \fBSIGHUP\fR（请参见 \fBkill\fR(1)）,或根据配置间隔（请参见 \fBrcapadm\fR(1M)）,将配置更改合并到该守护进程中。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR\fR
+.ad
+.RS 6n
+.rt  
+启用调试模式。消息显示在调用用户的终端上。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR设置驻留集大小上限属性
+.sp
+.LP
+\fB/etc/project\fR 数据库中的以下行将名为 \fBfoo\fR 的项目的 RSS 上限设置为 1073741824 个字节。
+
+.sp
+.in +2
+.nf
+foo:100::foo,root::rcap.max-rss=10737418240
+.fi
+.in -2
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB0\fR
+.ad
+.RS 5n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB1\fR
+.ad
+.RS 5n
+.rt  
+出现错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB2\fR
+.ad
+.RS 5n
+.rt  
+指定的命令行选项无效。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/project\fR\fR
+.ad
+.RS 16n
+.rt  
+项目数据库。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/resource-mgmt/resource-caps
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBrcapstat\fR(1)、\fBsvcs\fR(1)、\fBrcapadm\fR(1M)、\fBzonecfg\fR(1M)、\fBsvcadm\fR(1M)、\fBproject\fR(4)、\fBattributes\fR(5)、\fBsmf\fR(5)、\fBzones\fR(5)
+.sp
+.LP
+《\fI系统管理指南：Solaris 容器-资源管理和 Solaris 区域\fR》中的“使用资源限制守护进程进行物理内存控制”
+.SH 附注
+.sp
+.LP
+如果有任何信号中断了 \fBrcapd\fR，则所有正在运行的扫描将立即停止并且 \fBrcapd\fR 将干净地退出。
+.sp
+.LP
+在强制执行上限之前的一段时间内，集合的 RSS 可超出其上限，即使有足够的可分页内存。可通过使用 \fBrcapadm\fR 缩短 RSS 抽样间隔来缩短该时间段。
+.sp
+.LP
+如果某个集合长时间超出其 rss 上限，则 \fBrcapd\fR 可能会停止对该集合强制执行上限并记录一条消息来建议设置合适的上限。之后，\fBrcapd\fR 可以恢复对该集合强制执行上限。
+.sp
+.LP
+要强制 \fBrcapd\fR 恢复强制执行上限，请为集合设置合适的上限并且/或者查找行为不当的进程并重新启动 \fBrcapd\fR。
+.sp
+.LP
+\fBrcapd\fR 服务由服务管理工具 \fBsmf\fR(5) 管理，其服务标识符为：
+.sp
+.in +2
+.nf
+svc:/system/rcap:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以使用 \fBsvcadm\fR(1M) 来对此服务执行管理操作（如启用、禁用或请求重新启动）。可以使用 \fBsvcs\fR(1) 命令来查询服务的状态。

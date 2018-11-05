@@ -1,0 +1,225 @@
+'\" te
+.\" Copyright (c) 2011, 2015, Oracle and/or its affiliates. All rights             reserved.
+.TH zs_pset 3ZONESTAT "21 May 2015" "SunOS 5.11" "Zones Statistics Library Functions"
+.SH NAME
+zs_pset, zs_pset_list, zs_pset_walk, zs_pset_property, zs_pset_total_time, zs_pset_total_cpus, zs_pset_used_time, zs_pset_used_cpus, zs_pset_used_pct, zs_pset_stolen_all_time, zs_pset_stolen_all_cpus, zs_pset_stolen_all_pct, zs_pset_stolen_time, zs_pset_stolen_cpus, zs_pset_stolen_pct, zs_pset_stolen_zones_time, zs_pset_stolen_zones_cpus, zs_pset_stolen_zones_pct \- libzonestat pset accessor methods
+.SH SYNOPSIS
+.LP
+.nf
+cc [ \fIflag\fR ... ] \fIfile\fR... -lzonestat [ \fIlibary\fR ... ]
+#include <zonestat.h>
+
+int zs_pset_list(zs_usage_t \fIusage\fR, zs_pset_t *\fIpsetlist\fR, int \fInum\fR);
+.fi
+
+.LP
+.nf
+zs_pset_t zs_pset_walk(zs_usage_t \fIusage\fR, zs_pset_t \fIpset\fR);
+.fi
+
+.LP
+.nf
+zs_property_t zs_pset_property(zs_pset_t \fIpset\fR, zs_pset_property_t \fIprop\fR);
+.fi
+
+.LP
+.nf
+void zs_pset_total_time(zs_pset_t \fIpset\fR, timestruc_t *\fIts\fR);
+.fi
+
+.LP
+.nf
+uint64_t zs_pset_total_cpus(zs_pset_t \fIpset\fR);
+.fi
+
+.LP
+.nf
+void zs_pset_used_time(zs_pset_t \fIpset\fR, zs_user_t \fIuser\fR, timestruc_t *\fIts\fR);
+.fi
+
+.LP
+.nf
+uint64_t zs_pset_used_cpus(zs_pset_t \fIpset\fR, zs_user_t \fIuser\fR);
+.fi
+
+.LP
+.nf
+uint_t zs_pset_used_pct(zs_pset_t \fIpset\fR, zs_user_t \fIuser\fR);
+.fi
+
+.LP
+.nf
+void zs_pset_stolen_all_time(zs_pset_t \fIpset\fR, timestruc_t *\fIts\fR);
+.fi
+
+.LP
+.nf
+uint64_t zs_pset_stolen_all_cpus(zs_pset_t \fIpset\fR);
+.fi
+
+.LP
+.nf
+uint_t zs_pset_stolen_all_pct(zs_pset_t \fIpset\fR);
+.fi
+
+.LP
+.nf
+void zs_pset_stolen_time(zs_pset_t \fIpset\fR, timestruc_t *\fIts\fR);
+.fi
+
+.LP
+.nf
+uint64_t zs_pset_stolen_cpus(zs_pset_t \fIpset\fR);
+.fi
+
+.LP
+.nf
+uint_t zs_pset_stolen_pct(zs_pset_t \fIpset\fR);
+.fi
+
+.LP
+.nf
+void zs_pset_stolen_zones_time(zs_pset_t \fIpset\fR, timestruc_t *\fIts\fR);
+.fi
+
+.LP
+.nf
+uint64_t zs_pset_stolen_zones_cpus(zs_pset_t \fIpset\fR);
+.fi
+
+.LP
+.nf
+uint_t zs_pset_stolen_zones_pct(zs_pset_t \fIpset\fR);
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+These functions are used to access the processor sets (\fIpsets\fR) in the usage object. These \fIpsets\fR are the \fIpsets\fR which existed at the time when the \fBzs_usage_read\fR was called, and returned the usage object.
+.sp
+.LP
+By default, the system has a single processor set which contains all cpus. Processor sets can be created by resource pools (\fBpooladm\fR(1M)), the \fBpsrset\fR(1M) command, and by the \fBzonecfg\fR(1M) dedicated cpu resource.
+.sp
+.LP
+The \fBzs_pset_list()\fR function returns the number of \fBzs_pset_t\fR objects contained within usage. If \fIpsetlist\fR is non-NULL, the \fIpsetlist\fR array will be filled with up to num \fBzs_pset_t\fR objects. The \fBpsetlist\fR array must be first allocated by the caller. The first \fIpset\fR returned in the array will always be the default \fIpset\fR. The remaining \fIpset\fR will be in alphanumeric ordered by \fIpset\fR name.
+.sp
+.LP
+The \fBzs_pset_walk()\fR function walks the \fIpsets\fR contained in usage. If \fIpset\fR is NULL, the first \fIpset\fR is returned. The first \fIpset\fR is always the default \fIpset\fR. Otherwise, the \fIpsets\fR are returned in alphanumeric order. NULL will be returned if there are no more \fIpsets\fR.
+.sp
+.LP
+The \fBzs_pset_property()\fR function will return the prop property of a \fIpset\fR. See \fBlibzonestat\fR(3LIB) for a description of the ZS_PSET_PROP_* property codes.
+.sp
+.LP
+The \fBzs_pset_total_time()\fR function sets \fIts\fR to the total cpu time that has been available in \fIpset\fR. For example, if a \fIpset\fR has 2 online cpus, and \fBzs_open\fR as called 30 seconds before \fBzs_usage_read\fR, then the total time available in the pset is 60 seconds. ts must be allocated by the caller.
+.sp
+.LP
+The \fBzs_pset_total_cpus()\fR function returns the number of online cpus in \fIpset\fR * 100. For instance, if the number of online cpus is 4, the value returned will be 400.
+.sp
+.LP
+The \fBzs_pset_used_time()\fR function sets \fIts\fR to the total cpu time that has been used in \fIpset\fR, starting at zero from the point when \fBzs_open\fR was first called.
+.sp
+.LP
+The \fBzs_pset_used_cpus()\fR function returns quantity of cpus used by user. The value returned is the number of cpus used * 100. For instance, if user \fBZS_USER_ZONES\fR (which represents total \fIpset\fR usage by all zones) has used 2.5 cpus worth of cpu time, then the value returned is 250.
+.sp
+.LP
+The \fBuint_t zs_pset_used_pct()\fR function returns the percentage of cpu time used by user. The value returned is the percentage * 100. For example, if user \fBZS_USER_ALL\fR (representing total cpu usage) is 50%, then the value returned will be 5000.
+.sp
+.LP
+All \fBZS_USER_*\fR user codes are described in the \fBlibzonestat\fR(3LIB) manual page.
+.sp
+.LP
+The \fBzs_pset_stolen_all_time()\fR function sets \fIts\fR to the sum of the time stolen from the \fIpset\fR and time stolen from all the zones bound to the \fIpset\fR. For more information about stolen time, see \fBsolaris-kz\fR(5).
+.sp
+.LP
+The \fBzs_pset_stolen_all_cpus()\fR function returns the sum of number of cpus stolen from the \fIpset\fR with number of cpus stolen from the zones bound to the \fIpset\fR.
+.sp
+.LP
+The \fBzs_pset_stolen_all_pct()\fR function returns the percentage of cpu time stolen from the \fIpset\fR and all its zones.
+.sp
+.LP
+The \fBzs_pset_stolen_time()\fR function sets \fIts\fR to the time stolen from the \fIpset\fR. Stolen time is supported only when running inside a supported zone brand. If stolen time is not supported by the current system, \fIts\fR is set to a zero structure.
+.sp
+.LP
+The \fBzs_pset_stolen_cpus()\fR function returns cpus stolen from the \fIpset\fR. If the current system does not support stolen time, a special value of \fBZS_LIMIT_NONE\fR is returned.
+.sp
+.LP
+The \fBzs_pset_stolen_pct()\fR function returns percentage of time stolen from the \fIpset\fR. If stolen time is not supported by the current system, special value of \fBZS_PCT_NONE\fR is returned.
+.sp
+.LP
+The \fBzs_pset_stolen_zones_time()\fR function sets \fIts\fR to the total sum of time stolen from the zones bound to the \fIpset\fR.
+.sp
+.LP
+The \fBzs_pset_stolen_zones_cpus()\fR function returns cpus stolen from the zones bound to the \fIpset\fR.
+.sp
+.LP
+The \fBzs_pset_stolen_zones_pct()\fR function returns percentage of time stolen from the zones bound to the \fIpset\fR.
+.SH RETURN VALUES
+.sp
+.LP
+See Description.
+.SH ERRORS
+.sp
+.LP
+If a \fBzs_pset_*()\fR function is called with an invalid user code, the function will abort with \fBabort\fR(3C).
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRRetrieve information about all psets in a usage object.
+.sp
+.LP
+The following example traverses all psets in a usage object, retrieving information about each pset.
+
+.sp
+.in +2
+.nf
+#include <zonestat.h>
+\&...
+extern zs_usage_t usage;        /* assume returned by zs_usage_read() */
+\&...
+zs_pset_t pset;
+zs_property_t prop;
+char * psetname;
+uint64_t online;
+uint64_t used;
+uint64_t stolen;
+
+for (pset = zs_pset_first(usage); pset != NULL;
+    pset = zs_pset_next(usage, pset)) {
+
+/* Get psetname */
+prop = zs_pset_property(pset, ZS_PSET_PROP_NAME);
+psetname = strdup(zs_property_string(prop)));
+
+/*
+ * Get number of online cpus, quantity of cpu used, and time
+ * stolen from the pset, all in number of cpus * 100.
+ */
+online = zs_pset_total_cpus(pset);
+used = zs_pset_used_cpus(pset, ZS_USER_ALL);
+stolen = zs_pset_stolen_cpus(pset);
+}
+.fi
+.in -2
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Interface StabilityCommitted
+_
+MT-LevelSafe
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBzonestat\fR(1), \fBpooladm\fR(1M), \fBpsrset\fR(1M), \fBrcapadm\fR(1M), \fBswap\fR(1M), \fBzoneadm\fR(1M), \fBzonestatd\fR(1M), \fBabort\fR(3C), \fBlibpool\fR(3LIB), \fBlibzonestat\fR(3LIB), \fBzs_open\fR(3ZONESTAT), \fBzs_property\fR(3ZONESTAT), \fBzs_pset_zone\fR(3ZONESTAT), \fBzs_resource\fR(3ZONESTAT), \fBzs_usage\fR(3ZONESTAT), \fBzs_zone\fR(3ZONESTAT), \fBattributes\fR(5), \fBresource-controls \fR(5)

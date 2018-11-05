@@ -1,0 +1,974 @@
+'\" te
+.\" Copyright 1989 AT&T
+.\" Copyright (c) 2003, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Portions Copyright (c) 1992, X/Open Company Limited All Rights Reserved
+.\" Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation.In the following statement, the phrase "this text" refers to portions of the system documentation.Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document.The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.This notice shall appear on any product containing this material. 
+.TH ed 1 "2011 年 7 月 12 日" "SunOS 5.11" "用户命令"
+.SH 名称
+ed, red \- 文本编辑器
+.SH 用法概要
+.LP
+.nf
+\fB/usr/bin/ed\fR [\fB-s\fR | \fB-\fR] [\fB-p\fR \fIstring\fR] [\fIfile\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/xpg4/bin/ed\fR [\fB-s\fR | \fB-\fR] [\fB-p\fR \fIstring\fR] [\fIfile\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/xpg6/bin/ed\fR [\fB-s\fR | \fB-\fR] [\fB-p\fR \fIstring\fR] [\fIfile\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/bin/red\fR [\fB-s\fR | \fB-\fR] [\fB-p\fR \fIstring\fR] [\fIfile\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBed\fR 实用程序是一个标准文本编辑器。如果指定 \fIfile\fR，\fBed\fR 将对指定的文件模拟 \fBe\fR 命令（请参见下文）。也就是说，将该文件读取到 \fBed\fR 的缓冲区中，使其可以编辑。
+.sp
+.LP
+\fBed\fR 实用程序在其所编辑的文件的副本上进行操作。在指定 \fBw\fR（写入）命令之前，对该副本所做的更改对文件没有影响。被编辑的文本副本位于名为 \fIbuffer\fR 的临时文件中。只有一个缓冲区。
+.sp
+.LP
+\fBred\fR 实用程序是 \fBed\fR 的受限版本。它仅允许编辑当前目录中的文件。\fBred\fR 禁止通过 \fB!\fR\fIshell command\fR 执行 shell 命令。试图绕过这些限制将导致出现错误消息 (\fIrestricted shell\fR)（被限制的 shell）。
+.sp
+.LP
+\fBed\fR 和 \fBred\fR 都支持 \fBfspec\fR(4) 格式设置功能。缺省的终端模式是 \fBstty\fR \fB-tabs\fR 或 \fBstty tab3\fR，其中制表停止位置设置在八列（请参见 \fBstty\fR(1)）。但是，如果 \fIfile\fR 的第一行包含一个规范，则该规范将覆盖缺省模式。例如，如果 \fIfile\fR 的第一行包含以下内容，制表停止位置将设置为 5、10 和 15，并强制实施最大行长度 72：
+.sp
+.in +2
+.nf
+\fB<:t5,10,15 s72:>\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBed\fR 命令有一个简单的正规结构：零个、一个或两个\fI地址\fR后跟一个单字符的\fI命令\fR，还可能后跟该命令的参数。这些地址指定缓冲区中的一行或多行。需要地址的每个命令都有缺省地址，因此经常可以将地址省略。
+.sp
+.LP
+一般情况下，一行上只能出现一个命令。有些命令允许输入文本。此文本放在缓冲区中的相应位置。\fBed\fR 在接受文本时，应该处于\fI输入模式\fR。在此模式下\fB不能\fR识别任何命令；所有输入都是收集的。通过在行的开头键入一个句点 (\fB\&.\fR) 并立即跟一个回车，可以退出输入模式。
+.SS "/usr/bin/ed"
+.sp
+.LP
+如果 \fBed\fR 执行命令时使用参数，则使用缺省的 shell \fB/usr/bin/sh\fR（请参见 \fBsh\fR(1)）。
+.SS "/usr/xpg4/bin/ed and /usr/xpg6/bin/ed"
+.sp
+.LP
+如果 \fBed\fR 执行命令时使用参数，则使用 \fB/usr/xpg4/bin/sh\fR（请参见 \fBksh88\fR(1)）。
+.SS "正则表达式"
+.sp
+.LP
+\fBed\fR 实用程序支持形式有限的\fI正则表达式\fR表示法。在地址中使用正则表达式来指定行，在有些命令（例如 \fBs\fR）中使用正则表达式指定行中要替换的部分。要了解 \fBed\fR 中的寻址，必须知道在任何时候都有一个\fI当前行\fR。一般而言，当前行是受命令影响的最后一行。对当前行的具体影响在每个命令的说明中讨论。
+.sp
+.LP
+国际化基本正则表达式用于所有系统提供的语言环境。请参见 \fBregex\fR(5)。
+.SS "ed 命令"
+.sp
+.LP
+命令可能需要零个、一个或两个地址。不需要地址的命令将存在地址视为错误。接受一个或两个地址的命令在指定的地址数量不足时将使用缺省地址；如果指定的地址多于该命令需要的地址，则使用最后一个（批）地址。
+.sp
+.LP
+通常，地址用逗号 (\fB,\fR) 互相分隔。也可以用分号 (\fB;\fR) 分隔地址。在后一种情况下，将计算第一个地址，当前行 (\fB\&.\fR) 设置为该值，然后再计算第二个地址。此功能可用于确定向前和向后搜索的开始行（请参见上文的规则 5 和规则 6）。任何双地址序列的第二个地址必须对应于缓冲区中第一个地址所对应行后面的一行。
+.sp
+.LP
+对于 \fB/usr/xpg6/gbin/ed\fR，逗号或分号分隔符任一侧的地址都可以省略，此时得到的地址对如下：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+指定结果
+_
+,1 , $
+_
+, addr1 , addr
+_
+addr ,addr , addr
+_
+;1 ; $
+_
+; addr1 ; addr
+_
+addr ;addr ; addr
+.TE
+
+.sp
+.LP
+地址、地址分隔符或地址偏移之间包含的任何 <\fIblank\fR> 都会被忽略。
+.sp
+.LP
+在以下 \fBed\fR 命令列表中，命令前面显示的括号\fI不是\fR地址的一部分。括号中显示的是命令的缺省地址。
+.sp
+.LP
+每个地址组成部分前面可以有零个或更多空白字符。命令字母前面可以有零个或更多空白字符。如果指定前缀字母 (\fBl\fR、\fBn\fR 或 \fBp\fR)，则必须紧跟命令。
+.sp
+.LP
+\fBe\fR、\fBE\fR、\fBf\fR、\fBr\fR 和 \fBw\fR 命令使用可选的 \fIfile\fR 参数，用一个或多个空白字符与命令字母隔开。
+.sp
+.LP
+如果自从上一个 \fBw\fR 命令写入整个缓冲区之后缓冲区中发生了变化，则当用户试图通过 \fBe\fR 或 \fBq\fR 命令销毁缓冲区时，\fBed\fR 将警告用户。\fBed\fR 实用程序可将字符串：
+.sp
+.in +2
+.nf
+"?\en"
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+（如果通过 \fBH\fR 命令启用了\fI帮助模式\fR，则后跟一条解释消息）写入标准输出，然后继续处于命令模式，当前行编号不变。如果重复 \fBe\fR 或 \fBq\fR 命令时没有中间命令，则 \fBed\fR 将生效。
+.sp
+.LP
+如果在应该执行命令时在标准输入上检测到文件结尾，则 \fBed\fR 实用程序的作用相当于输入了 \fBq\fR 命令。
+.sp
+.LP
+一般情况下，在一行上出现多个命令是非法的。但是，任何命令（\fBe\fR、\fBf\fR、\fBr\fR 或 \fBw\fR 除外）可以加后缀 \fBl\fR、\fBn\fR 或 \fBp\fR；在这种情况下，会分别列出、编号或写入当前行，如下文中 \fBl\fR、\fBn\fR 和 \fBp\fR 命令下所述。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(.)a\fR\fR
+.ad
+.br
+.na
+\fB<\fItext\fR>\fR
+.ad
+.br
+.na
+\fB\fB\&.\fR\fR
+.ad
+.RS 10n
+.rt  
+\fBa\fR 附加命令接受零行或更多行文本，并将其附加到缓冲区中的寻址行之后。当前行 (\fB\&.\fR) 留在最后一个插入的行处；如果没有插入行，则留在寻址行处。地址 0 对此命令合法：它会导致将附加的文本放在缓冲区的开头。可从终端输入的最大字符数是每行 256 个（包括换行符）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(.,.)c\fR\fR
+.ad
+.br
+.na
+\fB<\fItext\fR>\fR
+.ad
+.br
+.na
+\fB\fB\&.\fR\fR
+.ad
+.RS 10n
+.rt  
+\fBc\fR 更改命令可删除缓冲区中的寻址行，然后接受零行或更多行文本替换缓冲区中的这些行。当前行 (\fB\&.\fR) 留在最后一个行输入处；如果没有插入行，则留在未删除的第一个行处。如果删除的行原来在缓冲区的末尾，则当前行编号将设置为新的最后行的地址。如果缓冲区中没有剩余行，则当前行编号将设置为 0。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/xpg4/bin/ed\fR\fR
+.ad
+.RS 20n
+.rt  
+地址 0 对此命令非法。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/xpg6/bin/ed\fR\fR
+.ad
+.RS 20n
+.rt  
+地址 0 对此命令有效。地址 0 会被解释为像指定了地址 1 一样。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(.,.)d\fR\fR
+.ad
+.RS 10n
+.rt  
+\fBd\fR 删除命令可删除缓冲区中的寻址行。最后被删除的一行之后的行将成为当前行。如果删除的行原来在缓冲区的末尾，则新的最后行将成为当前行。如果缓冲区中没有剩余行，则当前行编号将设置为 0。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBe\fR \fIfile\fR\fR
+.ad
+.RS 10n
+.rt  
+\fBe\fR 编辑命令可删除缓冲区的整个内容，然后将 \fIfile\fR 的内容读取到缓冲区中。当前行 (\fB\&.\fR) 设置为缓冲区的最后一行。如果未指定 \fIfile\fR，则使用当前记住的已有文件名（请参见 \fBf\fR 命令）。读取的字节数将写入到标准输出，除非按以下格式指定 \fB-s\fR 选项：
+.sp
+\fB"%d\n"\fR <\fInumber of bytes read\fR>
+.sp
+\fIfile\fR 会被记住，在后续的 \fBe\fR、\fBE\fR、\fBr\fR 和 \fBw\fR 命令中可能会用作缺省文件名。如果将 \fIfile\fR 替换为 \fB!\fR，则行的剩余部分将被视为一个 shell 命令 (\fBsh\fR(1))，其输出将被读取。这样的 shell 命令\fI不会\fR记为当前文件名。另请参见下文的“诊断”部分。所有标记都会在成功完成 \fBe\fR 命令时丢弃。如果自从上次写入整个缓冲区后缓冲区发生了变化，则用户会收到警告，如前文中所述。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBE\fR \fIfile\fR\fR
+.ad
+.RS 10n
+.rt  
+\fBE\fR 编辑命令类似于 \fBe\fR，但编辑器不检查自上一个 \fBw\fR 命令以来缓冲区是否发生变化。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBf\fR \fIfile\fR\fR
+.ad
+.RS 10n
+.rt  
+如果指定了 \fIfile\fR，则 \fBf\fR 命令将当前记住的路径名更改为 \fIfile\fR。不管名称是否变化，\fBf\fR 命令随后都会用以下格式将（可能是新的）当前记住的路径名写入到标准输出：
+.sp
+\fB"%s\n"\fR\fIpathname\fR
+.sp
+当前行编号不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(1,$)g/\fR\fIRE\fR\fB/\fR\fIcommand list\fR\fR
+.ad
+.RS 26n
+.rt  
+在 \fBg\fR 全局命令中，第一步是标记与指定的 \fIRE\fR 匹配的每行。然后，对于每个此类行，执行指定的 \fIcommand list\fR，当前行 (\fB\&.\fR) 最初设置为该行。\fBg\fR 命令完成时，当前行编号的值是命令列表中最后一个命令赋予的值。如果没有匹配行，则当前行编号不变。单个命令或者命令列表中的第一个命令与全局命令出现在同一行上。多行列表中除最后一行外的所有行必须以反斜杠 (\fB\\fR ) 结尾；允许 \fBa\fR、\fBi\fR 和 \fBc\fR 命令及关联的输入。如果 \fB\&.\fR 终止输入模式是 \fIcommand list\fR 的最后一行，则可将其省略。空的 \fIcommand list\fR 等效于 \fBp\fR 命令。\fBg\fR、\fBG\fR、\fBv\fR、\fBV\fR 和 \fB!\fR 命令\fI不\fR允许出现在 \fIcommand list\fR 中。另请参见下文中的“附注”部分以及“文件”部分之前的最后一段。除了空格或换行符以外的任何字符都可以替代斜杠来分隔 \fIRE\fR。在 \fIRE\fR 内部，\fIRE\fR 分隔符本身就可用作文本字符（当它前面有一个反斜杠时）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(1,$)G/\fR\fIRE\fR\fB/\fR\fR
+.ad
+.RS 26n
+.rt  
+在交互式 \fBG\fR 全局命令中，第一步是标记与指定的 \fIRE\fR 匹配的每行。然后，对于每一个此类行，将该行写入到标准输出，将当前行 (\fB\&.\fR) 更改为该行，并且任何\fI一个\fR命令（不包括 \fBa\fR、\fBc\fR、\fBi\fR、\fBg\fR、\fBG\fR、\fBv\fR 和 \fBV\fR 命令中的一个）都可以是输入并被执行。在执行了该命令后，写入下一个标记的行，依此类推。换行符的作用相当于一个空命令。\fB&\fR 会导致重新执行在当前调用 \fBG\fR 时执行的最新非空命令。\fB注意：\fR执行 \fBG\fR 命令过程中的命令输入可以寻址和影响缓冲区中的\fB任何\fR行。当前行编号的最后值是最后一个成功执行的命令设置的值。（请注意，如果命令失败或者指定了空命令，则最后一个成功执行的命令是 \fBG\fR 命令本身。）如果没有匹配行，则当前行编号不变。可以通过 \fBSIGINT\fR 信号终止 \fBG\fR 命令。可以通过中断信号（ASCII DEL 或 BREAK）终止 \fBG\fR 命令。除了空格或换行符以外的任何字符都可以替代斜杠来分隔 \fIRE\fR。在 \fIRE\fR 内部，\fIRE\fR 分隔符本身就可用作文本字符（当它前面有一个反斜杠时）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBh\fR\fR
+.ad
+.RS 26n
+.rt  
+\fBhelp\fR 命令会提供一条简短的错误消息，解释最近的 \fB?\fR 诊断的原因。当前行编号不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBH\fR\fR
+.ad
+.RS 26n
+.rt  
+\fBHelp\fR 命令会导致 \fBed\fR 进入一种模式，在该模式下，将为所有后续的 \fB?\fR 诊断写入错误消息。该命令还会解释上一个 \fB?\fR（如果有）。\fBH\fR 命令还可以打开和关闭此模式；此模式最初是关闭的。当前行编号不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(.,.)i\fR\fR
+.ad
+.br
+.na
+\fB<\fItext\fR>\fR
+.ad
+.br
+.na
+\fB\fB\&.\fR\fR
+.ad
+.RS 26n
+.rt  
+\fBinsert\fR 命令接受零行或更多行文本，并将其插入到缓冲区中的寻址行之前。当前行 (\fB\&.\fR) 留在最后一个插入的行处；如果没有插入行，则留在寻址行处。此命令不同于 \fBa\fR 命令之处仅在于输入文本的位置。可从终端输入的最大字符数是每行 256 个（包括换行符）。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/xpg4/bin/ed\fR\fR
+.ad
+.RS 20n
+.rt  
+地址 0 对此命令非法。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/usr/xpg6/bin/ed\fR\fR
+.ad
+.RS 20n
+.rt  
+地址 0 对此命令有效。地址 0 会被解释为像指定了地址 1 一样。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(.,.+1)j\fR\fR
+.ad
+.RS 26n
+.rt  
+\fBj\fR 联接命令通过删除相应的换行符来联接邻近的行。如果只提供了一个地址，则此命令不执行任何操作。如果联接了行，则当前行编号将设置为联接后的行的地址。否则，当前行编号不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(.)k\fR\fIx\fR\fR
+.ad
+.RS 26n
+.rt  
+\fBk\fR 标记命令标记名称为 \fIx\fR 的寻址行，x 必须是一个小写 ASCII 字母 (\fBa\fR\fB-\fR\fBz\fR)。然后，地址 \fI´x\fR 会在该行寻址。当前行 (\fB\&.\fR) 不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(.,.)l\fR\fR
+.ad
+.RS 26n
+.rt  
+\fBl\fR 命令以明确的形式将寻址行写入到标准输出。字符 (\fB\\\fR, \fB\a\fR, \fB\b\fR, \fB\f\fR, \fB\r\fR, \fB\t \fR, \fB\v\fR) 以对应的转义序列写入。该表中的 \fB\n\fR 不适用。不在该表中的非可输出字符以字符中每个字节的三位数的八进制数字形式写入（前面带反斜杠字符），最重要的字节在最前面。
+.sp
+长行会折叠，折叠点通过写入反斜杠/换行符表示。折叠出现的长度未指定，但应适合输出设备。每行的末尾用一个 \fB$\fR 标记。在使用 \fB/usr/xpg6/bin/ed\fR 命令时，每行的末尾由于折叠而用一个 \fB$\fR 标记，文本中的 \fB$\fR 字符在写入时前面带一个反斜杠。\fBl\fR 命令可以附加到其他任何命令末尾，但 \fBe\fR、\fBE\fR、\fBf\fR、\fBq\fR、\fBQ\fR、\fBr\fR、\fBw\fR 或 \fB!\fR 除外。当前行编号设置为最后写入的行的地址。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(.,.)m\fR\fIa\fR\fR
+.ad
+.RS 26n
+.rt  
+\fBm\fR 移动命令将寻址行重新定位到 \fIa\fR 寻址的行之后。地址 0 对 \fIa\fR 合法，会导致将寻址行移到文件的开头。如果地址 \fIa\fR 在被移动的行的范围内，则出现错误。当前行 (\fB\&.\fR) 留在移动的最后一行处。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(.,.)n\fR\fR
+.ad
+.RS 26n
+.rt  
+\fBn\fR 编号命令写入寻址行，每行前面是其行编号和一个制表符。当前行 (\fB\&.\fR) 留在写入的最后一行处。\fBn\fR 命令可以附加到其他任何命令末尾，但 \fBe\fR、\fBE\fR、\fBf\fR、\fBq\fR、\fBQ\fR、\fBr\fR、\fBw\fR 或 \fB!\fR 除外。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(.,.)p\fR\fR
+.ad
+.RS 26n
+.rt  
+\fBp\fR 输出命令可将寻址行写入到标准输出。当前行 (\fB\&.\fR) 留在写入的最后一行处。\fBp\fR 命令可以附加到其他任何命令末尾，但 \fBe\fR、\fBE\fR、\fBf\fR、\fBq\fR、\fBQ\fR、\fBr\fR、\fBw\fR 或 \fB!\fR 除外。例如，\fBdp\fR 删除当前行并写入新的当前行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBP\fR\fR
+.ad
+.RS 26n
+.rt  
+\fBP\fR 命令会导致 \fBed\fR 用星号 (\fB*\fR)（或\fI字符串\fR，在指定了 \fB-p\fR 的情况下）提示所有后续命令。\fBP\fR 命令还可以打开和关闭此模式；如果指定了 \fB-p\fR 选项，则模式最初是打开的，否则是关闭的。当前行不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBq\fR\fR
+.ad
+.RS 26n
+.rt  
+\fBq\fR 退出命令会导致 \fBed\fR 退出。如果自从上次写入整个缓冲区后缓冲区发生了变化，则用户会收到警告。请参见“诊断”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBQ\fR\fR
+.ad
+.RS 26n
+.rt  
+编辑器会退出，但不检查自上一次执行 \fBw\fR 命令以来缓冲区中是否发生变化。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB($)r\fR \fIfile\fR\fR
+.ad
+.RS 26n
+.rt  
+\fBr\fR 读取命令将 \fIfile\fR 的内容读取到缓冲区中。如果未指定 \fIfile\fR，则使用当前记住的已有文件名（请参见 \fBe\fR 和 \fBf\fR 命令）。除非 \fIfile\fR 是自从调用 \fBed\fR 以来提及的第一个文件名，否则当前记住的文件名\fB不\fR变。地址 0 对 \fBr\fR 合法，会导致在缓冲区的开头读取文件。如果读取成功，并且未指定 \fB-s\fR 选项，则读取的字符数会用以下格式写入到标准输出：
+.sp
+.in +2
+.nf
+\fB%d\en\fR, <\fInumber of bytes read\fR>
+.fi
+.in -2
+.sp
+
+当前行 (\fB\&.\fR) 设置为读取的最后一行。如果将 \fIfile\fR 替换为 \fB!\fR，则行的剩余部分将被视为一个 shell 命令 (\fBsh\fR(1))，其输出将被读取。例如，\fB$r !ls\fR 将当前目录附加到正在编辑的文件的末尾。这种 shell 命令\fB不会\fR记为当前文件名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(.,.)s/\fR\fIRE\fR\fB/\fR\fIreplacement\fR\fB/\fR\fR
+.ad
+.br
+.na
+\fB\fB(.,.)s/\fR\fIRE\fR\fB/\fR\fIreplacement\fR\fB /\fR\fIcount\fR, \fIcount\fR=[\fB1-2047\fR]\fR
+.ad
+.br
+.na
+\fB\fB(.,.)s/\fR\fIRE\fR\fB/\fR\fIreplacement\fR\fB/g\fR\fR
+.ad
+.br
+.na
+\fB\fB(.,.)s/\fR\fI RE\fR\fB/\fR\fIreplacement\fR\fB/l\fR\fR
+.ad
+.br
+.na
+\fB\fB(.,.)s/\fR\fIRE\fR\fB/\fR\fIreplacement\fR\fB/n\fR\fR
+.ad
+.br
+.na
+\fB\fB(.,.)s/\fR\fIRE\fR\fB /\fR\fIreplacement\fR\fB/p\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBs\fR 替换命令在每个寻址行中搜索指定的 \fIRE\fR。可以指定零个或更多替换命令。如果在命令后出现了全局替换指示符 \fBg\fR，则在找到匹配项的每个行中，所有（非重叠的）匹配字符串会替换成 \fIreplacement\fR。如果未出现该全局指示符，则仅替换出现的第一个匹配字符串。如果在命令行出现一个数字 \fIcount\fR，则仅替换每个寻址行上出现的第 \fIcount\fR 个匹配字符串。如果\fB所有\fR寻址行上的替换都失败，则显示错误。除了空格或换行符以外的任何字符都可用于替代斜杠 (\fB/\fR) 来分隔 \fIRE\fR 和 \fIreplacement\fR。当前行 (\fB\&.\fR) 留在发生替换的最后一行处。在 \fIRE\fR 内部，\fIRE\fR 分隔符本身就可用作文本字符（当它前面有一个反斜杠时）。另请参见下文中“文件”部分之前的最后一段。
+.sp
+出现在 \fIreplacement\fR 中的和符号 (\fB&\fR) 替换成当前行上匹配 \fIRE\fR 的字符串。在此上下文中 \fB&\fR 的特殊意义被其前面的 \fB\\fR  所抑制。作为较普通的一项功能，字符 \fB\\fR\fIn\fR（其中 \fIn\fR 是一个数字）被替换成指定的 \fIRE\fR 的第 \fIn\fR 个子正则表达式（括在 \fB\(\fR 和 \fB\)\fR 之间）匹配的文本。当存在嵌套在括号中的子表达式时，\fIn\fR 取决于从左侧开始的 \fB\(\fR 出现个数。当字符 \fB%\fR 是 \fIreplacement\fR 中的唯一字符时，大多数最近替换的命令中使用的 \fIreplacement\fR 会用作当前替换命令中的 \fIreplacement\fR。如果之前没有任何替换命令，则按此方式使用 \fB%\fR 将出现错误。如果 \fB%\fR 在包含多个字符的替换字符串中或者前面带一个 \fB\\fR ，则将失去其特殊含义。对于在从头至尾的 \fIreplacement\fR 扫描中遇到的每个反斜杠 (\)，以下字符将失去其特殊含义（如果有的话）。未指定赋予除 \fB&\fR、\fB\\fR、\fB%\fR 或数字以外的任何字符的特殊含义。 
+.sp
+可以通过在行中替换进一个换行符来拆分行。\fIreplacement\fR 中的换行符必须在前面加 \fB\\fR 进行转义。此类替换不能在 \fBg\fR 或 \fBv\fR 命令列表中完成。当前行编号设置为执行替换的最后一行的地址。如果未执行任何替换，则当前行编号不变。如果拆分了行，可认为对每个新行执行了替换操作，以便确定新的当前行编号。即使替换字符串与其替换的字符串完全相同，也认为执行了替换。
+.sp
+替换命令支持以下指示符：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcount\fR\fR
+.ad
+.RS 9n
+.rt  
+仅替换在每个寻址行上出现的第 \fIcount\fR 个 \fIRE\fR。\fIcount\fR 必须介于 \fB1\fR-\fB2047\fR 之间。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBg\fR\fR
+.ad
+.RS 9n
+.rt  
+全局替换 \fIRE\fR 的所有非重叠实例，而不是仅替换第一个。如果同时指定 \fBg\fR 和 \fIcount\fR，则不指定结果。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBl\fR\fR
+.ad
+.RS 9n
+.rt  
+将发生替换的最后一行写入到标准输出。写入该行时所用的格式是为 \fBl\fR 命令指定的格式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBn\fR\fR
+.ad
+.RS 9n
+.rt  
+将发生替换的最后一行写入到标准输出。写入该行时所用的格式是为 \fBn\fR 命令指定的格式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp\fR\fR
+.ad
+.RS 9n
+.rt  
+将发生替换的最后一行写入到标准输出。写入该行时所用的格式是为 \fBp\fR 命令指定的格式。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(.,.)t\fR\fIa\fR\fR
+.ad
+.sp .6
+.RS 4n
+此命令的作用就像是 \fBm\fR 命令，但会将寻址行的一个\fI副本\fR放在地址 \fBa\fR（可能为 0）之后。当前行 (\fB\&.\fR) 留在复制的最后一行处。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBu\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBu\fR 撤消命令可以废除修改了缓冲区中的任何内容的最近命令（即最近的 \fBa\fR、\fBc\fR、\fBd\fR、\fBg\fR、\fBi\fR、\fBj\fR、\fBm\fR、\fBr\fR、\fBs\fR、\fBt\fR、\fBu\fR、\fBv\fR、\fBG\fR 或 \fBV\fR 命令）产生的效果。\fBg\fR、\fBG\fR、\fBv\fR 或 \fBV\fR 全局命令对缓冲区所做的所有更改都作为一项更改被撤消。如果全局命令未做任何更改（例如使用 \fBg/\fR \fIRE\fR\fB/p\fR），则 \fBu\fR 命令不会有任何效果。当前行编号设置为被撤消的命令启动前该行具有的编号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(1,$)v/\fR\fIRE\fR\fB/\fR\fIcommand list\fR\fR
+.ad
+.sp .6
+.RS 4n
+此命令与全局命令 \fBg\fR 相同，但在第一步中标记的行是与 \fIRE\fR \fB不\fR匹配的行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(1,$)V/\fR\fIRE\fR\fB/\fR\fR
+.ad
+.sp .6
+.RS 4n
+此命令与交互式全局命令 \fBG\fR 相同，但在第一步中标记的行是与 \fIRE\fR \fB不\fR匹配的行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(1,$)w\fR \fIfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBw\fR 写入命令可将寻址行写入到 \fIfile\fR 中。如果 \fIfile\fR 不存在，那么，除非您的文件创建掩码有其他指示，否则将使用模式 \fB666\fR（每个人都可读写）创建一个。请参见 \fBsh\fR(1) 上对 \fBumask\fR 特殊命令的说明。除非 \fIfile\fR 是自从调用 \fBed\fR 以来提及的第一个文件名，否则当前记住的文件名\fB不\fR变。如果未指定文件名，则使用当前记住的已有文件名（请参见 \fBe\fR 和 \fBf\fR 命令）。当前行 (\fB\&.\fR) 不变。如果读取成功，那么，除非用以下格式指定了 \fB-s\fR 选项，否则将输出写入的字符数：
+.sp
+.in +2
+.nf
+\fB"%d\en",\fR<\fInumber of bytes written\fR>
+.fi
+.in -2
+.sp
+
+如果将 \fIfile\fR 替换为 \fB!\fR，则行的剩余部分将被视为一个 shell 命令 (\fBsh\fR(1))，其标准输入为寻址行。这样的 shell 命令\fI不会\fR记为当前路径名。使用写入命令时带 \fB!\fR 会被视为“写入整个缓冲区的最后一个 \fBw\fR 命令”。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(1,$)W\fR \fIfile\fR\fR
+.ad
+.RS 19n
+.rt  
+此命令与上文中的 \fBw\fR 写入命令相同，但它将寻址行附加到 \fIfile\fR（如果存在）的末尾。如果 \fIfile\fR 不存在，则将创建一个，如上文中对 \fBw\fR 的说明中所述。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB($)=\fR\fR
+.ad
+.RS 19n
+.rt  
+寻址行的行编号用以下格式写入到标准输出：
+.sp
+.in +2
+.nf
+\fB"%d\en"\fR<\fIline number\fR>
+.fi
+.in -2
+.sp
+
+此命令不改变当前行编号。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB!\fR\fIshell command\fR\fR
+.ad
+.RS 19n
+.rt  
+行中 \fB!\fR 之后的剩余部分会发送到 UNIX 系统 shell（请参见 \fBsh\fR(1)）解释为一个命令。在该命令的文本中，未转义的字符 \fB%\fR 会替换成记住的文件名。如果 \fB!\fR 是 shell 命令的第一个字符，则会将其替换成上一个 shell 命令的文本。因此，\fB!!\fR 会重复上一个 shell 命令。如果替换了 \fB%\fR 或 \fB!\fR，则会先将修改后的行写入到标准输出，然后再执行 \fIcommand\fR。\fB!\fR 命令在完成时将以下内容：
+.sp
+\fB"!\n"\fR
+.sp
+写入标准输出（除非指定了 \fB-s\fR 选项）。当前行编号不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB(.+1)\fR<new-line>\fR
+.ad
+.RS 19n
+.rt  
+一行上只有一个地址会导致写入寻址行。只有一个换行符等效于 \fB\&.+1p\fR。这可用于在缓冲区中步进。当前行编号将设置为写入行的地址。
+.RE
+
+.sp
+.LP
+如果发送了一个中断信号（ASCII DEL 或 BREAK），则 \fBed\fR 将写入一个 \fB"?\n"\fR 并返回到\fB它的\fR命令级别。
+.sp
+.LP
+\fBed\fR 实用程序对所有信号执行标准操作，但存在以下例外：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSIGINT\fR\fR
+.ad
+.RS 10n
+.rt  
+\fBed\fR 实用程序中断其当前活动，将字符串 \fB"?\n"\fR 写入到标准输出，并返回到命令模式。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSIGHUP\fR\fR
+.ad
+.RS 10n
+.rt  
+如果缓冲区不为空，并且自上次写入后发生了更改，则 \fBed\fR 实用程序将尝试在一个文件中写入缓冲区的一个副本。首先，使用当前目录中的名为 \fBed.hup\fR 的文件。如果该操作失败，则使用 \fBHOME\fR 环境变量指定的目录中名为 \fBed.hup\fR 的文件。在任一情况下，\fBed\fR 实用程序都会退出，但不返回到命令模式。
+.RE
+
+.sp
+.LP
+有些大小限制会生效：一行中 512 个字符，一个全局命令列表中 256 个字符，一个文件的路径名中 255 个字符（包括斜杠）。对行数的限制取决于用户的内存量。每行占用 1 个字。
+.sp
+.LP
+在读取文件时，\fBed\fR 会放弃 \fBASCII\fR 和 \fBNUL\fR 字符。
+.sp
+.LP
+如果文件不以换行符终止，则 \fBed\fR 将添加一个换行符，并显示一条消息解释其操作。
+.sp
+.LP
+如果 \fBRE\fR 或替换字符串（例如 \fB/\fR）的封闭分隔符是换行符之前的最后一个字符，则将忽略该分隔符，此时将写入寻址行。以下命令对是等效的：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBs/s1/s2\fR\fR
+.ad
+.RS 11n
+.rt  
+\fBs/s1/s2/p\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBg/s1\fR\fR
+.ad
+.RS 11n
+.rt  
+\fBg/s1/p\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB?s1\fR\fR
+.ad
+.RS 11n
+.rt  
+\fB?s1?\fR
+.RE
+
+.sp
+.LP
+如果输入了一个无效命令，\fBed\fR 将以下字符串：
+.sp
+.LP
+\fB"?\n"\fR
+.sp
+.LP
+（如果通过 \fBH\fR 命令启用了\fI帮助模式\fR，则后跟一条解释消息）写入标准输出，然后继续处于命令模式，当前行编号不变。
+.SH 选项
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fIstring\fR\fR
+.ad
+.RS 12n
+.rt  
+允许用户指定提示字符串。缺省情况下，没有提示字符串。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR | \fB-;\fR\fR
+.ad
+.RS 12n
+.rt  
+抑制写入 \fBe\fR、\fBr\fR 和 \fBw\fR 命令的字符计数、\fBe\fR 和 \fBq\fR 命令的诊断以及 \fB!\fR\fIshell command\fR 后的 \fB!\fR 提示。
+.RE
+
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfile\fR\fR
+.ad
+.RS 8n
+.rt  
+如果指定了 \fIfile\fR，则 \fBed\fR 会对路径名 \fIfile\fR 指定的文件模拟 \fBe\fR 命令，然后再接受来自标准输入的命令。
+.RE
+
+.SH 用法
+.sp
+.LP
+有关 \fBed\fR 和 \fBred\fR 遇到大于或等于 2 GB（2^31 字节）文件时行为的说明，请参见 \fBlargefile\fR(5)。
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBed\fR 执行的以下环境变量的说明，请参见 \fBenviron\fR(5)：\fBHOME\fR、\fBLANG\fR、\fBLC_ALL\fR、\fBLC_CTYPE\fR、\fBLC_COLLATE\fR、\fBLC_MESSAGES\fR 和 \fBNLSPATH\fR。
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功完成，没有任何文件或命令错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。
+.RE
+
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$TMPDIR\fR\fR
+.ad
+.RS 12n
+.rt  
+如果此环境变量不是 \fINULL\fR，则使用其值代替 \fB/var/tmp\fR 作为临时工作文件的目录名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/tmp\fR\fR
+.ad
+.RS 12n
+.rt  
+如果存在 \fB/var/tmp\fR，则将其用作临时工作文件的目录名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/tmp\fR\fR
+.ad
+.RS 12n
+.rt  
+如果环境变量 \fBTMPDIR\fR 不存在或者为 \fINULL\fR，并且 \fB/var/tmp\fR 不存在，则使用 \fB/tmp\fR 作为临时工作文件的目录名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBed.hup\fR\fR
+.ad
+.RS 12n
+.rt  
+终端挂起时，工作保存在此处。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.SS "/usr/bin/ed, /usr/bin/red"
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+CSIEnabled（已启用）
+.TE
+
+.SS "/usr/xpg4/bin/ed"
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/xopen/xcu4
+_
+CSIEnabled（已启用）
+_
+接口稳定性Committed（已确定）
+_
+标准请参见 \fBstandards\fR(5)。
+.TE
+
+.SS "/usr/xpg6/bin/ed"
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/xopen/xcu6
+_
+CSIEnabled（已启用）
+_
+接口稳定性Standard（标准）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBbfs\fR(1)、\fBedit\fR(1)、\fBex\fR(1)、\fBgrep\fR(1)、\fBksh88\fR(1)、\fBsed\fR(1)、\fBsh\fR(1)、\fBstty\fR(1)、\fBumask\fR(1)、\fBvi\fR(1)、\fBfspec\fR(4)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBlargefile\fR(5)、\fBregex\fR(5)、\fBstandards\fR(5)
+.SH 诊断
+.sp
+.ne 2
+.mk
+.na
+\fB\fB?\fR\fR
+.ad
+.RS 9n
+.rt  
+用于命令错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB?\fR\fIfile\fR\fR
+.ad
+.RS 9n
+.rt  
+用于不可访问文件。使用 \fBh\fR 和 \fBH\fR 帮助命令获得详细说明。
+.RE
+
+.sp
+.LP
+如果自从上一个 \fBw\fR 命令写入整个缓冲区之后缓冲区中发生了变化，则当用户试图通过 \fBe\fR 或 \fBq\fR 命令销毁 \fBed\fR 的缓冲区时，\fBed\fR 将警告用户。它会写入 \fB?\fR 并允许继续编辑。另一个 \fBe\fR 或 \fBq\fR 命令将在此时生效。\fB-s\fR 命令行选项禁止此功能。
+.SH 附注
+.sp
+.LP
+该\fB-\fR选项虽然仍受支持，但在文档中已替换成遵循\fB命令语法标准\fR的 \fB-s\fR 选项（请参见 \fBIntro\fR(1)）。
+.sp
+.LP
+\fB!\fR 命令无法用于 \fBg\fR 或 \fBv\fR 命令。
+.sp
+.LP
+如果编辑器是从受限的 shell 调用的，则无法使用 \fB!\fR 命令和 \fBe\fR、\fBr\fR 和 \fBw\fR 命令中的 \fB!\fR 转义（请参见 \fBsh\fR(1)）。
+.sp
+.LP
+\fBRE\fR 中的序列 \fB\n\fR 不匹配换行符。
+.sp
+.LP
+如果编辑器输入来自于命令文件（例如 \fBed\fR \fIfile\fR \fB<\fR \fIed_cmd_file\fR），则编辑器会在第一次失败时退出。
+.sp
+.LP
+使用环境变量 \fBLD_PRELOAD\fR 装入备用的 \fBmalloc()\fR 库可能会导致 \fB/usr/bin/ed\fR 出问题。

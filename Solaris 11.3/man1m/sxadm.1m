@@ -1,0 +1,542 @@
+'\" te
+.\" Copyright (c) 2015, Oracle and/or its affiliates. All rights       reserved.
+.TH sxadm 1M "15 Jun 2015" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+sxadm \- manage Solaris security extensions configuration
+.SH SYNOPSIS
+.LP
+.nf
+sxadm enable [-c property=value[,property=value,...]]
+      extension[,extension,...]
+
+sxadm delcust [extension,...]
+
+sxadm disable extension[,extension,...]
+
+sxadm get [-p] [-o "all" | field[,...]] <"all" | property[,...]>
+     [extension]
+
+sxadm help [subcommand]
+
+sxadm set property=value[,property=value,...] extension
+
+sxadm status [-p] [extension]
+.fi
+
+.LP
+.nf
+sxadm exec [-s extension=value],... command
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBsxadm\fR command configures and provides information regarding Solaris security extensions. These extensions can be applied at the system level, or at the process level.
+.sp
+.LP
+Security extensions for a process are determined by \fBexec\fR(2), and become effective for a process from that point forward. Extensions persist for the lifetime of the process until the process exits or calls \fBexec\fR(2) again. System level extensions can affect all processes. Process level extensions affect individual processes, and are inherited by any child processes, providing the child process is not privileged. See \fBSECURITY EXTENSIONS\fR.
+.sp
+.LP
+Individual executables can be tagged with security extension requirements when built with \fBld\fR(1). This tagging ensures the associated process requirements are met regardless of any system level extensions. Executables with tagged security extensions can be overridden with process level extensions. See \fBEXECUTABLE TAGGED EXTENSIONS\fR.
+.SS "SECURITY EXTENSIONS"
+.sp
+.LP
+The following security extensions are available. These extensions reduce the chances of attackers finding known entry points, or planting exploitation code in locations that can later be executed.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBASLR\fR- Address Space Layout Randomization\fR
+.ad
+.sp .6
+.RS 4n
+\fBASLR\fR activates the randomization of the location of key areas of the process, such as the stack, brk-based heap, and memory segment mappings. The memory mappings of an application that is built as a position-independent executable are also randomized under \fBASLR\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNXHEAP\fR- Non-Executable Heap\fR
+.ad
+.sp .6
+.RS 4n
+\fBNXHEAP\fR prevents pages allocated for the process heap from being executable.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBNXSTACK\fR- Non-Executable Stack\fR
+.ad
+.sp .6
+.RS 4n
+\fBNXSTACK\fR prevents pages allocated for the process stack from being executable. Backward compatibility with legacy \fB/etc/system noexec_user_stack\fR and \fBnoexec_user_stack_log\fR settings is maintained, although such controls are deprecated and \fBsxadm\fR should be used instead.
+.RE
+
+.sp
+.LP
+By default, the global zone and all non-global zones have the \fBASLR\fR and \fBNXHEAP\fR extensions enabled only for tagged binaries, while the \fBNXSTACK\fR extension is enabled for all processes.
+.SS "SECURITY EXTENSION PROPERTIES"
+.sp
+.LP
+A security extension can have one or more properties. All extensions have a model property. This property defines what the extension is applied to. Following are the model properties that exist.
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmodel=all\fR\fR
+.ad
+.RS 22n
+.rt  
+Enable the security extension for all processes.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmodel=tagged-files\fR\fR
+.ad
+.RS 22n
+.rt  
+Enable the security extension for tagged binaries.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmodel=default\fR\fR
+.ad
+.RS 22n
+.rt  
+Follow the security extension system default. See \fBSECURITY EXTENSIONS\fR.
+.RE
+
+.sp
+.LP
+Security extensions may have additional properties.
+.sp
+.LP
+\fBNXHEAP\fR and \fBNXSTACK\fR provide a logging property, which, when enabled, reports attempts to execute from non-executable memory ranges (stack for \fBNXSTACK\fR, heap and data for \fBNXHEAP\fR).
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlog=enable\fR\fR
+.ad
+.RS 15n
+.rt  
+Enable logging.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlog=disable\fR\fR
+.ad
+.RS 15n
+.rt  
+Disable logging. (Default configuration)
+.RE
+
+.SS "MANAGING SECURITY EXTENSIONS"
+.sp
+.LP
+Security extensions can be modified system wide using the \fBsxadm\fR subcommands \fBenable\fR, \fBdisable\fR, \fBset\fR, and \fBdelcust\fR. For example, the following \fBsxadm\fR commands enable extensions system wide:
+.sp
+.in +2
+.nf
+% \fBsxadm enable nxstack\fR
+% \fBsxadm enable aslr,nxheap\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The following \fBsxadm\fR command also enables extensions system wide but by specifically identifying each property:
+.sp
+.in +2
+.nf
+% \fBsxadm enable -c model=all aslr\fR
+% \fBsxadm enable -c model=all -c log=enable nxstack\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+Security extensions can also be enabled or disabled for a process using the \fBsxadm\fR subcommand \fBexec\fR. This subcommand only affects the status of the security extension. Any other properties of the extension are inherited from the system properties. The following \fBsxadm\fR command ensures the \fBfoobar\fR process executes with disabled extensions:
+.sp
+.in +2
+.nf
+% \fBsxadm exec -s aslr=disable -s nxheap=disable foobar\fR
+.fi
+.in -2
+.sp
+
+.SS "EXECUTABLE TAGGED EXTENSIONS"
+.sp
+.LP
+Individual executables can be tagged with security extension requirements when built with the following \fBld\fR(1) options:
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBalsr\fR[=\fImode\fR]\fR
+.ad
+.RS 21n
+.rt  
+Control \fBASLR\fR tagging.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnxheap\fR[=\fImode\fR]\fR
+.ad
+.RS 21n
+.rt  
+Control non-executable heap tagging.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-z\fR \fBnxstack\fR[=\fImode\fR]\fR
+.ad
+.RS 21n
+.rt  
+Control non-executable stack tagging.
+.RE
+
+.sp
+.LP
+The mode can be enabled or disabled. If the mode is not supplied, then \fBenabled\fR is the default.
+.sp
+.LP
+The security extension defined within a tagged executable interacts with any system wide security settings in the following manner.
+.RS +4
+.TP
+.ie t \(bu
+.el o
+An executable with an enabled, or disabled security setting is honored without consulting the system security setting. Process level security settings override tagged executable settings.
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+Only executables that have a tagged security setting are honored when the system security setting is tagged-files.
+.RE
+.SH SUB-COMMANDS
+.sp
+.LP
+The \fBsxadm\fR command has the following subcommands:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm enable\fR [\fB-c\fR \fIproperty\fR=\fIvalue\fR[\fI,property\fR=\fIvalue\fR,...]] \fIextension\fR[\fI,extension\fR,...]\fR
+.ad
+.sp .6
+.RS 4n
+Enable the specified extension for the current zone. The \fB-c\fR option allows \fBsxadm\fR to pass property values for the specific extension.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm delcust\fR [\fIextension\fR,...]\fR
+.ad
+.sp .6
+.RS 4n
+Restore the extension to the default configuration. This option effectively deletes any customizations.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm disable\fR \fIextension\fR[\fI,extension\fR,...]\fR
+.ad
+.sp .6
+.RS 4n
+Disable the specified extension for the current zone.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm help\fR [\fIsubcommand\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Display usage information about sxadm or more detailed information for each subcommand.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm status\fR [\fB-p\fR] [\fIextension\fR]\fR
+.ad
+.sp .6
+.RS 4n
+Report information on the status of all security extensions for the current zone. If \fB-p\fR is specified, the output is displayed in an easily parseable format. Specifying an extension on the command line filters for the specific extension. Machine parseable output is a list of colon-separated fields:
+.sp
+.in +2
+.nf
+extension:status (model):configuration (model)
+.fi
+.in -2
+.sp
+
+where:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBextension\fR\fR
+.ad
+.RS 17n
+.rt  
+The name of the extension
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstatus\fR\fR
+.ad
+.RS 17n
+.rt  
+The current status for the extension (enabled or disabled)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmodel\fR\fR
+.ad
+.RS 17n
+.rt  
+The current model enabled for the security extension (all, default, tagged-binaries)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBconfiguration\fR\fR
+.ad
+.RS 17n
+.rt  
+The stored configuration for the extension (enabled, disabled, or sys- tem default)
+.sp
+The characters colon (\fB:\fR), null sign (\fB\0\fR), and newline (\fB\n\fR) are not permitted for any of the components, extension_name, status, extra, and configuration.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm get\fR [\fB-p\fR] [\fB-o\fR "all" | field[,...]] <"all" | property[,...]> [extension]\fR
+.ad
+.sp .6
+.RS 4n
+Display the value of security extensions properties. If extension is specified, display the value of the property only for the specified extension. Specify "all" to display properties associated to all sections. For each property, the following columns are displayed:
+.sp
+.in +2
+.nf
+extension: the extension the property refers to
+name: the name of the property
+value: the value of the property
+.fi
+.in -2
+.sp
+
+All columns are displayed by default; specify particular or all columns, using the \fB-o\fR option. If \fB-p\fR is specified, the output is displayed in an easily parseable format. Such format is a list of colon-separated fields:
+.sp
+.in +2
+.nf
+extension:property:value
+.fi
+.in -2
+.sp
+
+The characters colon (\fB:\fR), null sign (\fB\0\fR), and newline (\fB\n\fR) are not permitted for any of the components.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm set\fR \fIproperty\fR=\fIvalue\fR[\fI,property\fR=\fIvalue\fR,...] \fIextension\fR\fR
+.ad
+.sp .6
+.RS 4n
+Assign value to the property of the specified extension.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsxadm exec\fR \fB-s\fR [\fIextension\fR=\fIvalue\fR]... command\fR
+.ad
+.sp .6
+.RS 4n
+Execute the specified command with a specific configuration for security extensions. For each security extension not explicitly configured on the command line, the system configuration is used. Child processes eventually spawned by command inherit the same security extension configuration that is specified on the command line. setuids and privileged binaries do not inherit any configuration. Multiple configurations can be expressed from the command line using multiple \fB-s\fR options. If the same extension is configured more than once, the last occurrence takes precedence. In the following example, \fBfoobar\fR is executed with \fBASLR\fR enabled:
+.sp
+.in +2
+.nf
+% \fBsxadm exec -s aslr=disable -s aslr=enable foobar\fR
+.fi
+.in -2
+.sp
+
+The \fBsxadm exec\fR subcommand is designed to accommodate the common case in which a debugger is applied to a single process started directly by the debugger. It may not be sufficient for more complex scenarios. In such cases, it may be necessary to use \fBsxadm\fR to change the system or zone level security extension defaults, or to apply per-object tagging using the \fBld\fR(1) utility, in order to facilitate debugging.
+.sp
+This feature is primarily of interest when extensions based on a randomized secret are active (for example, \fBASLR\fR), since changing memory addresses can complicate some debugging scenarios. This feature is also useful for explicitly testing applications with different security extension configurations.
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRDisplaying the current Security Extensions Configuration
+.sp
+.in +2
+.nf
+$ \fBsxadm status -p\fR
+       aslr:enabled (tagged-files):system default (default)
+       nxstack:enabled (all):system default (default)
+       nxheap:enabled (tagged-files):system default (default)
+       $
+
+       $ \fBsxadm status\fR
+       EXTENSION        STATUS                   CONFIGURATION            
+       aslr             enabled (tagged-files)   system default (default)
+       nxstack          enabled (all)            system default (default)
+       nxheap           enabled (tagged-files)   system default (default)
+       $
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRUse set/get to set/retrieve Security Extensions Properties
+.sp
+.in +2
+.nf
+$ \fBsxadm get model aslr\fR
+       EXTENSION       PROPERTY          VALUE
+       aslr            model            tagged-files
+       $
+
+       $ \fBsxadm set log=enable nxheap\fR
+       $ \fBsxadm get log nxheap\fR
+       EXTENSION       PROPERTY         VALUE
+       nxheap          log              enable
+       $
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRRunning a Debugging Session
+.sp
+.LP
+The following command sequence illustrates a debugging session being conducted with \fBASLR\fR disabled.
+
+.sp
+.in +2
+.nf
+$ \fBsxadm exec -s aslr=disable /bin/bash\fR
+       $
+       # Because all processes (except privileged ones) inherit the(disabled)
+       # ASLR configuration mdb, truss & co will have repeatable results.
+
+       $ truss -t mmap /bin/true
+       mmap(0x00000000, 32, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE5B0000
+       mmap(0x00000000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE5A0000
+       mmap(0x00000000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE590000
+       [...]
+       $ truss -t mmap /bin/true
+       mmap(0x00000000, 32, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE5B0000
+       mmap(0x00000000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE5A0000
+       mmap(0x00000000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE590000
+       [...]
+       $ truss -t mmap /bin/true
+       mmap(0x00000000, 32, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE5B0000
+       mmap(0x00000000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE5A0000
+       mmap(0x00000000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1,0)
+       = 0xFE590000
+.fi
+.in -2
+.sp
+
+.SH EXIT STATUS
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+The command completed successfully.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+The command exited due to an error.
+.RE
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/core-os
+_
+Interface StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBld\fR(1), \fBexec\fR(2), \fBattributes\fR(5)

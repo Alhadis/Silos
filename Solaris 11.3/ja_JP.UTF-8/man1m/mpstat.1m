@@ -1,0 +1,602 @@
+'\" te
+.\" Copyright (c) 2004, 2014, Oracle and/or its affiliates.All rights reserved.
+.TH mpstat 1M "2014 年 9 月 9 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+mpstat \- プロセッサごとまたはプロセッサセットごとの統計の報告
+.SH 形式
+.LP
+.nf
+\fB/usr/bin/mpstat\fR [\fB-amq\fR] [-A core|soc|\fIbins\fR] [-k keys] [-o num]
+     [\fB-p\fR | \fB-P\fR \fIset\fR] [\fB-T\fR d | u] [-I statfile] [-O statfile]
+     [\fIinterval\fR [\fIcount\fR]]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBmpstat\fR コマンドは、プロセッサ統計を表形式で報告します。表の各行は、1 つのプロセッサのアクティビティーを表します。最初の表では、ブート以降のすべてのアクティビティーが集計されます。以降の各表では、直前の間隔のアクティビティーが集計されます。特に注記がないかぎり、値はすべて 1 秒あたりのイベント数で示されるレートです。
+.sp
+.LP
+カーネルステータスコマンドの実行中に、カーネルの\fBステータス\fRが変化することがあります。関連する場合は、次のいずれかの形式の状態変更メッセージが \fBmpstat\fR の出力に含まれます。
+.sp
+.in +2
+.nf
+<<processor 3 moved from pset: -1 to: 1>>
+<<pset destroyed: 1>>
+<<pset created: 1>>
+<<processors added: 1, 3>>
+<<processors removed: 1, 3>>
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fBmpstat\fR コマンドは次の情報を報告します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCPU\fR|\fBSET\fR|\fBCOR\fR|\fBSOC\fR|\fBBIN\fR\fR
+.ad
+.sp .6
+.RS 4n
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCPU\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-a\fR および \fB-A\fR オプションを省略したときに統計情報が表示されるプロセッサ ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSET\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-a\fR オプションの場合に、統計情報が集計されるプロセッサセット ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCOR\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-A\fR \fBcore\fR オプションの場合に、統計情報が集計されるコア ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBSOC\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-A\fR \fBsoc\fR オプションの場合に、統計情報が集計されるソケット ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBBIN\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-A\fR \fIbins\fR オプションの場合に、統計情報が集計される bin の序数。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBminf\fR\fR
+.ad
+.sp .6
+.RS 4n
+軽度の障害
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmjf\fR\fR
+.ad
+.sp .6
+.RS 4n
+重大な障害
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBxcal\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセッサ間のクロスコール
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBintr\fR\fR
+.ad
+.sp .6
+.RS 4n
+割り込み
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBithr\fR\fR
+.ad
+.sp .6
+.RS 4n
+スレッドとしての割り込み (クロック割り込みはカウントしない)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcsw\fR\fR
+.ad
+.sp .6
+.RS 4n
+コンテキストスイッチ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBicsw\fR\fR
+.ad
+.sp .6
+.RS 4n
+自発的でないコンテキストスイッチ
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmigr\fR\fR
+.ad
+.sp .6
+.RS 4n
+スレッドの移行 (別のプロセッサへの)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsmtx\fR\fR
+.ad
+.sp .6
+.RS 4n
+相互排他ロックでのスピン (最初の試行でロックが取得されなかった)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsrw\fR\fR
+.ad
+.sp .6
+.RS 4n
+読み取り/書き込みロックでのスピン (最初の試行でロックが取得されなかった)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsyscl\fR\fR
+.ad
+.sp .6
+.RS 4n
+システムコール
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBusr\fR\fR
+.ad
+.sp .6
+.RS 4n
+ユーザー時間の割合 (パーセント)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsys\fR\fR
+.ad
+.sp .6
+.RS 4n
+システム時間の割合 (パーセント)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBst\fR\fR
+.ad
+.sp .6
+.RS 4n
+ハイパーバイザによって占有された \fBCPU\fR 時間の割合。物理ハードウェア上で実行するときは常に 0。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBidl\fR\fR
+.ad
+.sp .6
+.RS 4n
+アイドル時間の割合 (パーセント)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsze\fR\fR
+.ad
+.sp .6
+.RS 4n
+要求されたプロセッサセット内のプロセッサの数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset\fR\fR
+.ad
+.sp .6
+.RS 4n
+各 \fBCPU\fR のプロセッサセットのメンバーシップ
+.RE
+
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+プロセッサセット別に出力を集計します。セット順に出力をソートします。デフォルトの出力は \fBCPU\fR 番号順にソートされます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fBcore\fR\fR
+.ad
+.sp .6
+.RS 4n
+コア ID 別に CPU 出力を集計します。同じコア ID のデータ行は、1 行に集計されます。デフォルトでは、列は小計で置き換えられます。\fB-m\fR オプションでは、代わりに列の平均を出力します。
+.sp
+\fB-A\fR オプションには、プロセッサセット別に集計するための \fB-a\fR オプションとの互換性はありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fBsoc\fR\fR
+.ad
+.sp .6
+.RS 4n
+ソケット ID 別に CPU 出力を集計します。同じソケット ID のデータ行は、1 行に集計されます。デフォルトでは、列は小計で置き換えられます。\fB-m\fR オプションでは、代わりに列の平均を出力します。
+.sp
+\fB-A\fR オプションには、プロセッサセット別に集計するための \fB-a\fR オプションとの互換性はありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fIbins\fR\fR
+.ad
+.sp .6
+.RS 4n
+各サンプリング期間内で行をビンに集計して、表示される順にグループ化し、ビンごとに行全体を集計します。\fB-k\fR オプションを使用して、ビン化の段階の前に行の順序を変更できます。\fBsze\fR 列には、各ビン内の CPU の数が出力されます。\fBBIN\fR 列は \fBCPU\fR 列を置き換え、各 bin の序数を出力します。
+.sp
+ID 別の集計 (\fB-A\fR \fBcore\fR|\fBsoc\fR) は、ソート (\fB-k\fR) 前に処理されます。bin 別のグループ化 (\fB-A\fR \fIbins\fR) が次に行われます。最後に、間隔ごとに出力される出力行の数は、\fB-o\fR によって制限されることがあります。
+.sp
+\fB-A\fR オプションには、プロセッサセット別に集計するための \fB-a\fR オプションとの互換性はありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR \fIstatfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+以前に \fIstatfile\fR 内に保存したデータを再実行します。\fB-O\fR を指定して、再実行用のデータファイルを作成します。このオプションが特に役立つのは、多数の CPU を搭載したマシンの統計情報を分析する場合です。ファイルは、異なるソートおよび集計オプションを使用して何度も再処理されることがあります。
+.sp
+\fB-I\fR オプションは、間隔およびカウントの仕様と互換性がありません。
+.sp
+ファイル名が \fB—\fR (ハイフン) の場合は、標準入力から読み取ります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR \fIkey1\fR,...\fR
+.ad
+.sp .6
+.RS 4n
+各サンプリング期間内の行を、\fIkey1\fR、次に \fIkey2\fR、という具合に最上位から最下位へとソートします。各鍵には、\fBxcal\fR、\fBintr\fR、\fBsys\fR などの任意の列ヘッダーを指定できます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fB-a\fR または \fB-A\fR オプションを使用して、複数の CPU 全体でデータを集計するときは、合計ではなく算術平均値を出力します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+ソートおよび集計のオプションの適用後に、各サンプリング期間内の最初の \fInum\fR 行だけを出力します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-O\fR \fIstatfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+すべてのデータを \fIstatfile\fR に保存します。このデータは、\fB-I\fR を使用してあとで再実行できます。
+.sp
+ファイル名が \fB—\fR (ハイフン) の場合、標準出力に書き込みます。
+.sp
+\fB-O\fR の目的は、利用可能な全データを取得することです。これには、データ整理オプション \fB-a\fR、\fB-A\fR、\fB-k\fR、\fB-m\fR、\fB-o\fR、\fB-p\fR、および \fB-P\fR との互換性はありません。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.sp .6
+.RS 4n
+各 \fBCPU\fR のプロセッサセットのメンバーシップを報告します。セット順に出力をソートします。デフォルトの出力は \fBCPU\fR 番号順にソートされます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR \fIset\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定された \fIset\fR 内のプロセッサだけを表示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-q\fR\fR
+.ad
+.sp .6
+.RS 4n
+状態変更に関連したメッセージを抑制します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fBu\fR | \fBd\fR\fR
+.ad
+.sp .6
+.RS 4n
+時間の内部表現の出力表現に \fBu\fR  を指定します。\fBtime\fR(2) を参照してください。 標準の日付フォーマットに \fBd\fR を指定します。\fBdate\fR(1) を参照してください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIinterval\fR\fR
+.ad
+.sp .6
+.RS 4n
+各 \fIinterval\fR 秒ごとに報告します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIcount\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fIcount\fR 回のレポートのみ表示します。
+.RE
+
+.SH 使用例
+.sp
+.LP
+80 文字幅の表示では、次の出力例は 1 から 7 文字で折り返されます。ウィンドウの幅を広くすることで、この折り返しをなくすことができます。
+.LP
+\fB例 1 \fR\fBmpstat\fR を使用してユーザーおよびシステムオペレーション統計を生成する
+.sp
+.LP
+次のコマンドは、プロセッサ統計を 5 秒間隔で 2 つのレポートに生成します。このコマンドは、各 \fBCPU\fR のプロセッサセットのメンバーシップを表示します。デフォルトの出力は、\fBCPU\fR 番号順にソートされ、\fIプロセッサセット\fR別に集計された、ユーザー (\fBusr\fR) 操作とシステム (\fBsys\fR) 操作に関する統計です。
+
+.sp
+.in +2
+.nf
+example% \fBmpstat -ap 5 2\fR
+
+
+SET minf mjf xcal intr ithr csw icsw migr smtx srw syscl usr sys st idl sze
+  0    6   0  355  291  190  22    0    0    0   0    43   0   2  0  43   1
+  1   24  17  534  207  200  70    1    0    2   0   600   4   1  1  83   2
+  2   19   7  353  325  318  44    0    0    5   0   345   1   1  0  94   3
+  3   36   2  149  237  236  14    0    0    4   0    97   0   0  0  98   2
+SET minf mjf xcal intr ithr csw icsw migr smtx srw syscl usr sys st idl sze
+  0    1   0  720  405  304  55    0    0   18   0    12   0  15  0  81   1
+  1    0  69 1955  230  200 313   33    4   41   9  7086  34  10  0  19   2
+  2    0  46  685  314  300 203   11    0   54   1  5287  36   6  2  26   3
+  3    0   0   14  386  384   0    0    0    0   0     0   0   0  0 100   2
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 2 \fRフィルタ要件を満たす CPU を表示する
+.sp
+.LP
+次のコマンドは、\fBintr\fR 率がもっとも高い 3 つの CPU を表示します。
+
+.sp
+.in +2
+.nf
+example% \fBmpstat -k intr -o 3\fR
+CPU minf mjf xcal  intr ithr  csw icsw migr smtx  srw syscl  usr sys  st idl
+ 56 1143   5  975  4238   82  465   74   53  124    0 198163  42  17   1  40
+123 1189   6 1315  1030  890  461   65   53  122    0 24383   27  12   0  62
+  4 1184   5 1040   149   70  502   73   55  113    0 82039   31  13   0  56
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 3 \fR複数の CPU を四分位数で集計する
+.sp
+.LP
+次のコマンドは、\fBsys\fR 時間別に 256 の CPU を四分位数で集計します。
+
+.sp
+.in +2
+.nf
+example% \fBmpstat -A 4 -k sys\fR
+BIN minf mjf xcal intr ithr  csw icsw migr smtx  srw syscl  usr sys  st idl sze
+
+0   18   0 5811  7105    1 22154   17 9529 1176   0    72    1  79   1  18  64
+1    0   0 4624  1006   12 1321   42  418  175    0  3591   36  37   0  27  64
+2 1195   5 1056    92   10  526   74   56  104    0 45876   27  12   0  61  64
+3    0   0    2    18    8   10    0    0    0    0     1    0   0   0 100  64
+.fi
+.in -2
+.sp
+
+.LP
+\fB例 4 \fR後で再処理するために統計情報を保存する
+.sp
+.LP
+次のコマンドは、後で再処理するために統計情報を保存して、コアごとに 8 の CPU を持つマシンでコア ID 別に集計します。
+
+.sp
+.in +2
+.nf
+example% \fBmpstat -O /tmp/t1; mpstat -I /tmp/t1 -A core\fR
+COR minf mjf xcal  intr ithr  csw icsw migr smtx  srw syscl  usr sys  st idl sze
+514    0   0  124    45    0   21    0    3    1    0     0    0   3   0  97   8
+521    0   0   16     5    0    1    0    0    0    0     0    0   0   1  99   8
+528    0   0   11     5    0    3    0    0    0    0     0    0   0   0 100   8
+535    0   0    7     4    0    1    0    0    0    0     0    0   0   0 100   8
+542    0   0    7     4    0    1    0    0    0    0     0    0   0   0 100   8
+549    0   0   10     4    0    1    0    0    0    0     0    0   0   0 100   8
+556    0   0   10     5    0    1    0    0    0    0     0    0   0   0 100   8
+563    0   0    8     4    0    1    0    0    0    0     0    0   0   0 100   8
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性下記を参照。
+.TE
+
+.sp
+.LP
+この呼び出しは開発中です。人間が読める形式の出力は不安定 (Unstable) です。
+.SH 関連項目
+.sp
+.LP
+\fBsar\fR(1), \fBdate\fR(1), \fBiostat\fR(1M), \fBsar\fR(1M), \fBvmstat\fR(1M), \fBtime\fR(2), \fBattributes\fR(5)
+.SH 注意事項
+.sp
+.LP
+\fBCPU\fR 使用率の合計は、割合の数字を生成するときの丸め誤差のため、100 からわずかにずれることがあります。
+.sp
+.LP
+\fBCPU\fR 処理に使用された合計時間は、ユーザー操作とシステム操作に関して報告される、\fBusr\fR と \fBsys\fR の出力値の合計です。\fBidl\fR 値は、保留中のディスク I/O 操作を除くなんらかの理由で \fBCPU\fR がアイドル状態になっている時間を報告します。 
+.sp
+.LP
+\fBsvc_t\fR 出力に I/O サービス時間を報告するには、\fB-x\fR オプションを指定して \fBiostat\fR コマンドを実行します。\fBiostat\fR ユーティリティーも、同じ \fBst\fR、ユーザー (\fBus\fR)、およびシステム (\fBsy\fR) 統計情報を報告します。詳細は、\fBiostat\fR(1M) を参照してください。
+.sp
+.LP
+\fBzone\fR で実行された場合、かつ、プール機能がアクティブだった場合は、\fBmpstat\fR(1M) は \fBzone\fR が割り当てられているプールのプロセッサセットのメンバーであるプロセッサの情報のみを表示します。

@@ -1,0 +1,756 @@
+'\" te
+.\" Copyright (c) 2004, 2014, Oracle and/or its affiliates.All rights reserved.
+.TH trapstat 1M "2014 年 2 月 24 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+trapstat \- 报告陷阱统计信息
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/trapstat\fR [\fB-t\fR | \fB-T\fR | \fB-e\fR \fIentry\fR] 
+     [\fB-C\fR \fIprocessor_set_id\fR | \fB-c\fR \fIcpulist\fR] [\fB-P\fR] [\fB-a\fR]
+     [-A cor|soc|bins [-m]] [-k \fIkeys\fR] [-o \fInum\fR]
+     [-r \fIrate\fR | [\fIinterval\fR [\fIcount\fR]] | \fIcommand\fR [\fIargs\fR]...]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/trapstat\fR -O \fIstatfile\fR [-t | -T | -e entry]
+             [-C \fIprocessor_set_id\fR | -c \fIcpulist\fR] [-a]
+             [-r \fIrate\fR | [\fIinterval\fR [\fIcount\fR]] | \fIcommand\fR [\fIargs\fR]...]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/trapstat\fR -I \fIstatfile\fR
+             [-A cor|soc|bins [-m]] [-k \fIkeys\fR] [-o \fInum\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/trapstat\fR -l [-P] [-t | -T]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBtrapstat\fR 实用程序可在基于 UltraSPARC 的系统上收集并显示运行时陷阱统计信息。缺省输出是包含陷阱类型和 \fBCPU\fR \fBID\fR 的表，表的每行指示陷阱类型，表的每列指示 \fBCPU\fR。如果标准输出是一个终端，该表可包含该终端宽度可以容纳的任意多列数据；如果标准输出不是终端，该表最多可包含六列数据。缺省情况下，会针对所有 \fBCPU\fR 收集并显示数据；如果单个表容纳不下数据，则会在多个表中列显这些数据。可以通过 \fB-c\fR 或 \fB-C\fR 可选选项指定要收集并显示其数据的 \fBCPU\fR 集。
+.sp
+.LP
+除非指定了 \fB-r\fR 选项或 \fB-a\fR 选项或 command 参数，否则表中每个条目显示的值对应于每秒的陷阱数。如果指定 \fB-r\fR 选项，该值将对应于指定抽样率隐含的时间间隔内的陷阱数；如果指定 \fB-a\fR 选项，该值将对应于自调用 \fBtrapstat\fR 以来累计的陷阱数。如果指定了 command 参数，则该值对应于在命令的生命周期内累计的陷阱数。
+.sp
+.LP
+缺省情况下，\fBtrapstat\fR 每秒显示一次数据并且无限期运行；可以使用 \fB-r\fR 选项或 \fIinterval\fR 和 \fIcount\fR 参数控制此行为。\fB-r\fR 选项参数指定每秒进行抽样并显示数据的次数。以秒为单位指定 \fIinterval\fR；\fIcount\fR 表示在退出之前要执行的统计次数。另外，可以指定 \fBcommand\fR，在这种情况下 \fBtrapstat\fR 执行所提供的命令并继续运行至该命令退出，然后显示累计数据。系统假定 \fIinterval\fR 为正整数；如果所需的 \fB\fIcommand\fR\fR 无法与整数区分开，则必须指定 \fIcommand\fR 的完整路径。只能使用 \fB-r\fR、\fIinterval\fR 或 \fIcommand\fR 中的一个。
+.sp
+.LP
+UltraSPARC 系统可以通过操作系统陷阱来处理转换后备缓冲器 (translation lookaside buffer, TLB) 未命中。对于某些工作负荷，TLB 未命中陷阱会是影响系统整体性能的一个重要部分；\fB-t\fR 选项可提供有关这些陷阱的详细信息。使用此选项运行时，\fBtrapstat\fR 将显示 TLB 未命中陷阱的比率\fI\fR以及处理这些陷阱所用时间的百分比。此外，还将区分命中转换存储缓冲区 (translation storage buffer, TSB) 的 TLB 未命中事件和在 TSB 中也未命中的 TLB 未命中事件。（TSB 是一种用作转换条目高速缓存的软件结构，用于快速填充 TLB；\fI\fR《UltraSPARC II User's Manual》中对其进行了详细讨论。）TLB 和 TSB 未命中信息将进一步分为用户模式未命中和内核模式未命中。
+.sp
+.LP
+工作集超出 TLB 范围的工作负荷可能会因 TLB 未命中而花费大量时间。为了适应这些工作负荷，操作系统支持多个页面大小：大页面可提高有效 TLB 范围，从而减少 TLB 未命中次数。为了帮助用户深入了解页面大小与 TLB 未命中率之间的关系，\fBtrapstat\fR 提供了 \fB-T\fR 选项，通过该可选选项，可以按页面大小进一步细分 TLB 未命中信息。\fB-T\fR 选项提供的信息是 \fB-t\fR 选项所提供信息的超集；只能指定 \fB-t\fR 与 \fB-T\fR 中的一个。 
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+按单调递增的累计值而不是每秒或每间隔比率形式显示陷阱数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fBcor\fR\fR
+.ad
+.sp .6
+.RS 4n
+按核心 ID 聚合输出。具有相同核心 ID 的数据行将聚合到一个行中。缺省情况下，列将替换为小计。而 \fB-m\fR 选项将输出列平均值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fBsoc\fR\fR
+.ad
+.sp .6
+.RS 4n
+按套接字 ID 聚合输出。具有相同套接字 ID 的数据行聚合为一行。缺省情况下，列将替换为小计。而 \fB-m\fR 选项将输出列平均值。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-A\fR \fBbins\fR\fR
+.ad
+.sp .6
+.RS 4n
+将每个抽样期间内的列聚合到数量较少的容器 (bin) 中，按其出现顺序对其分组。要计算算术平均值而不是小计，可以使用 \fB-m\fR 选项。在执行 bin 聚合步骤之前，可以使用 \fB-k\fR 排序选项来更改列顺序。
+.sp
+按 ID (\fB-A\fR \fBcor\fR|\fBsoc\fR) 进行的聚合在排序 (\fB-k\fR) 之前处理。然后按 bin (\fB-A\fR \fBbins\fR) 进行分组。最后，每个间隔输出的输出行的数量可能会受 \fB-o \fR 限制。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR \fIcpulist\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅对 \fIcpulist\fR 指定的 \fBCPU\fR 执行 \fBtrapstat\fR。
+.sp
+\fIcpulist\fR 可以是单个处理器 \fBID\fR（例如 \fB4\fR）、处理器 \fBID\fR 范围（例如 \fB4-6\fR），也可以是以逗号分隔的处理器 \fBID\fR 或处理器 \fBID\fR 范围列表（例如 \fB4,5,6\fR 或 \fB4,6-8\fR）。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-C\fR \fIprocessor_set_id\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅对 \fIprocessor_set_id\fR 指定的处理器集中的 \fBCPU\fR 执行 \fBtrapstat\fR。
+.sp
+\fBtrapstat\fR 会修改其输出，以始终反映指定处理器集中的 \fBCPU\fR。如果向该处理器集中添加了一个 \fBCPU\fR，\fBtrapstat\fR 会修改其输出以包括该添加的 \fBCPU\fR；如果从该处理器集中删除了一个 \fBCPU\fR，\fBtrapstat\fR 会修改其输出以排除该删除的 CPU。最多可指定一个处理器集。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fIentrylist\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅对 \fIentrylist\fR 指定的陷阱表条目执行 \fBtrapstat\fR。陷阱表条目可以通过陷阱编号或陷阱名称指定（例如，级别为 10 的陷阱可以指定为 \fB74\fR、\fB0x4A\fR、\fB0x4a\fR 或 \fBlevel-10\fR）。 
+.sp
+\fIentrylist\fR 可以是单个陷阱表条目或以逗号分隔的陷阱表条目列表。如果指定的陷阱表条目无效，\fBtrapstat\fR 将输出一个表，其中包含所有有效陷阱表条目的名称和值。也可以在《The SPARC Architecture Manual, Version 9》\fI\fR和《Sun Microelectronics UltraSPARC II User's Manual》\fI\fR 中找到有效的陷阱表条目列表。如果除了 \fB-e\fR 选项外还指定了可解析选项 (\fB-P\fR)，则数据的格式将如 \fB-P\fR 选项的说明中指定的那样：
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-I\fR \fIstatfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+重放之前保存在 \fIstatfile\fR 中的数据。通过指定 \fB-O\fR 来创建用于重放的数据文件。该选项尤其适用于分析具有大量 CPU 的计算机的统计信息。可以使用不同的排序和聚合选项对文件进行多次重新处理。
+.sp
+为帮助解释数据，将在输出的顶部显示用来收集数据的原始命令，除非指定了 \fB-P\fR。
+.sp
+\fB-I\fR 选项与 \fB-O\fR、\fB-T\fR、\fB-t\fR、\fB-e\fR、\fB-c\fR、\fB-C\fR、\fB-a\fR 和 \fB-r\fR 选项不兼容。如果使用该选项，则不能指定 \fIinterval\fR 和 \fIcount\fR 或 command 参数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR \fIkey1\fR,...\fR
+.ad
+.sp .6
+.RS 4n
+每个抽样期间内的行依次按照 \fIkey1\fR、\fIkey2\fR 等从高到低排序。每个键可以是 \fBtrapstat\fR 输出中的任何行标题，例如 \fBlevel-10\fR、\fBu-itlb-miss\fR 等。
+.sp
+使用 \fBtrapstat\fR \fB-l\fR 可以列出所有事件名称。使用 \fB-lt\fR 或 \fB-lT\fR 可以列出 TLB 格式的键名称。将 \fB-l\fR 与 \fB-P\fR 一起使用可显示可解析的列表。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-l\fR\fR
+.ad
+.sp .6
+.RS 4n
+列出陷阱表条目。缺省情况下，所显示的表包含所有有效的陷阱编号、陷阱名称以及简要说明。使用缺省输出和使用 \fB-e\fR 选项的 \fIentrylist\fR 参数时都会显示陷阱名称。如果除了 \fB-l\fR 选项外还指定了可解析选项 (\fB-P\fR)，则数据的格式如下： 
+.sp
+
+.sp
+.TS
+tab();
+cw(2.75i) cw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+字段内容
+1以十六进制表示的陷阱编号
+2以十进制表示的陷阱编号
+3陷阱名称 
+其余陷阱说明
+.TE
+
+前三个字段以空格分隔。最后一个字段可以包含空格。如果修改格式，则它将与现有字段兼容。
+.sp
+有关 \fB-l\fR 的其他用法，请参见 \fB-k\fR、\fB-t\fR 和 \fB-T\fR 选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.sp .6
+.RS 4n
+当使用 \fB-A\fR 选项来聚合多个 CPU 的数据时，将显示算术平均值而不是总和。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fInum\fR\fR
+.ad
+.sp .6
+.RS 4n
+在应用排序和聚合选项后，仅显示每个抽样期间内的前 \fInum\fR 行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-O\fR \fIstatfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+将收集的数据保存到 \fIstatfile\fR 中。以后可以使用 \fB-I\fR 重放该数据。
+.sp
+如果文件名为 \fB—\fR（连字符），则将写入到标准输出。
+.sp
+\fB-O\fR 的用途是捕获所有指定的数据。它与以下数据缩减选项不兼容：\fB-A\fR、\fB-k\fR、\fB-m\fR 和 \fB-o\fR。由于 \fBstatfile\fR 格式是固定的，因此，\fB-P\fR 选项不能与 \fB-O\fR 一起使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR\fR
+.ad
+.sp .6
+.RS 4n
+生成可解析的输出。在不使用其他数据收集修改选项（即 \fB-t\fR 或 \fB-T\fR）运行时或使用 \fB-e\fR 运行时，\fBtrapstat\fR 的可解析输出具有以下格式：
+.sp
+
+.sp
+.TS
+tab();
+cw(2.75i) cw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+字段内容
+1T{
+时间戳（自启动以来的纳秒数）
+T}
+2CPU/核心/插槽/bin ID
+3陷阱编号（以十六进制表示）
+4陷阱名称
+5每间隔的陷阱比率
+.TE
+
+各个字段使用空格分隔。如果修改格式，将通过从字段 6 开始添加可能的新字段来进行修改；现有字段将保持不变。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR \fIrate\fR\fR
+.ad
+.sp .6
+.RS 4n
+将抽样率显式设置为每秒 \fIrate\fR 个样例。如果指定该选项，\fBtrapstat\fR 的输出将由每秒的陷阱数更改为每抽样间隔的陷阱数。不能与 command 或 interval 参数一起使用。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-t\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用 TLB/TSB 统计信息。
+.sp
+所显示的表包含四个主要数据列：\fIitlb-miss\fR、\fIitsb-miss\fR、\fIdtlb-miss\fR 和 \fIdtsb-miss\fR。这些列包含对应事件的比率和处理事件所用 \fBCPU\fR 时间的百分比。表中的行对应于 CPU（或核心、插槽或 bin，如果指定了 \fB-A\fR），每个 CPU 占用两行：一行用于用户模式事件（以 \fBu\fR 表示），一行用于内核模式事件（以 \fBk\fR 表示）。对于每一行，在最右侧的列中显示汇总的\fBCPU\fR 时间百分比。使用实线表示 \fBCPU\fR。如果除了 \fB-t\fR 选项外还指定了可解析选项 (\fB-P\fR)，则数据的格式如下： 
+.sp
+
+.sp
+.TS
+tab();
+cw(0i) cw(5.5i) 
+lw(0i) lw(5.5i) 
+.
+字段内容
+1T{
+时间戳（自启动以来的纳秒数）
+T}
+2CPU/核心/插槽/bin ID
+3T{
+模式（\fBk\fR 表示内核，\fBu\fR 表示用户）。
+T}
+4I-TLB 未命中
+5T{
+I-TLB 未命中处理程序所用时间的百分比
+T}
+6I-TSB 未命中
+7T{
+I-TSB 未命中处理程序所用时间的百分比
+T}
+8D-TLB 未命中
+9T{
+D-TLB 未命中处理程序所用时间的百分比
+T}
+10D-TSB 未命中
+11T{
+D-TSB 未命中处理程序所用时间的百分比
+T}
+.TE
+
+各个字段使用空格分隔。如果修改格式，将通过从字段 12 开始添加可能的新字段来进行修改；现有字段将保持不变。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用 \fBTLB/TSB\fR 统计信息，其中包含页面大小信息。与 \fB-t\fR 选项一样，所显示的表包含四个主要数据列：\fIitlb-miss\fR、\fIitsb-miss\fR、\fIdtlb-miss\fR 和 \fIdtsb-miss\fR。这些列包含对应事件的绝对数量以及处理该事件所用 \fBCPU\fR 时间的百分比。表中的行对应于 CPU（或核心、插槽或 bin，如果指定了 \fB-A\fR），每个 \fBCPU\fR 占用两个行集：一个行集用于用户级事件（以 \fBu\fR 表示），一个行集用于内核级事件（以 \fBk\fR 表示）。每个行集包含的行数与所支持的页面大小相对应（请参见 \fBgetpagesizes\fR(3C)）。对于每一行，在最右侧的列中显示汇总的\fBCPU\fR 时间百分比。使用虚线表示两个行集；使用实线表示 CPU。如果除了 \fB-T\fR 选项外还指定了可解析选项 (\fB-P\fR)，则数据的格式如下：
+.sp
+
+.sp
+.TS
+tab();
+cw(0i) cw(5.5i) 
+lw(0i) lw(5.5i) 
+.
+字段内容
+1T{
+时间戳（自启动以来的纳秒数）
+T}
+2CPU/核心/插槽/bin ID
+3T{
+模式（\fBk\fR 表示内核，\fBu\fR 表示用户）
+T}
+4页面大小（以十进制表示）
+5I-TLB 未命中
+6T{
+I-TLB 未命中处理程序所用时间的百分比
+T}
+7I-TSB 未命中
+8T{
+I-TSB 未命中处理程序所用时间的百分比
+T}
+9D-TLB 未命中
+10T{
+D-TLB 未命中处理程序所用时间的百分比
+T}
+11D-TSB 未命中
+12T{
+D-TSB 未命中处理程序所用时间的百分比
+T}
+.TE
+
+各个字段使用空格分隔。如果修改格式，将通过从字段 13 开始添加可能的新字段来进行修改；现有字段将保持不变。 
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR运行不带选项的 \fBtrapstat\fR
+.sp
+.LP
+在不带选项的情况下运行时，\fBtrapstat\fR 会显示一个包含陷阱类型和 CPU 的表。缺省终端宽度最多可以容纳六列；如果有六个以上的 CPU（如本例），将显示多个表： 
+
+.sp
+.in +2
+.nf
+example# \fBtrapstat\fR
+vct  name               |     cpu0     cpu1     cpu4     cpu5     cpu8     cpu9
+------------------------+------------------------------------------------------
+ 24 cleanwin            |     6446     4837     6368     2153     2623     1321
+ 41 level-1             |      100        0        0        0        1        0
+ 44 level-4             |        0        1        1        1        0        0
+ 45 level-5             |        0        0        0        0        0        0
+ 47 level-7             |        0        0        0        0        9        0
+ 49 level-9             |      100      100      100      100      100      100
+ 4a level-10            |      100        0        0        0        0        0
+ 4d level-13            |        6       10        7       16       13       11
+ 4e level-14            |      100        0        0        0        1        0
+ 60 int-vec             |     2607     2740     2642     2922     2920     3033
+ 64 itlb-miss           |     3129     2475     3167     1037     1200      569
+ 68 dtlb-miss           |   121061    86162   109838    37386    45639    20269
+ 6c dtlb-prot           |      997      847     1061      379      406      184
+ 84 spill-user-32       |     2809     2133     2739   200806   332776   454504
+ 88 spill-user-64       |    45819   207856    93487   228529    68373    77590
+ 8c spill-user-32-cln   |      784      561      767      274      353      215
+ 90 spill-user-64-cln   |        9       37       17       39       12       13
+ 98 spill-kern-64       |    62913    50145    63869    21916    28431    11738
+ a4 spill-asuser-32     |     1327      947     1288      460      572      335
+ a8 spill-asuser-64     |       26       48       18       54       10       14
+ ac spill-asuser-32-cln |     4580     3599     4555     1538     1978      857
+ b0 spill-asuser-64-cln |       26        0        0        2        0        0
+ c4 fill-user-32        |     2862     2161     2798   191746   318115   435850
+ c8 fill-user-64        |    45813   197781    89179   217668    63905    74281
+ cc fill-user-32-cln    |     3802     2833     3733    10153    16419    19475
+ d0 fill-user-64-cln    |      329    10105     4873    10603     4235     3649
+ d8 fill-kern-64        |    62519    49943    63611    21824    28328    11693
+108 syscall-32          |     2285     1634     2278      737      957      383
+126 self-xcall          |      100        0        0        0        0        0
+
+vct  name               |    cpu12    cpu13    cpu14    cpu15
+------------------------+------------------------------------
+ 24 cleanwin            |     5435     4232     6302     6104
+ 41 level-1             |        0        0        0        0
+ 44 level-4             |        2        0        0        1
+ 45 level-5             |        0        0        0        0
+ 47 level-7             |        0        0        0        0
+ 49 level-9             |      100      100      100      100
+ 4a level-10            |        0        0        0        0
+ 4d level-13            |       15       11       22       11
+ 4e level-14            |        0        0        0        0
+ 60 int-vec             |     2813     2833     2738     2714
+ 64 itlb-miss           |     2636     1925     3133     3029
+ 68 dtlb-miss           |    90528    70639   107786   103425
+ 6c dtlb-prot           |      819      675      988      954
+ 84 spill-user-32       |   175768    39933     2811     2742
+ 88 spill-user-64       |        0   241348    96907   118298
+ 8c spill-user-32-cln   |      681      513      753      730
+ 90 spill-user-64-cln   |        0       42       16       20
+ 98 spill-kern-64       |    52158    40914    62305    60141
+ a4 spill-asuser-32     |     1113      856     1251     1208
+ a8 spill-asuser-64     |        0       64       16       24
+ ac spill-asuser-32-cln |     3816     2942     4515     4381
+ b0 spill-asuser-64-cln |        0        0        0        0
+ c4 fill-user-32        |   170744    38444     2876     2784
+ c8 fill-user-64        |        0   230381    92941   111694
+ cc fill-user-32-cln    |     8550     3790     3612     3553
+ d0 fill-user-64-cln    |        0    10726     4495     5845
+ d8 fill-kern-64        |    51968    40760    62053    59922
+108 syscall-32          |     1839     1495     2144     2083
+126 self-xcall          |        0        0        0        0
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR运行带 CPU 过滤的 \fBtrapstat\fR
+.sp
+.LP
+\fB-c\fR 选项可用于限制 \fBtrapstat\fR 所针对的 \fBCPU\fR。此示例限定 CPU 为 \fBCPU 1\fR 以及 \fBCPU\fR \fB12\fR 到 \fB15\fR。
+
+.sp
+.in +2
+.nf
+example# \fBtrapstat -c 1,12-15\fR
+
+
+vct  name               |     cpu1    cpu12    cpu13    cpu14    cpu15
+------------------------+---------------------------------------------
+ 24 cleanwin            |     6923     3072     2500     3518     2261
+ 44 level-4             |        3        0        0        1        1
+ 49 level-9             |      100      100      100      100      100
+ 4d level-13            |       23        8       14       19       14
+ 60 int-vec             |     2559     2699     2752     2688     2792
+ 64 itlb-miss           |     3296     1548     1174     1698     1087
+ 68 dtlb-miss           |   114788    54313    43040    58336    38057
+ 6c dtlb-prot           |     1046      549      417      545      370
+ 84 spill-user-32       |    66551    29480   301588    26522   213032
+ 88 spill-user-64       |        0   318652   111239   299829   221716
+ 8c spill-user-32-cln   |      856      347      331      416      293
+ 90 spill-user-64-cln   |        0       55       21       59       39
+ 98 spill-kern-64       |    66464    31803    24758    34004    22277
+ a4 spill-asuser-32     |     1423      569      560      698      483
+ a8 spill-asuser-64     |        0       74       32       98       46
+ ac spill-asuser-32-cln |     4875     2250     1728     2384     1584
+ b0 spill-asuser-64-cln |        0        2        0        1        0
+ c4 fill-user-32        |    64193    28418   287516    27055   202093
+ c8 fill-user-64        |        0   305016   106692   288542   210654
+ cc fill-user-32-cln    |     6733     3520    15185     2396    12035
+ d0 fill-user-64-cln    |        0    13226     3506    12933    11032
+ d8 fill-kern-64        |    66220    31680    24674    33892    22196
+108 syscall-32          |     2446      967      817     1196      755
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR运行显示 TLB 统计信息的 \fBtrapstat\fR
+.sp
+.LP
+\fB-t\fR 选项显示详细的 \fBTLB\fR 统计信息，其中包括执行 \fBTLB\fR 未命中处理所用的时间。以下示例显示仅处理 D-TLB 未命中就占用了计算机 14.1% 的时间： 
+
+.sp
+.in +2
+.nf
+example# \fBtrapstat -t\fR
+cpu m| itlb-miss %tim itsb-miss %tim | dtlb-miss %tim dtsb-miss %tim |%tim
+-----+-------------------------------+-------------------------------+----
+  0 u|      2571  0.3         0  0.0 |     10802  1.3         0  0.0 | 1.6
+  0 k|         0  0.0         0  0.0 |    106420 13.4       184  0.1 |13.6
+-----+-------------------------------+-------------------------------+----
+  1 u|      3069  0.3         0  0.0 |     10983  1.2       100  0.0 | 1.6
+  1 k|        27  0.0         0  0.0 |    106974 12.6        19  0.0 |12.7
+-----+-------------------------------+-------------------------------+----
+  2 u|      3033  0.3         0  0.0 |     11045  1.2       105  0.0 | 1.6
+  2 k|        43  0.0         0  0.0 |    107842 12.7       108  0.0 |12.8
+-----+-------------------------------+-------------------------------+----
+  3 u|      2924  0.3         0  0.0 |     10380  1.2       121  0.0 | 1.6
+  3 k|        54  0.0         0  0.0 |    102682 12.2        16  0.0 |12.2
+-----+-------------------------------+-------------------------------+----
+  4 u|      3064  0.3         0  0.0 |     10832  1.2       120  0.0 | 1.6
+  4 k|        31  0.0         0  0.0 |    107977 13.0       236  0.1 |13.1
+=====+===============================+===============================+====
+ ttl |     14816  0.3         0  0.0 |    585937 14.1      1009  0.0 |14.5
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR运行显示 TLB 统计信息和页面大小信息的 \fBtrapstat\fR
+.sp
+.LP
+通过指定 \fB-T\fR 选项，\fBtrapstat\fR 可显示按页面大小细分的 \fBTLB\fR 未命中信息。在此示例中，使用 8K 页面时的用户模式 TLB 未命中占用了 CPU 0 7.9% 的处理时间，而使用 64K 页面时的用户模式 TLB 未命中占用了 CPU 0 2.3% 的处理时间。
+
+.sp
+.in +2
+.nf
+example# \fBtrapstat -T -c 0\fR
+cpu m size| itlb-miss %tim itsb-miss %tim | dtlb-miss %tim dtsb-miss %tim |%tim
+----------+-------------------------------+-------------------------------+----
+  0 u   8k|      1300  0.1        15  0.0 |    104897  7.9        90  0.0 | 8.0
+  0 u  64k|         0  0.0         0  0.0 |     29935  2.3         7  0.0 | 2.3
+  0 u 512k|         0  0.0         0  0.0 |      3569  0.2         2  0.0 | 0.2
+  0 u   4m|         0  0.0         0  0.0 |       233  0.0         2  0.0 | 0.0
+- - - - - + - - - - - - - - - - - - - - - + - - - - - - - - - - - - - - - + - -
+  0 k   8k|        13  0.0         0  0.0 |     71733  6.5       110  0.0 | 6.5
+  0 k  64k|         0  0.0         0  0.0 |         0  0.0         0  0.0 | 0.0
+  0 k 512k|         0  0.0         0  0.0 |         0  0.0       206  0.1 | 0.1
+  0 k   4m|         0  0.0         0  0.0 |         0  0.0         0  0.0 | 0.0
+==========+===============================+===============================+====
+      ttl |      1313  0.1        15  0.0 |    210367 17.1       417  0.2 |17.5
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR运行带条目过滤的 \fBtrapstat\fR
+.sp
+.LP
+通过指定 \fB-e\fR 选项，\fBtrapstat\fR 可仅显示特定陷阱类型的统计信息。使用此选项，可最大限度地降低查找特定数据时的探测影响。该示例仅生成有关 CPU 12 到 15 的 \fIdtlb-prot\fR 和 \fIsyscall-32\fR 陷阱的统计信息。 
+
+.sp
+.in +2
+.nf
+example# \fBtrapstat -e dtlb-prot,syscall-32 -c 12-15\fR
+vct  name               |    cpu12    cpu13    cpu14    cpu15
+------------------------+------------------------------------
+ 6c dtlb-prot           |      817      754     1018      560
+108 syscall-32          |     1426     1647     2186     1142
+
+vct  name               |    cpu12    cpu13    cpu14    cpu15
+------------------------+------------------------------------
+ 6c dtlb-prot           |     1085      996      800      707
+108 syscall-32          |     2578     2167     1638     1452
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR运行采用较高抽样率的 \fBtrapstat\fR
+.sp
+.LP
+以下示例使用 \fB-r\fR 选项指定抽样率为每秒 1000 个样例，并仅过滤出级别为 10 的陷阱。此外，指定 \fB-P\fR 选项可生成可解析的输出。
+
+.sp
+.LP
+请注意级别 10 事件之间的时间戳差异：9,998,000 纳秒和 10,007,000 纳秒。这些级别 10 事件对应于系统时钟，缺省情况下，时钟周期为 100 赫兹（即，每 10,000,000 纳秒）。
+
+.sp
+.in +2
+.nf
+example# \fBtrapstat -e level-10 -P -r 1000\fR
+1070400 0 4a level-10 0
+2048600 0 4a level-10 0
+3030400 0 4a level-10 1
+4035800 0 4a level-10 0
+5027200 0 4a level-10 0
+6027200 0 4a level-10 0
+7027400 0 4a level-10 0
+8028200 0 4a level-10 0
+9026400 0 4a level-10 0
+10029600 0 4a level-10 0
+11028600 0 4a level-10 0
+12024000 0 4a level-10 0
+13028400 0 4a level-10 1
+14031200 0 4a level-10 0
+15027200 0 4a level-10 0
+16027600 0 4a level-10 0
+17025000 0 4a level-10 0
+18026000 0 4a level-10 0
+19027800 0 4a level-10 0
+20025600 0 4a level-10 0
+21025200 0 4a level-10 0
+22025000 0 4a level-10 0
+23035400 0 4a level-10 1
+24027400 0 4a level-10 0
+25026000 0 4a level-10 0
+26027000 0 4a level-10 0
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR显示 \fBcpu_mondo\fR 比率最高的三个 CPU
+.sp
+.LP
+以下命令显示 \fBcpu_mondo\fR 比率最高的三个 CPU。
+
+.sp
+.in +2
+.nf
+example% \fBtrapstat -k cpu_mondo -o 3 10 1\fR
+vct name                | cpu0 cpu1 cpu61
+------------------------+----------------
+9   immu-miss           |    0    0     0
+24  cleanwin            |    0    0     0
+31  dmmu-miss           |    0    0     0
+41  level-1             |    0    0     0
+46  level-6             |    0    0     0
+49  level-9             |    0    0     0
+4a  level-10            |  100   31    16
+4d  level-13            |   23   15     8
+4e  level-14            |  100   32    18
+6c  dtlb-prot           |    0    0     0
+7c  cpu_mondo           |   24   16     9
+7d  dev_mondo           |    0    0     0
+84  spill-user-32       |    0    0     0
+8c  spill-user-32-cln   |    0    0     0
+98  spill-kern-64       |  423  180   102
+a4  spill-asuser-32     |    0    0     0
+ac  spill-asuser-32-cln |    0    0     0
+c4  fill-user-32        |    0    0     0
+cc  fill-user-32-cln    |    0    1     0
+d8  fill-kern-64        |  295  165    94
+103 flush-wins          |    0    0     0
+108 syscall-32          |    0    0     0
+122 get-psr             |    0    0     0
+127 gethrtime           |    0    0     0
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 8 \fR将多个 CPU 聚合为四组（按四分位数分组）
+.sp
+.LP
+以下命令按级别 10 比率将 96 个 CPU 聚合为四组（按四分位数分组）。
+
+.sp
+.in +2
+.nf
+example% \fBtrapstat -O /tmp/t1 -e level-10 10 1\fR
+example% \fBtrapstat -I /tmp/t1 -A 4\fR
+
+replay from: trapstat -O /tmp/t1 -e level-10 10 1
+vct name     | bin0 bin1 bin2 bin3
+-------------+--------------------
+4a  level-10 |  440  340  305  306
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 9 \fR聚合多个 CPU 并排序
+.sp
+.LP
+以下命令按核心 ID 聚合 96 个 CPU 并进行排序，确定最高的四个。
+
+.sp
+.in +2
+.nf
+example% \fBtrapstat -A cor -e level-10 -k level-10 -o 4 10 1\fR
+vct name     |  cor514  cor549  cor542  cor521
+-------------+--------------------------------
+4a  level-10 |     197     120     111     106
+.fi
+.in -2
+.sp
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) cw(2.75i) 
+lw(2.75i) lw(2.75i) 
+.
+属性类型属性值
+可用性system/core-os
+接口稳定性
+    用户可读的输出Uncommitted（未确定）
+    可解析的输出Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBlockstat\fR(1M)、\fBpmap\fR(1)、\fBpsrset\fR(1M)、\fBpsrinfo\fR(1M)、\fBpbind\fR(1M)、\fBppgsz\fR(1)、\fBgetpagesizes\fR(3C) 
+.sp
+.LP
+《\fISun Microelectronics UltraSPARC II User's Manual\fR》，1997 年 1 月，STP1031。 
+.sp
+.LP
+《\fIThe SPARC Architecture Manual, Version 9\fR》，1994 年，Prentice-Hall 出版。 
+.SH 附注
+.sp
+.LP
+启用 \fBtrapstat\fR 后会产生各种探测影响，具体取决于收集的信息类型。虽然确切的探测影响取决于硬件的具体情况，但可以依据下表进行粗略估计： 
+.sp
+
+.sp
+.TS
+tab();
+cw(0i) cw(5.5i) 
+lw(0i) lw(5.5i) 
+.
+选项大致的探测影响
+缺省值每个陷阱为 3-5%
+\fB-e\fR每个指定陷阱为 3-5%
+\fB-t\fR, \fB-T\fR T{
+命中 TSB 的每个 TLB 未命中陷阱为 40-45%，未命中 TSB 的每个 TLB 未命中陷阱为 25-30%
+T}
+.TE
+
+.sp
+.LP
+这些探测影响基于 \fI每个陷阱\fR，反映的不是对系统造成的整体影响。例如，使用缺省选项在系统上运行 \fBtrapstat\fR，会用总时间的 7% 来处理陷阱，导致的性能下降不到 0.5%；使用 \fB-t\fR 或 \fB-T\fR 选项在系统上运行 \fBtrapstat\fR，会用总时间的 5% 来处理 TLB 未命中，导致的性能下降不超过 2.5%。 
+.sp
+.LP
+带 \fB-t\fR 或 \fB-T\fR 选项运行时，\fBtrapstat\fR 在计算 \fI%tim\fR 字段时会将探测影响考虑在内。这可确保无论是否存在 \fBtrapstat\fR 扰动，\fI%tim\fR 字段都是衡量给定工作负荷的 TLB 未命中处理用时的准确合理指标。
+.sp
+.LP
+尽管 \fI%tim\fR 字段包括执行 TLB 未命中处理程序的显性成本，但\fI不\fR包括 TLB 未命中陷阱的隐性成本（例如，管道影响、高速缓存污染等）。随着陷阱率增长，这些隐性成本会越来越显著；如果报告的 \fI%tim\fR 值较高（大于 50%），您可以准确推断出有大量时间用在 TLB 未命中陷阱的隐性成本上。
+.sp
+.LP
+由于可能会导致系统范围的性能下降，所以只有超级用户才能运行 \fBtrapstat\fR。
+.sp
+.LP
+受底层统计信息收集方法所限，一次只能运行一个 \fBtrapstat\fR 实例。
+.sp
+.LP
+通过硬件（例如 Hardware Table Walk 或 HWTW）支持 TLB 未命中处理的 UltraSPARC sun4v 平台通过操作系统屏蔽 TLB 未命中。Trapstat 通常会通过虚拟机管理程序 (hypervisor) 禁用 HWTW（如果它已启用）。由于这可能会导致性能大幅降低，所以 sun4v 平台提供了一种替代的“快速”方法来收集 TLB 未命中数据。当前，只有基于 UltraSPARC T1 的系统完全实现了此功能：在其他 sun4v 系统上，由 trapstat 收集的 TLB 未命中数据将始终为 0。

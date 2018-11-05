@@ -1,0 +1,1187 @@
+'\" te
+.\" Copyright (c) 2003, 2012, Oracle and/or its affiliates.All rights reserved.
+.TH luxadm 1M "2011 年 8 月 16 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+luxadm \- 管理 Sun Fire 880 存储子系统和 FC_AL 设备
+.SH 用法概要
+.LP
+.nf
+\fBluxadm\fR [\fIoptions\fR]... \fIsubcommand\fR [\fIoptions\fR]... \fIenclosure\fR 
+     [,\fIdev\fR] | \fIpathname\fR...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBluxadm\fR 程序是用于管理 \fBSENA\fR、Sun Fire 880 内部存储子系统以及单个光纤通道仲裁环路 (Fiber Channel Arbitrated Loop, \fBFC_AL\fR) 设备的管理命令。\fBluxadm\fR 可执行各种控制和查询任务，具体取决于使用的命令行参数和选项。
+.sp
+.LP
+命令行必须包含子命令。命令行还可以包含选项，通常至少包含一个附件名称或路径名以及取决于子命令的其他参数。您仅需要指定唯一标识子命令所需的那么多个字符。
+.sp
+.LP
+通过输入路径名指定与子命令交互的设备。对于 \fBSENA\fR 子系统，可以改为指定磁盘设备或附件服务控制器，方法为输入该设备的全球名称 (World Wide Name, \fBWWN\fR) 或者该设备的端口。还可以通过输入 \fBSENA\fR 附件的名称以及该附件中特定设备的可选标识符来指定设备。可以通过输入设备的 \fBWWN\fR 或设备的端口来指定单个 \fBFC_AL\fR 设备。
+.SS "路径名"
+.sp
+.LP
+通过完整物理路径名或完整逻辑路径名来指定设备或控制器。
+.sp
+.LP
+对于 \fBSENA\fR，设备的典型物理路径名是：
+.sp
+.in +2
+.nf
+/devices/sbus@1f,0/SUNW,socal@1,0/sf@0,0/ssd@w2200002037000f96,
+         0:a,raw
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+对于系统上的所有 \fBSENA IB\fR（Interface Board，接口板）和 Sun Fire 880 SES 设备控制器，物理路径的逻辑链接存放在目录 \fB/dev/es\fR 中。以下是逻辑链接的示例 \fB/dev/es/ses0\fR。
+.sp
+.LP
+可以使用 \fBWWN\fR 替代路径名来选择 \fBFC_AL\fR 设备、\fBSENA\fR 子系统 IB 或者 Sun Fire 880 内部存储子系统。\fBWWN\fR 是唯一的 16 个十六进制数字值，指定用于访问设备的端口或者设备自身。典型 \fBWWN\fR 值为：
+.sp
+.in +2
+.nf
+2200002037000f96
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+有关 \fBWWN\fR 格式的更多信息，请参见“附注”部分。
+.sp
+.LP
+对于 Sun Fire 880 内部存储子系统中的磁盘，典型物理路径名为： 
+.sp
+.in +2
+.nf
+/devices/pci@8,600000/SUNW,qlc@2/fp@0,0/ssd@w2100002037a6303c,0:a
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+典型逻辑路径名为：
+.sp
+.in +2
+.nf
+/dev/rdsk/c2t8d0s2
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+对于单个 FC_AL 设备，典型物理路径名为： 
+.sp
+.in +2
+.nf
+/devices/sbus@3.0/SUNW,socal@d,10000/sf@0,0/ssd@w2200002037049fc3,0:a,raw
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+典型逻辑路径名为：
+.sp
+.in +2
+.nf
+/dev/rdsk/c1t0d0s2
+.fi
+.in -2
+.sp
+
+.SS "附件"
+.sp
+.LP
+对于 \fBSENA\fR，可以通过其附件名称和插槽名称标识设备：
+.br
+.in +2
+\fIbox_name\fR[\fB,f\fR\fIslot_number\fR]
+.in -2
+.br
+.in +2
+\fIbox_name\fR[\fB,r\fR\fIslot_number\fR]
+.in -2
+.sp
+.LP
+\fIbox_name\fR 是 \fBSENA\fR 附件的名称，由 \fBenclosure_name\fR 子命令指定。如果使用时不带可选的 \fIslot_number\fR 参数，\fIbox_name\fR 标识 \fBSENA\fR 子系统 \fBIB\fR。
+.sp
+.LP
+\fBf\fR 或 \fBr\fR 指定是 \fBSENA\fR 附件中前面还是后面的插槽。
+.sp
+.LP
+\fIslot_number\fR 指定 \fBSENA\fR 附件中设备的插槽编号，\fB0-6\fR 或 \fB0-10\fR。
+.sp
+.LP
+对于 Sun Fire 880 内部存储子系统，还可以通过设备的附件名称和插槽名称标识该设备。但是，仅有一组磁盘：
+.sp
+.in +2
+.nf
+\fIbox_name\fR[,\fIsslot_number\fR]
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+\fIbox_name\fR 是 Sun Fire 880 附件的名称，由 \fBenclosure_name\fR 子命令指定。如果使用时不带可选的 \fIslot_number\fR 参数，\fIbox_name\fR 标识 Sun Fire 880 内部存储子系统附件服务设备。使用 \fIs\fR 指定 Sun Fire 880 内部存储子系统中的磁盘插槽编号，\fB0\fR - \fB11\fR。
+.sp
+.LP
+有关磁盘和子系统的逻辑名称的其他信息，请参见 \fBdisks\fR(1M) 和 \fBdevlinks\fR(1M)。
+.SH 选项
+.sp
+.LP
+所有子命令都支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR\fR
+.ad
+.RS 6n
+.rt  
+专家模式。建议初学用户不要使用此选项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 6n
+.rt  
+详细模式。
+.RE
+
+.sp
+.LP
+特定于某个子命令的选项在\fB\fR“用法”部分中随子命令一起进行介绍。
+.SH 操作数
+.sp
+.LP
+支持下列操作数：
+.sp
+.ne 2
+.mk
+.na
+\fB\fIenclosure\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBSENA\fR 的 \fIbox_name\fR 或者 Sun Fire 880 内部存储子系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIfibre_channel_HBA_port\fR\fR
+.ad
+.sp .6
+.RS 4n
+主机控制器端口的路径。典型路径为：
+.sp
+.in +2
+.nf
+ /devices/pci@8,600000/pci@1/SUNW,qlc@4/fp@0,0:devctl
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIpathname\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBSENA IB\fR、Sun Fire 880 内部存储子系统或磁盘设备的逻辑或物理路径。\fIpathname\fR 还可以是 \fBSENA IB\fR、\fBSENA\fR 磁盘或单个 \fBFC_AL\fR 设备的 \fBWWN\fR。
+.RE
+
+.SH 用法
+.SS "子命令"
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdisplay\fR \fIenclosure\fR[,\fIdev\fR] . . . | \fIpathname\fR . . .\fR
+.ad
+.br
+.na
+\fB\fBdisplay\fR \fB-p\fR \fIpathname\fR . . . \fR
+.ad
+.br
+.na
+\fB\fBdisplay\fR \fB-r\fR \fIenclosure\fR[,\fIdev\fR] . . . | \fIpathname\fR . . .\fR
+.ad
+.br
+.na
+\fB\fBdisplay\fR \fB-v\fR \fIenclosure \fR[,\fIdev\fR] . . . | \fIpathname\fR . . .\fR
+.ad
+.sp .6
+.RS 4n
+显示附件或设备特定的数据。
+.sp
+子系统数据包含附件环境信息以及所有子系统设备（包括磁盘）的状态。
+.sp
+磁盘数据包含查询、容量和配置信息。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 6n
+.rt  
+显示 \fIpathname\fR 指定的设备或子系统的性能信息。此选项仅适用于累积性能信息的子系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.RS 6n
+.rt  
+显示由路径名指定的 \fBFC_AL\fR 设备的错误信息，如果路径为 \fBSENA\fR，则显示环路上所有设备的错误信息。\fB-r\fR 选项仅适用于 \fBSENA\fR 子系统和单个 \fBFC_AL\fR 设备。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.RS 6n
+.rt  
+在详细模式下显示，包括模式意义数据。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdownload\fR [ \fB-s\fR ] [ \fB-f\fR \fIfilename_path\fR ] \fIenclosure\fR. . .\fR
+.ad
+.sp .6
+.RS 4n
+下载指向由附件或路径名指定的 SENA 子系统接口板单元或 Sun Fire 880 内部存储子系统的 prom 映像。
+.sp
+\fBSENA\fR 的下载完成时，将重置 \fBSENA\fR 并且执行下载的代码。如果未指定文件名，将使用缺省 prom 映像。\fBSENA\fR 的缺省 prom 映像位于目录 \fBusr/lib/locale/C/LC_MESSAGES\fR 中，名称为 \fBibfirmware\fR
+.sp
+Sun Fire 880 内部存储子系统的下载完成时，子系统将重置并且下载的代码开始执行。Sun Fire 880 内部存储子系统的缺省固件映像位于：\fB/usr/platform/SUNW,Sun-Fire-880/lib/images/int_fcbpl_fw\fR。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR\fR
+.ad
+.RS 6n
+.rt  
+保存。\fB-s\fR 选项用于将下载的固件保存在 FEPROM 中。如果未指定 \fB-s\fR，在关开机循环后将不保存下载的固件。 
+.sp
+\fB-s\fR 选项不适用于 Sun Fire 880 内部存储子系统，因为该系统始终在闪存中存储下载的固件。
+.sp
+使用 \fB-s\fR 选项时，\fBdownload\fR 子命令修改子系统上的 \fBFEPROM\fR 并且应\fI谨慎使用\fR。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBenclosure_name\fR \fInew_name\fR \fIenclosure\fR | \fIpathname\fR\fR
+.ad
+.sp .6
+.RS 4n
+更改由附件或路径名指定的附件的附件名称。新名称 (\fInew_name\fR) 必须等于或少于 16 个字符。仅接受字母或数字字符。此子命令仅适用于 SENA 和 Sun Fire 880 内部存储子系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfailover primary\fR | \fBsecondary\fR \fIpathname\fR\fR
+.ad
+.sp .6
+.RS 4n
+选择访问给定逻辑卷的 Sun Storage T3 存储阵列合作伙伴组控制器。如果指定了 \fBprimary\fR，将通过主控制器访问逻辑卷。如果指定了 \fBsecondary\fR，将通过由 \fIpathname\fR 指定的辅助控制器访问逻辑卷。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfcal_s_download\fR [ \fB-f\fR \fIfcode-file\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+将文件 \fIfcode-file\fR 中包含的 fcode 下载到\fI所有\fR \fBFC100/S\fR Sbus 卡中。此命令是交互式的，在下载 fcode 之前需要用户确认。
+.sp
+请\fI仅\fR在单用户模式下使用 \fBfcal_s_download\fR。存在通过某个主机适配器进行的 \fBI/O\fR 活动时，使用 \fBfcal_s_download\fR 更新该适配器会\fI\fR导致该适配器重置。只有在系统重新引导后，才会执行或显示新更新的 FCode。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfcode-file\fR\fR
+.ad
+.RS 17n
+.rt  
+如果调用时不带 \fB-f\fR 选项，将输出每个 \fBFC100/S\fR Sbus 卡中 fcode 的当前版本。 
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfcode_download\fR \fB-p\fR\fR
+.ad
+.br
+.na
+\fB\fBfcode_download\fR \fB-d\fR \fIdir-name\fR\fR
+.ad
+.sp .6
+.RS 4n
+查找已安装的 \fBFC/S\fR、\fBFC100/S、FC100/P\fR 或 \fBFC100/2P\fR 主机总线适配器卡，并将 \fIdir-name\fR 中的 FCode 文件下载到适当的卡。该命令确定每种文件类型的正确卡，并且是交互式的。将 FCode 下载到每个设备之前需要用户确认。
+.sp
+请仅在单用户模式下使用 \fBfcode_download\fR 装入 FCode。存在通过某个主机适配器进行的 \fBI/O\fR 活动时，使用 \fBfcode_download\fR 更新该适配器会导致该适配器重置。只有在系统重新引导后，才会执行或显示新更新的 FCode。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIdir-name\fR\fR
+.ad
+.RS 15n
+.rt  
+将目录 \fIdir-name\fR 中包含的 FCode 文件下载到适当的适配器卡。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 15n
+.rt  
+列显每个卡上装入的 FCode 的当前版本。不执行任何下载。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinquiry\fR \fIenclosure\fR[,\fIdev\fR ] . . .  | \fIpathname\fR . . .\fR
+.ad
+.sp .6
+.RS 4n
+显示由附件或路径名指定的所选设备的查询信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBinsert_device\fR [ \fIenclosure\fR,\fIdev\fR . . . ]\fR
+.ad
+.sp .6
+.RS 4n
+帮助用户热插入新设备或者新设备链。有关热插拔操作的限制，请参阅“附注”\fB\fR部分。此子命令仅适用于 \fBSENA\fR、Sun Fire 880 内部存储子系统和单个 FC_AL 驱动器。对于 \fBSENA\fR，如果指定了多个附件，可以在多个总线上执行并发热插入。如果该子命令没有参数，可以插入整个附件或单个 \fBFC_AL\fR 驱动器。对于 \fBSENA\fR 或 Sun Fire 880 内部存储子系统，该子命令以交互方式引导用户执行新设备或设备链的热插入步骤。如果输入了磁盘列表，将要求用户验证要插入的设备列表是否正确，此时用户可以选择继续或退出。然后会以交互方式要求用户插入磁盘或附件，然后创建并显示设备的逻辑路径名。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBled\fR \fIenclosure\fR,\fIdev\fR . . . | \fIpathname\fR. . .\fR
+.ad
+.sp .6
+.RS 4n
+显示由附件或路径名指定的磁盘的关联 \fBLED\fR 的当前状态。此子命令仅适用于支持此功能的子系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBled_blink\fR \fIenclosure\fR,\fIdev\fR . . . | \fIpathname\fR . . .\fR
+.ad
+.sp .6
+.RS 4n
+请求子系统开始闪烁由附件或路径名指定的磁盘的关联 \fBLED\fR。此子命令仅适用于支持此功能的子系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBled_off\fR \fIenclosure\fR,\fIdev\fR . . . | \fIpathname\fR . . .\fR
+.ad
+.sp .6
+.RS 4n
+请求子系统禁用（关闭）由附件或路径名指定的磁盘的关联 \fBLED\fR。在 \fBSENA\fR 子系统上，此项可能会、也可能不会使 \fBLED\fR 关闭或停止闪烁，具体取决于 \fBSENA\fR 子系统的状态。请参阅《\fBSENA\fR Array Installation and Service Manual》（文件号码 802-7573）。此子命令仅适用于支持此功能的子系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBled_on\fR \fIpathname\fR . . .\fR
+.ad
+.sp .6
+.RS 4n
+请求子系统启用（打开）由路径名指定的磁盘的关联 \fBLED\fR。此子命令仅适用于支持此功能的子系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpower_off\fR [ \fB-F\fR ] \fIenclosure\fR[,\fIdev\fR] . . . | \fIpathname\fR  . . .\fR
+.ad
+.sp .6
+.RS 4n
+用于 \fBSENA\fR 时，此子命令会使 \fBSENA\fR 子系统进入节能模式。在节能模式下时，\fBSENA\fR 驱动器不可用。用于 \fBSENA\fR 中的驱动器时，将该驱动器设置为驱动器关闭/不对插状态。在驱动器关闭/不对插状态下，驱动器将降低转速（停止）并处于绕过模式。此命令不适用于 Sun Fire 880 内部存储子系统。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fR
+.ad
+.RS 6n
+.rt  
+强制选项仅适用于 \fBSENA\fR。指示 \fBluxadm\fR 尝试关闭一个或多个设备的电源，即使这些设备正在由该主机使用（因此处于忙碌状态）也是如此。
+.sp
+\fB警告\fR：关闭包含当前正使用数据的设备的电源将导致不可预测的结果。用户应该首先尝试正常关闭设备电源（无 \fB-F\fR），仅当明确知道不进行正常检查的后果时才能采用此选项。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpower_on\fR \fIenclosure\fR[\fB,\fR\fIdev\fR] . . \fR
+.ad
+.sp .6
+.RS 4n
+使 \fBSENA\fR 子系统离开节能模式（在将此子命令用于 \fBSENA\fR 时）。将此子命令用于驱动器时，会将该驱动器设置为正常启动状态。此命令不适用于 Sun Fire 880 内部存储子系统。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprobe\fR [ \fB-p\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+查找和显示关于所有连接的 \fBSENA\fR 子系统、Sun Fire 880 内部存储子系统以及单个 \fBFC_AL\fR 设备的信息，包括逻辑路径名、\fBWWNs\fR 和附件名称。如果此子命令发现具有相同附件名称的不同 \fBSENA\fR，它会对用户进行警告。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 6n
+.rt  
+在显示中包括物理路径名。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBqlgc_s_download\fR [ \fB-f\fR \fIfcode-file\fR ]\fR
+.ad
+.sp .6
+.RS 4n
+将文件 \fIfcode-file\fR 中包含的 FCode 下载到所有 \fBFC100/P\fR、\fBFC100/2P\fR \fBPCI\fR 主机适配器卡中。此命令是交互式的，在将 FCode 下载到每个设备之前需要用户确认。请仅在单用户模式下使用 \fBqlgc_s_download\fR。存在通过某个主机适配器进行的 \fBI/O\fR 活动时，使用 \fBqlgc_s_download\fR 更新该适配器会导致该适配器重置。只有在系统重新引导后，才会执行或显示新更新的 FCode。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR \fIfcode-file\fR\fR
+.ad
+.RS 17n
+.rt  
+如果调用时不带 \fB-f\fR 选项，将输出每个 \fBFC100/P\fR、\fBFC100/2P PCI\fR 卡中 FCode 的当前版本。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrelease\fR \fIpathname\fR\fR
+.ad
+.sp .6
+.RS 4n
+释放指定磁盘上的预留空间。路径名应该是磁盘的物理或逻辑路径名。
+.sp
+包括此子命令只是出于历史原因和诊断目的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBremove_device\fR [ \fB-F\fR ] \fIenclosure\fR[,\fIdev\fR] . . . | \fIpathname\fR . . .\fR
+.ad
+.sp .6
+.RS 4n
+帮助用户热移除设备或设备链。此子命令还可用于移除整个附件。此子命令适用于 \fBSENA\fR、Sun Fire 880 内部存储子系统和单个 \fBFC_AL\fR 驱动器。有关热插拔操作的限制，请参阅“附注”\fB\fR部分。对于 \fBSENA\fR、Sun Fire 880 内部存储子系统和单个 \fBFC_AL\fR 设备，该子命令引导用户执行一个或多个设备的热移除操作。在执行过程中，将要求用户验证要移除的设备列表是否正确，此时用户可以选择继续或退出。然后会准备要移除的磁盘或附件并以交互方式要求用户移除磁盘或附件。
+.sp
+对于多重托管的磁盘，执行的步骤为：
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在第一个主机上发出 \fBluxadm\fR \fBremove_device\fR 命令。当提示继续时，请等待。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在辅助主机上发出 \fBluxadm\fR \fBremove_device\fR 命令。当提示继续时，请等待。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在第一个主机上继续执行 \fBremove_device\fR 命令。提示移除设备时执行该操作。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+在其他主机上完成 \fBluxadm\fR \fBremove_device\fR 命令。
+.RE
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR\fR
+.ad
+.RS 6n
+.rt  
+指示 \fBluxadm\fR 尝试热插拔一个或多个设备，即使这些设备正在由该主机使用（因此处于\fB忙碌\fR或\fB保留\fR状态）也\fB强制\fR执行热插拔操作。
+.sp
+\fB警告\fR：移除包含当前正使用的数据的设备将导致不可预测的结果。用户应该首先尝试正常热插拔（无 \fB-F\fR），仅当明确知道不进行正常热插拔检查的后果时才能采用此选项。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreserve\fR \fIpathname\fR\fR
+.ad
+.sp .6
+.RS 4n
+保留指定磁盘，使其供发出命令的主机专用。使用的路径名应该是磁盘的物理或逻辑路径名。
+.sp
+包括此子命令只是出于历史原因和诊断目的。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBset_boot_dev\fR [ \fB-y\fR ] \fIpathname\fR\fR
+.ad
+.sp .6
+.RS 4n
+将系统 \fBPROM\fR 中的 boot-device 变量设置为 \fIpathname\fR 指定的物理设备名称，其可以是块特殊设备或者挂载引导文件系统的目录的路径名。该命令通常以交互方式运行，要求对在 \fBPROM\fR 中设置缺省 boot-device 进行确认。可以使用 \fB-y\fR 选项以非交互方式运行该命令，在这种情况下不要求或不需要确认。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstart\fR \fIpathname\fR\fR
+.ad
+.sp .6
+.RS 4n
+加快 SENA 中指定磁盘的转速。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstop\fR \fIpathname\fR...\fR
+.ad
+.sp .6
+.RS 4n
+降低 SENA 中指定磁盘的转速。
+.RE
+
+.SS "SENA、Sun Fire 880 内部存储子系统以及单个 FC_AL 驱动器专家模式子命令"
+.sp
+.LP
+以下子命令仅供专家使用，仅适用于 \fBSENA\fR、Sun Fire 880 内部存储子系统和光纤通道环路。这些子命令应该仅由熟悉 \fBSENA\fR 子系统和光纤通道环路的用户使用。
+.sp
+.LP
+如果为针对总线运行的专家子命令指定磁盘，该子命令会对指定磁盘所连接到的总线运行。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fBbypass\fR \fB[\fR\fB-ab\fR\fB]\fR \fIenclosure\fR,\fIdev\fR\fR
+.ad
+.br
+.na
+\fB\fB-e\fR \fBbypass\fR \fB-f\fR \fIenclosure\fR\fR
+.ad
+.sp .6
+.RS 4n
+请求附件服务控制器将指定端口和设备的 LRC（Loop Redundancy Circuit，环路冗余线路）设置为绕过状态。 
+.sp
+该子命令支持以下选项： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 6n
+.rt  
+绕过指定设备的端口 \fBa\fR。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.RS 6n
+.rt  
+绕过指定设备的端口 \fBb\fR。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fBdump_map\fR \fIfibre_channel_HBA_port\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示指定光纤通道端口上的目标设备或主机总线适配器的 WWN 数据。如果指定端口上没有目标设备，则返回错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fBenable\fR \fB[\fR\fB-ab\fR\fB]\fR \fIenclosure\fR,\fIdev\fR\fR
+.ad
+.br
+.na
+\fB\fB-e\fR \fBenable\fR \fB-f\fR \fIenclosure\fR\fR
+.ad
+.sp .6
+.RS 4n
+请求附件服务控制器将指定端口和设备的 LRC（Loop Redundancy Circuit，环路冗余线路）设置为启用状态。 
+.sp
+该子命令支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 6n
+.rt  
+启用指定设备的端口 \fBa\fR。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.RS 6n
+.rt  
+启用指定设备的端口 \fBb\fR。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-e\fR \fBforcelip\fR \fIenclosure\fR[\fB,\fR\fIdev\fR]  . . . | \fIpathname\fR . . .\fR
+.ad
+.sp .6
+.RS 4n
+使用环路初始化基元 (Loop Initialization Primitive, \fBLIP\fR) 序列强制链路重新初始化。附件或路径名可以指定环路上的任何设备。使用路径名指定多重环路配置的特定路径。
+.sp
+这是仅限专家使用的命令，使用时应谨慎。该命令将重置环路上的所有端口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-e\fR \fBrdls\fR \fIenclosure\fR[\fB,\fR\fIdev\fR]  . . . | \fIpathname\fR . . .\fR
+.ad
+.sp .6
+.RS 4n
+对于包含由附件或路径名指定的设备的环路，读取并显示该环路上所有可用设备的链路错误状态信息。
+.RE
+
+.SS "其他专家模式子命令"
+.sp
+.LP
+有关这些子命令的限制，请参见“附注”\fB\fR部分。这些子命令应该仅由熟悉其所管理的系统的用户使用。
+.sp
+.LP
+这些命令不适用于 Sun Fire 880 内部存储子系统。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-e\fR \fBbus_getstate\fR \fIpathname\fR\fR
+.ad
+.RS 29n
+.rt  
+获取并显示指定总线的状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-e\fR \fBbus_quiesce\fR \fIpathname\fR\fR
+.ad
+.RS 29n
+.rt  
+停止指定总线。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-e\fR \fBbus_reset\fR \fIpathname\fR\fR
+.ad
+.RS 29n
+.rt  
+仅重置指定总线。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-e\fR \fBbus_resetall\fR \fIpathname\fR\fR
+.ad
+.RS 29n
+.rt  
+重置指定总线和所有设备。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-e\fR \fBbus_unquiesce\fR \fIpathname\fR\fR
+.ad
+.RS 29n
+.rt  
+将指定总线停止。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-e\fR \fBdev_getstate\fR \fIpathname\fR\fR
+.ad
+.RS 29n
+.rt  
+获取并显示指定设备的状态。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-e\fR \fBdev_reset\fR \fIpathname\fR\fR
+.ad
+.RS 29n
+.rt  
+重置指定设备。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-e\fR \fBoffline\fR \fIpathname\fR\fR
+.ad
+.RS 29n
+.rt  
+将指定设备脱机。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB\fR\fB-e\fR \fBonline\fR \fIpathname\fR\fR
+.ad
+.RS 29n
+.rt  
+将指定设备联机。
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR显示系统上的 \fBSENA\fR 和单个 FC_AL 设备
+.sp
+.LP
+以下示例查找并显示系统上的所有 \fBSENA\fR 和单个 \fBFC_AL\fR 设备：
+
+.sp
+.in +2
+.nf
+example% \fBluxadm probe\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR显示 \fBSENA\fR 或 Sun Fire 880 内部存储子系统
+.sp
+.LP
+以下示例显示 \fBSENA\fR 或 Sun Fire 880 内部存储子系统：
+
+.sp
+.in +2
+.nf
+example% \fBluxadm display /dev/es/ses0\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR显示两个子系统
+.sp
+.LP
+以下示例使用附件名称显示两个子系统：
+
+.sp
+.in +2
+.nf
+example% \fBluxadm display BOB system1\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR显示关于第一个磁盘的信息
+.sp
+.LP
+以下示例显示名为 \fBBOB\fR 的附件前面第一个磁盘的信息。使用 \fBf\fR 指定前面的磁盘。使用 \fBr\fR 指定后面的磁盘。
+
+.sp
+.in +2
+.nf
+example% \fBluxadm display BOB,f0\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 5 \fR显示关于 Sun Fire 880 内部存储子系统的信息
+.sp
+.LP
+Sun Fire 880 内部存储子系统仅具有一组磁盘。在这种情况下，使用 \fIs\fR 指定插槽：
+
+.sp
+.in +2
+.nf
+example% \fBluxadm display BOB,s0\fR 
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 6 \fR显示关于 \fBSENA\fR 磁盘、附件或单个 \fBFC_AL\fR 驱动器的信息
+.sp
+.LP
+以下示例显示关于 \fBSENA\fR 磁盘、附件或端口 \fBWWN\fR 为 \fB2200002037001246\fR 的单个 \fBFC_AL\fR 驱动器的信息：
+
+.sp
+.in +2
+.nf
+example% \fBluxadm display 2200002037001246\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 7 \fR使用唯一字符发出子命令
+.sp
+.LP
+以下示例仅使用了唯一标识子命令所需的那么多个字符：
+
+.sp
+.in +2
+.nf
+example% \fBluxadm disp BOB\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 8 \fR显示错误信息
+.sp
+.LP
+以下示例显示关于附件 \fBBOB\fR 所在的环路的错误信息：
+
+.sp
+.in +2
+.nf
+example% \fBluxadm display\fR \fB-r\fR \fBBOB\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 9 \fR将新固件下载到接口板
+.sp
+.LP
+以下示例将新固件下载到名为 \fBBOB\fR 的附件中的接口板中（使用文件的缺省路径进行下载）：
+
+.sp
+.in +2
+.nf
+example% \fBluxadm download\fR \fB-s\fR \fBBOB\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 10 \fR显示来自 \fBSCSI\fR 查询命令的信息
+.sp
+.LP
+以下示例显示 \fBSCSI\fR 查询命令从系统上所有单个磁盘获取的信息，仅使用唯一标识查询子命令所需的那么多个字符：
+
+.sp
+.in +2
+.nf
+example% \fBluxadm inq /dev/rdsk/c?t?d?s2\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 11 \fR热插拔
+.sp
+.LP
+以下示例将新驱动器热插入名为 \fBBOB\fR 的附件前面的第一个插槽中：
+
+.sp
+.in +2
+.nf
+example% \fBluxadm insert_device BOB,f0\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+以下示例将新驱动器热插入名为 SF880-1 的 Sun Fire 880 内部存储子系统中的第一个插槽中：
+
+.sp
+.in +2
+.nf
+example% \fBluxadm insert_device SF880-1,s0\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 12 \fR运行专家子命令
+.sp
+.LP
+以下示例运行专家子命令。该子命令在附件 \fBBOB\fR 所在的环路上强制环路初始化：
+
+.sp
+.in +2
+.nf
+example% \fBluxadm\fR \fB-e\fR \fBforcelip BOB\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 13 \fR使用专家模式热插拔子命令
+.sp
+.LP
+下面是使用专家模式热插拔子命令来热移除磁盘的示例。有关热插拔的限制，请参见“附注”部分\fB\fR。
+
+.sp
+.LP
+第一个步骤保留 SCSI 设备，使其无法从它的第二个 SCSI 总线访问：
+
+.sp
+.in +2
+.nf
+example# \fBluxadm reserve /dev/rdsk/c1t8d0s2\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 14 \fR将要移除的磁盘脱机
+.sp
+.LP
+后面两个步骤将要移除的磁盘脱机，然后停止总线：
+
+.sp
+.in +2
+.nf
+example# \fBluxadm\fR \fB-e\fR \fBoffline /dev/rdsk/c1t8d0s2\fR
+example# \fBluxadm -e bus_quiesce /dev/rdsk/c1t8d0s2\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 15 \fR将总线停止
+.sp
+.LP
+然后，用户移除磁盘并继续执行以下操作：将总线停止、将磁盘重新联机，然后将其取消保留：
+
+.sp
+.in +2
+.nf
+example# \fBluxadm\fR \fB-e\fR \fBbus_unquiesce /dev/rdsk/c1t8d0s2\fR
+example# \fBluxadm\fR \fB-e\fR \fBonline /dev/rdsk/c1t8d0s2\fR
+example# \fBluxadm release /dev/rdsk/c1t8d0s2\fR
+.fi
+.in -2
+.sp
+
+.SH 环境变量
+.sp
+.LP
+有关影响 \fBluxadm\fR 执行的 \fBLANG\fR 环境变量的说明，请参见 \fBenviron\fR(5)。
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+成功完成。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-1\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。
+.RE
+
+.SH 文件
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBusr/lib/firmware/fc_s/fc_s_fcode\fR
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fBusr/lib/locale/C/LC_MESSAGES/ibfirmware\fR
+.RE
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.SS "usr/sbin"
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/storage/fc-utilities
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBdevlinks\fR(1M)、\fBdisks\fR(1M)、\fBattributes\fR(5)、\fBenviron\fR(5)、\fBses\fR(7D)
+.sp
+.LP
+\fI《Managing SAN Devices and Multipathing in Oracle                         Solaris 11.3 》\fR
+.sp
+.LP
+《\fIOracle Solaris Cluster 3.3 with Fibre Channel JBOD Storage Device Manual\fR》
+.SH 附注
+.sp
+.LP
+请参见 R.Snively 编著的《Tutorial for SCSI use of IEEE Company_ID》\fI\fR，了解关于 \fBIEEE\fR 扩展 \fBWWN\fR 的其他信息。当前，仅某些设备驱动程序支持热插拔。如果在不支持热插拔的磁盘或总线上尝试热插拔，将显示以下形式的错误消息：
+.sp
+.in +2
+.nf
+luxadm: can't acquire "PATHNAME": No such file or directory
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+……
+.sp
+.LP
+请务必谨慎，不要停止包含根文件系统或 \fB/usr\fR 文件系统或者任何交换数据的总线。如果停止此类总线，会导致死锁，从而需要重新引导系统。

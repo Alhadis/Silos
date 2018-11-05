@@ -1,0 +1,287 @@
+'\" te
+.\"  Copyright 1989 AT&T
+.\" Copyright © 2003, Sun Microsystems, Inc. All Rights Reserved 
+.TH rcp 1 "2008 年 12 月 23 日" "SunOS 5.11" "用户命令"
+.SH 名称
+rcp \- 远程文件复制
+.SH 用法概要
+.LP
+.nf
+\fBrcp\fR [\fB-p\fR] [\fB-a\fR] [\fB-K\fR] [\fB-x\fR] [\fB-PN\fR | \fB-PO\fR] [\fB-k\fR \fIrealm\fR] \fIfilename1\fR \fIfilename2\fR
+.fi
+
+.LP
+.nf
+\fBrcp\fR [\fB-pr\fR] [\fB-a\fR] [\fB-K\fR] [\fB-x\fR] [\fB-PN\fR | \fB-PO\fR] [\fB-k\fR \fIrealm\fR] \fIfilename\fR... \fIdirectory\fR
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBrcp\fR 命令会在计算机之间复制文件。每个 \fIfilename\fR 或 \fIdirectory\fR 参数可以是以下形式的远程文件名：
+.sp
+.in +2
+.nf
+\fIhostname\fR\fB:\fR\fIpath\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+也可以是本地文件名（不含 \fB:\fR（冒号）字符，或任何 \fB:\fR（冒号）字符前不含 \fB/\fR（反斜杠））。
+.sp
+.LP
+\fIhostname\fR 可以是一个 IPv4 或 IPv6 地址字符串。请参见 \fBinet\fR(7P) 和 \fBinet6\fR(7P)。由于 IPv6 地址已经包含冒号，因此，使用 IPv6 地址时，\fIhostname\fR 应括在一对方括号中。否则，第一个冒号会解释为 \fIhostname\fR 和 \fIpath\fR 之间的分隔符。例如，
+.sp
+.in +2
+.nf
+[1080::8:800:200C:417A]:tmp/file
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+如果 \fIfilename\fR 不是全路径名，则会将其解释为相对于 \fIhostname\fR 上的起始目录的路径名。远程主机上的 \fIpath\fR 可使用 \fB\ \fR、\fB" \fR 或 \fB\&' \fR 引起，以便能够远程解释元字符。请注意，Kerberos 版本的 \fBrcp\fR 不支持 IPv6。
+.sp
+.LP
+\fBrcp\fR 不会提示用户输入口令。它会使用通过命令行选项启用的 Kerberos 验证，或者您的当前本地用户名必须存在于 \fIhostname\fR 中并允许 \fBrsh\fR(1) 执行远程命令。
+.sp
+.LP
+\fBrcp\fR 会话可使用以下 Kerberos 特定选项来执行 Kerberos 验证：\fB-a\fR、\fB-PN\fR 或 \fB-PO\fR、\fB-x\fR 以及 \fB-k\fR \fIrealm\fR。上述部分选项（\fB-a\fR、\fB-x\fR 和 \fB-PN\fR 或 \fB-PO\fR）也可以在 \fBkrb5.conf\fR(4) 的 \fB[appdefaults]\fR 部分中指定。这些选项的用法及其预期行为将在下面的“选项”部分中讨论。使用 Kerberos 验证时，帐户授权将由 \fBkrb5_auth_rules\fR(5) 中的规则控制。如果此授权失败，则仅当在命令行上显式使用 \fB-PO\fR 选项，或者在 \fBkrb5.conf\fR(4) 中指定了该选项时，才会出现使用 rhosts 回退到常规 \fBrcp\fR 这一情况。如果授权成功，则会成功执行远程复制，且系统不会提示用户输入口令。另请注意，\fB-PN\fR 或 \fB-PO\fR、\fB-x\fR 以及 \fB-k\fR \fIrealm\fR 选项只是 \fB-a\fR 选项的超集。
+.sp
+.LP
+\fBrcp\fR 可以处理源和目标文件均不在当前计算机上的第三方副本。主机名也可以采用以下形式
+.sp
+.in +2
+.nf
+\fIusername\fR\fB@\fR\fIhostname\fR\fB:\fR\fIfilename\fR
+.fi
+.in -2
+
+.sp
+.LP
+以便使用 \fIusername\fR（而非当前本地用户名）作为远程主机上的用户名。\fBrcp\fR 还支持远程主机的 Internet 域寻址，因此：
+.sp
+.in +2
+.nf
+\fIusername\fR\fB@\fR\fIhost\fR\fB\&.\fR\fIdomain\fR\fB:\fR\fIfilename\fR
+.fi
+.in -2
+
+.sp
+.LP
+会指定要使用的用户名、主机名以及主机驻留的域。使用并非全路径名的文件名时，系统会将其解释为与远程主机上名为 \fIusername\fR 的用户的起始目录相对的文件名。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.RS 12n
+.rt  
+此选项会显式启用 Kerberos 验证，并信任用于访问控制的 \fB\&.k5login\fR 文件。如果服务器端的 \fBin.rshd\fR(1M) 成功执行了授权检查，且 \fB\&.k5login\fR 文件允许访问，则允许用户执行 \fBrcp\fR 传输。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-k\fR \fIrealm\fR\fR
+.ad
+.RS 12n
+.rt  
+促使 \fBrcp\fR 获取 \fIrealm\fR（而非 \fBkrb5.conf\fR(4) 确定的远程主机领域）中的远程主机的票证。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-K\fR \fIrealm\fR\fR
+.ad
+.RS 12n
+.rt  
+此选项会显式禁用 Kerberos 验证。它可用来覆盖 \fBkrb5.conf\fR(4) 中的 \fBautologin\fR 变量。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 12n
+.rt  
+尝试为每个副本提供与原始文件相同的修改时间、访问时间、模式以及 \fBACL\fR（如适用）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-PO\fR\fR
+.ad
+.br
+.na
+\fB\fB-PN\fR\fR
+.ad
+.RS 12n
+.rt  
+显式请求新版 (\fB-PN\fR) 或旧版 (\fB-PO\fR) Kerberos “\fBrcmd\fR” 协议。新协议避免了旧协议中常见的许多安全问题，安全性大幅提升，但它无法与早期的 (MIT/SEAM) 服务器互操作。缺省情况下会使用新协议，除非使用这些选项或通过 \fBkrb5.conf\fR(4) 进行了显式指定。使用旧 “\fBrcmd\fR” 协议时，如果 Kerberos 验证失败，系统会回退到常规的非 Kerberos \fBrcp\fR。使用更安全的新 “\fBrcmd\fR” 协议时，则不会发生这种情况。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR\fR
+.ad
+.RS 12n
+.rt  
+复制根目录位于 \fIfilename\fR 的每个子树；此时，目标必须是一个目录。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.RS 12n
+.rt  
+使系统对主机之间传输的信息进行加密。请注意，命令会以未加密的形式发送至远程系统。所有后续传输都会进行加密。
+.RE
+
+.SH 用法
+.sp
+.LP
+有关 \fBrcp\fR 遇到大于或等于 2 GB（2^31 字节）文件时行为的说明，请参见 \fBlargefile\fR(5)。
+.sp
+.LP
+\fBrcp\fR 命令支持 IPv6。请参见 \fBip6\fR(7P)。Kerberos V5 验证目前不支持 \fBIPv6\fR。
+.sp
+.LP
+对于 Kerberos \fBrcp\fR 会话，每个用户都可在其起始目录中的 \fB\&.k5login\fR 文件中拥有一个专用验证列表。此文件中的每一行均应包含一个 \fIprincipal\fR/\fIinstance \fR@\fIrealm\fR 格式的 Kerberos 主体名称。如果存在一个 \fB~/.k5login\fR 文件，则当且仅当发起方用户通过了 \fB~/.k5login\fR 文件中所指定的某个主体的验证时，才会授予其对该帐户的访问权限。否则，当且仅当用户的已验证主体名称可以使用 \fIauthenticated-principal-name\fR -> \fIlocal-user-name\fR 映射规则映射至本地帐户名称时，才会授予发起方用户对该帐户的访问权限。\fB\&.k5login\fR 文件（用于访问控制）在 Kerberos 验证完成后才生效。
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+所有文件都已成功复制。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.RS 6n
+.rt  
+出现错误。
+.RE
+
+.sp
+.LP
+请参见“附注”部分了解有关退出代码的警告。
+.SH 文件
+.sp
+.LP
+\fB$HOME/.profile\fR
+.sp
+.ne 2
+.mk
+.na
+\fB\fB$HOME/.k5login\fR\fR
+.ad
+.RS 23n
+.rt  
+包含允许访问的 Kerberos 主体的文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/krb5/krb5.conf\fR\fR
+.ad
+.RS 23n
+.rt  
+Kerberos 配置文件
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性service/network/network-clients
+_
+CSIEnabled（已启用）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBcpio\fR(1)、\fBftp\fR(1)、\fBrlogin\fR(1)、\fBrsh\fR(1)、\fBsetfacl\fR(1)、\fBtar\fR(1)、\fBtar\fR(1)、\fBin.rshd\fR(1M)、\fBhosts.equiv\fR(4)、\fBkrb5.conf\fR(4)、\fBattributes\fR(5)、\fBlargefile\fR(5)、\fBkrb5_auth_rules\fR(5)、\fBinet\fR(7P)、\fBinet6\fR(7P)、\fBip6\fR(7P)
+.SH 附注
+.sp
+.LP
+\fBrcp\fR 用来在不同主机之间进行复制。按照以下方式使用 \fBrcp\fR 尝试将一个文件复制到其自身时：
+.sp
+.in +2
+.nf
+example% \fBrcp tmp/file myhost:/tmp/file\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+会导致文件严重损坏。
+.sp
+.LP
+复制目标为文件而不是目录时，\fBrcp\fR 可能会出现异常故障。
+.sp
+.LP
+使用远程主机 \fB$HOME/.profile\fR 内的命令生成的输出时，\fBrcp\fR 可能会出现混乱。
+.sp
+.LP
+处理第三方副本时，\fBrcp\fR 要求源主机具备在远程主机上执行命令的权限。
+.sp
+.LP
+\fBrcp\fR 无法正确处理符号链接。请使用通过管道传输到 \fBrsh\fR 的 \fBtar\fR 或 \fBcpio\fR 来获取包含符号链接或命名管道的目录的远程副本。请参见 \fBtar\fR(1) 和 \fBcpio\fR(1)。
+.sp
+.LP
+如果忘记使用引号将用于远程主机的元字符引起，则会收到无法理解的错误消息。
+.sp
+.LP
+将 \fBACL\fR 复制到不支持 \fBACL\fR 的文件系统时，\fBrcp\fR 会失败。
+.sp
+.LP
+\fBrcp\fR 支持 \fBCSI\fR，但处理用户名、主机名和域时除外。
+.sp
+.LP
+使用 \fBrcp\fR 处理第三方副本时，如果任一台远程计算机未运行 Solaris，则退出代码不可依赖。也就是说，退出代码表明操作成功执行时实际上可能发生了错误，或者虽然退出代码表明发生了错误，但复制可能已经彻底成功完成。

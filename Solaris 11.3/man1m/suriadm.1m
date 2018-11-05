@@ -1,0 +1,587 @@
+'\" te
+.\" Copyright (c) 2012, 2015, Oracle and/or its affiliates. All rights reserved
+.TH suriadm 1M "07 Apr 2015" "SunOS 5.11" "System Administration Commands"
+.SH NAME
+suriadm \- administer storage objects based on storage URIs
+.SH SYNOPSIS
+.LP
+.nf
+\fB/usr/sbin/suriadm\fR \fIcommand\fR [\fIoptions\fR] [\fIoperands\fR]
+.fi
+
+.LP
+.nf
+\fB/usr/sbin/suriadm\fR parse [\fB-H\fR] [\fB-o\fR <\fIp\fR>,<\fIp\fR>,...] <\fIURI\fR>
+\fB/usr/sbin/suriadm\fR normalize <\fIURI\fR>
+/usr/sbin/suriadm map [-H] [-o <\fIp\fR>,<\fIp\fR>,...] [-p <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>
+/usr/sbin/suriadm lookup-mapping [-H] [-o <\fIp\fR>,<\fIp\fR>,...] [-p <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>
+/usr/sbin/suriadm unmap [-p <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>
+/usr/sbin/suriadm create [-H] [-o <\fIp\fR>,<\fIp\fR>,...] [-p <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>
+/usr/sbin/suriadm destroy [-p <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>
+/usr/sbin/suriadm lookup-uri [-t <\fIuri-type\fR>] <\fIdevice-path\fR>
+/usr/sbin/suriadm lookup-uri [-t <\fIuri-type\fR>] 
+    -p \fBmapped-dev\fR=<\fIdevice-path\fR>
+/usr/sbin/suriadm lookup-uri [-t <\fIuri-type\fR>] -p \fBluname\fR=<\fIluname\fR>
+/usr/sbin/suriadm lookup-uri [-t <\fIuri-type\fR>] -p \fBtarget\fR=<\fItarget\fR> 
+    -p \fBlun\fR=<\fILUN\fR>
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBsuriadm\fR command line administration tool allows system users to manage storage objects via storage URIs. The command allows to parse, map, unmap, query the state of mappings and look up storage URIs.
+.SS "Supported Storage URIs"
+.sp
+.LP
+Supported storage URIs are defined in \fBsuri\fR(5) manual page.
+.SH SUB-COMMANDS
+.sp
+.LP
+The following subcommands are supported:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBparse\fR [\fB-H\fR] [\fB-o\fR \fIp\fR,\fIp\fR,...] \fIURI\fR\fR
+.ad
+.sp .6
+.RS 4n
+Parses a given URI and displays a default list of properties. With \fB-H\fR, a header is omitted from the output. With \fB-o\fR, only properties from the list provided are displayed. The \fB-o\fR option implies output on one line, with property values separated by tabs, meant to be further processed by another command.
+.sp
+Allowed property names for the \fB-o\fR option are: \fIcreate-size\fR, \fIcreate-supported\fR, \fIgroup\fR, \fIfile-permissions\fR, \fIhostname\fR, \fIinitiator\fR, \fIluname\fR, \fIlun\fR, \fImapped-dev\fR, \fImapped-devs\fR, \fImount-options\fR, \fImountpoint\fR, \fImountpoint-prefix\fR, \fIpath\fR, \fIport\fR, \fItarget\fR, \fIteardown-supported\fR, \fIuri\fR, \fIuri-type\fR, and \fIuser\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnormalize\fR \fIURI\fR\fR
+.ad
+.sp .6
+.RS 4n
+Parses and normalizes a storage URI string based on normalization specifications for the URI type. Displays the normalized URI and does not accept any options.
+.sp
+For an iSCSI or a logical unit URI this subcommand converts all the alphabetical charaters in the URI to lower case characters.
+.sp
+For iSCSI URIs this subcommand also removes the presence of the default iSCSI port "3260" in the URI.
+.sp
+For device URI type, all leading forward slashes that follow the URI type name and the occurence of "\fB/dev\fR" at the head of the path component if present is removed.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBmap\fR [\fB-H\fR] [\fB-o\fR p,p,...] [\fB-p\fR <\fIprop\fR>=<\fIvalue\fR>] \fIURI\fR\fR
+.ad
+.sp .6
+.RS 4n
+Parses a storage URI, configures the storage subsystem if necessary to instantiate all devices corresponding to the URI provided, and displays device paths. If devices are already instantiated, the map operation only looks up device paths.
+.sp
+For an iSCSI URI, this subcommand will add a \fBsend-targets\fR discovery address(es) a hostname resolves to if a URI authority section is present.
+.sp
+For logical unit and \fBdev\fR URI types, this subcommand has no effect on system configuration. Options \fB-H\fR and \fB-o\fR have the same meaning as the \fBparse\fR subcommand. The property \fBmapped-devs\fR shows all the device paths corresponding to the URI provided, and the property \fBmapped-dev\fR shows only the first device path of \fBmapped-devs\fR.
+.sp
+Allowed input property names for the \fB-p\fR option are: \fBcreate-size\fR, \fBfile-permissions\fR, \fBmount-options\fR, \fBmountpoint-prefix\fR, \fBmapped-dev\fR, \fBtarget\fR, \fBlun\fR, and \fBluname\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlookup-mapping\fR [\fB-H\fR] [\fB-o\fR <\fIp\fR>,<\fIp\fR>,...]\fR
+.ad
+.br
+.na
+\fB[\fB-p\fR <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>\fR
+.ad
+.sp .6
+.RS 4n
+Parses a URI and looks up an existing mapping between a storage URI and the object represented by a local system device paths. Default list of properties is displayed. Options \fB-H\fR and \fB-o\fR have the same meaning as for the \fBparse\fR subcommand. Option \fB-p\fR has the same meaning as for the \fBmap\fR subcommand.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcreate\fR [\fB-H\fR] [\fB-o\fR <\fIp\fR>,<\fIp\fR>,...] [\fB-p\fR <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>\fR
+.ad
+.sp .6
+.RS 4n
+Creates the backing store for the storage URI then maps it. Option \fB-p\fR has the same meaning as for the \fBmap\fR subcommand.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdestroy\fR [\fB-p\fR <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>\fR
+.ad
+.sp .6
+.RS 4n
+Unmaps the storage URI then destroys the backing store. Option \fB-p\fR has the same meaning as for the \fBmap\fR subcommand.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunmap\fR [\fB-p\fR <\fIprop\fR>=<\fIvalue\fR>] <\fIURI\fR>\fR
+.ad
+.sp .6
+.RS 4n
+Parses and unmaps an object presumably mapped before. Option \fB-p\fR has the same meaning as for the \fBmap\fR subcommand.
+.sp
+For an iSCSI URI, this subcommand removes discovery addresses to which a hostname from a URI authority section resolves, if present.
+.sp
+For logical unit and \fBdev\fR URI types, this subcommand has no effect on system configuration.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlookup-uri\fR [\fB-t\fR \fIuri-type\fR] \fIdevice-path\fR\fR
+.ad
+.br
+.na
+\fB\fBlookup-uri\fR [\fB-t\fR \fIuri-type\fR] \fB-p\fR \fImapped-dev\fR=<\fIdevice-path\fR>\fR
+.ad
+.sp .6
+.RS 4n
+Looks up and displays URIs based on a local system device path. Allowed URI types for \fB-t\fR are \fBdev\fR, \fBlu\fR, and \fBiscsi\fR. If the \fB-t\fR option is not specified, the output consists of all URIs that match the device path for any URI type. Using the property option "\fB-p\fR" is optional.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlookup-uri\fR [\fB-t\fR \fIuri-type\fR] \fB-p\fR \fIluname\fR=<\fIluname\fR>\fR
+.ad
+.sp .6
+.RS 4n
+Looks up and displays LU and iSCSI URIs based on a logical unit name. Allowed URI types for \fB-t\fR are \fBlu\fR and \fBiscsi\fR. If the \fB-t\fR option is not specified the output consists of all URIs that identify the logical unit matched by a given logical unit name.
+.sp
+If the logical unit name does not have an implicit ID type (as in IQN based name) the ID type must be explicitly stated. See EXAMPLES.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlookup-uri\fR [\fB-t\fR \fIuri-type\fR] \fB-p\fR \fItarget\fR=<\fItarget\fR> \fB-p\fR \fBlun\fR=<\fILUN\fR>\fR
+.ad
+.sp .6
+.RS 4n
+Looks up and displays URIs based on a target port and LUN. Allowed URI types for \fB-t\fR are \fBlu\fR and \fBiscsi\fR. If the \fB-t\fR option is not specified, the output consists of all URIs that identify the logical unit matched by the specified target and LUN. In general only one URI type will be present in the output even without the \fB-t\fR option.
+.sp
+The target must consists of an identifier type and the identifier, separated by a period. Supported ID types are "\fBnaa\fR" and "\fBiqn\fR". Fibre-channel target ports are always NAA based names. iSCSI target ports are always IQN based names. See EXAMPLES.
+.sp
+LUN is a decimal number.
+.RE
+
+.SH EXAMPLES
+.LP
+\fBExample 1 \fRParsing a URI and Displaying Properties
+.sp
+.LP
+The following command parses and iSCSI URI and displays a default list of properties.
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm parse iscsi://10.0.0.1:3260/luname.naa.0123456789abcdef\fR
+PROPERTY           VALUE
+uri-type           iscsi
+hostname           10.0.0.1
+port               3260
+luname             naa.0123456789abcdef
+target             -
+lun                -
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm parse iscsi://10.0.0.1:3260/target.iqn.1990-12.com.sun\ 
+:cng-002,lun.3\fR 
+PROPERTY           VALUE 
+uri-type           iscsi 
+hostname           10.0.0.1 
+port               3260 
+luname             - 
+target            iqn.1990-12.com.sun:cng-002 
+lun               3
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 2 \fRMapping an iSCSI URI and Displaying a Device Name
+.sp
+.LP
+The following command maps an iSCSI URI and displays the mapped local system device names. The effect of this command is to automatically add a \fBsend-targets\fR discovery address if one is not already present.
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm map iscsi://127.0.0.1/luname.naa.\e\fR
+\fB600144F0F4977D4000004F7EC8F00001\fR
+PROPERTY        VALUE
+mapped-devs      /dev/dsk/c0t600144F0F4977D4000004F7EC8F00001d0s2
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 3 \fRMapping an iSCSI URI and Displaing Device Names when the device is accessible by means of multiple paths.
+.sp
+.LP
+The following command displays all the device names, when there is multiple device paths corresponding to a URI.
+
+.sp
+.in +2
+.nf
+$\fBsuriadm map iscsi://localhost/luname.naa.\e\fR
+\fB600144F0F42B0A00000053BC37270001\fR
+PROPERTY        VALUE
+mapped-devs     /dev/dsk/c6t46d0
+                /dev/dsk/c6t45d0
+                /dev/dsk/c6t48d0
+                /dev/dsk/c6t47d0
+                /dev/dsk/c6t49d0
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 4 \fRLooking Up Mapping
+.sp
+.LP
+The following command looks up an existing iSCSI mapping.
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-mapping iscsi://127.0.0.1/\e\fR
+\fBluname.naa.600144F0F4977D4000004F7EC8F00001\fR
+PROPERTY        VALUE
+mapped-devs      /dev/dsk/c0t600144F0F4977D4000004F7EC8F00001d0s2
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 5 \fRParsing a Logical Unit URI
+.sp
+.LP
+The following command parses an initiator/target/\fBluname\fR logical unit URI.
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm parse lu:initiator.naa.2101001b32ae7ab5,\e\fR
+\fBtarget.naa.2100001d38089fb0,luname.naa.500000e012942880\fR
+PROPERTY        VALUE
+uri-type        lu
+luname          naa.500000e012942880
+initiator       naa.2101001b32ae7ab5
+target          naa.2100001d38089fb0
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 6 \fRMapping a Logical Unit URI, Looking Up URIs
+.sp
+.LP
+The following command sequence maps a logical unit URI, then looks up the matched logical unit URIs based on a found device name.
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm map lu:luname.naa.5000c5000288fa25\fR
+PROPERTY        VALUE
+mapped-path     /dev/dsk/c7t26d0s2
+
+$ \fBsuriadm lookup-uri -t lu /dev/dsk/c7t26d0s2\fR
+lu:luname.naa.5000c5000288fa25
+lu:initiator.naa.500605b000ae7010,target.naa.\e
+5001636000019c11,naa.5000c5000288fa25
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 7 \fRLooking Up Matching URIs
+.sp
+.LP
+The following command looks up all URIs that match a specific device name without specifying a URI type.
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri /dev/dsk/c7t26d0s2\fR
+lu:luname.naa.5000c5000288fa25
+lu:initiator.naa.500605b000ae7010,target.naa.5001636000019c11,\e
+luname.naa.5000c5000288fa25
+dev:dsk/c7t26d0s2
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 8 \fRParsing a URI, Displaying Selected Properties
+.sp
+.LP
+The following command parses a URI and displays only selected properties, all on the same line, separated by tabs, and with no header.
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm map -Ho uri-type,luname,mapped-path \e\fR
+\fBlu:luname.naa.5000c5000288fa25\fR
+lu      naa.5000c5000288fa25    /dev/dsk/c7t26d0s2
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 9 \fRLooking Up Logical Unit URIs
+.sp
+.LP
+The following command looks up logical unit URIs for a device accessible by means of multiple paths.
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri -t lu /dev/dsk/c11t2000001D38089FB0d0\fR
+lu:luname.naa.2000001d38089fb0
+lu:initiator.naa.2101001b32ae7ab5,target.naa.2100001d38089fb0,luname.\e
+naa.2000001d38089fb0
+lu:initiator.naa.2100001b328e7ab5,target.naa.2200001d38089fb0,luname.\e
+naa.2000001d38089fb0
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 10 \fRTrying to Parse Incorrect URI
+.sp
+.LP
+The following command attempts to parse a syntactically incorrect URI.
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm parse lu:luname.naa.0123456789\fR
+Failed to parse URI "lu:luname.naa.0123456789": \fIGUID\fR part
+in "luname.naa.\fIGUID\fR" not 16 or 32 character hexadecimal
+number: "0123456789"
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 11 \fRTrying to Map LU URI with Inaccessible LU
+.sp
+.LP
+The following command attempts to map an LU URI with a logical unit name not accessible from the system.
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm map lu:luname.naa.0123456789abcdef\fR
+Failed to map URI "lu:luname.naa.0123456789abcdef": No such
+logical unit "naa.0123456789abcdef" found
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 12 \fRLooking Up URI for Non-Existent Device Path
+.sp
+.LP
+The following command attempts to lookup a URI for a non-existent device path.
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri /dev/dsk/nonexistent\fR
+Failed to map "/dev/dsk/nonexistent" to URI: No such device:
+"/dev/dsk/nonexistent"
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 13 \fRLooking Up \fBdev\fR URI
+.sp
+.LP
+The following command sequence illustrates the fact that the \fBdev\fR URI is the only URI type that accepts a disk pathname that specifies a slice.
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri -t dev /dev/dsk/c0t500000E012942880d0s0\fR
+dev:dsk/c0t500000E012942880d0s0
+
+$ \fBsuriadm lookup-uri -t iscsi \e\fR
+  \fB/dev/dsk/c0t600144F03E0A0C0000004FAB3B660001d0s0\fR
+Failed to look up "iscsi" URI for device: \e
+  "/dev/dsk/c0t600144F03E0A0C0000004FAB3B660001d0s0": \e
+  Device path with slice does not represent entire disk
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 14 \fRNormalizing a URI
+.sp
+.LP
+The following command normalizes an iSCSI URI.
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm normalize iscsi://10.0.0.1:3260/luname.naa.0123456789ABCDEF 
+        iscsi://10.0.0.1/luname.naa.0123456789abcdef\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+The following invocations normalize dev URIs.
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm normalize dev:/dev/dsk/c0t0d0 dev:dsk/c0t0d0\fR
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm normalize dev:///dev/dsk/c0t0d0 dev:dsk/c0t0d0\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 15 \fRGetting URIs Based on Target and LUN
+.sp
+.LP
+The following command shows how to get URIs based on target and LUN.
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri -p target=naa.2100001d38089fb0 -p lun=0\fR
+lu:luname.naa.500000e012942880 
+lu:initiator.naa.2101001b32ae7ab5,target.naa.2100001d38089fb0,luname.naa.50000 
+0e012942880
+.fi
+.in -2
+.sp
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri -p lun=0 -p\fR
+target=iqn.1986-03.com.sun:02:9548ddf8-dc44-63a1-b773-e7ac335a760f 
+iscsi://10.0.0.1/luname.naa.600144f0a5320b470000527d66740009 
+iscsi://10.0.0.1/target.iqn.1986-03.com.sun:02:9548ddf8-dc44-63a1-b773-e7ac335 
+a760f,lun.0
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 16 \fRGetting LU URIs Based on a Logical Unit Name
+.sp
+.LP
+The following command shows how to get LU URIs based on a logical unit name:
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm lookup-uri -t lu -p luname=naa.5000cca012b66e90\fR
+lu:luname.naa.5000cca012b66e90
+lu:initiator.naa.5080020000fafcf8,target.naa.5000cca012b66e91,luname.naa.5000c
+ca012b66e90
+.fi
+.in -2
+.sp
+
+.LP
+\fBExample 17 \fRSetting an Input Property on \fBmap\fR
+.sp
+.LP
+The following command shows how to set an input property on \fBmap\fR.
+
+.sp
+.in +2
+.nf
+$ \fBsuriadm map -p create-size=2G file://user1:group2@/export/file1\fR
+.fi
+.in -2
+.sp
+
+.SH EXIT STATUS
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+Command succeeded.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB>0\fR\fR
+.ad
+.sp .6
+.RS 4n
+Command failed.
+.RE
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/library/storage/suri
+_
+Interface StabilityCommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBstmsboot\fR(1M), \fBsvcadm\fR(1M), \fBattributes\fR(5), \fBsuri\fR(5), \fBscsi_vhci\fR(7D), \fBlibsuri\fR(3LIB)
+.sp
+.LP
+\fISmall Computer System Interface-3\fR (SCSI-3)
+.SH NOTES
+.sp
+.LP
+When an iSCSI URI is used, the \fBsvc:/network/iscsi/initiator\fR service must be enabled, unless a parse operation is being performed. If this service is disabled and an iSCSI URI is being processed, the iSCSI initiator service will be automatically enabled temporarily. The service is never disabled through the \fBsuriadm\fR command.

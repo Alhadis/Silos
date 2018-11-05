@@ -1,0 +1,364 @@
+'\" te
+.\" Copyright (c) 2008, 2011, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1989 AT&T
+.TH fsck 1M "2010 年 9 月 13 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+fsck \- 检查并修复文件系统
+.SH 用法概要
+.LP
+.nf
+\fBfsck\fR [\fB-F\fR \fIFSType\fR] [\fB-m\fR] [\fB-V\fR] [\fB-v\fR] [\fIspecial\fR]...
+.fi
+
+.LP
+.nf
+\fBfsck\fR [\fB-F\fR \fIFSType\fR] [\fB-n\fR | N | y | Y] [\fB-V\fR] [\fB-v\fR] 
+     [\fB-o\fR \fIFSType-specific-options\fR] [\fIspecial\fR]...
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBfsck\fR 审计文件系统并以交互方式修复不一致的文件系统状况。如果文件系统中存在不一致，每项更正措施的缺省操作是等待用户响应 \fByes\fR 或 \fBno\fR。如果用户没有写入权限，\fBfsck\fR 缺省为 \fBno\fR 操作。某些更正操作会导致数据丢失。数据丢失的数量和严重性可通过诊断输出确定。
+.sp
+.LP
+\fIFSType-specific-options\fR 是在选项或关键字-属性对的逗号分隔（逗号后不加空格）列表中指定的选项，由命令的特定于 \fIFSType\fR 的模块进行解释。
+.sp
+.LP
+\fIspecial\fR 表示文件系统所在的字符特殊设备，例如 \fB/dev/rdsk/c1t0d0s7\fR。注意：应使用字符特殊设备，而不是块特殊设备。如果挂载块设备，\fBfsck\fR 将不工作。
+.sp
+.LP
+如果未指定 \fIspecial\fR 设备，\fBfsck\fR 会检查 \fB/etc/vfstab\fR 中列出的文件系统。将检查 \fB/etc/vfstab\fR 中的以下条目：在 \fBfsckdev\fR 字段中具有特殊字符设备条目并在 \fBfsckpass\fR 字段中具有非零数字条目。指定 \fB-F\fR \fIFSType\fR 会将要检查的文件系统限制为指示的那些类型。
+.sp
+.LP
+如果指定 \fIspecial\fR，但未指定 \fB-F\fR，将通过在 \fB/etc/vfstab\fR 中查找匹配条目来确定文件系统类型。如果没有找到相应的条目，则将使用 \fB/etc/default/fs\fR 中指定的缺省本地文件系统类型。
+.sp
+.LP
+如果文件系统类型支持并行检查，例如 \fBufs\fR，可能会并行检查可以进行检查的一些文件系统。有关更多信息，请查阅文件系统特定的手册页（例如 \fBfsck_ufs\fR(1M)）。
+.SH 选项
+.sp
+.LP
+支持下列常规选项： 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-F\fR \fIFSType\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定要对其进行操作的文件系统类型。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-m\fR\fR
+.ad
+.sp .6
+.RS 4n
+检查但不修复。此选项检查文件系统是否适合挂载，返回相应的退出状态。如果文件系统可以挂载，\fBfsck\fR 显示如下消息： 
+.sp
+.in +2
+.nf
+ufs fsck: sanity check: /dev/rdsk/c0t3d0s1 okay
+.fi
+.in -2
+.sp
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-n\fR | \fB-N\fR\fR
+.ad
+.sp .6
+.RS 4n
+假定对 \fBfsck\fR 询问的所有问题响应 \fBno\fR；不打开文件系统进行写入。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR\fR
+.ad
+.sp .6
+.RS 4n
+回显扩展的命令行但不执行命令。可以使用此选项来确认和验证命令行。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用详细的输出。可能并不是所有文件系统特定的 \fBfsck\fR 实现都支持此项。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-y\fR | \fBY\fR\fR
+.ad
+.sp .6
+.RS 4n
+假定对 \fBfsck\fR 询问的所有问题响应 \fByes\fR。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-o\fR \fIspecific-options\fR\fR
+.ad
+.sp .6
+.RS 4n
+这些 \fIspecific-options\fR 可以是以下各项的任意组合，以逗号分隔（逗号后不加空格）。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBb=\fR\fIn\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用块 \fIn\fR 作为文件系统的超级块。块 32 始终是备用超级块之一。通过运行 \fBnewfs\fR(1M) 并指定 \fB-Nv\fR 选项来确定其他超级块的位置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBc\fR\fR
+.ad
+.sp .6
+.RS 4n
+如果文件系统处于旧（静态表）格式，则将其转换为新（动态表）格式。文件系统处于新格式时，如果旧格式可以支持文件系统配置，则将其转换为旧格式。在交互模式下，\fBfsck\fR 将列出转换的方向并询问是否应进行转换。如果提供了否定回答，则不对文件系统执行进一步操作。在整理模式下，将列出转换的方向，并且如果可能将执行转换而不需要用户交互。同时转换所有文件系统时，最好在整理模式下进行转换。可以通过 \fBfstyp\fR(1M) 的输出的第一行确定文件系统的格式。注意：\fBc\fR 选项很少使用，包括该选项仅为了与 4.1 之前的发行版兼容。不保证此选项会包括在将来发行版中。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBf\fR\fR
+.ad
+.sp .6
+.RS 4n
+强制检查文件系统，而不考虑其超级块清理标志。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBp\fR\fR
+.ad
+.sp .6
+.RS 4n
+以非交互方式检查和修复文件系统（“整理”(preen)）。如果存在需要干预的问题则立即退出。需要使用此选项来启用并行文件系统检查。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBw\fR\fR
+.ad
+.sp .6
+.RS 4n
+仅检查可写入文件系统。
+.RE
+
+.RE
+
+.SH 退出状态
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+文件系统已卸载并且正常
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定了错误参数
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB32\fR\fR
+.ad
+.sp .6
+.RS 4n
+文件系统已卸载并且需要进行检查（仅限 \fBfsck\fR \fB-m\fR）
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB33\fR\fR
+.ad
+.sp .6
+.RS 4n
+文件系统已经挂载
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB34\fR\fR
+.ad
+.sp .6
+.RS 4n
+无法对设备执行 stat 操作
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB35\fR\fR
+.ad
+.sp .6
+.RS 4n
+修改了挂载为读取/写入状态的文件系统－重新引导
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB36\fR\fR
+.ad
+.sp .6
+.RS 4n
+检测到无法更正的错误－正常终止
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB37\fR\fR
+.ad
+.sp .6
+.RS 4n
+处理过程中捕获到信号
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB39\fR\fR
+.ad
+.sp .6
+.RS 4n
+检测到无法更正的错误－立即终止
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB40\fR\fR
+.ad
+.sp .6
+.RS 4n
+文件系统已挂载为只读状态并且正常
+.RE
+
+.SH 用法
+.sp
+.LP
+根据 \fBlargefile\fR(5) 手册页，\fBfsck\fR 命令可以感知 UFS 文件系统的\fB大文件\fR。
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/default/fs\fR\fR
+.ad
+.sp .6
+.RS 4n
+缺省的本地文件系统类型。可以在 \fB/etc/default/fs\fR 中为以下标志设置缺省值。例如：\fBLOCAL=ufs。\fR 
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLOCAL\fR\fR
+.ad
+.sp .6
+.RS 4n
+未指定 FSType 时用于命令的缺省分区。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/vfstab\fR\fR
+.ad
+.sp .6
+.RS 4n
+每个文件系统的缺省参数的列表
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+_
+接口稳定性Committed（已确定）
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBclri\fR(1M)、\fBfsck_ufs\fR(1M)、\fBfsdb_ufs\fR(1M)、\fBfsirand\fR(1M)、\fBfstyp\fR(1M)、\fBmkfs\fR(1M)、\fBmkfs_ufs\fR(1M)、\fBmountall\fR(1M)、\fBnewfs\fR(1M)、\fBreboot\fR(1M)、\fBvfstab\fR(4)、\fBattributes\fR(5)、\fBlargefile\fR(5)、\fBufs\fR(7FS)
+.SH 警告
+.sp
+.LP
+操作系统会缓冲文件系统数据。在已挂载文件系统上运行 \fBfsck\fR 会导致操作系统的缓冲区对磁盘变为过时。因此，使用 \fBfsck\fR 时，文件系统应该处于\fI未挂载\fR状态。如果这不可能，应该注意保证系统是不活动的并且在运行 \fBfsck\fR 后立即重新引导该系统。但是，这样做经常是不够的。如果在文件系统上运行 \fBfsck\fR 会修改该文件系统，将可能出现紧急情况。
+.SH 附注
+.sp
+.LP
+可能并不是所有 \fIFSType\fR 都支持此命令。
+.sp
+.LP
+从 Solaris 9 开始，\fBfsck\fR 管理磁盘上的扩展属性数据。（有关扩展文件属性的说明，请参见 \fBfsattr\fR(5)。）可以在不识别属性的 Solaris 版本（Solaris 9 之前的版本）上挂载具有扩展属性的文件系统，但是将无法访问这些属性，并且 \fBfsck\fR 会将其从文件中去除并置于 \fBlost+found\fR 中。去除这些属性后，文件系统在不识别属性的 Solaris 版本上将完全稳定，但是在可识别属性版本中将被视为已损坏。在后一种情况下，先运行可识别属性的 \fBfsck\fR 来稳定文件系统，然后再将其用于可识别属性的环境。

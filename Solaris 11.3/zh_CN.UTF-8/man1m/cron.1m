@@ -1,0 +1,181 @@
+'\" te
+.\" Copyright (c) 2009, 2012, Oracle and/or its affiliates.All rights reserved.
+.\" Copyright 1989 AT&T
+.TH cron 1M "2009 年 2 月 4 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+cron \- 时钟守护进程
+.SH 用法概要
+.LP
+.nf
+\fB/usr/sbin/cron\fR 
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBcron\fR 启动在指定日期和时间执行命令的进程。 
+.sp
+.LP
+可以根据目录 \fB/var/spool/cron/crontabs\fR 中 \fBcrontab\fR 文件中的说明向 \fBcron\fR 指定定期执行的命令。用户可以使用 \fBcrontab\fR(1) 命令提交自己的 \fBcrontab\fR 文件。可以使用 \fBat\fR(1) 命令提交仅执行一次的命令。
+.sp
+.LP
+\fBcron\fR 仅在自己的进程初始化阶段以及 \fBcrontab\fR 或 \fBat\fR 命令运行时，检查 \fBcrontab\fR 或 \fB at\fR 命令文件。这样可以降低按计划的间隔定期检查新的或更改文件所带来的系统开销。
+.sp
+.LP
+因为 \fBcron\fR 从不退出，它应该仅执行一次。这通常由 \fBsvc:/system/cron:default\fR 服务来完成。文件 \fB/etc/cron.d/FIFO\fR 用作锁定文件，用于防止执行多个 \fBcron\fR 实例。
+.sp
+.LP
+\fBcron\fR 捕获作业的 \fBstdout\fR 和 \fBstderr\fR 流的输出，如果输出不为空，将其通过邮件发送给用户。如果作业不生成输出，则不向用户发送邮件。例外情况是作业为 \fBat\fR(1) 作业并且在提交作业时指定了 \fB-m\fR 选项。
+.sp
+.LP
+如果您的帐户被锁定，将不执行 \fBcron\fR 和 \fBat\fR 作业。其他作业和进程将执行。\fBshadow\fR(4) 文件定义不锁定哪些帐户并使其作业和进程得到执行。
+.SS "跨时区设置 cron 作业"
+.sp
+.LP
+\fBcron\fR 守护进程的时区为 \fBcron\fR 条目设置系统范围的时区。此缺省的系统范围值使用 \fB/etc/default/init\fR 设置。可以在用户的 crontab 文件中覆盖 \fBcron\fR 条目的时区；请参见 \fBcrontab\fR(1)。 
+.sp
+.LP
+如果使用某种形式的\fB夏时制\fR或\fB夏季/冬季时间\fR，则计划在切换期间执行的作业可以执行一次、两次或根本不执行。
+.SS "设置 cron 缺省值"
+.sp
+.LP
+要记录 \fBcron\fR 执行的操作，必须在 \fB/etc/default/cron\fR 文件中指定 \fBCRONLOG=YES\fR。如果指定 \fBCRONLOG=NO\fR，将不执行日志记录。保留日志是用户可配置选项，因为 \fBcron\fR 通常创建大量日志文件。
+.sp
+.LP
+通过在 \fB/etc/default/cron \fR 中使用 \fBPATH\fR\fB=\fR，可以为 \fBuser\fR cron 作业指定 \fBPATH\fR。通过在 \fB /etc/default/cron\fR 中使用 \fBSU\fR\fBPATH\fR\fB=\fR，可以为 \fBroot\fR cron 作业设置 \fBPATH\fR。请慎重考虑设置 \fBPATH\fR 和 \fBSUPATH\fR 的安全影响。
+.sp
+.LP
+\fB/etc/default/cron\fR 文件示例：
+.sp
+.in +2
+.nf
+CRONLOG=YES
+PATH=/usr/bin
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+此示例启用了日志记录并将非根作业使用的缺省 \fBPATH\fR 设置为 \fB/usr/bin\fR。根作业继续使用 \fB/usr/sbin:/usr/bin\fR。
+.sp
+.LP
+\fBcron\fR 日志文件由 \fBlogadm\fR(1M) 定期轮转。
+.SH 文件
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/cron.d\fR\fR
+.ad
+.RS 25n
+.rt  
+主 \fBcron\fR 目录
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/cron.d/FIFO\fR\fR
+.ad
+.RS 25n
+.rt  
+锁定文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/default/cron\fR\fR
+.ad
+.RS 25n
+.rt  
+\fBcron\fR 缺省设置文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/cron/log\fR\fR
+.ad
+.RS 25n
+.rt  
+\fBcron\fR 历史记录信息
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/var/spool/cron\fR\fR
+.ad
+.RS 25n
+.rt  
+假脱机区域
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/cron.d/queuedefs\fR\fR
+.ad
+.RS 25n
+.rt  
+\fBat\fR、\fBbatch\fR 和 \fBcron\fR 的队列描述文件
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/logadm.conf\fR\fR
+.ad
+.RS 25n
+.rt  
+\fBlogadm\fR 的配置文件
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/core-os
+.TE
+
+.SH 另请参见
+.sp
+.LP
+\fBsvcs\fR(1)、\fBat\fR(1)、\fBcrontab\fR(1)、\fBsh\fR(1)、\fBlogadm\fR(1M)、\fBsvcadm\fR(1M)、\fBqueuedefs\fR(4)、\fBshadow\fR(4)、\fBattributes\fR(5)、\fBrbac\fR(5)、\fBsmf\fR(5)、\fBsmf_security\fR(5)
+.SH 附注
+.sp
+.LP
+\fBcron\fR 服务由服务管理工具 \fBsmf\fR(5) 管理，其服务标识符为：
+.sp
+.in +2
+.nf
+svc:/system/cron:default
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+可以使用 \fBsvcadm\fR(1M) 来对此服务执行管理操作（如启用、禁用或请求重新启动）。可以使用 \fBsvcs\fR(1) 命令来查询服务的状态。大多数管理操作都可以委托给具有 \fBsolaris.smf.manage.cron \fR 授权的用户（请参见 \fBrbac\fR(5) 和 \fBsmf_security\fR(5)）。
+.SH 诊断
+.sp
+.LP
+\fBcron\fR 执行的所有操作的历史记录存储在 \fB/var/cron/log\fR 中，还有可能存储在 \fB/var/cron/olog\fR 中。

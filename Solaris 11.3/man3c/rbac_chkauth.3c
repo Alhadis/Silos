@@ -1,0 +1,140 @@
+'\" te
+.\" Copyright (c) 2013, Oracle and/or its affiliates. All rights reserved.
+.\" Portions Copyright (c) 2012, X/Open Company Limited. All rights reserved.
+.\" Oracle America gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation. Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/. The Open Group has given us permission to reprint portions of their documentation. In the following statement, the phrase "this text" refers to portions of the system documentation. Portions of this text are reprinted and reproduced in electronic form in the Oracle Solaris OS Reference Manual, from The Open Group BAuthorization Roles Based On RBAC (O_ARMOR), Copyright (C) 2012 by The Open Group. In the event of any discrepancy between these versions and the original The Open Group Standard, the original The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.opengroup.org/unix/online.html. This notice shall appear on any product containing this material.
+.TH rbac_chkauth 3C "04 Feb 2013" "SunOS 5.11" "Standard C Library Functions"
+.SH NAME
+rbac_chkauth \- RBAC authorization check
+.SH SYNOPSIS
+.LP
+.nf
+#include <unistd.h>
+.fi
+
+.LP
+.nf
+\fBrbac_chkauth (const char *\fR\fIusername\fR, \fBconst char *\fR\fIauthname\fR, \fBconst char *\fR\fIobjname\fR);
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBrbac_chkauth()\fR function determines whether the specified username has the authorization indicated by the \fBauthname\fR to allow access on the \fBobjname\fR object. If username is a null pointer, then the user name associated with the real user ID of the calling process will be used instead. The Oracle Solaris Operating System (OS) accepts role names as well as user names. The contents of the \fBauthname\fR string are implementation-defined; consisting of dot-separated words beginning with the name of the vendor or product. The contents of the \fBobjname\fR string are implementation-defined. If \fBobjname\fR is a null pointer, this function simply verifies whether or not the user has been given this authorization for any object.
+.SH RETURN VALUES
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.RS 6n
+.rt  
+Upon successful completion, the return value will be 1 to indicate that the user has the specified authorization.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+The user does not have the specified authorization.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-1\fR\fR
+.ad
+.RS 6n
+.rt  
+On failure, -1 will be returned and \fBerrno\fR will be set to indicate the error.
+.RE
+
+.SH ERRORS
+.sp
+.LP
+The \fBrbac_chkauth()\fR function can fail if:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEINVAL\fR\fR
+.ad
+.RS 10n
+.rt  
+The specified arguments are invalid.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEPERM\fR\fR
+.ad
+.RS 10n
+.rt  
+The calling process does not have proper authority to verify the \fBauthname\fR for a user when username is a non-null pointer.
+.RE
+
+.sp
+.LP
+If \fBusername\fR is a null pointer, the \fBrbac_chkauth()\fR function can set \fBerrno\fR to values as specified for \fBgetpwuid_r()\fR.
+.sp
+.LP
+If \fBobjname\fR is not a null pointer, the \fBrbac_chkauth()\fR function can set \fBerrno\fR to values as specified for \fBasprintf\fR(3C).
+.SH EXAMPLES
+.sp
+.in +2
+.nf
+#include <unistd.h>
+#include <stdio.h>
+#include <errno.h>
+
+#define PRINTER_CONFIG_AUTH "example.printer.configure"
+int
+printer_authchk(char *printer)
+{
+	/*
+	 * Verify that this user can configure the specified printer
+	 */
+	switch (rbac_chkauth(NULL, PRINTER_CONFIG_AUTH, printer) {
+	case -1:
+		perror("rbac_chkauth");
+		return(0);
+	case 0:
+		(void) fprintf(stderr, "user lacks authorization: %s "
+		    "for printer: %s\n", PRINTER_CONFIG_AUTH, printer);
+		return(0);
+	}
+	return(1);
+}
+.fi
+.in -2
+
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Availabilitysystem/library
+_
+Interface StabilityUncommitted
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBattributes\fR(5), \fBarmor\fR(5), \fBasprintf\fR(3C), \fBauths\fR(5), \fBgetpwuid_r\fR(3C)

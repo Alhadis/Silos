@@ -1,0 +1,316 @@
+'\" te
+.\"  Copyright (c) 1992, X/Open Company Limited All Rights Reserved Portions Copyright (c) 1996, Sun Microsystems, Inc. All Rights Reserved
+.\"  Sun Microsystems, Inc. gratefully acknowledges The Open Group for permission to reproduce portions of its copyrighted documentation.Original documentation from The Open Group can be obtained online at http://www.opengroup.org/bookstore/.
+.\" The Institute of Electrical and Electronics Engineers and The Open Group, have given us permission to reprint portions of their documentation. In the following statement, the phrase "this text" refers to portions of the system documentation. Portions of this text are reprinted and reproduced in electronic form in the Sun OS Reference Manual, from IEEE Std 1003.1, 2004 Edition, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group. In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.opengroup.org/unix/online.html. This notice shall appear on any product containing this material.
+.TH pathchk 1 "1995 年 2 月 1 日" "SunOS 5.11" "ユーザーコマンド"
+.SH 名前
+pathchk \- パス名の検査
+.SH 形式
+.LP
+.nf
+\fBpathchk\fR [\fB-p\fR] \fIpath\fR...
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBpathchk\fR コマンドは、1 つ以上のパス名が有効である (つまり、構文エラーを起こさずにファイルにアクセスしたりファイルを作成したりできる) こと、および移植可能である (つまり、ファイル名の切り捨てが発生しない) ことを検査します。さらに詳細な移植性検査は、\fB-p\fR オプションによって提供されます。
+.sp
+.LP
+デフォルトでは、\fBpathchk\fR はベースとなるファイルシステムに基づいて、それぞれの \fIpath\fR オペランドの各コンポーネントを検査します。次の特徴を持つそれぞれの \fIpath\fR オペランドに対して、診断が書き込まれます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fIPATH_MAX\fR バイトより長い。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+要素として含むディレクトリに、\fINAME_MAX\fR バイトより長いコンポーネントを含む
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+ディレクトリに含むいずれかのコンポーネントが検索可能でない
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+要素として含むディレクトリのいずれかのコンポーネントに、有効でない文字を含む。
+.RE
+.sp
+.LP
+診断メッセージの形式は指定されませんが、検出されたエラーおよび対応する \fIpath\fR オペランドを示します。
+.sp
+.LP
+上記で指定したすべての検査に違反しない、欠落したコンポーネントによって指定されるパス名と一致するファイルが作成可能なかぎり、\fIpath\fR オペランドの 1 つ以上のコンポーネントが存在しなくてもエラーとはみなされません。
+.SH オプション
+.sp
+.LP
+次のオプションがサポートされています。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-p\fR\fR
+.ad
+.RS 6n
+.rt  
+ベースとなるファイルシステムに基づく検査を実行する代わりに、次の特徴を持つそれぞれの \fIpath\fR オペランドに対して診断を書き込みます。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB_POSIX_PATH_MAX \fR バイトより長い
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+\fB_POSIX_NAME_MAX\fR バイトより長いコンポーネントを含む
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+移植可能なファイル名文字セットに存在しない任意の文字を、いずれかのコンポーネントに含む。
+.RE
+.RE
+
+.SH オペランド
+.sp
+.LP
+次のオペランドを指定できます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIpath\fR\fR
+.ad
+.RS 8n
+.rt  
+検査するパス。
+.RE
+
+.SH 使用法
+.sp
+.LP
+ファイルが 2G バイト (2^31 バイト) 以上ある場合の \fBpathchk\fR の動作については、\fBlargefile\fR(5) を参照してください。
+.SH 使用例
+.LP
+\fB例 1 \fRpathchk コマンドの使用
+.sp
+.LP
+インポートされたデータ交換アーカイブ内のすべてのパスが、現在のシステム上で正当かつ明白であることを確認するには、次のようにします。
+
+.sp
+.in +2
+.nf
+example% \fBpax -f archive | sed -e '/ == .*/s///' | xargs pathchk
+if [ $? -eq 0 ]
+then
+        pax -r -f archive
+else
+	echo Investigate problems before importing files.
+	exit 1
+fi\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+現在のディレクトリ階層内のすべてのファイルが、X/Open 仕様に準拠し、\fBpax\fR(1) コマンドもサポートするシステムに移動できることを確認するには、次のようにします。
+
+.sp
+.in +2
+.nf
+example% \fBfind . -print | xargs pathchk -p
+if [ $? \(mieq 0 ]
+then
+        pax -w -f archive .
+else
+	echo Portable archive cannot be created.
+	exit 1
+fi\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+ユーザー指定のパスによって読み取り可能なファイルが指定されること、およびアプリケーションが所定のパスを拡張して、切り捨てや既存ファイルの上書きを行わずにファイルを作成できることを確認するには、次のようにします。
+
+.sp
+.in +2
+.nf
+example% \fBcase $- in
+	*C*)    reset="";;
+	*)      reset="set +C"
+		set -C;;
+esac
+test -r "$path" && pathchk "$path.out" &&
+	rm "$path.out" > "$path.out"
+if [ $? -ne 0 ]; then
+	printf "%s: %s not found or %s.out fails \e
+creation checks.\en" $0 "$path" "$path"
+	$reset	# reset the noclobber option in case a trap
+		# on EXIT depends on it
+	exit 1
+fi
+$reset
+PROCESSING < "$path" > "$path.out"\fR
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+この例では、次を前提としています。
+
+.RS +4
+.TP
+1.
+\fBPROCESSING\fR は、\fB$path.out\fR が意図したとおりに動作することが確認されたあと、\fB$path\fR を使用するアプリケーションによって使用されるコードを表します。
+.RE
+.RS +4
+.TP
+2.
+このコードが呼び出されたとき、\fBnoclobber\fR オプションの状態は不明で、終了時には、このコードが呼び出された時点の状態に設定する必要があります。(この例では初期状態に復元するために、\fBreset\fR 変数が使用されています。)
+.RE
+.RS +4
+.TP
+3.
+次の使用方法に注意してください。
+.sp
+.in +2
+.nf
+\fBrm "$path.out" > "$path.out"\fR
+.fi
+.in -2
+.sp
+
+.sp
+.ne 2
+.mk
+.na
+\fBa.\fR
+.ad
+.RS 6n
+.rt  
+\fBpathchk\fR コマンドは、\fB$path.out\fR が切り捨てられないことを、この時点ですでに確認しています。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBb.\fR
+.ad
+.RS 6n
+.rt  
+\fBnoclobber\fR オプションを設定することで、シェルは \fBrm\fR を呼び出す前に \fB$path.out\fR がまだ存在していないことを検証します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBc.\fR
+.ad
+.RS 6n
+.rt  
+シェルが \fB$path.out\fR を正しく作成できたら、\fBrm\fR がこれを削除することで、アプリケーションは \fBPROCESSING\fR ステップでファイルをふたたび作成できるようになります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBd.\fR
+.ad
+.RS 6n
+.rt  
+\fBPROCESSING\fR ステップで、ファイルが呼び出されるときにファイルがすでに存在しているようにするには、次のようにします。
+.sp
+.in +2
+.nf
+\fBrm "$path.out" > "$path.out"\fR
+.fi
+.in -2
+.sp
+
+これを次のものに置き換えます。
+.sp
+.in +2
+.nf
+\fB> "$path.out"\fR
+.fi
+.in -2
+.sp
+
+これにより、ファイルが存在しなかったことが検証されますが、\fBPROCESSING\fR によって使用するための \fB$path.out\fR はそのままにします。
+.RE
+
+.RE
+.SH 環境
+.sp
+.LP
+\fBpathchk\fR の実行に影響を与える次の環境変数についての詳細は、\fBenviron\fR(5) を参照してください。\fBLANG\fR、\fBLC_ALL\fR、\fBLC_CTYPE\fR、\fBLC_MESSAGES\fR、および \fBNLSPATH\fR。
+.SH 終了ステータス
+.sp
+.LP
+次の終了ステータスが返されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+すべての \fIpath\fR オペランドはすべての検査に合格しました。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB>\fB0\fR\fR
+.ad
+.RS 6n
+.rt  
+エラーが発生した。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性確実
+_
+標準T{
+\fBstandards\fR(5) を参照してください。
+T}
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBpax\fR(1), \fBtest\fR(1), \fBattributes\fR(5), \fBenviron\fR(5), \fBlargefile\fR(5), \fBstandards\fR(5)

@@ -1,0 +1,258 @@
+'\" te
+.\" Copyright (c) 2015, Oracle and/or its affiliates. All rights             reserved.
+.TH adimalloc_debug 3MALLOC "9 Apr 2015" "SunOS 5.11" "Memory Allocation Library Functions"
+.SH NAME
+adimalloc_debug \- debugging features of the adimalloc library
+.SH SYNOPSIS
+.LP
+.nf
+cc [ flag... ] file... -ladimalloc [ library... ]
+.fi
+
+.SH DESCRIPTION
+.sp
+.LP
+The \fBlibadimalloc\fR library provides debugging features that detect memory leaks, buffer overruns, multiple frees, use of uninitialized data, use of freed data, and many other common programming errors. The activation of the extended run-time debugging features is controlled by environment variables.
+.SH ENVIRONMENT VARIABLES
+.sp
+.LP
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBADIMALLOC_DEBUG\fR\fR
+.ad
+.RS 21n
+.rt  
+This variable contains a list of comma-separated options. Unrecognized options are ignored. Possible options include:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaudit[=frames]\fR\fR
+.ad
+.RS 20n
+.rt  
+This option enables the recording of auditing information, including thread ID, high-resolution time stamp, and stack trace for the last action (allocation or free) on every allocation. If transaction logging (see ADIMALLOC_LOGGING) is enabled, this auditing information is also logged.
+.sp
+The \fIframes\fR parameter sets the number of stack frames recorded in the auditing structure. The upper bound for frames is implementation defined. If a larger value is requested, the upper bound is used instead.
+.sp
+If \fIframes\fR is not specified or is not an integer, the default value of 15 is used.
+.sp
+This option also enables the \fBguards\fR option.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcontents[=count]\fR\fR
+.ad
+.RS 20n
+.rt  
+If auditing and contents logging (see ADIMALLOC_LOGGING) are enabled, the first count bytes of each buffer are logged when they are freed. If a buffer is shorter than count bytes, it is logged in its entirety.
+.sp
+If count is not specified or is not an integer, the default value of 256 is used.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdefault\fR\fR
+.ad
+.RS 20n
+.rt  
+This option is equivalent to \fBaudit\fR, \fBcontents\fR, \fBguards\fR.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBguards\fR\fR
+.ad
+.RS 20n
+.rt  
+This option enables filling allocated and freed buffers with special patterns to help detect the use of uninitialized data and previously freed buffers. It also enables an 8-byte red-zone after each buffer that contains \fB0xfeedfacefeedfaceULL\fR.
+.sp
+When an object is freed, it is filled with \fB0xdeadbeef\fR. When an object is allocated, the \fB0xdeadbeef\fR pattern is verified and replaced with \fB0xbaddcafe\fR. The redzone is checked every time a buffer is allocated or freed.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBadi_precise\fR\fR
+.ad
+.RS 20n
+.rt  
+The library uses ADI precise mode trapping. This has an overall performance overhead, but is more accurate at determining the exact point that an ADI fault occurred. The default is to use disrupting mode traps.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBadi_mode\fR\fR
+.ad
+.RS 20n
+.rt  
+This option sets the mode ADI will operate in. It may be one of three values:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBon (default if unspecified)\fR\fR
+.ad
+.sp .6
+.RS 4n
+On platforms that support ADI it will be enabled and used to check for heap errors. On platforms that do not support ADI, memory allocation routines such as \fBmalloc\fR(3C) will return \fBNULL\fR with \fBerrno\fR set to \fBENOMEM\fR. A diagnostic message will be logged to the internal \fBlibadimalloc\fR log to indicate that ADI is unavailable.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfallback\fR\fR
+.ad
+.sp .6
+.RS 4n
+On platforms that support ADI it will be enabled and used to check for heap errors. On platforms that do not support ADI the application will continue with adimalloc using the same allocation strategies it would use if ADI was available, however no ADI calls will be made by \fBadimalloc\fR. A diagnostic message will be logged to the internal \fBlibadimalloc\fR log to indicate that ADI is in fallback mode.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBoff\fR\fR
+.ad
+.sp .6
+.RS 4n
+ADI will be disabled. The same allocation strategies will be used as when ADI is available, however no ADI calls will be made by adimalloc. A diagnostic message will be logged to the internal \fBlibadimalloc\fR log to indicate that ADI is turned off. See also \fBadimalloc_debug_init()\fR and \fBadimalloc_logging_init()\fR.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBverbose\fR\fR
+.ad
+.RS 20n
+.rt  
+The library writes error descriptions to standard error before aborting. These messages are not localized.
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBADIMALLOC_LOGGING\fR\fR
+.ad
+.RS 21n
+.rt  
+To be enabled, this variable should be set to a comma-separated list of in-memory logs. The logs available are:
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtransaction[=size]\fR\fR
+.ad
+.RS 22n
+.rt  
+If the audit debugging option is set (see ADIMALLOC_DEBUG), the audit structures from previous transactions are entered into this log.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcontents[=size]\fR\fR
+.ad
+.RS 22n
+.rt  
+If the \fBaudit\fR debugging option is set, the contents of objects are recorded in this log as they are freed.
+.sp
+If the \fB"contents"\fR debugging option was not set, 256 bytes of each freed buffer are saved.
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfail[=size]\fR\fR
+.ad
+.RS 22n
+.rt  
+Records are entered into this log for every failed allocation.
+.RE
+
+.RE
+
+.sp
+.LP
+For any of these options, if size is not specified, the default value of 64k is used. The size parameter must be an integer that can be qualified with \fBK\fR, \fBM\fR, \fBG\fR, or \fBT\fR to specify kilobytes, megabytes, gigabytes, or terabytes, respectively. 
+.sp
+.LP
+Logs that are not listed or that have either a size of 0 or an invalid size are disabled.
+.sp
+.LP
+The log is disabled if during initialization the requested amount of storage cannot be allocated.
+.SH FUNCTIONS
+.sp
+.in +2
+.nf
+const char *adimalloc_debug_init(void);
+const char *adimalloc_logging_init(void);
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+An application that uses \fBlibadimalloc\fR may use the above functions to specify the default ADI debugging and logging settings that it requires. The \fBadimalloc_debug_init()\fR function corresponds to the ADIMALLOC_DEBUG environment variable and the \fBadimalloc_logging_init()\fR function corresponds to the ADIMALLOC_LOGGING environment variable. These functions should return a string that is the same as the value for the corresponding environment variable.
+.sp
+.LP
+These functions should be defined when required by the application. If they are present \fBlibadimalloc\fR will call them at initialization time, using the returned value as described above. Any values specified using these functions will be overriden if the corresponding environment is set, in which case the value of the environment variable will be used to configure \fBadimalloc\fR.
+.SH ATTRIBUTES
+.sp
+.LP
+See \fBattributes\fR(5) for descriptions of the following attributes:
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+ATTRIBUTE TYPEATTRIBUTE VALUE
+_
+Interface StabilityVolatile
+_
+MT-LevelMT-Safe
+.TE
+
+.SH SEE ALSO
+.sp
+.LP
+\fBmdb\fR(1), \fBabort\fR(3C), \fBsignal\fR(3C), \fBlibadimalloc\fR(3LIB), \fBattributes\fR(5)
+.SH WARNINGS
+.sp
+.LP
+When \fBlibadimalloc\fR aborts the process using \fBabort\fR(3C), any existing signal handler for \fBSIGABRT\fR is called. If the signal handler performs allocations, undefined behavior can result.
+.SH NOTES
+.sp
+.LP
+Some of the debugging features work only for allocations smaller than 1Mb in size. Allocations larger than that could have reduced support.
+.sp
+.LP
+Activating any of the library's debugging features could significantly increase the library's memory footprint and decrease its performance.
+.sp
+.LP
+This API is Volatile and as such can change at any time and for any reason. See the Volatile entry of the Classifications section of \fBattributes\fR(5).

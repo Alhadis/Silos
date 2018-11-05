@@ -1,0 +1,554 @@
+'\" te
+.\" Copyright (c) 2009, 2012, Oracle and/or its affiliates. All rights reserved.
+.\"  Copyright (c) 1992-1996 Competitive Automation, Inc.
+.TH dhcpagent 1M "2012 年 5 月 22 日" "SunOS 5.11" "システム管理コマンド"
+.SH 名前
+dhcpagent \- 動的ホスト構成プロトコル (DHCP) クライアントデーモン
+.SH 形式
+.LP
+.nf
+\fBdhcpagent\fR [\fB-a\fR] [ \fB-d\fR \fIn\fR] [\fB-f\fR] [\fB-v\fR]
+.fi
+
+.SH 機能説明
+.sp
+.LP
+\fBdhcpagent\fR は、Solaris ソフトウェアが稼働するマシンにクライアント側動的ホスト構成プロトコル \fB(DHCP)\fR を実装します。
+.sp
+.LP
+\fBdhcpagent\fR デーモンは \fBDHCP\fR サーバーから、クライアント (ローカル) マシンのネットワークインタフェースの構成パラメータを取得します。これらのパラメータには \fBIP\fR アドレスのリース (クライアントマシンはアドレスをそのリースの期間 (無期限の場合もある) 使用できる) が含まれることがあります。クライアントが \fBIP\fR アドレスをリースよりも長い期間使用したい場合は、\fBDHCP\fR を使って延長のネゴシエーションを行う必要があります。このため \fBdhcpagent\fR は、クライアントマシンの電源が切れる場合にのみ終了する、デーモンとして実行する必要があります。
+.sp
+.LP
+IPv4 の場合、\fBdhcpagent\fR デーモンは \fBifconfig\fR(1M) 経由で制御されます。
+.sp
+.LP
+\fBdhcpagent\fR はユーザープロセスとして呼び出すこともできますが (root 特権が必要)、\fBifconfig\fR(1M) が自動的に起動するのでその必要はありません。
+.sp
+.LP
+IPv6 の場合、\fBdhcpagent\fR デーモンは \fBin.ndpd\fR(1M) によって自動的に呼び出されます。必要に応じて \fBifconfig\fR(1M) で制御することもできます。
+.sp
+.LP
+\fBdhcpagent\fR は呼び出されるとパッシブ状態に入り、\fBifconfig\fR(1M) または \fBin.ndpd\fR(1M) からの命令を待ちます。インタフェースを構成するコマンドを受け取ると、インタフェースを (必要に応じて) 起動し、DHCP を開始します。DHCP が完了すると、\fBdhcpagent\fR にさまざまなネットワークパラメータの値を照会できます。さらに、インタフェースのアドレスのリースを取得するために DHCP が使用された場合、DHCP はアドレスを使用するための構成を行います。リースが取得されると、必要に応じて自動的に更新されます。リースを更新できない場合、\fBdhcpagent\fR はアドレスの構成を解除しますが、インタフェースは起動したままなので\fBdhcpagent\fR は新しいアドレスリースを取得しようとします。\fBdhcpagent\fR はシステムの一時停止/再開イベントを監視し、再開時に DHCP サーバーで永続的でないリースがあるかどうかを検証します。同様に、\fBdhcpagent\fR はリンク起動/停止イベントを監視し、停止していたリンクが再度起動されたときに DHCP サーバーで永続的でないリースがあるかどうかを検証します。既存のリースがもう有効でないことがサーバーから示された場合、リース検証メカニズムによって DHCP が再開されます。サーバーにアクセスできない場合、既存のリースは継続されます。この動作は、\fB/etc/default/dhcpagent\fR ファイルの \fBVERIFIED_LEASE_ONLY\fR パラメータで変更できます。後述するこのパラメータの説明を参照してください。
+.sp
+.LP
+IPv4 の場合、構成済みのインタフェースが unplumb されたか、DHCP から取得されたものと異なる IP アドレス、サブネットマスク、またはブロードキャストアドレスを持つことがわかった場合、インタフェースは DHCP 制御から破棄されます。
+.sp
+.LP
+IPv6 の場合、\fBdhcpagent\fR は、サーバーから提供された IPv6 アドレスに対応する論理インタフェースを必要に応じて自動的に plumb および unplumb します。IPv6 接頭辞長 (ネットマスク) は、DHCPv6 プロトコルによって設定されるのではなく、代わりに \fBin.ndpd\fR(1M) によってルーター通知から取得された接頭辞情報を使って設定されます。\fBdhcpagent\fR によって作成された論理インタフェースのいずれかが unplumb されるか異なる IP アドレスで構成されると、DHCP 制御から破棄されます。リンクローカルインタフェースが unplumb されると、その物理インタフェース上で DHCP によって構成されたアドレスがすべて削除されます。
+.sp
+.LP
+\fBdhcpagent\fR では \fBDHCP\fR のほかに、\fBBOOTP\fR (IPv4 のみ) もサポートされます。\fIRFC 951、Bootstrap Protocol\fR を参照してください。\fBBOOTP\fR サーバーから取得された構成パラメータは \fBDHCP\fR サーバーから受信されたものと同様に処理されますが、\fBBOOTP\fR サーバーから受信された \fBIP\fR アドレスのリースは常に無期限である点が異なります。
+.sp
+.LP
+\fBDHCP\fR は、ルーターのドメイン名やアドレスなど、クライアントで必要になるその他の情報を構成するためのメカニズムとしても機能します。エージェントは、IP アドレス (および IPv4 の場合はネットマスク、ブロードキャストアドレス、およびデフォルトルーター) を除いてワークステーションを直接構成せず、代わりにほかのプログラム (特に \fBdhcpinfo\fR(1)) から問い合わせ可能なデータベースとして機能します。 
+.sp
+.LP
+インタフェースが 1 つのクライアントでは、これは非常に単純です。インタフェースが複数のクライアントでは複雑になり、異なるインタフェースに到着した情報の一部がマージする必要があったり矛盾していたりする可能性があります。さらに、インタフェースの構成が非同期であるため、一部または全部のインタフェースがまだ構成されていないときに要求が到着する場合があります。こうした問題に対処するために、1 つのインタフェースをプライマリ、つまり特定のインタフェースが要求されなかった場合に \fBDHCP\fR パラメータの値の信頼できるソースとして指定することもできます。詳細については、\fBdhcpinfo\fR(1) および \fBifconfig\fR(1M) を参照してください。
+.sp
+.LP
+\fBdhcpagent\fR から送信されるすべての DHCP パケットには、ベンダークラス識別子 (RFC 2132 オプションコード 60、RFC 3315 オプションコード 16) が含まれています。この識別子は、\fBuname\fR \fB-i\fR コマンドから返されるプラットフォーム名と同じですが、次の点が異なります。
+.RS +4
+.TP
+.ie t \(bu
+.el o
+プラットフォーム名に含まれるコンマはピリオドに変更されます。
+.RE
+.RS +4
+.TP
+.ie t \(bu
+.el o
+名前が銘柄記号とコンマで始まっていない場合、\fBSUNW\fR が先頭に自動的に付加されます。
+.RE
+.SS "メッセージ"
+.sp
+.LP
+\fBdhcpagent\fR デーモンは、5 つのカテゴリの情報やエラーメッセージを書き込みます。
+.sp
+.ne 2
+.mk
+.na
+\fB重大\fR
+.ad
+.sp .6
+.RS 4n
+重大メッセージは、正常な処理を妨げる深刻な状態を示します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBエラー\fR
+.ad
+.sp .6
+.RS 4n
+エラーメッセージは、リソースの枯渇やその他の予期しないシステムコール障害による、重要で場合によっては回復不可能なイベントです。エラーを無視すると機能が低下する可能性があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB警告\fR
+.ad
+.sp .6
+.RS 4n
+警告はあまり深刻でない問題を示し、ほとんどの場合、サーバーから受信された異常または不正なデータグラムや提供不可能なサービスの要求を表現します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB情報\fR
+.ad
+.sp .6
+.RS 4n
+情報メッセージは、サイトで \fBDHCP\fR 構成をデバッグする際に役立つ可能性のある重要な情報を提供します。情報メッセージは一般に、\fB-v\fR オプションによって制御されます。ただし、取得された IP アドレスなどの重大な情報は常に提供されます。 
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBデバッグ\fR
+.ad
+.sp .6
+.RS 4n
+デバッグメッセージは 2 つの異なる冗長レベルで生成でき、主にソースコードにアクセスできる人に役立ちますが、難しい DHCP 構成問題をデバッグする際にも役立つ場合があります。デバッグメッセージは、\fB-d\fR オプションを使用するときにのみ生成されます。
+.RE
+
+.sp
+.LP
+\fB-f\fR オプションなしで \fBdhcpagent\fR を実行すると、すべてのメッセージがそれぞれに適切な優先度と機能識別子 \fBLOG_DAEMON\fR でシステムロガー \fBsyslog\fR(3C) に送信されます。\fB-f\fR オプション付きで \fBdhcpagent\fR を実行すると、すべてのメッセージが標準エラーに転送されます。
+.SS "DHCP イベントとユーザー定義アクション"
+.sp
+.LP
+\fB/etc/dhcp/eventhook\fR に実行可能ファイル (バイナリまたはスクリプト) が置かれている場合は、次のイベントが発生した際に、\fBdhcpagent\fR デーモンによってそのプログラムが自動的に実行されます。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBBOUND\fR および \fBBOUND6\fR\fR
+.ad
+.sp .6
+.RS 4n
+これらのイベントはインタフェース構成時に発生します。\fBdhcpagent\fR がアドレスのリース要求に対する DHCPv4 ACK または DHCPv6 Reply メッセージ (インタフェースの初期構成が成功したことを示す) を DHCP サーバーから受信すると、イベントプログラムが呼び出されます。(アドレスリースのない構成パラメータが取得された際に発生する、\fBINFORM\fR および \fBINFORM6\fR イベントも参照。)
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEXTEND\fR および \fBEXTEND6\fR\fR
+.ad
+.sp .6
+.RS 4n
+これらのイベントはリース延長時に発生します。\fBdhcpagent\fR が DHCPv4 REQUEST (更新) メッセージまたは DHCPv6 Renew または Rebind メッセージに対する DHCPv4 ACK または DHCPv6 Reply を DHCP サーバーから受信した直後に、イベントプログラムが呼び出されます。
+.sp
+DHCPv6 の場合、サーバーは特定の Reply メッセージ内の一部のアドレスを削除し、新しいアドレスリースを追加し、その他のアドレスを無視する (期限切れを許可する) ことを選択することもできます。1 つ以上のアドレスリースをまだ有効のままにする Reply が受信されると、(Reply メッセージがアドレスのリースを延長しない場合でも) \fBEXTEND6\fR イベントが発生します。イベントプログラムは、アドレスが削除される直前、新しいアドレスが追加された直後に呼び出されます。削除されるものには \fBIFF_DEPRECATED\fR フラグが付けられます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBEXPIRE\fR および \fBEXPIRE6\fR\fR
+.ad
+.sp .6
+.RS 4n
+これらのイベントはリースの期限が切れるときに発生します。DHCPv4 の場合、リース済みアドレスがインタフェースから削除される直前に、イベントプログラムが呼び出されます。DHCPv6 の場合、最後に残っているリース済みアドレスがインタフェースから削除される直前に、イベントプログラムが呼び出されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBDROP\fR および \fBDROP6\fR\fR
+.ad
+.sp .6
+.RS 4n
+これらのイベントは、期間中にインタフェースがドロップされる際に発生します。インタフェースが DHCP 制御から削除される直前に、イベントプログラムが呼び出されます。ユーザーが unplumb することでインタフェースが破棄された場合、このイベントはユーザーのアクションが起こったあとに発生します。インタフェースは存在しない可能性があります。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBINFORM\fR および \fBINFORM6\fR\fR
+.ad
+.sp .6
+.RS 4n
+これらのイベントは、インタフェースが新しいまたは更新された構成情報を DHCPv4 \fBINFORM\fR または DHCPv6 Information-Request メッセージによって DHCP サーバーから取得した際に発生します。これらのメッセージは、\fBifconfig\fR(1M)\fBdhcp inform\fR コマンドを使用して、または DHCPv6 ルーター通知の \fBO\fR (文字 0) ビットが設定されて \fBM\fR ビットが設定されていないときに送信されます。したがってこれらのイベントは、DHCP クライアントがサーバーから IP アドレスリースを取得せず、代わりに構成パラメータのみを取得した際に発生します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBLOSS6\fR\fR
+.ad
+.sp .6
+.RS 4n
+このイベントは、リース期限切れの際に有効なリースがまだ 1 つ以上残っている場合に発生します。イベントプログラムは、期限切れアドレスが削除される直前に呼び出されます。削除されるものには \fBIFF_DEPRECATED\fR フラグが付けられます。
+.sp
+このイベントは、Reply メッセージの受信には関連付けられておらず、有効なリースが 1 つ以上残っているときにのみ発生し、DHCPv6 でのみ発生します。すべてのリースの期限が切れた場合は、代わりに EXPIRE6 イベントが発生します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBRELEASE\fR および \fBRELEASE6\fR\fR
+.ad
+.sp .6
+.RS 4n
+このイベントは、期間中にリース済みアドレスが解放されるときに発生します。イベントプログラムは、\fBdhcpagent\fR がインタフェース上のアドレスを破棄し、DHCPv4 \fBRELEASE\fR または DHCPv6 Release パケットを DHCP サーバーに送信する直前に呼び出されます。
+.RE
+
+.sp
+.LP
+システムはデフォルトイベントプログラムを提供していません。ファイル \fB/etc/dhcp/eventhook\fR は、root によって所有され、モードが 755 であると想定されています。
+.sp
+.LP
+イベントプログラムには 2 つの引数 (それぞれインタフェース名とイベント名) が渡されます。DHCPv6 の場合、インタフェース名は物理インタフェースの名前です。
+.sp
+.LP
+イベントプログラムは、\fBdhcpinfo\fR(1) ユーティリティーを使ってインタフェースに関する追加情報を取得できます。イベントプログラムは上で説明したすべてのイベントで呼び出されますが、重要でないイベントは無視してかまいません。イベントプログラムは \fBdhcpagent\fR と同じ特権や環境で実行されますが、例外として、\fBstdin\fR、\fBstdout\fR、および \fBstderr\fR は \fB/dev/null\fR にリダイレクトされます。これは、イベントプログラムが root 特権で実行されることを意味します。
+.sp
+.LP
+イベントプログラムの呼び出しが 55 秒後に終了しない場合、\fBSIGTERM\fR シグナルが送信されます。次の 3 秒で終了しない場合は、\fBSIGKILL\fR シグナルで終了します。
+.sp
+.LP
+イベントプログラムの例については、「使用例」を参照してください。
+.SH オプション
+.sp
+.LP
+サポートしているオプションは、次のとおりです。 
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-a\fR\fR
+.ad
+.sp .6
+.RS 4n
+構成済み IPv4 インタフェースを採用します。これは、ディスクレス \fBDHCP\fR クライアントで使用するためのオプションです。ディスクレス \fBDHCP\fR の場合、\fBdhcpagent\fR を実行する前にオペレーティングシステムイメージを提供するネットワークインタフェース上で \fBDHCP\fR がすでに実行されています。このオプションは、インタフェースの制御を引き継ぐようにエージェントに指示します。主にブートスクリプト内で使用することを意図しています。
+.sp
+このオプションの効果は、インタフェースが採用されているかどうかに依存します。
+.sp
+インタフェースが採用されている場合は、次の状態が該当します:
+.sp
+\fBdhcpagent\fR は、\fB/chosen\fR:\fI<client_id>\fR で指定されたクライアント ID (PROM によって公開されているもの、または \fBboot\fR(1M) コマンド行で指定されたもの) を使用します。この値がない場合、クライアント ID は未定義です。その場合は、DHCP サーバーが何をクライアント ID として使用するかを決定します。インタフェースが InfiniBand インタフェースで PROM 値がない場合は、エラー状態です。
+.sp
+インタフェースが採用されていない場合:
+.sp
+\fBdhcpagent\fR は、\fB/etc/default/dhcpagent\fR に格納された値を使用します。この値がない場合、クライアント ID は未定義です。インタフェースが InfiniBand で、\fB/etc/default/dhcpagent\fR に値がない場合は、次から入手可能な DHCP over Infiniband に関するドラフトドキュメントで説明されている方法でクライアント ID が生成されます。
+.sp
+.in +2
+.nf
+http://www.ietf.org
+.fi
+.in -2
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-d\fR \fIn\fR\fR
+.ad
+.sp .6
+.RS 4n
+デバッグレベルを \fIn\fR に設定します。現在使用可能なデバッグレベルは 1 と 2 の 2 つで、後者のほうが冗長です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-f\fR\fR
+.ad
+.sp .6
+.RS 4n
+デーモンプロセスとしてではなくフォアグラウンドで実行します。このオプションを使用した場合、メッセージは \fBsyslog\fR(3C) ではなく標準エラーに送信されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-v\fR\fR
+.ad
+.sp .6
+.RS 4n
+サイト構成問題をデバッグするのに役立つ冗長出力を提供します。
+.RE
+
+.SH 使用例
+.LP
+\fB例 1 \fRイベントプログラムの例
+.sp
+.LP
+次のスクリプトはファイル \fB/etc/dhcp/eventhook\fR 内に格納されていて、root によって所有され、モードは 755 です。ファイル内に記載されたイベントが発生した際に呼び出されます。
+
+.sp
+.in +2
+.nf
+#!/bin/sh
+
+(
+echo "Interface name: " $1
+echo "Event: " $2
+
+case $2 in
+"BOUND")
+     echo "Address acquired from server "\e
+         `/usr/sbin/dhcpinfo -i $1 ServerID`
+     ;;
+"BOUND6")
+     echo "Addresses acquired from server " \e
+         `/usr/sbin/dhcpinfo -v6 -i $1 ServerID`
+     ;;
+"EXTEND")
+    echo "Lease extended for " \e
+         `/usr/sbin/dhcpinfo -i $1 LeaseTime`" seconds"
+     ;;
+"EXTEND6")
+    echo "New lease information obtained on $i"
+     ;;
+"EXPIRE" | "DROP" | "RELEASE")
+     ;;
+
+esac
+) >/var/run/dhcp_eventhook_output 2>&1
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+標準出力と標準エラーのファイルへのリダイレクトです。
+
+.SH ファイル
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/dhcp/\fIif\fR.dhc\fR\fR
+.ad
+.br
+.na
+\fB\fB/etc/dhcp/\fIif\fR.dh6\fR\fR
+.ad
+.sp .6
+.RS 4n
+インタフェースの構成を含みます。このファイルの存在だけでは、リース期限が切れている可能性があるため、構成が正しいことを意味しません。起動時に、\fBdhcpagent\fR は REQUEST (DHCPv4 の場合) または Confirm (DHCPv6) を使ってアドレスの有効性を確認します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/dhcp/duid\fR\fR
+.ad
+.br
+.na
+\fB\fB/etc/dhcp/iaid\fR\fR
+.ad
+.sp .6
+.RS 4n
+DUID (DHCP Unique Identifier) と IAID (Identity Association Identifier) 値の永続ストレージを含みます。これらのファイルの形式はドキュメント化されていないため、これらに対する読み取りや書き込みをアプリケーションから行わないようにしてください。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/default/dhcpagent\fR\fR
+.ad
+.sp .6
+.RS 4n
+チューニング可能パラメータのデフォルト値を含みます。すべての値は、インタフェースパラメータ名の先頭にインタフェース名とピリオド (“.”) を付けることによって、適用先のインタフェースで修飾できます。
+.sp
+IPv6 パラメータを構成するには、インタフェース名 (存在する場合) とパラメータ名の間に文字列 \fB\&.v6\fR を置きます。たとえば、グローバル IPv6 パラメータ要求リストを設定する場合は、\fB\&.v6.PARAM_REQUEST_LIST\fR を使用します。\fBhme0\fR に \fBCLIENT_ID\fR (\fBDUID\fR) を設定する場合は、\fBhme0.v6.CLIENT_ID\fR を使用します。
+.sp
+パラメータを次に示します。
+.sp
+.ne 2
+.mk
+.na
+\fB\fBVERIFIED_LEASE_ONLY\fR\fR
+.ad
+.sp .6
+.RS 4n
+エージェントの終了時に管理されたインタフェースで \fBDROP\fR ではなく \fBRELEASE\fR を実行すべきであることを示します。解放の場合は、クライアントはリースを破棄し、サーバーはアドレスを使用可能に戻します。ドロップの場合は、クライアントはリースをあとで使用できるように \fB/etc/dhcp/\fIinterface\fR.dhc\fR または \fB/etc/dhcp/\fIinterface\fR.dh6\fR 内に記録します。さらに、リンクステータスが \fBup\fR に変わったりシステムが一時停止後に再開したりした場合、クライアントはサーバーでリースを検証します。検証時にサーバーに到達できない場合、古いリースは (時間が残っていても) 破棄され、新しいものが取得されます。
+.sp
+ノートパソコンなどのモバイルシステムでは、システムを移動からすばやく回復するために、多くの場合このオプションを有効にすることをお勧めします。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBOFFER_WAIT\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBDISCOVER\fR の送信後に有効な \fBOFFER\fR をチェックするまでの待ち時間を示します。DHCPv6 の場合は、要請の送信後に有効な通知をチェックするまでの待ち時間を設定します。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBCLIENT_ID\fR\fR
+.ad
+.sp .6
+.RS 4n
+クライアントをサーバーに対して一意に識別するために使用すべき値を示します。この値は 3 つの基本形式のいずれかを取ることができます。
+.sp
+.in +2
+.nf
+\fIdecimal\fR,\fIdata\fR...
+0xHHHHH...
+"\fIstring\fR...."
+.fi
+.in -2
+.sp
+
+最初の形式は RFC 3315 DUID です。これは、IPv4 DHCP と DHCPv6 の両方で有効です。IPv4 の場合、この値から RFC 4361 クライアント ID が構築されます。この最初の形式で、\fIdata\fR... の形式は 10 進値に依存します。この最初の形式には次の形式が定義されています。
+.sp
+.ne 2
+.mk
+.na
+\fB1,\fIhwtype\fR,\fItime\fR,\fIlla\fR\fR
+.ad
+.sp .6
+.RS 4n
+タイプ 1、DUID-LLT。\fIhwtype\fR 値は 0 - 65535 の範囲の整数で、ハードウェアのタイプを示します。\fItime\fR 値は 2000 年 1 月 1 日 UTC 真夜中からの秒数で、現在のシステム時間を使用する場合は省略できます。\fIlla\fR 値は、コロンで区切られた、物理インタフェースの MAC アドレスまたは名前です。インタフェースの名前を使用する場合は、\fIhwtype\fR 値を省略できます。例: \fB1,,,hme0\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB2,\fIenterprise\fR,\fIhex\fR...\fR
+.ad
+.sp .6
+.RS 4n
+タイプ 2、DUID-EN。\fIenterprise\fR 値は 0 - 4294967295 の範囲の整数で、組織の SMI エンタープライズ番号を表します。\fIhex\fR 文字列は、偶数長の 16 進数シーケンスです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB3,\fIhwtype\fR,\fIlla\fR\fR
+.ad
+.sp .6
+.RS 4n
+タイプ 3、DUID-LL。これは、タイムスタンプを使用しない点を除いて、DUID-LLT (タイプ 1) と同じです。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB*,\fIhex\fR\fR
+.ad
+.sp .6
+.RS 4n
+その他のタイプ値 (0 または 4 - 65535) を偶数長 16 進文字列で使用できます。
+.RE
+
+\fBCLIENT_ID\fR の 2 番目と 3 番目の形式は、IPv4 でのみ有効です。これらはどちらも、16 進形式または NVT ASCII 文字列形式の raw クライアント ID (RFC 4361 なし) を表します。したがって、「\fBSun\fR」と \fB0x53756E\fR は同等です。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPARAM_REQUEST_LIST\fR\fR
+.ad
+.sp .6
+.RS 4n
+オプションの整数値 (クライアントで値が使用される場合)、あるいはシンボリック \fBSite\fR または \fBOption\fR オプション名の、コンマ区切りリストを指定します。IPv4 のシンボリックオプション名は \fB/etc/dhcp/inittab\fR によって解決されます。IPv6 のオプション名は \fB/etc/dhcp/inittab6\fR によって解決されます。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBPARAM_IGNORE_LIST\fR\fR
+.ad
+.sp .6
+.RS 4n
+DHCP クライアントが無視するオプションのリスト (\fBPARAM_REQUEST_LIST\fR と同じ方法で構築) を指定します。無視するオプションは、サーバーが指定されたオプションが返さなかったかのように処理されます。無視するオプションは、\fBdhcpinfo\fR(1) を使って表示できず、クライアントによって考慮されません。このパラメータは、たとえば、不要なクライアント名やデフォルトルーターを無効するために使用できます。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB/etc/dhcp/eventhook\fR\fR
+.ad
+.sp .6
+.RS 4n
+DHCP イベントプログラムの場所。
+.RE
+
+.SH 属性
+.sp
+.LP
+属性についての詳細は、マニュアルページの \fBattributes\fR(5) を参照してください。
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性タイプ属性値
+_
+使用条件system/core-os
+_
+インタフェースの安定性確実
+.TE
+
+.SH 関連項目
+.sp
+.LP
+\fBdhcpinfo\fR(1), \fBifconfig\fR(1M), \fBinit\fR(1M), \fBin.mpathd\fR(1M), \fBin.ndpd\fR(1M), \fBsyslog\fR(3C), \fBattributes\fR(5), \fBdhcp\fR(5)
+.sp
+.LP
+\fI『Working With DHCP in Oracle Solaris 11.3 』\fR
+.sp
+.LP
+Croft, B. and Gilmore, J.,\fIBootstrap Protocol (BOOTP)\fRRFC 951, Network Working Group, September 1985. 
+.sp
+.LP
+Droms, R., \fIDynamic Host Configuration Protocol\fR, RFC 2131, Network Working Group, March 1997. 
+.sp
+.LP
+Lemon, T. and B. Sommerfeld. \fIRFC 4361, Node-specific Client Identifiers for Dynamic Host Configuration Protocol Version Four (DHCPv4)\fR. Nominum and Sun Microsystems. February 2006. 
+.sp
+.LP
+Droms, R. \fIRFC 3315, Dynamic Host Configuration Protocol for IPv6 (DHCPv6)\fR. Cisco Systems. July 2003. 
+.SH 注意事項
+.sp
+.LP
+\fBdhcpagent\fR デーモンは、IPv4 の物理インタフェースと同様に論理インタフェースでも使用できます。デーモンが論理インタフェースで使用される場合、RFC 4361 に従って DUID 値と IAID 値に基づいてクライアント ID 値を自動的に構築します。\fB/etc/default/dhcpagent\fR \fBCLIENT_ID\fR 値 (ある場合) は、この自動識別子をオーバーライドします。
+.sp
+.LP
+IPv4 物理インタフェースと異なり、\fBdhcpagent\fR は論理インタフェースに関連付けられたデフォルトルートを追加または削除しません。
+.sp
+.LP
+IPMP データアドレスを取得して保守するために、IPMP IP インタフェース上で DHCP を実行できます。IPMP IP インタフェースにはハードウェアアドレスがないため、デーモンは前述の IPv4 論理インタフェースと同じ方法を使ってクライアント ID を自動的に構築します。さらに、ハードウェアアドレスがないことは、デーモンが IPMP IP インタフェース上のすべての \fBDISCOVER\fR および \fBREQUEST\fR メッセージに「ブロードキャスト」フラグを設定する必要があることを意味します。一部の DHCP サーバーはそのような要求を拒否する場合があります。
+.sp
+.LP
+(テストアドレスを取得して保守するために) IPMP グループの一部である IP インタフェース上で DHCP を実行できます。デーモンは各テストアドレスで \fBNOFAILOVER\fR および \fBDEPRECATED\fR フラグを自動的に設定します。さらにこの場合、デーモンはデフォルトルートを追加または削除しません。実際の DHCP パケット交換は、IPMP グループ内のアクティブな IP インタフェース経由で実行される可能性があります。テストアドレスのリースを無期限にすることを強くお勧めします。そうしないと、プローブでのみ検出可能な長時間のネットワーク停止によりテストアドレスリースが期限切れとなり、\fBin.mpathd\fR(1M) がリンクベース障害検出に戻り、間違った修復が起動される可能性があります。

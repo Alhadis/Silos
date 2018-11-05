@@ -1,0 +1,402 @@
+'\" te
+.TH TIFFOpen 3tiff "05 Apr 2004" "" ""
+.SH "NAME"
+TIFFOpen, TIFFFdOpen, TIFFClientOpen \- open a TIFF file for
+reading or writing
+.SH "SYNOPSIS"
+.sp
+.nf
+\f(CW#include <tiffio\&.h>
+TIFF* TIFFOpen(const char* filename, const char* mode)
+TIFF* TIFFFdOpen(const int fd, const char* filename, const char* mode)
+typedef tsize_t (*TIFFReadWriteProc)(thandle_t, tdata_t, tsize_t);
+typedef toff_t (*TIFFSeekProc)(thandle_t, toff_t, int);
+typedef int (*TIFFCloseProc)(thandle_t);
+typedef toff_t (*TIFFSizeProc)(thandle_t);
+typedef int (*TIFFMapFileProc)(thandle_t, tdata_t*, toff_t*);
+typedef void (*TIFFUnmapFileProc)(thandle_t, tdata_t, toff_t);
+TIFF* TIFFClientOpen(const char* filename, const char* mode,
+         thandle_t clientdata,TIFFReadWriteProc readproc,
+         TIFFReadWriteProc writeproc, TIFFSeekProc seekproc,
+         TIFFCloseProc closeproc, TIFFSizeProc sizeproc,
+         TIFFMapFileProc mapproc, TIFFUnmapFileProc unmapproc)\fR
+.fi
+.sp
+.SH ""
+.PP
+\fBTIFFOpen\fR opens a TIFF file whose name is \fIfilename\fR and returns a handle to be used in subsequent calls
+to routines in \fBlibtiff\fR\&. If the open operation fails, then
+zero is returned\&.
+.PP
+The \fBmode\fR parameter specifies whether the file is
+to be opened for reading ("\fBr\fR"), writing ("\fBw\fR"), or appending ("\fBa\fR") and,
+optionally, whether to override certain default aspects of library operation
+(see below)\&. When a file is opened for appending, existing data is not touched\&.
+Instead, new data is written as additional subfiles\&. If an existing file is
+opened for writing, all previous data is overwritten\&.
+.SH ""
+.PP
+If a file is opened for reading, the first TIFF directory in the file
+is automatically read\&. See also \fBTIFFSetDirectory(3tiff)\fR for
+information on how to read directories other than the first\&. If a file is
+opened for writing or appending, a default directory is automatically created
+for writing subsequent data\&. This directory has all of the default values
+specified in TIFF Revision 6\&.0:
+.sp
+.in +2
+\(bu
+.mk
+.in +3
+.rt
+\fBBitsPerSample=1\fR
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBThreshHolding=bilevel art scan\fR
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBFillOrder=1\fR (most significant bit of each
+data byte is filled first)
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBOrientation=1\fR (the 0th row represents the
+visual top of the image, and the 0th column represents the visual left-hand
+side)
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBSamplesPerPixel=1\fR
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBRowsPerStrip=infinity\fR
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBResolutionUnit=2 (inches)\fR
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBCompression=1 (no compression)\fR
+.sp
+.in -3
+.in -2
+.PP
+To alter these values, or to define values for additional fields, \fBTIFFSetField(3tiff)\fR must be used\&.
+.PP
+\fBTIFFFdOpen\fR is like \fBTIFFOpen\fR except
+that \fBTIFFFdOpen\fR opens a TIFF file given an open file descriptor \fBfd\fR\&. The file name and mode must reflect that of the open descriptor\&.
+The object associated with the file descriptor must support random access\&.
+.PP
+\fBTIFFClientOpen\fR is like \fBTIFFOpen\fR
+except that the caller supplies a collection of functions that the library
+uses to perform UNIX-like I/O operations:
+.sp
+.in +2
+\(bu
+.mk
+.in +3
+.rt
+\fBreadproc\fR and \fBwriteproc\fR
+are called to read and write data at the current file position\&.
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBseekproc\fR is called to change the current
+file position\&. See also \fBlseek(2)\fR\&.
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBcloseproc\fR is invoked to release any resources
+associated with an open file\&.
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBsizeproc\fR is invoked to obtain the size
+in bytes of a file\&.
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+\fBmapproc\fR and \fBunmapproc\fR
+are called to map and unmap the contents of a file in memory\&. See also \fBmmap(2)\fR and \fBmunmap(2)\fR\&.
+.sp
+.in -3
+\(bu
+.mk
+.in +3
+.rt
+The \fBclientdata\fR parameter is an opaque "handle"
+passed to the client-specified routines that are passed as parameters to \fBTIFFClientOpen\fR\&.
+.sp
+.in -3
+.in -2
+.SS "Byte Order"
+.PP
+The TIFF specification (all versions) states that compliant readers
+must be capable of reading images written in either byte order\&. However, some
+software that claims to support the reading of TIFF images is incapable of
+reading images in anything but the native CPU byte order on which the software
+was written\&. By default, the library creates new files with the native byte-order
+of the CPU on which the application is run\&. This ensures optimal performance
+and is portable to any application that conforms to the TIFF specification\&.
+To force the library to use a specific byte-order when creating a new file,
+the "\fBb\fR" and "\fBl\fR"
+option flags may be included in the call to open a file\&. For example, "\fBwb\fR" or "\fBwl\fR"\&.
+.SS "Diagnostics"
+.PP
+All error messages are directed to the \fBTIFFError(3tiff)\fR
+routine\&. Likewise, warning messages are directed to the \fBTIFFWarning(3tiff)\fR routine\&.
+.sp
+.ne 2
+.mk
+\fB"%s": Bad mode\&.\fR
+.in +24n
+.rt
+The specified mode
+parameter is not one of "\fBr\fR" (read), "\fBw\fR" (write), or "\fBa\fR" (append)\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fB%s: Cannot open\&.\fR
+.in +24n
+.rt
+\fBTIFFOpen()\fR is unable to open the specified filename for reading or writing\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fBCannot read TIFF header\&.\fR
+.in +24n
+.rt
+An error
+occurred while attempting to read the header information\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fBError writing TIFF header\&.\fR
+.in +24n
+.rt
+An error
+occurred while writing the default header information for a new file\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fBNot a TIFF file, bad magic number %d (0x%x)\&.\fR
+.in +24n
+.rt
+The magic number in the header was not (hex) \fB0x4d4d\fR
+or (hex) \fB0x4949\fR\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fBNot a TIFF file, bad version number %d (0x%x)\&.\fR
+.in +24n
+.rt
+The version field in the header was not \fB42\fR
+(decimal)\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fBCannot append to file that has opposite byte ordering\&.\fR
+.in +24n
+.rt
+A file with a byte ordering opposite to the native
+byte ordering of the current machine was opened for appending ("\fBa\fR")\&. This is a limitation of the library\&.
+.sp
+.sp 1
+.in -24n
+.SH ""
+.PP
+The open \fBmode\fR parameter can include the following
+flags in addition to the "r", "w", and "a"
+flags\&. Note however that option flags must follow the read-write-append specification\&.
+.sp
+.ne 2
+.mk
+\fB\fBB\fR\fR
+.in +24n
+.rt
+Force image data that is read or written to be treated with bits filled from
+Most Significant Bit (MSB) to Least Significant Bit (LSB)\&. This is the default\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fB\fBb\fR\fR
+.in +24n
+.rt
+When creating a new file, force information to be written with Big-Endian
+byte order (but see the Byte Order section of this reference page)\&. By default,
+the library creates new files using the native CPU byte order\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fB\fBC\fR\fR
+.in +24n
+.rt
+Enable the use of "strip chopping" when reading images that are
+comprised of a single strip or tile of uncompressed data\&. Strip chopping is
+a mechanism by which the library automatically converts the single-strip image
+to multiple strips, each of which has about 8 Kilobytes of data\&. This facility
+can be useful in reducing the amount of memory used to read an image because
+the library normally reads each strip in its entirety\&. Strip chopping does
+however alter the apparent contents of the image because when an image is
+divided into multiple strips, the image looks as though the underlying file
+contains multiple separate strips\&. Finally, note that default handling of
+strip chopping is a compile-time configuration parameter\&. The default behaviour,
+for backwards compatibility, is to enable strip chopping\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fB\fBc\fR\fR
+.in +24n
+.rt
+Disable the use of strip chopping when reading images\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fB\fBH\fR\fR
+.in +24n
+.rt
+Force image data that is read or written to be treated with bits filled in
+the same order as the native CPU\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fB\fBL\fR\fR
+.in +24n
+.rt
+Force image data that is read or written to be treated with bits filled from
+Least Significant Bit (LSB) to Most Significant Bit (MSB)\&. Note that this
+is the opposite to the way that the library has worked from its inception\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fB\fBl\fR\fR
+.in +24n
+.rt
+When creating a new file, force information to be written with Little-Endian
+byte order (but see the Byte Order section of this reference page)\&. By default,
+the library creates new files using the native CPU byte order\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fB\fBM\fR\fR
+.in +24n
+.rt
+Enable the use of memory-mapped files for images opened as read-only\&. If the
+underlying system does not support memory-mapped files, or if the specific
+image being opened cannot be memory-mapped, the library uses the normal system
+interface for reading information\&. By default, the library attempts to use
+memory-mapped files\&.
+.sp
+.sp 1
+.in -24n
+.sp
+.ne 2
+.mk
+\fB\fBm\fR\fR
+.in +24n
+.rt
+Disable the use of memory-mapped files\&.
+.sp
+.sp 1
+.in -24n
+.SH ""
+.PP
+Upon successful completion, \fBTIFFOpen\fR, \fBTIFFFdOpen\fR, and \fBTIFFClientOpen\fR return a TIFF pointer\&. Otherwise,
+NULL is returned\&.
+.SH ""
+.PP
+See \fBattributes\fR(5)
+for descriptions of the following attributes:
+.sp
+.TS
+tab() allbox;
+cw(2.750000i)| cw(2.750000i)
+lw(2.750000i)| lw(2.750000i).
+ATTRIBUTE TYPEATTRIBUTE VALUE
+Availabilityimage/library/libtiff
+Interface stabilityUncommitted
+.TE
+.sp
+.SH ""
+.PP
+\fBlibtiff\fR(3), \fBTIFFClose\fR(3tiff)
+.SH ""
+.PP
+This man page was originally written by Sam Leffler\&. Updated by Breda McColgan, Sun Microsystems Inc\&., 2004\&.
+...\" created by instant / solbook-to-man, Thu 20 Mar 2014, 02:30
+...\" LSARC 2003/085 libtiff, libjpeg, and libpng

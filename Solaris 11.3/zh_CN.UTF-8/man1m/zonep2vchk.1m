@@ -1,0 +1,2206 @@
+'\" te
+.\" Copyright (c) 2012, Oracle and/or its affiliates.All rights reserved
+.TH zonep2vchk 1M "2011 年 7 月 1 日" "SunOS 5.11" "系统管理命令"
+.SH 名称
+zonep2vchk \- 针对到非全局区域的物理到虚拟迁移检查全局区域的配置
+.SH 用法概要
+.LP
+.nf
+\fBzonep2vchk\fR \fB-V\fR
+.fi
+
+.LP
+.nf
+\fBzonep2vchk\fR [\fB-T\fR \fIrelease\fR] \fB-c\fR
+.fi
+
+.LP
+.nf
+\fBzonep2vchk\fR [\fB-T\fR \fIrelease\fR] [\fB-P\fR] [\fB-b\fR] [ \fB-s\fR path[,path...] ] [\fB-S\fR \fIfile\fR]
+     [ \fB-r\fR {\fItime\fR}(h|m|s} ] [\fB-x\fR] [\fB-e\fR \fIexecname\fR[,\fIexecname\fR...] ]
+     [\fB-E\fR \fIfile\fR]
+.fi
+
+.SH 描述
+.sp
+.LP
+\fBzonep2vchk\fR 实用程序用于在通过物理到虚拟 (physical-to-virtual, \fBp2v\fR) 方式迁移到非全局区域之前对全局区域配置进行评估。
+.sp
+.LP
+该 p2v 过程包括对全局区域（源）进行归档，然后使用该归档文件安装非全局区域（目标）。请参见 \fBsolaris\fR(5) 和 \fBsolaris10\fR(5) 手册页中的 \fBinstall\fR \fB-a\fR 说明。
+.sp
+.LP
+\fBzonep2vchk\fR 有两个功能。首先，可以用来报告源中可能阻碍 \fBp2v\fR 迁移成功的问题。其次，可以输出一个模板 \fBzonecfg\fR，该模板可用来帮助配置非全局区域目标。
+.sp
+.LP
+\fBzonep2vchk\fR 可以在 Solaris 10 或更高版本的全局区域上执行。要在 Solaris 10 上执行，请将 \fBzonep2vchk\fR 实用程序复制到 Solaris 10 源全局区域。
+.SH 安全
+.sp
+.LP
+\fBzonep2vchk\fR 实用程序必须以有效的用户 ID（即 0）来运行。它可查询各个 Solaris 子系统的配置状态。
+.SH 选项
+.sp
+.LP
+支持以下选项：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-V\fR\fR
+.ad
+.sp .6
+.RS 4n
+显示命令版本并退出。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-T\fR \fIrelease\fR\fR
+.ad
+.sp .6
+.RS 4n
+指定目标发行版。缺省值为：
+.sp
+.in +2
+.nf
+Global Zone         Default Target
+Solaris 10          S10
+Solaris 11          S11
+.fi
+.in -2
+.sp
+
+\fBzonep2chk\fR 生成的所有配置文件都适用于该目标发行版。请参见下文中的 \fB-c\fR。
+.sp
+在 Solaris 10 上运行时，可以指定 \fBS11\fR 作为目标发行版，这将对到 Solaris 10 标记区域的 \fBp2v\fR 迁移进行检查。
+.sp
+目标为 S10 时，假定使用共享栈。将报告任何需要独占 IP 栈的问题。
+.sp
+目标为 S11 时，假定使用独占 IP 栈。
+.sp
+如果全局区域在使用的某个特定功能要求目标具有特定的修补程序/更新级别才能运行，则 \fBzonep2vchk\fR 输出中将包括该信息。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-P\fR\fR
+.ad
+.sp .6
+.RS 4n
+生成计算机可解析的输出。请参见下文中的“可解析的输出格式”部分。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-c\fR\fR
+.ad
+.sp .6
+.RS 4n
+以 \fBzonecfg\fR(1M) \fBexport\fR 输出格式在 stdout 上显示模板区域配置。该配置包含了基于源主机的物理资源和网络配置的资源限制和网络配置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-b\fR\fR
+.ad
+.sp .6
+.RS 4n
+执行基本检查。这将检查全局区域中是否存在可能阻碍 \fBp2v\fR 迁移成功的问题。这是 \fB-b\fR、\fB-c\fR、\fB-s\fR、\fB-S\fR、\fB-r\fR 和 \fB-x\fR 都未指定时的缺省行为。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-r\fR{\fItime\fR} (h|m|s)\fR
+.ad
+.sp .6
+.RS 4n
+在指定的持续时间内执行运行时检查。这将分析全局区域中当前正在执行的进程，并报告可能阻碍在非全局区域内成功执行的问题。报告的问题针对在执行 \fBzonep2vchk\fR 期间这些进程所执行的操作。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-x\fR\fR
+.ad
+.sp .6
+.RS 4n
+执行运行时检查（与使用 \fB-r\fR 一样），直至收到 \fBSIGINT\fR（如大多数 shell 中的 \fBCtrl-c\fR 所提供的功能）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-e\fR \fIexecname\fR[,\fIexecname\fR...]\fR
+.ad
+.sp .6
+.RS 4n
+执行运行时分析（\fB-r\fR、\fB-x\fR）时，将检查的程序限定为与指定的 \fIexecname\fR 列表匹配的程序。\fIexecname\fR 是 \fBps\fR \fB-o\fR \fBcomm\fR 返回的进程名称。在调用 \fBzonep2vchk\fR 时，指定的进程不一定要存在。将检查在运行 \fBzonep2vchk\fR 时创建的所有匹配进程。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-E\fR \fIfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+与 \fB-e\fR 相似，但是它从 \fIfile\fR 读取 \fIexecname\fR 列表，一行一个。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-s\fR \fIpath\fR[,\fIpath\fR...]\fR
+.ad
+.sp .6
+.RS 4n
+对指定的文件或目录执行静态二进制文件分析。这将检查 ELF 二进制文件中可能影响在区域内正常工作的系统和库调用。将以递归方式分析目录，并忽略非 ELF 文件。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB-S\fR \fIfile\fR\fR
+.ad
+.sp .6
+.RS 4n
+与 \fB-s\fR 相似，但是它从 \fIfile\fR 读取路径列表，一行一个。
+.RE
+
+.SH 可解析的输出格式
+.sp
+.LP
+对于检测到的每个问题，\fBzonep2vchk\fR 将输出一行可解析的输出。行的格式为：
+.sp
+.in +2
+.nf
+\fIcategory\fR:\fIissue\fR:\fIfield1\fR:[\fIfield2\fR:...]
+.fi
+.in -2
+.sp
+
+.sp
+.LP
+各个字段以冒号 (\fB:\fR) 分隔。以反斜杠 (\fB\:\fR) 转义的冒号字符不应被视为字段分隔符。
+.sp
+.LP
+对于多次出现的同一问题，每次出现时都会报告，并通过字段来描述问题的此次具体情况。
+.sp
+.LP
+下面阐述了现有的类别和问题。\fBzonep2vchk\fR 的将来版本可能会包括更多类别和问题。对于现有问题，可能会在其现有字段后添加新的字段。
+.SS "\fBheader\fR 类别"
+.sp
+.LP
+\fBheader\fR 类别列出关于源、目标和 \fBzonep2vchk\fR 版本的信息。此类别中的问题包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBversion\fR\fR
+.ad
+.sp .6
+.RS 4n
+\fBzonep2vchk\fR 命令的版本。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+\fBzonep2vchk\fR 命令的版本。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsource\fR\fR
+.ad
+.sp .6
+.RS 4n
+关于源系统的信息。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+源系统的节点名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+源系统的 /etc/release 版本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField3\fR:\fR
+.ad
+.RS 11n
+.rt  
+源系统的内核版本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField4\fR:\fR
+.ad
+.RS 11n
+.rt  
+源系统的平台。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBtarget\fR\fR
+.ad
+.sp .6
+.RS 4n
+关于 \fBp2v\fR 检查的指定目标的信息。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+目标的 Solaris 版本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+将在目标上使用的标记类型。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField3\fR:\fR
+.ad
+.RS 11n
+.rt  
+目标上的预期区域的 IP 类型。
+.RE
+
+.RE
+
+.SS "\fBfooter\fR 类别"
+.sp
+.LP
+\fBfooter\fR 类别列出最终的摘要信息。此类别中的问题包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBissues\fR\fR
+.ad
+.sp .6
+.RS 4n
+概述发现的问题数。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+检测到的问题数。
+.RE
+
+.RE
+
+.SS "\fBincompatible\fR 类别"
+.sp
+.LP
+\fBincompatible\fR 类别代表无法在非全局区域中正常工作的问题。此类别中的问题包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBetcsystem\fR\fR
+.ad
+.sp .6
+.RS 4n
+存在 \fB/etc/system\fR 可调参数。这类可调参数在区域内无法正常工作。\fB/etc/system\fR 可调参数可以转移到目标全局区域，但它将影响整个系统，包括所有区域和全局区域。如果有可在区域内配置的替代可调参数，将描述该可调参数。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.sp .6
+.RS 4n
+\fB/etc/system\fR 可调参数设置。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.sp .6
+.RS 4n
+为以下项之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoalternate\fR\fR
+.ad
+.RS 15n
+.rt  
+非全局区域内没有替代可调参数。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBobsolete\fR\fR
+.ad
+.RS 15n
+.rt  
+该可调参数在目标上已过时。它不再提供任何功能。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBreplaced\fR\fR
+.ad
+.RS 15n
+.rt  
+该可调参数在目标上已被替换。该替换是在全局区域中配置的，由字段 3 和 4 描述。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBalternate\fR\fR
+.ad
+.RS 15n
+.rt  
+存在一个替代可调参数。可在非全局区域内配置该可调参数。该可调参数由字段 3 和 4 描述。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnoinfo\fR\fR
+.ad
+.RS 15n
+.rt  
+\fBzonep2vchk\fR 不了解该可调参数。该可调参数在区域内可能没有替代参数。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField3\fR:\fR
+.ad
+.sp .6
+.RS 4n
+替代可调参数的类型。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField4\fR:\fR
+.ad
+.sp .6
+.RS 4n
+关于替代可调参数的说明。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbe\fR\fR
+.ad
+.sp .6
+.RS 4n
+存在多个引导环境。只有活动的引导环境才会迁移到非全局区域。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+非活动引导环境的名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBunsupported\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用了在区域内无法正常工作的某项功能。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR: \fBmobileip\fR\fR
+.ad
+.RS 20n
+.rt  
+配置了移动 IP 代理，而移动 IP 代理无法在区域中正常工作。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnfs\fR（仅限 S10 源）\fR
+.ad
+.sp .6
+.RS 4n
+系统在通过 NFS 方式共享文件系统。Solaris 10 上的本机区域和 Solaris 11 上的 Solaris 10 区域不能通过 NFS 方式进行共享。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+共享文件系统的路径。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsmb\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统正在通过内核中 \fBsmb/cifs\fR 共享一个文件系统。区域不能通过 SMB 方式共享文件系统。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+共享文件系统的路径。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpkg\fR\fR
+.ad
+.sp .6
+.RS 4n
+安装的某个软件包提供了已知不能在区域中正常工作的软件。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+软件包的名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBiscsi-target\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统在导出 ISCSI 目标。区域不能导出 iSCSI 目标。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+iSCSI 目标的名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfcoe-target\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统配置了一个 FCOE 目标。区域无法配置 FCOE 目标。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+使用的以太网设备。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+FCOE 目标的 WWN。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfc-target\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统配置了一个光纤通道目标。区域无法配置光纤通道目标。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+光纤通道目标的 WWN。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnpiv\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统配置了一个虚拟 NPIV HBA。区域无法配置虚拟 HBA。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+承载着虚拟 HBA 的物理 WWN。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+虚拟 WWN。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBscsi\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统配置了一个 SCSI 块设备。区域无法配置 SCSI 块设备。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+配置为 SCSI 设备的对象。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvcnotallowed\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用了在区域内无法正常工作的某个服务。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+服务的名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBresourcepool\fR\fR
+.ad
+.sp .6
+.RS 4n
+配置了一个 Solaris 资源池。区域无法配置资源池。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+池的名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpset\fR\fR
+.ad
+.sp .6
+.RS 4n
+配置了一个处理器集。区域无法配置处理器集。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+处理器集 ID。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+该处理器集中的 CPU ID 的列表。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzones\fR\fR
+.ad
+.sp .6
+.RS 4n
+配置了区域。区域无法承载区域。执行 \fBp2v\fR 后，目标非全局区域中将不存在任何区域。可以使用 \fBzoneadm\fR(1M) 中的 \fBdetach\fR/\fBattach\fR 功能单独迁移各个区域。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+区域的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+区域的状态。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlofi\fR（仅限目标为 Solaris 10）\fR
+.ad
+.sp .6
+.RS 4n
+配置了 lofi 设备。区域无法配置 lofi 设备。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+lofi 设备的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+设备所基于的文件的路径。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsyscall\fR（由 \fB-s\fR 和 \fB-f\fR 生成）\fR
+.ad
+.sp .6
+.RS 4n
+某个二进制文件中含有无法从区域调用的系统或库调用。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+二进制文件的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+系统或库调用的名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsyscallargs\fR（由 \fB-s\fR 和 \fB-f\fR 生成）\fR
+.ad
+.sp .6
+.RS 4n
+某个二进制文件中的系统或库调用如果使用特定参数进行调用，则无法从区域内调用。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+系统或库调用的名称。
+.RE
+
+有关不允许使用的参数的详细信息，请参见常规输出（不带 \fB-P\fR）。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlib\fR（由 \fB-s\fR 和 \fB-f\fR 生成）\fR
+.ad
+.sp .6
+.RS 4n
+某个二进制文件链接了无法在区域内使用的库。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+二进制文件的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+不允许使用的库的名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprivnotallowed\fR（由 \fB-r\fR 和 \fB-x\fR 生成）\fR
+.ad
+.sp .6
+.RS 4n
+某个进程使用了无法添加到区域中的特权。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+进程的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+特权的名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdevnotallowed\fR（由 \fB-r\fR 和 \fB-x\fR 生成）\fR
+.ad
+.sp .6
+.RS 4n
+某个进程打开了无法添加到区域中的设备。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+进程的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+设备的名称。
+.RE
+
+.RE
+
+.SS "\fBconfiguration\fR 类别"
+.sp
+.LP
+\fBconfiguration\fR 类别代表需要进行配置设置才能在非全局区域内正常工作的问题。这可能是 \fBzonecfg\fR(1M) 配置设置、全局区域中的配置更改，或者是这二者。
+.sp
+.LP
+此类别中的问题包括：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdatalink\fR\fR
+.ad
+.sp .6
+.RS 4n
+配置了无法在区域内配置的数据链路功能。数据链路功能必须在全局区域中配置，如果需要，必须使用 \fBzonecfg add anet\fR（仅限 Solaris 11）或 \fBzonecfg add net\fR 委托给区域。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+数据链路功能的名称。为以下项之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBaggr\fR\fR
+.ad
+.RS 13n
+.rt  
+聚合。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBibiface\fR\fR
+.ad
+.RS 13n
+.rt  
+Infiniband 接口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBibpart\fR\fR
+.ad
+.RS 13n
+.rt  
+Infiniband 分区。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvnic\fR\fR
+.ad
+.RS 13n
+.rt  
+虚拟 NIC。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBetherstub\fR\fR
+.ad
+.RS 13n
+.rt  
+以太网存根。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBbridge\fR\fR
+.ad
+.RS 13n
+.rt  
+网桥实例。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsecobj\fR\fR
+.ad
+.RS 13n
+.rt  
+无线 WPA 或 WEB 安全对象。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+数据链路对象名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdhcp-server\fR（仅限目标为 Solaris 10）\fR
+.ad
+.sp .6
+.RS 4n
+主机是一个 DHCP 服务器。要提供 DHCP 服务，区域必须设置 \fBip-type=exclusive\fR 或具有特权 \fBnet_rawaccess\fR 和设备 \fB/dev/ip\fR。请注意，这将允许共享栈区域读写网络上的原始 IP 数据包，与独占栈区域或全局区域类似。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+DHCP 服务器服务的 FMRI。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBntp-client\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用了一个 NTP 客户机服务。该服务更新系统时钟。由于所有区域共享同一系统时钟，因此在 \fBp2v\fR 期间会自动禁用该服务。如果需要区域更新目标主机上的系统时钟，区域将需要特权 \fBsys_time\fR，且需要在执行 \fBp2v\fR 后在区域内启用该服务。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+客户机服务的 FMRI。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdriverconf\fR\fR
+.ad
+.sp .6
+.RS 4n
+某个网络设备在其 \fB\&.conf\fR 文件中包含配置设置。区域无法配置驱动程序。驱动程序必须在全局区域中配置。某些网络驱动程序设置可以使用 \fBdladm\fR(1M) 进行配置，而不必编辑驱动程序配置文件。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+配置文件的路径。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBifname\fR（仅限目标为 Solaris 10）\fR
+.ad
+.sp .6
+.RS 4n
+变更网络设备名称会影响某个现有配置文件。例如，如果为目标非全局区域指定的网络设备不是 \fBbge0\fR，\fB/etc/hostname.bge0\fR 文件将会受影响。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+受影响的文件的路径。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBiscsi-initiator\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统正在作为客户机访问 iSCSI 目标。区域无法访问 iSCSI 目标。全局区域必须是 iSCSI 启动器。然后，可以使用 \fBzonecfg add device\fR 将设备添加到区域。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+正在访问的 iSCSI 目标。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfcoe-initiator\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统配置了一个 FCOE 启动器。区域无法配置 FCOE 启动器。全局区域必须配置 FCOE 启动器，并使用 \fBzonecfg add fs\fR 或 \fBzonecfg add device\fR 使 SCSI 目标设备可供区域使用。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+以太网网络设备。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+启动器的 WWN。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBfc-initiator\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统具有一个联机的 HBA 光纤通道端口。区域无法访问光纤通道目标。必须从全局区域访问该目标并使其可供区域使用。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+光纤通道 HBA 端口 WWN。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBlinkprop\fR\fR
+.ad
+.sp .6
+.RS 4n
+配置了数据链路属性。区域无法配置数据链路属性。必须从全局区域对其进行配置。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+数据链路的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+属性名称
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField3\fR:\fR
+.ad
+.RS 11n
+.rt  
+属性值。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBndd\fR\fR
+.ad
+.sp .6
+.RS 4n
+使用 \fBndd\fR 配置了无法由区域配置的可调参数。这类可调参数必须从全局区域进行配置。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+设置了这类可调参数的文件或脚本。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+要调整的驱动程序。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField3\fR:\fR
+.ad
+.RS 11n
+.rt  
+可调参数。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdynaddr\fR\fR
+.ad
+.sp .6
+.RS 4n
+在某个网络接口上配置了一个或多个动态分配的 IP 地址。共享 IP 区域不支持这类地址。这类 IP 地址可能会因 MAC 地址更改而更改。您可能需要在 DHCP 服务器上以及 DNS、LDAP 或 NIS 名称服务器上修改该系统的地址信息。
+.sp
+\fIField1\fR 可以为下项之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdhcp\fR\fR
+.ad
+.sp .6
+.RS 4n
+所配置的 DHCP 地址。在此情况下，\fIField2\fR 是为 DHCP 配置的接口的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBv6autoconf\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用了 IPv6 无状态地址配置。在此情况下，\fIField2\fR 是采用 IPv6 自动配置的接口的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBrarp\fR（仅限源为 Solaris 10）\fR
+.ad
+.sp .6
+.RS 4n
+启用了反向 ARP 分配的地址。在此情况下，\fIField2\fR 是启用了反向 ARP 的接口的名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBpatch\fR（仅限源为 Solaris 10 且目标为 Solaris 11 及更高版本）\fR
+.ad
+.sp .6
+.RS 4n
+在以 \fBp2v\fR 方式迁移到非全局区域前需要安装某个修补程序。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+所需的修补程序。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBphysif\fR（仅限目标为 Solaris 10）\fR
+.ad
+.sp .6
+.RS 4n
+如果迁移到独占 IP 区域，源系统上的某个物理接口将被替换为目标系统上的某个专用物理或 VLAN 接口。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+源系统上的接口的名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsched\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统配置了一个缺省调度类。可以使用 \fBzonecfg set scheduler\fR 属性配置非全局区域的缺省调度类。将在 \fB-c\fR 输出中提供此项。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+配置的缺省调度类。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsharedip\fR（仅限目标为 Solaris 10）\fR
+.ad
+.sp .6
+.RS 4n
+如果迁移到共享 IP 区域，将需要由全局区域代替区域配置以下网络功能。
+.sp
+\fIField1\fR 可以为下项之一：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBipmpgroup\fR\fR
+.ad
+.RS 16n
+.rt  
+配置了一个 IPMP 组。如果需要 IPMP，必须从全局区域对其进行配置。在此情况下，\fIField2\fR 是 IPMP 组名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvni\fR\fR
+.ad
+.RS 16n
+.rt  
+配置了一个虚拟网络接口。这类接口必须从全局区域进行配置。在此情况下，\fIField2\fR 是 VNI 接口名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBv4forwarding\fR\fR
+.ad
+.br
+.na
+\fB\fBv6forwarding\fR\fR
+.ad
+.RS 16n
+.rt  
+某个接口上配置了 IP 转发（v4 或 v6）。在此情况下，\fIField2\fR 是配置了 IP 转发的接口。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBstaticroute\fR\fR
+.ad
+.RS 16n
+.rt  
+配置了静态路由。这类静态路由必须从全局区域进行配置。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBexclusiveonly\fR（仅限目标为 Solaris 10）\fR
+.ad
+.sp .6
+.RS 4n
+配置了不支持在共享 IP 区域中使用的网络功能。该功能在独占 IP 区域中可正常工作，不需要修改。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+.sp
+.ne 2
+.mk
+.na
+\fB\fBiptun\fR\fR
+.ad
+.RS 9n
+.rt  
+已激活了某个 IPv4、IPv6 或 6to4 隧道接口。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+隧道接口的名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsharedonly\fR\fR
+.ad
+.sp .6
+.RS 4n
+配置了独占 IP 区域中不支持的网络功能。迁移到共享 IP 区域时，必须在全局区域中配置该功能才能支持通信。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+.sp
+.ne 2
+.mk
+.na
+\fB\fBcgtp\fR\fR
+.ad
+.RS 8n
+.rt  
+已激活了某个电信级传输协议接口。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+CGTP 接口的名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBnetdevalloc\fR\fR
+.ad
+.sp .6
+.RS 4n
+某个网络功能要求使用 zonecfg(1M) add device 命令将其底层设备分配给区域。共享 IP 区域不支持此功能。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+可以是：
+.sp
+.ne 2
+.mk
+.na
+\fB\fBppp\fR\fR
+.ad
+.RS 7n
+.rt  
+点对点协议 (Point-to-Point Protocol, PPP)。\fB/etc/ppp\fR 下存在 PPP 配置文件。需要分配给区域的底层设备是一个串行端口，或以太网物理或 VNIC 接口（对于 \fBpppoe\fR）。
+.RE
+
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvcexlip\fR（仅限目标为 Solaris 10）\fR
+.ad
+.sp .6
+.RS 4n
+启用了一个需要独占 IP 区域的服务。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+服务 FMRI 的名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvcpriv\fR\fR
+.ad
+.sp .6
+.RS 4n
+启用了一个需要使用 \fBzonecfg\fR(1M) \fBlimitpriv\fR 属性向区域中添加其他特权的服务。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+服务的 FMRI。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+该服务需要的特权的列表。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsvm\fR\fR
+.ad
+.sp .6
+.RS 4n
+配置了一个 Solaris Volume Manager 元设备。元设备必须在全局区域中配置，并使用 \fBzonecfg\fR(1M) \fBadd device\fR、\fBadd fs\fR 或 \fBadd dataset\fR 使其可供非全局区域使用。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+元设备的名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBramdisk\fR\fR
+.ad
+.sp .6
+.RS 4n
+配置了一个 ramdisk 设备。区域无法配置 ramdisk 设备。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+Ramdisk 设备路径。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBvfstab\fR\fR
+.ad
+.sp .6
+.RS 4n
+通过 \fB/etc/vfstab\fR 配置了一个文件系统挂载。必须将该文件系统迁移到目标全局区域并使其可供非全局区域使用。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+挂载的设备。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+挂载点。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBzpool\fR\fR
+.ad
+.sp .6
+.RS 4n
+系统配置了附加的 zpool。必须将这些 zpool 迁移到目标全局区域，并使用 \fBzonecfg add dataset\fR 或 \fBzonecfg add fs\fR 使其可供区域使用。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+池的名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprivexclip\fR（仅限目标为 Solaris 10）\fR
+.ad
+.sp .6
+.RS 4n
+某个进程使用了需要独占 IP 栈的特权。有关 \fBip-type\fR 属性的说明，请参见 \fBzonecfg\fR(1M)。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+进程的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+使用的特权。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdevexclip\fR（仅限目标为 Solaris 10）\fR
+.ad
+.sp .6
+.RS 4n
+某个进程打开了需要独占 IP 栈的设备。有关 \fBip-type\fR 属性的说明，请参见 \fBzonecfg\fR(1M)。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+进程的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+设备的名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBprivoptional\fR\fR
+.ad
+.sp .6
+.RS 4n
+某个进程使用的特权要求向目标非全局区域中添加其他特权。有关 \fBlimitpriv\fR 属性的说明，请参见 \fBzonecfg\fR(1M)。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+进程的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+使用的特权。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBdevoptional\fR\fR
+.ad
+.sp .6
+.RS 4n
+某个进程打开了缺省情况下在区域中不可用的设备。有关 \fBadd device\fR 资源的说明，请参见 \fBzonecfg\fR(1M)。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+进程的名称。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+设备的路径。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsyscallpriv\fR（由 \fB-s\fR 和 \fB-f\fR 生成）\fR
+.ad
+.sp .6
+.RS 4n
+某个二进制文件含有可能要求向目标非全局区域添加其他特权的系统或库调用。有关 \fBlimitpriv\fR 属性的说明，请参见 \fBzonecfg\fR(1M)。有关系统或库调用的详细信息，请参见不可解析的输出。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+二进制文件的路径。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+系统调用的名称。
+.RE
+
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fBsyscallexclip\fR（由 \fB-s\fR 和 \fB-f\fR 生成）\fR
+.ad
+.sp .6
+.RS 4n
+某个二进制文件含有可能需要独占 IP 栈的系统或库调用。有关 \fBip-type\fR 属性的说明，请参见 \fBzonecfg\fR(1M)。有关系统或库调用的详细信息，请参见不可解析的输出。
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField1\fR:\fR
+.ad
+.RS 11n
+.rt  
+二进制文件的路径。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fIField2\fR:\fR
+.ad
+.RS 11n
+.rt  
+系统调用的名称。
+.RE
+
+.RE
+
+.SH 示例
+.LP
+\fB示例 1 \fR执行静态二进制文件分析
+.sp
+.LP
+以下命令对两个应用程序目录树中的所有 ELF 二进制文件执行静态分析：
+
+.sp
+.in +2
+.nf
+# \fBzonep2vchk -s /opt/myapplication,/usr/local\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 2 \fR为目标区域生成模板
+.sp
+.LP
+在 Solaris 10 全局区域上运行以下命令时，将为 Solaris 11 生成一个模板区域配置。
+
+.sp
+.in +2
+.nf
+# \fBzonep2vchk T S11 -c\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 3 \fR在某个时段内分析正在运行的应用程序
+.sp
+.LP
+以下命令将分析名为 \fBmyapplication\fR 的进程在一小时内的运行情况，并报告在区域内可能无法正常工作的任何活动。
+
+.sp
+.in +2
+.nf
+# \fBzonep2vchk -s 1h -e myapplication\fR
+.fi
+.in -2
+.sp
+
+.LP
+\fB示例 4 \fR执行基本检查
+.sp
+.LP
+以下命令将分析全局区域，找出哪些正在使用的配置和 Solaris 功能在区域内可能无法正常工作。对于发现的每个问题时，将显示一行可解析的输出。
+
+.sp
+.in +2
+.nf
+# \fBzonep2vchk  -bP\fR
+.fi
+.in -2
+.sp
+
+.SH 退出状态
+.sp
+.LP
+将返回以下退出值：
+.sp
+.ne 2
+.mk
+.na
+\fB\fB0\fR\fR
+.ad
+.sp .6
+.RS 4n
+成功完成，未检测到任何问题。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB1\fR\fR
+.ad
+.sp .6
+.RS 4n
+发生内部错误。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB2\fR\fR
+.ad
+.sp .6
+.RS 4n
+用法无效。
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fB\fB3\fR\fR
+.ad
+.sp .6
+.RS 4n
+检测到一个或多个问题。
+.RE
+
+.SH 属性
+.sp
+.LP
+有关下列属性的说明，请参见 \fBattributes\fR(5)：
+.sp
+
+.sp
+.TS
+tab() box;
+cw(2.75i) |cw(2.75i) 
+lw(2.75i) |lw(2.75i) 
+.
+属性类型属性值
+_
+可用性system/zones
+_
+接口稳定性请参见下文
+.TE
+
+.sp
+.LP
+命令调用和可解析的输出是 "Committed"（已确定）。用户可读的输出（缺省输出）是 "Uncommitted"（未确定）。
+.SH 另请参见
+.sp
+.LP
+\fBdladm\fR(1M)、\fBzoneadm\fR(1M)、\fBzonecfg\fR(1M)、\fBattributes\fR(5)、\fBsolaris\fR(5)、\fBsolaris10\fR(5)、\fBzones\fR(5)
+.SH 附注
+.sp
+.LP
+静态（\fB-s\fR 和 \fB-f\fR）检查使用 \fBelfdump\fR(1) 实用程序，该程序由以下软件包提供：
+.sp
+.ne 2
+.mk
+.na
+\fBSolaris 11\fR
+.ad
+.RS 14n
+.rt  
+\fBdeveloper/base-developer-utilities\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBSolaris 10\fR
+.ad
+.RS 14n
+.rt  
+\fBSUNWbtool\fR
+.RE
+
+.sp
+.LP
+运行时（\fB-r\fR）检查使用 \fBdtrace\fR(1M) 实用程序，该程序由以下软件包提供：
+.sp
+.ne 2
+.mk
+.na
+\fBSolaris 11\fR
+.ad
+.RS 14n
+.rt  
+\fBsystem/dtrace\fR
+.RE
+
+.sp
+.ne 2
+.mk
+.na
+\fBSolaris 10\fR
+.ad
+.RS 14n
+.rt  
+\fBSUNWdtrc\fR
+.RE
+
