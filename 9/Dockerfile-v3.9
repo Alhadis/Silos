@@ -1,0 +1,88 @@
+FROM getupcloud/origin-ansible:v3.9
+
+USER root
+
+ENV PACKER_VERSION=1.2.5 \
+    TERRAFORM_VERSION=0.11.8 \
+    FLAVOR=openshift \
+    TARGET_RELEASE=v3.9 \
+    TARGET_VERSION=3.9.0 \
+    PATH=/getup-engine/bin/:$PATH \
+    PACKER_BIN=/getup-engine/bin/packer \
+    TERRAFORM_BIN=/getup-engine/bin/terraform \
+    TF_DATA_DIR=/state/.terraform \
+    ANSIBLE_BIN=/usr/bin/ansible \
+    ANSIBLE_PLAYBOOK_BIN=/usr/bin/ansible-playbook
+
+COPY yum.repos.d/*.repo /etc/yum.repos.d/
+
+RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc && \
+    yum install -y epel-release https://centos7.iuscommunity.org/ius-release.rpm && \
+    yum install -y python2-pip python-devel \
+        python36u python36u-pip python36u-devel \
+        google-cloud-sdk azure-cli which patch git \
+        openssl gettext unzip sudo bind-utils && \
+    yum clean all && \
+    pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir awscli pyaml && \
+    pip3.6 install --no-cache-dir --upgrade pip && \
+    pip3.6 install --no-cache-dir awscli pyaml boto3 && \
+    mkdir -p /getup-engine/bin && \
+    ln -s /usr/share/ansible/openshift-ansible /openshift-ansible && \
+    \
+    curl -O https://releases.hashicorp.com/packer/${PACKER_VERSION}/packer_${PACKER_VERSION}_linux_amd64.zip && \
+    unzip packer_${PACKER_VERSION}_linux_amd64.zip -d /getup-engine/bin/ && \
+    rm -f packer_${PACKER_VERSION}_linux_amd64.zip && \
+    \
+    curl -O https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
+    unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip -d /getup-engine/bin/ && \
+    rm -f terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
+    \
+    echo '#1000 ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers.d/allow_local_action && \
+    ln -s /state/azure ~/.azure && \
+    cd /getup-engine && \
+    git clone https://github.com/Neilpang/acme.sh.git && \
+    cd ./acme.sh && \
+    ./acme.sh --install --force --nocron && \
+    curl -L https://github.com/jmespath/jp/releases/download/0.1.2/jp-linux-amd64 > /getup-engine/bin/jp
+
+## Workaround: prometheus listens on 0.0.0.0:9090 in order for
+## grafana to reach it when on proxy-mode
+RUN sed -ie \
+    's/--web.listen-address=localhost:9090/--web.listen-address=0.0.0.0:9090/' \
+    /usr/share/ansible/openshift-ansible/roles/openshift_prometheus/templates/prometheus.j2
+
+WORKDIR /getup-engine
+
+ENTRYPOINT [ "/usr/bin/ssh-agent", "/getup-engine/bin/entrypoint" ]
+
+CMD [ "/bin/bash" ]
+
+ADD images/ /getup-engine/images
+ADD provider/ /getup-engine/provider
+#ADD state-backend/ /getup-engine/state-backend
+
+RUN for provider in /getup-engine/provider/*/ /getup-engine/images/azure/; do \
+      echo "Terraform init [$provider]" && \
+      cd $provider && \
+      terraform init -upgrade -reconfigure -input=false || exit 1; \
+    done
+
+ADD installer /getup-engine/installer
+
+RUN cd / && \
+    for i in /getup-engine/installer/*/patches/${TARGET_RELEASE}-*.diff; do \
+        [ -e "${i}" ] && patch -p0 < "$i"; \
+    done
+
+ADD templates/ /getup-engine/templates
+ADD bin/ /getup-engine/bin/
+
+ARG RELEASE
+
+RUN chmod -R ug+rw,o-w /getup-engine && \
+    chmod -R +x /getup-engine/bin/ && \
+    chown -R 1000 /getup-engine/* && \
+    echo $RELEASE > /getup-engine/release
+
+USER 1000

@@ -1,0 +1,329 @@
+.Dd August 2, 2015
+.Dt GDP-CREATE 8
+.Os Swarm-GDP
+.Sh NAME
+.Nm gdp-create
+.Nd create new GDP log
+.Sh SYNOPSIS
+.Nm gdp-create
+.Op Fl C Ar creator-name
+.Op Fl D Ar debug-spec
+.Op Fl e Ar key-crypto
+.Op Fl G Ar router-ip
+.Op Fl h Ar hash-alg
+.Op Fl k Ar key-type
+.Op Fl K Ar owner-key-location
+.Op Fl b Ar key-bits
+.Op Fl c Ar curve-name
+.Op Fl q
+.Op Fl s Ar logd-gdp-addr
+.Op Fl S
+.Op Fl W Ar writer-key-location
+.Op Ar mdid = Ar metadata
+.Op Ar external-name
+.Sh DESCRIPTION
+.Nm gdp-create
+creates a new GDP object
+(sometimes called a
+.Ql "log"
+or a
+.Ql "Data Capsule" ,
+mostly for historic reasons)
+on a given log server.
+In its default mode it also creates a public/secret
+.Ql "owner"
+keypair associated with this object,
+with the public key stored in the object metadata.
+Additional (text-based) metadata can be added
+(arguably this should allow binary metadata as well).
+Optionally the log can be given a human-understandable name;
+if not specified a seemingly random name is made up.
+.
+.Ss "Metadata"
+User-specified metadata may be added when a log is created.
+The metadata name is stored as a 32-bit number and is generally represented
+by four characters.
+.Pp
+In addition to user metadata,
+.Nm gdp-create
+adds metadata for the log creation time,
+the public half of the signing key in DER format,
+and the human-readable name.
+.Pp
+Metadata is immutable; there is no way to add, delete, or change metadata
+after the log is created.
+.
+.Ss "Key Management"
+GDP objects may have two secret keys associated with them:
+the
+.Ql owner
+key allows administrative control over the object and the
+.Ql writer
+key allows write access to the object.
+If the writer key is not specifies it defaults to the same as the owner key.
+.
+.Ss "Warning"
+This implementation will change in the future,
+and the command will probably be subsumed into a swarm service.
+.Sh OPTIONS
+.Bl -tag
+.
+.It Fl C
+Sets the name of the creator in the log metadata.
+If this is not specified it will be derived from system data.
+It should be in the form of an email address.
+.
+.It Fl D Ar debug-spec
+Turns on debugging flags using the libep-style format.
+Useful only with the code in hand.
+.
+.It Fl e Ar key-crypto
+Specifies symmetric encryption algorithm to use for storing the secret key.
+If
+.Ar key-crypto
+is
+.Li none
+then the key is stored unencrypted on disk.
+Defaults to
+.Va swarm.gdp.crypto.keyenc.alg .
+.
+.It Fl G Ar router-ip
+Contact the given IP address (which may be a DNS name)
+to get a connection to the GDP routing layer.
+This will be replaced by automatic discovery
+(for example, using Zeroconf)
+soon.
+The address may have an optional port number after a colon.
+If this is not specified,
+the names listed in the
+.Va swarm.gdp.routers
+runtime administrative parameter
+are searched.
+.
+.It Fl h Ar hash-alg
+Selects the hash (message digest) algorithm used when
+generating and checking signatures.
+When data is appended to the log,
+the log name, log metadata, record number, and record data
+is hashed using this algorithm and then that hash is signed.
+.
+.It Fl k Ar key-type
+Selects the type of signing key to be created for this log.
+It can be one of
+.Li rsa ,
+.Li dsa ,
+or
+.Li ec .
+As a special case, the type
+.Li none
+suppresses creation of the keypair.
+.
+.It Fl K Ar owner-key-location
+This option has two purposes.
+First, if you want to use an existing keypair
+(formatted as a PEM file)
+as the owner key
+you can use the
+.Fl K
+flag to name an existing PEM file.
+If you want
+.Nm
+to create a keypair for you,
+.Fl K
+can name either a file in which to store the secret key,
+or a directory into which the secret key will be written
+named the same as the internal name of the log (with
+.Va \&-owner.pem
+appended).
+If
+.Fl K
+is not specified, the value of the
+.Va swarm.gdp.crypto.key.dir
+administrative parameter will be used
+as a colon-separated directory search path,
+which defaults to
+.Pa ./KEYS ,
+or to the current directory if the
+.Pa KEYS
+directory does not exist.
+.
+.It Fl b Ar key-bits
+If the key type is RSA or DSA,
+this parameter specifies the number of bits in the key.
+If this is omitted and the key type is RSA,
+this defaults to the value of
+.Va swarm.gdp.crypto.rsa.keylen .
+DSA keys use
+.Va swarm.gdp.crypto.dsa.keylen .
+Additionally, RSA keys use the
+.Va swarm.gdp.crypto.rsa.keyexp
+parameter to set the exponent.
+This parameter is ignored when creating EC key pairs.
+.
+.It Fl c Ar curve-name
+Sets the name of the curve to use for Elliptic Cryptography keys.
+This overrides the
+.Va swarm.gdp.crypto.ec.curve
+parameter.
+Ignored when creating RSA or DSA key pairs.
+.
+.It Fl q
+If set,
+.Nm
+does not show errors or informational message.
+In particular, using
+.Fl q
+is a way to ensure that a log exists without give an error if it already exists.
+.
+.It Fl s Ar logd-gdp-addr
+The name of the log daemon on which to create the physical instantiation
+of the log.
+If not specified, the value of the
+.Va swarm.gdp.gdp-create.server
+administrative will be used.
+If that is not set,
+it will default to one of the servers at Berkeley.
+If you want a specific server at your site,
+either use the
+.Fl s
+flag or set that administrative parameter.
+.
+.It Fl S
+Skips the test to see if the log already exists before creating it.
+Used for debugging.
+.
+.It Fl W Ar writer-key-location
+Similar to
+.Fl K ,
+but for the writer key.
+If this is not specified, the writer key is the same as the owner key.
+.El
+.Sh EXIT STATUS
+.Bl -tag
+.It Li EX_OK No (0)
+Success
+.It Li EX_CANTCREAT No (73)
+The log already exists.
+.It Li EX_DATAERR No (65)
+A command-line key file could not be parsed.
+.It Li EX_IOERR No (74)
+A secret key file could not be created.
+.It Li EX_NOHOST No (68)
+The log server name was not valid.
+.It Li EX_NOINPUT No (67)
+A command-line key file could not be opened.
+.It Li EX_SOFTWARE No (70)
+A successfully created public key could not be converted to external (DER) form
+for storage in new log metadata,
+or severe internal error.
+.It Li EX_USAGE No (64)
+Command line parameters are incorrect.
+.It Li EX_UNAVAILABLE No (69)
+A specified key length was insecure.
+It was impossible to create a new key.
+Other unspecified error.
+.El
+.Sh ADMINISTRATIVE PARAMETERS
+.Bl -tag
+.It swarm.gdp.crypto.dsa.keylen
+The DSA key length.
+Defaults to 2048.
+Overridden by
+.Fl b .
+.It swarm.gdp.crypto.ec.curve
+The EC curve.
+Defaults to
+.Li sect283r1
+(also known as
+.Li B-283 ) .
+Overridden by
+.Fl c .
+.It swarm.gdp.crypto.hash.alg
+The hash algorithm.
+Defaults to
+.Li sha256 .
+Overridden by
+.Fl h .
+.It swarm.gdp.crypto.key.dir
+The directory in which to store secret keys.
+Defaults to
+.Pa KEYS
+(in the current working directory).
+If that subdirectory does not exist,
+the keys are written to the current directory.
+Overridden by
+.Fl K .
+.It swarm.gdp.crypto.keyenc.alg
+The secret key (symmetric) encryption algorithm.
+Defaults to
+.Li aes192 .
+Overridden by
+.Fl e .
+.It swarm.gdp.crypto.rsa.keyexp
+The exponent to be used in the RSA algorithm.
+Defaults to 3.
+.It swarm.gdp.crypto.rsa.keylen
+The key length for the RSA algorithm.
+Defaults to 2048.
+Overridden by
+.Fl b .
+.It swarm.gdp.crypto.sign.alg
+The signing algorithm.
+Defaults to
+.Li ec .
+Overridden by
+.Fl k .
+.It swarm.gdp.gdp-create.server
+The default server on which to create logs.
+Overridden by
+.Fl s .
+.El
+.\".Sh ENVIRONMENT
+.\".Sh FILES
+.Sh SEE ALSO
+.Xr gdp 7 ,
+.Xr gdplogd 8
+.Sh EXAMPLES
+.Bl -bullet
+.It
+To create a GDP log on a default server:
+.Dl gdp-create edu.berkeley.cs.eric.log00
+The secret key will be written into a a file named
+.Pa KEYS/<something>.pem ,
+where
+.Va <something>
+is the base-64-encoded internal name of the log, e.g.,
+.Li 1KZy5jy1QpghTe8QBmDQGqdz3a_9tVP3qp6uxlOeJdk.pem .
+The password for encrypting this key will be read from the standard input.
+.It
+To create a GDP log on log server named edu.berkeley.eecs.gdp-01 using defaults:
+.Dl logd=edu.berkeley.eecs.gdp-01.gdplogd
+.Dl gdp-create -s $logd edu.berkeley.cs.eric.log01
+.It
+To create a log named
+.Li $newlog
+on the server named
+.Li $logd
+encrypted with a 1024-bit RSA key,
+leaving the unencrypted key in a file named
+.Pa mykey.pem :
+.Dl gdp-create -k RSA -b 1024 -e none -K mykey.pem $newlog
+.It
+To create a log with user-specified metadata:
+.Dl gdp-create Qo "MYMD=My special metadata" Qc $newlog
+.It
+To create a log without a human-friendly name using sha-224
+as the hash (message digest) algorithm:
+.Dl gdp-create -h sha224
+.Nm gdp-create
+will print the base-64-encoded name of the new log.
+You should be careful to record that,
+since it is your only way to access the log.
+.El
+.Sh BUGS
+There should be some way to provide the key password
+other than reading it from the standard input.
+.Pp
+It should not be necessary to name the server on which the log will be created.
+This command will be replaced by a smart service
+that chooses placement based on locality and capacity.

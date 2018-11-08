@@ -1,0 +1,77 @@
+
+Bootstrap: docker
+From: ubuntu:16.04
+
+%labels
+Maintainer Mohammed Mhaidra
+Version 4.10.5.0.beta
+
+%help
+
+##########
+# GEANT4 #
+##########
+This container runs Geant4.
+
+%environment
+export LD_LIBRARY_PATH="/opt/geant4/lib:$LD_LIBRARY_PATH"
+export G4LEDATA="/opt/geant4/share/Geant4-10.5.0.beta/data/G4EMLOW7"
+export G4LEVELGAMMADATA="/opt/geant4/share/Geant4-10.5.0.beta/data/PhotonEvaporation5.2"
+export G4NEUTRONHPDATA="/opt/geant4/share/Geant4-10.5.0.beta/data/G4NDL4.5"
+export G4NEUTRONXSDATA="/opt/geant4/share/Geant4-10.5.0.beta/data/G4NEUTRONXS1.4"
+export G4PIIDATA="/opt/geant4/share/Geant4-10.5.0.beta/data/G4PII1.3"
+export G4RADIOACTIVEDATA="/opt/geant4/share/Geant4-10.5.0.beta/data/RadioactiveDecay5.2"
+export G4REALSURFACEDATA="/opt/geant4/share/Geant4-10.5.0.beta/data/RealSurface2.1.1"
+export G4SAIDXSDATA="/opt/geant4/share/Geant4-10.5.0.beta/data/G4SAIDDATA1.1"
+export G4ENSDFSTATEDATA="/opt/geant4/share/Geant4-10.5.0.beta/data/G4ENSDFSTATE2.2"
+export G4ABLADATA="/opt/geant4/share/Geant4-10.5.0.beta/data/G4ABLA3.1"
+
+%post
+# default mount points
+mkdir -p /scratch/global /scratch/local /rcc/stor1/refdata /rcc/stor1/projects /rcc/stor1/depts
+
+# Install necessary packages
+apt-get update && apt-get install -y --no-install-recommends \
+build-essential \
+gcc-multilib \
+ca-certificates \
+zlib1g-dev \
+libfreetype6-dev \
+libexpat1-dev \
+cmake \
+wget
+apt-get clean
+
+# install geant4
+wget https://github.com/Geant4/geant4/archive/v10.5.0.beta.tar.gz && tar xvf v10.4.2.tar.gz
+mkdir -p geant4-10.5.1/geant4-build && cd geant4-10.5.0.beta/geant4-build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt/geant4 -DGEANT4_INSTALL_DATA=ON
+make && make install
+cd ~/ && rm -rf geant4-10.5.0.beta v10.5.0.beta.tar.gz
+
+#############
+# ROOT CERN #
+#############
+
+%apphelp root
+>
+> ROOT - Data Analysis Framework (https://root.cern.ch)
+> release web page: https://root.cern.ch/content/release-60608
+>
+> To launch a ROOT session:
+> $ singularity --app root <image>
+>
+
+%appenv root
+export ROOTSYS="/scif/apps/root"
+export MANPATH="$ROOTSYS/man:$MANPATH"
+export PYTHONPATH="$ROOTSYS/lib:$PYTHONPATH"
+
+%apprun root
+root -l $@
+
+%appinstall root
+wget -q -O- https://root.cern.ch/download/root_v6.14.04.Linux-ubuntu16-x86_64-gcc5.4.tar.gz | tar --strip-components 1 -xz -C $SINGULARITY_APPROOT
+
+%applabels root
+root-version 6.14.04

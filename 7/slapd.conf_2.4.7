@@ -1,0 +1,227 @@
+#
+# See slapd.conf(5) for details on configuration options.
+# This file should NOT be world readable.
+#
+<% if os=="Gentoo" %>
+modulepath /usr/lib/openldap/openldap/
+moduleload back_monitor
+moduleload refint
+moduleload unique
+<% end %>
+
+include <%= openldap_schemadir %>/core.schema
+include <%= openldap_schemadir %>/cosine.schema
+include <%= openldap_schemadir %>/inetorgperson.schema
+include <%= openldap_schemadir %>/nis.schema
+include <%= openldap_schemadir %>/rfc2739.schema
+include <%= openldap_schemadir %>/kolab2.schema
+include <%= openldap_schemadir %>/horde.schema
+include <%= openldap_schemadir %>/puppet.schema
+
+pidfile		<%= openldap_pidfile %>
+argsfile	<%= openldap_argsfile %>
+
+TLSCertificateFile     <%= ssl_cert_path %>
+TLSCertificateKeyFile  <%= ssl_key_path %>
+<% if ca_cert %>
+TLSCACertificateFile   <%= ca_cert %>
+TLSVerifyClient        never
+<% end %>
+
+rootDSE                <%= openldap_confdir %>/rootDSE.ldif
+
+defaultsearchbase      "<%= kolab_base_dn %>"
+
+allow 		bind_v2
+
+loglevel	0
+
+#######################################################################
+# BDB database definitions
+#######################################################################
+
+database	bdb
+suffix		"<%= kolab_base_dn %>"
+cachesize       10000
+checkpoint 	512 5
+idlcachesize    10000
+idletimeout	300
+dirtyread
+
+directory	<%= openldap_datadir %>
+
+rootdn          "<%= kolab_bind_dn %>"
+rootpw          "<%= kolab_bind_pw_hash %>"
+
+#### Using overlays to improve data consistency
+# Ensure that we never get dangling member attributes
+# Checked on rename and delete
+overlay refint
+refint_attributes member
+
+# The mail and the uid attribute must be unique.
+overlay unique
+unique_attributes mail uid
+
+<% if openldap_master -%>
+# Overlay for syncrepl
+overlay syncprov
+syncprov-checkpoint 100 10
+syncprov-sessionlog 100
+index   entryUUID eq
+<% end -%>
+
+<% if openldap_slave != '' -%>
+syncrepl rid=1
+	provider=<%= openldap_slave %>
+        tls_reqcert=allow
+	type=refreshAndPersist
+	interval=00:10:00:00
+	searchbase="<%= kolab_base_dn %>"
+	bindmethod=simple
+	binddn="<%= kolab_bind_dn %>"
+	credentials=<%= kolab_bind_pw %>
+<% end -%>
+
+index   objectClass     pres,eq
+index   uid             approx,sub,pres,eq
+index   mail            approx,sub,pres,eq
+index   alias           approx,sub,pres,eq
+index   cn              approx,sub,pres,eq
+index   sn              approx,sub,pres,eq
+index   givenName       approx,sub,pres,eq
+index   kolabDelegate   approx,sub,pres,eq
+index   kolabHomeServer pres,eq
+index   kolabDeleteflag pres,eq
+index   member          pres,eq
+
+#include <%= openldap_confdir %>/slapd.access
+
+access to dn="<%= kolab_base_dn %>" attrs=children
+	by group/kolabGroupOfNames="cn=admin,cn=internal,<%= kolab_base_dn %>" write
+	by group/kolabGroupOfNames="cn=maintainer,cn=internal,<%= kolab_base_dn %>" write
+	by group/kolabGroupOfNames="cn=domain-maintainer,cn=internal,<%= kolab_base_dn %>" write
+
+access to dn="cn=internal,<%= kolab_base_dn %>" attrs=children
+	by group/kolabGroupOfNames="cn=admin,cn=internal,<%= kolab_base_dn %>" write
+	by group/kolabGroupOfNames="cn=maintainer,cn=internal,<%= kolab_base_dn %>" write
+	by group/kolabGroupOfNames="cn=domain-maintainer,cn=internal,<%= kolab_base_dn %>" write
+
+access to attrs=userPassword
+   	by group/kolabGroupOfNames="cn=admin,cn=internal,<%= kolab_base_dn %>" =wx
+        by group/kolabGroupOfNames="cn=maintainer,cn=internal,<%= kolab_base_dn %>" =wx
+        by self =wx
+        by anonymous =x
+        by * none stop
+
+access to attrs=mail
+        by group/kolabGroupOfNames="cn=admin,cn=internal,<%= kolab_base_dn %>" write
+        by group/kolabGroupOfNames="cn=maintainer,cn=internal,<%= kolab_base_dn %>" write
+        by * read stop
+
+access to attrs=alias
+        by group/kolabGroupOfNames="cn=admin,cn=internal,<%= kolab_base_dn %>" write
+        by group/kolabGroupOfNames="cn=maintainer,cn=internal,<%= kolab_base_dn %>" write
+        by * read stop
+
+access to attrs=uid
+        by group/kolabGroupOfNames="cn=admin,cn=internal,<%= kolab_base_dn %>" write
+        by group/kolabGroupOfNames="cn=maintainer,cn=internal,<%= kolab_base_dn %>" write
+        by * read stop
+
+access to attrs=cyrus-userquota
+        by group/kolabGroupOfNames="cn=admin,cn=internal,<%= kolab_base_dn %>" write
+        by group/kolabGroupOfNames="cn=maintainer,cn=internal,<%= kolab_base_dn %>" write
+	by self read stop
+
+access to attrs=kolabHomeServer
+        by group/kolabGroupOfNames="cn=admin,cn=internal,<%= kolab_base_dn %>" write
+        by group/kolabGroupOfNames="cn=maintainer,cn=internal,<%= kolab_base_dn %>" write
+        by * read stop
+
+access to attrs=kolabHomeMTA
+        by group/kolabGroupOfNames="cn=admin,cn=internal,<%= kolab_base_dn %>" write
+        by group/kolabGroupOfNames="cn=maintainer,cn=internal,<%= kolab_base_dn %>" write
+        by * read stop
+
+access to attrs=kolabAllowSMTPRecipient
+       by group/kolabGroupOfNames="cn=admin,cn=internal,<%= kolab_base_dn %>" write
+       by group/kolabGroupOfNames="cn=maintainer,cn=internal,<%= kolab_base_dn %>" write
+       by self read stop
+
+access to dn="cn=nobody,<%= kolab_base_dn %>"
+        by anonymous auth stop
+
+access to dn="cn=manager,cn=internal,<%= kolab_base_dn %>"
+        by dn="cn=nobody,cn=internal,<%= kolab_base_dn %>" read
+        by self write
+        by anonymous auth stop
+
+access to dn="cn=admin,cn=internal,<%= kolab_base_dn %>"
+        by group/kolabGroupOfNames="cn=admin,cn=internal,<%= kolab_base_dn %>" write
+        by dn="cn=nobody,cn=internal,<%= kolab_base_dn %>" read
+        by self write
+        by anonymous auth stop
+
+access to dn="cn=maintainer,cn=internal,<%= kolab_base_dn %>"
+        by group/kolabGroupOfNames="cn=admin,cn=internal,<%= kolab_base_dn %>" write
+        by group/kolabGroupOfNames="cn=maintainer,cn=internal,<%= kolab_base_dn %>" read
+        by dn="cn=nobody,cn=internal,<%= kolab_base_dn %>" read
+        by self write
+        by anonymous auth stop
+
+access to dn.regex="(.*,)?cn=internal,<%= kolab_base_dn %>"
+ 	by group/kolabGroupOfNames="cn=admin,cn=internal,<%= kolab_base_dn %>" write
+        by group/kolabGroupOfNames="cn=maintainer,cn=internal,<%= kolab_base_dn %>" write
+        by self write
+	by dn="cn=nobody,cn=internal,<%= kolab_base_dn %>" read 
+	by anonymous auth stop
+
+access to dn.regex="(.*,)?cn=external,<%= kolab_base_dn %>"
+        by group/kolabGroupOfNames="cn=admin,cn=internal,<%= kolab_base_dn %>" write
+        by group/kolabGroupOfNames="cn=maintainer,cn=internal,<%= kolab_base_dn %>" write
+	by * read stop
+
+access to dn="cn=external,<%= kolab_base_dn %>"
+	by dn="cn=nobody,cn=internal,<%= kolab_base_dn %>" read 
+	by * search stop
+
+access to dn="cn=internal,<%= kolab_base_dn %>"
+	by dn="cn=nobody,cn=internal,<%= kolab_base_dn %>" read 
+        by * search stop
+
+access to dn="ou=Hosts,<%= kolab_base_dn %>"
+	by dn="cn=nobody,cn=internal,<%= kolab_base_dn %>" read 
+        by * search stop
+
+access to dn="cn=monitor"
+	by dn="cn=nobody,cn=internal,<%= kolab_base_dn %>" read 
+        by * search stop
+
+access to dn="k=kolab,<%= kolab_base_dn %>"
+	by group/kolabGroupOfNames="cn=admin,cn=internal,<%= kolab_base_dn %>" write
+	by group/kolabGroupOfNames="cn=maintainer,cn=internal,<%= kolab_base_dn %>" read
+	by group/kolabGroupOfNames="cn=domain-maintainer,cn=internal,<%= kolab_base_dn %>" read
+	by dn="cn=nobody,cn=internal,<%= kolab_base_dn %>" read 
+	by * none stop	
+
+access to * 
+        by self write
+	by group/kolabGroupOfNames="cn=admin,cn=internal,<%= kolab_base_dn %>" write
+ 	by group/kolabGroupOfNames="cn=maintainer,cn=internal,<%= kolab_base_dn %>" write
+	by * read stop
+
+# FIXME: provide
+#include <%= openldap_confdir %>/slapd.replicas
+
+#######################################################################
+# Monitor database definitions
+#######################################################################
+
+database	monitor
+
+access to *
+	by group/kolabGroupOfNames="cn=admin,cn=internal,<%= kolab_base_dn %>" write
+        by dn="cn=nobody,cn=internal,<%= kolab_base_dn %>" read
+	by * none stop
+

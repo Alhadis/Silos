@@ -1,0 +1,799 @@
+from __future__ import print_function
+import random
+import sys
+import tkinter
+from tkinter import messagebox
+import os
+global zmienna
+
+#--------------------------------status-----------------------------------------#
+class moj_status_poczatkowy(object):
+    def __init__(self, HP_gracza, EXP, level, Bonus_DMG, HP_maksymalne, flag):
+        self.HP_gracza = HP_gracza
+        self.EXP = EXP
+        self.level = level
+        self.Bonus_DMG = Bonus_DMG
+        self.HP_maksymalne = HP_maksymalne
+        self.flag = str(flag)
+    def __repr__(self):
+        return "(%d ,%d ,%d, %d, %d, %s)" % (self.HP_gracza, self.EXP, self.level, self.Bonus_DMG, self.HP_maksymalne, self.flag)
+    def status(self, HP_gracza, EXP, level, Bonus_DMG, HP_maksymalne, flag):
+        status = [HP_gracza, EXP, level, Bonus_DMG, HP_maksymalne, str(flag)]
+        return status
+
+#-------------------przeciwnicy--------------------------------------------------#
+class enemy(object):
+    def __init__(self, HP, dmg):
+        self.HP = HP
+        self.dmg = dmg
+
+class goblin(enemy):
+    def __init__(self):
+        self.name = "goblin"
+        self.HP = 4
+        self.dmg = 1
+        self.EXP = 8
+    def status(self):
+        return (self.name, self.HP, self.dmg, self.EXP)
+
+class ork(enemy):
+    def __init__(self):
+        self.name = "ork"
+        self.HP = 8
+        self.dmg = random.randrange(2,5)
+        self.EXP = 20
+    def status(self):
+        return (self.name, self.HP, self.dmg, self.EXP)
+
+class szczur(enemy):
+    def __init__(self):
+        self.name = "szczur"
+        self.HP = 2
+        self.dmg = 1
+        self.EXP = 2
+    def status(self):
+        return (self.name, self.HP, self.dmg, self.EXP)
+
+class towdi(enemy):
+    def __init__(self):
+        self.name = "Tołdi Kału tzw. wierny sługus Last Bossa"
+        self.HP = 50
+        self.dmg = random.randrange(3, 7)
+        self.EXP = 500
+    def status(self):
+        return (self.name, self.HP, self.dmg, self.EXP)
+
+class LAST_BOSS(object):
+    def __init__(self):
+        self.name = "The Queen of feces"
+        self.HP = 100
+        self.dmg = random.randrange(4, 9)
+        self.EXP = 10**6
+    def status(self):
+        return (self.name, self.HP, self.dmg, self.EXP)
+
+class mikstura(object):
+    def __init__(self):
+        self.mala = "mala"
+        self.HPregen_mala = 2
+        self.normalna = "normalna"
+        self.HPregen_normalna = 4
+        self.duza = "duza"
+        self.HPregen_duza = 10
+    def mala_mix(self):
+        return(self.mala, self.HPregen_mala)
+    def normalna_mix(self):
+        return(self.normalna, self.HPregen_normalna)
+    def duza_mix(self):
+        return(self.duza, self.HPregen_duza)
+
+
+#------------------------------grafika----------------------------------#
+
+class Window(tkinter.Frame):
+    def __init__(self, master=None):
+        tkinter.Frame.__init__(self, master) # daje mozliwosc wywolania  okien
+        self.zmienna = tkinter.StringVar(value='Start the Game')
+        self.master = master
+
+        labelframe3 = tkinter.LabelFrame(text="Event", relief="raised", height=350, width=100)
+        self.frame3 = tkinter.Message(labelframe3, textvariable=self.zmienna,  width=500)
+        labelframe3.pack(side=tkinter.TOP, fill=tkinter.X, expand=0)
+        self.frame3.pack(padx=150, pady=130)
+        self.init_window()
+        self.init_window2()
+
+    def init_window(self):
+        global north, south, east, west, walcz, uciekaj
+
+        self.master.title("Simple RPG")
+        labelframe1 = tkinter.LabelFrame(text="Action", relief="raised", height=10, width=10)
+
+        MainMenu = tkinter.Menu(self.master)    # dodanie głownego menu do okna
+        self.master.config(menu=MainMenu)       # konfiguracja glownego menu w oknie
+
+
+        self.file = tkinter.Menu(MainMenu)
+        MainMenu.add_cascade(label='File', menu=self.file)
+        self.file.add_command(label='Start Game', command=self.pre_main)  # , command=self.main)
+        self.file.add_command(label='Save - not work')
+        self.file.add_command(label='Exit', command=self.client_exit)
+
+        edit = tkinter.Menu(MainMenu)
+        MainMenu.add_cascade(label='Edit', menu=edit)
+        edit.add_command(label='Undo', state="disabled")
+
+        about = tkinter.Menu(MainMenu)
+        MainMenu.add_cascade(label='About', menu=about)
+        about.add_command(label='About',  command=self.about_x)
+
+        north = tkinter.Button(labelframe1, text="\'NORTH\'", fg="blue", height=4, width=25, bd=4, state="disabled")
+        north.place(x=170, y=10)
+
+        south = tkinter.Button(labelframe1, text="\'SOUTH\'", fg="blue", height=4, width=25, bd=4, state="disabled")
+        south.place(x=170, y=310)
+
+        east = tkinter.Button(labelframe1, text="\'EAST\'", fg="blue", height=10, width=10, bd=4, state="disabled")
+        east.place(x=420, y=110)
+
+        west = tkinter.Button(labelframe1, text="\'WEST\'", fg="blue", height=10, width=10, bd=4, state="disabled")
+        west.place(x=20, y=110)
+
+        walcz = tkinter.Button(labelframe1, text="\'FIGHT!\'", fg="red", height=10, width=10, bd=4, state="disabled")
+        walcz.place(x=170, y=110)
+
+        uciekaj = tkinter.Button(labelframe1, text="\'RUN AWAY\'", fg="green", height=10, width=10, bd=4, state="disabled")
+        uciekaj.place(x=270, y=110)
+
+        labelframe1.pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=1, anchor=tkinter.CENTER)
+
+    def init_window2(self):
+        global imgLabel
+
+        labelframe2 = tkinter.LabelFrame(text="Map", relief="flat", height=10, width=10)
+        labelframe2.pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+        img = tkinter.PhotoImage(file="Pusta_Mapa.png").zoom(x=4, y=4)
+        imgLabel = tkinter.Label(image=img, relief="flat")
+        imgLabel.image = img
+        imgLabel.pack(side=tkinter.BOTTOM, fill=tkinter.BOTH, expand=1, padx=50, pady=20)
+
+
+    def client_exit(self):
+        answer=messagebox.askquestion("Game Over ?", 'Are U sure?')
+        if answer == "yes":
+            exit()
+
+    def about_x(self):
+        messagebox.showinfo("Simple RPG - Creator: Paqul", "This is Simple RPG second version\n Have Fun ^^")
+
+    # -------------------------GRA-------------------------------------------#
+
+    def pre_main(self):
+        self.file.delete(1)
+        self.main()
+
+    def main(self):
+        try:
+            ostatni_wybor_1.destroy(), ostatni_wybor_2.destroy(), ostatni_wybor_1_al.destroy(), ostatni_wybor_2_al.destroy(),
+            os.remove("trofea_File.txt")
+        except:
+            pass
+        finally:
+            self.frame3.configure(fg="black")
+            self.wybor_postaci()
+
+
+    def main2(self):
+        global wskocz, niewskakuj, wojownik, czarodziej, zabojca
+        self.frame3.configure(fg="black")
+        wskocz = tkinter.Button(text='Yes! - Jump into', fg='blue', width=20, command=(self.central))
+        wskocz.place(x=445, y=250)
+
+        niewskakuj = tkinter.Button(text="NO! - Don't do that!", fg='green', width=20, command=(self.main_alternative))
+        niewskakuj.place(x=445, y=275)
+
+        Rozpocznij.destroy(), Cofnij.destroy(), wojownik.destroy(), czarodziej.destroy(), zabojca.destroy()
+
+        self.zmienna.set("You Start The Game - Simple RPG\nDo You want jump into the well leading to the Dark Dungeon, where you will wade in the feces until the very end(yes/no)?")
+
+
+    def main_alternative(self):
+        global dalej_1
+        self.zmienna.set("You are smart human,\nthere is no point in getting angry and getting tired ...\nMaybe you don't defeat last boss, \nbut you finished this simple RPG game without stresses and big effort")
+
+        dalej_1 = tkinter.Button(text='Next', fg='black', width=20, command=self.main_alternative_2)
+        dalej_1.place(x=445, y=275)
+
+        wskocz.destroy(), niewskakuj.destroy()
+
+    def main_alternative_2(self):
+        global dalej_2
+        self.zmienna.set("CONGRATULATIONS!")
+
+        dalej_2 = tkinter.Button(text='THE END', fg='black', width=20, command=self.GAME_OVER_alternative)
+        dalej_2.place(x=445, y=175)
+
+        dalej_1.destroy()
+
+    def wybor_postaci(self):
+        global wojownik, czarodziej, zabojca
+        try:
+            ostatni_wybor_1_win.destroy(), ostatni_wybor_2_win.destroy()
+        except:
+            pass
+        finally:
+            self.zmienna.set("Select your character")
+
+            wojownik = tkinter.Button(text="\'Warrior\'", fg="blue", height=2, width=10, bd=4, command=self.warrior)
+            wojownik.place(x=10, y=20)
+
+            czarodziej = tkinter.Button(text="\'Mage\'", fg="red", height=2, width=10, bd=4, command=self.mage)
+            czarodziej.place(x=470, y=20)
+
+            zabojca = tkinter.Button(text="\'Assassin\'", fg="green", height=2, width=10, bd=4, command=self.assasin)
+            zabojca.place(x=920, y=20)
+
+
+    def wybor_postaci2(self):
+        global wojownik, czarodziej, zabojca
+        self.zmienna.set("Select your character")
+
+        wojownik = tkinter.Button(text="\'Warrior\'", fg="blue", height=2, width=10, bd=4, command=self.warrior)
+        wojownik.place(x=10, y=20)
+
+        czarodziej = tkinter.Button(text="\'Mage\'", fg="red", height=2, width=10, bd=4, command=self.mage)
+        czarodziej.place(x=470, y=20)
+
+        zabojca = tkinter.Button(text="\'Assassin\'", fg="green", height=2, width=10, bd=4, command=self.assasin)
+        zabojca.place(x=920, y=20)
+
+        Rozpocznij.destroy(), Cofnij.destroy()
+
+
+    def warrior(self):
+        HP_maksymalne = 10
+        HP = int(HP_maksymalne)
+        EXP = 0
+        level = 1
+        Bonus_DMG = 0
+        flag = "war"
+        wojownik.destroy(), czarodziej.destroy(), zabojca.destroy()
+        self.zmienna.set("Your statistic: \nHP: %d / %d \nYour damage is 1 - 4, because You have SWORD!" % (HP, HP_maksymalne))
+        self.aktualny_status = moj_status_poczatkowy(HP, EXP, level, Bonus_DMG, HP_maksymalne, flag).status(HP, EXP, level, Bonus_DMG, HP_maksymalne, flag)
+        self.ropocznij_lub_cofnij()
+
+    def mage(self):
+        HP_maksymalne = 4
+        HP = HP_maksymalne
+        EXP = 0
+        level = 1
+        Bonus_DMG = 0
+        flag = "mag"
+        wojownik.destroy(), czarodziej.destroy(), zabojca.destroy()
+        self.zmienna.set("Your statistic: \nHP: %d / %d \nYour damage is 1 - 2, using magic!\nWith grow up your power, your spells became more powerful" % (HP, HP_maksymalne))
+        self.aktualny_status = moj_status_poczatkowy(HP, EXP, level, Bonus_DMG, HP_maksymalne, flag).status(HP, EXP, level, Bonus_DMG, HP_maksymalne, flag)
+        self.ropocznij_lub_cofnij()
+
+    def assasin(self):
+        HP_maksymalne = 8
+        HP = HP_maksymalne
+        EXP = 0
+        level = 1
+        Bonus_DMG = 0
+        flag = "asa"
+        wojownik.destroy(), czarodziej.destroy(), zabojca.destroy()
+        self.zmienna.set("Your statistic: \nHP: %d / %d \nYour damage is 1 - 6, using daggers!\nYou never know when You can critically hit enemy " % (HP, HP_maksymalne))
+        self.aktualny_status = moj_status_poczatkowy(HP, EXP, level, Bonus_DMG, HP_maksymalne, flag).status(HP, EXP, level, Bonus_DMG, HP_maksymalne, flag)
+        self.ropocznij_lub_cofnij()
+
+    def ropocznij_lub_cofnij(self):
+        global Rozpocznij, Cofnij
+
+        Rozpocznij = tkinter.Button(text='BEGIN', fg='blue', width=20, command=(self.main2))
+        Rozpocznij.place(x=445, y=50)
+
+        Cofnij = tkinter.Button(text='Undo', fg='green', width=20, command=(self.wybor_postaci2))
+        Cofnij.place(x=445, y=75)
+
+        wojownik.destroy(), czarodziej.destroy(), zabojca.destroy()
+
+    def wywolaj_status(self):
+        if self.aktualny_status[5] == "war":
+            x = ("|--Class--|--LVL--|--HP --|--HPmax--|--Exp --|-- Damage --|\n|-- %s --|--- %d ---|-- %2.1d --|---- %2.1d ----|-- %3.1d ---|-- %3.1d - %3.1d ---|\n|---------|--------|--------|------------|--------|--------------|" % (self.aktualny_status[5], self.aktualny_status[2], self.aktualny_status[0], self.aktualny_status[4], self.aktualny_status[1], 1 + self.aktualny_status[3], 4 + self.aktualny_status[3]))
+        elif self.aktualny_status[5] == "mag":
+            x = ("|--Class--|--LVL--|--HP --|--HPmax--|--Exp --|-- Damage --|\n|-- %s --|--- %d ---|-- %2.1d --|---- %2.1d ----|-- %3.1d ---|-- %3.1d - %3.1d ---|\n|---------|--------|--------|------------|--------|--------------|" % (self.aktualny_status[5], self.aktualny_status[2], self.aktualny_status[0], self.aktualny_status[4], self.aktualny_status[1], 1 + self.aktualny_status[3], 2 + self.aktualny_status[3]))
+        elif self.aktualny_status[5] == "asa":
+            x = ("|--Class--|--LVL--|--HP --|--HPmax--|--Exp --|-- Damage --|\n|-- %s --|--- %d ---|-- %2.1d --|---- %2.1d ----|-- %3.1d ---|-- %3.1d - %3.1d ---|\n|---------|--------|--------|------------|--------|--------------|" % (self.aktualny_status[5], self.aktualny_status[2], self.aktualny_status[0], self.aktualny_status[4], self.aktualny_status[1], 1 + self.aktualny_status[3], 6 + self.aktualny_status[3]))
+        return x
+
+
+    def level(self):
+        if self.aktualny_status[5] == "war":
+            if self.aktualny_status[1] < 25:
+                self.aktualny_status[2:5] = 1, 0, 10
+            elif self.aktualny_status[1] >= 25 and self.aktualny_status[1] < 50:
+                self.aktualny_status[2:5] = 2, 2, 15
+            elif self.aktualny_status[1] >= 50 and self.aktualny_status[1] < 100:
+                self.aktualny_status[2:5] = 3, 5, 22
+            elif self.aktualny_status[1] >= 100 and self.aktualny_status[1] < 200:
+                self.aktualny_status[2:5] = 4, 8, 30
+            elif self.aktualny_status[1] >= 200 and self.aktualny_status[1] < 350:
+                self.aktualny_status[2:5] = 5, 13, 50
+            else:
+                self.aktualny_status[2:5] = 6, 50, 100
+        elif self.aktualny_status[5] == "mag":
+            if self.aktualny_status[1] < 25:
+                self.aktualny_status[2:5] = 1, 0, 4
+            elif self.aktualny_status[1] >= 25 and self.aktualny_status[1] < 50:
+                self.aktualny_status[2:5] = 2, 4, 8
+            elif self.aktualny_status[1] >= 50 and self.aktualny_status[1] < 100:
+                self.aktualny_status[2:5] = 3, 10, 12
+            elif self.aktualny_status[1] >= 100 and self.aktualny_status[1] < 200:
+                self.aktualny_status[2:5] = 4, 15, 16
+            elif self.aktualny_status[1] >= 200 and self.aktualny_status[1] < 350:
+                self.aktualny_status[2:5] = 5, 25, 25
+            else:
+                self.aktualny_status[2:5] = 6, 100, 50
+        elif self.aktualny_status[5] == "asa":
+            if self.aktualny_status[1] < 25:
+                self.aktualny_status[2:5] = 1, 0, 8
+            elif self.aktualny_status[1] >= 25 and self.aktualny_status[1] < 50:
+                self.aktualny_status[2:5] = 2, 3, 12
+            elif self.aktualny_status[1] >= 50 and self.aktualny_status[1] < 100:
+                self.aktualny_status[2:5] = 3, 8, 18
+            elif self.aktualny_status[1] >= 100 and self.aktualny_status[1] < 200:
+                self.aktualny_status[2:5] = 4, 12, 25
+            elif self.aktualny_status[1] >= 200 and self.aktualny_status[1] < 350:
+                self.aktualny_status[2:5] = 5, 20, 33
+            else:
+                self.aktualny_status[2:5] = 6, 75, 40
+        return self.aktualny_status
+
+    # --------------------------------spotkanie -----------------------------------------#
+
+    def przejscie(self, HP_gracza_aktualne, EXP_gracza_aktualny, Bonus_DMG, HP_maksymalne, flag):
+        if EXP_gracza_aktualny >= 325:
+            self.frame3.configure(fg="black")
+            self.zmienna.set("You feel that you are already powerful enough to face FINAL BOSS, Do you want it?")
+
+            self.lastboss1 = tkinter.Button(text='YES', fg='black', width=20, command=self.LAST_BOSS_1)
+            self.lastboss1.place(x=345, y=225)
+
+            self.lastboss2 = tkinter.Button(text='NO', fg='black', width=20, command=self.LAST_BOOS_NO)
+            self.lastboss2.place(x=520, y=225)
+
+            north.configure(state="disabled")
+            east.configure(state="disabled")
+            west.configure(state="disabled")
+            south.configure(state="disabled")
+        else:
+            return
+
+    def LAST_BOOS_NO(self):
+        self.lastboss1.destroy(), self.lastboss2.destroy()
+        self.konfiguracja()
+        self.zmienna.set("You are in central part of dungeon\nWhere will You go? You can go on North and South and East and West\n%s" % self.wywolaj_status())
+
+    def LAST_BOSS_1(self):
+        self.lastboss1.destroy(), self.lastboss2.destroy()
+        self.zmienna.set("... FROM THE WHOLE Dungeon, flows ALL the feces in which you wade until now, in one place in front of you ...")
+        self.Next_1_button = tkinter.Button(text='NEXT', fg='black', width=20, command=self.LAST_BOSS_2)
+        self.Next_1_button.place(x=445, y=225)
+
+    def LAST_BOSS_2(self):
+        self.zmienna.set("... and FINAL BOSS are formed + T H E + Q U E E N + O F + F E C E S !+")
+        self.Next_1_button.configure(command=self.LAST_BOSS_3)
+
+    def LAST_BOSS_3(self):
+        self.zmienna.set("You can't run away, You must FIGHT!")
+        my_enemy = LAST_BOSS()
+        self.staty = my_enemy.status()
+        self.HP_potwora = self.staty[1]
+        self.walka()
+        self.Next_1_button.destroy()
+
+        walcz.configure(state="normal")
+
+    def LAST_BOSS_dead(self):
+        global end_game_1, end_game_2
+        self.zmienna.set("You managed to beat Last Boss and finish a simple RPG !!! \nThe Queen of Feces breaks up into millions of fragments of excrement and disappears\nHere start a strong earthquake, and the dungeon starts banging ...\nA portal appears in front of you, \nat this moment it seems to be the only reasonable place to escape from the dungeon.\nDo you want to go through the portal?")
+        end_game_1 = tkinter.Button(text='YES', fg='black', width=20, command=self.zamek)
+        end_game_1.place(x=345, y=250)
+
+        end_game_2 = tkinter.Button(text='NO', fg='black', width=20, command=self.nie_zamek)
+        end_game_2.place(x=520, y=250)
+
+    def nie_zamek(self):
+        global dead_button
+        end_game_1.destroy(), end_game_2.destroy()
+        self.zmienna.set("Earthquake destroys the dungeon\nYou don't go through by portal, and portal are closing\nand massive rock hits you in your head and you are dead!\nyour dead body disappear under debris")
+        dead_button = tkinter.Button(text='You are dead', fg="white", bg="black", width=60, command=self.GAME_OVER)
+        dead_button.place(x=300, y=225)
+
+    def zamek(self):
+        global finish_button
+        end_game_1.destroy(), end_game_2.destroy()
+        self.zmienna.set("After go through by portal, You are at the castle's courtyard,\nYOU FINISHED THE SIMPLE RPG WITH 100% SUCCESS!")
+        finish_button = tkinter.Button(text='Last button in this game', fg="black", bg="white", width=60, command=self.GAME_OVER_win)
+        finish_button.place(x=300, y=225)
+
+    def spotkanie(self):
+        zaszlo = random.randrange(0, 101)
+        self.aktualny_status = self.level()
+        if zaszlo > 33 and zaszlo <= 75: #if zaszlo > 33 and zaszlo <= 75:
+            self.frame3.configure(fg="red")
+            try:
+                north.configure(state="disabled")
+                south.configure(state="disabled")
+                east.configure(state="disabled")
+                west.configure(state="disabled")
+            finally:
+                losuj_przeciwnika = random.randrange(1, 101)
+                if losuj_przeciwnika >= 1 and losuj_przeciwnika <= 40:
+                    my_enemy = szczur()
+                    przeciwnik = ("You came across a rat!")
+                elif losuj_przeciwnika > 40 and losuj_przeciwnika < 80:
+                    my_enemy = goblin()
+                    przeciwnik = ("You came across a goblin!")
+                elif losuj_przeciwnika == 100:
+                    my_enemy = towdi()
+                    przeciwnik = ("You came across a faithful LAST BOSS slugus!")
+                else:
+                    my_enemy = ork()
+                    przeciwnik = ("You came across a orc!")
+                self.zmienna.set("On your way, meet an opponent, get ready to fight !\n%s\nChoose whether you want to fight or run?\n%s " % (przeciwnik, self.wywolaj_status()))
+                self.staty = my_enemy.status()
+                self.HP_potwora=self.staty[1]
+
+                walcz.configure(state="normal", command=self.walka)
+                uciekaj.configure(state="normal", command=self.proba_ucieczki)
+                return self.aktualny_status
+
+        elif zaszlo > 75 and zaszlo <= 100: # 75 - 100
+            jaki_mix = random.randrange(0, 101)
+            # aktualny_status = self.level(aktualny_status)
+            elixir = mikstura()
+            if jaki_mix < 40:
+                mikstura_tekst = "You find a small healing mixture that slightly improves your health"
+                Lecz = elixir.mala_mix()
+            elif jaki_mix >= 40 and jaki_mix < 80:
+                mikstura_tekst = "You find a healing mixture that heals you"
+                Lecz = elixir.normalna_mix()
+            else:
+                mikstura_tekst = "You find a large healing mixture that significantly improves your health"
+                Lecz = elixir.duza_mix()
+            self.aktualny_status[0] += Lecz[1]
+            odpowiedz = self.porownanie_HP_HPmax(self.aktualny_status[0], self.aktualny_status[4])
+            self.aktualny_status[0] = odpowiedz[0]
+            self.aktualny_status[4] = odpowiedz[1]
+            del elixir
+            self.frame3.configure(fg="blue")
+            self.zmienna.set("%s\n%s" % (mikstura_tekst, self.wywolaj_status()))
+            return self.aktualny_status
+        else:
+            self.frame3.configure(fg="black")
+            self.zmienna.set("You enter a new area and nothing happens\n%s" % self.wywolaj_status())
+            # return self.przejscie(self.aktualny_status[0], self.aktualny_status[1], self.aktualny_status[3], self.aktualny_status[4], self.aktualny_status[5])
+            return self.aktualny_status
+        return self.aktualny_status
+
+    # ------------------------------------walka------------------------------#
+    # def walka(self, HP_gracza, HP_potwora, dmg_potwora, EXP_gracza_aktualny, EXP_potwora, Bonus_DMG, HP_maksymalne, flag):
+    def walka(self):
+        if self.staty[1] > 99:
+            if self.aktualny_status[5] == "war":
+                damage_zadane = random.randrange(1, 5) + self.aktualny_status[3]
+            elif self.aktualny_status[5] == "mag":
+                damage_zadane = random.randrange(1, 3) + self.aktualny_status[3]
+            elif self.aktualny_status[5] == "asa":
+                damage_zadane = random.randrange(1, 7) + self.aktualny_status[3]
+            self.HP_potwora = self.HP_potwora - damage_zadane
+            self.aktualny_status[0] = self.aktualny_status[0] - self.staty[2]
+            naloz_gracz = self.nakladka_klimat(self.aktualny_status[0], self.aktualny_status[4])
+            naloz_potwor = self.nakladka_klimat(self.HP_potwora, self.staty[1])
+            self.zmienna.set("You deal damage to the LAST BOSS and he is %s\nEnemy hit you and you are %s\nThe battle continues\n%s" % (naloz_potwor, naloz_gracz, self.wywolaj_status()))
+            if self.aktualny_status[0] <= 0:
+                self.GAME_OVER()
+                return self.aktualny_status
+            elif self.HP_potwora <= 0:
+                self.zmienna.set("You deal damage to the opponent and he is %s\nEnemy hit you and you are %s\nYou win the battle\n%s" % (naloz_potwor, naloz_gracz, self.wywolaj_status()))
+                # trofea_fun(HP_potwora_maksymalne)
+                self.aktualny_status[1] += self.staty[3]
+                walcz.configure(state="disabled")
+                uciekaj.configure(state="disabled")
+                self.LAST_BOSS_dead()
+                del self.staty
+        else:
+                        if self.aktualny_status[5] == "war":
+                            damage_zadane = random.randrange(1, 5) + self.aktualny_status[3]
+                        elif self.aktualny_status[5] == "mag":
+                            damage_zadane = random.randrange(1, 3) + self.aktualny_status[3]
+                        elif self.aktualny_status[5] == "asa":
+                            damage_zadane = random.randrange(1, 7) + self.aktualny_status[3]
+                        self.HP_potwora = self.HP_potwora - damage_zadane
+                        self.aktualny_status[0] = self.aktualny_status[0] - self.staty[2]
+                        naloz_gracz = self.nakladka_klimat(self.aktualny_status[0], self.aktualny_status[4])
+                        naloz_potwor = self.nakladka_klimat(self.HP_potwora, self.staty[1])
+                        self.zmienna.set("You deal damage to the opponent and he is %s\nEnemy hit you and you are %s\nThe battle continues\n%s" % (naloz_potwor, naloz_gracz, self.wywolaj_status()))
+                        if self.aktualny_status[0] <= 0:
+                            self.GAME_OVER()
+                            return self.aktualny_status
+                        elif self.HP_potwora <= 0:
+                            self.zmienna.set("You deal damage to the opponent and he is %s\nEnemy hit you and you are %s\nYou win the battle\n%s" % (naloz_potwor, naloz_gracz, self.wywolaj_status()))
+                            # trofea_fun(HP_potwora_maksymalne)
+                            HP_po_walce = self.aktualny_status[0]
+                            self.aktualny_status[1] += self.staty[3]
+                            walcz.configure(state="disabled")
+                            uciekaj.configure(state="disabled")
+                            self.konfiguracja()
+                            del self.staty
+                            return HP_po_walce, self.aktualny_status[1], self.HP_potwora
+
+    # -------------------support function--------------------------------------------------#
+
+    def proba_ucieczki(self):
+        proba_ucieczki = random.randrange(1, 101)
+        if proba_ucieczki >= 20:
+            self.frame3.configure(fg="green")
+            self.zmienna.set( "You ran away from enemy\n%s" % (self.wywolaj_status()))
+            walcz.configure(state="disabled")
+            uciekaj.configure(state="disabled")
+            self.konfiguracja()
+            # return self.aktualny_status[0], self.aktualny_status[1]
+        else:
+            self.walka()
+
+    def nakladka_klimat(self, HP, HP_max):
+        dic = ["full health", "slightly injured", "average injured", "badly injured", "almost dead", "dead"]
+        if HP == HP_max:
+            return dic[0]
+        elif HP < HP_max and HP >= 0.75 * HP_max:
+            return dic[1]
+        elif HP < 0.75 * HP_max and HP >= 0.5 * HP_max:
+            return dic[2]
+        elif HP < 0.5 * HP_max and HP >= 0.25 * HP_max:
+            return dic[3]
+        elif HP < 0.25 * HP_max and HP >= 1:
+            return dic[4]
+        else:
+            return dic[5]
+
+    def porownanie_HP_HPmax(self, HP_akt, HP_max):
+        if HP_akt >= HP_max:
+            HP_akt = HP_max
+        return HP_akt, HP_max
+
+    def trofea_fun(self, HP_max):
+        if HP_max == 2:
+            trofea_text = "\nPokonales szczura"
+        elif HP_max == 4:
+            trofea_text = "\nPokonales goblina"
+        elif HP_max == 8:
+            trofea_text = "\nPokonales orka"
+        elif HP_max == 50:
+            trofea_text = "\nPokonales minibossa"
+        else:
+            trofea_text = "\nPokonales Last Bossa"
+
+        trofea = open("trofea_File.txt", "a")
+        trofea.write(trofea_text)
+        trofea.close()
+
+    def GAME_OVER(self):
+        global ostatni_wybor_1, ostatni_wybor_2
+        try:
+            dead_button.destroy()
+        except:
+            pass
+        finally:
+            self.aktualny_status[0] = 0
+            self.zmienna.set("%s\nGAME OVER!!!\nDo You want play one more time?" % self.wywolaj_status())
+
+            ostatni_wybor_1 = tkinter.Button(text='YES', fg='black', width=20, command=self.main)
+            ostatni_wybor_1.place(x=345, y=225)
+
+            ostatni_wybor_2 = tkinter.Button(text='NO', fg='black', width=20, command=sys.exit)
+            ostatni_wybor_2.place(x=520, y=225)
+
+            walcz.configure(state="disabled")
+            uciekaj.configure(state="disabled")
+
+            img = tkinter.PhotoImage(file="Pusta_Mapa.png").zoom(x=4, y=4)
+            imgLabel.image = img
+            imgLabel.configure(image=img)
+
+    def GAME_OVER_alternative(self):
+        global ostatni_wybor_1_al, ostatni_wybor_2_al
+        self.zmienna.set("CONGRATULATIONS!\nDo You want play one more time?")
+
+        ostatni_wybor_1_al = tkinter.Button(text='YES', fg='black', width=20, command=self.main)
+        ostatni_wybor_1_al.place(x=345, y=195)
+
+        ostatni_wybor_2_al = tkinter.Button(text='NO', fg='black', width=20, command=sys.exit)
+        ostatni_wybor_2_al.place(x=520, y=195)
+
+        dalej_2.destroy()
+
+    def GAME_OVER_win(self):
+        global ostatni_wybor_1_win, ostatni_wybor_2_win
+        finish_button.destroy()
+        self.zmienna.set("CONGRATULATIONS!\nDo You want play one more time?")
+
+        ostatni_wybor_1_win = tkinter.Button(text='YES', fg='black', width=20, command=self.main)
+        ostatni_wybor_1_win.place(x=345, y=195)
+
+        ostatni_wybor_2_win = tkinter.Button(text='NO', fg='black', width=20, command=sys.exit)
+        ostatni_wybor_2_win.place(x=520, y=195)
+
+    def map_display(self):
+        dictionar = {"NW": "Mapa_NW.png",
+                     "N": "Mapa_N.png",
+                     "NE": "Mapa_NE.png",
+                     "W": "Mapa_W.png",
+                     "CENTER": "Mapa_CENTER.png",
+                     "E": "Mapa_E.png",
+                     "SE": "Mapa_SE.png",
+                     "S": "Mapa_S.png",
+                     "SW": "Mapa_SW.png"}
+
+        img = tkinter.PhotoImage(file=dictionar[self.ktora_lokacja]).zoom(x=4, y=4)
+        imgLabel.image = img
+        return imgLabel.configure(image=img)
+
+    # --------------------------------lokacje-----------------------------------------#
+    def top_left(self):
+        self.frame3.configure(fg="black")
+        self.aktualny_status = self.level()
+        self.zmienna.set("You are in north-west part of dungeon\nWhere will You go? You can go on South and East\n%s" % self.wywolaj_status())
+
+        self.ktora_lokacja = "NW"
+        self.konfiguracja()
+        self.map_display()
+
+        self.aktualny_status = self.spotkanie()
+
+    def top(self):
+        self.frame3.configure(fg="black")
+        self.aktualny_status = self.level()
+        self.zmienna.set("You are in north part of dungeon\nWhere will You go? You can go on South and West and East\n%s" % self.wywolaj_status())
+
+        self.ktora_lokacja = "N"
+        self.konfiguracja()
+        self.map_display()
+
+        self.aktualny_status = self.spotkanie()
+
+    def top_right(self):
+        self.frame3.configure(fg="black")
+        self.aktualny_status = self.level()
+        self.zmienna.set("You are in north-east part of dungeon\nWhere will You go? You can go on South and West\n%s" % self.wywolaj_status())
+
+        self.ktora_lokacja = "NE"
+        self.konfiguracja()
+        self.map_display()
+
+        self.aktualny_status = self.spotkanie()
+
+    def left(self):
+        self.aktualny_status = self.level()
+        self.zmienna.set("You are in west part of dungeon\nWhere will You go? You can go on North and South and East\n%s" % self.wywolaj_status())
+
+        self.ktora_lokacja = "W"
+        self.konfiguracja()
+        self.map_display()
+
+        self.aktualny_status = self.spotkanie()
+
+    def central(self):
+        try:
+            wskocz.destroy(), niewskakuj.destroy()
+        finally:
+            self.frame3.configure(fg="black")
+            self.aktualny_status = self.level()
+            self.zmienna.set("You are in central part of dungeon\nWhere will You go? You can go on North and South and East and West\n%s" % self.wywolaj_status())
+
+            self.ktora_lokacja = "CENTER"
+            self.konfiguracja()
+            self.map_display()
+
+            self.przejscie(self.aktualny_status[0], self.aktualny_status[1], self.aktualny_status[3],self.aktualny_status[4], self.aktualny_status[5])
+
+    def right(self):
+        self.aktualny_status = self.level()
+        self.zmienna.set("You are in east part of dungeon\nWhere will You go? You can go on North and South and West\n%s" % self.wywolaj_status())
+
+        self.ktora_lokacja = "E"
+        self.konfiguracja()
+        self.map_display()
+
+        self.aktualny_status = self.spotkanie()
+
+    def bot_left(self):
+        self.aktualny_status = self.level()
+        self.zmienna.set("You are in south-west part of dungeon\nWhere will You go? You can go on North and East\n%s" % self.wywolaj_status())
+
+        self.ktora_lokacja = "SW"
+        self.konfiguracja()
+        self.map_display()
+
+        self.aktualny_status = self.spotkanie()
+
+    def bot(self):
+        try:
+            wskocz.destroy(), niewskakuj.destroy()
+        finally:
+            self.aktualny_status = self.level()
+            self.zmienna.set("You are in south part of dungeon\nWhere will You go? You can go on North and West and East\n%s" % self.wywolaj_status())
+            self.ktora_lokacja = "S"
+            self.konfiguracja()
+            self.map_display()
+
+            self.aktualny_status = self.spotkanie()
+
+    def bot_right(self):
+        self.aktualny_status = self.level()
+        self.zmienna.set("You are in south-east part of dungeon\nWhere will You go? You can go on North and West\n%s" % self.wywolaj_status())
+
+        self.ktora_lokacja="SE"
+        self.konfiguracja()
+        self.map_display()
+
+        self.aktualny_status = self.spotkanie()
+
+    def konfiguracja(self):
+        if self.ktora_lokacja == "NW":
+            north.configure(state="disabled")
+            east.configure(state="normal", command=self.top)
+            west.configure(state="disabled")
+            south.configure(state="normal", command=self.left)
+        elif self.ktora_lokacja == "N":
+            north.configure(state="disabled")
+            east.configure(state="normal", command=self.top_right)
+            west.configure(state="normal", command=self.top_left)
+            south.configure(state="normal", command=self.central)
+        elif self.ktora_lokacja == "NE":
+            north.configure(state="disabled")
+            east.configure(state="disabled")
+            west.configure(state="normal", command=self.top)
+            south.configure(state="normal", command=self.right)
+        elif self.ktora_lokacja == "W":
+            north.configure(state="normal", command=self.top_left)
+            east.configure(state="normal", command=self.central)
+            west.configure(state="disabled")
+            south.configure(state="normal", command=self.bot_left)
+        elif self.ktora_lokacja == "CENTER":
+            north.configure(state="normal", command=self.top)
+            east.configure(state="normal", command=self.right)
+            west.configure(state="normal", command=self.left)
+            south.configure(state="normal", command=self.bot)
+        elif self.ktora_lokacja == "E":
+            north.configure(state="normal", command=self.top_right)
+            east.configure(state="disabled")
+            west.configure(state="normal", command=self.central)
+            south.configure(state="normal", command=self.bot_right)
+        elif self.ktora_lokacja == "SW":
+            north.configure(state="normal", command=self.left)
+            east.configure(state="normal", command=self.bot)
+            west.configure(state="disabled")
+            south.configure(state="disabled")
+        elif self.ktora_lokacja == "S":
+            north.configure(state="normal", command=self.central)
+            west.configure(state="normal", command=self.bot_left)
+            east.configure(state="normal", command=self.bot_right)
+            south.configure(state="disabled")
+        elif self.ktora_lokacja == "SE":
+            north.configure(state="normal", command=self.right)
+            west.configure(state="normal", command=self.bot)
+            east.configure(state="disabled")
+            south.configure(state="disabled")
+
+#====================inicjalizacja okna==============================#
+
+
+okno = tkinter.Tk()
+okno.resizable(width=False, height=False)
+okno.geometry("1024x768")
+
+app = Window(okno)
+
+okno.mainloop()

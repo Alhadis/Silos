@@ -1,0 +1,80 @@
+library(readr)
+library(carData)
+library(qqplotr)
+library(seqinr)
+library(gplots)
+library(car)
+
+oysters <- read_delim("C:/Users/User/Desktop/Statistik/3.Semester/Projekt/oysters.txt", 
+                                  "\t", escape_double = FALSE, trim_ws = TRUE)
+head(oysters)
+# Data frame
+# 1 = 2D
+# 2 = 3D
+x <- oysters$Oyster_Volume_cc
+y1 <- oysters$Pixels_2D
+y2 <- oysters$Pixels_3D
+
+ii <- order(x); ii 
+x <- x[ii]; y1 <- y1[ii]; y2 <- y2[ii]
+
+mod1 <- lm(y1~x)
+modsum1 <- summary(mod1); modsum1
+
+mod2 <- lm(y2~x)
+modsum2 <- summary(mod2); modsum2
+
+# 1
+# H0: rho = 0 vs. H1: rho <> 0
+cor.test(x,y1, conf.level = 0.95) # Testgröße ist T verteilt
+
+cor.test(x,y2, conf.level = 0.95) # Testgröße ist T verteilt
+# beide p-werte deutlich unter 5% -> gegen H0
+
+
+# 2
+plot(x, y1, xlab = "Volumen", ylab = "Pixel 2D", main = "Streudiagramm 2D")
+abline(mod1, col="blue") #ab ist das englische pardo zu kd -> gerade
+cc1 <- predict(mod1,oysters, interval = "confidence")
+lines(x,cc1[,2], col="red") # fügt die untergrenze ein
+lines(x,cc1[,3],col="red") #fügt die obergrenze ein
+
+plot(x, y2, xlab = "Volumen", ylab = "Pixel 3D", main = "Streudiagramm 3D")
+abline(mod2, col="blue") #ab ist das englische pardo zu kd -> gerade
+cc2 <- predict(mod2,oysters, interval = "confidence")
+lines(x,cc2[,2], col="red") # fügt die untergrenze ein
+lines(x,cc2[,3],col="red") #fügt die obergrenze ein
+
+
+# 2D Berechnung
+
+b1 <- coefficients(mod1);b1 #bringt den achsenabschnitt und anstieg
+b10 <- b1[[1]]
+b11 <- b1[[2]]
+print(cbind(b10,b11), digits=4)
+confi1 <- confint(mod1)
+kf1 <- function(x){b10+b11*x}
+af1 <- function(y){(y-b10)/b11}
+
+
+# 3D Berechnung
+
+b2 <- coefficients(mod2);b2 #bringt den achsenabschnitt und anstieg
+b20 <- b2[[1]]
+b21 <- b2[[2]]
+print(cbind(b20,b21), digits=4)
+confi2 <- confint(mod2)
+kf2 <- function(x){b20+b21*x}
+af2 <- function(y){(y-b20)/b21}
+
+# 3
+
+r1 <- cor(x,y1); r1   # errechnet den Korrelationskoeffizient
+r2 <- cor(x,y2); r2   # errechnet den Korrelationskoeffizient
+
+# 4
+Messung <- 3490000
+Vschätz <- af2(Messung)
+
+
+

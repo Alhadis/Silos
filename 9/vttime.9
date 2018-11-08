@@ -1,0 +1,418 @@
+	title vttime
+;;;			author RVB@ML
+;;;		based on an idea of frd
+
+colon==":
+t=1
+tt=2
+c=3
+time=4
+vert=5
+horiz=6	
+timkpr=7
+
+if1 nextpg==0
+if2 nextpg==<patchb+patchl+1023.>_<-10.>	;first free page
+pgmapd=12	;pointer to mapped pages
+jclp=13		;jcl line ildb pointer
+outcnt=14	;characters in output buffer
+outp=15		;output buffer pointer
+p=17
+
+ttyo=10
+
+pdll==50
+patchl==100	;patch space
+jcll==50	;200. characters
+outl==300	;siot buffer
+
+hour==3600.
+hours==hour
+delay:	10.*30.
+
+siot==1		;use siot's
+;siot==0		;iot
+
+page==1		;page map time
+;page==0		;don't
+
+.ilose=.lose 1000
+.iolose=.lose 1400
+
+;;;	iot a character, or put it into an output buffer to be siot'ed 
+;;;later
+
+define stash channel,ac
+ife siot,	.iot channel,ac
+.else [idpb ac,outp
+	aos outcnt]
+termin
+
+
+;;;	output a control P then the character.
+
+define cntlp channel,char
+	movei c,20
+	stash channel,c
+	movei c,"char
+	stash channel,c
+termin
+
+;;;	output the character
+
+define iotchr channel,char
+	movei c,"char
+	stash channel,c
+termin
+
+
+;;;	output a digit iff the digit is not a leading zero.
+;;;c must be set up to detect whether any non zero digit has been seen.
+;;;It becomes non blank when a non zero digit is seen.
+define zspdig channel,ac
+	cain ac,0
+	  caie c," 
+	 movei c,(ac)"0
+	stash channel,c
+termin
+
+
+;;;	essentially print a number by recursively dividing and saving 
+;;;the remainder until the quotient becomes zero.  Except this macro is
+;;;recursive itself and produces a straight line program.  Then too,
+;;;this macro is given a list of numbers to divide the "ac" by.  Thus
+;;;rather than always dividing by 10., you can divide by other numbers
+;;;as well.  This is useful in dealing with printing out the time.  And
+;;;lastly, where the "numbers to divide by" (the "divlst") includes non
+;;;numbers then they are assumed to be characters that are output as
+;;;long as zero suppress has stopped
+
+define outpno ac,divlst
+   irp car,cdr,[divlst]
+	ifl .type car,[
+		ifsn [cdr][][
+			idivi ac,car
+			push p,ac+1
+			outpno ac,[cdr]
+			pop p,ac
+			zspdig ttyo,ac
+			    ]
+		.else [
+			idivi ac,car
+			movei c," 
+			caie ac,
+			movei c,(ac)"0
+			stash ttyo,c
+			zspdig ttyo,ac+1
+			     ] ]
+	.else [
+		outpno ac,[cdr]
+		movei ac,car
+		cain c," 
+	 	movei ac," 
+		stash ttyo,ac
+	      ]
+	.istop
+   termin
+termin
+
+go:	move p,[-pdll,,pdlb-1]
+	move jclp,jclptr
+	move outp,outptr
+	.suset [.rxjname,,t]
+	setom rt.onp		;on
+	setzm et.onp		;off
+	camn t,[sixbit /ettime/]
+	setom et.onp		;on
+
+
+	.open ttyo,[4001,,'tty ? 0 ? 0]
+	.iolose
+	.call [setz
+		'cnsget
+		1000,,ttyo
+		2000,,vert
+		2000,,horiz
+		2000,,t		;tctyp
+		2000,,t		;ttycom
+		402000,,t	;ttyopt
+]
+	.iolose
+	movei vert,-1(vert)	;zero origin addressing
+	setzm  clr
+	tlne t,%toovr		;can console correctly overprint?
+	setom clr		; then clear eol before type out.
+	.break 12,[5,,jclb]
+	skipe jclb
+	pushj p,jclprs
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;	find page in ITS containing TIME
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+	move t,fndtim
+	.eval t,
+	.ilose
+	movem t,timloc		;system clock word
+
+	movei tt,(t)
+	ash t,-10.		;page in system
+	movem t,timpag
+
+	trz tt,776000		;word offset
+	hrrm tt,timdsp		;timdsp indexes off of pgmapd
+
+	move tt,[-2,,nextpg]		;two pages
+	.call [setz ? sixbit /corblk/  
+			movei %cbred 
+			movei %jself
+			move tt
+			movei 400000
+			setz t]
+	.ilose
+
+	movei pgmapd,nextpg*1024.	;addresability
+
+
+reinit:	.value [asciz/:job
+/]
+ifn page,move time,@timdsp
+.else	.rdtime time,
+	movem time,oldtim	;initialize elapsed time
+
+
+
+loop:	ifn siot,[	move outp,outptr
+			setz outcnt,]
+	cntlp ttyo,S
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;		elapsed time
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+et.st:	skipn et.onp
+	jrst rt.st
+
+	movei t,-7(horiz)	;seven characters to be printed
+	movei tt,-1(vert)	;one line up
+	skipn rt.onp		;only elapsed time
+	 aos tt
+	pushj p,ttspos
+
+	move t,oldtim		;initial count
+ifn page,move time,@timdsp	;latest time
+.else	.rdtime time,
+
+	subb time,t		;elapsed time
+ifn page,idivi t,2		;1/2 second units
+.else	 idivi t,30.		;1/30 second units
+
+	idivi t,6.		;to minutes * 10.
+period==".
+
+;;;	outpno t,[10.,period,10.,6.,colon,10.]
+	idivi t,10.		;tenth's of mins
+	push p,tt
+	outpno t,[10.,6.,colon,10.]
+	iotchr ttyo,.		;force a . out and not zero suppress
+	pop p,t
+	zspdig ttyo,t
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;		time of day
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+rt.st:	skipn rt.onp
+	jrst finish
+
+	movei t,-11.(horiz)	;eleven characters out
+	movei tt,(vert)
+	pushj p,ttspos
+
+ifn page,[
+	move t,@timdsp		;use # of 1/2 seconds since midnight
+	camn t,[-1]
+	 .value [asciz /:Clock not set./]        
+	idivi t,2		; timer
+	setzm rt.pm
+
+	cail t,12.*hours
+	 setom rt.pm
+	caige t,13.*hours
+	 jrst rt.am
+	subi t,12.*hours
+	jrst rt.out
+rt.am:	caig t,hour
+	 addi t,12.*hours
+rt.out: outpno t,[10.,6.,colon,10.,6.,colon,10.]
+]
+
+.else [	.rtime time,	;use 6 bit time from system
+	jumpl time,quittr
+	setzm rt.pm		
+	move c,time
+	 caml c,noon
+	setom rt.pm
+	camge c,[sixbit /13    /]	;accept 00:00:00 to 12:59:59
+	 jrst rt.am
+	sub time,noon
+	tlze time,7000		;carry propagate
+	 add time,[200,,0]	;add 2 more for bcd arithmetic
+	tlo time,2000		;put back sixbit "0"
+	tlne time,770000	;no leading zero
+	 tlo time,200000		
+	jrst rt.out
+
+rt.am:	tlzn c,575700		;202000	.ie. zero oclock
+	 tlo time,212200	;12:00:00rt.am
+	tlnn time,170000	;1-9 rt.am
+	 tlz time,200000	;flush leading zero
+
+rt.out:	move timkpr,[440600,,time]
+	movei tt,3
+rt.dig:	ildb c,timkpr
+	movei c,40(c)
+	stash ttyo,c
+	ildb c,timkpr
+	movei c,40(c)
+	stash ttyo,c
+	sojle tt,rt.ppm
+	iotchr ttyo,:
+	jrst rt.dig
+
+quittr:	movei t,-4(horiz)
+	movei tt,(vert)
+	pushj p,ttspos
+	move outp,[440700,,[ascii/fail/]]
+	movei outcnt,4
+	.call [setz ? sixbit /siot/ ? movei ttyo ? outp ? setz outcnt]
+	.iolose
+	jrst exit
+]
+
+
+;;;	common to both kinds of real time clock output
+rt.ppm:	iotchr ttyo,[ ]
+	movei c,"p
+	skipn 0,rt.pm
+	movei c,"a
+	stash ttyo,c
+	iotchr ttyo,m
+
+
+
+finish:	cntlp ttyo,R
+
+ifn siot,[	move outp,outptr
+		.call [setz ? sixbit /siot/ ? movei ttyo ? outp ? setz outcnt]
+		.iolose]
+
+pause:	move t,delay
+	.sleep t,
+	jrst loop
+exit:	.close ttyo,
+	.break 16,140000
+
+
+
+ttspos:	cntlp ttyo,H
+	movei t,10(t)
+	stash ttyo,t
+	cntlp ttyo,V
+	movei tt,10(tt)
+	stash ttyo,tt
+	skipn clr		;if console normally overprints
+	popj p,
+	cntlp ttyo,L		;clear to eol
+	popj p,
+
+
+jclprs:	setz t,
+jcllup:	ildb c,jclp		;scan till first non space
+	cain c," 		; should be a number or a /
+	 jrst jcllup
+	cain c,15		;^M means end of data
+	 popj p,
+	cain c,"/
+	 jrst jcltyp
+
+	cail c,"0
+	  caile c,"9
+	 jrst jclbad		;must be a number if not /'ed
+	jrst jclnum+3
+
+jclnum:	cail c,"0		;build number
+	  caile c,"9
+	 jrst jcldly
+	imuli t,12
+	addi t,-60(c)
+	ildb c,jclp
+	jrst jclnum
+
+jcldly:	jumpe t,jclscn
+	imuli t,30.
+	movem t,delay
+	caia
+
+jclscn:	ildb c,jclp		;scan till a / is seen to delimit an
+	cain c," 		; option
+	 jrst jclscn
+	cain c,15
+	 popj p,
+	caie c,"/ 
+	 jrst jclbad
+
+jcltyp:	ildb c,jclp
+	cain c,"b
+	 caia
+	cain c,"B		;both elapsed and real time
+	 jrst [setom rt.onp ? setom et.onp ? jrst jclscn]
+
+	cain c,"t
+	 caia
+	cain c,"T		;just real time
+	 jrst [setom rt.onp ? setzm et.onp ? jrst jclscn]
+
+	cain c,"e
+	 caia
+	cain c,"E		;just elapsed time
+	 jrst [setzm rt.onp ? setom et.onp ? jrst jclscn]
+
+jclbad:	move outp,[440700,,[ascii/Bad Jcl option: /]]
+	movei outcnt,15.
+	.call [setz ? sixbit /siot/ ? movei ttyo ? outp ? setz outcnt]
+	.iolose
+	.iot ttyo,c
+	jrst exit
+
+;		these 3 flags are set TRUE if -1
+rt.onp:	0			;keep normal time
+et.onp:	0			;keep elapsed time
+clr:	0			;must clear eol before writing
+
+fndtim:	squoze 0,timoff		;timoff is a location the ITS system
+timdsp:	0(pgmapd)
+
+timpag:	0
+timloc:	0			;page in system of time
+oldtim:	0			;for elapsed time
+
+rt.pm:	0
+noon:	sixbit /12    /
+
+pdlb:	block pdll
+
+jclptr:	440700,,jclb
+jclb:	block jcll
+
+outptr:	440700,,outb
+outb:	block outl
+
+literal:	constants
+patchb:	0
+patch:	block patchl
+
+	end go

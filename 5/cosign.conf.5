@@ -1,0 +1,591 @@
+.TH cosign.conf "5" "March 2012" "cosign" "File Formats Manual"
+.SH NAME
+.B cosign.conf
+\- Cookie Sign-On Daemons and CGI configuration file
+.SH SYNOPSIS
+.B _COSIGN_CONF
+.sp
+.SH DESCRIPTION
+The _COSIGN_CONF file is a general purpose configuration file for
+cosign.cgi, the logout cgi, cosignd, and monster. It is a whitespace delimited
+line-oriented file. The first argument is always a keyword, followed by
+a value, followed by optional per-keyword additional values. The
+keywords
+.B cgi
+and
+.B proxy
+are unique to cosignd. The keywords
+.BR service ,
+.B set
+and
+.B include
+are used by both daemons and both cgis. Finally the keywords
+.BR cert ,
+.BR factor ,
+.BR negotiate ,
+.B reauth
+and
+.B suffix
+are used by cosign.cgi.
+.sp
+Keywords and values are whitespace-delimited. Lines that are blank or begin
+with '#' are ignored (see Examples).
+.sp
+.SH CGI and SERVICE
+The
+.B cgi
+and
+.B service
+keywords describe the role of the client within the cosign system.
+.sp
+The
+.B cgi
+keyword indicates that the client is responsible for running the cosign.cgi.
+.B cgi
+takes one argument, a regular expression of the subject CN (common name)
+of the certificate the client will present to cosignd when connecting.
+.sp
+The
+.B service
+keyword indicates that the client is running a cosign-protected web service.
+.B service
+takes 4 or 5 arguments, depending on the effect the administrator wishes to
+achieve. cosignd examines all of the fields; cosign.cgi looks only at the
+first three.
+.sp
+The first argument is a regular expression (regex) of the service
+name associated with this particular web service, for example,
+"cosign-(web\\.mail)".  Argument 2 is the validation URL associated with
+the service, which the service uses to validate the service cookie and
+destination URL. This is the location to which cosign.cgi will redirect
+following a successful authentication. The regex and the validation URL
+are connected, in that matches in the regex can be substituted in the
+validation URL (see Examples).
+.sp
+The third field contains flags (T, 2, 0) denoting whether the client is
+permitted to retrieve Kerberos tickets (T); whether the client is permitted
+to use the deprecated cosign v2 scheme (2); or whether the client will use
+defaults (0). Flags can be combined.
+.sp
+The fourth field is a regular expression of the client's CN, on
+which is based the client's access to cosignd,
+or more specifically, to any cookies matching the service regex
+given as the first argument. That is to say, only client CNs matching
+the regex in the fourth argument are allowed to talk to cosignd 
+about service cookies matching the regex in the first argument.
+.sp
+Generally the administrator will limit access to cookies by relying on
+the association established between the service regex (argument 1) and
+the client CN regex (argument 4), but there are cases where this
+association is too vague. The optional fifth argument, a service name
+substitution pattern, is provided for these cases. The canonical example
+is a so-called "default" service, allowing institution-wide access to
+cosignd without requiring the weblogin administrators to modify
+.BR _COSIGN_CONF ,
+as shown in this example:
+.sp
+.br
+ service cosign-(.*) https://$1/cosign/valid 0 (.*\\.xyz\\.org) cosign-$1
+.sp
+This service entry allows any client with a valid CN ending in "xyz.org"
+access to the server, but because of the presence of the substitution
+pattern, those clients can only talk to cosignd
+about cookies derived from their CN. For example, a client presenting a
+certificate CN of "infiniteloop.xyz.org" would only be able to talk
+to cosignd about "cosign-infiniteloop.xyz.org" service cookies.
+.sp
+Whether using the
+.B cgi
+keyword or the
+.B service
+keyword, a client's CN must match a line in the configuration file or it
+will not be permitted to talk to cosignd. All clients must call STARTTLS
+before any other commands can be issued. Clients can only issue commands
+associated with their keyword. The keyword
+.B cgi
+allows clients to use the
+.BR LOGIN ,
+.BR CHECK ,
+.BR REGISTER ,
+.BR RETRIEVE ,
+.BR TIME ,
+.BR DAEMON ,
+and
+.B LOGOUT
+commands. 
+.sp
+The keyword
+.B service
+allows clients to use the
+.B CHECK
+and
+.B RETRIEVE
+commands (see cosignd(8)).
+.sp
+.SH PROXY
+The
+.B proxy
+keyword allows a given service to retrieve proxy cookies for other services.
+.B proxy
+takes two arguments, a client CN regex and a path to a proxy file. The
+proxy file contains the hostname and servicename for the proxy cookies,
+one per line, whitespace-delimited (see Examples). The CN regex must
+match a prior service entry in
+.BR _COSIGN_CONF .
+The
+.B proxy
+keyword replaces the combination of the "P" flag with a path in older
+versions of Cosign.
+.sp
+.SH "SET" CONFIG FILE OPTIONS - SHARED
+The following configuration file options are recognised for use with the
+keyword
+.BR SET .
+Configuration file options override the default compile time settings, but are in turn overridden by any command line options as specified.
+.TP 19
+.B cosigncadir
+The location where CA certificates in hashed form after expected to reside for validating client ceriticates. This is overridden by the
+.B \-x
+command line option, and the default is _COSIGN_TLS_CADIR
+.TP 19
+.B cosigncert
+The location of the SSL server certificate for use by this program. This is overridden by the
+.B \-y
+command line option and the defualt is _COSIGN_TLS_CERT
+.TP 19
+.BI cosignkey
+The location of the SSL key file for use by this program. This is overridden by the
+.B \-z
+command line option and the default is _COSIGN_TLS_KEY
+.TP 19
+.BI cosigndcrl
+The location of the SSL certificate revocation list (CRL). This path may be a CRL file or a hashed directory of CRLs. CRLs are not enabled by default. Setting
+.B cosigndcrl 
+enables them.
+.SH "SET" CONFIG FILE OPTIONS - DAEMON
+.TP 19
+.B cosigndb
+The cosign daemon directory, where all cookies (cosign= and cosign-serv=) will be stored. This is overridden by the
+.B \-D
+command line option and the default is _COSIGN_DIR
+.TP 19
+.B cosigndbhashlen
+This is the length of the subdirectory hash in cosignd's cookie cache
+_COSIGN_DIR. The default is 0, which means all cookies are written to
+the top level of _COSIGN_DIR. A value of 1 means cosignd will use 64
+subdirectories, that is a-z, A-Z, 0-9, +, and - (this is only 38 on a
+case-insensitive filesystem) to store the cookie cache. A value of 2
+means cosignd will use 4096 subdirectories, similar to thr previous
+example but with 2 character directory names (this is only 1444 on a
+case-insensitive filesystem) to store the cookie cache. These
+subdirectories must be created by the administrator (see
+SCRIPTS/dbhash).
+.TP 19
+.B cosignhost
+The hostname to replicate to. This "turns on" cosignd's replication.
+This is overridden by the
+.B \-h
+command line option and the default is off and "NULL"
+.TP 19
+.B cosigndticketcache
+The path to the directory where cosignd stores the kerberos tickets sent
+by cosign.cgi. If nothing is set here, the default value is _COSIGN_TICKET_CACHE
+.TP 19
+.B cosignnettimeout
+This is the amount of time alotted by cosignd for each network
+transaction. The default is 4 minutes.
+.TP 19
+.B cosignport
+This is the port on which cosignd listens. The default is 6663.
+.TP 19
+.B cosignstrictcheck
+This can be set to "on" or "off". Enable or disable strict limitations on
+cookie access. If enabled, cosignd will only allow a client to check
+cookies associated with the client's certificate Common Name. If
+disabled, cosignd does not enforce any limitations on cookie checks.
+The default value is "on", enabling strict checking.
+.sp
+.SH "SET" CONFIG FILE OPTIONS - CGIs
+.TP 19
+.B cosignkrbtkts
+This can be set to "on" or "off". Governs whether an external 
+HTTP-Negotiate or x509 login should attempt to transfer kerberos 
+tickets. The default is "off".
+.TP 19
+.B cosignticketcache
+The path to the directory where cosign.cgi stores the kerberos tickets
+it generates upon successful kerberos login. These tickets are deleted
+once the ticket has been successfully transfered to cosignd. This
+setting is also the default path for the directory where cosignd stores
+its tickets, and the default is _COSIGN_TICKET_CACHE
+.TP 19
+.B cosignhttponlycookies
+Enable or disable the "httponly" attribute of the cosign cookie set by the 
+.BR cosign.cgi .
+The "httponly" attribute restricts non-User Agent access to the cookie,
+mitigating some cross-site scripting (XSS) attacks. The value can be set
+to "on" or "off". The default is "on".
+.TP 19
+.B cosigntmpldir
+The path to the directory where cosign.cgi gets the templates for
+drawing the screen. This is therefore the working directory for
+cosign.cgi. The default is _COSIGN_TMPL_DIR
+.TP 19
+.B cosignx509krbtkts
+Synonymous with cosignkrbtkts.
+.TP 19
+.B cosignkeytab
+This is the path to the keytab file keytab with the principal of "cosign" and
+the instance of the hostname of the machine that the cgi will run on. This
+keytab is used during authentication to verify that KDC spoofing is not
+happening  <http://www.securityfocus.com/bid/1616> and must therefore be
+readable by the UID the CGI runs as (usually the same as your web server).
+The path to this file can be set at compile time using the
+.B --with-keytabpath=FILE
+configure option, during runtime with this cosignkeytab setting or
+.IR krb5_kt_default_name (3)
+will be used at run time to identify the default keytab file for the uid
+running the CGI. The default is "NULL".
+.TP 19
+.B cosignprincipal
+The principal name to use with
+.B cosignkeytab
+option. If set,
+.B cosign.cgi
+will attempt to find this principal within the keytab set by
+.B cosignkeytab
+and use it to verify the user's credentials. The default principal name
+.B cosign.cgi
+uses is "cosign/<hostname_of_cgi_server>".
+.TP 19
+.B cosignstoretickets
+Used by the cgi to determine whether kerberos tickets should be stored in
+a ccache after a successful kerberos login. Valid values are
+.B on
+and
+.BR off .
+The default is
+.BR on .
+.TP 19
+.B cosignticketlifetime
+Sets the lifetime in seconds of the kerberos ticket-granting ticket (TGT)
+created by a successful kerberos login. The default is 10 hours.
+.TP 19
+.B cosignpamservice
+Sets the pam.conf service name used by
+.B cosign.cgi
+when using PAM to authenticate users. The default service name is
+_COSIGN_PAM_SERVICE.
+.TP 19
+.B cosignlogouturl
+This is the URL the logout cgi will redirect a user to upon successful
+completion of logout. It can be overriden by passing a URL on the query
+string to the logout cgi, as in
+http://cosign.edu/cosign-bin/logout?http://go.here.now.edu
+and the default is _COSIGN_LOGOUT_URL.
+.TP 19
+.B cosignlogoutregex
+The regular expression matching URLs passed in the query string that the
+.B logout
+cgi will consider safe for redirection after a logout. If the URL included
+on the query string does not match the pattern, _COSIGN_LOGOUT_URL will be
+used. The default pattern is _COSIGN_LOGOUT_RE.
+.TP 19
+.B cosignloopurl
+This is the page a browser is redirected to when cosign.cgi detects
+there is a loop. The complied-in defaults define a loop as visiting
+cosign.cgi more than 10 (MAXLOOPCOUNT) times in 30 (LOOPWINDOW) seconds.
+The default is _COSIGN_LOOP_URL
+.sp
+.SH "SET" CONFIG FILE OPTIONS - CGI with Cosign Friend
+The following three options are for use with Cosign Friend which is now a
+separate release, though the cgi in this release of Cosign must be built
+with friend support on.
+.TP 19
+.B mysqldb
+The hostname of friend's database server. The default is _FRIEND_MYSQL_DB
+.TP 19
+.B mysqldbname
+The name of friend database. The default is _FRIEND_MYSQL_DB_NAME
+.TP 19
+.B mysqluser
+The login name to access the friend database. The default is
+_FRIEND_MYSQL_LOGIN
+.TP 19
+.B mysqlpasswd
+The password to access the friend database. The default is
+_FRIEND_MYSQL_PASSWD
+.sp
+.SH INCLUDE
+The keyword
+.B include
+allows an administrator to build a cosign configuration file by
+aggregating the contents of several smaller files. The first argument is
+the keyword followed by the path to the file to include.
+.sp
+.SH REAUTH
+The keyword 
+.B reauth
+denotes a cosign service that requires reauthentication before a
+.B REGISTER
+can succeed.
+.B reauth
+requires at least one argument, a service cookie prefix like
+"cosign-web\\.mail".
+.sp
+Beginning with Cosign 2.0, there is the option to indicate that multiple
+factors are required for reauthentication. After the service cookie prefix
+there can be up to 5 factor names. When a user is asked to re-authenticate,
+s/he must supply the correct information to every factor that is
+configured here in the single POST. If the user types any information
+wrong, s/he must type in everything again.
+.sp
+If there are no factors configured for reauthentication, the cgi will
+accept any factor the user can satisfy. Any
+.B reauth
+line requires a prior matching
+.B service
+line in the configuration file.
+.B reauth
+replaces the "cookie" keyword in older versions of Cosign.
+.sp
+.SH CERT
+The keyword
+.B cert
+is used to authenticate a user with an x509 certificate. It takes 5
+fields - keyword, issuer_dn, subject_dn, login, and factor (see
+Examples).  The issuer_dn must be an exact match  of the environment
+variable SSL_CLIENT_I_DN.  The next field, subject_dn, is a regular
+expression which matches SSL_CLIENT_S_DN. The login and factor fields
+may contain $1, $2, and/or $3, which are replaced with the corresponding
+parenthesized subexpressions of the regular expression subject_dn.
+.sp
+.SH FACTOR
+The keyword
+.B factor
+is used to invoke the external authenticator API. It takes the keyword,
+the pathname to the executable, and a list of form-fields, maximum of 5
+(see Examples).  If all listed form-fields contain posted data, then the
+CGI invokes the external authenticator. The value of each form-field is
+written to the external authenticator on stdin (file descriptor 0), one
+per line, in the order they are listed in the configuration. If
+authentication is successful, the external authenticator writes the
+factor name on stdout (file descriptor 1) and exits with a value of 0.
+If an error occurs, the external authenticator writes an error message
+on stdout and exits with a value of 1. If the user's password has
+expired, the external authenticator writes an error message on stdout
+and exits with a value of 2. All other exit values are reserved for
+future use.
+.sp
+There are currently two additional configuration options.  The -2 option
+to the factor keyword means that this factor is only checked after
+another (non -2) factor has been satisfied.  It is intended for use with
+factors that are vulnerable to denial-of-service attacks due to repeated
+authentication failures. The other configuration option uses the keyword
+.I suffix.
+.sp
+.SH NEGOTIATE
+The keyword
+.B negotiate
+is used to authenticate a user using HTTP-Negotiate authentication. It 
+takes 4 fields - keyword, regexp, login, and factor.  The regular 
+expression regexp is matched against the REMOTE_USER variable 
+provided by the web server. The login and factor fields may contain $1,
+$2, and/or $3, which are replaced with the corresponding parenthesized
+subexpressions of the regular expression.
+.sp
+.SH PASSWD
+The keyword
+.B passwd
+is used to control password based authentication of a user using the 
+Kerberos, MySQL and PAM internal authenticators. Where this keyword is not
+specified, usernames containing an '@' are authenticated through mysql,
+all other usernames are authenticated with Kerberos. The keyword takes
+5 fields -
+.IR keyword ,
+.IR type ,
+.IR regexp ,
+.I login
+and
+.IR factor .
+The regular
+expression regexp is matched against the username supplied by the user.
+The login and factor fields may contain $1, $2 and/or $3 which are replaced
+with the corresponding parethesized subexpressions of the regular expression.
+The CGI uses the first password line whose regular expression matches the
+username, and calls the internal authenticator specified by the 'type'
+field (which may be 'kerberos', 'mysql' or 'pam'), with the login name
+given by the login field. Should this login be successful, the user is
+marked as being authenticated by the factor contained in the factor field.
+You may have all three configuration types enabled simultaneously.
+.sp
+The default authentication type rules match the following
+.B passwd
+configuration lines:
+.sp
+.nf
+    # Anything containing an @ is a friend request
+    passwd mysql    (.+@.+)  $1 friend
+    # Anything else gets handed to Kerberos
+    passwd kerberos ([^@]+) $1 MY.REALM
+.fi
+.sp
+The following allows user to specify accounts in the form user@realm, and 
+allows both A.EXAMPLE.COM and B.EXAMPLE.COM to be used as supported realms.
+.sp
+.nf
+    passwd kerberos (.*@A\\.EXAMPLE\\.COM) $1 A.EXAMPLE.COM
+    passwd kerberos (.*@B\\.EXAMPLE\\.COM) $1 B.EXAMPLE.COM
+.fi
+.sp
+To enable PAM processing for user authentication, add the following line
+in _COSIGN_CONF:
+.sp
+.nf
+	passwd pam	(.+)	$1	PAM
+.fi
+.sp
+This tells the cgi to authenticate all users with PAM. Authenticated users
+with this configuration will have the authentication factor "PAM". This may
+be changed by replacing the last field with a different value.
+.sp
+By default, the cosign.cgi will use the PAM service "_COSIGN_PAM_SERVICE"
+to authenticate.  You may override this with the
+.B cosignpamservice
+keyword.
+.sp
+.SH SUFFIX
+The keyword
+.I suffix
+takes 2 arguments - the keyword and a string, such as "-junk" (see
+Examples). This configuration
+causes cosign.cgi to remove the "-junk" suffix from any
+server-provided factors before comparison with required 
+factors.  For example, if the cgi is checking the factor "OTP", and
+ignores the suffix "-junk", and the user has authenticated 
+with the factor "OTP-junk", then the cgi's authentication factor
+requirements would be fulfilled. This option is paired with the cosign
+filter's CosignFactorSuffix and CosignFactorSuffixIgnore and is
+essentially here to support Michigan's phased roll out of one time
+passwords.
+.sp
+.SH EXAMPLES
+The following example of _COSIGN_CONF defines 2 cgis and several
+services. It also overrides the built in values for the cosign key file
+and where cosignd stores kerberos tickets.
+.sp
+.RS
+.nf
+#
+# keyword 	subject cn
+#
+cgi		cosignserver\\.umich\\.edu
+cgi		cosignserver\\.test\\.umich\\.edu
+#
+# service keyword. all arguments must be on one line.
+# arguments are indented here for sake of presentation.
+#
+# keyword  service  url  flags  cn  [optional substitution]
+#
+service  cosign-servicea
+	https://servicea.umich.edu/cosign/valid 0
+	servicea\\.web\\.umich\\.edu
+service  cosign-serviceb
+	https://serviceb.umich.edu/cosign/valid 0
+	serviceb\\.web\\.umich\\.edu
+service  cosign-portaltest
+	https://portaltest.web.umich.edu/cosign/valid T
+	portaltest\\.web\\.umich\\.edu
+service  cosign-(campusmail)
+	https://$1.umich.edu/cosign/valid T
+	campusmail\\.umich\\.edu
+service  cosign-(securemail)
+	https://$1.umich.edu/cosign/valid T
+	securemail\\.umich\\.edu
+service  cosign-(finance\\.web)
+	https://$1.umich.edu/cosign/valid T
+	finance\\.web\\.umich\\.edu
+service cosign-(.*\\.web\\.mgoblue\\.com)
+	https://$1/cosign/valid 0 \\*\\.mgoblue\\.com
+# the "default" service
+service cosign-(.*)
+	https://$1.umich.edu/cosign/valid 0
+	(.*)\\.web\\.umich\\.edu cosign-$1
+#
+# keyword	subject cn				path
+#
+proxy	cosignserver\\.test\\.umich\\.edu	/etc/cosign/test.conf
+proxy	portaltest\\.umich\\.edu		/etc/cosign/portal.conf
+#
+#
+# keyword        path to file
+#
+include		/etc/cosign/another.conf
+#
+# keyword        configuration key            value
+#
+set		cosigndticketcache	/some/place
+set		cosignkey		/some/key
+#
+# keyword        service name           optional factors to reauth
+#
+reauth		cosign-(securemail)
+reauth		cosign-(finance\\.web)	UMICH.EDU
+#
+# keyword issuer_dn subject_dn login factor
+#
+cert    "/C=US/ST=Michigan/L=Ann Arbor/O=University of
+Michigan/OU=ITCS/CN=UM Web CA/emailAddress=webmaster@umich.edu"
+".*emailAddress=\\(.*\\)@umich\\.edu" $1 UMICH.EDU
+#
+# keyword path [secondary] formfield1 [formfield2 ... formfield5]
+factor	/usr/cosign/factor/123magic.sh	-2 login passcode
+# keyword  phrase to ignore
+suffix	-junk
+.fi
+.RE
+.sp
+This is an example of the file that controls which proxy credentials a server
+can
+.B RETRIEVE.
+.sp
+.RS
+.nf
+	
+    #
+    # domain name		service-name
+    #
+
+    campusmail.umich.edu	cosign-campusmail
+    news.web.umich.edu		cosign-webnews
+.fi
+.RE
+.sp
+The following snippet defines the normal internal password authentication rules
+.sp
+.RS
+.nf
+
+    # Anything containing an @ is a friend request
+    passwd mysql    (.+@.+)  $1 friend
+    # Anything else gets handed to Kerberos
+    passwd kerberos ([^@]+) $1 MY.REALM
+.fi
+.RE
+.sp
+The following allows user to specify accounts in the form user@realm, and 
+allows both A.EXAMPLE.COM and B.EXAMPLE.COM to be used as supported realms.
+.sp
+.RS
+.nf
+    passwd kerberos (.*@A\\.EXAMPLE\\.COM) $1 A.EXAMPLE.COM
+    passwd kerberos (.*@B\\.EXAMPLE\\.COM) $1 B.EXAMPLE.COM
+.fi
+.RE
+.sp
+.SH FILES
+_COSIGN_CONF
+.sp
+.SH SEE ALSO
+.sp
+http://weblogin.org, cosignd(8)

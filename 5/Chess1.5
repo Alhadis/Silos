@@ -1,0 +1,216 @@
+#include <iostream>
+#include <string>
+#include <unistd.h>
+#include <vector>
+#include <windows.h>
+using namespace std;
+
+int main()
+{
+    string map [8][8];
+    string eingabe ="";
+    int von,nach,von1,nach1,color=0;
+    vector <string> deads;
+
+    string boxLines = "════════╦";
+
+    system("@chcp 65001");
+    system("cls");
+
+    //-------------------------------------------------------------------------
+    //Fill "map"
+    string figuren = "TSLDKLST";
+
+    for (int i = 0; i < 8; i ++){
+        for (int j=0; j<8;j++){
+            map[i][j]="  ";
+        }
+    }
+
+    for (int i = 0; i < 8; i ++){
+        for (int unsigned j=0; j<8;j++){
+            if (i % 7 == 0){
+                //Türme,Springer,Läufer Links
+                map[i][j]=figuren[j];
+                //Weiß oder Schwarz?
+                if (i==7)
+                    map[i][j]='w'+map[i][j];
+                else
+                    map[i][j]='s'+map[i][j];
+            }
+
+            //Bauern
+            if (i==1)
+                map[i][j]="sB";
+            else if(i==6)
+                map[i][j]="wB";
+        }
+    }
+
+
+
+    //-------------------------------------------------------------------------
+    do{
+        //Create "game field"
+        int count = 1;
+        char count2 = 'a';
+        color ++;
+
+        //Change color for every play
+        if (color % 2 == 0)
+            system("color 03");
+        else
+            system("color 0a");
+        system("cls");
+
+        //Create the lines
+        for (int i = 1; i <=8; i++)
+            cout << "    " << count2++<<"    ";
+        cout << endl;
+        cout << "╔";
+        for (int i = 1; i <=8; i++)
+            cout << boxLines;
+        cout << endl;
+        for (int b = 0;b <8;b++){
+            for (int i = 1; i <3; i++){
+                for (int j = 0;j < 8; j++)
+                    if (i == 2)
+                        cout <<"║"<< "   "<<map[b][j]<<"   ";
+                    else
+                        cout <<"║"<< "        ";
+                cout <<"║";
+                if (i==1)
+                    cout << " " << count++;         //Shows the numbers og the field to the user
+                if (i==1&&(count==2)){
+                    if (color%2!=0)
+                        cout << "\tWeiß ist dran!";
+                    else
+                        cout << "\tSchwarz ist dran!";
+                }
+
+                //Shows the dead bodies next to the field
+                if (i==2&&(count==3)){
+                    cout << "\t Pieces: ";
+                    for (unsigned int i = 0; i < deads.size();i++)
+                        if(deads[i][0] == 'w')
+                            cout << deads[i] << " ";
+                }
+                if (i==2&&(count==8)){
+                    cout << "\t Pieces: ";
+                    for (unsigned int i = 0; i < deads.size();i++)
+                        if(deads[i][0] == 's')
+                            cout << deads[i] << " ";
+                }
+
+                cout << endl;
+
+            }
+            cout << "╠";
+            for (int c = 0;c <8;c++)
+                cout << "════════╬";
+            cout <<endl;
+        }
+
+
+        //-------------------------------------------------------------------------
+        //Movements
+        bool legal=false;
+        do {
+            cout <<"Bitte Zug eingeben (z.B f1-e3): ";
+            cin >> eingabe;
+            von = int(eingabe[1])-49;
+            von1 = int(eingabe[0])-97;
+            nach = int(eingabe[4])-49;
+            nach1 = int(eingabe[3])-97;
+
+            //Legal moves detector
+            if (von < 8 && von >=0 && von1 < 8 && von1 >=0 && nach < 8 && nach >=0 //Only entries >=0 & <8
+                    && nach1 < 8 && nach1 >=0 && map[von][von1]!="  ")             //Only move if there is something to move
+                legal = true;
+            else if(eingabe=="exit"){
+                von=0;von1=0;nach=0;nach1=0;
+                legal = true;
+                break;
+            }
+            if(legal && ((map[von][von1][0] == 's' && color%2 != 0)||(map[von][von1][0] == 'w' && color%2 == 0))){
+                legal = false;
+                cout << "Du bist nicht dran!    \t";
+            }
+            if(legal && map[von][von1][0] == map[nach][nach1][0]){
+                cout << "Verräter!\t\t";
+                legal = false;
+            }
+
+            ///Some logik Tests
+            //            for (short pos =-8;pos < 9;pos++){
+            //                if((map[von][von1]=="sT"||map[von][von1]=="wT")){
+            //                    if(map[von+pos][von1]=="  ")
+            //                        map [von+pos][von] = " *";
+            //                    if(map[von][von1+pos]=="  ")
+            //                        map [von][von1+pos] = " *";
+            //                }
+
+            //            }
+
+            if (legal == false)
+                cout << "Illegal move\n\a";            //"\a" Macht ein beep
+
+        }while(legal == false);
+
+        //-------------------------------------------------------------------------
+        //Some Other funktionalitäten
+
+        //Dead counter
+        if (map[nach][nach1] != "  ")
+            deads.push_back(map[nach][nach1]);
+
+        //Revive a Friend
+        if (map[von][von1][1] == 'B' && (nach1==0||nach1==7)&&deads.size()!=0){      //Bugs: it doesnt recognize nach1==0 ...
+            cout << "Who you want to revive? ";                     //Ein Bauer kann nach hintern gehen und es würde auch legal
+            string input;
+            cin >> input;
+            for (unsigned int i =0;i < deads.size(); i++){
+                if (input == deads[i]){
+                    map[von][von1] = deads[i];
+                    deads[i].erase();
+                }
+            }
+
+        }
+
+
+        int anim=0;
+        if (map[nach][nach1][1]=='K'){
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t▒▓▒░        Schachmatt!          ▒▓▒░";system("color d7");Beep (196,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t▓▒░▒        Schachmatt!          ▓▒░▒";system("color ae");Beep (262,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t▒▓▒░        Schachmatt!          ▒▓▒░";system("color d7");Beep (330,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t░▒▓▒        Schachmatt!          ░▒▓▒";system("color ae");Beep (392,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t▒░▒▓        Schachmatt!          ▒░▒▓";system("color d7");Beep (523,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t░▒▓▒        Schachmatt!          ░▒▓▒";system("color ae");Beep (660,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t▒▓▒░        Schachmatt!          ▒▓▒░";system("color d7");Beep (784,100);Sleep(575);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t▓▒░▒        Schachmatt!          ▓▒░▒";system("color ae");Beep (660,100);Sleep(575);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t▒▓▒░        Schachmatt!          ▒▓▒░";system("color d7");Beep (207,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t░▒▓▒        Schachmatt!          ░▒▓▒";system("color ae");Beep (262,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t▒░▒▓        Schachmatt!          ▒░▒▓";system("color d7");Beep (311,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t░▒▓▒        Schachmatt!          ░▒▓▒";system("color ae");Beep (415,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t▒▓▒░        Schachmatt!          ▒▓▒░";system("color d7");Beep (523,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t▓▒░▒        Schachmatt!          ▓▒░▒";system("color ae");Beep (622,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t▒▓▒░        Schachmatt!          ▒▓▒░";system("color d7");Beep (830,100);Sleep(575);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t░▒▓▒        Schachmatt!          ░▒▓▒";system("color ae");Beep (622,100);Sleep(575);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t▒░▒▓        Schachmatt!          ▒░▒▓";system("color d7");Beep (233,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t░▒▓▒        Schachmatt!          ░▒▓▒";system("color ae");Beep (294,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t▒▓▒░        Schachmatt!          ▒▓▒░";system("color d7");Beep (349,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t▓▒░▒        Schachmatt!          ▓▒░▒";system("color ae");Beep (466,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t▒▓▒░        Schachmatt!          ▒▓▒░";system("color d7");Beep (587,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t░▒▓▒        Schachmatt!          ░▒▓▒";system("color ae");Beep (698,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t▒░▒▓        Schachmatt!          ▒░▒▓";system("color d7");Beep (932,100);Sleep(575);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t░▒▓▒        Schachmatt!          ░▒▓▒";system("color ae");Beep (932,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t▒▓▒░        Schachmatt!          ▒▓▒░";system("color d7");Beep (932,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t▓▒░▒        Schachmatt!          ▓▒░▒";system("color ae");Beep (932,100);Sleep(125);system("cls");
+            cout<< "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t▒▓▒░        Schachmatt!          ▒▓▒░";system("color d7");Beep (1046,675);system("cls");
+            break;
+        }
+        map[nach][nach1]=map[von][von1];
+        map[von][von1]="  ";
+    }while(eingabe != "exit");
+}

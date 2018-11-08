@@ -1,0 +1,209 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0"/>
+    <!-- enable full-screen mode -->
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <!-- controls the appearance of the status bar in full-screen mode -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+
+    <title>Demo</title>
+    <style type="text/css" media="screen">
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+        }
+
+        #console {
+            z-index: 999;
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+
+        #content-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .navi-bar {
+            position: absolute;
+            -webkit-transform: translate3d(0, 0, 0);
+            display: block;
+            top: 0;
+            left: 200px;
+            width: 400px;
+            height: 40px;
+            z-index: 100;
+            background: gray;
+        }
+        .navi-bar > ul {
+            text-align: center;
+            background: gray;
+        }
+        .navi-bar > ul li {
+            list-style: none;
+            display: inline;
+            padding: 5px;
+            border: 1px solid #fff;
+            background: gray;
+        }
+
+        .navi-bar > ul li a {
+            /*color: #fff;*/
+        }
+
+    </style>
+</head>
+<body>
+    <div id="console">
+        <!-- the FPS meter is according to http://www.kaizou.org/2011/06/effectively-measuring-browser-framerate-using-css/ -->
+        <div>
+            <span>Current FPS<span><span id="currFPS"></span>
+        </div>
+        <div>
+            <span>FPS Stats<span><span id="fpsStats"></span>
+        </div>
+    </div>
+
+    <div id="content-container">
+        <div>
+            <iframe id="wrapper-frame-0" src="sub1.html" style="position: absolute; z-index: 1;border: 0; width: 1024px; height: 768px">Your browser doesn't support iframe.</iframe>
+            <iframe id="wrapper-frame-1" style="display: hidden; position: absolute; z-index: 1;border: 0; width: 1024px; height: 768px">Your browser doesn't support iframe.</iframe>
+            <iframe id="wrapper-frame-2" style="display: hidden; position: absolute; z-index: 1;border: 0; width: 1024px; height: 768px">Your browser doesn't support iframe.</iframe>
+        </div>
+    </div>
+    <div class="navi-bar">
+        <ul>
+            <li><a href="#" class="navi-link" transition-target="sub1" transition-method="flyIn">Travel</a></li>
+            <li><a href="#" class="navi-link" transition-target="sub2" transition-method="flyIn">road</a></li>
+            <li><a href="#" class="navi-link" transition-target="sub3" transition-method="flyIn">dog</a></li>
+        </ul>
+    </div>
+
+
+    <script src="http://yui.yahooapis.com/3.4.1/build/yui/yui-min.js"></script>
+    <script type="text/javascript" src="FPSMeter.js"></script>
+
+    <script type="text/javascript" charset="utf-8">
+YUI().use('node', 'yql', 'transition', function(Y) {
+
+    var allocateFrame, activateFrame,
+        currPage = Y.one('#wrapper-frame-0'),
+        //allPages = [Y.one('#wrapper-frame-0'), Y.one('#wrapper-frame-1'), Y.one('#wrapper-frame-2')],
+        allPages = Y.all('iframe');
+        pageTrans = {};
+
+    var currFPS = Y.one('#currFPS'),
+        fpsStats = Y.one('#fpsStats');
+
+    function logFps(fps){
+        // Do some stuff here with current FPS
+        currFPS.set('innerHTML', fps + '@' + new Date().toString());
+    }
+    function endFps(minfps,avgfps,maxfps){
+        fpsStats.set('innerHTML', 'min: ' + minfps + ', avg: ' + avgfps + ', max' + maxfps + '@' + new Date().toString());
+    }
+
+
+    pageTrans.flyIn = function (node) {
+        var duration = 0.7;
+
+        //alert(node);
+        //alert(currPage);
+
+        if (node == currPage) return;
+
+        //alert(currPage);
+        //alert(node);
+
+        allPages.each(function(n, i, list) {
+            if (n !== currPage) {
+                n.hide();
+            } else {
+                //alert(currPage);
+            }
+        });
+
+        currPage.setStyle('z-index', 1);
+        node.setStyle('z-index', 2);
+        //alert(node.getStyle('z-index'));
+
+        new FPSMeter(logFps, endFps).run(duration + 1);
+
+        node.setStyles({
+                /*
+            left: '500px',
+            top: '500px',
+            transform: 'rotate(60deg)'
+            */
+            transform: 'rotate(60deg) translate(500px, 500px)'
+        })
+        .show()
+        .transition({
+            easing: 'ease-out',
+            //easing: 'cubic-bezier(0, 0.35, 0.5, 0)',
+            duration: duration,
+            /*
+            left: '0',
+            top: '0',
+            transform: 'rotate(0deg)'
+            */
+            transform: 'rotate(0deg) translate(0px, 0px)'
+        }, function() {
+            currPage.hide();
+            currPage = node;
+        });
+    };
+
+
+    allocateFrame = (function(){
+        var next = 0,
+            total = allPages.size();
+
+        return function() {
+            next = (next + 1) % total;
+            return allPages.item(next);
+        };
+    }());
+
+    activatePage = function(frame, newTarget, method) {
+        //frame.show();
+
+        if (!frame.getAttribute('src')) {
+            console.log(frame.get('id'));
+            console.log('re src:' + newTarget);
+            frame.setAttribute('src', newTarget + '.html');
+        }
+
+        pageTrans[method](frame);
+    };
+
+    function onNavi(e) {
+        e.halt();
+
+        var frame,
+            newTarget = e.currentTarget.getAttribute('transition-target'),
+            method = e.currentTarget.getAttribute('transition-method');
+
+        frame = allocateFrame();
+        activatePage(frame, newTarget, method);
+    }
+
+    Y.on('domready', function() {
+        //hideURLbar();
+        Y.delegate('click', onNavi, 'body', '.navi-link');
+        //activatePage('road', 'starWar');
+    });
+
+});
+
+    </script>
+</body>
+</html>

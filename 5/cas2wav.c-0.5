@@ -1,0 +1,84 @@
+/* cas2wav - convert Dragon/CoCo .cas file to 9600Hz WAV.
+   Ciaran Anscomb, 2011.  Public Domain.
+
+   v0.5: converted to C
+*/
+
+#include <stdlib.h>
+#include <stdio.h>
+
+static unsigned char wav_header[44] = {
+	0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00,
+	0x57, 0x41, 0x56, 0x45, 0x66, 0x6d, 0x74, 0x20,
+	0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00,
+	0x80, 0x25, 0x00, 0x00, 0x80, 0x25, 0x00, 0x00,
+	0x01, 0x00, 0x08, 0x00, 0x64, 0x61, 0x74, 0x61,
+	0x00, 0x00, 0x00, 0x00
+};
+
+static struct {
+	int length;
+	const unsigned char bytes[8];
+} waves[2] = {
+	{ 8, { 0x80, 0xd9, 0xff, 0xd9, 0x80, 0x27, 0x01, 0x27 } },
+	{ 4, { 0x80, 0xff, 0x80, 0x01 } }
+};
+
+int main(int argc, char **argv) {
+	FILE *in, *out;
+	long count;
+	int c;
+
+	if (argc < 3) {
+		fprintf(stderr, "usage: $0 INFILE OUTFILE\n");
+		fprintf(stderr, "INFILE is Dragon/Tandy CoCo CAS file\n");
+		fprintf(stderr, "OUTFILE will be 9600Hz WAV\n");
+		exit(1);
+	}
+
+	if ((in = fopen(argv[1], "rb")) == NULL) {
+		perror("Failed to open input file");
+		exit(1);
+	}
+	if ((out = fopen(argv[2], "wb")) == NULL) {
+		perror("Failed to open output file");
+		exit(1);
+	}
+
+	if (fwrite(wav_header, 1, sizeof(wav_header), out) < 44) {
+		perror("Failed to write WAV header");
+		exit(1);
+	}
+
+	count = 0;
+
+	while ((c = fgetc(in)) != EOF) {
+		int i;
+		for (i = 0; i < 8; i++) {
+			int bit = c & 1;
+			int length = waves[bit].length;
+			if (fwrite(waves[bit].bytes, 1, length, out) < length) {
+				perror("Short write on output file");
+				exit(1);
+			}
+			count += length;
+			c >>= 1;
+		}
+	}
+
+	fseek(out, 40L, SEEK_SET);
+	fputc(count & 0xff, out);
+	fputc((count >> 8) & 0xff, out);
+	fputc((count >> 16) & 0xff, out);
+	fputc((count >> 24) & 0xff, out);
+	count += 36;
+	fseek(out, 4L, SEEK_SET);
+	fputc(count & 0xff, out);
+	fputc((count >> 8) & 0xff, out);
+	fputc((count >> 16) & 0xff, out);
+	fputc((count >> 24) & 0xff, out);
+
+	fclose(out);
+	fclose(in);
+	return 0;
+}

@@ -1,0 +1,290 @@
+.Dd August 7, 2015
+.Dt GDPLOGD 8
+.Os Swarm-GDP
+.Sh NAME
+.Nm gdplogd
+.Nd GDP log server
+.Sh SYNOPSIS
+.Nm gdplogd
+.Op Fl D Ar debug-spec
+.Op Fl F
+.Op Fl G Ar router-ip
+.Op Fl n Ar n-workers
+.Op Fl N Ar my-name
+.Op Fl s Ar sig-strictness
+.Sh DESCRIPTION
+.Nm gdplogd
+serves up logs from stable storage,
+accepting commands from clients.
+.Sh OPTIONS
+.Bl -tag
+.It Fl D Ar debug-spec
+Turns on debugging flags using the libep-style format.
+Useful only with the code in hand.
+Implies
+.Fl F .
+.It Fl F
+Runs the daemon in foreground.
+At the moment the daemon always runs in foreground,
+so this flag does nothing.
+.It Fl G Ar router-ip
+Contact the given IP address (which may be a DNS name)
+to get a connection to the GDP routing layer.
+This will be replaced by automatic discovery
+(for example, using Zeroconf)
+soon.
+The address may have an optional port number after a colon.
+If this is not specified,
+the names listed in the
+.Va swarm.gdp.routers
+runtime administrative parameter
+are searched.
+See
+.Xr gdp 7
+for details.
+.It Fl n Ar n-workers
+Set the number of worker threads.
+A more flexible way of setting these uses the
+.Va libep.thr.pool.min_workers
+and
+.Va libep.thr.pool.max_workers
+to set the minimum and maximum number of threads in the thread pool.
+See
+.Xr gdp 7
+for details.
+.It Fl N Ar my-name
+Sets the name of this log daemon instance.
+This is the same name used in the
+.Xr gdp-create 8
+command.
+.Em The name must be unique in the GDP,
+and hence will usually have a structured name such as
+.Qq edu.berkeley.eecs.gdp-01.gdplogd .
+.It Fl S Ar sig-strictness
+Specifies how strict the daemon will be about enforcing signatures
+on append (write) requests to logs.
+It is only possible to make the checking stricter using this flag.
+See the description of the
+.Va swarm.gdplogd.crypto.strictness
+parameter below for details.
+This option is only intended to be used during a transition period;
+it will go away in the future.
+.El
+.
+.Sh EXIT STATUS
+.
+.Sh ADMINISTRATIVE PARAMETERS
+These only describe the parameters specific to
+.Nm .
+See
+.Xr gdp 7
+for descriptions of shared parameters.
+.Bl -tag
+.
+.It swarm.gdplogd.admin.output
+Specify the location for output of administrative information.
+This is intended to be used for management and visualization
+of the system itself.
+The values can be:
+.Bl -tag -nested -compact -width 12m
+.It stdout
+Write to stdout.
+.It stderr
+Write to stderr.
+.It syslog
+Write to syslog.  The messages will be LOG_INFO priority.
+.It N
+(where N is an integer) Log to the file descriptor indicated.
+.It filename
+Append output to the named file.
+.El
+The information printed includes interesting events
+(e.g., when logs are created) as well as optional probe results
+(see below).
+.
+.It swarm.gdplogd.admin.probeintvl
+If set to a positive integer,
+this specifies the interval in seconds
+at which gdplogd will output a summary of the known logs.
+If zero or negative no summaries will be produced.
+.
+.It swarm.gdplogd.advertise.interval
+The time in seconds before
+.Nm
+will renew its advertisements of known names.
+If set to zero, advertisements will not be renewed.
+Defaults to 150 seconds.
+.
+.It swarm.gdplogd.crypto.strictness
+Specifies how strict the daemon will be about enforcing signatures
+on append (write) requests to logs.
+The value is a comma-separated string of words
+from the set:
+.Bl -tag -nested -compact -width 12m
+.It Li Verify
+If a signature exists on an append command
+it must correctly verify.
+.It Li Required
+Signatures are required to exist on all append commands;
+any unsigned commands are rejected.
+.It Li Pubkey
+Logs must have a public key associated with them.
+If they do not,
+attempts to open a file for writing will fail.
+.El
+Only the first character is actually tested, so
+.Qq V,R
+and
+.Qq Verify,Required
+are semantically the same.
+This variable is only intended to be used during a transition period;
+it will go away in the future.
+.
+.It swarm.gdplogd.ignore.sigpipe
+If set, ignore the
+.Li SIGPIPE
+signal.
+This allows
+.Nm
+to reconnect to the router if it gets a write error.
+Defaults to
+.Li false
+on systems that allow the signal to be ignored on individual sockets,
+.Li true
+otherwise.
+See also the
+.Li swarm.gdp.ignore.sigpipe
+parameter described in
+.Xr gdp 7 .
+.
+.It swarm.gdplogd.log.dir
+The directory in which physical logs are written.
+Defaults to
+.Qq Pa /var/swarm/gdp/glogs .
+.
+.It swarm.gdplogd.gob.mode
+The file mode to use when creating on-disk log files.
+Defaults to 0600.
+.
+.It swarm.gdplogd.gob.mode
+The file mode for on-disk GCL storage.
+Defaults to
+.Li 0600 .
+.
+.It swarm.gdplogd.gdpname
+Sets the name of this instance of
+.Nm .
+This is needed when using
+.Xr gdp-create 8
+to create a new log.
+.
+.It swarm.gdplogd.index.cachesize
+The size (in entries) of the internal record offset cache.
+This can be used to speed access to recently accessed records.
+Defaults to 65536, which equals 1MiB.
+.
+.It swarm.gdplogd.reclaim.age
+When an in-memory log reference count drops to zero
+that log is a candidate for having resources
+(such as memory and open file descriptors)
+reclaimed.
+However there is a high likelihood that the log will be referenced again soon,
+so reclaimation is deferred for this parameter's value (in seconds).
+Defaults to 300 (five minutes).
+.
+.It swarm.gdplogd.reclaim.interval
+How often to scan the cached but unreferenced resources
+that might be cleared (in seconds).
+Defaults to 15.
+This should generally be less than
+.Va swarm.gdplogd.reclaim.age .
+.It swarm.gdplogd.reclaim.inthread
+If set, resource reclaiming is run in a worker thread
+rather than in the main event loop.
+Defaults to
+.Li false.
+.
+.It swarm.gdplogd.sequencing.allowdups
+Allows duplicate numbered records.
+.Em "THIS PROBABLY DOESN'T DO WHAT YOU WANT!"
+The old record with the same number will not be accessible.
+.
+.It swarm.gdplogd.sequencing.allowgaps
+Allow gaps in record numbers.
+This will likely confuse readers who try to read the record
+that does not exist.
+.
+.It swarm.gdplogd.sqlite.log-posix-errors
+Send any Posix errors to the system log.
+May be useful for some debugging scenarios.
+Default to
+.Li false .
+.
+.It swarm.gdplogd.sqlite.log-sqlite-errors
+Send any SQLite errors to the system log.
+May be useful for some debugging scenarios.
+Default to
+.Li true .
+.
+.It swarm.gdplogd.sqlite.pragma.cache_size
+Set the SQLite cache size.
+Defaults to the built-in SQLite default.
+.
+.It swarm.gdplogd.sqlite.pragma.journal_mode
+Set the SQLite journalling mode.
+May be
+.Li DELETE ,
+.Li TRUNCATE ,
+.Li PERSIST ,
+.Li MEMORY ,
+.Li WAL ,
+or
+.Li OFF .
+Defaults to
+.Li TRUNCATE .
+.
+.It swarm.gdplogd.sqlite.pragma.journal_size_limit
+Set the maximum size of the SQLite journal.
+Defaults to the built-in SQLite default.
+.
+.It swarm.gdplogd.sqlite.pragma.locking_mode
+Sets the file locking mode.
+May be
+.Li NORMAL
+or
+.Li EXCLUSIVE .
+Defaults to
+.Li EXCLUSIVE .
+.
+.It swarm.gdplogd.sqlite.pragma.synchronous
+Specify the circumstances when SQLite will force pages to disk.
+May be
+.Li OFF ,
+.Li NORMAL ,
+.Li FULL ,
+or
+.Li EXTRA .
+Defaults to
+.Li NORMAL .
+.
+.It swarm.gdplogd.sqlite.pragma.temp_store
+Indicate where temporary tables should be stored.
+May be
+.Li DEFAULT ,
+.Li FILE ,
+or
+.Li MEMORY .
+Defaults to the built-in SQLite default.
+.El
+.
+.Sh SEE ALSO
+.Xr gdp 7 ,
+.Xr gdp-create 8
+.
+.Sh BUGS
+The
+.Fl S
+flag is a horrible thing indeed.
+.Pp
+Subscription leases should be per-subscription
+and negotiated between the clients and the log servers.

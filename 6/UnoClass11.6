@@ -1,0 +1,203 @@
+import random
+# from Tkinter import * # Get everything from Tkinter without having to type Tkinter. before it every time
+
+class Card: #Card Class
+
+	def __init__(self, color, rank): #Take in color, rank, and image to make each card
+		self.color = color
+		self.rank = int(rank)
+		#self.img = Button(window, image=image, command =use Card) 
+	def id(self):
+		if 0<= self.rank <= 9: # If the card is a number card
+			return self.rank
+		if self.rank == 10: #a 10 rank card is a draw 2
+			return "Draw 2"
+		if self.rank == 11: #a 11 rank card is a draw 4
+			return "Draw 4"
+		if self.rank == 12: #^^^
+			return "Reverse"
+		if self.rank == 13:#^^^
+			return "Skip"
+		if self.rank == 14:#^^^
+			return "Card" #when printing 
+	def colorer(self):
+		if self.color == 0:
+			return "Blue"
+		if self.color == 1:
+			return "Red"
+		if self.color == 2:
+			return "Green"
+		if self.color == 3:
+			return "Yellow"
+		if self.color == 4:
+			return "Wild"
+	def __str__(self):	
+		return self.colorer() + " " + str(self.id())
+
+
+class Deck:
+
+	def __init__(self, present): # Make deck
+		self.cards = [] # Make an empty deck
+		self.present = present # If present == 1, make a full deck. If present == 0, make an empty deck
+		if self.present == 1:
+			colors = [0, 1, 2, 3]
+			for i in range(4): # For each color except "wild color"
+     			#self.cards.append(Card(colors[i], 0)) # Make 1 zero card
+				for x in range(2): # Make 2 copies of the following cards
+					for z in range(0,9): # Numbered cards from 1 to 9
+						self.cards.append(Card(colors[i], z))
+					self.cards.append(Card(colors[i], 10))
+					self.cards.append(Card(colors[i], 12))
+					self.cards.append(Card(colors[i], 13))
+			for q in range(4): # Make 4 wild and draw 4 cards
+				self.cards.append(Card(4, 11))
+				self.cards.append(Card(4, 14))
+			self.shuffle()
+
+	def shuffle(self): # Shuffle deck
+		random.shuffle(self.cards)
+
+	def numcards(self): # Returns number of cards in deck
+		return len(self.cards)
+
+	def deal(self, position): # Removes and returns the value of the card in position of the deck
+		return self.cards.pop(position)
+
+	def addcard(self, card): # Add card to end of deck
+		self.cards.append(card)
+
+	def addtotop(self, card): # Add card to front of deck
+		self.cards = [card] + self.cards
+    
+	def cardid(self, position): # Returns position of the card in the deck
+		return self.cards[position]
+
+	def __str__(self):
+		hand = ""
+		for i in range(len(self.cards)):
+			hand = hand + str(self.cards[i]) +"\n"
+		return str(hand)
+
+
+players = ["Jack", "Anan", "Billy", "Bobby"]
+drawpile = Deck(1) # Make a full deck
+discard = Deck(0) # Create an initially empty discard pile
+
+
+
+def setup():
+	global drawpile
+	global players
+	global discard
+	for i in range(len(players)): # Make an empty deck for each player in the game
+		players[i] = Deck(0)
+
+def startgame():
+	global drawpile
+	global players
+	global discard
+	for i in range(7): # For each player, deal 7 cards into their deck
+		for z in range(len(players)):
+			players[z].addcard(drawpile.deal(0))
+	# for r in range(len(players)):
+	# 	print(players[r])
+	# 	print("\n")
+	#print(drawpile)
+	while True: # Start the game off by adding a card to the discard pile
+		discard.addtotop(drawpile.deal(0)) # Keep adding cards
+		if discard.cards[0].rank <= 9: # Until a regular number card is on top
+			break
+
+
+def turn(player, direction):
+	global drawpile
+	global players
+	global discard
+
+	print("Player" + str(player+ 1))
+
+	players[player] # Displays the player name
+	print(players[player])
+
+	print("\n")
+	print(discard.cards[0])
+
+
+	colorp = discard.cards[0].color
+	rankp = int(discard.cards[0].rank)
+	playedcard = 0
+
+	while True:
+		move1 = int(input("Type position of card(#) or draw card(10)"))
+		if 0<=move1<=len(players[player].cards):
+			if players[player].cards[move1].rank == rankp or players[player].cards[move1].color == colorp:
+				playercard = players[player].cards[move1]
+				discard.addtotop(players[player].deal(move1))
+				break
+		elif move1 == 10:
+			players[player].addcard(drawpile.deal(0))
+			while 1==1:
+				move2 = int(input("Type position of card(#) or end turn(10)"))
+				if 0<=move2<=len(players[player].cards):
+					if players[player].cards[move2].rank == rankp or players[player].cards[move2].color == colorp:
+						playedcard = players[player].cards[move2]
+						discard.addtotop(players[player].deal(move1))
+						break
+				elif move2 == 10:
+					break
+			break
+	if playedcard == 0:
+		return 1
+	elif playedcard.rank <= 9:
+		return 1
+	elif playedcard.rank == 10:
+		players[player+(1*direction)].addcard(drawpile.deal(0))
+		players[player+(1*direction)].addcard(drawpile.deal(0))
+		return 2
+	elif playedcard.rank == 11:
+		for i in range(4):
+			players[player+(1*direction)].addcard(drawpile.deal(0))
+			choicecolor = input("Choice color Blue(0), Red(1), Green(2), Yellow(3)")
+			discard.cards[0] = Card(choicecolor, discard.cards[0].rank)
+		return 2
+	elif playedcard.rank == 12:
+		return 2
+	elif playedcard.rank == 13:
+		return -1
+	elif playedcard.rank == 14:
+		choicecolor = input("Choice color Blue(0), Red(1), Green(2), Yellow(3)")
+		discard.cards[0] = Card(choicecolor, discard.cards[0].rank)
+		return 1
+  
+
+print("________________________________")
+setup()
+startgame()
+turner = 0 #which players turn is it?
+direction = 1
+while True:
+	value = turn(turner, direction)
+	if value == -1:
+		direction = (-1)*direction
+		value = 1
+	turner = (turner + (value * direction))%4
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

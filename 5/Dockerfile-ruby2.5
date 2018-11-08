@@ -1,0 +1,24 @@
+FROM centos:7
+
+WORKDIR /dashing_hkdl_version
+
+ENV PATH=$PATH:/usr/local/rvm/bin/:/usr/local/rvm/rubies/ruby-2.5.1/bin/
+
+RUN yum -y install epel-release  which gcc-c++ patch readline readline-devel zlib zlib-devel \
+   libyaml-devel libffi-devel openssl-devel make \
+   bzip2 autoconf automake libtool bison iconv-devel sqlite-devel
+
+RUN curl -sSL https://rvm.io/mpapis.asc | gpg --import - && \
+    curl -L get.rvm.io | bash -s stable && \
+    source /etc/profile.d/rvm.sh && \
+    rvm reload
+RUN rvm requirements run && \
+    rvm install 2.5 && \
+    rvm use 2.5 --default
+RUN yum install -y nodejs scl-utils scl-utils-build openssl-devel gcc gcc-c++
+RUN gem install dashing execjs
+
+ADD . /dashing_hkdl_version
+RUN bundle update && yum clean all
+
+EXPOSE 3030

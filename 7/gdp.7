@@ -1,0 +1,508 @@
+.Dd August 7, 2015
+.Dt GDP 7
+.Os Swwarm-GDP
+.Sh NAME
+.Nm GDP
+.Nd the Global Data Plane
+.Sh DESCRIPTION
+The Global Data Plane consists of two major components:
+the routing layer transfers data using internal, flat namespace addresses,
+and the storage layer manages data modeled on
+append-only, immutable, record-based logs.
+
+.Sh ADMINISTRATIVE PARAMETERS
+There are several administrative parameters that can be used to tune
+various parts of the GDP and associated support code.
+Most of these should not need to be modified.
+.Pp
+Only parameters applying to multiple programs are documented here.
+.Ss Syntax and Location
+Administrative parameters are located in files located by a search path
+that can be set using the
+.Ev PARAM_PATH
+environment variable, giving a colon-separated list of directories
+in which to search for configuration files.
+This defaults to
+.Bd -literal -offset indent
+\&.ep_adm_params
+~/.ep_adm_params
+/usr/local/etc/ep_adm_params
+/etc/ep_adm_params
+.Ed
+.Pp
+When a GDP program starts up it searches for
+files named
+.Pa default ,
+.Pa gdp ,
+and the name of the program itself.
+The first file of a given name that is found in the search path is read,
+and all the different names are read,
+so at most one file named
+.Pa default
+will be read, followed by at most file named
+.Pa gdp ,
+and so forth.
+When parameters are found in more than one of these configuration files,
+the last definition wins.
+.Pp
+Each file is a sequence of definitions, one per line, in the form
+.Va name
+.Li =
+.Ar value .
+Blank lines and lines beginning with a hash mark
+.Sq ( # )
+are ignored.
+.Ss Generic Support Library Parameters
+The GDP code uses libep, a general-purpose support library
+that is not specifically associated with the GDP.
+.Bl -tag
+.
+.It libep.assert.maxfailures
+If at least this number of assertion failures occur,
+the process will abort,
+even if the assertion has a recovery action.
+If zero, non-fatal assertions will never abort.
+If one, all assertions are fatal.
+Defaults to 100.
+.
+.It libep.assert.resetinterval
+The assertion count is set to zero after this time interval (in milliseconds).
+Defaults to 2000 (two seconds).
+.
+.It libep.crypto.dev
+If set, try to use the hardware crypto acceleration provided by
+.Pa /dev/crypto .
+Defaults to
+.Li true .
+See
+.Xr crypto 4
+for more information.
+.
+.It libep.dbg.file
+Where to write debugging output.
+Values may be
+.Qq stderr ,
+.Qq stdout ,
+or a writable file.
+Defaults to
+.Qq stderr .
+.
+.It libep.log.facility
+The
+.Xr syslog 3
+facility to which to write log messages.
+This is only consulted if a message is logged before the library
+has initialized.
+By default no logging is done.
+.It libep.thr.mutex.type
+The type of mutex to use for thread synchronization.
+May be
+.Li default ,
+.Li normal ,
+.Li errorcheck ,
+or
+.Li recursive .
+Generally only used for debugging.
+Defaults to
+.Qq default .
+.
+.It libep.thr.pool.max_workers
+.ns
+.
+.It libep.thr.pool.min_workers
+When a thread pool is created, the application can specify
+the minimum and maximum number of threads in the pool.
+The minimum number of threads are created when the pool is initialized.
+If more work comes in than there are available worker threads,
+the pool may be expanded up to the maximum.
+If the application doesn't choose these values,
+these parameters come into play.
+They default to one initial thread
+and up two twice the number of CPU cores that are available.
+.
+.It libep.time.accuracy
+In the libep world,
+times are allowed to include an estimate of accuracy.
+For example, systems with a high quality GPS clock
+might have an accuracy under a microsecond,
+while systems with a sloppy clock and no clock synchronization
+might have an accuracy of multiple minutes.
+If this parameter is set
+it is used as the default accuracy;
+if not set the accuracy is set to 0.0 which means
+.Qq unknown
+(not
+.Qq perfect ) .
+This is a floating point value, so decimal points and exponents are allowed.
+The units are seconds.
+.El
+.Ss Parameters Applying to All GDP Programs
+When the GDP library is initialized several parameters come into play.
+These apply to all programs using the GDP library.
+.Bl -tag
+.
+.It swarm.gdp.cache.fd.headroom
+When aging out the log cache,
+this is the number of file descriptors that must be available
+(i.e., not open)
+after a pass through the cache.
+If fewer file descriptors are available,
+the maximum age of a cache entry is reduced by 25%
+and the cache is swept again.
+For example,
+if the maximum cache age is five minutes (300 seconds),
+but after clearing the cache there are still fewer than
+headroom
+available file descriptors available,
+the cache is swept again with a 3.75 minute (225 seconds) maximum age.
+The default is half the per-process maximum number of open files.
+.
+.It swarm.gdp.cache.reclaim.maxgcls
+Limit the number of GCLs to be examined during a reclaim operation.
+This is intended for debugging (to detect loops in the usage time list).
+If the number of GCLs in the cache exceed this number
+an assertion failure will be thrown.
+Defaults to
+.Li 100000 .
+.
+.It swarm.gdp.catch.sigint
+Arranges to catch the
+.Li SIGINT
+(Keyboard Interrupt)
+signal and exit cleanly.
+Defaults to
+.Li true .
+You might want to set this to
+.Li false
+in some debugging contexts.
+.
+.It swarm.gdp.catch.sigterm
+Arranges to catch the
+.Li SIGTERM
+(Soft Termination)
+signal and exit cleanly.
+Defaults to
+.Li true .
+You might want to set this to
+.Li false
+in some debugging contexts.
+.
+.It swarm.gdp.command.runinthread
+Run command processing (read, append, etc.) in a thread.
+Mostly relevant to
+gdplogd .
+Defaults to
+.Li true .
+.
+.It swarm.gdp.create.service
+The name of the creation service to use
+for creating a new GDP Object.
+Defaults to
+.Dq edu.berkeley.eecs.creation.service
+unless overridden by setting the
+.Dv GDP_DEFAULT_CREATION_SERVICE
+compile-time macro to a local value when compiling the code.
+.
+.It swarm.gdp.crypto.dsa.keylen
+When creating a new key of type DSA,
+the default number of bits to use.
+Defaults to 2048.
+.
+.It swarm.gdp.crypto.ec.curve
+When creating a new key of type EC (Elliptic Curve),
+the name of the curve to use.
+Defaults to
+.Qq sect283r1 .
+.
+.It swarm.gdp.crypto.hash.alg
+When creating a new log,
+use this as the hash (message digest) algorithm.
+Defaults to
+.Qq sha256 .
+.
+.It swarm.gdp.crypto.key.dir
+When creating a new secret key,
+write it to this directory.
+Defaults to
+.Qq KEYS .
+.
+.It swarm.gdp.crypto.key.exclusive
+If set, create secret key files using exclusive mode,
+i.e., refuse to overwrite existing files.
+Defaults to
+.Li true .
+.
+.It swarm.gdp.crypto.key.mode
+The file mode to use when creating a secret key file.
+Defaults to
+.Li 0400 .
+.
+.It swarm.gdp.crypto.key.path
+When reading an existing secret key,
+This is the path used to search for it.
+Defaults to
+.Bd -literal -offset indent
+\&.
+KEYS
+~/.swarm/gdp/keys
+/usr/local/etc/swarm/gdp/keys
+/etc/swarm/gdp/keys
+.Ed
+.
+.It swarm.gdp.crypto.keyenc.alg
+When creating a secret key,
+encrypt it using this (symmetric) algorithm before writing it to a disk file.
+Defaults to
+.Qq aes192 .
+.
+.It swarm.gdp.crypto.rsa.keyexp
+When creating an RSA key,
+use this as the key exponent.
+Defaults to 3.
+.
+.It swarm.gdp.crypto.rsa.keylen
+When creating an RSA key,
+make it this many bits long.
+Defaults to 2048.
+.
+.It swarm.gdp.crypto.sign.alg
+When creating a new log,
+use this as the signing algorithm.
+Defaults to
+.Qq ec .
+.
+.It swarm.gdp.debug.assert.allabort
+If set, assertions cause an immediate abort of the process.
+If not set, assertions may attempt a recovery action.
+Defaults to
+.Li false .
+.
+.It swarm.gdp.event.loopdelay
+If the internal event loop terminates,
+sleep this many microseconds before restarting the loop.
+This is to avoid allowing a software bug to chew up 100% of a CPU.
+Defaults to 1000 (one millisecond).
+.
+.It swarm.gdp.event.looptimeout
+How many seconds to allow an event loop to run before restarting it.
+This is only needed in some versions of the underlying event library.
+Defaults to 30.
+.
+.It swarm.gdp.ignore.sigpipe
+If set, the
+.Li SIGPIPE
+signal is ignored,
+which allows the application to reconnect to the router
+if it goes away during a write.
+Unfortunately this also applies to writes to other files,
+including
+.Va stdout ,
+which allows applications to fail silently
+unless the application checks the result of every write.
+Since almost no programs check to see if
+.Fn printf
+succeeds, this can result in programs seeming to hang
+if the consumer of a pipe goes away.
+Defaults to
+.Li false .
+.
+.It swarm.gdp.invoke.retries
+When a GDP client is trying to invoke a service
+(for example, accessing a log)
+it sends a message through the routing layer to the log or service
+it is trying to access.
+If a response is not received in a timely fashion,
+it will retry up to this many times.
+Defaults to 3.
+.
+.It swarm.gdp.invoke.timeout
+When a GDP client is trying to invoke a service
+(for example, accessing a log)
+it sends a message through the routing layer to the log or service
+it is trying to access.
+If it does not get a response in this many milliseconds
+it will retry.
+Defaults to 10000 (ten seconds).
+.
+.It swarm.gdp.namedb.database
+The name of the database holding the mappings
+from a human-oriented name to an internal GDPname.
+Defaults to
+.Li gdp_hongd
+(human-oriented to GDPname directory).
+.
+.It swarm.gdp.namedb.host
+The DNS name of the host on which the database resides.
+Currently no default; this must be set.
+.
+.It swarm.gdp.namedb.passwd
+The password for the database user.
+Defaults to the empty string,
+as appropriate for anonymous users.
+.
+.It swarm.gdp.namedb.table
+The name of the table with the mappings.
+Defaults to
+.Li human_to_gdp .
+.
+.It swarm.gdp.namedb.user
+The name of the database user to do the update.
+This user must have SELECT permission on the database
+to do a name lookup
+or INSERT permission
+to add a new name.
+Defaults to
+.Li anonymous .
+.
+.It swarm.gdp.reconnect.delay
+If a GDP application (either client or server) loses contact with
+the routing layer, it will sleep this number of milliseconds
+before it tries to reconnect.
+This is to keep from flooding routers that are trying to reboot.
+Defaults to 1000 (one second).
+.
+.It swarm.gdp.response.runinthread
+Run response processing (2xx, 4xx, etc) in a thread.
+Defaults to
+.Li false .
+Caveat Emptor: This is untested.
+.
+.It swarm.gdp.routers
+This is semicolon-delimited list of IP names or addresses
+to search to find a GDP router.
+Each entry can also take a port number preceeded by a colon.
+This list is always searched from first to last.
+For no particularly good reason, defaults to
+.Qq 127.0.0.1:8007 .
+.It swarm.gdp.runasuser
+If the GDP program is invoked as root,
+change to this user id.
+If that user id is unknown, switch to
+.Li 1:1
+(generally
+.Li daemon
+on most systems).
+If the parameter is not specified at all no special processing takes place.
+Can be overridden on a per-program basis.
+.
+.It swarm.gdp.subscr.refresh
+How often open subscriptions should be renewed (in seconds).
+Subscriptions that are not renewed will eventually expire.
+Defaults to one third of
+.Va swarm.gdp.subscr.timeout .
+Note that the
+.Xr gdplogd 8
+hosting the log decides how long a subscription lease will last,
+so changing this may result in mysterious failures.
+Note that this interacts with
+.Va swarm.gdp.subscr.timeout
+(see below).
+.
+.It swarm.gdp.subscr.timeout
+How old a subscription can get before it is expired.
+This is used by
+.Xr gdplogd 8 .
+If this is less than
+.Va swarm.gdp.subscr.timeout
+then subscriptions will expire before they have an opportunity
+to be refreshed.
+This should generally be at least three times the refresh interval.
+Note that the timeout is enforced on the log server,
+which may use different values for these parameters,
+so changes to a client system should be coordinated with server systems.
+Defaults to 180 (three minutes).
+.
+.It swarm.gdp.syslog.facility
+The
+.Xr syslogd 8
+facility to which to send log messages.
+Defaults to
+.Li local4 .
+.It swarm.gdp.tcp.nodelay
+If set, the GDP attempts to set the
+.Li TCP_NODELAY
+flag on the connection to the routing layer.
+This disables the Nagle algorithm,
+and can improve performance if you are not doing big transfers.
+Defaults to
+.Li false .
+.It swarm.gdp.zeroconf.domain
+The domain used when doing Zeroconf searches.
+Defaults to
+.Li local .
+.It swarm.gdp.zeroconf.enable
+Enable use of the Zeroconf protocol.
+Defaults to
+.Li true .
+.It swarm.gdp.zeroconf.proto
+The protocol used when doing Zeroconf searches.
+Defaults to
+.Li _gdp._tcp .
+.El
+.Ss Parameters Settable on a Per-Application Basis
+These parameters can be tuned for each application.
+In all cases,
+.Ar progname
+is replaced by the name of the currently executing program
+as determined by how it was invoked on the command line.
+.Bl -tag
+.Sm off
+.It swarm. Ar progname No .gdpname
+.Sm on
+Forces the program to take on a 256-bit GDP address
+represented by it's argument.
+Should only be used by daemons, and then only rarely.
+.Sm off
+.It swarm. Ar progname No .syslog.facility
+.Sm on
+The
+.Xr syslogd(8)
+facility to which to send log messages generated by this program.
+Overrides
+.Va swarm.gdp.syslog.facility .
+For example, if a configuration file reads:
+.Bd -literal -offset indent
+swarm.myapp.syslog.facility=local1
+swarm.gdp.syslog.facility=local2
+.Ed
+.Pp
+then the program named
+.Qq myapp
+will log to facility
+.Li local1 ;
+all other programs will log to facility
+.Li local2 .
+.Sm off
+.It swarm. Ar progname No .runasuser
+.Sm on
+If the GDP program is invoked as root,
+change to this user id.
+Overrides
+.Va swarm.gdp.runasuser .
+.El
+.
+.Sh ENVIRONMENT VARIABLES
+.Bl -tag
+.
+.It GDP_NAME_ROOT
+If sent, the value of this environment variable
+is prepended to names that do not have any dots in them.
+For example if
+.Ev GDP_NAME_ROOT =
+com.example, a lookup of
+.Li foo
+would actually look up
+.Li com.example.foo .
+This can be used to provide simplistic name spaces.
+.
+.El
+.
+.Sh SEE ALSO
+.Xr gdplogd 8
+.
+.Sh BUGS
+Routers should be discovered rather than configured in.
+.Pp
+Subscription lease timeouts should be per-subscription
+and communicated between the application and
+.Xr gdplogd 8 .

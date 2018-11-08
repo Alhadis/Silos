@@ -1,0 +1,151 @@
+.\" Macros
+.ds PX \s-1POSIX\s+1
+.de EXAMPLE .\" Format de los ejemplos
+.RS 10
+.BR "\\$1"
+.RE
+..
+
+.TH POP3FILTER 0.0.0 "14 de Noviembre 2017"
+.LO 8
+.SH NAME
+pop3filter \- proxy POP3 que permite transformar los mensajes entregados
+
+.SH SINOPSIS
+.HP 10
+.B pop3filter
+[ POSIX style options ]
+.IR servidor-origen
+
+.SH ARGUMENTOS
+.TP
+.IR servidor-origen
+Dirección del servidor origen POP3. Puede ser una dirección IPV6 (por ejemplo
+\fI::1\fR), una dirección IPV4 (por ejemplo \fI192.168.1.5\fR) o un nombre 
+(por ejemplo \fIfoo.example.org\fR).
+
+
+.SH OPCIONES
+
+.\".IP "\fB\-d\fB"
+.\"Establece que debe ejecutar con la configuración predeterminada.
+.\".IP
+.\"Aquellos servidores donde la configuración sea persistente (el enunciado
+.\"no lo requiere) presentan un desafío a la hora de realizar pruebas ya que
+.\"se debe conocer la configuración actual.
+.\".IP
+.\"En esos casos esta opción olvida toda configuración previa y establece
+.\"la configuración predeterminada.
+.\".IP
+.\"La configuración predeterminada consiste en tener apagada las transformaciones.
+
+.IP "\fB-e\fR \fIarchivo-de-error\fR"
+Especifica el archivo donde se redirecciona \fBstderr\fR de las ejecuciones
+de los filtros. Por defecto el archivo es \fI/dev/null\fR.
+
+.IP "\fB-h\fR"
+Imprime la ayuda y termina.
+
+.IP "\fB\-l\fB \fIdirección-pop3\fR"
+Establece la dirección donde servirá el proxy.
+Por defecto escucha en todas las interfaces. 
+
+.IP "\fB\-L\fB \fIdirección-de-management\fR"
+Establece la dirección donde servirá el servicio de
+management. Por defecto escucha únicamente en loopback.
+
+.IP "\fB-m\fB \fImensaje-de-reemplazo\fR"
+Mensaje testigo dejado cuando una parte es reemplazada por el filtro
+(opción -M).
+Utilizar -m múltiples veces provocará que los textos sean concatenados
+en diferentes párrafos.
+
+.IP
+Por defecto el mensaje es \fIParte reemplazada.\fR. La primera utilización
+de la opción -m pisa este mensaje y la segunda arma un segundo párrafo.
+
+.IP "\fB-M\fB \fImedia-types-censurables\fR"
+Lista de media types censurados. La sintaxis de la lista sigue las reglas
+del header Accept de HTTP (sección 5.3.2 del RFC7231
+<\m[blue]\fB\%https://tools.ietf.org/html/rfc7231#section-5.3.2\fR\m[]\&>).
+Por defecto la lista se encuentra vacía.
+
+.IP
+Por ejemplo el valor \fItext/plain,image/*\fR censurará todas las partes
+declaradas como \fItext/plain\fR o de tipo imagen como ser \fIimage/png\fR.
+
+.IP "\fB-o\fR \fIpuerto-de-management\fR"
+Puerto STCP donde se encuentra el servidor de management.
+Por defecto el valor es \fI9090\fR.
+
+
+.IP "\fB\-p\fB \fIpuerto-local\fR"
+Puerto TCP donde escuchará por conexiones entrantes POP3.
+Por defecto el valor es \fI1110\fR.
+
+.IP "\fB\-P\fB \fIpuerto-origen\fR"
+Puerto TCP donde se encuentra el servidor POP3 en el servidor origen.
+Por defecto el valor es \fI110\fR.
+
+.IP "\fB\-t\fB \fIcmd\fR"
+Comando utilizado para las transformaciones externas.
+Compatible con \fBsystem(3)\fR.
+La sección \fBFILTROS\fR describe como es la interacción entre 
+pop3filter y el comando filtro.
+Por defecto no se aplica ninguna transformación.
+
+.IP "\fB\-v\fB"
+Imprime información sobre la versión versión y termina.
+
+.SH FILTROS
+.PP
+Por cada mensaje que se obtiene del origin server, se lanza un nuevo proceso
+que ejecuta el comando externo.
+Si el intento de ejecutar el comando externo falla se debe reportar el error
+al administrador por los logs, y copiar la entrada en la salida.
+
+El nuevo proceso recibe por entrada estándar el contenido del correo, y 
+retorna por la salida estándar el correo procesado.
+
+Los programas que realizan las transformaciones externas
+tienen a su disposición las siguientes variables de entornos:
+.TP
+.BR FILTER_MEDIAS
+Lista de media types (Opción -M).
+
+.TP
+.BR FILTER_MSG
+Mensaje de reemplazo (Opción -m).
+
+.TP
+.BR POP3FILTER_VERSION
+Versión de \fBpop3filter\fR. Por ejemplo: \fI0.0.0\fR.
+
+.TP
+.BR POP3_USERNAME
+El nombre del usuario logueado si es que se ha utilizado el mecanismo 
+\fBUSER\fR en la autenticación.
+Por ejemplo \fIbob\fR.
+
+.TP
+.BR POP3_SERVER
+Dirección del servidor origen POP3. Es el mismo valor pasado en los argumentos
+de línea de comandos. Por ejemplo: \fIpop3.example.org\fR.
+
+.SH EJEMPLOS
+
+.IP \(bu 4
+Se desea proxear sin ninguna transformación al servidor ubicado en
+\fIpop3.example.org\fR en el puerto estándar:
+.EXAMPLE "pop3filter pop3.example.org"
+
+.IP \(bu
+En Linux es posible redirigir el tráfico al proxy de forma transparente
+con una regla que implemente destination NAT:
+.EXAMPLE "iptables \-t nat \-A PREROUTING -i eth0 \-p tcp \-d \
+pop3.example.org --dport 110 -j REDIRECT --to 1110
+
+.IP \(bu
+Quitar todas las que comienzan con el texto \fIDate\fR ya sea en los headers como en el body:
+.EXAMPLE "pop3filter -t 'grep -i -v ^Date: ' pop3.example.org"
+

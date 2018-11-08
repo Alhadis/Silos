@@ -1,0 +1,656 @@
+.Dd November 05, 2018
+.Dt PERPD 8
+.Os
+.Sh NAME
+.Nm perpd
+.Nd persistent process scanner/supervisor/controller
+.Sh SYNOPSIS
+.Nm
+.Op Fl hV
+.Op Fl a Ar secs
+.Op Fl g Ar gid
+.Op Ar basedir
+.Sh DESCRIPTION
+.Nm
+scans a directory to start and monitor a collection of services.
+It is the principal daemon of an active perp installation.
+.Pp
+.Nm
+operates on a base directory containing a set of
+.Xr perpetrate 5
+service definitions.
+The base directory may be given by the
+.Ar basedir
+argument on the command line.
+If no
+.Ar basedir
+argument is given,
+.Nm
+will look for a value associated with the environmental variable
+.Ev PERP_BASE .
+If neither of these is defined,
+.Nm
+will operate on a compiled-in default directory,
+normally
+.Pa /etc/perp .
+.Pp
+Service definitions are installed,
+configured and activated as subdirectories of the base directory.
+As
+.Nm
+sequentially scans the base directory,
+it looks for subdirectory names not beginning with
+.Sq \&. .
+If
+.Nm
+then finds the
+.Sq sticky
+bit set on the subdirectory,
+it considers the service definition
+.Dq active
+and
+attempts to start the service.
+.Pp
+First
+.Nm
+inspects the service subdirectory.
+If the optional file named
+.Pa rc.log
+is present and executable,
+.Nm
+spawns a child process to run it,
+setting up a pipe to link its stdin to the stdout
+of the main service.
+To start the logging process,
+.Nm
+invokes
+.Pa rc.log
+as follows:
+.Pp
+.Dl Pa ./rc.log Sy start Ar svname
+.Pp
+The first argument is the literal string
+.Dq start ,
+with the
+.Ar svname
+argument set to the basename of the subdirectory.
+.Pp
+After starting the optional logger,
+.Nm
+proceeds to spawn a child process to run the required file named
+.Pa rc.main .
+If a logging process has been defined as described above,
+.Nm
+will also connect the stdout of the main service to the stdin of the logger.
+.Pp
+To start the main service,
+.Nm
+invokes
+.Pa rc.main
+as follows:
+.PP
+.Dl Pa ./rc.main Sy start Ar svname
+.Pp
+The conventions and arguments for starting
+.Pa rc.main
+are the same as those described for
+.Pa rc.log
+above.
+.Pp
+.Nm
+runs each
+child process for
+.Pa rc.main
+and
+.Pa rc.log
+in a new session and separate process group.
+The current working directory of the child process is
+set to the service subdirectory.
+The environment for each process is defined with the variable
+.Ev PERP_BASE
+set to the absolute path of the
+.Nm
+base directory as described above.
+.Pp
+The files
+.Pa rc.main
+and
+.Pa rc.log
+are known as
+.Dq runscripts .
+The result of running
+.Dq start
+on a runscript
+should normally be a persistent process,
+some long\-running program designed to start at system boot
+and continue running until system shutdown.
+Runscript conventions and examples may be found in the
+.Xr perpetrate 5
+manual.
+.Pp
+.Nm
+monitors its
+.Dq start
+processes to make sure they continue running.
+If any active service process terminates,
+.Nm
+is triggered to reset and restart the service.
+.Pp
+To reset a process that has terminated from a
+.Dq start,
+.Nm
+will invoke the associated runscript again in either one of two forms,
+depending on whether the process exited normally,
+or was killed by a signal:
+.Pp
+.Dl Pa ./rc.main Sy reset Ar svname Sy exit Ar exitcode
+or
+.Dl Pa ./rc.main Sy reset Ar svname Sy signal Ar signum signame
+.Pp
+The first argument in both cases is the literal string
+.Dq reset .
+If the service exited normally,
+this is followed by the literal string
+.Dq exit
+and a string representation
+of the numeric exit code returned by the process.
+If the service was terminated by a signal,
+the
+.Dq reset
+is followed by the literal string
+.Dq signal ,
+a string representation of the numeric signal number that killed the process,
+and the symbolic name for the signal, such as SIGTERM.
+.Pp
+A runscript process running
+.Dq reset
+will normally run to completion
+and return/exit promptly.
+After the resetting process terminates,
+.Nm
+will then attempt to restart the service,
+again invoking its runscript with the same
+.Dq start
+and
+.Ar svname
+arguments as described above.
+.Pp
+To avoid chronic service failures from looping too quickly,
+.Nm
+will delay at least one second beyond the previous start time
+before trying to restart a service.
+.Pp
+.Nm
+may be triggered to immediately rescan the base directory with a
+SIGHUP signal or the
+.Xr perphup 8
+command.
+.Nm
+may also be configured at startup to automatically rescan the
+base directory at fixed intervals given by the
+.Fl a
+option.
+For any new active service definitions found while scanning,
+.Nm
+will attempt to start the service as described above.
+For any existing services whose subdirectory has been removed
+or is no longer sticky,
+.Nm
+will bring down the service
+.Po
+terminating both the main and log processes,
+and then running
+.Dq reset
+on each
+.Pc ,
+and remove the service from further active monitoring.
+.Pp
+While
+.Nm
+monitors its services,
+it also listens on a control interface for administrative commands
+and status requests from perp client applications such as
+.Xr perpctl 8 ,
+.Xr perpls 8 ,
+and
+.Xr perpstat 8 .
+.Pp
+.Nm
+will exit failure immediately after startup under certain conditions:
+being unable to find or change into the base directory;
+finding another instance of
+.Nm
+running on the same base directory;
+or failure during initialization of its control files.
+Otherwise,
+.Nm
+is designed to start at system boot and continue running until system shutdown.
+.Pp
+Normally a system is configured to start
+.Nm
+as part of its
+.Xr init 8
+sequence during system startup.
+The
+perp
+distribution
+includes a
+.Xr perpboot 8
+utility,
+specifically designed to provide a reliable method for starting
+.Nm
+under many different
+.Xr init 8
+environments.
+.Ss Startup Modification
+The service startup procedures
+described above may be modified by installing certain specific
+.Dq flag
+files
+into the service directory:
+.Pa flag.down
+and
+.Pa flag.once .
+.Pp
+If a file named
+.Pa flag.down
+is present,
+.Nm
+will not attempt to start the
+.Pa rc.main
+control executable immediately at startup.
+In such cases,
+the
+.Xr perpctl 8
+utility may be used to tell
+.Xr perpetrate 8
+to start the service at a later time.
+.Pp
+If a file named
+.Pa flag.once
+is present,
+.Nm
+will attempt to start the
+.Pa rc.main
+control executable immediately at startup, as usual,
+and then reset it if it terminates.
+But when the reset completes,
+.Nm
+will not restart the main service.
+Again,
+the
+.Xr perpctl 8
+utility may be used to tell
+.Nm
+to restart the service if necessary,
+or to
+.Dq unflag
+its
+.Pa once
+setting.
+.Pp
+If both files
+.Pa flag.down
+and
+.Pa flag.once
+are present when
+.Nm
+is starting the service for the first time,
+the behavior described for
+.Pa flag.down
+takes precedence.
+.Pp
+The existence of either of the flag files
+.Pa flag.down
+and
+.Pa flag.once
+only affects the behavior of the service at activation.
+If they are installed in the service directory after
+.Nm
+has already started and is running the service,
+they will have no effect until the service is deactivated and then reactivated.
+.Pp
+The presence of either of these flag files also has no effect
+on the optional logging service.
+If a file named
+.Pa rc.log
+is present and executable at startup,
+.Nm
+will attempt to start and monitor a logger for the service,
+irrespective of the presence of any of the flag files described above.
+.Pp
+These flag files are usually of zero length and may be installed with the
+.Xr touch 1
+command.
+.Ss Error Logging
+.Nm
+emits diagnostics to stderr.
+To capture and log such messages,
+.Nm
+will usually be started with an associated logger;
+see
+.Xr perpboot 8
+for a utility designed to start
+.Nm
+with an associated logger.
+In such an installation,
+the stderr of
+.Nm
+will be redirected to stdout,
+and, in turn, its stdout will be piped to the stdin of the logger.
+.Pp
+Each activated service starts with its stdout and stderr file descriptors
+inherited from
+.Nm .
+If these are not subsequently redirected elsewhere,
+any diagnostics emitted by a service will also appear in the
+.Nm
+logger.
+.Ss Signals
+.Bl -tag -width SIGTERM
+.It SIGHUP
+Triggers
+.Nm
+to immediately rescan the base directory.
+.It SIGTERM
+Triggers
+.Nm
+to begin a shutdown sequence on
+each service process it is currently monitoring.
+After all service
+processes have terminated from their
+.Dq start
+and final
+.Dq reset ,
+.Nm
+itself exits 0.
+.El
+.Ss Limits
+Each
+.Nm
+instance can monitor a compile-time maximum number
+of active services,
+normally 200.
+The runtime environment of the
+.Nm
+process should be configured to permit sufficient child processes
+.Pq up to 2 per service ,
+and open file descriptors
+.Po
+up to 3 per service, plus 7 requisite,
+plus a number for concurrent client connections, usually 20
+.Pc
+to handle the actual number of services to be installed and activated.
+See
+.Xr getrlimit 2 ,
+.Xr runlimit 8
+and the references to RLIMIT_NPROC and RLIMIT_NOFILE
+for more information.
+.Sh OPTIONS
+.Bl -tag -width aassecs
+.It Fl a Ar secs
+Autoscan.
+Normally
+.Nm
+runs in a quiet
+.Xr poll 2
+state until some external signal or event causes it to rescan the base directory.
+The
+.Fl a
+option may be used to set an interval
+that causes
+.Nm
+to automatically rescan the base directory every
+.Ar secs
+seconds.
+For example,
+a
+.Ar secs
+argument of 5 will cause
+.Nm
+to automatically rescan the base directory at least once every 5 seconds,
+imitating the behavior of daemontools
+.Xr svscan 8 .
+An argument of 0 disables autoscanning.
+.It Fl g Ar gid
+Socket gid.
+Normally the control socket is created with the same ownership
+as the
+.Nm
+process and with an explicit access mode 0700.
+The
+.Fl g
+option sets the group ownership on the control socket according to the
+.Ar gid
+argument and changes the access mode on the socket to 0770.
+The
+.Ar gid
+argument may be given as either a numeric group id
+or as a group name.
+Note that the designated group will also require
+access to the
+.Pa .control
+directory
+.Pq or related symlink
+in which the control socket is installed.
+.It Fl h
+Help.
+Display a brief help message on stderr and exit.
+.It Fl V
+Version.
+Display the version string on stderr and exit.
+.El
+.Sh ENVIRONMENT
+.Bl -tag -width PERP_BASE
+.It Ev PERP_BASE
+The base scanning directory for the
+.Nm
+process.
+If no
+.Ar basedir
+argument is given on the command-line at startup,
+.Nm
+checks for a value defined with
+.Ev PERP_BASE .
+If this variable is not defined or empty,
+.Nm
+uses a compiled-in default,
+usually
+.Pa /etc/perp .
+Irrespective of how
+.Ar basedir
+is determined at startup,
+.Nm
+will use its value to define
+.Ev PERP_BASE
+within the environment of each
+service runscript it starts.
+If defined,
+.Ev PERP_BASE
+should be given as an absolute pathname.
+.It Ev PERP_SVPID
+The process ID of the active or terminated service.
+.Nm
+supplies the process ID of the service process in the value of the
+.Ev PERP_SVPID
+variable
+within the environment of both the
+.Dq start
+and
+.Dq reset
+invocations of the runscript.
+In the case of the
+.Dq start
+target,
+the value given in
+.Ev PERP_SVPID
+is the process ID of the script itself,
+and which normally becomes the pid of the active service,
+as when the script calls the
+.Pa exec
+command to run the service program.
+In the case of the
+.Dq reset
+target,
+the value given in
+.Ev PERP_SVPID
+is the process ID of the service
+that has just terminated.
+.It Ev PERP_SVSECS
+The uptime in seconds of the terminated service.
+.Nm
+supplies the total wallclock runtime of the process that has just terminated
+in the value of the
+.Ev PERP_SVSECS
+variable.
+This variable is defined only within the environment of the
+.Dq reset
+invocation of the runscript.
+.El
+.Sh FILES
+.Bl -tag -width /PERP_BASE/.control/perpd.sock -compact
+.It Pa /etc/perp
+The default base operating directory monitored by
+.Nm ,
+containing the set of service definition directories as described in
+.Xr perpetrate 5 .
+.It Pa / Ns Ev PERP_BASE Ns /.control
+.Nm
+maintains associated runtime files and IPC interfaces within a subdirectory named
+.Pa .control .
+Normally this will be configured as a symbolic link
+to a directory within the
+.Pa /var
+hierarchy before starting
+.Nm .
+For example, the symlink:
+.Pp
+.Dl Pa .control Ns \& -> Pa /var/run/perp
+.Pp
+will cause
+.Nm
+to maintain its runtime files under
+.Pa /var/run/perp .
+If
+.Nm
+finds that
+.Pa .control
+is a dangling symlink on startup,
+it will attempt to make the directory that
+.Pa .control
+points to.
+.It Pa / Ns Ev PERP_BASE Ns /.control/perpd.pid
+The lock file used by
+.Nm
+to constrain execution to a single instance on a base directory.
+This file also contains the pid of the active
+.Nm
+process.
+.It Pa / Ns Ev PERP_BASE Ns /.control/perpd.sock
+The domain socket used by
+.Nm
+to perform inter-process communications with perp client utilities
+such as
+.Xr perpctl 8
+and
+.Xr perpls 8 .
+.El
+.Sh EXAMPLES
+.Nm
+is designed to permit easy service activation/deactivation using the
+.Xr chmod 1
+utility.
+.Pp
+To activate a service within the
+.Nm
+base directory,
+set the sticky bit of the subdirectory containing the
+service definition:
+.Pp
+.Dl chmod +t myservice && perphup
+.Pp
+.Nm
+will notice the service definition is now active
+and will initiate the startup procedures for it.
+Alternatively, the
+.Xr A
+command to
+.Xr perpctl 8
+may be used instead to perform the equivalent activation:
+.Pp
+.Dl perpctl A myservice
+.Pp
+To deactivate a service, unset the sticky bit:
+.Pp
+.Dl chmod -t myservice && perphup
+.Pp
+.Nm
+will notice the service has now been deactivated and will
+initiate a shutdown sequence on it.
+The
+.Ar X
+command to
+.Xr perpctl 8
+may also be used to perform the equivalent deactivation:
+.Pp
+.Dl perpctl X myservice
+.Pp
+Note that there is generally no need to use the
+.Xr perpctl 8
+.Ar D
+command to bring down a service before deactivating it.
+Simply unsetting the sticky bit will bring the service down properly.
+.Pp
+On some platforms/terminals,
+colorized
+.Xr ls 1
+listings may be configured to display the
+.Sy sticky
+entries within a directory
+so they are readily visible.
+Othewise,
+request
+.Xr ls 1
+to display a long listing format that presents directory permissions in the first column:
+.Pp
+.Bd -literal -offset indent
+# ls -l
+drwxr-xr-x  goodbye
+drwxr-xr-t  hello
+.Ed
+.Pp
+In this truncated and contrived example,
+the service directory
+.Pa hello
+is active
+.Po
+has sticky bit set; see the
+.Sq t
+in its permission string
+.Pc ,
+and the service directory
+.Pa goodbye
+is not active
+.Pq sticky bit not set.
+.Pp
+The
+.Xr stat 1 ,
+.Xr perpstat 8 ,
+and
+.Xr perpls 8
+utilities may also be used to display the active services within a directory.
+.Sh SEE ALSO
+.Xr chmod 1 ,
+.Xr perp_intro 8 ,
+.Xr perp-setup 8 ,
+.Xr perpboot 8 ,
+.Xr perpctl 8 ,
+.Xr perpetrate 5 ,
+.Xr perphup 8 ,
+.Xr perpls 8 ,
+.Xr perpok 8 ,
+.Xr perpstat 8 ,
+.Xr sissylog 8 ,
+.Xr tinylog 8
+.Sh AUTHORS
+.Au Wayne Marshall

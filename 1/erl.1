@@ -1,0 +1,520 @@
+.TH erl 1 "erts  5.6.3" "Ericsson AB" "USER COMMANDS"
+.SH 名前
+erl \- Erlang エミュレータ
+.SH 説明
+.LP
+この \fIerl\fR プログラムは Erlang ランタイムシステムを開始します。正確な詳細は(例えば、\fIerl\fR がスクリプトかプログラムであるかや他のプログラムを呼び出すかどうかは)システム依存です。
+.LP
+恐らく Windows ユーザーは代わりにそれぞれのウィンドウとスクロールバーを持ちコマンドライン編集をサポートして実行される \fIwerl\fR プログラムを使用したがります。Windows 上の \fIerl\fR プログラムではシェルでのライン編集を提供しませんし、Windows 95 上ではスクロールしたテキストをスクロールバックする方法は有りません。\fIerl\fR プログラムはパイプライン使うか必要なら標準入力や照準出力をリダイレクトしなければなりません。
+.SH 使い方
+.LP
+.B
+erl <引数>
+.br
+.RS
+.LP
+Erlang ランタイムシステムを開始します\&.
+.LP
+この引数は \fIエミュレータフラグ\fR と \fIフラグ\fR と \fIプレーン引数\fR に分けられます:
+.RS 2
+.TP 2
+*
+\fI+\fR から始まる引数はエミュレータフラグとして解釈されます。
+.RS 2
+.LP
+
+.LP
+名前通り、エミュレータフラグはエミュレータの挙動をコントロールします。
+.RE
+.TP 2
+*
+\fI-\fR (ハイフン)から始まる引数は Erlang ランタイム部を通過すべきフラグとして解釈され、具体的には \fIinit\fR システムによって処理されます、see init(3)。
+.RS 2
+.LP
+
+.LP
+この init 処理では \fIinit flags\fR と呼ばれる幾つかのフラグをそれ自身で解釈します。これはまた残りのフラグを \fIuser flags\fR として格納します。これは後から \fIinit:get_argument/1\fR を呼ぶことによって取得することが出来ます。
+.LP
+
+.LP
+実際にはエミュレータフラグである "-" フラグが極少数存在する事に注意が必要です、以下の説明を見てください。
+.RE
+.TP 2
+*
+プレーン引数はどんな場合にも解釈されません。それらはまた\fIinit\fR 処理によって格納され、\fIinit:get_plain_arguments/0\fR が呼ばれる事による取得する事が出来ます。 プレーン引数は最初のフラグの後か \fI--\fR フラグの後に現れます。さらに \fI-extra\fR フラグによって後続の全てがプレーン引数になります。
+.RE
+.LP
+例:
+
+.nf
+% erl +W w -sname arnie +R 9 -s my_init -extra +bertie
+
+(arnie@host)1> init:get_argument(sname)\&.
+
+{ok,[["arnie"]]}
+(arnie@host)2> init:get_plain_arguments()\&.
+
+["+bertie"]
+.fi
+.LP
+この \fI+W w\fR と \fI+R 9\fR はエミュレータフラグです。\fI-s my_init\fR は初期化フラグで、\fIinit\fR により処理されます。\fI-sname arnie\fR はユーザーフラグです、\fIinit\fR により保存されます。それはカーネルに読み込まれ、Erlangランタイムシステムを分散させる要因となるでしょう。最後に、\fI-extra\fR(\fI+bertie\fR) 以降のすべてはプレーン引数とみなされます。
+
+.nf
+% erl -myflag 1
+
+1> init:get_argument(myflag).
+
+{ok,[["1"]]}
+2> init:get_plain_arguments().
+
+[]
+.fi
+.LP
+このユーザーフラグ \fI-myflag 1\fR は\fIinit\fR プロセスを通過し、保存されます。それはユーザーの定義したフラグで、おそらくはユーザーの定義したアプリケーションによって使用されます。
+
+.RE
+.SH フラグ
+.LP
+以下の一覧は初期化フラグ(init flag)に分類されます。特別にに指定しない限り、その他の全てのフラグは \fIinit:get_argument/1\fR を呼び出すことで取得する事が出来るユーザーフラグになります。このリストにユーザーフラグは含まれていないことに注意してください、それらはおそらく付加的なアプリケーション固有のフラグですので、アプリケーションに付随するドキュメントに記載されています。
+
+.RS 2
+.TP 4
+.B
+\fI--\fR(init flag):
+\fI--\fR 以降に続く全てのフラグ (\fI-flag\fR と \fI+flag\fR) はプレーン引数としてみなされ、\fIinit:get_plain_arguments/0\fR を使用して取得できます。
+
+.TP 4
+.B
+\fI-Application Par Val\fR:
+アプリケーション \fIApplication\fR の為の構成パラメータ \fIPar\fR に値の \fIVal\fR を設定します、app(4) and application(3) を参照してください。
+
+.TP 4
+.B
+\fI-args_file FileName\fR:
+.RS 4
+.LP
+コマンドライン引数はファイル \fIFileName\fR から読み込まれます。この引数はファイルを読み込み、コマンドラインの結果は \&'\fI-args_file FileName\fR\&' フラグを置き換えたものとなります。
+.LP
+
+.LP
+この\fIFileName\fR で指定するファイルはプレーンテキストである必要があり、コメントとコマンドライン引数を含むことができます。# の文字から始まり行末までがコメントです。バックスラッシュ(\e)は文字の引用に使用されます。\fIerl\fR で許可されている全てのコマンドが受け入れられます(\fI-args_file FileName\fR フラグも)。ただし、\fI-args_file\fR フラグの依存関係が巡回するケースに注意してください。
+.LP
+
+.LP
+この\fI-extra\fRフラグは特別に処理されます。そのスコープはファイルの終端で終了します。コマンドライン上の\fI-extra\fRフラグ以降の引数は、\fI-extra\fRセクションへ移動します。すなわち、\fI-extra\fRフラグからコマンドラインの終端までです。
+.RE
+.TP 4
+.B
+\fI-async_shell_start\fR:
+Erlangシェルの初期段階では起動手続きが完了するまでユーザーの入力を読み込みません(Erlang 5\&.4 以降)。このフラグは同期開始機能を無効化し、システムの空き時間を使用してシェルの開始を並列化します。
+.TP 4
+.B
+\fI-boot File\fR:
+ブートファイル名 \fIFile\& を指定します。これはシステムを開始するときに使用されます。 参照 init(3)。\fIFile\fR に絶対パスを指定した場合を除き、システムは \fIFile\&.boot\fR をカレントディレクトリと、\fI$ROOT/bin\fRディレクトリから探索します。
+.RS 4
+.LP
+
+.LP
+デフォルトは \fI$ROOT/bin/start\&.boot\fR です。
+.RE
+.TP 4
+.B
+\fI-boot_var Var Dir\fR:
+もしブートスクリプトに \fI$ROOT\fR 以外のパス変数 \fIVar\fR が含まれていれば、この変数は \fIDir\fRに展開されます。アプリケーションは \fI$ROOT/lib\fR とは別のディレクトリにインストールされたものを使用します。systools:make_script/1,2 を参照してください。
+.TP 4
+.B
+\fI-code_path_cache\fR:
+コードサーバーのコードパスキャッシュを有効にします。code(3)を参照してください。
+.TP 4
+.B
+\fI-compile Mod1 Mod2 \&.\&.\&.\fR:
+指定した終端までの複数のモジュールをコンパイルします(終了コードがゼロ以外だった場合、いくつかのファイルのコンパイルは成功していません)。暗黙的に \fI-noinput\fR\& が使用されます。このフラグは推奨されません - 代わりに erlc を使用してください。
+.TP 4
+.B
+\fI-config Config\fR:
+コンフィグレーションファイル名 \fIConfig\&.config\fR を指定します、これはアプリケーションを設定するために使用されます。 app(4) と application(3) を参照してください。
+.TP 4
+.B
+\fI-connect_all false\fR:
+
+.RS 4
+.LP
+If this flag is present, \fIglobal\fR will not maintain a fully connected network of distributed Erlang nodes, and then global name registration cannot be used\&. See global(3)\&.
+.RE
+.TP 4
+.B
+\fI-cookie Cookie\fR:
+Obsolete flag without any effect and common misspelling for \fI-setcookie\fR\&. Use \fI-setcookie\fR instead\&.
+.TP 4
+.B
+\fI-detached\fR:
+Starts the Erlang runtime system detached from the system console\&. Useful for running daemons and backgrounds processes\&.
+.TP 4
+.B
+\fI-emu_args\fR:
+Useful for debugging\&. Prints out the actual arguments sent to the emulator\&.
+.TP 4
+.B
+\fI-env Variable Value\fR:
+Sets the host OS environment variable \fIVariable\fR to the value \fIValue\fR for the Erlang runtime system\&. Example:
+.RS 4
+.LP
+
+
+.nf
+% erl -env DISPLAY gin:0
+
+.fi
+.LP
+
+.LP
+In this example, an Erlang runtime system is started with the \fIDISPLAY\fR environment variable set to \fIgin:0\fR\&.
+.RE
+.TP 4
+.B
+\fI-eval Expr\fR(init flag):
+Makes \fIinit\fR evaluate the expression \fIExpr\fR, see init(3)\&.
+.TP 4
+.B
+\fI-extra\fR(init flag):
+Everything following \fI-extra\fR is considered plain arguments and can be retrieved using \fIinit:get_plain_arguments/0\fR\&.
+.TP 4
+.B
+\fI-heart\fR:
+Starts heart beat monitoring of the Erlang runtime system\&. See heart(3)\&.
+.TP 4
+.B
+\fI-hidden\fR:
+Starts the Erlang runtime system as a hidden node, if it is run as a distributed node\&. Hidden nodes always establish hidden connections to all other nodes except for nodes in the same global group\&. Hidden connections are not published on neither of the connected nodes, i\&.e\&. neither of the connected nodes are part of the result from \fInodes/0\fR on the other node\&. See also hidden global groups, global_group(3)\&.
+.TP 4
+.B
+\fI-hosts Hosts\fR:
+Specifies the IP addresses for the hosts on which Erlang boot servers are running, see erl_boot_server(3)\&. This flag is mandatory if the \fI-loader inet\fR flag is present\&.
+.RS 4
+.LP
+
+.LP
+The IP addresses must be given in the standard form (four decimal numbers separated by periods, for example \fI"150\&.236\&.20\&.74"\fR\&. Hosts names are not acceptable, but a broadcast address (preferably limited to the local network) is\&.
+.RE
+.TP 4
+.B
+\fI-id Id\fR:
+Specifies the identity of the Erlang runtime system\&. If it is run as a distributed node, \fIId\fR must be identical to the name supplied together with the \fI-sname\fR or \fI-name\fR flag\&.
+.TP 4
+.B
+\fI-init_debug\fR:
+Makes \fIinit\fR write some debug information while interpreting the boot script\&.
+.TP 4
+.B
+\fI-instr\fR(emulator flag):
+ 
+.RS 4
+.LP
+Selects an instrumented Erlang runtime system (virtual machine) to run, instead of the ordinary one\&. When running an instrumented runtime system, some resource usage data can be obtained and analysed using the module \fIinstrument\fR\&. Functionally, it behaves exactly like an ordinary Erlang runtime system\&.
+.RE
+.TP 4
+.B
+\fI-loader Loader\fR:
+Specifies the method used by \fIerl_prim_loader\fR to load Erlang modules into the system\&. See erl_prim_loader(3)\&. Two \fILoader\fR methods are supported, \fIefile\fR and \fIinet\fR\&. \fIefile\fR means use the local file system, this is the default\&. \fIinet\fR means use a boot server on another machine, and the \fI-id\fR, \fI-hosts\fR and \fI-setcookie\fR flags must be specified as well\&. If \fILoader\fR is something else, the user supplied \fILoader\fR port program is started\&.
+.TP 4
+.B
+\fI-make\fR:
+Makes the Erlang runtime system invoke \fImake:all()\fR in the current working directory and then terminate\&. See make(3)\&. Implies \fI-noinput\fR\&.
+.TP 4
+.B
+\fI-man Module\fR:
+Displays the manual page for the Erlang module \fIModule\fR\&. Only supported on Unix\&.
+.TP 4
+.B
+\fI-mode interactive | embedded\fR:
+Indicates if the system should load code dynamically (\fIinteractive\fR), or if all code should be loaded during system initialization (\fIembedded\fR), see code(3)\&. Defaults to \fIinteractive\fR\&.
+.TP 4
+.B
+\fI-name Name\fR:
+Makes the Erlang runtime system into a distributed node\&. This flag invokes all network servers necessary for a node to become distributed\&. See net_kernel(3)\&. It is also ensured that \fIepmd\fR runs on the current host before Erlang is started\&. See epmd(1)\&.
+.RS 4
+.LP
+
+.LP
+The name of the node will be \fIName@Host\fR, where \fIHost\fR is the fully qualified host name of the current host\&. For short names, use the \fI-sname\fR flag instead\&.
+.RE
+.TP 4
+.B
+\fI-noinput\fR:
+Ensures that the Erlang runtime system never tries to read any input\&. Implies \fI-noshell\fR\&.
+.TP 4
+.B
+\fI-noshell\fR:
+Starts an Erlang runtime system with no shell\&. This flag makes it possible to have the Erlang runtime system as a component in a series of UNIX pipes\&.
+.TP 4
+.B
+\fI-nostick\fR:
+Disables the sticky directory facility of the Erlang code server, see code(3)\&.
+.TP 4
+.B
+\fI-oldshell\fR:
+Invokes the old Erlang shell from Erlang 3\&.3\&. The old shell can still be used\&.
+.TP 4
+.B
+\fI-pa Dir1 Dir2 \&.\&.\&.\fR:
+Adds the specified directories to the beginning of the code path, similar to \fIcode:add_pathsa/1\fR\&. See code(3)\&. As an alternative to \fI-pa\fR, if several directories are to be prepended to the code and the directories have a common parent directory, that parent directory could be specified in the \fIERL_LIBS\fR environment variable\&. See code(3)\&.
+.TP 4
+.B
+\fI-pz Dir1 Dir2 \&.\&.\&.\fR:
+Adds the specified directories to the end of the code path, similar to \fIcode:add_pathsz/1\fR\&. See code(3)\&.
+.TP 4
+.B
+\fI-remsh Node\fR:
+Starts Erlang with a remote shell connected to \fINode\fR\&.
+.TP 4
+.B
+\fI-rsh Program\fR:
+Specifies an alternative to \fIrsh\fR for starting a slave node on a remote host\&. See slave(3)\&.
+.TP 4
+.B
+\fI-run Mod [Func [Arg1, Arg2, \&.\&.\&.]]\fR(init flag):
+Makes \fIinit\fR call the specified function\&. \fIFunc\fR defaults to \fIstart\fR\&. If no arguments are provided, the function is assumed to be of arity 0\&. Otherwise it is assumed to be of arity 1, taking the list \fI[Arg1, Arg2, \&.\&.\&.]\fR as argument\&. All arguments are passed as strings\&. See init(3)\&.
+.TP 4
+.B
+\fI-s Mod [Func [Arg1, Arg2, \&.\&.\&.]]\fR(init flag):
+Makes \fIinit\fR call the specified function\&. \fIFunc\fR defaults to \fIstart\fR\&. If no arguments are provided, the function is assumed to be of arity 0\&. Otherwise it is assumed to be of arity 1, taking the list \fI[Arg1, Arg2, \&.\&.\&.]\fR as argument\&. All arguments are passed as atoms\&. See init(3)\&.
+.TP 4
+.B
+\fI-setcookie Cookie\fR:
+ノードのマジッククッキーを \fICookie\fR に設定します、erlang:set_cookie/2 を参照してください。
+.TP 4
+.B
+\fI-shutdown_time Time\fR:
+\fIinit\fR プロセスがシステムのシャットダウンを許可するまでの時間(ミリ秒)を指定します。\fITime\fR ミリ秒の時間を経過したら、既存のプロセスはすべて終了させられます。デフォルトでこの値は \fIinfinity\fR です。
+.TP 4
+.B
+\fI-sname Name\fR:
+Erlangランタイムシステムは分散ノードの中で作られます。\fI-name\fR とよく似ていますがノード名 \fIName@Host\fR のホスト名の部分を省略し、完全に修飾しません。
+.RS 4
+.LP
+
+.LP
+これは時々、DNS(Domain Name System)が動作していない場合で分散Erlangを実行する為の唯一の方法です。\fI-sname\fR フラグで実行したノードと \fI-name\fR フラグで実行したノードの間で通信を行うことは出来ませんが、ノード名は分散Erlangシステム内でユニークでなければなりません。
+
+.RE
+.TP 4
+.B
+\fI-smp [enable|auto|disable]\fR:
+
+.RS 4
+.LP
+\fI-smp enable\fR と \fI-smp\fR は SMPサポートを有効にして Erlangランタイムシステムを起動します。もしランタイムシステムがSMPをサポートしていない場合に、これは失敗するかもしれません。\fI-smp auto\fR は SMPサポートを有効であり一つ以上の論理プロセッサを検出出来た場合に SMPサポートを有効にして Erlangランタイムシステムを起動します。\fI-smp disable\fR は SMPサポートを無効にして Erlangランタイムシステムを起動します。デフォルトでは \fI-smp auto\fR が使用されますが、競合するパラメータ通過した場合には \fI-smp disable\fR が使用されます。現在 \fI-smp auto\fR と競合するパラメーターは \fI-hybrid\fR だけです。
+.LP
+
+.LP
+\fIノート\fR: SMPをサポートしたランタイムシステムは全てのプラットホームでサポートされていません。+Sフラグを参照してください。
+
+.RE
+.TP 4
+.B
+\fI-version\fR(エミュレーターフラグ):
+エミュレーター自身のバージョン番号を表示します。\fIerl +V\fR と同じです。
+.RE
+.SH エミュレーターフラグ
+.LP
+\fIerl\fR invokes the code for the Erlang emulator (virtual machine), which supports the following flags:
+.RS 2
+.TP 4
+.B
+\fI+a size\fR:
+ 
+.RS 4
+.LP
+Suggested stack size, in kilowords, for threads in the async-thread pool\&. Valid range is 16-8192 kilowords\&. The default suggested stack size is 16 kilowords, i\&.e, 64 kilobyte on 32-bit architectures\&. This small default size has been chosen since the amount of async-threads might be quite large\&. The default size is enough for drivers delivered with Erlang/OTP, but might not be sufficiently large for other dynamically linked in drivers that use the driver_async() functionality\&. Note that the value passed is only a suggestion, and it might even be ignored on some platforms\&.
+.RE
+.TP 4
+.B
+\fI+A size\fR:
+ 
+.RS 4
+.LP
+Sets the number of threads in async thread pool, valid range is 0-1024\&. Default is 0\&.
+.RE
+.TP 4
+.B
+\fI+B [c | d | i]\fR:
+The \fIc\fR option makes \fICtrl-C\fR interrupt the current shell instead of invoking the emulator break handler\&. The \fId\fR option (same as specifying \fI+B\fR without an extra option) disables the break handler\&. The \fIi\fR option makes the emulator ignore any break signal\&.
+.RS 4
+.LP
+
+.LP
+If the \fIc\fR option is used with \fIoldshell\fR on Unix, \fICtrl-C\fR will restart the shell process rather than interrupt it\&.
+.LP
+
+.LP
+Note that on Windows, this flag is only applicable for \fIwerl\fR, not \fIerl\fR (\fIoldshell\fR)\&. Note also that \fICtrl-Break\fR is used instead of \fICtrl-C\fR on Windows\&.
+.RE
+.TP 4
+.B
+\fI+c\fR:
+Disable compensation for sudden changes of system time\&.
+.RS 4
+.LP
+
+.LP
+Normally, \fIerlang:now/0\fR will not immediately reflect sudden changes in the system time, in order to keep timers (including \fIreceive-after\fR) working\&. Instead, the time maintained by \fIerlang:now/0\fR is slowly adjusted towards the new system time\&. (Slowly means in one percent adjustments; if the time is off by one minute, the time will be adjusted in 100 minutes\&.)
+.LP
+
+.LP
+When the \fI+c\fR option is given, this slow adjustment will not take place\&. Instead \fIerlang:now/0\fR will always reflect the current system time\&. Note that timers are based on \fIerlang:now/0\fR\&. If the system time jumps, timers then time out at the wrong time\&.
+.RE
+.TP 4
+.B
+\fI+h Size\fR:
+Sets the default heap size of processes to the size \fISize\fR\&.
+.TP 4
+.B
+\fI+K true | false\fR:
+Enables or disables the kernel poll functionality if the emulator supports it\&. Default is \fIfalse\fR (disabled)\&. If the emulator does not support kernel poll, and the \fI+K\fR flag is passed to the emulator, a warning is issued at startup\&.
+.TP 4
+.B
+\fI+l\fR:
+Enables auto load tracing, displaying info while loading code\&.
+.TP 4
+.B
+\fI+MFlag Value\fR:
+ 
+.RS 4
+.LP
+Memory allocator specific flags, see erts_alloc(3) for further information\&.
+.RE
+.TP 4
+.B
+\fI+P Number\fR:
+ 
+.RS 4
+.LP
+Sets the maximum number of concurrent processes for this system\&. \fINumber\fR must be in the range 16\&.\&.134217727\&. Default is 32768\&.
+.RE
+.TP 4
+.B
+\fI+R ReleaseNumber\fR:
+ 
+.RS 4
+.LP
+Sets the compatibility mode\&.
+.LP
+
+.LP
+The distribution mechanism is not backwards compatible by default\&. This flags sets the emulator in compatibility mode with an earlier Erlang/OTP release \fIReleaseNumber\fR\&. The release number must be in the range \fI7\&.\&.<current release>\fR\&. This limits the emulator, making it possible for it to communicate with Erlang nodes (as well as C- and Java nodes) running that earlier release\&.
+.LP
+
+.LP
+For example, an R10 node is not automatically compatible with an R9 node, but R10 nodes started with the \fI+R 9\fR flag can co-exist with R9 nodes in the same distributed Erlang system, they are R9-compatible\&.
+.LP
+
+.LP
+Note: Make sure all nodes (Erlang-, C-, and Java nodes) of a distributed Erlang system is of the same Erlang/OTP release, or from two different Erlang/OTP releases X and Y, where \fIall\fR Y nodes have compatibility mode X\&.
+.LP
+
+.LP
+For example: A distributed Erlang system can consist of R10 nodes, or of R9 nodes and R9-compatible R10 nodes, but not of R9 nodes, R9-compatible R10 nodes and "regular" R10 nodes, as R9 and "regular" R10 nodes are not compatible\&.
+.RE
+.TP 4
+.B
+\fI+r\fR:
+Force ets memory block to be moved on realloc\&.
+.TP 4
+.B
+\fI+S Number\fR:
+ 
+.RS 4
+.LP
+Sets the number of scheduler threads to use when SMP support has been enabled\&. Valid range is 1-1024\&. If the Erlang runtime system is able to determine the number of processor cores available, the default value will equal the this value; otherwise, the default value will be one\&.
+.LP
+
+.LP
+This flag will be ignored if the emulator doesn\&'t have SMP support enabled (see the -smp flag)\&.
+.RE
+.TP 4
+.B
+\fI+T Level\fR:
+ 
+.RS 4
+.LP
+Enables modified timing and sets the modified timing level\&. Currently valid range is 0-9\&. The timing of the runtime system will change\&. A high level usually means a greater change than a low level\&. Changing the timing can be very useful for finding timing related bugs\&.
+.LP
+
+.LP
+Currently, modified timing affects the following:
+.LP
+
+.RS 2
+.TP 4
+.B
+Process spawning:
+A process calling \fIspawn\fR, \fIspawn_link\fR, \fIspawn_monitor\fR, or \fIspawn_opt\fR will be scheduled out immediately after completing the call\&. When higher modified timing levels are used, the caller will also sleep for a while after being scheduled out\&.
+.TP 4
+.B
+Context reductions:
+The amount of reductions a process is a allowed to use before being scheduled out is increased or reduced\&.
+.TP 4
+.B
+Input reductions:
+The amount of reductions performed before checking I/O is increased or reduced\&.
+.RE
+.LP
+
+.LP
+\fINOTE:\fR Performance will suffer when modified timing is enabled\&. This flag is \fIonly\fR intended for testing and debugging\&. Also note that \fIreturn_to\fR and \fIreturn_from\fR trace messages will be lost when tracing on the spawn BIFs\&. This flag may be removed or changed at any time without prior notice\&.
+.RE
+.TP 4
+.B
+\fI+V\fR:
+Makes the emulator print out its version number\&.
+.TP 4
+.B
+\fI+v\fR:
+Verbose\&.
+.TP 4
+.B
+\fI+W w | i\fR:
+Sets the mapping of warning messages for \fIerror_logger\fR\&. Messages sent to the error logger using one of the warning routines can be mapped either to errors (default), warnings (\fI+W w\fR), or info reports (\fI+W i\fR)\&. The current mapping can be retrieved using \fIerror_logger:warning_map/0\fR\&. See error_logger(3) for further information\&.
+.RE
+.SH 環境変数
+.RS 2
+.TP 4
+.B
+\fIERL_CRASH_DUMP\fR:
+If the emulator needs to write a crash dump, the value of this variable will be the file name of the crash dump file\&. If the variable is not set, the name of the crash dump file will be \fIerl_crash\&.dump\fR in the current directory\&.
+.TP 4
+.B
+\fIERL_CRASH_DUMP_NICE\fR:
+\fIUnix systems\fR: If the emulator needs to write a crash dump, it will use the value of this variable to set the nice value for the process, thus lowering its priority\&. The allowable range is 1 through 39 (higher values will be replaced with 39)\&. The highest value, 39, will give the process the lowest priority\&.
+.TP 4
+.B
+\fIERL_CRASH_DUMP_SECONDS\fR:
+\fIUnix systems\fR: This variable gives the number of seconds that the emulator will be allowed to spend writing a crash dump\&. When the given number of seconds have elapsed, the emulator will be terminated by a SIGALRM signal\&.
+.TP 4
+.B
+\fIERL_AFLAGS\fR:
+The content of this environment variable will be added to the beginning of the command line for \fIerl\fR\&.
+.RS 4
+.LP
+
+.LP
+The \fI-extra\fR flag is treated specially\&. Its scope ends at the end of the environment variable content\&. Arguments following an \fI-extra\fR flag are moved on the command line into the \fI-extra\fR section, i\&.e\&. the end of the command line following after an \fI-extra\fR flag\&.
+.RE
+.TP 4
+.B
+\fIERL_ZFLAGS\fRand \fIERL_FLAGS\fR:
+The content of these environment variables will be added to the end of the command line for \fIerl\fR\&.
+.RS 4
+.LP
+
+.LP
+The \fI-extra\fR flag is treated specially\&. Its scope ends at the end of the environment variable content\&. Arguments following an \fI-extra\fR flag are moved on the command line into the \fI-extra\fR section, i\&.e\&. the end of the command line following after an \fI-extra\fR flag\&.
+.RE
+.TP 4
+.B
+\fIERL_LIBS\fR:
+This environment variable contains a list of additional library directories that the code server will search for applications and add to the code path\&. See code(3)\&.
+.RE
+.SH 関連項目
+.LP
+init(3), erl_prim_loader(3), erl_boot_server(3), code(3), application(3), heart(3), net_kernel(3), auth(3), make(3), epmd(1), erts_alloc(3)
