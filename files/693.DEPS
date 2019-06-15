@@ -1,0 +1,1 @@
+/home/action/.parts/packages/nodejs/0.10.26/lib/node_modules/npm/node_modules/node-gyp/gyp/DEPS
