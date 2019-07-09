@@ -1,0 +1,58 @@
+// build a module for execution
+module EXE_Stage
+	(
+		BR_Type,
+		EXE_Cmd,
+		readdata1,
+		readdata2,
+		Immediate,
+		shouldForward1,
+		shouldForward2,
+		PC_in,
+		data2,
+		forwardVal1,
+		forwardVal2,
+		branch_taken,
+		branch_address,
+		ALU_result
+	);
+	
+	// input and output ports
+	output			branch_taken;
+	input           shouldForward1;
+	input           shouldForward2;
+	input 	[1:0]	BR_Type;
+	input 	[3:0]	EXE_Cmd;
+	input 	[31:0]	readdata1;
+	input 	[31:0]	readdata2;
+	input	[31:0]	data2;
+	input	[31:0]	forwardVal1;
+	input	[31:0]	forwardVal2;
+	input 	[31:0] 	Immediate;
+	input 	[31:0]	PC_in;
+	output	[31:0]	branch_address;
+	output	[31:0]	ALU_result;
+	
+	// build module
+	
+	// arithmetic logic unit module
+	ALU alu
+	(
+		.dataa(shouldForward1 ? forwardVal1 : readdata1),
+		.datab(shouldForward2 ? forwardVal2 : data2),
+		.Function(EXE_Cmd),
+		.result(ALU_result)
+	);
+	
+	// address selector
+	assign branch_address = ({Immediate[31], (Immediate[30:0] << 2)} - 4 + PC_in);
+	
+	// branch codition
+	Condition_Check condition_check
+	(
+		.BR_Type(BR_Type),
+		.readdata1(shouldForward1 ? forwardVal1 : readdata1),
+		.readdata2(shouldForward2 ? forwardVal2 : readdata2),
+		.branch_taken(branch_taken)
+	);
+endmodule

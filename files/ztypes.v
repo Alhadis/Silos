@@ -1,0 +1,3 @@
+module winreg
+
+// TODO Implement.
