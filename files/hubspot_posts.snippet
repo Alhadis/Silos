@@ -1,0 +1,74 @@
+<?php
+################################
+// temporary block
+// if(!$_GET['dev']) return '';
+################################
+
+/**
+* @name hubspot_posts
+* @description Get posts from an Hubspot's blog
+* @required https://github.com/ryanwinchester/hubspot-php
+* @author Massimiliano Monaro (2017)
+*
+* PROPERTIES:
+*
+* &limit integer optional
+* &wrapperTpl string optional. Default: hubspot_postsWrapperTpl
+* &itemTpl string optional. Default: hubspot_postsItemTpl
+*
+* USAGE:
+*
+* [[!hubspot_posts? &limit=`4` &wrapperTpl=`hubspot_postsWrapperTpl` &itemTpl=`hubspot_postsItemTpl`]]
+*/
+
+require_once 'vendor/autoload.php';
+
+/*
+* Parameters
+*/
+
+$api_key = $modx->getOption('hubspot.api_key');
+$wrapperTpl = $modx->getOption('wrapperTpl', $scriptProperties, 'hubspot_postsWrapperTpl');
+$itemTpl = $modx->getOption('itemTpl', $scriptProperties, 'hubspot_postsItemTpl');
+
+if(!$api_key) {
+  return 'error: hubspot api_key is empty';
+}
+
+$hubspot = SevenShores\Hubspot\Factory::create($api_key);
+
+if(!$hubspot) {
+  return 'error: fail to create hubspot class';
+}
+
+// get all blog posts
+$response = $hubspot->blogPosts()->all();
+
+$html = $items = NULL;
+
+// cycle all posts
+$limit = $modx->getOption('limit', $scriptProperties, FALSE);
+$counter = 1;
+
+if($response && $response->objects) {
+  foreach ($response->objects as $data) {
+	if($data->is_published == 1 && ($counter <= $limit || !$limit)) {
+	  $timestamp = $data->created_time / 1000;	
+	  
+	  $props = array(
+		'url' => $data->url,
+		'image' => $data->featured_image,
+		'name' => $data->name,
+		'date' => gmdate('d F Y', $timestamp)
+	  );
+	  $items .= $modx->getChunk($itemTpl, $props);
+	  
+	  $counter++;
+	}
+  }
+}
+
+$props = array(
+  'items' => $items
+);
+return $modx->getChunk($wrapperTpl, $props);
