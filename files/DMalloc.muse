@@ -1,0 +1,156 @@
+#title Работа с dmalloc
+#keywords bugs finding, dmalloc, article, поиск ошибок, memory leaks, утечки памяти
+
+<contents>
+
+* Introduction
+
+[[http://dmalloc.com/][Dmalloc]] -- is a library for detecting problems during work with memory -- memory leaks,
+accessing behind memory blocks boundaries (same as in [[ElectricFence][Electric Fence]]), and also collecting
+statistic about memory consumption and allocation.  This library redefines standard
+functions for work with memory (=malloc=, =free=, etc.).  Library is written in portable
+style, and can be used on Linux, Solaris and other Unix-like operating systems, including
+MS Windows (under Cygwin)[1].
+
+*From my point of view, now there are more powerful alternatives to dmalloc -- [[Valgrind][Valgrind]] and
+[[GooglePT][Google Performance Tools]].*
+
+* Installation
+
+As for many Unix packages, installation of =dmalloc= pretty simple -- you need to download
+source code, unpack it and run 3 commands[2]:
+
+<src lang="sh">
+./configure 
+make 
+make install
+</src>
+
+If you will use =dmalloc= to analyse multi-threaded programs, then you need to run =configure=
+script with =--enable-threads= option.
+
+* Work with dmalloc
+
+As for many other libraries, that implements memory errors detection, usage of =dmalloc= is
+very simple -- you need to link the library with program, or load it with =LD_PRELOAD=[3].
+I need to mention, that exist two versions of library: for programs, that written in C
+language -- =libdmalloc=, and for programs in C++ -- =libdmallocthcxx=.[4] Second library,
+besides support for standard memory functions, like =malloc= & =free=, also supports C++
+memory operators -- =new=, =new []=, etc.
+
+=libdmalloc= gets information about settings from environment variables.  Some difference
+from other libraries is that with library come command-line utility called =dmalloc=, that
+could be used to set environment variables without their explicit naming and not depending
+on syntax of concrete command processor[5].  In typical situation, =dmalloc= is used as in
+following example:
+
+<src lang="sh">
+eval `dmalloc -b options debug_level`
+LD_PRELOAD=libmalloc.so.4 ./your-program
+</src>
+
+we need to use =eval= command, as if we simply run =dmalloc=, then it just print commands to
+set value to environment variable =DMALLOC_OPTIONS=, but not set this value[6].  Depending
+on command processor, you need to pass =dmalloc= concrete option: =-b= for shells compatible
+with =sh= -- =bash=, =zsh=, etc., and =-c= for shells, that use =csh=-compatible syntax.
+
+User also should to pass value, that defines which checks will be used (debug level).
+There are several predefined values (=low=, =runtime=, =medium= & =high=), that enable some
+predefined sets of checks (from minimal to maximal).  User can also specify they own set
+of checks, using =-d= option for =dmalloc= utility to specify number, that describe set of
+checks.  There is also =-p= option, that allow to specify checks using mnemonic names, for
+example:
+
+<src lang="sh">
+eval `dmalloc -d 0 -l log_file -p log-non-free -p check-fence -p check-funcs`
+</src>
+
+In this example, =-d= option used to set all flags to 0, and after this, use =-p= options to
+form new set of checks[7].  Full list of checks, available for user, we can obtain by
+using =dmalloc= with =-DV= option (this will print names of checks, their short descriptions,
+and corresponding numbers).
+
+Among other =dmalloc= options, mostly used is =-l= (or =--logfile=) option, that allow to
+specify name of log file.
+
+* Analysis of results
+
+After finish of analyzed program, we find report about all found errors in corresponding
+log file.  In example below, program had tried to free block of memory, that was already
+freed by other function, and this lead to following report[8]:
+
+<example>
+..... description of parameters, passed to libdmalloc
+1204541422: 3: ERROR: free: cannot locate pointer in heap (err 22)
+1204541422: 3:   error details: finding address in heap
+1204541422: 3:   pointer '0xb7fc8ff0' from 'test-double-free.c:7' prev access 'unknown'
+</example>
+
+If in program there are errors, that lead to memory leaks, then we'll see something like:
+
+<example>
+1204542221: 3: Dumping Not-Freed Pointers Changed Since Start:
+1204542221: 3:  not freed: '0xb7fdffc8|s1' (10 bytes) from 'test-memleak.c:6'
+1204542221: 3:  total-size  count  source
+1204542221: 3:          10      1  test-memleak.c:6
+1204542221: 3:          10      1  Total of 1
+</example>
+
+Besides printing messages about found errors, =libdmalloc= also print some statistic about
+memory allocation, numbers of calls for concrete functions, etc.  For example:
+
+<example>
+1204542469: 3: Dumping Chunk Statistics:
+1204542469: 3: basic-block 4096 bytes, alignment 8 bytes
+1204542469: 3: heap address range: 0xb7f01000 to 0xb7f0a000, 36864 bytes
+1204542469: 3:     user blocks: 1 blocks, 4074 bytes (11%)
+1204542469: 3:    admin blocks: 8 blocks, 32768 bytes (89%)
+1204542469: 3:    total blocks: 9 blocks, 36864 bytes
+1204542469: 3: heap checked 0
+1204542469: 3: alloc calls: malloc 2, calloc 0, realloc 0, free 1
+1204542469: 3: alloc calls: recalloc 0, memalign 0, valloc 0
+1204542469: 3: alloc calls: new 0, delete 0
+1204542469: 3:   current memory in use: 10 bytes (1 pnts)
+1204542469: 3:  total memory allocated: 20 bytes (2 pnts)
+1204542469: 3:  max in use at one time: 10 bytes (1 pnts)
+1204542469: 3: max alloced with 1 call: 10 bytes
+1204542469: 3: max unused memory space: 22 bytes (68%)
+1204542469: 3: top 10 allocations:
+1204542469: 3:  total-size  count in-use-size  count  source
+1204542469: 3:          10      1          10      1  test-memleak.c:6
+1204542469: 3:          10      1           0      0  test-memleak.c:4
+1204542469: 3:          20      2          10      1  Total of 2
+</example>
+
+<div id="rule">[[./index][Back to main page]]</div>
+
+Footnotes: 
+[1] Library could be also used for analyse multi-threaded programs.
+
+[2] In many operating systems, this package available to installation with package
+    managers. 
+
+[3] To get detailed information about source code and lines of code, that produce error,
+    you can recompile your program with inclusion of =dmalloc.h= header file.  You can read
+    about this in [[http://dmalloc.com/docs/latest/online/dmalloc_9.html][documentation]].
+
+[4] Libraries, that should be used to check multi-threaded programs has =th= suffix.  For
+    example: =libdmallocth.so.4=
+
+[5] User can also specify options, that will used on every run of =dmalloc=.  To specify
+    these options the file =~/.dmallocrc= is used.
+
+[6] [[http://dmalloc.com/docs/latest/online/dmalloc_4.html][Documentation]] has several examples of shell functions, that will eliminate usage of
+    =eval=.
+
+[7] We need to mention, that in sequential calls of =dmalloc= values, that are not changed
+    by current call, will preserve their values.  User can use =-r= option to specify, that
+    all option should be erased, or =-k= option to specify, that values should be preserved.
+
+[8] In this example, test program was compiled with header file =dmalloc.h=, and library has
+    access to information about source code.  If you can't rebuild program, than you can
+    get information about source code with gdb, as this described in [[http://dmalloc.com/docs/latest/online/dmalloc_17.html#SEC23][documenation]].
+
+
+;  LocalWords:  new libdmalloc libdmallocthcxx LocalWords dmalloc example eval
+;  LocalWords:  командно-строковая options csh zsh debug Cygwin title level

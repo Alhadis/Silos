@@ -1,0 +1,264 @@
+#title Network Programming
+<contents>
+
+* Connectionless UDP
+** server
+ - sd = socket() : create socket
+ - bind(sd, ...) : specify socket local IP address and port number
+ - read() / recv() : receive packets
+ - close(): done
+
+** client
+ - socket() : create socket
+ - write() / sendto(): send packets to server, by specifying receiver address and port number
+ - close(): done
+
+* Connection-oriented
+** server
+ - sd = socket() : create socket
+ - bind(sd, ...) : specify socket local IP address and port number
+ - listen(sd, ...) : specify that socket sd is a listening socket
+ - sd2 = accept(sd, ...) : get a connected connection from the queue for socket sd;create a new socket identified by sd2
+ - read() / write() : do IO on socket sd2
+ - close(sd2): done
+
+** client
+ - socket() : create socket
+ - bind() : specify socket address (optional)
+ - connect() : initialize TCP handshake; return until TCP handshake is done 
+ - read() / write() : do IO on the socket
+ - close(): done
+
+** TCP Connection-Oriented Demux
+ - TCP socket identified by 4-tuple
+  - source IP address
+  - source port number
+  - dest IP address
+  - dest port number
+ - Host uses all four values to direct segment to appropriate socket
+  - Server can easily support many simultaneous TCP sockets: different connections/sessions are automatically separated into different sockets
+
+* Socket API
+ - API used to access the network
+  - A socket is an abstraction of a communication endpoint
+   - Can be used to access different network protocols (not only TCP/IP)
+  - A socket’s characteristics are determined by calling specific functions
+  - A socket can be accessed as a file
+   - Similar to some I/O APIs, e.g. read, write, close
+
+** int socket(int domain, int type, int protocol)
+ - domain: PF_UNIX, PF_INET, PF_INET6
+ - type: SOCK_STREAM(reliable), SOCK_DGRAM(not reliable)
+ - protocol: normally 0, can be other values if there are multiple protocols available (IPPROTO_TCP, IPPROTO_UDP)
+
+** int bind(int sockfd, struct sockaddr* my_addr, socklen_t addrlen)
+ - sockfd: socket descriptor
+ - my_addr: socket address (usually of sockaddr_in type)
+ - addrlen: address structure length
+ - Return value: 0 for success, -1 in case of error
+
+<literal>
+<pre class="brush:cpp; gutter:true; toolbar:false; ruler:false;">
+
+struct sockaddr {
+u_short sa_family; /* family */
+char sa_data[14]; /* address data */
+};
+
+struct sockaddr_in { /* a TCP endpoint */
+u_int16_t sin_family; /* address family: AF_INET */
+u_int16_t sin_port; /* port in network byte order */
+struct in_addr sin_addr; /* internet address */
+};
+
+struct in_addr {
+u_int32_t s_addr; /* address in network byte order */
+};
+
+</pre>
+</literal>
+
+ - sin_port
+  - 16 bits
+  - 0-1024 reserved for system
+  - well-known ports are important
+  - If you specify 0, the OS picks a port
+ - s_addr
+  - 32 bits
+  - INADDR_ANY for any local interface address
+
+*** Network Byte Order
+ - unsigned long int htonl(unsigned long int hostlong);
+ - unsigned short int htons(unsigned short int hostshort);
+ - unsigned long int ntohl(unsigned long int networklong);
+ - unsigned short int ntohs(unsigned short int networkshort);
+
+** int listen(int s, int backlog)
+If a socket is used to receive TCP connections, it is necessary to bind it to an address and to specify that the socket is passive.
+
+ - s: socket descriptor
+ - backlog: maximum length of the queue of pending connections (used to be the number of open/half-open connections, now only the open ones that are ready to
+be accepted are counted)
+ - Return value: 0 in case of success, -1 in case of error
+
+** int accept(int s, struct sockaddr* addr, socklen_t* addrlen)
+A call to accept() blocks the caller until a request is sent.
+ - s: socket descriptor
+ - addr: structure that will be filled with the parameters of the client (maybe NULL)
+ - addrlen: length of the structure in input, it is filled with the actual size of the data returned
+ - Return value: a new socket file descriptor in case of success, -1 in case of errors
+
+
+** int connect(int sockfd, const struct sockaddr* serv_addr, socklen_t addrlen)
+ - sockfd: socket descriptor
+ - serv_addr: destination address
+ - addrlen: size of the structure
+ - Return value: 0 in case of success, -1 in case of errors
+
+*** Connecting with TCP/UDP
+ - TCP
+  - connect() starts the three-way handshake
+ - UDP
+  - Nothing really happens, but the socket can only be used to send/receive datagrams to/from the specified address
+
+** Read / Write to a Socket
+return value: -1 if an error occurs and will block the process if there is no data to receive
+
+
+ - for connected-oriented
+  - ssize_t read(int sockfd, void *buf, size_t count);
+  - ssize_t write(int sockfd, const void *buf, size_t count);
+
+ - Socket specific system call
+  - int send(int sd, const void *msg, size_t len, int flags);
+  - int sendto(int sd, const void *msg, size_t len, int flags, const struct sockaddr *to, socklen_t tolen);
+  - int sendmsg(int sd, const struct msghdr *msg, int flags);
+  - int recv(int sd, void *buf, size_t len, int flags);
+  - int recvfrom(int sd, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t fromlen);
+  - int recvmsg(int sd, struct msghdr *msg, int flags);
+
+
+<literal>
+<pre class="brush:cpp; gutter:true; toolbar:false; ruler:false;">
+struct msghdr {
+void *msg_name; // peer address
+socklen_t msg_namelen; // address length
+struct iovec *msg_iov; // io vector
+size_t msg_iovlen; // io vector length
+void *msg_control;
+socklen_t msg_controllen;
+int msg_flags;
+};
+
+struct iovec {
+void *iov_base;
+size_t iov_len;
+};
+
+</pre>
+</literal>
+
+** int close(int fd)
+ - fd: socket descriptor
+ - Return value: 0 in case of success, -1 in case of errors
+
+** int shutdown(int s, int how)
+Can be used to close a socket partially
+ - s: connected socket
+ - how:
+  - SHUT_RD, further receptions are disallowed
+  - SHUT_WR, further transmissions are disallowed
+  - SHUT_RDWR, further receptions and transmissions are disallowed
+ - Return value: 0 in case of success, -1 in case of errors
+
+** Closing Semantics
+ - TCP
+  - Close: FIN/ACK in both directions
+  - Shutdown: FIN/ACK in one direction
+ - UDP
+  - Close: Don't send anything. Just deallocate structure
+
+** Data Exchange in TCP/UDP
+ - TCP
+  - recv/read will return a chunk of data
+  - Not necessarily the data sent by means of a single send/write operation on the other side
+ - UDP
+  - recv/read will always return a datagram
+  - If message size > buffer, fills buffer, discards rest
+
+** Address from and to String Formats
+presentation format to and from network format
+ - int inet_pton(int af, const char *src, void *dst);
+  - return value: positive if successful
+ - const char *inet_ntop(int af, const void *src, char *dst, size_t cnt);
+  - return value: NULL is error
+
+** DNS Service
+<literal>
+<pre class="brush:cpp; gutter:true; toolbar:false; ruler:false;">
+
+struct hostent *gethostbyname(const char *name);
+
+struct hostent {
+char *h_name; // official name
+char **h_aliases; // a list of aliases
+int h_addrtype;
+int h_length;
+char **h_addr_list;
+};
+
+</pre>
+</literal>
+
+ - return value: NULL if fails
+
+* Asynchronous Network Programming
+** Method 1: Process and Thread
+ - Process
+  - fork()
+  - waitpid()
+ - Thread: light weight process
+  - pthread_create()
+  - pthread_exit()
+
+** Method 2: Asynchronous I/O (Select)
+select: deal with blocking system call
+ - int select(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)
+ - FD_CLR(int fd, fd_set *set);
+ - FD_ZERO(fd_set *set);
+ - FD_ISSET(int fd, fd_set *set);
+ - FD_SET(int fd, fd_set *set);
+
+** Method 3: Signal and Select
+ - signal: events such as timeout
+
+
+** Writing High Performance Servers: Major Issues
+ -  Many socket/IO operations can cause a process to block, e.g.
+  - accept: waiting for new connection;
+  - read a socket waiting for data or close;
+  - write a socket waiting for buffer space;
+  - I/O read/write for disk to finish
+ - Thus a crucial perspective of network server design is the concurrency design (non-blocking)
+  - for high performance
+  - to avoid denial of service
+ - Concurrency is also important for clients!
+
+** Problems of Multi-Thread Server
+ - High resource usage, context switch overhead, contended
+locks
+ - Too many threads → throughput meltdown, response time
+explosion
+ - In practice: bound total number of threads
+
+** Problems of Event-Driven Server
+ - Difficult to engineer, modularize, and tune
+ - Little OS and tool support: "roll your own"
+ - No performance/failure isolation between FSMs
+ - FSM code can never block (but page faults,
+ - garbage collection may still force a block)
+  - thus still need multiple threads
+
+
+
+

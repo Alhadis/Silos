@@ -1,0 +1,1248 @@
+#title 百米生活服务器安装指南
+#author Ole Yang
+#date 2013-03-05
+
+<contents>
+
+* 系统安装
+** 下载
+
+** 安装
+[[http://www.if-not-true-then-false.com/2011/install-nginx-php-fpm-on-fedora-centos-red-hat-rhel/][参考]]
+
+** 安装相关软件
+<src type="bash">
+yum update
+yum -y install gcc cmake make gcc-c++ autoconf rsync  wget openssh-clients libjpeg libjpeg-devel libpng libpng-devel freetype freetype-devel libxml2 libxml2-devel zlib zlib-devel curl curl-devel ncurses ncurses-devel openssl openssl-devel bison
+</src>
+
+* 配置
+** 用户
+新增web启动用户：100msh,所有的应用都用100msh的用户
+<src type="bash">
+groupadd 100msh
+useradd -g 100msh 100msh
+passwd 100msh
+cd /home/100msh
+mkdir src
+</src>
+
+** mysql
+<src type="bash">
+cd /home/100msh
+wget -c http://cdn.mysql.com/Downloads/MySQL-5.5/mysql-5.5.29.tar.gz
+tar xvf mysql-5.5.29.tar.gz
+cmake -DCMAKE_INSTALL_PREFIX=/home/100msh/mysql \
+-DMYSQL_DATADIR=/home/100msh/mysql/data \
+-DSYSCONFDIR=/home/100msh/mysql \
+-DEXTRA_CHARSETS=all \
+-DDEFAULT_CHARSET=utf8 \
+-DDEFAULT_COLLATION=utf8_general_ci \
+-DWITH_READLINE=1 \
+-DWITH_SSL=bundled \
+-DWITH_EMBEDDED_SERVER=1 \
+-DENABLED_LOCAL_INFILE=1 \
+-DWITH_INNOBASE_STORAGE_ENGINE=1 \
+-DWITHOUT_PARTITION_STORAGE_ENGINE=1 \
+-DWITH_DEBUG=0
+
+make && make install
+cd /home/100msh/mysql/
+mkdir /home/100msh/mysql/etc
+cp /home/100msh/mysql/support-files/my-medium.cnf /home/100msh/mysql/my.cnf
+# mysql的默认配置文件在/etc/my.cnf，如果不做下面这一步会出现：Starting MySQL. ERROR! The server quit without updating PID file (/var/lib/mysql/JGHT.pid).
+ln -s /home/100msh/mysql/my.cnf /etc/my.cnf
+</src>
+
+修改my.cnf的配置
+<src type="bash">
+vi /home/100msh/mysql/my.cnf
+</src>
+
+改动的内容如下：
+<src type="bash">
+[client]
+socket = /home/100msh/mysql/mysql.socket
+
+[mysqld]
+# 增加这一句，不如pid文件无法更新.The server quit without updating PID file (/home/100msh/mysql/data/100msh-02.pid).
+user            = 100msh
+socket = /home/100msh/mysql/mysql.socket
+</src>
+
+初始化数据库
+<src type="bash">
+scripts/mysql_install_db --user=100msh --datadir=/home/100msh/mysql/data --defaults-file=/home/100msh/mysql/my.cnf
+</src>
+
+如果是测试服务器添加,可以添加查询日志,但是日志的文件夹必须存在，并且mysql进程可写
+<src type="bash">
+mkdir /home/100msh/mysql/log
+</src>
+
+[mysqld]
+<src type="bash">
+# query log
+log=/home/100msh/mysql/log/query.log
+
+# slow query log
+# 超过5second的查询认为是慢查询
+long_query_time = 5
+log-slow-queries = /home/100msh/mysql/log/slowquery.log
+</src>
+
+启动mysqld服务
+<src type="bash">
+bin/mysqld_safe --defaults-file=/home/100msh/mysql/my.cnf --log-error=/home/100msh/mysql/log/mysqld.log 
+</src>
+
+做成系统服务
+<src type="bash">
+cp /home/100msh/mysql/support-files/mysql.server /etc/init.d/mysqld
+vi /etc/init.d/mysqld
+           basedir=/home/100msh/mysql     # 修改这里
+           datadir=/home/100msh/mysql/data # 修改这里
+chmod +x /etc/init.d/mysqld
+chkconfig --add mysqld
+chkconfig --level 345 mysqld on
+</src>
+
+添加mysql库文件到搜索路径
+<src type="bash">
+echo "/home/100msh/mysql/lib" >> /etc/ld.so.conf
+ldconfig
+</src>
+
+添加mysql bin路径到path
+<src type="bash">
+echo "export PATH=$PATH:/home/100msh/mysql/bin" >> /etc/profile
+source /etc/profile
+</src>
+
+添加root密码
+<src type="bash">
+/home/100msh/mysql/bin/mysqladmin -u root password "xxttest"
+</src>
+
+添加用户
+用户：username 密码： password
+<src type="text">
+> GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,DROP ON dbname.* TO 'username'@'localhost' IDENTIFIED BY 'password';
+</src>
+
+安装多个mysql的时候，只需要用--defaults-file指定my.cnf的位置，就可以安装多个mysql。连接服务器的时候需要指定socket
+<src type="text">
+#!/bin/sh
+
+mysql_root=/home/100msh/mysql
+$mysql_root/bin/mysql -uroot -p100msh@mysql@root --socket=$mysql_root/tmp/mysql.sock
+</src>
+
+
+** php5.4.12
+*** install mcript
+centos和fedora都可以用下面的源
+<src type="bash">
+rpm -ivh http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.2-2.el6.rf.i686.rpm
+yum clean all
+yum makecache
+yum install libmcrypt* -y
+</src>
+
+*** install php
+<src type="bash">
+yum install t1lib t1lib-devel libxslt libxslt-devel bzip2* libXpm* libX11* -y
+wget -c http://cn2.php.net/distributions/php-5.4.12.tar.bz2
+./configure \
+--prefix=/home/100msh/php \
+--with-curl \
+--with-pear \
+--with-gd \
+--with-jpeg-dir \
+--with-png-dir \
+--with-zlib \
+--with-xpm-dir \
+--with-freetype-dir \
+--with-t1lib \
+--with-mcrypt \
+--with-mhash \
+--with-mysql \
+--with-mysqli \
+--enable-pdo \
+--with-pdo-mysql \
+--with-openssl \
+--with-xmlrpc \
+--with-xsl \
+--with-gettext \
+--with-fpm-user=100msh \
+--with-fpm-group=100msh \
+--enable-fpm \
+--enable-exif \
+--enable-wddx \
+--enable-zip \
+--enable-bcmath \
+--with-bz2 \
+--enable-calendar \
+--enable-ftp \
+--enable-mbstring \
+--enable-soap \
+--enable-sockets \
+--enable-shmop \
+--enable-dba \
+--enable-sysvmsg \
+--enable-sysvsem \
+--enable-sysvshm \
+--enable-debug \
+--enable-maintainer-zts \
+--enable-embed \
+--with-libdir=lib64
+
+make && make install
+
+</src>
+
+php.ini的位置在PHPROOT/lib/php.ini,如果不确定可以使用phpinfo（）的函数来查看
+<src type="text">
+Configuration File (php.ini) Path 	/home/100msh/php/lib 
+</src>
+
+
+*** configuration
+**** php-fpm
+<src type="bash">
+cp /home/100msh/php/etc/php-fpm.conf.default /home/100msh/php/etc/php-fpm.conf
+vi /home/100msh/php/etc/php-fpm.conf
+</src>
+内容如下：
+<src type="bash">
+# pid设置，默认在安装目录中的var/run/php-fpm.pid，建议开启
+pid = run/php-fpm.pid
+
+# 错误日志，默认在安装目录中的var/log/php-fpm.log
+error_log = log/php-fpm.log
+
+# 错误级别. 可用级别为: alert（必须立即处理）, error（错误情况）, warning（警告情况）, notice（一般重要信息）, debug（调试信息）. 默认: notice.
+log_level = notice
+
+# 表示在emergency_restart_interval所设值内出现SIGSEGV或者SIGBUS错误的php-cgi进程数如果超过 emergency_restart_threshold个，php-fpm就会优雅重启。这两个选项一般保持默认值。
+emergency_restart_threshold = 10
+emergency_restart_interval = 1m
+
+# 设置子进程接受主进程复用信号的超时时间. 可用单位: s(秒), m(分), h(小时), 或者 d(天) 默认单位: s(秒). 默认值: 0.
+process_control_timeout = 10s
+
+# 后台执行fpm,默认值为yes，如果为了调试可以改为no。
+daemonize = yes
+
+# fpm监听端口，即nginx中php处理的地址，一般默认值即可。
+#     可用格式为: ‘ip:port’, ‘port’, ‘/path/to/unix/socket’. 每个进程池都需要设置.
+listen = 127.0.0.1:9000
+
+# backlog数，-1表示无限制，由操作系统决定，此行注释掉就行。backlog含义参考：
+listen.backlog = -1
+
+# 允许访问FastCGI进程的IP，设置any为不限制IP，如果要设置其他主机的nginx也能访问这台FPM进程，listen处要设置成本地可被访问的IP。默认值是any。
+# 每个地址是用逗号分隔. 如果没有设置或者为空，则允许任何服务器请求连接
+listen.allowed_clients = 127.0.0.1
+
+# 启动进程的帐户和组
+user = 100msh
+group = 100msh
+
+# unix socket设置选项，如果使用tcp方式访问，这里注释即可。
+listen.owner = 100msh
+listen.group = 100msh
+listen.mode = 0666
+
+# 如何控制子进程，选项有static和dynamic。
+# 如果选择static，则由pm.max_children指定固定的子进程数。
+# 如果选择dynamic，则由下开参数决定：
+# pm.max_children ，子进程最大数
+# pm.start_servers ，启动时的进程数
+# pm.min_spare_servers ，保证空闲进程数最小值，如果空闲进程小于此值，则创建新的子进程
+# pm.max_spare_servers ，保证空闲进程数最大值，如果空闲进程大于此值，此进行清理
+# 对于专用服务器，pm可以设置为static。
+pm = dynamic
+
+# 设置每个子进程重生之前服务的请求数. 对于可能存在内存泄漏的第三方模块来说是非常有用的. 如果设置为 ’0′ 则一直接受请求. 等同于 PHP_FCGI_MAX_REQUESTS 环境变量. 默认值: 0.
+pm.max_requests = 1000
+
+# FPM状态页面的网址. 如果没有设置, 则无法访问状态页面. 默认值: none.
+pm.status_path = /status
+
+# FPM监控页面的ping网址. 如果没有设置, 则无法访问ping页面. 该页面用于外部检测FPM是否存活并且可以响应请求. 请注意必须以斜线开头 (/)。
+ping.path = /ping
+
+# 用于定义ping请求的返回相应. 返回为 HTTP 200 的 text/plain 格式文本. 默认值: pong.
+ping.response = pong
+
+# 设置单个请求的超时中止时间. 该选项可能会对php.ini设置中的’max_execution_time’因为某些特殊原因没有中止运行的脚本有用. 设置为 ’0′ 表示 ‘Off’.
+# 当经常出现502错误时可以尝试更改此选项。
+request_terminate_timeout = 0
+
+# 当一个请求该设置的超时时间后，就会将对应的PHP调用堆栈信息完整写入到慢日志中. 设置为 ’0′ 表示 ‘Off’
+request_slowlog_timeout = 10s
+
+# 慢请求的记录日志,配合request_slowlog_timeout使用
+slowlog = log/$pool.log.slow
+
+# 设置文件打开描述符的rlimit限制. 默认值: 系统定义值
+# 系统默认可打开句柄是1024，可使用 ulimit -n查看，ulimit -n 2048修改。
+rlimit_files = 1024
+
+# rlimit_core = 0
+设置核心rlimit最大限制值. 可用值: ‘unlimited’ 、0或者正整数. 默认值: 系统定义值.
+
+# 启动时的Chroot目录. 所定义的目录需要是绝对路径. 如果没有设置, 则chroot不被使用.
+chroot =
+
+# 设置启动目录，启动时会自动Chdir到该目录. 所定义的目录需要是绝对路径. 默认值: 当前目录，或者/目录（chroot时）
+chdir =
+
+# 重定向运行过程中的stdout和stderr到主要的错误日志文件中. 如果没有设置, stdout 和 stderr 将会根据FastCGI的规则被重定向到 /dev/null . 默认值: 空.
+catch_workers_output = yes
+
+</src>
+
+测试配置文件是否OK
+<src type="bash">
+~/php/sbin/php-fpm -t
+[05-Mar-2013 23:10:22] NOTICE: configuration file /home/100msh/php/etc/php-fpm.conf test is successful
+[05-Mar-2013 23:10:22] kill -USR2 `cat /home/100msh/php/var/run/php-fpm.pid`  # restart
+</src>
+
+*** install APC Extetion
+<src type="bash">
+wget -O APC-3.1.13.tgz http://pecl.php.net/get/APC 
+tar xvf APC-3.1.13.tgz
+cd APC-3.1.13
+/home/100msh/php/bin/phpize
+./configure --with-php-config=/home/100msh/php/bin/php-config
+make && make install
+</src>
+
+*** configure ＡＰＣ
+如果php.ini没有，从远程服务器上同步一个过来： rsync -az root@120.31.131.241:/home/100msh/php/lib/php.ini /home/100msh/php/lib/php.ini
+<src type="bash">
+vi /home/100msh/php/etc/php.ini
+在末尾加上：
+extension = apc.so
+apc.enabled = 1
+apc.shm_size = 128M
+apc.shm_segments=1
+apc.write_lock = 1
+apc.rfc1867 = On
+apc.ttl=7200
+apc.user_ttl=7200
+apc.num_files_hint=1024
+apc.mmap_file_mask=/tmp/apc.XXXXXX
+apc.enable_cli=1
+</src>
+顺便修改php.ini的时区：
+date.timezone = Asia/Shanghai
+创建符号链接
+ln -s /etc/php.ini /home/100msh/php/etc/php.ini
+
+** nginx-1.3.9
+<src type="bash">
+yum install -y pcre*
+wget -c http://nginx.org/download/nginx-1.3.9.tar.gz
+./configure --user=100msh --group=100msh \
+--prefix=/home/100msh/nginx \
+--with-http_stub_status_module \
+--with-http_ssl_module \
+--with-pcre \
+--with-http_flv_module
+
+make && make install
+ln -s /home/100msh/nginx/conf/nginx.conf /etc/nginx.conf
+</src>
+
+*** configuration
+<src type="bash">
+# 放网站文件的目录
+mkdir /home/100msh/www  
+vi /etc/nginx.conf
+</src>
+
+内容如下：
+<src type="bash">
+user 100msh 100msh;
+#user  nobody;                                                                                                                                                 
+worker_processes  4;  		# 内核数 cat /proc/cpuinfo | grep processor | wc -l
+
+#error_log  logs/error.log;                                                                                                                                    
+#error_log  logs/error.log  notice;                                                                                                                            
+error_log  logs/error.log  info;
+
+pid        logs/nginx.pid;
+
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    server_tokens off;  # 关闭头中的nginx信息
+
+
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  logs/access.log  main;
+
+    sendfile        on;
+    #tcp_nopush     on;                                                                                                                                        
+
+    #keepalive_timeout  0;                                                                                                                                     
+    keepalive_timeout  65;
+    # 上传文件的大小
+    client_max_body_size 20m;
+    # 每次发送信息的大小
+    client_body_buffer_size 128k;
+
+    gzip  on;
+    server {
+        listen       80;
+        server_name  localhost;
+
+        charset utf-8;
+
+        access_log  logs/host.access.log  main;
+
+        location / {
+            root   /home/100msh/www;
+            index  index.html index.htm index.php;
+        }
+
+        error_page  404              /404.html;
+
+        # redirect server error pages to the static page /50x.html                                                                                             
+        #                                                                                                                                                      
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+
+        # proxy the PHP scripts to Apache listening on 127.0.0.1:80                                                                                            
+        #                                                                                                                                                      
+        #location ~ \.php$ {                                                                                                                                   
+        #    proxy_pass   http://127.0.0.1;                                                                                                                    
+        #}                                                                                                                                                     
+
+        # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000                                                                                   
+        #                                                                                                                                                      
+        location ~ \.php$ {
+            root           /home/100msh/www;
+            fastcgi_pass   127.0.0.1:9000;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  $document_root/$fastcgi_script_name;
+            include        fastcgi_params;
+        }
+
+        # deny access to .htaccess files, if Apache's document root                                                                                            
+        # concurs with nginx's one                                                                                                                             
+        #                                                                                                                                                      
+        location ~ /\.ht {
+            access_log off;
+            log_not_found off;
+            deny  all;                                                                                                                                        
+        }
+
+        # 对图片的处理
+        location ~* \.(jpg|jpeg|gif|png|css|js|ico|xml)$ {
+            # 不加图片和样式将无法加载
+            root              /home/100msh/www;
+            access_log        off;
+            log_not_found     off;
+            expires           360d;
+        }                                                                                                                                          
+    }
+
+
+    # another virtual host using mix of IP-, name-, and port-based configuration                                                                               
+    #                                                                                                                                                          
+    #server {                                                                                                                                                  
+    #    listen       8000;                                                                                                                                    
+    #    listen       somename:8080;                                                                                                                           
+    #    server_name  somename  alias  another.alias;                                                                                                          
+
+    #    location / {                                                                                                                                          
+    #        root   html;                                                                                                                                      
+    #        index  index.html index.htm;                                                                                                                      
+    #    }                                                                                                                                                     
+    #}                                                                                                                                                         
+
+
+    # HTTPS server                                                                                                                                             
+    #                                                                                                                                                          
+    #server {                                                                                                                                                  
+    #    listen       443;                                                                                                                                     
+    #    server_name  localhost;                                                                                                                               
+
+    #    ssl                  on;                                                                                                                              
+    #    ssl_certificate      cert.pem;                                                                                                                        
+    #    ssl_certificate_key  cert.key;                                                                                                                        
+
+    #    ssl_session_timeout  5m;                                                                                                                              
+
+    #    ssl_protocols  SSLv2 SSLv3 TLSv1;                                                                                                                     
+    #    ssl_ciphers  HIGH:!aNULL:!MD5;                                                                                                                        
+    #    ssl_prefer_server_ciphers   on;
+
+    #    location / {                                                                                                                                          
+    #        root   html;                                                                                                                                      
+    #        index  index.html index.htm;                                                                                                                      
+    #    }                                                                                                                                                     
+    #}                                                                                                                                                         
+
+}
+</src>
+
+关键的几点：
+ 1. user 100msh 100msh
+ 2. fastcgi_param  SCRIPT_FILENAME  /home/100msh/www$fastcgi_script_name; 一定要写上php的路径,或者是$document_root/
+
+编写启动脚本
+vi /etc/init.d/nginx
+<src type="bash">
+!/bin/sh                                                                                                                                                                                                                                      
+#
+# Startup script for nginx
+. /etc/rc.d/init.d/functions
+RETVAL=0
+
+basedir=/home/100msh
+nginxdir=$basedir/nginx
+phpdir=$basedir/php
+nginxpidfile=$nginxdir/logs/nginx.pid
+
+start(){
+    echo "Nginx starting...";
+    $nginxdir/sbin/nginx -c $nginxdir/conf/nginx.conf;
+    echo "Nginx started OK";
+    echo "php starting...";
+    $phpdir/sbin/php-fpm;
+    echo "php started OK";
+}
+
+stop(){
+    echo "Nginx stoping...";
+    $nginxdir/sbin/nginx -s stop;
+    echo "Nginx stoped OK";
+    echo "php-fpm stoping...";
+    for i in `/bin/ps -fe|grep php-fpm|grep -v grep |awk '{ printf $2" "}'`;
+    do
+        kill -9 $i;
+    done;
+    echo "php-fpm stoped OK";
+}
+
+case "$1" in
+    start)
+        start;
+        ;;
+    stop)
+        stop;
+        ;;
+    restart)
+        stop;
+        start;
+        ;;
+    *)
+        echo "Usage: $0 {start | stop | restart}";
+        exit 1;
+        ;;
+esac
+exit $RETVAL;
+</src>
+
+打开80端口
+<src type="text">
+iptables -A INPUT -p tcp -dport 80 -j ACCEPT
+</src>
+
+如果要重启也要生效，就把规则写作配置文件中
+<src type="bash">
+vi /etc/sysconfig/iptables
+# 添加一条如下记录
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 80 -j ACCEPT
+service iptables restart
+</src>
+
+创建测试文件
+<src type="bash">
+echo "<?php phpinfo();" > /home/100msh/www/phpinfo.php
+</src>
+
+** svn
+<src type="bash">
+yum install subversion
+yum install httpd mod_dav_svn
+mkdir /opt/svnroot
+svnadmin create /opt/svnroot default
+ln -s /etc/submin/default-apache-cgi.conf /etc/httpd/conf.d/submin.conf
+
+cp /var/lib/submin/authz /var/lib/submin/htpasswd /var/lib/submin/userproperties.conf /opt/svnroot
+rm -rf /var/lib/submin/svn
+ln -s /opt/svnroot /var/lib/submin/svn
+vi /etc/httpd/conf.d/submin.conf
+</src>
+
+*** 同步到测试目录www
+
+** vsftpd
+<src type="bash">
+yum install vsftpd
+setsebool -P allow_ftpd_full_access 1  # 设置selinux，允许ftp用户访问
+</src>
+
+** postfix
+参考文章： [[http://bbs.chinaunix.net/thread-987344-1-1.html]]
+
+确认MX记录的添加是否生效的方法：
+<src type="bash">
+[root@sample ~]# host -t mx mail.100msh.com
+mail.100msh.com mail is handled by 20 mail.100msh.com.
+</src>
+
+*** 安装
+<src type="bash">
+yum -y install postfix
+</src>
+
+*** 配置
+/etc/postfix/main.cf
+<src type="bash">
+myhostname = mail.100msh.com
+mydomain = 100msh.com
+
+# 设置域名（我们将让此处设置将成为E-mail地址“@”后面的部分）
+myorigin = $mydomain
+
+inet_interfaces = all
+# 接受所有请求
+
+mydestination = $myhostname, localhost.$mydomain, localhost，$mydomain
+# 指定发给本地邮件的域名
+
+relay_domains = $mydestination
+# 指定允许转发的域名
+
+mynetworks = 0.0.0.0/0
+# 指定可以发邮件的网络。0表示全部
+
+home_mailbox = Maildir/
+# 指定用户的邮箱目录
+
+smtpd_banner = $myhostname ESMTP unknow
+# 不显示SMTP服务器的相关信息
+
+# 在配置文件的文尾，添加如下行：
+smtpd_sasl_auth_enable = yes　# 服务器使用SMTP认证
+smtpd_sasl_local_domain = $myhostname　 # 指定SMTP认证的本地域名（主机名）
+smtpd_sasl_security_options = noanonymous 　 # 不允许匿名的方式认证
+smtpd_recipient_restrictions = permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination 
+message_size_limit = 15728640　 # 规定邮件最大尺寸为15MB
+</src>
+
+
+/etc/sasl2/stmpd.conf
+<src type="bash">
+pwcheck_method: auxprop
+# 将“saslauthd”改为“auxprop”,不使用系统用户密码作为用户的SMTP认证密码
+</src>
+
+/etc/sysconfig/saslauthd
+<src type="bash">
+MECH=shadow
+# 使用shadow机制
+
+FLAGS=sasldb
+# 使用sasldb2认证方式
+</src>
+
+创建邮箱目录
+<src type="bash">
+mkdir /etc/skel/Maildir # 让每次添加用户的时候，在用户的主目录中都有一个Maildir的目录
+chmod 700 /etc/skel/Maildir
+</src>
+
+创建邮箱用户
+<src type="bash">
+groupadd mail
+useradd -g mail -s /sbin/nologin -m ole
+</src>
+
+创建smtp认证密码
+<src type="bash">
+saslpasswd2 -u mail.100msh.com -c ole
+Password:         		; 输入新密码
+Again				# 再次输入新密码
+</src>
+
+修改sasldb数据库文件的权限
+<src type="bash">
+chgrp postfix /etc/sasldb2
+chmod 640 /etc/sasldb2
+</src>
+
+关闭sendmail
+<src type="bash">
+service sendmail stop
+chkconfig sendmail off
+chkconfig --list sendmail
+</src>
+
+设置默认的MTA，即默认发送邮件的软件
+<src type="bash">
+alternatives --config mta
+*+ 1 /usr/sbin/sendmail.sendmail　 ← 当前状态：sendmail为默认MTA
+　2 /usr/sbin/sendmail.postfix
+
+Enter to keep the current selection[+], or type selection number: 2　 ← 在这里输入2，使Postfix成为默认MTA
+</src>
+如果没有安装sendmail，那么上面没有sendmail的项
+
+启动服务
+<src type="bash">
+service saslauthd start
+chkconfig saslauthd on
+chkconfig --list saslauthd    	# 查看是否设置成功
+
+# postfix
+service postfix start
+chkconfig postfix on
+chkconfig --list postfix    	# 查看是否设置成功
+</src>
+
+日志： /var/log/maillog
+<src type="bash">
+tailf /var/log/maillog
+</src>
+
+查看日志的时候发现有错误信息错误
+<src type="bash">
+Mar  8 13:13:58 100msh-01 postfix/smtpd[18286]: fatal: no SASL authentication mechanisms
+</src>
+是没有安装sasl认证模块
+<src type="bash">
+yum install -y cyrus-sasl*
+</src>
+
+打开iptables中25端口
+<src type="bash">
+vi /etc/sysconfig/iptables
+# 添加下面一行，不要在最下面
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp --dport 25 -j ACCEPT
+</src>
+
+测试,找一台电脑
+<src type="bash">
+[~]$ telnet mail.100msh.com 25
+Trying 120.31.131.241...
+Connected to mail.100msh.com.
+Escape character is '^]'.
+220 mail.100msh.com ESMTP unknow
+</src>
+OK smtp成功
+
+*** 安装pop/imap
+smtp只是发送的邮件的，pop是客户端接收邮件的，imap是在服务器上保留邮件
+
+安装dovecot
+<src type="bash">
+yum -y install dovecot
+</src>
+
+配置
+<src type="bash">
+vi /etc/dovecot/dovecot.conf
+
+protocols = imap pop3
+# 设置使用的协议
+</src>
+
+<src type="bash">
+vi /etc/dovecot/conf.d/10-mail.conf
+
+mail_location = maildir:~/Maildir
+# 定义邮件目录为用户目录下的Maildir目录
+</src>
+
+打开iptables中110,143端口
+<src type="bash">
+vi /etc/sysconfig/iptables
+# 添加下面一行，不要在最下面
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp --dport 110 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp --dport 143 -j ACCEPT
+</src>
+
+让sellinux允许saslauthd能都读取shadow的内容。
+<src type="bash">
+setsebool -P allow_saslauthd_read_shadow 1
+</src>
+
+设置dovecot为自启动
+<src type="bash">
+chkconfig dovecot on
+</src>
+
+启动dovecot
+<src type="bash">
+service dovecot start
+</src>
+
+*** 添加mysql用户
+<src type="bash">
+/home/100msh/mysql/bin/mysql -uroot -p
+> create database postfix;
+> grant all privileges on postfix.* to postfix@localhost identified by 'postfix';
+> flush privileges;
+</src>
+
+* svn
+<src type="bash">
+yum -y install subversion subversion-devel httpd mod_dav_svn apr-devel apr-until-devel neon-devel
+</src>
+
+** 安装submin
+<src type="bash">
+wget http://supermind.nl/submin/current/submin-1.2.11.tar.gz
+[root@submin ~]# tar zxf submin-1.2.11.tar.gz 
+[root@submin ~]# cd submin-1.2.11
+[root@submin submin-1.2.11]# python bin/install.py /usr/local/ 
+[root@web submin-1.2.11]# /usr/local/bin/submin-admin create default
+[root@submin ~]# ln -s /etc/submin/default-apache-cgi.conf /etc/httpd/conf.d/submin.conf
+[root@submin ~]# mkdir -p /data/svn        
+[root@submin ~]# cd /data/svn/
+[root@submin svn]# cp /var/lib/submin/authz .
+[root@submin svn]# cp /var/lib/submin/htpasswd .
+[root@submin svn]# cp /var/lib/submin/userproperties.conf .
+[root@submin svn]# rm -rf /var/lib/submin/svn/
+[root@submin svn]# ln -s /data/svn /var/lib/submin/svn
+[root@submin ~]# chown -R apache:apache /data/svn
+</src>
+
+修改配置
+[root@submin ~]# vim /etc/submin/default.conf
+<src type="bash">
+[svn]
+authz_file = /data/svn/authz
+userprop_file = /data/svn/userproperties.conf
+access_file = /data/svn/htpasswd
+repositories = /data/svn
+
+[www]
+base_url = /submin
+svn_base_url = /svn
+trac_base_url = /trac
+
+[backend]
+bindir = /usr/local/share/submin/bin
+
+[generated]
+session_salt = F6B1tIn8vJRX.zb2
+</src>
+
+vim /etc/httpd/conf.d/submin.conf 
+<src type="bash">
+    Alias /submin /usr/local/share/submin/www
+    <Directory /usr/local/share/submin/www>
+        Order allow,deny
+        Allow from all
+        Options ExecCGI FollowSymLinks
+        AddHandler cgi-script py cgi pl
+        SetEnv SUBMIN_CONF /etc/submin/default.conf
+
+        RewriteEngine on
+        RewriteBase /submin
+
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteRule ^(.+)$ submin.cgi/$1
+
+        RewriteRule ^/?$ submin.cgi/
+    </Directory>
+
+    <Location /svn>
+        DAV svn
+        SVNParentPath /data/svn
+
+        AuthType Basic
+        AuthName "Subversion repository"
+
+        AuthUserFile /data/svn/htpasswd
+        AuthzSVNAccessFile /data/svn/authz
+
+        Satisfy Any
+        Require valid-user
+    </Location>
+</src>
+
+重启apache
+<src type="bash">
+service httpd restart
+</src>
+
+同步代码到测试目录
+<src type="bash">
+[root@Server01 ~]# cat /data/svn/ecmall/hooks/post-commit
+#!/bin/sh
+### SUBMIN AUTOCONFIG, DO NOT ALTER FOLLOWING LINE ###
+/usr/bin/python /usr/local/share/submin/bin/post-commit.py "/etc/submin/default.conf" "$1" "$2"
+
+
+ECMALL=/home/100msh/www/ecmall
+SVN_CMD=/usr/bin/svn
+USERNAME=ole
+PASSWORD=100msh
+
+export=zh_CN.UTF-8
+$SVN_CMD up $WWW_ROOT --username=$USERNAME --password=$PASSWORD --non-interactive
+</src>
+
+在测试目录：/home/100msh/www中执行
+<src type="bash">
+svn co http://192.168.0.8/svn/ecmall
+cd ecmall
+svn add *
+svn ci -m ''
+</src>
+
+* iRedmail
+** 修改主机名
+ - /etc/hosts
+ - /etc/sysconfig/network
+<src type="text">
+[root@mail ~]# cat /etc/hosts
+127.0.0.1   mail.100msh.com localhost
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+[root@mail ~]# cat /etc/sysconfig/network
+NETWORKING=yes
+HOSTNAME=mail.100msh.com
+NETWORKING_IPV6=no
+</src>
+reboot
+
+** 安装
+*** 下载
+<src type="text">
+wget https://bitbucket.org/zhb/iredmail/downloads/iRedMail-0.8.3.tar.bz2
+</src>
+
+*** 安装
+<src type="text">
+[root@mail src]# cd iRedMail-0.8.3
+[root@mail iRedMail-0.8.3]# bash iRedMail.sh
+< INFO > Checking new version of iRedMail ...
+< INFO > Clean metadata of yum repositories.
+Loaded plugins: fastestmirror
+Cleaning repos: base extras iRedMail rpmforge updates
+12 metadata files removed
+4 sqlite files removed
+0 metadata files removed
+< INFO > Generating yum repository ...
+< INFO > Fetching source tarballs ...
+< INFO > + 1 of 6: http://iredmail.org/yum/misc/iRedAdmin-0.2.tar.bz2
+< INFO > + 2 of 6: http://iredmail.org/yum/misc/roundcubemail-0.8.2.tar.gz
+< INFO > + 3 of 6: http://iredmail.org/yum/misc/phpldapadmin-1.2.2.tgz
+< INFO > + 4 of 6: http://iredmail.org/yum/misc/phpMyAdmin-3.5.3-all-languages.tar.bz2
+< INFO > + 5 of 6: http://iredmail.org/yum/misc/iRedAPD-1.3.8.tar.bz2
+< INFO > + 6 of 6: http://iredmail.org/yum/misc/phpPgAdmin-5.0.4.tar.bz2
+</src>
+
+就是下载一些文件,如果下载失败，可以把已经下载好的文件复制到相应的文件夹
+<src type="text">
+[root@mail iRedMail-0.8.3]# find . -name "*.tar.*"
+./pkgs/misc/iRedAPD-1.3.8.tar.bz2
+./pkgs/misc/phpPgAdmin-5.0.4.tar.bz2
+./pkgs/misc/iRedAdmin-0.2.tar.bz2
+./pkgs/misc/phpMyAdmin-3.5.3-all-languages.tar.bz2
+./pkgs/misc/roundcubemail-0.8.2.tar.gz
+./misc/iRedAPD-1.3.8.tar.bz2
+./misc/phpPgAdmin-5.0.4.tar.bz2
+./misc/iRedAdmin-0.2.tar.bz2
+./misc/phpMyAdmin-3.5.3-all-languages.tar.bz2
+./misc/roundcubemail-0.8.2.tar.gz
+</src>
+
+
+** 错误
+<src type="text">
+[root@mail src]# cd iRedMail-0.8.3
+[root@mail iRedMail-0.8.3]# bash iRedMail.sh 
+< INFO > Checking new version of iRedMail ...
+< INFO > Clean metadata of yum repositories.
+Loaded plugins: fastestmirror
+Cleaning repos: base extras iRedMail rpmforge updates
+12 metadata files removed
+4 sqlite files removed
+0 metadata files removed
+< INFO > Generating yum repository ...
+< INFO > Fetching source tarballs ...
+< INFO > + 1 of 6: http://iredmail.org/yum/misc/iRedAdmin-0.2.tar.bz2
+< INFO > + 2 of 6: http://iredmail.org/yum/misc/roundcubemail-0.8.2.tar.gz
+< INFO > + 3 of 6: http://iredmail.org/yum/misc/phpldapadmin-1.2.2.tgz
+< INFO > + 4 of 6: http://iredmail.org/yum/misc/phpMyAdmin-3.5.3-all-languages.tar.bz2
+< INFO > + 5 of 6: http://iredmail.org/yum/misc/iRedAPD-1.3.8.tar.bz2
+< INFO > + 6 of 6: http://iredmail.org/yum/misc/phpPgAdmin-5.0.4.tar.bz2
+< INFO > Validate packages ...md5sum: misc/iRedAdmin-0.2.tar.bz2: No such file or directory
+md5sum: misc/roundcubemail-0.8.2.tar.gz: No such file or directory
+md5sum: misc/phpldapadmin-1.2.2.tgz: No such file or directory
+md5sum: misc/phpMyAdmin-3.5.3-all-languages.tar.bz2: No such file or directory
+md5sum: misc/iRedAPD-1.3.8.tar.bz2: No such file or directory
+misc/iRedAdmin-0.2.tar.bz2: FAILED open or read
+misc/roundcubemail-0.8.2.tar.gz: FAILED open or read
+misc/phpldapadmin-1.2.2.tgz: FAILED open or read
+misc/phpMyAdmin-3.5.3-all-languages.tar.bz2: FAILED open or read
+misc/iRedAPD-1.3.8.tar.bz2: FAILED open or read
+md5sum: WARNING: 5 of 6 listed files could not be read
+	[ FAILED ]
+< ERROR > MD5 check failed. Script exit ...
+</src>
+解决的办法是： 修改pkgs/get_all.sh中的iredmail.org改成ip：173.254.22.21
+
+<src type="text">
+Downloading Packages:
+http://iredmail.org/yum/rpms/6/arj-3.10.22-12.el6.x86_64.rpm: [Errno 14] PYCURL ERROR 56 - "Failure when receiving data from the peer"
+
+http://iredmail.org/yum/rpms/6/awstats-7.0-2.el6.rf.noarch.rpm: [Errno 14] PYCURL ERROR 56 - "Failure when receiving data from the peer"
+
+</src>
+解决的办法手动下载安装
+
+<src type="text">
+wget -c http://173.254.22.21/yum/rpms/6/arj-3.10.22-12.el6.x86_64.rpm http://173.254.22.21/yum/rpms/6/awstats-7.0-2.el6.rf.noarch.rpm http://173.254.22.21/yum/rpms/6/cabextract-1.3-3.el6.x86_64.rpm http://173.254.22.21/yum/rpms/6/clamav-0.97.7-1.el6.rf.x86_64.rpm http://173.254.22.21/yum/rpms/6/clamav-db-0.97.7-1.el6.rf.x86_64.rpm http://173.254.22.21/yum/rpms/6/clamd-0.97.7-1.el6.rf.x86_64.rpm http://173.254.22.21/yum/rpms/6/dovecot-2.0.18-1_134.el6.x86_64.rpm http://173.254.22.21/yum/rpms/6/dovecot-managesieve-0.2.6-21.el6.x86_64.rpm http://173.254.22.21/yum/rpms/6/dovecot-pigeonhole-0.2.6-21.el6.x86_64.rpm http://173.254.22.21/yum/rpms/6/fail2ban-0.8.8-2.el6.noarch.rpm http://173.254.22.21/yum/rpms/6/freeze-2.5.0-11.el6.x86_64.rpm http://173.254.22.21/yum/rpms/6/geoip-1.4.6-1.el6.rf.x86_64.rpm http://173.254.22.21/yum/rpms/6/libmspack-0.2-0.1.20100723alpha.el6.x86_64.rpm http://173.254.22.21/yum/rpms/6/nomarch-1.4-6.el6.x86_64.rpm http://173.254.22.21/yum/rpms/6/p7zip-9.13-1.el6.x86_64.rpm http://173.254.22.21/yum/rpms/6/perl-BerkeleyDB-0.43-3.el6.x86_64.rpm http://173.254.22.21/yum/rpms/6/perl-Convert-TNEF-0.17-10.el6.noarch.rpm http://173.254.22.21/yum/rpms/6/perl-Convert-UUlib-1.34-1.el6.x86_64.rpm http://173.254.22.21/yum/rpms/6/perl-Geo-IP-1.38-1.el6.rf.x86_64.rpm http://173.254.22.21/yum/rpms/6/perl-IO-Multiplex-1.13-1.el6.noarch.rpm http://173.254.22.21/yum/rpms/6/perl-Mail-SPF-2.007-1.el6.noarch.rpm http://173.254.22.21/yum/rpms/6/perl-Mail-SPF-Query-1.999.1-2.el6.rf.noarch.rpm http://173.254.22.21/yum/rpms/6/perl-Net-CIDR-Lite-0.20-1.2.el6.rf.noarch.rpm http://173.254.22.21/yum/rpms/6/perl-Net-Server-0.97-7.el6.noarch.rpm http://173.254.22.21/yum/rpms/6/perl-Razor-Agent-2.85-6.el6.x86_64.rpm http://173.254.22.21/yum/rpms/6/perl-Sys-Hostname-Long-1.4-1.2.el6.rf.noarch.rpm http://173.254.22.21/yum/rpms/6/perl-Unix-Syslog-1.1-3.el6.x86_64.rpm
+</src>
+
+
+
+* 短信猫
+公司的短信猫的芯片是pl2303 hxa，在centos下安装的方法：
+
+** 查看使用的端口
+<src type="text">
+dmesg | grep "pl2303"
+pl2303 2-5.1.1:1.0: pl2303 converter detected
+usb 2-5.1.1: pl2303 converter now attached to ttyUSB0
+pl2303 2-5.1.2:1.0: pl2303 converter detected
+usb 2-5.1.2: pl2303 converter now attached to ttyUSB1
+pl2303 2-5.1.3:1.0: pl2303 converter detected
+usb 2-5.1.3: pl2303 converter now attached to ttyUSB2
+pl2303 2-5.1.4:1.0: pl2303 converter detected
+usb 2-5.1.4: pl2303 converter now attached to ttyUSB3
+pl2303 2-5.2.1:1.0: pl2303 converter detected
+usb 2-5.2.1: pl2303 converter now attached to ttyUSB4
+pl2303 2-5.2.2:1.0: pl2303 converter detected
+usb 2-5.2.2: pl2303 converter now attached to ttyUSB5
+pl2303 2-5.2.3:1.0: pl2303 converter detected
+usb 2-5.2.3: pl2303 converter now attached to ttyUSB6
+pl2303 2-5.2.4:1.0: pl2303 converter detected
+usb 2-5.2.4: pl2303 converter now attached to ttyUSB7
+</src>
+说明使用的端口分别是/dev/ttyUSB0-7，如果没有出现，可能是驱动没有安装
+
+** 安装发短信的软件
+<src type="text">
+wget http://gnokii.org/download/gnokii/gnokii-0.6.31.tar.bz2
+./configure
+make && make install
+</src>
+
+** 配置
+<src type="text">
+cp /usr/local/share/doc/gnokii/sample/gnokiirc /etc/gnokiirc
+</src>
+
+/etc/gnokiirc的内容如下
+<src type="text">
+[global]
+# 端口设置
+port = /dev/ttyUSB0
+# 模式设置，其他设备都使用AT
+model = AT
+# 初始化的长度
+initlength = default
+# 连接的方式
+connection = serial
+# 是否锁定端口
+use_locking = no
+# 连接的速率，这里是115200
+serial_baudrate = 115200
+# 重试的次数
+sm_retry = 1
+# 超时时间
+smsc_timeout = 100
+allow_breakage = 0
+bindir = /usr/local/sbin/
+# 这里不是卡手机号码，也不是短信中心的号码
+TELEPHONE = 12345678
+# 屏幕上输出调试信息
+debug = on
+rlpdebug = off
+xdebug = off
+
+[phone_fake]
+port = foobar
+model = AT
+connection = serial
+[fake_driver]
+sms_inbox = /tmp/sms
+</src>
+
+如果需要用网页请求的方式来发送短信，需要设置ttyUSB0-7有权限。
+
+查看权限
+<src type="text">
+ls -l /dev/ttyUSB0
+crw-rw---- 1 root dialout 188, 0 4月  25 10:23 /dev/ttyUSB0
+</src>
+
+给nginx进程用户100msh赋予权限,把100msh加入dialout的组中
+<src type="text">
+usermod -G dialout 100msh
+</src>
+
+** 发送中文
+<src type="text">
+$content = $_GET['c'];
+$to = $_GET['p'];
+$cmd = 'export LC_ALL=zh_CN.utf8;export LANG=zh_CN.utf-8;' . 'echo -n "您的验证码是：' . $content . '【百米生活】" | /usr/local/bin/gnokii --sendsms ' . $to;
+$output = shell_exec ($cmd);
+</src>
+一定要把命令在一次shell_exec中执行
+
+** 错误码
+[[http://wiki.gnokii.org/index.php/AT_Errors][所有的错误码]]
+*** 常见错误码
+**** CMS ERROR 8
+sim卡没有费
+
+**** CMS ERROR 10
+ 1. 没有读到卡，modem里面没有卡
+ 2. 卡是报废的
+
+**** CMS ERROR 28
+发送短信失败后返回28，把SIM卡断电后（相当于重启后）有正常,很可能是运营商限制发送了。
+
+**** CMS ERROR 38
+ 1. 发送目标手机号不正确
+ 2. 余额不足（不是没有费）
+
+**** CMS ERROR 317
+需要SIM卡的PIN2
+
+**** CMS ERROR 304 
+是没有设置短信发送模式，需要设备一下 AT+CMGF=1
+
+
+**** CMS ERROR 512
+ 1. 没有信号
+ 2. 设备灯不闪烁
+可以把天线卸载重新拧上，或者用手机拨打卡的号码
+
+**** CMS ERROR 513
+短信中心错误的原因
+
+
+**** CMS ERROR 515
+Device busy or Invalid Character in string
+卡还没有准备好，稍等再试或者是字符串错误
+
+
+* 账号
+** 服务器
+*** mail
+ip: 120.31.131.241
+ssh: root baimi@new
+
+邮件
+https://mail.100msh.com
+
+https://mail.100msh.com/iredadmin
+
+postmaster postmaster@100msh
+
+mysql:
+
+http://120.31.131.241/phpmyadmin
+
+root 100msh100
+
+*** web
+**ssh**
+
+ip: 120.31.131.242
+root 100msh@web@242
+
+**mysql:**
+
+http://120.31.131.242/phpmyadmin
+
+root 100msh@mysql@root
+
+100msheb baimi@sc
+
+**商城**
+
+http://100msh.com/admin
+
+admin admin123
+
+http://120.31.131.242/ucenter 密码：100msh@ucenter
+
+http://120.31.131.242/tools.php 密码：100msh
+
+*** office
+ip: 192.168.0.8
+root 100msh!@#$@
+
+http://192.168.0.8/submin/ admin 100msh
+
+**虚拟服务器**
+IP： 113_107_219_80
+帐号： administrator
+密码： nowvps@123
+用处： D3
+联系人： 小梁 18926960696 QQ：168594716
+sql： sa 密码： 100msh@sql
+
+* 电话卡
+13144878936 需要激活
+13144896439 OK，有时显示512 无信号
+13144886082 需要激活
+13112823834 需要激活
+13144874041 需要激活
+13144896319 需要激活
+13144873745 需要激活
+13144891836 需要激活
+
+* 恒义
+** 网站
+网址： www.898hy.com
+原服务器信息：
+域名管理权限：
+http://www.dns-diy.com
+用户名：898hy.com
+密码：a123456a
+
+服务器：ftp326.72dns.net
+FTP用户名： 898hycom 
+FTP密码： q1yg5e
+
+数据库服务器: db319.72dns.net  
+数据库名: db_898hycom
+数据库用户名: 898hycom
+数据库密码: q1yg5e
+
+后台地址： www.898hy.com/admin-789456
+帐号： 898hy
+密码： hyjz898
+
+安装在windows server 2008 r2上需要注意的是
+ 1. 权限。文件夹的权限
+ 2. 64位中access数据库的访问 iis信息管理->应用程序池->defaultAppPool->高级设置->启用32位应用程序->true

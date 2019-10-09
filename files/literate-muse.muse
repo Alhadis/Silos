@@ -1,0 +1,93 @@
+#title Writing literate muse files
+#author Arnaud Bailly - abailly@oqube.com
+
+* Source code formatting 
+
+Each literate muse file consists of the following elements:
+ - standard muse formatting elements,
+ - source code fragments.
+ 
+** Code fragments
+
+Source code fragments are standard code in an arbitrary programming
+language that is enclosed between pairs of =<source>= tags and is given
+a name:
+<example>
+<source name="oqube/Coverage.java">
+package oqube;
+
+/**
+ * Sample code repository to illustrate sthortcomings of line 
+ * and branch coverage.
+ * 
+ * @author abailly@oqube.com
+ * @version $Id$
+ */
+public class Coverage {
+<<code_to_be_covered>>
+}
+</source> 
+</example>
+
+The name identifies the fragment in a *hierarchy* and is an arbitrary
+string that allows one to refer to this fragment as standard links
+within the source code fragments. In the preceding example, the
+string =<<code_to_be_covered>>= is a reference to some other piece of
+code: 
+
+<example>
+<source name="code_to_be_covered"> 
+
+  public int sampleMcdc(int i, int j) {
+    int k;
+    if(i<0 && (i+j >=0 || j < 0))
+      return 1;
+    else 
+      return  2;  
+  }
+</source>  
+
+</example>
+
+A name can be used by multiple fragments which will all be
+concatenated upon processing.
+
+** Fragments attributes
+
+Appart from its name, a fragment's tag can have the following
+attributes:
+ - an attribute =language= which is an hint for the processing system as
+   to which language this fragment is written in (default: =java=),
+ - an attribute =hidden= which instructs possible documentation
+   publisher to not display this fragment. This may be interesting in
+   verbose languages (eg. Java !) to hide uninteresting but necessary
+   code in the course of the discussion (for example, accessors and
+   mutators in bean-style java classes).
+
+* Source processing
+
+When the literate muse engine parses the muse source, it extracts the
+source blocks and stores them along with their name in a map. When
+asked to produce source code, it then analyzes its map and for each
+fragment does the following:
+ - if the fragment is referenced by some other fragment, then the
+   latter's reference is replaced by the former's content. This is
+   done recursively so one must be cautious not to introduce indirect
+   self-references, 
+ - if the fragment is not referenced in any other fragment, then its
+   name is considered to be a relative file path and the fragment's
+   final content is written to this file in some output
+   directory. Dangling references can either be ignored if the parser is **lenient** or
+   produce an error. Optionally, a common header and footer are prepended and
+   appended respectively to the generated source (for eg. adding standard
+   licence disclaimer). 
+
+If configured appropriately, the parser can transform the input files
+using some standard muse publishing format (see
+[[../muse-parser/index.html]]). These two operations are classically
+called **tangle** and **weave**, after the name of the programs from the first
+literate programming system called CWEB.
+
+Note that one can use a **multifile** mode in which fragments are
+accumulated over *all* input files before being processed. This allows
+splitting of complex and lengthy programs into several documents. 

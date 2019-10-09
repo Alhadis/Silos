@@ -1,0 +1,215 @@
+#title Muse syntax in muse-parser
+#author abailly@oqub.com
+
+The goal of this package is to follow as strictly as possible the
+[[http://www.mwolson.org/static/doc/muse.html#Markup-Rules][official muse]] markup rules. We refer the reader to this page for a
+completet reference and just hint at the main muse features. This page
+alaso gives some ongoing information on supported and unsupported
+markup rules.
+
+* Muse syntax summary
+
+Muse's markup rules are wiki-like and kept as simple as possible. A
+muse document is a standard text document, possibly starting with some
+meta-informations, and divided into *block* level markup rules and *flow*
+level markup rules.
+
+#anchor
+** Block
+
+A **paragraph** in muse is simply a sequence af lines without leading
+spaces or tabs:
+
+<example>
+This is a paragraph, possibly extending over several lines of text
+according to the authoring tool internal rules.
+
+This is another paragraph.
+</example>
+
+Text can be **quoted** or **centered** depending on the amount of white space
+at the beginning. The following input:
+
+<example>
+  A quoted paragraph is indented by 1 to 5 spaces from the (current)
+  right margin.
+
+      A centered paragraph is indented by 6 spaces or more from the
+      current right margin.
+</example>
+
+should renders (in HTML) as:
+
+<literal>
+<blockquote>
+  A quoted paragraph is indented by 1 to 5 spaces from the (current)
+  right margin.
+</blockquote>
+<center>
+      A centered paragraph is indented by 6 spaces or more from the
+      currrnt right margin. Note that the current margin means that
+      quoted or centered paragraphs can be arbitrarily nested.
+</center>
+</literal>
+
+**WARNING**: in the current (1.0-rc1) version of muse-module, quoted and
+centered paragraphs will be rendered as normal paragraphs as there is
+no provision in the doxia Sink API for outputting such layout. The
+above layout is cheating as one can see from this documentation's
+sources.
+
+
+Muse handle **lists** and **enumerations** which can be arbitrarily nested:
+
+<example>
+ - a list item starts with a dash and is indented by at least one
+   space rom the right margin. Lines must be aligned on the position
+   of the first non-space character after the dash which constitutes
+   the current right margin
+ - another item 
+   1. a sub-enumeration. Only nunmbers format are supported at present.
+   2. another item in sublist
+      which must be aligned on margin
+ - last item
+</example>
+
+ - a list item starts with a dash and is indented by at least one
+   space rom the right margin. Lines must be aligned on the position
+   of the first non-space character after the dash which constitutes
+   the current right margin
+ - another item 
+   1. a sub list
+   2. another item in sublist extending over several lines 
+      which must be aligned on margin
+ - last item
+
+**Meta-information** can be given at the beginning of a document in the
+form of tags with content:
+
+<literal>
+<pre>
+#title Titre de la page
+#author Jean Dupont
+#date 23/08/2006
+</pre>
+</literal>
+
+At present, tags =title=, =author= and =date= are recognised and translated
+to doxia equivalent. Note that this information may only be given at
+start of document.
+
+One can also add **separation** or horizontal rules using 4 or more dashes
+at the beginning of a line:
+
+<example>
+-----
+</example>
+
+-----
+
+** Flow elements
+
+Simple text effects within block level elements are allomwed:
+
+<example>
+=monospaced text=
+Different level of emphasis: *emphasis* **strong emphasis**
+_underlined text_
+</example>
+
+You can use =monospaced text=, different level of emphasis: *emphasis*
+**strong emphasis** and _underlined text_.
+
+You can also use links in two forms:
+
+<example>
+[[http://www.google.com]]
+
+[[http://www.oqube.com/projects/muse-parser][muse parser in Java]]
+</example>
+
+This is rendered with same text as the link and generates an
+hyperlink: either  [[http://www.google.com]] in first form, or
+[[http://www.oqube.com/projects/muse-parser][muse parser in Java]] in second form. If you are linking to another muse
+page in the same project, then you can just drop the protocol part:
+
+<example>
+[[maven-muse][here]]
+</example>
+
+renders as [[maven-muse][here]].
+
+You can also use **anchors** and links to anchor. An anchor is defined
+anywhere outside a block as:
+
+<example>
+#anchor
+</example>
+
+and it is referred to as
+
+<example>
+a link to an anchor [[#anchor][anchor]]
+</example>
+
+yielding an [[#anchor][hyperlink]]. This also works within pages as [[maven-muse#module][this link]] to
+maven-muse page shows.
+
+** Tables
+
+A simple table syntax is supported, as in the following example:
+
+<example>
+hdr1 ||hdr2 || hdr3
+data11 | data21| data31
+data12 |data22| data32
+data13 |data23 |data33
+</example>
+
+Renders as:
+hdr1 ||hdr2 || hdr3
+data11 | data21| data31
+data12 |data22| data32
+data13 |data23 |data33
+
+*Header* is a line with columns headers separated by two bars. Each
+successive line is a row with table cells separated by single bars. 
+It is also possible to nests tables inside lists:
+
+<example>
+ - this example test tables 
+   inside listes
+ - this is an inline table:
+   hdr1 ||hdr2 || hdr3
+   data11 | data21| data31
+   data12 |data22| data32
+   data13 |data23 |data33
+ - another item
+</example>
+
+This gets rendered as:
+ - this example test tables 
+   inside listes
+ - this is an inline table:
+   hdr1 ||hdr2 || hdr3
+   data11 | data21| data31
+   data12 |data22| data32
+   data13 |data23 |data33
+ - another item
+
+* Unsupported muse syntax
+
+The following markup rules in muse are not supported in current
+version of muse-parser:
+ - very strong emphasis with triple stars
+ - various tags like =<lisp>=, =<ruby>=, =<python>=, =<markup>= ...
+ - directive =#desc= 
+ - footnotes
+ - verses
+ - bare urls, emails or camel-case wiki links
+ - comments 
+
+There may also be some annoying discrepancies (and plain bugs
+!). Known issues are:
+ - whitespace alignment in lists and enums is very strict
+ - whitespace at start of empty line can cause havoc

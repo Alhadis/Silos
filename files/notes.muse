@@ -1,0 +1,97 @@
+#title Nil Notes & Kinda Specs
+
+* Slot
+
+A slot holds or reference data in memory.
+
+A slot is declared with the *let* form.
+
+The *let* keyword is optional in members and function parameters declarations.
+
+<src lang="niscript">
+(let ATTRIBUTE TYPE NAME = INITIALIZATION_EXPRESSION)
+
+(class|struct TYPE_NAME
+ (ATTRIBUTE TYPE NAME = INITIALIZATION_EXPRESSION))
+
+(function foo (int x, let int y))
+</src>
+
+** NAME
+
+The name of the slot. This is the symbol that will be used later in the code to access the slot's data.
+
+** TYPE
+
+The slot's type defines which type can be stored in the slot. If the type isn't specified the return type of the INITIALIZATION_EXPRESSION is used.
+
+*** struct type
+When the type of the slot is a *value type* the slot holds the data directly. It uses a "by value" semantic. When the slot is assigned to another slot the data is copied to the new slot such that modifing the value in the new slot will not change the value in the original slot.
+
+Note that the base types *int*, *float* and *string* all behave as value types.
+
+<src lang="niscript">
+(struct MyValueType
+ (var int x = 0))
+
+(let mut A = (new MyValueType))
+
+(let mut B = A) // A's data are copied in A
+(B.x = 123) // B.x == 123, A.x still == 0
+</src>
+
+*** class type
+When the type of the slot is a *class type* the slot holds a reference to the data. It uses a "by reference" semantic. The data are usually stored "on the heap" and are referenced by the slot instead of being directly held there. In practise this means that when a slot is copied to another slot only a reference is copied, the effect of this is that both slots now reference (point to) the same data so that modifying the data through either slots will modify the same data.
+
+<src lang="niscript">
+(class MyClassType
+ (var int x = 0))
+
+(let mut A = (new MyClassType))
+
+(let mut B = A) // A reference to the data reference by A is copied into B
+(B.x = 123) // B.x == 123 and A.x ALSO == 123 since both slots point to the same data
+</src>
+
+** ATTRIBUTE
+
+*** 'var' attribute
+
+Makes the slot variable, another value can be assigned to it.
+
+<src lang="niscript">
+// WITHOUT var
+(let x = 123)
+(x = 5) // COMPILATION ERROR
+
+// WITH var
+(let var x = 123)
+(x = 5) // works, x is not equal to 5
+</src>
+
+*** 'mut' attribute
+
+The data stored or referenced by the slot can be modified.
+
+<src lang="niscript">
+(class|struct MyType // all kind of types behave the same way
+ (var int x = 0))
+
+// WITHOUT mut
+(let A = (new MyType))
+(A.x = 123) // COMPILATION ERROR, can't modify an immutable value
+
+// WITH mut
+(let mut A = (new MyType))
+(A.x = 123) // works, A.x == 123 now
+</src>
+
+*** 'static' attribute
+
+Declares a static slot that is accessible directly as a global slot. Can only be used with a type member.
+
+There is a static form which declares *module static* slots.
+
+** INITIALIZATION_EXPRESSION
+
+Indicates the initial value of the data stored in the slot.

@@ -1,0 +1,76 @@
+#title lighttpd | apache
+
+* lighty or apache
+** speed vs. stability?
+*** nginx 
+是一个俄罗斯人写的，在俄罗斯似乎比较流行，排名紧随 lighty 之后，不管怎
+样，支持竞争把。这两个很象，同样都是嵌入 perl，同样追求轻量级，贯彻简
+单就是美的原则。相对而言后者比较稳定，lighty 的 debug 工作还很漫长。感
+兴趣的话自己 google lighttpd vs. nginx 就知道了。
+* the HTTP protocol
+** GET & POST in form
+<quote>
+What is important to note is that when the POST method is used, the
+content type of the message is application/x-www-form-urlencoded. This
+content encoding type: 
+
+ - Specifies normal data encoding
+ - Converts blanks to plus (+) signs
+ - Converts non-alphanumeric characters to hexadecimal numbers preceded by a percentage sign (%)
+ - Places an ampersand (&) between each name=value pair
+
+According to this encoding scheme, the message (name=Sally McDonald and email=smc@yahoo.com) must be encoded as
+<example>name=Sally+McDonald&email=smc@yahoo.com</example>
+</quote>
+
+GET 与 POST 的区别在于，GET 将消息放在消息头中传递。长度限制，其一；安
+全性，其二。
+
+<quote>
+The Hypertext Transfer Protocol (HTTP) is a request-reply application
+protocol which supports a fixed set of methods, such as GET, POST,
+PUT, DELETE, and so forth. The GET method is commonly used to request
+resources from a web server. Here are two sample GET requests: 
+
+ - GET / HTTP/1.1
+ - GET /names.html HTTP/1.1
+
+In addition, you can use both the GET and POST methods to send data to
+the server. These methods, however, have different ways of sending
+data to the server: 
+
+ - GET method: The input data is sent as part of the URL.
+ - POST method: The input data is sent as an entity body in a separate message. 
+</quote>
+* Configuration
+** conf Basics
+*** debian's modified conf file structure
+debian 中对这两个 web 服务器的配置文件都做了分割，因为它们本身都有支持
+mod 动态扩展的特性，所以在 /etc/ 的相应目录下又有两个文件夹分别是：
+ - /etc/lighttpd/conf-available/
+ - /etc/lighttpd/conf-enabled/
+apache 也是如此，其他的比如 php5 我想也是如此。对这种做法其实似乎是褒
+贬不一，我个人比较喜欢，所以特别希望用 debian 作服务器，先天的管理氛围
+嘛。conf-enabled 目录下的东西都是到 conf-available 下的软连接，自己 ls
+-l 看看就晓得了。可以自己手动弄，不过推荐 debian 的方式。安装了相应的
+deb 包的话自然就有了这么两个命令：
+ - lighty-enable-mod
+ - lighty-disable-mod
+顾名思义，用了就知道了。
+
+read /etc/lighttpd/conf-available/README first
+
+*** lighty's conf file
+所在目录我前头已经说了。它的配置文件使用 perl 写，我就是因此学的 perl。
+
+** PHP installation
+*** with fastcgi (lighty)
+ - php5-cgi
+ - php5-gd (option)
+ - php5-pgsql (option)
+使用 aptitude 安装如上所述几个包，php5 这个包是和 apache 配套的，使用
+lighty 运行 PHP 的方式就是 cgi，以前听说好像有些问题之类的，需细究。装
+好之后记得 enable fastcgi 这个模块就行了。关于详细配置方面目前还未深
+入，留一篇 [[http://trac.lighttpd.net/trac/wiki/TutorialLighttpdAndPHP][官方入门]] 和一篇另外的 [[http://hi.baidu.com/thinkinginlamp/blog/item/127209f77f3a9c26720eecda.html][文章连接]] 在此。
+
+*** in apache

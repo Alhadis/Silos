@@ -1,0 +1,641 @@
+#title Kingdom Connectivity
+
+* Kingdom Connectivity
+
+It has been a prosperous year for King Charles and he is rapidly expanding his kingdom. a beautiful new kingdom has been recently constructed and in this kingdom there are many cities connected by a number of one-way roads. Two cities may be directly connected by more than one roads, this is to ensure high connectivity.
+
+对于 Charles 国王来说，这是成功的一年，他迅速的扩展了他的王国。一个美丽的王国最近建立了，在这个王国中有许多城市通过许多单行道连通起来。两个城市可以直接通过多于一条路来连通，这是为了确保更高的连通性。
+
+In this new kingdom King Charles has made one of the cities at his financial capital and one as warfare capital and he wants high connectivity between these two capitals. The connectivity of a pair of cities say city A and city B is defined as the number of different paths from city A to city B. A path may use a road more than once if possible. Two path are considered different if they do not use exactly the same sequece of roads.
+
+在这个新的王国，国王 Charles 使一个城市作为他的金融中心，另一个作为战争中心，他想让这两个城市之间有更高的连通性。比方说城市A和城市B这一对城市的连通性由从城市A到城市B不同 **路径** 的数目定义。如果可能的话，一个 **路径** 可以多次使用一个道路。如果他们不精确地使用同一个道路序列，两个路径就是不同的。
+
+There are N cities numbered 1 to N in the new kingdom and M one-way roads. City 1 is the monetary captial and city N is the warare capital.
+
+王国中有编号从1到N的N个城市和M条单行道。城市1是金融中心，城市N是战争中心。
+
+You being one of he best programmers in new kingdom need to answer the connectivity of financial capital and warfare capital, i.e number of different path from city 1 to city N.
+
+你是王国中最好的计划员之一，需要回答金融中心和战争中心的连通性，例如，从城市1到城市N之间不同路径的数目。
+
+** Input Description
+
+First line contains two integers N and M.
+
+第一行包含两个整数N和M。
+
+Then follow M lines, each having two integers asy x and y, 1<=x,y<=N, indicating there is a road from city x to city y.
+
+接到来的M行，每一行有两个整数，例如x和y，1<=x,y<=N, 代表有一条从城市x到城市y的道路。
+
+** Output Description:
+
+Print the number of different path from city 1 to city N modulo 1,000,000,000 (10^9). If there are infinitely many different paths print "INFINITE PATHS" (quotes are for clarity).
+
+打印从城市1到城市N不同 **路径** 的数目 (不知道对谁求模)。如果有无穷多条不同 **路径** 打印 "INFINITE PATHS" (引号是为了清楚的说明)。
+
+<example>
+Sample Input:
+
+5 5
+1 2
+2 4
+2 3
+3 4
+4 5
+
+Sample Output:
+
+2
+
+Sample Input:
+
+5 5
+1 2
+4 2
+2 3
+3 4
+4 5
+
+Sample Output:
+
+INFINITE PATHS
+
+Constraints:
+
+2<=N<=10,000(10^4)
+
+1<=M<=1,00,000(10^5) 
+
+</example>
+
+* 解题思路
+
+好吧，我承认这道题我现在还没有解决。
+
+** 思路一
+现在说说我的思路，初看题目我就感觉应该会用到图论上的知识，但是我又没怎么学过离散数学，与于我就想，先不去看图论方面的知识，只凭自己的直觉试试先。
+
+我的 main 函数大概做了以下几件事：
+ 1. 获取数据
+ 2. 使用递归的方式获取路径数量 (path_num)
+
+获取数据就不用说了，我使用了一个结构体来保存，如下：
+
+<example>
+struct road {
+    int from;
+    int to;
+    int times;
+};
+</example>
+
+下面来说一说递归函数都做了点什么。
+
+*** 递归函数 get_path_num()
+
+这个函数逻辑是这样的，从 **目标城市N** 开始，倒着查找 **起始城市1** ，最终返回从 1 到 N 的不同路径的数量。内部实现如下：
+ - 找出 **N** 可由哪些城市到达，将可到达N的城市存为一个列表，名为from_list。
+ - 检查from_list中的每一个元素：比如城市 **M**,如果为城市1，path_num加1，否则递归调用本身，返回从城市M开始倒着找到城市1的不同路径的数量。
+
+是不是没看懂，这是因为我说得也不清楚。如果真想清楚，只有看代码了。下面的代码是我第一次的实验品，总共有10个test case，但只过了3个。我的建议是，不要看下面的代码了，这段代码逻辑不是十分清楚，并且还有bug。直接看我看过图论知识后写的第二段代码吧。
+
+<example>
+/**
+ * @file kingdom_connectivity.c
+ * @brief 
+ * @author Airead Fan <fgh1987168@gmail.com>
+ * @date 2012  3月 02 15:51:52 CST
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+//#define _DEBUG_
+
+#ifdef _DEBUG_
+#define DBG(fmt, args...) printf(fmt, ##args)
+#else
+#define DBG(fmt, args...)
+#endif
+
+struct road {
+    int from;
+    int to;
+    int times;
+};
+
+int city_num, road_num;
+
+/**
+ * @brief get road list from stdin
+ * @param road_num : the number of road
+ * @return on error returns NULL, otherwise returns struct #road *
+ */
+struct road *get_road_list(int road_num)
+{
+    int i;
+    int size;
+    struct road *road_list;
+
+    size = sizeof(struct road) * (road_num + 1); 
+    road_list = (struct road *)malloc(size);
+    if (road_list == NULL) {
+        printf("malloc failed\n");
+        return NULL;
+    }
+    memset(road_list, 0, size);
+
+    for (i = 0; i < road_num; i++) {
+        scanf("%d %d", &road_list[i].from, &road_list[i].to);
+    }
+    
+    return road_list;
+}
+
+/**
+ * @brief get the list of city which can go to city
+ * @param city : should go to city
+ * @param road_list : all road in it
+ * @return on error returns NULL, otherwise returns city_from_list
+ */
+int *get_city_from_list(int city, struct road *road_list)
+{
+    int count, *city_from_list, *tmp_list;
+    int size;
+    struct road *road;
+
+    /* get from city list number to malloc */
+    count = 0;
+    road = road_list;
+    while (road->to != 0) {
+        if (road->to == city) {
+            count++;
+        }
+        road++;
+    }
+    
+    size = sizeof(int) * (count + 1);
+    city_from_list = (int *)malloc(size);
+    if (city_from_list == NULL) {
+        printf("malloc city_from failed\n");
+        return NULL;
+    }
+    memset(city_from_list, 0, size);
+
+    /* set city_from_list */
+    road = road_list;
+    tmp_list = city_from_list;
+    while (road->to != 0) {
+        if (road->to == city) {
+            *tmp_list++ = road->from;
+            road->times++;
+            DBG("\n%d --> %d: times: %d\n", road->from, road->to, road->times);
+        }
+        road++;
+    }
+
+    return city_from_list;
+}
+
+/**
+ * @brief get the number of path from city_from to city_to
+ * @param city_start : start point of city
+ * @param city_to : 
+ * @param road_list : 
+ * @param road_num : the number of road
+ * @return on infinite returns -1, otherwise returns the number of path
+ */
+int get_path_number(int city_start, int city_to, struct road *road_list, int road_num)
+{
+    int num, *city_from_list, tmp_num;
+    int *pcity;
+    struct road *road;
+    static int target_from;            /*
+                                        * if target city call
+                                        * get_city_from_list, target_from set 1,
+                                        * and don't call again
+                                        */
+
+    DBG("->%d", city_to);
+
+    num = 0;
+
+    if (city_to == city_num) {
+        if (target_from == 0) {
+            target_from = 1;
+        } else {
+            return 0;
+        }
+    }
+
+    city_from_list = get_city_from_list(city_to, road_list);
+    if (city_from_list == NULL) {
+        return 0;
+    }
+
+    /* check infinite*/
+    road = road_list;
+    while (road->to != 0) {
+        if (road->times >= road_num) {
+            DBG("%d --> %d: times: %d\n", road->from, road->to, road->times);
+            return -1;
+        }
+        road++;
+    }
+
+    pcity = city_from_list;
+    while (*pcity != 0) {
+        if (*pcity == city_start) {
+            DBG("->%d", *pcity);
+            num++;
+        } else {
+            tmp_num = get_path_number(city_start, *pcity, road_list, road_num);
+            if (tmp_num < 0) {
+                return -1;
+            }
+            num += tmp_num;
+        }
+        pcity++;
+    }
+
+    return num;
+}
+
+int main(int argc, char *argv[])
+{
+    int i, path_num;
+    struct road *road_list;
+    
+    scanf("%d %d", &city_num, &road_num);
+    DBG("city_num = %d, road_num = %d\n", city_num, road_num);
+
+    road_list = get_road_list(road_num);
+
+    for (i = 0; i < road_num; i++) {
+        DBG("road[%d]: %3d   --> %3d\n", i + 1, road_list[i].from, road_list[i].to);
+    } 
+
+    path_num = get_path_number(1, city_num, road_list, road_num);
+    if (path_num < 0) {
+        printf("INFINITE PATHS");
+    }else {
+        printf("%d", path_num);
+    }
+
+    free(road_list);
+    return 0;
+}
+</example>
+
+** 思路2 (建议看这个)
+
+这次我看了图论相关的知识了。
+
+先对题目进行分析，查看 **output sample** 可知，结果分成两大类：一个是求出具体有几条不同路径，另一个是说明路径是无限的。如果这个有向图有圈的，就可以输出无限了。否则的话，就要求出共有几条不同的路径。
+
+*** 判断是否有无限路径
+<verse>
+定理： 设S为有限的有向无圈图，则图S存在一个拓扑排序。
+</verse>
+
+根据这个定理，我们可不可以认为，一个不存在拓扑排序的的有向图就是有圈的呢，我不是十分确定，但是我的代码就是这样判断的。
+
+拓扑排序的算法：
+<verse>
+Step 1, 求S的每个顶点N的入度INDEG(N)
+Step 2, 在队列中插入所有的零度顶点
+Step 3, 重复 Step 4 和 Step 5，直到队列空
+Step 4, 移去并检查队列的前面顶点N
+Step 5, 对顶点N的每个邻点M重复
+        (a) 置INDEG(M) = INDEG(M) - 1
+            [删除从N到M的边]
+        (b) 若INDEG(M) = 0，则添加M到队列
+            [结束循环]
+        [结束 Step 3 循环]
+Step 6, 退出
+</verse>
+
+*** 求出有多少不同路径
+
+我的基本想法是：从城市1开始，检查它所有的可达城市，如果为目标城市则计数加1，否则检查该城市的每一个可达城市，重复直到没有可达城市为止。比较类似于图的深度优先算法吧。
+
+这样，我就可以走完从城市1所有能走的路径，那么当前的计数是否就应该为 **从城市1到城市N不同路径的数量** 呢？我觉得应该是的，但是结果是: 10个test case只过了2个，还没有我上一个版本过的多，郁闷死啦-_-。感兴趣的同学可以讨论一下这道题的解法。
+
+题目来自：[[https://www.interviewstreet.com/challenges/dashboard/#problem/4f40dfda620c4][Interview street Kingdom Connectivity]]，不知道没注册能不能看。
+
+第二个版本代码如下:
+
+<example>
+/**
+ * @file kingdom_connectivity.c
+ * @brief 
+ * @author Airead Fan <fgh1987168@gmail.com>
+ * @date 2012  3月 05 15:35:53 CST
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define _DEBUG_
+
+#ifdef _DEBUG_
+#define DBG(fmt, args...) printf(fmt, ##args)
+#else
+#define DBG(fmt, args...)
+#endif
+
+struct point {
+    int indeg;
+    int outdeg;
+    int status;
+    struct edge *edge;
+};
+
+struct edge {
+    int begin;
+    int end;
+    struct edge *next;
+};
+
+/**
+ * @brief insert edge to point_list
+ * @param point_list
+ * @param begin
+ * @param end
+ * @return on success returns 0, otherwise returns -1
+ */
+int point_list_insert_edge(struct point *point_list, int begin, int end)
+{
+    struct edge *tmpedge;
+
+    if ((tmpedge = malloc(sizeof(struct edge))) == NULL) {
+        return -1;
+    }
+
+    tmpedge->begin = begin;
+    tmpedge->end = end;
+    tmpedge->next = point_list[begin - 1].edge;
+    point_list[begin - 1].edge = tmpedge;
+
+    point_list[begin - 1].outdeg++;
+    point_list[end - 1].indeg++;
+    
+    return 0;
+}
+
+/**
+ * @brief get point list from stdin
+ * @param city_num
+ * @return on error returns NULL, otherwise returns point_list
+ */
+struct point *get_point_list(int city_num)
+{
+    struct point *point_list;
+    int size;
+
+    point_list = NULL;
+        
+    size = sizeof(struct point) * city_num;
+    if ((point_list = malloc(size)) == NULL) {
+        fprintf(stderr, "create point failed\n");
+        return NULL;
+    }
+    memset(point_list, 0, size);
+
+    return point_list;
+}
+
+/**
+ * @brief get edge list from stdin
+ * @param edge_num
+ * @return on error returns NULL, otherwise returns edge_list
+ */
+struct edge *get_edge_list(int edge_num)
+{
+    struct edge *edge_list;
+    int begin, end;
+    int i, size;
+
+    edge_list = NULL;
+        
+    size = sizeof(struct edge) * edge_num;
+    if ((edge_list = malloc(size)) == NULL) {
+        fprintf(stderr, "create edge failed\n");
+        return NULL;
+    }
+    memset(edge_list, 0, size);
+
+    for (i = 0; i < edge_num; i++) {
+        scanf("%d %d", &begin, &end);
+        edge_list[i].begin = begin;
+        edge_list[i].end = end;
+    }
+
+    return edge_list;
+}
+
+/**
+ * @brief find the point whose indeg is indeg
+ * @param indeg
+ * @param point_list
+ * @param city
+ * @return not found returns NULL, otherwise returns struct *point
+ */
+struct point *find_point_from_indeg(int indeg, struct point *point_list, int city_num)
+{
+    int i;
+    struct point *p;
+
+    for (i = 0; i < city_num; i++) {
+        if (point_list[i].indeg == indeg && point_list[i].status == 0) {
+            p = &point_list[i];
+            break;
+        }
+    }
+    
+    if (i == city_num) {
+        p = NULL;
+    }
+    
+    return p;
+}
+
+/**
+ * @brief check cyclic 
+ * @param point_list
+ * @param city_num
+ * @return not cyclic returns 0, otherwise returns 1;
+ */
+int is_cyclic(struct point *point_list, int city_num)
+{
+    int i;
+    struct point *p;
+
+    for (i = 0; i < city_num; i++) {
+        point_list[i].status = 0;
+    }
+
+    i = 0;
+    while ((p = find_point_from_indeg(0, point_list, city_num)) != NULL) {
+        p->status = 1;
+        while (p->edge != NULL) {
+            point_list[p->edge->end - 1].indeg--;
+            p->edge = p->edge->next;
+        }
+        i++;
+    }
+
+    if (i < city_num) {
+        return 1;
+    }
+
+    return 0;
+}
+
+/**
+ * @brief target is destination, path_num++
+ * @param point_list
+ * @param city_num
+ * @param path_num
+ * @return on success returns 0, otherwise returns -1
+ *
+ * check the second parameter point 
+ */
+int check_target(struct point *point_list, int city, int city_num, int *path_num, char *trace)
+{
+    struct edge *tmpedge;
+    char buf[32];
+
+    snprintf(buf, 32, "%d->", city);
+    strcat(trace, buf);
+
+    if (city == city_num) {
+        DBG("%s\n", trace);
+        (*path_num)++;
+        trace[strlen(trace) - 3] = '\0';
+        return 0;
+    }
+
+    tmpedge = point_list[city - 1].edge;
+    while (tmpedge != NULL) {
+        check_target(point_list, tmpedge->end, city_num, path_num, trace);
+        tmpedge = tmpedge->next;
+    }
+
+    trace[strlen(trace) - 3] = '\0';
+
+    return 0;
+}
+
+/**
+ * @brief get the number of different paths
+ * @param point_list
+ * @param city_num
+ * @param edge_num
+ * @return on error returns -1, otherwise returns number;
+ */
+int get_path_number(struct point *point_list, int city_num, int edge_num)
+{
+    int path_num;
+    char trace[1024];
+
+    memset(trace, 0, sizeof(trace));
+    path_num = 0;
+    check_target(point_list, 1, city_num, &path_num, trace);
+    
+    return path_num;
+}
+
+int debug_point_list(struct point *point_list, int city_num)
+{
+    int i;
+    struct edge *edge;
+
+    fprintf(stderr, "point | indeg | outdeg | target \n");
+
+    for (i = 0; i < city_num; i++) {
+        fprintf(stdout, "%3d   | %3d   | %4d   | ", i + 1, point_list[i].indeg, point_list[i].outdeg);
+        edge = point_list[i].edge;
+        while (edge != NULL) {
+            fprintf(stdout, "%d, ", edge->end);
+            edge = edge->next;
+        }
+        fprintf(stdout, "\n");
+    }
+
+    return 0;
+}
+
+/**
+ * @brief reset point list with edge list
+ * @param point_list
+ * @param edge_list
+ * @param edge_num
+ * @return on success returns 0, otherwise returns -1
+ */
+int point_list_reset(struct point *point_list, struct edge *edge_list, int city_num, int edge_num)
+{
+    int i;
+
+    for (i = 0; i < edge_num; i++) {
+        if (edge_list[i].begin == city_num) {
+            DBG("ignore %d --> %d\n", edge_list[i].begin, edge_list[i].end);
+            continue;
+        }
+        if (point_list_insert_edge(point_list, edge_list[i].begin, edge_list[i].end) < 0) {
+            fprintf(stderr, "inset edge failed\n");
+            return -1;
+        }
+    }
+    
+    return 0;
+}
+
+int main(int argc, char *argv[])
+{
+    int city_num, edge_num;
+    struct point *point_list;
+    struct edge *edge_list;
+    int path_num;
+
+    scanf("%d %d", &city_num, &edge_num);
+    DBG("city num: %d, edge num: %d\n", city_num, edge_num);
+
+    if ((point_list = get_point_list(city_num)) == NULL) {
+        fprintf(stderr, "get point_list failed\n");
+        exit(1);
+    }
+
+    if ((edge_list = get_edge_list(edge_num)) == NULL) {
+        fprintf(stderr, "get edge_list failed\n");
+        exit(1);
+    }
+
+    if (point_list_reset(point_list, edge_list, city_num, edge_num) < 0) {
+        fprintf(stderr, "point list reset failed\n");
+        exit(1);
+    }
+
+    debug_point_list(point_list, city_num);
+ 
+    if (is_cyclic(point_list, city_num) != 0) {
+        fprintf(stdout, "INFINITE PATHS");
+        return 0;
+    }
+
+    if (point_list_reset(point_list, edge_list, city_num, edge_num) < 0) {
+        fprintf(stderr, "point list reset failed\n");
+        exit(1);
+    }
+
+    path_num = get_path_number(point_list, city_num, edge_num);
+
+    fprintf(stdout, "%d", path_num);
+    DBG("\n");
+
+    return 0;
+}
+</example>

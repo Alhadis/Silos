@@ -1,0 +1,438 @@
+#title Monikop (and Pokinom)
+#subtitle rsync between unconnected hosts
+#author Bert Burgemeister
+
+
+
+* Installation
+
+We assume Debian GNU/Linux here, but any distribution should
+work. Adapt installation instructions accordingly.
+
+Debian Packages needed:
+
+ - to run Monikop (on Rover) or Pokinom (in office): 
+   rsync, mingetty, sudo, libcurses-perl, libfile-rsync-perl;
+
+ - to install from a git repository: git-core;
+
+ - to run the tests: bc, time.
+
+ - Both Monikop and Pokinom run on text console; you don't need
+   anything like Gnome, KDE or even X.
+
+
+** Prepare Removable Disks
+
+Put sticker labels with disk names on your removable disks.
+
+*** File Systems
+
+Create labelled file systems on the removable disks. Example
+(suppose a removable disk with a sticker label "=disk_10=" on its case is attached to =/dev/sdg1=): 
+
+=# mke2fs -j -L disk_10 /dev/sdg1=
+
+On both Monikop's and Pokinom's host, label the system root
+partition. If it were on =/dev/sda1/, that's e.g.=:
+
+=# e2label /dev/sda1 root=
+
+On both Monikop's and Pokinom's host, label the swap partition. If it
+happens to be on /dev/sda5, e.g.: 
+
+=# swapoff=
+
+=# mkswap -L swap /dev/sda5=
+
+=# swapon=
+ 
+*** Mount Points
+
+On both Monikop's and Pokinom's host, create mount points, one for
+each removable disk: 
+
+=# mkdir -p /media/disk_{01,02,03,04...}=
+
+=# chmod a+rx /media/disk_{01,02,03,04...}=
+
+#fstab
+In =/etc/fstab= on both Monikop's and Pokinom's host, make use of the disk labels:
+
+<src lang="conf">
+## System partitions ###
+LABEL=root     /               ext3  defaults,errors=remount-ro 0  1
+LABEL=swap     none            swap  sw                         0  0
+## Removable disks                   
+LABEL=disk_01  /media/disk_01  ext3  rw,user,auto               0  0
+LABEL=disk_02  /media/disk_02  ext3  rw,user,auto               0  0
+LABEL=disk_03  /media/disk_03  ext3  rw,user,auto               0  0
+LABEL=disk_04  /media/disk_04  ext3  rw,user,auto               0  0
+# etc.
+</src>
+
+Put each removable disk in and make it writable; e.g.:
+
+=# mount /media/disk_01=
+
+=# chmod a+rwx /media/disk_01=
+ 
+*** Maintain Bootability
+
+On both Monikop's and Pokinom's host, make sure the operating system boots
+actually from its system disk rather than from some of the removable
+ones. Change =/boot/grub/menu.lst= where it says <code># kopt=root=...</code>:
+
+<src lang="conf">
+### BEGIN AUTOMAGIC KERNELS LIST
+## lines between the AUTOMAGIC KERNELS LIST markers will be modified
+## by the debian update-grub script except for the default options below
+
+## DO NOT UNCOMMENT THEM, Just edit them to your needs
+
+## ## Start Default Options ##
+## default kernel options
+## default kernel options for automagic boot options
+## If you want special options for specific kernels use kopt_x_y_z
+## where x.y.z is kernel version. Minor versions can be omitted.
+## e.g. kopt=root=/dev/hda1 ro
+##      kopt_2_6_8=root=/dev/hdc1 ro
+##      kopt_2_6_8_2_686=root=/dev/hdc2 ro
+# kopt=root=/dev/disk/by-label/root noresume ro
+</src>
+ 
+and call
+ 
+=# update-grub=
+
+
+#Configure_Monikop_and_Pokinom
+** Configure Monikop and Pokinom
+
+Create a user on both Monikop's and Pokinom's machine. For
+description's sake, we assume they're called m-operator.
+
+Inside m-operator's home directory, [[download][get Monikop (and Pokinom)]];
+unpack the tarball:
+
+=$ tar -xzf monikop-<version>.tar.gz=
+
+=$ mv monikop-<version> monikop=
+
+=$ cd monikop=.
+
+Copy =monikop.config.example= to =monikop.config= and
+=pokinom.config.example= to =pokinom.config, respectively,= and
+adapt them according to your needs. Both are perl code, so be careful
+and keep the punctuation in place. 
+
+#monikop.config
+*** =monikop.config=
+
+<include file="../monikop.config.example" markup="src" lang="perl">
+
+For Monikop, change in [[installation#monikop.config][monikop.config]] at least:
+
+ - =%sources=: Data producing Sources on Rover in one of the formats Rsync
+   understands, together with a source-specific directory name where data
+   of the respective Source goes. Those directory names can be equal for
+   several Sources as long as all filenames in the payload are certain to be
+   unique.
+
+ - =@usable_mount_points=: Mount points (directories) you set up [[installation#fstab][earlier]] for your
+   removable disks.
+
+   
+#pokinom.config
+
+*** =pokinom.config=
+
+<include file="../pokinom.config.example" markup="src" lang="perl">
+
+For Pokinom you should edit in [[installation#pokinom.config][pokinom.config]] at least:
+
+ - =@usable_mount_points= (as with [[installation#monikop.config][monikop.config]])
+ - =$destination=: Data destination in one of the formats Rsync
+   understands; cf. setup of [[installation#Data_Destination][Data Destination]].
+ - =$rsync_username=, =$rsync_password=: credentials of (and only
+   known to) the Rsync server;
+   cf. setup of [[installation#Data_Destination][Data Destination]]. 
+
+
+*** Automatic Program Start
+
+Append to
+=/home/m-operator/.profile= (create it if necessary):
+
+<src lang="bash">
+/home/m-operator/monikop/monikop
+</src>
+
+or
+
+<src lang="bash">
+/home/m-operator/monikop/pokinom,
+</src>
+
+respectively.
+
+If necessary, specify path to config file, e.g.  
+<src lang="bash">
+/home/m-operator/monikop/monikop /home/m-operator/monikop/monikop.config
+</src>
+
+
+*** Setup Sudo
+
+On both Monikop's and Pokinom's host authorise m-operator to shut down computer.
+Use =visudo= to change =/etc/sudoers=; add:
+
+<src lang="conf">
+m-operator ALL=(ALL) NOPASSWD: /sbin/halt -p
+m-operator ALL=(ALL) NOPASSWD: /sbin/reboot
+</src>
+
+
+*** Automatic Login
+
+On both Monikop's and Pokinom's host, change the line in
+=/etc/inittab= that looks like
+
+<src lang="conf">
+1:2345:respawn:/sbin/getty 38400 tty1
+</src>
+
+into
+
+<src lang="conf">
+1:2345:respawn:/sbin/mingetty --autologin m-operator --noclear tty1
+</src>
+
+
+#Configure_Rsync_on_Sources
+** Configure Rsync on Sources
+
+Install package rsync.
+
+Example for =/etc/rsyncd.conf=:
+
+<src lang="conf">
+pid file=/var/run/rsyncd.pid
+[data]
+    path = /mnt/hdd_0
+    use chroot = false
+    lock file = /var/lock/rsyncd
+    read only = yes
+    list = yes
+    transfer logging = false
+</src>
+
+In =/etc/default/rsync=, change the line
+
+<src lang="conf">
+RSYNC_ENABLE = false
+</src>
+
+to
+
+<src lang="conf">
+RSYNC_ENABLE = true
+</src>
+
+Start rsync server:
+
+=# /etc/initd/rsync start=
+
+or reboot.
+
+
+On Windows, install
+[[http://sourceforge.net/projects/sereds/files/cwRsync/4.0.3/cwRsyncServer_4.0.3_Installer.zip/download][cwRsync]]. Click
+Start, Programs, cwRsyncServer, rsyncd.conf; edit:
+
+<src lang="conf">
+use chroot = false
+strict modes = false
+hosts allow = *
+logfile = rsyncd.log
+[data]
+#   /cygdrive/e/log stands for E:\log
+    path = /cygdrive/e/log
+    read only = false
+    transfer logging = false
+</src>
+
+Configure service RsyncServer: right-click My Computer; click Manage, Services
+and Applications, Services, RsyncServer; set Startup Type to Automatic.
+
+
+#Network_Setup
+** Network Setup
+
+Depending on the amount of data to transfer, consider putting a
+dedicated NIC for each Source into Monikop's machine.  In this case,
+you should provide for non-overlapping subnets. [[http://jodies.de/ipcalc][IP-Calculator]] may be
+helpful.
+
+
+*** Monikop
+
+**** Name the Sources
+
+#etc_hosts
+Example for =/etc/hosts=:
+
+<src lang="conf">
+127.0.0.1      localhost
+192.168.200.10 data-producer1
+192.168.200.20 data-producer2
+192.168.200.30 data-producer3
+192.168.200.50 data-producer4
+192.168.178.1  monikop
+</src>
+
+
+**** Configure NICs
+
+Example for =/etc/network/interfaces=:
+<src lang="conf">
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# Net of smaller Sources
+allow-hotplug eth1
+iface eth1 inet static
+   address 192.168.178.1
+   netmask 255.255.255.0
+
+# Dedicated NIC for data-producer1
+allow-hotplug eth2
+iface eth2 inet static
+   address 192.168.200.9
+   netmask 255.255.255.248
+
+# Dedicated NIC for data_producer2
+allow-hotplug eth3
+iface eth3 inet static
+   address 192.168.200.19
+   netmask 255.255.255.248
+
+# Dedicated NIC for data_producer3
+allow-hotplug eth4
+iface eth4 inet static
+   address 192.168.200.29
+   netmask 255.255.255.248
+
+# Dedicated NIC for data_producer4
+allow-hotplug eth5
+iface eth5 inet static
+   address 192.168.200.49
+   netmask 255.255.255.248
+</src>
+
+
+*** Data Sources
+
+Use [[installation#etc_hosts][/etc/hosts]] as with Monikop. For Windows, it's =%SystemRoot%\system32\drivers\etc\hosts=.
+
+
+**** Source's NIC
+
+Example for =/etc/network/interfaces=:
+
+<src lang="conf">
+auto lo
+iface lo inet loopback
+
+# service (not relevant for Monikop)
+allow-hotplug eth0
+iface eth0 inet static
+   address 192.168.178.2
+   netmask 255.255.255.0
+
+# Monikop's dedicated NIC
+allow-hotplug eth1
+iface eth1 inet static
+   address 192.168.200.10
+   netmask 255.255.255.248
+</src>
+
+For Windows, configure your network settings accordingly.
+
+
+*** Pokinom
+
+Pokinom's network settings don't need any special treatment. Just
+integrate it into the office LAN Destination is connected to.
+
+
+#Data_Destination
+** Data Destination
+
+*** Rsync Server on Destination
+
+Install package rsync.
+
+Adapt =/etc/rsyncd.conf=, e.g.:
+
+<src lang="conf">
+gid = data_receiving_group
+use chroot = yes
+max connections = 0
+pid file = /var/run/rsyncd.pid
+
+[incoming]
+        path = /mnt/./raid_0
+        list = no
+        comment = Pokinom only; requires authentication
+        read only = no
+        incoming chmod = g+r,g+w,g+x
+        write only = yes
+        # Pokinom's IP:
+        hosts allow = 192.168.180.120
+        auth users = m-operator
+        secrets file = /etc/rsyncd.secrets
+</src>
+
+=/etc/rsyncd.secrets= contains Rsync's credentials which must
+correspond to settings =$rsync_passwd= and =$rsync_username= in [[installation#pokinom.config][pokinom.config]]:
+
+<src lang="conf">
+m-operator:sEcReT
+</src>
+
+=/etc/rsyncd.secrets= must not be world-readable.
+
+In =/etc/default/rsync=, change the line
+
+<src lang="conf">
+RSYNC_ENABLE = false
+</src>
+
+to
+
+<src lang="conf">
+RSYNC_ENABLE = true
+</src>
+
+Start rsync server:
+
+=# /etc/initd/rsync start=
+
+or reboot.
+
+With the above, rsync puts the payload it receives into
+=/mnt/raid_0/NEW_DATA/=. ("=NEW_DATA=" was set with
+=$destination= in [[installation#pokinom.config][pokinom.config]].)
+
+=NEW_DATA/= and everything inside belongs to user
+nobody and group data_receiving_group.
+
+If on Destination you can't do without Windows, install 
+[[http://sourceforge.net/projects/sereds/files/cwRsync/4.0.3/cwRsyncServer_4.0.3_Installer.zip/download][cwRsync]],
+configure its =rsyncd.conf= accordingly, and set service rsync to
+automatic start.
+
+; TODO: net topology for Monikop, for Pokinom
+

@@ -1,0 +1,291 @@
+#title Nginx+Mysql+php源码安装
+#author Ole Yang
+#date `date`
+
+<contents>
+
+
+* 准备
+** 删除原来安装的mysql
+<src type="bash">
+rpm -qa | grep mysql
+mysql-libs-5.5.28-1.fc17.x86_64
+[LAMP]$ rpm -e mysql-libs-5.5.28-1.fc17.x86_64
+error: Failed dependencies:
+	libmysqlclient.so.18()(64bit) is needed by (installed) perl-DBD-MySQL-4.020-2.fc17.x86_64
+	libmysqlclient.so.18(libmysqlclient_16)(64bit) is needed by (installed) perl-DBD-MySQL-4.020-2.fc17.x86_64
+[LAMP]$ rpm -e perl-DBD-MySQL-4.020-2.fc17.x86_64 perl-DBD-MySQL-4.020-2.fc17.x86_64 mysql-libs-5.5.28-1.fc17.x86_64
+error: can't create transaction lock on /var/lib/rpm/.rpm.lock (权限不够)
+[LAMP]$ sudo rpm -e perl-DBD-MySQL-4.020-2.fc17.x86_64 perl-DBD-MySQL-4.020-2.fc17.x86_64 mysql-libs-5.5.28-1.fc17.x86_64
+</src>
+
+** 删除原来安装的php
+<src type="bash">
+[software]$ rpm -qa | grep php  # 查看安装的php程序
+php-cli-5.4.11-1.fc17.x86_64
+php-php-gettext-1.0.11-5.fc17.noarch
+php-mysql-5.4.11-1.fc17.x86_64
+php-common-5.4.11-1.fc17.x86_64
+php-mcrypt-5.4.11-1.fc17.x86_64
+php-pdo-5.4.11-1.fc17.x86_64
+php-gd-5.4.11-1.fc17.x86_64
+php-devel-5.4.11-1.fc17.x86_64
+php-mbstring-5.4.11-1.fc17.x86_64
+[software]$ su # 切换成root用户
+密码：
+[root@sl500 software]# for i in `rpm -qa|grep ^php`;do rpm -e $i;done   # 遍历自动一个一个删除，for语句强大
+error: Failed dependencies:
+	php-common(x86-64) = 5.4.11-1.fc17 is needed by (installed) php-pdo-5.4.11-1.fc17.x86_64
+	php-common(x86-64) = 5.4.11-1.fc17 is needed by (installed) php-mcrypt-5.4.11-1.fc17.x86_64
+	php-common(x86-64) = 5.4.11-1.fc17 is needed by (installed) php-mbstring-5.4.11-1.fc17.x86_64
+	php-common(x86-64) = 5.4.11-1.fc17 is needed by (installed) php-gd-5.4.11-1.fc17.x86_64
+[root@sl500 software]# for i in `rpm -qa|grep ^php`;do rpm -e $i;done # 出现依赖关系无法删除软件，再来一次
+warning: /etc/php.ini saved as /etc/php.ini.rpmsave
+[root@sl500 software]# rpm -qa| grep php # 查询看看是否还有
+</src>
+
+** 安装依赖软件
+<src type="bash">
+for i in ` rpm -q gcc gcc-c++ autoconf cmake libjpeg libjpeg-devel libpng libpng-devel freetype freetype-devel libxml2 libxml2-devel zlib zlib-devel glibc glibc-devel glib2 glib2-devel libXpm libXpm-devel bzip2 bzip2-devel ncurses ncurses-devel curl curl-devel e2fsprogs e2fsprogs-devel krb5-devel libidn libidn-devel openssl openssl-devel bison bison-devel readline readline-devel |grep 'not installed' | awk '{print $2}' `; do yum -y install $i; done
+</src>
+
+* 安装mysql
+<src type="bash">
+groupadd mysql
+useradd -r -g mysql mysql
+</src>
+
+<src type="bash">
+# wget http://cdn.mysql.com/Downloads/MySQL-5.5/mysql-5.5.29.tar.gz
+# tar xvf mysql-5.5.29.tar.gz
+# cd mysql-5.5.29
+# cmake -DCMAKE_INSTALL_PREFIX=/opt/mysql \
+-DMYSQL_DATADIR=/opt/mysql/data \
+-DEXTRA_CHARSETS=all \
+-DDEFAULT_CHARSET=utf8 \
+-DDEFAULT_COLLATION=utf8_general_ci \
+-DWITH_READLINE=1 \
+-DWITH_SSL=bundled \
+-DWITH_EMBEDDED_SERVER=1 \
+-DENABLED_LOCAL_INFILE=1 \
+-DWITH_INNOBASE_STORAGE_ENGINE=1 \
+-DWITHOUT_PARTITION_STORAGE_ENGINE=1 \
+-DWITH_DEBUG=0 
+# make && make install
+</src>
+
+** 权限和初始化数据库
+<src type="bash">
+# chown -R mysql:mysql /opt/mysql
+# cd /opt/mysql/  # 不执行这一步会报错：FATAL ERROR: Could not find ./bin/my_print_defaults
+                  ### 初始化数据库,不执行会出现：Table 'mysql.host' doesn't exist,
+                  ### 如果修改了/etc/init.d/mysqld 中的basedir，--datadir也得相应的修改
+# mkdir /home/mysql/data -p
+# chown -R mysql:mysql /home/mysql
+# scripts/mysql_install_db --user=mysql --datadir=/home/mysql/data
+</src>
+
+** 配置文件
+<src type="bash">
+# cp /opt/mysql/support-files/my-medium.cnf /etc/my.cnf
+</src>
+如果在编译的时候没有加入初始数据库默认字符集参数（-DDEFAULT_CHARSET=utf8 ，-DDEFAULT_COLLATION=utf8_general_ci ），那么在安装完成后就需要编辑my.ini，在[client]和[mysqld]更改MySQL默认编码，保存并关闭。如下：
+
+<src type="bash">
+[client]
+default-character-set = utf8
+
+[mysqld]
+character-set-server = utf8
+</src>
+
+** 启动
+<src type="bash">
+# /opt/mysql/bin/mysqld_safe --user=mysql --datadir=/home/mysql/data &
+</src>
+
+** 自动启动
+<src type="bash">
+# cp /opt/mysql/support-files/mysql.server /etc/init.d/mysqld
+# vi /etc/init.d/mysqld
+### 修改datadir的值为
+datadir=/home/mysql/data
+
+# chmod +x /etc/init.d/mysqld
+# chkconfig --add mysqld
+# chkconfig --level 345 mysqld on
+</src>
+
+** 修改root密码
+<src type="bash">
+# mysql -uroot
+>SET PASSWORD FOR 'root'@'localhost'=PASSWORD('new_password');
+>SET PASSWORD FOR 'root'@'host_name'=PASSWORD('new_password');
+</src>
+
+另外一个修改密码的方法
+<src type="bash">
+# mysqladmin -uroot password "new Password"
+</src>
+
+
+* 安装php
+PHP5.3.3 以后的版本不需要打php-fpm的补丁
+
+下载：
+<src type="bash">
+wget -c http://cn2.php.net/distributions/php-5.4.12.tar.bz2
+</src>
+
+<src type="bash">
+yum install t1lib t1lib-devel libxslt libxslt-devel -y
+</src>
+
+创建用户
+<src type="bash">
+groupadd www
+useradd -r -g www www
+</src>
+
+<src type="bash">
+./configure \
+--prefix=/opt/php \
+--with-config-file-path=/opt/php/etc \
+--with-curl \
+--with-pear \
+--with-gd \
+--with-jpeg-dir \
+--with-png-dir \
+--with-zlib \
+--with-xpm-dir \
+--with-freetype-dir \
+--with-t1lib \
+--with-mcrypt \
+--with-mhash \
+--with-mysql \
+--with-mysqli \
+--enable-pdo \
+--with-pdo-mysql \
+--with-openssl \
+--with-xmlrpc \
+--with-xsl \
+--with-gettext \
+--with-fpm-user=www \
+--with-fpm-group=www \
+--enable-fpm \
+--enable-exif \
+--enable-wddx \
+--enable-zip \
+--enable-bcmath \
+--with-bz2 \
+--enable-calendar \
+--enable-ftp \
+--enable-mbstring \
+--enable-soap \
+--enable-sockets \
+--enable-shmop \
+--enable-dba \
+--enable-sysvmsg \
+--enable-sysvsem \
+--enable-sysvshm \
+--enable-debug \
+--enable-maintainer-zts \
+--enable-embed
+
+make && make install
+</src>
+
+** 配置php-fpm
+<src type="bash">
+cp /opt/php/conf/php-fpm.conf.default /opt/php/conf/php-fpm.conf
+vi /opt/php/conf/php-fpm.conf
+pid = run/php-fpm.pid
+error_log = log/php-fpm.log
+user = www
+group = www
+</src>
+
+*** php-fpm 常用命令
+<src type="bash">
+[root@lvs php]# /opt/php/sbin/php-fpm -t
+[02-Mar-2013 08:17:42] NOTICE: configuration file /opt/php/etc/php-fpm.conf test is successful
+
+[root@lvs php]# /opt/php/sbin/php-fpm &
+[2] 9687
+[root@lvs php]# echo "/opt/php/sbin/php-fpm &" >> /etc/rc.d/rc.local
+kill -USR2 `cat /opt/php/var/run/php-fpm.pid` # 重启
+</src>
+
+** 安装ＡＰＣ
+<src type="bash">
+wget -O APC-3.1.13.tgz http://pecl.php.net/get/APC 
+tar xvf APC-3.1.13.tgz
+cd APC-3.1.13
+/opt/php/bin/phpize
+./configure --with-php-config=/opt/php/bin/php-config
+make && make install
+</src>
+
+*** 配置ＡＰＣ
+<src type="bash">
+vi /opt/php/etc/php.ini
+在末尾加上：
+extension = apc.so
+apc.enabled = 1
+apc.shm_size = 128M
+apc.shm_segments=1
+apc.write_lock = 1
+apc.rfc1867 = On
+apc.ttl=7200
+apc.user_ttl=7200
+apc.num_files_hint=1024
+apc.mmap_file_mask=/tmp/apc.XXXXXX
+apc.enable_cli=1
+顺便修改php.ini的时区：
+date.timezone = Asia/Shanghai
+</src>
+
+* 安装nginx
+<src type="bash">
+wget -c http://nginx.org/download/nginx-1.3.9.tar.gz
+./configure --user=www --group=www \
+--prefix=/opt/nginx \
+--with-http_stub_status_module \
+--with-http_ssl_module \
+--with-pcre \
+--with-http_flv_module
+
+make && make install
+ln -s /opt/nginx/conf/nginx.conf /etc/nginx.conf
+</src>
+
+** 配置
+优化参考： [[http://www.if-not-true-then-false.com/2011/nginx-and-php-fpm-configuration-and-optimizing-tips-and-tricks/]]
+
+<src type="bash">
+
+</src>
+
+** 一些命令
+*** 启动
+<src type="bash">
+/opt/nginx/sbin/nginx -c /opt/nginx/conf/nginx.conf
+</src>
+
+*** 测试配置文件是否正确
+<src type="bash">
+[root@lvs nginx-1.3.9]# /opt/nginx/sbin/nginx -t
+nginx: the configuration file /opt/nginx/conf/nginx.conf syntax is ok
+nginx: configuration file /opt/nginx/conf/nginx.conf test is successful
+</src>
+
+*** 重新加载配置文件
+<src type="bash">
+/opt/nginx/sbin/nginx -s reload
+</src>
+
+*** 停止
+<src type="bash">
+/opt/nginx/sbin/nginx -s stop
+</src>
+

@@ -1,0 +1,211 @@
+#title Booth, Rinzel, & Kiehn Motoneuron Model
+
+* Introduction
+
+The Booth, Rinzel, and Kiehn (BRK) motoneuron model is a two compartment vertebrate motoneuron demonstrating Ca<sup>2+</sup>-dependent spiking, plateau potentials, and bistability when under pharmacological treatment.  The ionic currents are distributed in a somatic and dendritic compartment.  Ionic currents follow Hodgkin-Huxley kinetics and include a fast inactivating Na<sup>+</sup> channel, K<sup>+</sup> delayed rectifier,  N-type Ca<sup>2+</sup> channels, a Ca<sup>2+</sup>-dependent K<sup>+</sup> channel, and a persistent L-type K<sup>+</sup> channel in the dendrite.  There are a total of 11 state variables, which include two voltage states, two calcium concentration states, and seven gating variables.
+
+* Model Description
+
+The brk demo is split into the DIESEL files.  The first one, *brk_inputs.dsl*, generates the neural spiking behavior.  The second model, *spikes.dsl*, is cascaded with the first and computes spike times from a continuous voltage trace.
+
+** Motoneuron - *brk_inputs.dsl*
+
+The model, *brk_inputs*, is defined with one input, *Iext*, and two outputs, *Iapp* and *V*.  The input to the model is a time-varying sampled input, with input samples generated every one millisecond.  The output, *Iapp*, is a sampled variant of *Iext* where each time point is one that was used by the simulation.  The voltage output, *V*, is a combination of two voltages, the somatic voltage, *Vs*, and the dendritic voltage, *Vd*.  For high performance, a variable time step solver, *ode23*, is employed which provides 2nd-order accuracy with adaptive step control based on a 3rd-order term.
+
+The somatic compartment contains a fast inactivating Na<sup>+</sup> channel, a delayed rectifier, an N-type Ca<sup>2+</sup> channel, the external input, a leakage current, and a coupling current.   The dendritic compartment contains no fast Na<sup>+</sup> or K<sup>+</sup> currents, but instead contains an N-type Ca<sup>2+</sup> current, a Ca<sup>2+</sup>-dependent K<sup>+</sup> channel, and a leakage and coupling current.
+
+The voltage equations are as follows:
+
+<latex>
+\begin{eqnarray*}
+V_{\rm{s}}' &=& \frac{1}{C} \left( Iext - INa_{\rm{s}} - IK_{\rm{s}} - ICa_{\rm{s}} - Ileak_{\rm{s}}- Icoupling_{\rm{s}} \right) \\
+V_{\rm{d}}' &=& \frac{1}{C} \left( - IK_{\rm{d}} - ICa_{\rm{d}} - Ileak_{\rm{d}} - Icoupling_{\rm{d}} \right)
+\end{eqnarray*}
+</latex>
+
+The voltage output, *V*, is the combination of both the somatic and dendritic voltages.  The output current, *Iapp*, is a resampled version of *Iext*, where the output is given for every value of *t*.  The following DSL code snippet shows how these two outputs are defined:
+<src lang="dsl">
+// Return the voltage as one output and the input current as the other
+output V = (Vs, Vd)
+output Iapp[t] = Iext
+</src>
+
+
+** Spike Detector - *spikes.dsl*
+
+The *spikes* model reads in voltage trace data and creates output events whenever a spike is registered.  The following is the complete code listing for the *spikes* model.
+
+<src lang="dsl">
+model (events) = spikes(Vm)
+
+  // set up a discrete iterator with steps of 0.01 milliseconds
+  iterator i with {discrete, sample_period=0.01}
+
+  // Define a sampled input for the voltage trace
+  input Vm with {iter=i, halt_when_exhausted}
+
+  // Determine when a spike occurs
+  equation spike_occurred = Vm > 20 and Vm < Vm[i-1] and Vm[i-1] >= Vm[i-2]
+
+  // Create an event output
+  output events = spike_occurred when spike_occurred
+
+end
+</src>
+
+An input, *Vm*, is defined as an input with iterator *i*.  This iterator simply means that *Vm* is sampled discretely according to the definition of iterator *i*, a discrete iterator with a sample period of 0.01 milliseconds.  The spikes model expects that *Vm* will be a continuous stream of data with a sampling rate of 100 kHz.  The flag, *halt_when_exhausted*, tells simEngine to finish the simulation of *spikes* when there is no more data available for processing.
+
+Spikes are determined according to three criteria.  First, *Vm* has to exceed 20 mV.  Sub-threshold oscillations will not count as a recorded spike.  Second, the current value of *Vm* has to be less than the value one iteration earlier, depicted as Vm[i-1], meaning that it is decreasing in value.  Finally, the previous value of *Vm* has to be greater than or equal to the value two steps before.  The second and third conditions, when satisfied, indicate that a local maxima has been reached.
+
+When this condition is true, the *spike_occurred* variable is set.  This is used in an output condition, such that the output, *events*, will be generated only at the times that the *spike_occurred* variable is true.
+
+* MATLAB processing
+
+The MATLAB m-file demonstrates the invocation of simEngine twice, once for the compilation and simulation of *brk_inputs.dsl* and then for the compilation and simulation of *spikes.dsl*.  A up and down ramp current ramp is generated in MATLAB and used as the input stimulus for *brk_inputs*.  The external current in *brk_inputs* was defined as a time varying input with a discrete iterator and sample period of 1 ms.
+
+<src lang="dsl">
+iterator i with {discrete, sample_period=1 /* ms */}
+input Iext with {iter=i, hold_when_exhausted}
+</src>
+
+In MATLAB, we generate an up and down ramp by defining just the inflection points and using interpolation to fill in the remaining points.
+
+<src lang="matlab">
+% Produce the input train, which is effectively a up and down
+% current ramp
+points = [0 0; 500 0; end_time/2 max_Iapp; end_time-500 0; end_time 0];
+n = 0:end_time;
+inp.Iext = {interp1(points(:,1),points(:,2), n)};
+</src>
+
+The variables, *end_time* and *max_Iapp*, are defined earlier in the code.  The simulation is executed by invoking simex as follows:
+
+<src lang="matlab">
+% Execute the simulation of the BRK motoneuron model
+o = simex('brk_inputs.dsl', end_time, inp);
+</src>
+
+We can inspect the results of the simulation with a sequence of commands using simplot, our simEngine plotting tool:
+
+<src lang="matlab">
+% Plot the voltage traces from the neural model
+subplot(2,2,1);
+simplot(o.V);
+axis([0 end_time -80 60]);
+title('Voltage Trace (with simulated 5-HT)');
+ylabel('Voltage (mV)');
+legend('V_s', 'V_d');
+
+% Plot the input current as read by the model
+subplot(2,2,3);
+simplot(o.Iapp, 'r');
+axis([0 end_time -5 30]);
+title('Input Current Waveform');
+xlabel('Time (ms)');
+ylabel('Current (nA/cm^2)');
+</src>
+
+<mfigure>
+% Set parameters for the simulation protocol
+max_Iapp = 25;     % nA/cm^2
+end_time = 11000;  % ms
+
+% Produce the input train, which is effectively a up and down
+% current ramp
+points = [0 0; 500 0; end_time/2 max_Iapp; end_time-500 0; end_time 0];
+n = 0:end_time;
+inp.Iext = {interp1(points(:,1),points(:,2), n)};
+
+% Execute the simulation of the BRK motoneuron model
+o = simex([simexamplepath '/demos/neural/brk_inputs.dsl'], end_time, inp);
+save o
+
+% Plot the voltage traces from the neural model
+figure(1);
+subplot(2,1,1);
+simplot(o.V);
+axis([0 end_time -80 60]);
+title('Voltage Trace (with simulated 5-HT)');
+ylabel('Voltage (mV)');
+legend('V_s', 'V_d');
+
+% Plot the input current as read by the model
+subplot(2,1,2);
+simplot(o.Iapp, 'r');
+axis([0 end_time -5 30]);
+title('Input Current Waveform');
+xlabel('Time (ms)');
+ylabel('Current (nA/cm^2)');
+
+</mfigure>
+
+The voltage trace data generated from *brk_inputs* is generated in a three column matrix.  The first column is time, and the second and third are somatic and dendritic voltage, respectively.  Since the model was simulated using a variable time step solver, the data is not uniformly distributed over time.  To produce sampled data as an input to the next model, we use an additional interpolation step.
+
+<src lang="matlab">
+% Now, resampling the output somatic voltage and reformat 
+% as an input to the spike detector model
+n2 = 0:0.01:end_time;
+inp2.Vm = {interp1(o.V(:,1),o.V(:,2),n2)};
+</src>
+
+Executing the spikes model using the command
+
+<src lang="matlab">
+o2 = simex('spikes.dsl', end_time, inp2);
+</src>
+
+generates a new output data structure with spike events.  Interspike intervals are computed using the MATLAB *diff* command.  Instantaneous spike frequency is the inverse of the interspike intervals.  Using a separate color and mark for the rising edge and the falling edge, the following Frequency-Current (F-I) curve can be generated.  This plot graphically depicts that for a given current input, there are at least two different spiking rates that can be generated from this neuron.  This neural feature is termed bistability.
+
+<mfigure>
+% Set parameters for the simulation protocol
+max_Iapp = 25;     % nA/cm^2
+end_time = 11000;  % ms
+
+% Produce the input train, which is effectively a up and down
+% current ramp
+points = [0 0; 500 0; end_time/2 max_Iapp; end_time-500 0; end_time 0];
+n = 0:end_time;
+inp.Iext = {interp1(points(:,1),points(:,2), n)};
+
+% Execute the simulation of the BRK motoneuron model
+o = simex([simexamplepath '/demos/neural/brk_inputs.dsl'], end_time, inp);
+
+% Now, resampling the output somatic voltage and reformat 
+% as an input to the spike detector model
+% The spike detector model uses a normalized timestep of zero, so we need
+% to rescale based on the timestep that will adequately show the spikes -
+% 0.01 ms
+dt = 0.01;
+n2 = 0:dt:end_time;
+inp2.Vm = {interp1(o.V(:,1),o.V(:,2),n2,'linear','extrap')};
+o2 = simex([simexamplepath '/demos/neural/spikes.dsl'], end_time/dt, inp2);
+
+% Compute interspike intervals and spiking frequency from the spike data
+spike_times = (o2.events(:,1)*dt)'; % rescale based on dt used when generating the input stream Vm
+interspike_intervals = [inf diff(spike_times)]; % Units in ms
+spike_frequency = 1000./interspike_intervals; % Units in Hz
+
+% Sub-sample the input waveform to match the spike times
+sampled_input = interp1(o.Iapp(:,1), o.Iapp(:,2), spike_times);
+
+% Plot the spike frequencies as a function of input current.  Using
+% different colors and different markers to distinguish between the
+% rising current and the falling current
+rising = find(spike_times <= end_time/2);
+falling = find(spike_times > end_time/2);
+plot(sampled_input(rising), spike_frequency(rising), 'o', sampled_input(falling), spike_frequency(falling), '.')
+title('F-I Curve')
+xlabel('Current (nA/cm^2)');
+ylabel('Spike Frequency (Hz)');
+legend('Rising', 'Falling', 'Location', 'NorthWest')
+</mfigure>
+
+* Adapting this example
+
+This example of the BRK model and a spike detector can be applied to a general class of problems combining a dynamical system modeled by differential equations and a post process analysis routine.  For other simulations, different neural models or analysis files can easily be swapped out.  
+
+If you are using the Standard or Professional edition of simEngine, both the model and the analysis can be included as part of one model.  This is because the Standard and Professional editions support multiple iterators per model, where *t* is the continuous iterator used in *brk_inputs* and *i* is the discrete iterator used in *spikes*.
+
+* References
+
+Booth V., Rinzel, J., Kiehn, O., Compartmental Model of Vertebrate Motoneurons for Ca<sup>2+</sup>-Dependent Spiking and Plateau Potentials Udner Pharmacological Treatment, *J Neurophys*, vol. 78, no. 6, pp. 3371-85, 1997

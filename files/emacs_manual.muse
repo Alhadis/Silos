@@ -1,0 +1,172 @@
+#title Emacs基础使用
+<contents>
+
+* 基础知识
+** 窗口布局
+Frame ::
+整个程序所在的终端或窗口，称为frame。
+
+一个frame从上到下的布局分别为
+ - 菜单栏 （menu bar）
+ - 工具栏 （tool bar
+ - 窗口（window）
+   输入文本的窗口
+ - 回声区 （echo area）
+   输入和显示命令的窗口
+
+Point ::
+point可以被看作是两个字符中间的那个位置。它在游标下的字符前，游标前的字符后。比如：
+<example>
+There are some words in this line.
+</example>
+如果游标在<code>words</code>上，那么point就在<code>o</code>和<code>i</code>之间。
+
+Echo Area ::
+echo的中文意思是回声。echo area这个名字很有意思， 因为这块区域即刻显示你输入的命令。
+
+echo area也会显示一些消息，比如说是错误信息。如果是单个字符的命令，那么不会在echo area中显示。如果是多字符的组合命令，并且你在输入一部分后停留了1秒钟，那么它会显示你已经输入的那部分命令，来给予你提示。echo area中的内容储存在*Messages* Buffer中，方便日后查看。echo area还被用做minibuffer。有一些命令需要你输入参数，比如说打开文件时候需要输入文件名，那么就会用到minibuffer。你会在echo area中输入mini buffer的内容。
+
+Mode Line::
+模式栏在window的底部，它的作用是显示当前buffer中的情况。它的位置在echo area的正上方，图形化界面里通常会有凸起的3D效果,
+模式栏中的文字格式为
+<example>
+-cs:ch-fr buf      pos  line  (major minor)-----------
+</example>
+下面是当前我的模式栏中的内容:
+
+[[modeline.png]]
+
+<code>cs</code>代表的是buffer的字符集。如果是<code>‘-’</code>， 则代表除了换行符变换，没有特别的字符集处理。如果是<code>‘=’</code>代表没有转换， 如果是<code>'1'</code>代表<code>ISO Latin-1</code>。如果在终端下，则稍许会有不同，我们就不在这里讨论了。
+
+在<code>cs</code>后的字符通常是一个冒号<code>'：'</code>，代表的是普通的换行方式。在一些情况下，可能它显示别的内容，代表不一般的换行方式,他们并不是<code>newline</code>字符。
+MS-DOS换行方式 ::
+carriage-return + linefeed, <code>cs</code>显示为<code>‘/’</code>或<code>'(Dos)'</code>。
+Macintosh换行方式 ::
+carriage-return, <code>cs</code>显示为<code>'\'</code>或<code>'(Mac)'</code>。
+
+对于mode line里接下去的一个元素<code>ch</code>， 如果是<code>'--'</code>,则表示buffer中的内容和磁盘上的内容是一致的。如果内容有过修改，则会显示<code>'**"</code>。对于只读的buffer，会显示<code>'%*'</code>,如果buffer被修改过了。反之为<code>'%%'</code>。
+
+<code>ch</code>后通常是一个<code>'-'</code>。如果当前buffer在一个远程的机器上的话，那么将会显示<code>'@'</code>。
+
+<code>fr</code>表示的是选择的frame名称，只会在终端上显示。
+
+<code>buf</code>表示的是窗口中buffer的名称，通常也是你编辑的文件名。
+
+<code>pos</code>表示的是在当前buffer中的位置。如果在buffer的顶部，会显示<code>'Top'</code>。 如果在buffer的底部， 则会显示<code>'Bot'</code>。如果在buffer很小，全部显示在窗口中，那么<code>pos</code>就会显示<code>'All'</code>。 <code>'nn%'</code>表示的是窗口上面的buffer的百分比。
+
+<code>line</code>是由<code>'L'</code>和point在buffer中的行数组合而成的。
+
+<code>major</code>是窗口的主要模式，比如Text Mode, C Mode, Lisp Mode等等。
+
+<code>minor</code>是一串窗口的次要模式，比如说有关补全的模式autocomplete， yasnippet等。
+
+** 用户输入
+Emacs是为键盘输入而设计的，因为这通常要比鼠标输入要快。
+键盘输入大致分以下三个大类：
+
+1. 图形符号，比如'a', 'B'， ' = ',还包括一些非英语键盘上的字符。
+
+2. 控制字符，比如‘RET', 'DEL', 'ESC', 'F1', 'Home', 'Left'。
+
+3. Modifier Keys, 常用的有‘Control(Ctrl)', 'Meta(Alt)'。
+
+Modifier Keys的输入其实就是我们熟悉的组合键。比如<code>C-a</code>代表的是按住‘Control’,再按字母‘a’；<code>M-c</code>代表按住‘Meta(Alt)’, 再按‘c’。在一些终端上，'Meta'的使用会遇到问题。需要按‘Meta’的地方可以先按‘Esc’,放开后再按相应的字母。比如<code>M-c</code>可以先按‘Esc’,放开，再按‘c’。
+
+** 启动Emacs
+在终端上，只要输入<code>emacs</code>,就能启动Emacs。
+为了终端不被占用，在shell上也可以输入emacs&
+
+* 配置
+** 启动文件
+变量<code>inhibit-startup-screen</code>和<code>initial-buffer-choice</code>共同决定了Emacs启动后显示的buffer。
+
+默认这两个变量都是nil，Emacs显示开机欢迎界面。如果你希望不要显示开机画面，那么可以把<code>inhibit-startup-screen</code>设置成non-nil，比如：
+<example>
+(setq inhibit-startup-screen t)
+</example>
+
+如果你在命令行里指定了文件名，将会显示这些文件。如果没有，将会显示<code>'*strach*'</code>buffer。
+
+如果你需要开机后buffer固定显示某目录或是某文件（即使命令行参数中指定了一个或多个文件，它们将只被打开，而不会显示在buffer中），那么可以对<code>initial-buffer-choice</code>进行赋值。比如：
+<example>
+;; this will show the directory "~/Projects/" at startup
+(setq initial-buffer-choice "~/Projects/")
+</example>
+
+<example>
+;; this will show the directory "~/Projects/myfile.txt" at startup
+(setq initial-buffer-choice "~/Projects/myfile.txt")
+</example>
+
+<example>
+;; this will show the '*stratch*' buffer at startup
+(setq initial-buffer-choice t)
+</example>
+
+<code>*strach*</code>的内容可以通过变量initial-strach-message进行设置，比如：
+<example>
+(setq initial-scratch-message ";; Emacs makes a computer slow.\n")
+</example>
+
+* 快捷键
+** 退出
+*** C-x C-c
+作用 ::
+退出Emacs。
+*** C-z
+作用 ::
+图形化界面内，最小化程序。
+终端下，挂起emacs。
+
+** 编辑
+*** C-q
+作用 ::
+输入字符。
+ - 如果<code>C-q</code>后输入一个非图形字符，那么，这个字符将被插入（即使后面输入的是<code>C-g</code>。比如<code>C-q DEL</code>插入了字符<code>DEL</code>。
+ - 如果<code>C-q</code>后输入的是一串八进制的数字，那么出现的第一个非数字输入将结束这个序列。最终八进制所代表的字符和那个非数字字符将被插入将被插入（如过非数字字符是<code>RET</code>,那么<code>
+RET</code>只是起到结束八进制数字并插入的作用，<code>RET</code>本身并不会被输出）。
+比如<code>'C-q 1 0 1 B'</code>输出<code>'AB'</code>, <code>'C-q 2 5 1 RET'</code>输出<code>©</code>。
+
+*** C-x 8 RET
+作用 ::
+输入Unicode字符
+
+输入标准的Unicode名称或是Unicode的十六进制编码，将会在buffer中插入相应的Unicode字符。
+
+** 移动
+*** C-a
+移动到行首
+*** C-e
+移动到行末
+*** C-f
+向后移动一个字符
+*** C-b
+向前移动一个字符
+*** M-f
+向后移动一个单词
+*** M-b
+向前移动一个单词
+*** C-n
+向下移动一行
+*** C-p
+向上移动一行
+*** M-r
+
+*** M-<
+*** M->
+
+*** C-v
+*** M-v
+*** M-x goto-char
+
+*** M-g M-g 
+
+*** C-x C-n
+
+*** C-u C-x C-n
+
+** 查看
+*** C-x =
+获得光标所在字符的信息。
+
+

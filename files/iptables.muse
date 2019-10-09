@@ -1,0 +1,300 @@
+#title IPtables
+
+<contents>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#加载相关的内核模块
+/sbin/modprobe ip_tables
+/sbin/modprobe ip_nat_ftp
+/sbin/modprobe ip_conntrack_ftp
+# 清除预设表 filter 中，所有规则链中的规则
+/sbin/iptables -F
+# 清除nat表中，所有规则链中的规则  
+/sbin/iptables -F -t nat
+# 清除预设表 filter 中，使用者自订链中的规则
+/sbin/iptables -X
+#将封包计数器归零。封包计数器是用来计算同一封包出现次数，是过滤阻断式攻击不可或缺的工具
+/sbin/iptables -Z
+# 清除mangle表中，所有规则链中的规则
+#iptables -F -t mangle
+# 清除mangle表中，使用者自订链中的规则
+#iptables -t mangle -X
+# 清除nat表中，使用者自订链中的规则
+#iptables -t nat -X
+#定义链的规则（设定预设规则） 
+/sbin/iptables -P INPUT ACCEPT
+/sbin/iptables -P FORWARD DROP
+/sbin/iptables -P OUTPUT ACCEPT
+# 打开 forward 功能 (或在/etc/sysconfig/network 中添加 FORWARD_IPV4=yes 打开转发功能，实现各网段互访)
+echo "1"> /proc/sys/net/ipv4/ip_forward
+# IP转发
+#echo "1">/proc/sys/net/ipv4/ip_forward
+#echo "1">/proc/sys/net/ipv4/icmp_echo_ignore_all
+#echo "8184000">/proc/sys/net/ipv4/ip_conntrack_max
+#echo "1024">/proc/sys/net/ipv4/neigh/default/gc_thresh1
+#echo "2048">/proc/sys/net/ipv4/neigh/default/gc_thresh2
+#echo "4096">/proc/sys/net/ipv4/neigh/default/gc_thresh3
+#将返回给CERNET DNS客户数据包的源端口(53端口)伪装成53端口，只要正确的改这里，下面的机器可以改成任意的dns。
+iptables -t nat -A PREROUTING -p udp -d 0.0.0.0/0 --dport 53 -j DNAT --to 218.30.19.40:53
+
+#iptables -t nat -A PREROUTING -p udp -d 192.168.1.1 --dport 53 -j DNAT --to 61.134.1.9:53
+#IP 伪装(SNAT应用)
+#使内网的封包经过伪装之后，使用对外的 eth0 网卡当作代理号，对外连线,进行IP地址伪装，使得内部的主机的数据包能通过服务器与外界联系!
+/sbin/iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+/sbin/iptables -A FORWARD -s 0/0 -d 0/0 -j ACCEPT
+#禁止ping
+#ping
+#iptables -A INPUT -p icmp --icmp-type 8 -s 0/0 -j DROP
+#iptables -A INPUT -p icmp --icmp-type 0 -s 0/0 -j ACCEPT
+# 设置icmp阔值 ,并对攻击者记录在案，小型的防火墙！
+iptables -A INPUT -p icmp -m limit --limit 3/s -j LOG --log-level INFO --log-prefix "ICMP packet IN: "
+iptables -A INPUT -p icmp -m limit --limit 6/m -j ACCEPT
+iptables -A INPUT -p icmp -j DROP
+# 打开 syncookie （轻量级预防 DOS 攻击）
+sysctl -w net.ipv4.tcp_syncookies=1 &>/dev/null 第一学习网 www.d1xxw.com
+# 设置默认 TCP 连接痴呆时长为 3800 秒（此选项可以大大降低连接数）
+sysctl -w net.ipv4.netfilter.ip_conntrack_tcp_timeout_established=3800 &>/dev/null
+# 设置支持最大连接树为 30W（这个根据内存和 iptables 版本来，每个 connection 需要 300 多个字节）
+#sysctl -w net.ipv4.ip_conntrack_max=300000 &>/dev/null
+# 允许要转向的包
+iptables -A FORWARD -p tcp --syn -m limit --limit 1/s -j ACCEPT
+iptables -A FORWARD -p tcp --tcp-flags SYN,ACK,FIN,RST RST -m limit --limit 1/s -j ACCEPT
+iptables -A FORWARD -p icmp --icmp-type echo-request -m limit --limit 1/s -j ACCEPT
+iptables -A FORWARD -i eth0 -j ACCEPT
+iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+# 防止SYN攻击 轻量
+iptables -N syn-flood
+iptables -A INPUT -p tcp --syn -j syn-flood
+iptables -A syn-flood -p tcp -m limit --limit 3/s --limit-burst 6 -j RETURN
+
+iptables -A syn-flood -j REJECT
+# 对于不管来自哪里的ip碎片都进行控制，允许每秒通过100个碎片
+iptables -A FORWARD -f -m limit --limit 100/s --limit-burst 100 -j ACCEPT
+# icmp包通过的控制，防止icmp黑客攻击
+iptables -A FORWARD -p icmp -m limit --limit 1/s --limit-burst 10 -j ACCEPT
+# 丢弃坏的TCP包
+iptables -A FORWARD -p TCP ! --syn -m state --state NEW -j LOG --log-prefix "New not syn:"
+iptables -A FORWARD -p TCP ! --syn -m state --state NEW -j DROP
+#drop pp poco（禁止PP POCO）
+iptables -I FORWARD -p tcp -s 0/0 --dport 2881 -j DROP
+iptables -I FORWARD -p tcp -s 0/0 --dport 5354 -j DROP
+iptables -I FORWARD -p tcp -s 0/0 --dport 9099 -j DROP
+iptables -I FORWARD -p udp -s 0/0 --dport 8094 -j DROP
+iptables -I OUTPUT -d 61.145.118.224 -j REJECT
+iptables -I OUTPUT -d 210.192.122.147 -j REJECT
+
+iptables -I OUTPUT -d 207.46.196.108 -j REJECT
+#drop QQLive（禁止QQLive）
+iptables -I FORWARD -p udp --dport 13000:14000 -j DROP
+#drop www（禁止网页）
+#iptables -I FORWARD -d www.baidu.com -j DROP
+# dorp mac（通过禁止mac禁止上网）
+#iptables -t nat -I PREROUTING -m mac --mac-source 00:14:78:30:3E:DE -j DROP
+#drop ip（通过禁止ip禁止上网）
+#iptables -I FORWARD -s 192.168.1.35 -j DROP
+#accept all（允许某个ip上网）
+#iptables -I INPUT -s 192.168.1.6 -j ACCEPT
+#iptables -I FORWARD -s 192.168.1.6 -j ACCEPT
+#端口映射
+#movie
+iptables -t nat -A PREROUTING -d 124.114.130.178 -p tcp -m tcp --dport 25001 -j DNAT --to-destination 192.168.100.3:3389
+iptables -t nat -A POSTROUTING -d 192.168.100.3 -p tcp -m tcp --dport 3389 -j SNAT --to-source 192.168.100.1 第一学习网 www.d1xxw.com
+#game
+iptables -t nat -A PREROUTING -d 124.114.130.178 -p tcp -m tcp --dport 25002 -j DNAT --to-destination 192.168.100.252:3389
+iptables -t nat -A POSTROUTING -d 192.168.100.252 -p tcp -m tcp --dport 3389 -j SNAT --to-source 192.168.100.1
+#ftp
+iptables -t nat -A PREROUTING -d 124.114.130.178 -p tcp -m tcp --dport 1021 -j DNAT --to-destination 192.168.100.3:21
+iptables -t nat -A POSTROUTING -d 192.168.100.3 -p tcp -m tcp --dport 21 -j SNAT --to-source 192.168.100.1
+iptables -t nat -A PREROUTING -d 124.114.130.178 -p tcp -m tcp --dport 1022 -j DNAT --to-destination 192.168.100.252:21
+iptables -t nat -A POSTROUTING -d 192.168.100.252 -p tcp -m tcp --dport 21 -j SNAT --to-source 192.168.100.1
+#flim
+#iptables -t nat -A PREROUTING -d 124.114.130.178 -p tcp -m tcp --dport 8088 -j DNAT --to-destination 192.168.1.251:80
+#iptables -t nat -A POSTROUTING -d 192.168.1.251 -p tcp -m tcp --dport 80 -j SNAT --to-source 192.168.100.1 第一学习网 www.d1xxw.com
+
+===============================
+有两点我们要注意.
+-conntrack最大数量.叫做conntrack_max
+-存储这些conntrack的hash表的大小,叫做hashsize
+当conntrack入口数大于conntrack_max时,在hash表中每一个conntrack list中的存储的入口将不可控.(conntrack_mark/hashsize 为每个list所能存储的入口的数量)
+hash表存在于固定的的不可swap的内存中. conntrack_mark决定占用多少这些不可swap的内存.
+缺省的hashsize
+--------------------------------
+conntrack_max=hashsize*8
+i386中 hashsize=conntrack_max/8=ramsize(in bytes)/131072=ramsize(in MegaBytes)*8.
+所以32位pc,512M内存可以存512*1024^2/128/1024=512*8=4096(连接池list)
+但是正确的算法是:
+hashsize=conntrack_max/8=ramsize(in bytes)/131072/(x/32)
+x表示使用的指针类型是(32位还是64的)
+----------------------------\
+读取conntrack_max值
+cat /proc/sys/net/ipv4/ip_conntrack_max
+读取hashsize值
+cat /proc/sys/net/ipv4/netfilter/ip_conntrack_buckets 本文来自第一学习网 www.d1xxw.com
+------------------------------
+你可修改这两个值以适应高负载的netfilter的应用
+系统默认为conntrack_max:hashsize是8:1,你可以设成1:1以提高性能.
+-------------------------
+设置conntrack_max
+echo $CONNTRACK_MAX > /proc/sys/net/ipv4/ip_conntrack_max
+设置hashsize
+如果(netfilter conntrack静态编译在内核中),2.4中可以在编译时设置,2.6可以在启动中(boot时)加入ip_conntrack.hashsize=$hashsize
+如果为modules,则可以使用 modprobe ip_conntrack hashsize=$hashsize
+--------------------------
+conntrack使用的内存计算
+size_of_mem_used_by_conntrack (in bytes) =
+         CONNTRACK_MAX * sizeof(struct ip_conntrack) +
+         HASHSIZE * sizeof(struct list_head)
+其中sizeof(struct ip_conntrack)大概在192-352字节之间.
+sizeof(struct list_head) = 2 * size_of_a_pointer(i386中为4字节)
+一个例子512m内存,使用384m来用于conntrack则
+384*1024*1024/(352+8)(使用它是保守计算) =~1143901 (此为conntrack:hashszie为1:1,352为sizeof(ip_conntrack),8为sizeof(list_head). 
+
+* 例子
+只能收发邮件，别的都关闭
+iptables -I Filter -m mac –mac-source 00:0F:EA:25:51:37 -j DROP
+iptables -I Filter -m mac –mac-source 00:0F:EA:25:51:37 -p udp --dport 53 -j ACCEPT
+iptables -I Filter -m mac –mac-source 00:0F:EA:25:51:37 -p tcp --dport 25 -j ACCEPT
+iptables -I Filter -m mac –mac-source 00:0F:EA:25:51:37 -p tcp --dport 110 -j ACCEPT
+
+IPSEC NAT 策略
+iptables -I PFWanPriv -d 192.168.100.2 -j ACCEPT
+iptables -t nat -A PREROUTING -p tcp --dport 80 -d $INTERNET_ADDR -j DNAT –to-destination 192.168.100.2:80
+iptables -t nat -A PREROUTING -p tcp --dport 1723 -d $INTERNET_ADDR -j DNAT –to-destination 192.168.100.2:1723
+iptables -t nat -A PREROUTING -p udp --dport 1723 -d $INTERNET_ADDR -j DNAT –to-destination 192.168.100.2:1723
+iptables -t nat -A PREROUTING -p udp --dport 500 -d $INTERNET_ADDR -j DNAT –to-destination 192.168.100.2:500
+iptables -t nat -A PREROUTING -p udp --dport 4500 -d $INTERNET_ADDR -j DNAT –to-destination 192.168.100.2:4500
+
+FTP服务器的NAT
+iptables -I PFWanPriv -p tcp --dport 21 -d 192.168.100.200 -j ACCEPT
+iptables -t nat -A PREROUTING -p tcp --dport 21 -d $INTERNET_ADDR -j DNAT –to-destination 192.168.100.200:21
+
+只允许访问指定网址
+iptables -A Filter -p udp --dport 53 -j ACCEPT
+iptables -A Filter -p tcp --dport 53 -j ACCEPT
+iptables -A Filter -d www.3322.org -j ACCEPT
+iptables -A Filter -d img.cn99.com -j ACCEPT
+iptables -A Filter -j DROP
+
+开放一个IP的一些端口，其它都封闭
+iptables -A Filter -p tcp --dport 80 -s 192.168.100.200 -d www.pconline.com.cn -j ACCEPT
+iptables -A Filter -p tcp --dport 25 -s 192.168.100.200 -j ACCEPT
+iptables -A Filter -p tcp --dport 109 -s 192.168.100.200 -j ACCEPT
+iptables -A Filter -p tcp --dport 110 -s 192.168.100.200 -j ACCEPT
+iptables -A Filter -p tcp --dport 53 -j ACCEPT
+iptables -A Filter -p udp --dport 53 -j ACCEPT
+iptables -A Filter -j DROP
+
+多个端口
+iptables -A Filter -p tcp -m multiport –destination-port 22,53,80,110 -s 192.168.20.3 -j REJECT
+
+连续端口
+iptables -A Filter -p tcp -m multiport –source-port 22,53,80,110 -s 192.168.20.3 -j REJECT iptables -A Filter -p tcp –source-port 2:80 -s 192.168.20.3 -j REJECT
+
+指定时间上网
+iptables -A Filter -s 10.10.10.253 -m time –timestart 6:00 –timestop 11:00 –days Mon,Tue,Wed,Thu,Fri,Sat,Sun -j DROP
+iptables -A Filter -m time –timestart 12:00 –timestop 13:00 –days Mon,Tue,Wed,Thu,Fri,Sat,Sun -j ACCEPT
+iptables -A Filter -m time –timestart 17:30 –timestop 8:30 –days Mon,Tue,Wed,Thu,Fri,Sat,Sun -j ACCEPT
+禁止多个端口服务
+iptables -A Filter -m multiport -p tcp --dport 21,23,80 -j ACCEPT
+
+将WAN 口NAT到PC
+iptables -t nat -A PREROUTING -i $INTERNET_IF -d $INTERNET_ADDR -j DNAT –to-destination 192.168.0.1
+
+将WAN口8000端口NAT到192。168。100。200的80端口
+iptables -t nat -A PREROUTING -p tcp --dport 8000 -d $INTERNET_ADDR -j DNAT –to-destination 192.168.100.200:80
+
+MAIL服务器要转的端口
+iptables -t nat -A PREROUTING -p tcp --dport 110 -d $INTERNET_ADDR -j DNAT –to-destination 192.168.100.200:110
+iptables -t nat -A PREROUTING -p tcp --dport 25 -d $INTERNET_ADDR -j DNAT –to-destination 192.168.100.200:25
+
+只允许PING 202。96。134。133,别的服务都禁止
+iptables -A Filter -p icmp -s 192.168.100.200 -d 202.96.134.133 -j ACCEPT
+iptables -A Filter -j DROP
+
+禁用BT配置
+iptables –A Filter –p tcp –dport 6000:20000 –j DROP
+
+禁用QQ防火墙配置
+iptables -A Filter -p udp --dport ! 53 -j DROP
+iptables -A Filter -d 218.17.209.0/24 -j DROP
+iptables -A Filter -d 218.18.95.0/24 -j DROP
+iptables -A Filter -d 219.133.40.177 -j DROP
+
+基于MAC，只能收发邮件，其它都拒绝
+iptables -I Filter -m mac --mac-source 00:0A:EB:97:79:A1 -j DROP
+iptables -I Filter -m mac --mac-source 00:0A:EB:97:79:A1 -p tcp --dport 25 -j ACCEPT
+iptables -I Filter -m mac --mac-source 00:0A:EB:97:79:A1 -p tcp --dport 110 -j ACCEPT
+
+禁用MSN配置
+iptables -A Filter -p udp --dport 9 -j DROP
+iptables -A Filter -p tcp --dport 1863 -j DROP
+iptables -A Filter -p tcp --dport 80 -d 207.68.178.238 -j DROP
+iptables -A Filter -p tcp --dport 80 -d 207.46.110.0/24 -j DROP
+
+只允许PING 202。96。134。133 其它公网IP都不许PING
+iptables -A Filter -p icmp -s 192.168.100.200 -d 202.96.134.133 -j ACCEPT
+iptables -A Filter -p icmp -j DROP
+
+禁止某个MAC地址访问internet:
+iptables -I Filter -m mac --mac-source 00:20:18:8F:72:F8 -j DROP
+
+禁止某个IP地址的PING:
+iptables –A Filter –p icmp –s 192.168.0.1 –j DROP
+
+禁止某个IP地址服务：
+iptables –A Filter -p tcp -s 192.168.0.1 --dport 80 -j DROP
+iptables –A Filter -p udp -s 192.168.0.1 --dport 53 -j DROP
+
+只允许某些服务，其他都拒绝(2条规则)
+iptables -A Filter -p tcp -s 192.168.0.1 --dport 1000 -j ACCEPT
+iptables -A Filter -j DROP
+
+禁止某个IP地址的某个端口服务
+iptables -A Filter -p tcp -s 10.10.10.253 --dport 80 -j ACCEPT
+iptables -A Filter -p tcp -s 10.10.10.253 --dport 80 -j DROP
+
+禁止某个MAC地址的某个端口服务
+
+iptables -I Filter -p tcp -m mac --mac-source 00:20:18:8F:72:F8 --dport 80 -j DROP
+
+禁止某个MAC地址访问internet:
+iptables -I Filter -m mac --mac-source 00:11:22:33:44:55 -j DROP
+禁止某个IP地址的PING:
+iptables –A Filter –p icmp –s 192.168.0.1 –j DROP
+
+# iptables限制同一IP连接数
+iptables -I INPUT -p tcp --dport 80 -m connlimit --connlimit-above 10 -j DROP
+
+
+echo "1" > /proc/sys/net/ipv4/ip_forward
+iptables --flush # 刷新所有过滤规则和NAT表.
+iptables --table nat --flush
+iptables --delete-chain
+#删除所有非缺省的规则链和nat表
+iptables --table nat --delete-chain
+#建立IP转发和伪装
+iptables -t nat -A POSTROUTING --out-interface eth0 -j MASQUERADE
+iptables --A FORWARD --in-interface eth1 -j ACCEPT
+iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+</src>
+
+

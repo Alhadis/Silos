@@ -1,0 +1,168 @@
+#title Magento
+#author OLE YANG
+
+<contents>
+
+
+* 简介
+Magento是一个开源的电子商务系统
+
+* 安装
+ - 删除 .htaccess
+ - 先创建数据库
+<src type="text">
+$ mysql -uroot -p
+> create database magento
+</src>
+ - base url 中可能出现问题，把localhost改成127.0.0.1刷新，然后再把localhost改成127.0.0.1
+ - 文件夹的权限 apps/etc media var includes includes/conf.
+ - 记住最后的key
+
+* 后台
+** 登录
+http://localhost/magento/index.php/admin
+
+
+* 结构介绍
+** 模块
+系统的核心模块放在: app/code/core中
+
+自定义的模块应该放在: app/code/local中,目录结构:
+<src type="text">
+`-- Alanstormdotcom
+    `-- Configviewer
+        |-- Block
+        |-- Helper
+        |-- Model
+        |-- controllers
+        |-- etc
+        |   |-- config.xml
+        `-- sql
+</src>
+
+让系统加载模块: app/etc/modules 下建立一个module_name.xml的文件.
+
+在system->configuration->Advanced下就能看见添加的模块
+
+例子: 建立一个名字为Alanstormdotcom_Configviewer的模块,先创建名字为Alanstormdotcom的文件夹，一般情况是公司的名称，比如:Microsoft,然后把模块放到这个文件夹下面。
+
+建立目录结构
+<src type="text">
+$ cd app/code/local
+$ mkdir -p Alanstormdotcom/Configviewer Alanstormdotcom/Configviewer/Block Alanstormdotcom/Configviewer/Helper Alanstormdotcom/Configviewer/Module Alanstormdotcom/Configviewer/controllers Alanstormdotcom/Configviewer/etc Alanstormdotcom/Configviewer/sql
+</src>
+
+创建配置文件app/code/local/Alanstormdotcom/Configviewer/etc/config.xml,内容如下:
+<src type="text">
+<config>
+  <modules>
+    <Alanstormdotcom_Configviewer>
+      <version>0.1.0</version>
+    </Alanstormdotcom_Configviewer>
+  </modules>
+</config> 
+</src>
+
+创建配置文件app/etc/modules/Alanstormdotcom_Configviewer.xml,内容如下:
+<src type="text">
+$ cat app/etc/modules/Alanstormdotcom_Configviewer.xml
+<config>
+  <modules>
+    <Alanstormdotcom_Configviewer>
+      <active>true</active>
+      <codePool>local</codePool>
+    </Alanstormdotcom_Configviewer>
+  </modules>
+</config>
+</src>
+
+登陆magento后台,刷新缓存 system->Cache Management
+
+查看模块情况system->Configuration->Advanced可以看见Alanstormdotcom_Configviewer
+
+上面只是建立一个空的模块，下面给这个模块添加显示magento所有模块的功能
+
+修改app/code/local/Alanstormdotcom/Configviewer/etc/config.xml,添加类和函数的信息
+<src type="text">
+<config>
+  <modules>
+    ...
+  </modules>
+    <global>
+        <events>
+            <controller_front_init_routers>
+                <observers>
+                    <alanstormdotcom_configviewer_model_observer>
+                        <type>singleton</type>
+                        <class>Alanstormdotcom_Configviewer_Model_Observer</class>
+                        <method>checkForConfigRequest</method>
+                    </alanstormdotcom_configviewer_model_observer>
+                </observers>
+            </controller_front_init_routers>
+        </events>
+    </global>
+</config>
+</src>
+
+创建处理文件Observer.php 放在app/code/local/Alanstormdotcom/Configviewer/Model/
+<src type="text">
+<?php
+    class Alanstormdotcom_Configviewer_Model_Observer {
+        const FLAG_SHOW_CONFIG = 'showConfig';
+        const FLAG_SHOW_CONFIG_FORMAT = 'showConfigFormat';     
+
+        private $request;
+
+        public function checkForConfigRequest($observer) {          
+            $this->request = $observer->getEvent()->getData('front')->getRequest();
+            if($this->request->{self::FLAG_SHOW_CONFIG} === 'true'){
+                $this->setHeader();
+                $this->outputConfig();
+            }
+        }
+
+        private function setHeader() {
+            $format = isset($this->request->{self::FLAG_SHOW_CONFIG_FORMAT}) ? 
+            $this->request->{self::FLAG_SHOW_CONFIG_FORMAT} : 'xml';                                
+            switch($format){
+                case 'text':
+                    header("Content-Type: text/plain");
+                    break;
+                default:
+                    header("Content-Type: text/xml");
+            }           
+        }
+
+        private function outputConfig() {            
+            die(Mage::app()->getConfig()->getNode()->asXML());      
+        }
+    }
+?>
+</src>
+
+在浏览器上输入： http://yourdomain.com/?showConfig=true 就可以看见 一个巨大的xml文件，这个文件描述了当前Magento系统的状态。它列出了所有的模块，数据模型，类，事件，监听器等等。举个例子，如果你搜索如下字符串
+Configviewer_Model_Observer已经列举在这个xml文件中了
+
+
+到目前为止，我们所作的事情似乎没什么意义，但是这个配置文件却是理解Magento的关键因素。你创建的每一个模块都会被加到这个配置文件中，任何时候，你需要调用一个系统功能的时候，Magento都会通过这个配置文件来查询相应的模块和功能。举个简单的例子，如果你懂MVC的话，你应该和 “helper class”之类概念的打过交道
+<src type="text">
+$helper_salesrule = new Mage_SalesRule_Helper();
+</src>
+Magento抽象了PHP的类声明方式。在Magento系统中，上面的代码等同于
+<src type="text">
+$helper_salesrule = Mage::helper('salesrule');
+</src>
+Magento将通过以下逻辑来处理这行代码
+ 1.   在配置文件中查找<helpers />标签
+ 2.   在<helpers />里面查找 <salesrule />标签
+ 3.   在<sales />里面查找 <class />标签
+ 4.   实例化从#3找到的类（Mage_SalesRule_Helper）
+
+从上面的例子中可以看出magento是根据etc/config.xml来查找类名，方法名。
+
+** 请求分发和控制器
+url->front
+
+
+
+* API参考

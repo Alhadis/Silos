@@ -1,0 +1,82 @@
+#title GNU Make
+<contents>
+* make的作用
+程序员在调试程序时，时常要做一些常规的工作。这些工作往往又是机械而又无趣的。即使如此，如果这些工作出了错误，程序员往往又要花大量的时间来发现错误。比如说，很多开发者经历过修改一个函数来修复一个bug，但是新代码却没有修复那个bug。后来，他们发现他们根本没有执行修改后的函数，因为他们没有重新编译源代码，重新链接可执行文件，或者重新构建一个jar。
+
+make的作用在于它能够依靠用户定义的依赖关系，自动化执行从源代码到可执行文件的功能。make的优点在于它可以通过关系和时间戳，来决定哪些过程需要被再做一遍。
+
+* make的定义文件--简单的makefile
+<src lang="makefile">
+hello: hello.c
+	gcc hello.c -o hello
+</src>
+在makefile所在的文件夹下运行命令：
+<src lang="shell">
+make
+</src>
+
+代码中<code>hello:</code>代表的是目标，如果<code>make</code>没有参数，就执行第一个目标，称为默认目标。
+
+* 目标和前提
+<src lang="makefile">
+target: prereq_1 prereq_2
+	commands
+</src>
+
+* 参数
+** --just-print(或-n)
+告诉make只要显示它为某个目标会执行的命令，而不真正执行。
+
+* 变量
+** 自动变量
+*** $@
+ - 目标
+*** $%
+ - 压缩包成员归约的文件名
+*** $<
+ - 第一个前置条件
+*** $?
+ - 所有比目标新的前置条件名
+
+*** $^
+ - 所有的前置条件名，去除了重复
+
+*** $+
+ - 所有的前置条件名，未去除重复
+
+*** $*
+ - 目标文件的主干名（去除了后缀）
+
+*** $(@D)
+ - 目标的路径名
+
+*** $(<F)
+ - 第一个前置条件的文件名（去除了路径）
+
+** 系统变量
+
+*** VPATH
+ - make寻找文件的路径
+
+*** vpath
+ - vpath %.c src
+ - vpath %.h include
+
+
+* Pattern Rules
+<src lang="makefile">
+%: %.mod
+    $(COMPILE.mod) -o $@ -e $@ $^
+
+%: %.cpp
+    $(LINK.cpp) $^ $(LOADLIBES) $(LDLIBS) -o $@
+
+%: %.sh
+    cat $< >$@
+    chmod a+x $@
+</src>
+** Static Pattern Rules
+<src lang="makefile">
+$(OBJECTS): %.o: %c
+      $(CC) -c $(CFLAGS) $< -o $@
+</src>

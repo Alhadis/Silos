@@ -1,0 +1,176 @@
+#title Work with ClearCase
+#keywords emacs, clearcase
+
+<contents>
+
+User can work with *ClearCase* from Emacs using either backend module for *VC* package, either
+using specialized package called *clearcase*.  Last package has more features, comparing
+backend for *VC* and for users it's better to use it.  This package supports following functions:
+ - key bindings compatibility with *VC* package;
+ - context menu;
+ - execution of graphical  *ClearCase's* tools;
+ - completion of version strings and other parameters;
+ - work with snapshots;
+ - special modes for editing comments and settings;
+ - execution of almost all operations directly from Emacs.
+
+* Installation
+
+The *clearcase* package is available for download from [[http://members.verizon.net/kevin.a.esler/EmacsClearCase/][author's page]].  It could be used with
+GNU Emacs 20.4 or higher, and with latest versions of XEmacs.  It could work with
+different operating systems -- with different MS Windows, and with Unix-like OSes.  To use
+package you need to download file to place where Emacs find it, and execute following
+command:
+
+<src lang="emacs-lisp">
+(require 'clearcase)
+</src>
+
+*Warning*: this package sometimes has problems with old versions of *vc-hooks* package, as
+they use incompatible versions of *tq* package.  But this happens not so often.
+
+* Work with *clearcase* package
+
+The *clearcase* package tries to keep compatibility with *VC* package in key bindings.  But
+interface, that is implemented by package, is more powerful and better reflects ideology
+of *ClearCase* than backend for *VC* package.
+
+Besides functions and key bindings user can use =ClearCase= menu, that is added to menu bar
+when he edit files with *ClearCase* minor-mode enabled.  User can perform all basic commands
+directly from Emacs, and also can run external utilities from  *ClearCase* distribution.
+
+Many operations could be performed in the *Dired* mode -- view tree of files versions, work
+with several files (checking them in and out), etc.  To work with directories, that are
+registered in *ClearCase* the *clearcase* package defines special mode --
+=clearcase-dired-mode=.
+
+For all key bindings the *clearcase* package use prefix key =C-x v=.  To avoid problems with
+*VC's* key bindings, the *clearcase* package removes needless key bindings, when you work with
+files, registered in *ClearCase*.
+
+All functions we can split into several logical groups -- work with files, work with
+changes, work with external utilities, and other functions.  For almost any function, that
+works with current file (they have suffix =-current-buffer=) there is also function that
+provides work with file from *Dired* buffer (such functions have suffix =-dired-file=).
+Usually both variants has same key bindings, that call appropriate function, depending on
+places in which they was pressed -- current file, or *Dired* buffer.
+
+** Work with files and versions
+
+The *clearcase* package tries to keep work logic of *VC* package as much as possible.  It
+defines two functions -- =clearcase-next-action-current-buffer= (=C-x v v=) and
+=clearcase-next-action-dired-files= (same key binding, but in *Dired* mode), that performs
+following operation on current file (or selected files).  To change state of current file
+you can use =clearcase-toggle-read-only= function (=C-x C-q=), that either allow modification
+of file, either switch it to read-only state.
+
+The package allows user to perform bulk operations of getting data from repository and
+committing them back.  To retrieve data from repository user can use following functions:
+=clearcase-checkout-current-buffer=, =clearcase-checkout-dired-files= and
+=clearcase-dired-checkout-current-dir=, that retrieve actual versions for current file,
+selected files and current directory.  And to commit data back to repository there are
+functions with similar names -- =clearcase-checkin-current-buffer=,
+=clearcase-checkin-dired-files= and =clearcase-dired-checkin-current-dir=.  To cancel changes
+user can use either =clearcase-uncheckout-current-buffer= function (it bound to =C-x v c= or
+=C-x v u=), or =clearcase-uncheckout-dired-files= function (it has same key bindings, but work
+only in =clearcase-dired-mode=), or =clearcase-dired-uncheckout-current-dir= function.
+
+To register files in the *ClearCase* user can use either =clearcase-mkelem-current-buffer=
+function (=C-x v i=), that register current file, or =clearcase-mkelem-dired-files= function,
+that register selected files.
+
+To update data from repository we can use =clearcase-update-current-buffer=,
+=clearcase-update-default-directory=, =clearcase-update-dired-files= or =clearcase-update-view=
+functions, that update corresponding object -- current file, selected files, directory or
+view.  And we can also can get concrete file version with =clearcase-version-other-window=
+function, that bound to =C-x v ~=.
+
+We also can create a new branch with =clearcase-mkbrtype= function, that bound to =C-x v m=.
+Other branch manipulations are performed the same way as in [[./EmacsVC#branches][VC]].
+
+** Work with changes
+
+All functions, that implement work with changes we can split into two groups.  First group
+use usual =diff= to get changes between versions (their names started with =clearcase-diff=),
+while second group use *ediff* package (and their names start with =clearcase-ediff=).  I
+describe only functionss from first group, as there are no differences between them, except
+the names.
+ - =clearcase-diff-pred-current-buffer= (<code>C-x v =</code>) and
+   =clearcase-diff-pred-dired-file= functions compare current file (or selected files)
+   with their previous versions;
+ - =clearcase-diff-branch-base-current-buffer= and =clearcase-diff-branch-base-dired-file=
+   compare current file (or selected files) with their base versions in the current
+   branch;
+ - =clearcase-diff-named-version-current-buffer= and =clearcase-diff-named-version-dired-file=
+   compare current file (or selected files) with concrete named version of files.
+
+** Obtaining an information
+
+To get information about files we can use several functions.  The
+=clearcase-describe-current-buffer= function (=C-x v ?=) could be used to get description of
+current file, while =clearcase-describe-dired-file= is used to get information about
+selected files.
+
+User can also get annotated copy of file(s) with =clearcase-annotate-current-buffer= (=C-x v
+g=) or =clearcase-annotate-dired-file= functions.  And to get history of changes, he can use
+functions =clearcase-list-history-current-buffer= (=C-x v l=) or
+=clearcase-list-history-dired-file=.
+
+User can also use *clearcase* package to work with *ClearCase* file's properties, that could
+be assigned to each registered file.  User can view them with
+=clearcase-fprop-display-properties= function, and insert them into current buffer with
+=clearcase-fprop-dump-to-current-buffer= function.
+
+** Work with *ClearCase's* external tools
+
+User can use *clearcase* package to run many utilities from *ClearCase's* distribution without
+leaving Emacs:
+ - =clearcase-gui-clearexplorer= -- runs =ClearExplorer=
+ - =clearcase-gui-deliver= 
+ - =clearcase-gui-merge-manager= -- runs merge manager;
+ - =clearcase-gui-project-explorer= -- runs utility that works with projects
+ - =clearcase-gui-rebase= 
+ - =clearcase-gui-snapshot-view-updater= 
+ - =clearcase-gui-vtree-browser-current-buffer= -- runs project tree browser for current buffer;
+ - =clearcase-gui-vtree-browser-dired-file= -- runs project tree browser for selected files.
+
+It also allows to use external utilities with graphical interface to view changes in
+files:
+ - =clearcase-gui-diff-branch-base-current-buffer= -- show difference between current file
+   and its base version;
+ - =clearcase-gui-diff-branch-base-dired-file= -- show difference between selected files and
+   their base versions;
+ - =clearcase-gui-diff-pred-current-buffer= -- show difference between current file and its
+   previous version;
+ - =clearcase-gui-diff-pred-dired-file= -- show difference between selected files and their
+   previous versions.
+
+** Other functions
+
+User can edit *ClearCase* configuration with functions, those names starts with
+=clearcase-edcs=.  For editing configurations, there is a special mode --
+=clearcase-edcs-mode=, that could be enabled by function with the same name.  User can edit
+configuration with =clearcase-edcs-edit= function (=C-x v e=), and save changes with
+=clearcase-edcs-save=.  To finish work with configuration there is special function --
+=clearcase-edcs-finish=.
+
+If there are some problems with package, then user can trace state of package with special
+functions.  To enable tracing user can use =clearcase-enable-tracing= function, and to
+disable -- =clearcase-disable-tracing= function.  User can also get data about package's
+internal state with =clearcase-dump= function.  But this is happen not so often. And if you
+find a bug in package, then you can set bug report with =clearcase-submit-bug-report=
+function, that collects all needed data (values of variables, version of Emacs, etc.) and
+prepare it to sending.
+
+* Customization
+
+As for many other packages, the *clearcase* package supports customization via standard
+Emacs routines.  User just need to execute =M-x customize-group clearcase= to do this.  He
+can set many parameters, for example, which program will be used as =diff=, etc.  User can
+also set (and remove) special hooks with =clearcase-integrate= and =clearcase-unintegrate=
+functions.
+
+
+<div id="rule">[[./index][Back to main page]]</div>
+
+;  LocalWords:  ClearCase LocalWords clearcase VC

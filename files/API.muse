@@ -1,0 +1,134 @@
+#title Folkso
+
+Dans une logique de *RESTful webservices*, cette API expose deux
+interfaces correspondant à deux types d'information. **tag.php** répond à
+toutes les requêtes concernant les *tags*, et surtout l'affichage des
+ressources associées à un *tag* donné. **resource.php** représente les
+différentes ressources (URI), et peut, par exemple, afficher les *tags*
+associés à une ressource donnée.
+
+
+* tag.php
+
+When the tag's name or id is known, the field name "tag" ("folksotag"
+if we maintain that system) will always be used. It can be a multiple
+field (that is: "tag001, tag002, tag003...").
+
+** GET
+
+*** folksotagid
+
+With numerical id, retrieve the display version of the tag.
+
+**** Formats
+
+Currently, only a simple text version.
+
+**** Errors
+
+***** 404 
+
+Tag does not exist.
+
+*** folksotagresources
+
+With a numerical tag id as argument, retrieves a list of the resources
+associated with that tag.
+
+
+Multiple, numbered 'folksotagresources' parameters will be treated as
+combined requests, ie. SELECT RESOURCE WHERE (TAGGED AS T1) AND
+(TAGGED AS T2) AND... (This is very pseudo SQL.)
+
+**** Formats
+
+Currently returns an xhtml list. An XML list will also be provided.
+
+
+**** Errors
+***** 204
+
+Returns a **204** if there are no tags associated with the selected
+resource. 
+
+***** 404
+
+Tag does not exist.
+
+
+** POST
+
+*** folksonewtag
+
+With the display version of a tag, create a new tag. Returns the new
+tag's id (**201**, created).
+
+* resource.php
+
+The basic field is "res" or "folksores". It can be either an numeric
+id or a uri, and each response handler should be able to react
+accordingly. 
+
+** HEAD
+
+*** res (id or uri)
+
+Returns 200 if the resource provided is already present in
+the resource index (resource table).
+
+**** Errors
+
+***** 404
+
+Resource is not indexed.
+
+** GET
+
+*** Tags associated with a resource: folksoresourceuri
+
+Retrieve the tags associated with a given resource.
+
+**** Formats
+
+xhtml, xml, text.
+
+**** Errors
+
+***** 404 
+
+Resource is not indexed.
+
+***** 204
+
+No tags associated with resource.
+
+** POST
+
+***  Add a resource to the index: folksovisituri, folksourititle
+
+Add a resource (uri) to the resource index.
+
+urititle is optional.
+
+Returns the uri of the link to the new resource. If the resource
+already exists, the number of visits is incremented.
+
+This command is cached. The resource is not immediatly added to the
+index.
+
+Returns **201** on success.
+
+*** Add a resource to the index immediatly: folksonewuri,folksonewtitle
+
+Like folksovisituri, except that the resource is added immediately.
+
+
+*** Tag a resource: folksoresource, folksotag
+
+Tag a resource with one or more tags. Returns **201** (created).
+
+**** Errors
+
+***** 404
+
+Resource is not indexed or tag does not exist.

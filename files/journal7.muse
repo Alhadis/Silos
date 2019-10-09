@@ -1,0 +1,216 @@
+#title OQube's Blog
+#author Arnaud Bailly
+#description Random things I am working on...
+#link http://localhost:4444/journal/journal
+
+* 20080903: Handling CSV files for accounting purpose
+
+I finally wrote a Haskell program for managing my ledger files and
+producing raw data for my accountant. The problem is simple: I use
+[[http://www.newartisans.com/software/ledger.html][ledger]] program for bookkeeping, which is basically a
+flat text file containing all basic accounting transactions in
+double-entry format (a transaction is valid iff all atomic writings to
+its accounts sum up to 0, see
+[[http://en.wikipedia.org/wiki/Double-entry_bookkeeping_system]]).
+
+Ledger program can produces various outputs, most notably the *balance*
+format, that outputs the net debit and credit value of each account
+taking into account all transactions; and the *csv* format which is all
+transactions as CSV, for easy inclusion in spreadsheets for
+example. There is no debit or credit notion in ledger, only positive
+and negative numbers. 
+
+What I need is somewhat similar to CSV output, but with additional
+requirements:
+ - numbers must be posted to accounts as either *debit* or *credit*, with
+   each category having its own column;
+ - there must be  columns for cumulative debits and credits;
+ - cumulative values must be grouped by accounts;
+ - I want to check that the general balance of debits and credits is
+   0.
+
+So the basic steps for this is the following:
+ 1. parse the CSV input and create a list of transactions items, one
+    for each line of the input. Each transaction item should contain
+    the date, the account number and title, the debit or  credit
+    amount ;
+ 2. sort this list by account number and date;
+ 3. group by account number;
+ 4. accumulate value for each group;
+ 5. output the items as CSV lines.
+
+In short, we have the following structure for the main function:
+
+<src lang="haskell">
+makeGeneralLedger :: [String] -> [String]
+makeGeneralLedger =
+          (concatMap displayCsv) .
+          (map (accumulate amountZero)) .
+          groupByAccount .
+          sort .
+          (map parseRawCsvLine)
+
+groupByAccount :: [TxItem] -> [[TxItem]]
+groupByAccount = groupBy (\ t t' -> accountNo t == accountNo t')
+
+accumulate :: Integer -> [TxItem] -> [TxItem]
+accumulate acc [] = []
+accumulate acc ((TxItem d c p l an al am _) : ts) = (TxItem d c p l an al am (addAmount am acc)) : accumulate (addAmount am  acc) ts
+
+
+displayCsv :: [TxItem] -> [String]
+displayCsv ts = (map displayTx ts) ++ [""]
+
+displayTx :: TxItem -> String
+displayTx (TxItem d c p l an al am ac) = concatMap (++ ";") [(show d)
+                                                            ,an
+                                                            ,al
+                                                            ,"(" ++ p ++ ")"
+                                                            ,l
+                                                            ,(debcred am ";")
+                                                            ,(debcred ac ";")]
+</src>
+
+=TxItem= is a record data type that contains all the necessary
+information about a single transaction.
+
+** Version 1: Parsec
+
+The first version I wrote uses [[http://legacy.cs.uu.nl/daan/parsec.html][parsec]] library for parsing the
+input. This is where I spent a lot of time, understanding how parsing
+with combinators worked and making lot of mistakes, out of ignorance
+and out of bad practice.
+
+I tried to use TDD to do the parsing, which helped me a bit but did
+not produce a lot of tests. Tests are painful to write, like:
+
+<src lang="haskell">
+canParseCSVTxItem =
+    TestList [
+              txItemParser txItem "\"2006/06/12\",\"Facture Norsys SAS\",\"706100:Produits:Services\",\"EUR-900,000000\",\"EUR-900,000000\",\"*\",\"F20060601\",\"\""
+              ~?=
+              Right (TxItem (toGregorian 2006 06 12) True "F20060601" "Facture Norsys SAS" "706100" "Produits:Services" (TxAmount Credit "EUR" 900000000) (TxAmount Credit "EUR" 900000000))
+             ]
+</src>
+
+Main problems I had were:
+ - understanding that a failed rule may actually consume input, thus
+   preventing =<|>= rules to complete succesfully;
+ - rules were just wrong, yet I was so immersed and trying to solve
+   the problem quickly I could not see they were wrong (I missed a
+   part of the rule, consuming a comma);
+ - parser could not read easily euro signs, which I had to transform
+   to =EUR= string. There seems to be well-known limitations or problems
+   with the way Haskell handles UTF-8: although internally strings are
+   lists of unicode characters, I/O is not so forgiving.
+ - I used [[http://www.bortzmeyer.org/calculs-calendaires-en-haskell.html][Calendar]] package from Stéphane Bortzmeyer which is a nice
+   and simple program to compute dates
+ - I borrowed some code from [[http://sequence.complete.org/node/259][here]] to have parsec combinators that
+   could handle correctly newlines and eofs. I actually had lot of
+   troubles initially to handle *lines* and lines termination. This code
+   seems to be the cleanest way to express the fact that a line is
+   either terminated  by EOL or by EOF.
+ - Conversion from/to strings and ints is somewhat painful and ugly in
+   my code:
+<src lang="haskell">
+readInt :: String -> [(Int, String)]
+readInt = reads
+...
+      let (ip,_):_ = readInt intpart
+</src>
+ - the code is very "sequential", but it is the nature of the parsing,
+   a sequence of things.
+ - I decided to read strings into a data-structure with Integer values
+   for representing numbers, so that calculations should always be
+   exact at the 6th decimal place. Using Integer instead of Int may be
+   cumbersome as you need =toInteger= to transform everything. There
+   seems to be a [[file:///usr/share/doc/ghc6-doc/libraries/base/Data-Fixed.html][Data.Fixed]] type that would be better suited but it is
+   poorly equipped in terms of operators
+ - I think the code is too complex for what I am trying to achieve:
+   parsing CSV lines should be easier, maybe using regexp. Parsec is
+   probably overkill for such a regular structure.
+
+** Version 2 : Correct version 1
+
+Developping version 1 I cut corners and it failed: The program
+computed incorrect values. Two things that I did not take into account
+where:
+ - when reading decimal number into an Integer, the calculation is
+   simply to scale the integral part by $10^6$ and add the decimal
+   part. I overlooked the fact that the number of digits after decimal
+   sign is variable, so one needs to scale it also according to the
+   number of digits it has. This yielded incorrect numbers;
+ - when *showing* the =TxAmount= data, I separate again integral and
+   decimal part with =quotRem= then concatenate the two strings. But I
+   did not take into account the fact that the decimal part could be
+   lower than 10^6, which means its string represenation has 5 instead
+   of the required 6 digits.
+
+The interesting thing is that both errors are due to lack of
+verification of those parts of the code that just do this
+parsing, or in other words, I did not test enough my program before
+shipping, or worse I did not developed it using TDD, which would have
+hopefully revealed this problem before.
+
+These problems are actually the two sides of the same coin, and what I
+really need is asserting that:
+ 1. given any correctly formatted decimal string, I can parse it then
+    show it again and it will be the same string plus maybe some added
+    zeros at decimal place for padding,
+ 2. given any =Integer=, I can show it then parse it again and it will
+    be the same value.
+
+The real problem, of course, lies in the *any*: These properties should be
+proved for **all** possible correct strings and all possible Integer
+values, while my TDD tests cover only a fraction of the possible
+values, selected for their representativity or their usefulness at the
+time of writing the test. The devils lurks in the details, so I must
+be careful while TDDing in choosing those values.
+
+Quickcheck may help in solving those problems. I can express the two
+above properties using Quickcheck:
+<src lang="haskell">
+roundtripOnInteger = forAll generateDecimal $ \d -> 
+                          (right . parseDecimal . showDecimal) d == d
+
+roundtripOnStrings = forAll generateCorrectStrings $ \s ->
+                        let s' = trimStrings s
+                        in  collect (lengthOfDecimal s') $
+                            (showDecimal . right . parseDecimal) s' == s
+</src>
+
+The second one is a little more complex as we are verifying the
+property for all strings where trailing zeros in the decimal part have
+been omitted, which means we first generate a correct version of the
+string, then trim it, then compare the roundtrip transformation to the
+initial input.
+
+The =collect (lengthOfDecimal s')= statement allows us to collect some
+statistics about the distribution of the lenght of generated strings,
+which unsurprisingly shows that lenght 7 (including the leading comma)
+are vastly outnumbering other lengths, but those are not null:
+<example>
+90% 7.
+8% 6.
+0% 5.
+0% 4.
+0% 3.
+</example>
+
+The =0%= figures are due to some formatting issues of percentages in
+Quickcheck. 
+
+Given that we generated 10000 test cases without failures, we can now
+be pretty confident that this part of the program is safe. We can have
+some information about what part of the code we exercised using hpc:
+<example>
+ghc --make -fhpc -i/home/nono/soft/Calendar Accounting.hs QCTests.hs
+hpc report QCTests
+hpc markup QCTests
+</example>
+
+and here are the figures:
+[[./hpc.png][HPC Html report]]
+We can see that the coverage of Accounting module which contains the
+main code is rather poor, which is normal as the quickcheck tests only
+exercise a small part of the reading and parsing of numbers.

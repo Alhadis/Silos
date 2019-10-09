@@ -1,0 +1,50 @@
+#title Dream Weaver?
+
+* More than that.
+
+** imgtag
+muse 插入图片的方式只有两种：图片居中，下方显示图片的名称（自己加的），实现方式是 =<table>=，
+此其一；图片带链接，不能加图片名称，就是外包 a href 标签的 img ，此其二。
+一般用用可能也就足够了，
+但是这两种都不太方便用 CSS 来处理，前者输出的时候直接写成居中了，后面这个又稍嫌简陋，
+所以我仿照着牛人们的自定义标签自己弄了一个，使用起来其实就和直接写 img 标签差不多，
+不同之处在于可以不必打 literal 哈哈。
+毕竟主要目的学习 muse 自定义标签的工作方式已经达到了。
+
+<src type="elisp">
+;; add `img' tag to muse-html-markup-tags, turn parameters on.
+(add-to-list 'muse-html-markup-tags
+	     '("img" t t t leto-muse-imgtag))
+
+;; not essential, for implementing this in CSS file is convinient enough.
+(defvar leto-muse-imgtag-align-default 'right
+  "default value of image alignment")
+
+;; two attributes, set imgage path with `src' and alignment with align. 
+(defun leto-muse-imgtag (beg end attrs)
+  (let ((source (or (cdr (assoc "src" attrs)) "nil"))
+	(align (or (cdr (assoc "align" attrs))	       
+		   leto-muse-imgtag-align-default))
+	(text (delete-and-extract-region beg end))
+	)
+    (insert 
+     (concat "<div class=\"pic\" style=\"float: " align ";\">\n"
+	     "  <img src=\"" source "\" "
+	     (if (> (string-width text) 0)
+		 (concat "alt=\"" text "\" /><br />\n"
+			 "  <span class=\"image-caption\">\n"
+			 "    " text "\n"
+			 "  </span>\n")
+	       (concat "/>\n")
+	       )
+	     "</div><!-- pic -->"	     
+	     ))
+    (muse-publish-mark-read-only beg (point))))
+;; put imgage and image-caption in `pic' divition.
+</src>
+
+<src type="perl">
+#!/usr/bin/perl
+
+print "What the fuck?";
+</src>

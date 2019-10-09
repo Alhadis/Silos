@@ -1,0 +1,797 @@
+#title JS笔记
+#author Ole Yang
+
+* 简介
+JavaScript和java没有任何关系,也不是sun公司的产品,JavaScript是由客户端浏览器来解释执行的.
+
+* 放置
+js可以放在页面的任何位置,一般情况有下面的三种情况:
+
+ - js可以放在页面<head>位置,
+ - 放在<body>位置
+ - 集中放在另外的一个文件中
+ 
+** 放在<head>中
+放在head中时,只有在调用时函数才执行.
+<src type="text">
+<html>
+  <head>
+    <title>js Text</title>
+    <script type="text/javascript">
+    <!--
+    ...
+    //-->
+    </script>
+  </head>
+  <body>
+  ...
+  </body>
+</html>
+</src>
+<!-- //--> 如果浏览器不支持js,那么js也不会在页面出现
+
+** 放置body部分
+页面生成时就执行
+<src type="text">
+<html>
+  <head>
+    <title>js Text</title>
+  </head>
+
+  <body>
+  <script type="text/javascript">
+    ...
+  </script>
+
+  ... 
+  </body>
+</html>
+</src>
+
+** 集中放在一个文件中
+js也可以集中的放置一个.js的文件中,这是一个比较好的方法.
+通过<script src="../inc/xx.js">方式来引入
+<src type="text">
+<html>
+  <head>
+    <title>js Text</title>
+    <script src="../inc/xx.js">
+  </head>
+  <body>
+  ...
+  </body>
+</html>
+</src>
+
+* 语法
+** 分号 ;
+语句后面的分号不是必须的(所以为什么有些语句后面没有;),但是在语句后面加上一个;是一个良好的习惯.
+<src type="html">
+<script type="text/javascript">
+document.write('<h1>Hello World</h1>");
+document.write('<h1>Hello World again</h1>");
+</script>
+</src>
+
+** 注释
+*** 单行注释 //
+<src type="html">
+<script type="text/javascript">
+document.write("<h1>Hello World!</h1>");
+//document.write("<h1>Hello World again!</h1>");
+document.write("<h1>Hello World again!</h1>");  // 这是行尾的注释
+</script>
+</src>
+
+*** 多行注释
+/*
+...
+*/
+像c的注释
+<src type="html">
+<script type="text/javascript">
+/*这里是注释的第一行
+第二行
+*/
+document.write("<h1>Hello World!</h1>");
+document.write("<h1>Hello World again!</h1>");
+</script>
+</src>
+
+** 变量
+变量必须以字母或者是下划线开头. 变量**大小写**敏感
+
+*** 声明 var
+变量不用声明也是可以使用的.如果需要也可以使用var来声明
+<src type="html">
+var x = 1.25;
+</src>
+变量必须使用var说明，没有没有显式用var声明，js会隐式声明。
+
+*** 作用域
+在函数中没有显式用var说明，使用全局的变量
+<src type="text">
+var g='global';
+fucntion setVar() {
+  alert(g);
+  g = 'in function';
+}
+alert(g);
+</src>
+
+如果在函数中说明的变量之前使用变量将出现undefined
+<src type="text">
+var g='global';
+fucntion setVar() {
+  alert(g);
+  var g='in function';
+}
+alert(g);
+</src>
+
+
+** 数组
+只能以数字为下标，没有多维数组的，但是可以用数组的嵌套来完成
+<src type="text">
+var arr = ['a', ['b','c'],{x:1, y:2}]
+alert(arr[1][0]);  //值为b
+</src>
+
+*** 字符串
+
+* json
+如何处理php中返回的数组类型的json数据,看例子
+
+<src type="php">
+<?php
+// data.php
+$result = array(
+  'txt' => 'one',
+  'link' => "#",
+);
+
+echo json_decode($result);
+exit;
+?>
+</src>
+
+js中的脚本,这是我在做时刻查询中搜索提示中js的提示脚本
+<src type="javasrcipt">
+// auto_complete.js
+function Suggest(objParent, url, div_id){
+    document.getElementById(div_id).innerHTML = "";
+
+    var xmlHttp=null;
+    try{
+        // firefox, Opera 8.0+, Safari
+        xmlHttp = new XMLHttpRequest();
+    }catch( e ){
+        // Internet Explorer
+        try{
+            xmlHttp = new ActiveXObject("Msxml2.XMLHTTP");
+        }catch( e ){
+            // IE 5.5 or low
+            try{
+                xmlHttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }catch(e){
+                alert("您的浏览器不支持AJAX");
+                return false;
+            }
+        }
+    }
+    
+    keyword = objParent.value.replace(/(^\s*)|(\s*$)/g, ""); // 去除开头或者是结尾的空白
+    url += "?keyword=" + keyword;
+    url += "&input_name=" + objParent.name;
+    xmlHttp.onreadystatechange=function(){
+        if(xmlHttp.readyState == 4){
+            if(xmlHttp.responseText){
+                eval('var hint = ' + xmlHttp.responseText + ';');
+            }
+            if(hint){
+                str = "";
+                if ( objParent.id == 'from' || objParent.id == 'to' ){
+	                for ( var x in hint ){ // 注意这里是使用循环来读取的,php返回的数据时数组类型的,不是字符串
+                        // hint[x].txt 是数组中的txt,link也就是php数组的link
+	                    str += "<a href='#' onclick=\"fill_input('";
+	                    str += div_id + "','" + objParent.id + "','" + hint[x].txt + "');\" target=\"_self\">" + hint[x].txt + "</a> <span style='color:gray'>|</span> ";
+	                }
+            	}else{
+            		for ( var x in hint ){
+	                    //str += "<a href='" + hint[x].link + "' target='_self'>" + hint[x].txt + "</a> <span style='color:gray'>|</span> ";
+	                }
+            	}
+                document.getElementById(div_id).innerHTML = str.replace(/\|\s*$/g, ""); // 给元素写内容,并且去除最后一个||
+            }
+        }
+        
+    }
+    xmlHttp.setTimeouts = (1000, 1000, 1000, 0);
+    xmlHttp.open("GET", url, true);
+    //setTimeout(function(){this.xmlHttp.open('GET', this.url, true);}, 500);
+    xmlHttp.send(null);
+}
+
+function fill_input( div_id,input_id,txt ){
+    document.getElementById(input_id).value = txt.replace(/^\s*|\s*$/g, "");
+    document.getElementById(div_id).innerHTML = "";    
+}
+function CallBack(method, url, is_async){
+    xmlHttp.open(method, url, is_async);
+    xmlHttp.send(null);
+}
+// form check
+function check_form(){
+	if(document.getElementById("from").value==""){
+		document.getElementById("from").focus();
+		return false;
+	}
+	if(document.getElementById("to").value==""){
+		document.getElementById("to").focus();
+		return false;
+	}
+}
+
+</src>
+
+* 数组对象
+** 创建
+ - new Array()  创建一个空数组<br>
+ var arr = new Array();
+ - new Array(1,2,'a',1.2) 在创建时候同时赋值
+
+** 输出元素
+ - .toString 转换成字符串<br>
+ arr.toString()
+ - 用for循环
+ for(i=0; i<=arr.leng; i++){
+     alert(arr[i]);
+ }
+ - 用jion的方法来转化成数组
+ arr.join(",")
+ - 直接用document.write()也可以把数组输出来
+ document.write(arr),好像自动转换成字符串
+
+** join
+联合成一个字符串
+
+** concat
+在数组后面添加元素,不会递归
+
+** slice
+去数组中一部分
+arr.slice(4,5)
+
+** splice
+插入或者是删除数组元素
+
+** reverse
+反转数组
+
+* 字符串对象
+
+** split
+把字符串分割成数组,和array.join的操作相反
+<src type="javascript">
+var str = "Hello Word";
+document.write(str.split(" "));  // Hello,World
+document.write(str.split(""));  // H,e,l,l,o, ,W,o,r,d 
+</src>
+
+** replace
+<src type="javascript">
+str.replace(/^\s*|\s$/ig, '')  // 把str首尾的空白去掉
+</src>
+
+* 位置
+** 窗口的宽度
+ - scrollWidth<br>
+ 对象实际内容的宽度,不包括边线的宽度和padding之类的
+ - clientWidth<br>
+ 对象可见宽度,不包含滚动条的宽度
+ - offsetWidth<br>
+ 对象可见宽度,包括滚动条的宽度
+ 
+<src type="javascript">
+getElementById("myId").scrollWidth
+</src>
+
+* 统计个数
+** 限制textarea中输入的个数
+ - 知识点： 对象.value.length
+<src type="html">
+<html>
+  <head>
+    <title>Test</title>
+    <script type="text/javascript">
+    // 定义函数，传入3个参数，分别为显示还剩多少个字，统计数字地方，字符限制； 
+      function textCounter(showNumField, countField, maxLimit){
+          // 如果超过最大长度，只取最大长度的部分
+          if(countField.value.length > maxLimit){
+              countField.value = countField.value.substring(0, maxLimit);
+              showNumField.value = 0;
+          }else{
+              showNumField.value = maxLimit - countField.value.length;
+          }
+      }
+    </script>
+  </head>
+  <body>
+
+    <form name="myform" action="#" method="GET"> 
+      <textarea name="message" wrap="physical" cols="28" rows="4" onKeyDown="textCounter(this.form.remLen,this.form.message,12);" onKeyUp="textCounter(this.form.remLen,this.form.message,12);"> </textarea> 
+      <br /> 
+        尚能输入 
+        <input readonly type="text" name="remLen" size="4" maxlength="3" value="12"> 
+          个字符
+        </div> 
+        </form> 
+  </body>
+</html>
+
+</src>
+
+** 统计标签中字符的个数
+ - 知识点： innerHTML.length
+<src type="html">
+function textCount(obj){
+  alert(obj.innerHTML.length);
+}
+
+<span onclick="textCount(this);">123456</span>
+<div onclick="textCount(this);">0123456</div>
+
+</src>
+
+
+** 超级图片漂浮程序
+<src type="text">
+<script type="text/javascript">
+var imagepath="http://blog.h3bbs.com/images/tianya.jpg" //设置图片路径
+var imagewidth=100 //设置图片大小即窗口大小
+var imageheight=100
+var speed=2;//滚动速度
+var imageURL="http://zhuyun8.blog.163.com" //图片链接地址
+var hideafter=0 //设置窗口多长时间自动关闭，值为0即不自动关闭
+var isie=0;
+//判断是否为IE5.5及以上版本
+if(window.navigator.appName=="Microsoft Internet Explorer"&&window.navigator.appVersion.substring(window.navigator.appVersion.indexOf("MSIE")+5,window.navigator.appVersion.indexOf("MSIE")+8)>=5.5)
+{ isie=1; }
+else
+{ isie=0;}
+//弹出
+function pop()
+{
+x=x+dx;
+y=y+dy;
+oPopup.show(x,y,imagewidth,imageheight);
+if((x+imagewidth+5>screen.width) ||(x<0)) dx=-dx;
+if((y+imageheight+5>screen.height) ||(y<0)) dy=-dy;
+startani=setTimeout("pop()",50);
+}
+//隐藏
+function dismisspop()
+{
+clearTimeout(startani)
+oPopup.hide()
+}
+//单击动作
+function dowhat()
+{
+//if (imageclick=="dismiss")
+//dismisspopup()
+//else
+window.open(imageURL);
+
+pop();
+}
+//创建并设置风格及内容
+if(isie)
+{
+var preload=new Image();
+preload.<src type="php">
+<?php
+
+?>
+</src>
+imagepath;
+var x=0,y=0,dx=speed,dy=speed;
+var oPopup=window.createPopup();
+var obody=oPopup.document.body;
+obody.style.cursor="hand";
+ //var s = oPopup.document.createStyleSheet();  
+        //s.addRule ('a:link','color:red;')
+        //s.addRule ('a:visted','color:red;')
+       // s.addRule ('a:hover','color:gold;')
+  //或直接把样式表包含进来
+ //oPopup.document.createStyleSheet("login.css");
+   //可附加函数
+        //oPopupBody.attachEvent('onmouseout',hidePop)
+        //oPopupBody.attachEvent('onmouseover',clrPopTimer)
+obody.innerHTML='<img <src type="php">
+<?php
+
+?>
+</src>
+"'+preload.<src type="php">
+<?php
+
+?>
+</src>
+'">';
+obody.onmouseover=new Function("clearTimeout(startani)")
+obody.onmouseout=pop
+obody.onclick=dowhat
+pop();
+//设置自动隐藏的时间
+if(hideafter>0)
+setTimeout("dismisspop()",hideafter*1000);
+}
+</script>
+</src>
+
+** 滑动菜单
+<src type="html">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>JavaScript下拉菜单</title>
+    <style type="text/css">
+        * {
+            padding:0;
+            margin:0;
+        }
+        body {
+            font-family:verdana, sans-serif;
+            font-size:small;
+        }
+        #navigation, #navigation li ul {
+            list-style-type:none;
+        }
+        #navigation {
+            margin:20px;
+        }
+        #navigation li {
+            float:left;
+            text-align:center;
+            position:relative;
+        }
+        #navigation li a:link, #navigation li a:visited {
+            display:block;
+            text-decoration:none;
+            color:#000;
+            width:120px;
+            height:40px;
+            line-height:40px;
+            border:1px solid #fff;
+            border-width:1px 1px 0 0;
+            background:#c5dbf2;
+            padding-left:10px;
+        }
+        #navigation li a:hover {
+            color:#fff;
+            background:#2687eb;
+        }
+        #navigation li ul li a:hover {
+            color:#fff;
+            background:#6b839c;
+        }
+        #navigation li ul {
+            display:none;
+            position:absolute;
+            top:40px;
+            left:0;
+            margin-top:1px;
+            width:120px;
+        }
+        #navigation li ul li ul {
+            display:none;
+            position:absolute;
+            top:0px;
+            left:130px;
+            margin-top:0;
+            margin-left:1px;
+            width:120px;
+        }
+    </style>
+    <script type="text/javascript">
+        function displaySubMenu(li) {
+            var subMenu = li.getElementsByTagName("ul")[0];
+            subMenu.style.display = "block";
+        }
+        function hideSubMenu(li) {
+            var subMenu = li.getElementsByTagName("ul")[0];
+            subMenu.style.display = "none";
+        }
+    </script>
+</head>
+<body>
+    <ul id="navigation">
+        <li onmouseover="displaySubMenu(this)" onmouseout="hideSubMenu(this)">
+            <a href="#">栏目1</a>   
+            <ul>
+                <li><a href="#">栏目1->菜单1</a></li>
+                <li><a href="#">栏目1->菜单2</a></li>
+                <li><a href="#">栏目1->菜单3</a></li>
+                <li><a href="#">栏目1->菜单4</a></li>
+            </ul>
+        </li>
+  
+  
+        <li onmouseover="displaySubMenu(this)" onmouseout="hideSubMenu(this)">
+            <a href="#">栏目2</a>   
+            <ul>
+                <li><a href="#">栏目2->菜单1</a></li>
+                <li><a href="#">栏目2->菜单2</a></li>
+                <li><a href="#">栏目2->菜单3</a></li>
+                <li><a href="#">栏目2->菜单4</a></li>
+                <li><a href="#">栏目2->菜单5</a></li>
+            </ul>
+        </li>
+        <li onmouseover="displaySubMenu(this)" onmouseout="hideSubMenu(this)">
+            <a href="#">栏目3</a>   
+            <ul>
+                <li onmouseover="displaySubMenu(this)" onmouseout="hideSubMenu(this)">
+                    <a href="#">栏目3->菜单1</a>
+                    <ul>
+                        <li><a href="#">菜单1->子菜单1</a></li>
+                        <li><a href="#">菜单1->子菜单2</a></li>
+                        <li><a href="#">菜单1->子菜单3</a></li>
+                        <li><a href="#">菜单1->子菜单4</a></li>
+                    </ul>
+                </li>
+                <li><a href="#">栏目3->菜单2</a></li>
+                <li onmouseover="displaySubMenu(this)" onmouseout="hideSubMenu(this)">
+                    <a href="#">栏目3->菜单3</a>
+                    <ul>
+                        <li><a href="#">菜单3->子菜单1</a></li>
+                        <li><a href="#">菜单3->子菜单2</a></li>
+                        <li><a href="#">菜单3->子菜单3</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+</ul>
+</body>
+</html>
+</src>
+
+** 函数大全
+<src type="text">
+函数是一组可以随时地运行的语句，她们是ECMAScipt的核心。函数是由关键字function、函数名加一组参数以及置于括号中的要执行的代码声明的。函数的基本语法如下：
+
+　　founctionc functionname(arg0,arg1,...,argN){
+
+　　statements
+
+　　}
+
+　　下面将详细的介绍函数的用途
+
+　　abs 方法，返回一个数的绝对值。
+
+　　acos 方法，返回一个数的反余弦。
+
+　　anchor 方法，在对象的指定文本两端加上一个带 NAME 属性的 HTML 锚点。
+
+　　asin 方法 返回一个数的反正弦。
+
+　　atan 方法 返回一个数的反正切。
+
+　　atan2 方法 返回从 X 轴到点 (y, x)的角度(以弧度为单位)。
+
+　　atEnd 方法 返回一个表明枚举算子是否处于集合结束处的 Boolean 值。
+
+　　big 方法 在String 对象的文本两端加入 HTML 的标识。
+
+　　blink 方法 将 HTML 的 标识添加到 String 对象中的文本两端。
+
+　　bold 方法 将 HTML 的 标识添加到String 对象中的文本两端。
+
+　　ceil 方法 返回大于或等于其数值参数的最小整数。
+
+　　charAt 方法 返回位于指定索引位置的字符。
+
+　　charCodeAt 方法 返回指定字符的 Unicode 编码。
+
+　　compile 方法 将一个正则表达式编译为内部格式。
+
+　　concat 方法(Array) 返回一个由两个数组合并组成的新数组。
+
+　　concat 方法(String) 返回一个包含给定的两个字符串的连接的 String 对象。
+
+　　cos 方法 返回一个数的余弦。
+
+　　dimensions 方法 返回 VBArray 的维数。
+
+　　escape 方法 对 String 对象编码，以便在所有计算机上都能阅读。
+
+　　eval 方法 对 JScript 代码求值然后执行之。
+
+　　exec 方法 在指定字符串中执行一个匹配查找。
+
+　　exp 方法 返回 e (自然对数的底) 的幂。
+
+　　fixed 方法 将 HTML 的 标识添加到String 对象中的文本两端。
+
+　　floor 方法 返回小于或等于其数值参数的最大整数。
+
+　　fontcolor 方法 将 HTML 带 COLOR 属性的标识添加到 String 对象中的文本两端。
+
+　　fontsize 方法 将 HTML 带 SIZE 属性的标识添加到 String 对象中的文本两端。
+
+　　fromCharCode 方法 返回 Unicode 字符值的字符串。
+
+　　getDate 方法 使用当地时间返回 Date 对象的月份日期值。
+
+　　getDay 方法 使用当地时间返回 Date 对象的星期几。
+
+　　getFullYear 方法 使用当地时间返回 Date 对象的年份。
+
+　　getHours 方法 使用当地时间返回 Date 对象的小时值。
+
+　　getItem 方法 返回位于指定位置的项。
+
+　　getMilliseconds 方法 使用当地时间返回 Date 对象的毫秒值。
+
+　　getMinutes 方法 使用当地时间返回 Date 对象的分钟值。
+
+　　getMonth 方法 使用当地时间返回 Date 对象的月份。
+
+　　getSeconds 方法 使用当地时间返回 Date 对象的秒数。
+
+　　getTime 方法 返回 Date 对象中的时间。
+
+　　getTimezoneOffset 方法返回主机的时间和全球标准时间(UTC)之间的差(以分钟为单位)。
+
+　　getUTCDate 方法 使用全球标准时间(UTC)返回 Date 对象的日期值。
+
+　　getUTCDay 方法 使用全球标准时间(UTC)返回 Date 对象的星期几。
+
+　　getUTCFullYear 方法 使用全球标准时间(UTC)返回 Date 对象的年份。
+
+　　getUTCHours 方法 使用全球标准时间(UTC)返回Date 对象的小时数。
+
+　　getUTCMilliseconds 方法 使用全球标准时间(UTC)返回Date 对象的毫秒数。
+
+　　getUTCMinutes 方法 使用全球标准时间(UTC)返回 Date 对象的分钟数。
+
+　　getUTCMonth 方法 使用全球标准时间(UTC)返回 Date 对象的月份值。
+
+　　getUTCSeconds 方法使用全球标准时间(UTC)返回Date对象的秒数。
+
+　　getVarDate 方法 返回 Date 对象中的 VT_DATE。
+
+　　getYear 方法 返回 Date 对象中的年份。
+
+　　indexOf 方法 返回在 String 对象中第一次出现子字符串的字符位置。
+
+　　isFinite 方法 返回一个 Boolean 值，表明某个给定的数是否是有穷的。
+
+　　isNaN 方法 返回一个 Boolean 值，表明某个值是否为保留值 NaN (不是一个数)。
+
+　　italics 方法 将 HTML的 标识添加到 String 对象中的文本两端。
+
+　　item 方法 返回集合中的当前项。
+
+　　join 方法 返回一个由数组中的所有元素连接在一起的 String 对象。
+
+　　lastIndexOf 方法 返回在 String 对象中子字符串最后出现的位置。
+
+　　lbound 方法 返回在 VBArray 中指定维数所用的最小索引值。
+
+　　link 方法 将带 HREF 属性的 HTML 锚点添加到 String 对象中的文本两端。
+
+　　log 方法 返回某个数的自然对数。
+
+　　match 方法使用给定的正则表达式对象对字符串进行查找，并将结果作为数组返回。
+
+　　max 方法 返回给定的两个表达式中的较大者。
+
+　　min 方法 返回给定的两个数中的较小者。
+
+　　moveFirst 方法 将集合中的当前项设置为第一项。
+
+　　moveNext 方法 将当前项设置为集合中的下一项。
+
+　　parse 方法对包含日期的字符串进行分析，并返回该日期与1970年1月1日零点之间相差的毫秒数。
+
+　　parseFloat 方法 返回从字符串转换而来的浮点数。
+
+　　parseInt 方法 返回从字符串转换而来的整数。
+
+　　pow 方法 返回一个指定幂次的底表达式的值。
+
+　　random 方法 返回一个 0 和 1 之间的伪随机数。
+
+　　replace 方法 返回根据正则表达式进行文字替换后的字符串的拷贝。
+
+　　reverse 方法 返回一个元素反序的 Array 对象。
+
+　　round 方法 将一个指定的数值表达式舍入到最近的整数并将其返回。
+
+　　search 方法返回与正则表达式查找内容匹配的第一个子字符串的位置。
+
+　　setDate 方法 使用当地时间设置 Date 对象的数值日期。
+
+　　setFullYear 方法 使用当地时间设置 Date 对象的年份。
+
+　　setHours 方法 使用当地时间设置 Date 对象的小时值。
+
+　　setMilliseconds 方法 使用当地时间设置 Date 对象的毫秒值。
+
+　　setMinutes 方法 使用当地时间设置 Date 对象的分钟值。
+
+　　setMonth 方法 使用当地时间设置 Date 对象的月份。
+
+　　setSeconds 方法 使用当地时间设置 Date 对象的秒值。
+
+　　setTime 方法 设置 Date 对象的日期和时间。
+
+　　setUTCDate 方法 使用全球标准时间(UTC)设置 Date 对象的数值日期。
+
+　　setUTCFullYear 方法 使用全球标准时间(UTC)设置 Date 对象的年份。
+
+　　setUTCHours 方法 使用全球标准时间(UTC)设置 Date 对象的小时值。
+
+　　setUTCMilliseconds 方法 使用全球标准时间(UTC)设置 Date 对象的毫秒值。
+
+　　setUTCMinutes 方法 使用全球标准时间(UTC)设置 Date 对象的分钟值。
+
+　　setUTCMonth 方法 使用全球标准时间(UTC)设置 Date 对象的月份。
+
+　　setUTCSeconds 方法 使用全球标准时间(UTC)设置 Date 对象的秒值。
+
+　　setYear 方法 使用 Date 对象的年份。
+
+　　sin 方法 返回一个数的正弦。
+
+　　slice 方法 (Array) 返回数组的一个片段。
+
+　　slice 方法 (String) 返回字符串的一个片段。
+
+　　small 方法 将 HTML 的 标识添加到 String 对象中的文本两端。
+
+　　sort 方法 返回一个元素被排序了的 Array 对象。
+
+　　split 方法将一个字符串分割为子字符串，然后将结果作为字符串数组返回。
+
+　　sqrt 方法 返回一个数的平方根。
+
+　　strike 方法 将 HTML 的 标识添加到String 对象中的文本两端。
+
+　　sub 方法 将 HTML 的 标识放置到 String 对象中的文本两端。
+
+　　substr 方法 返回一个从指定位置开始并具有指定长度的子字符串。
+
+　　substring 方法 返回位于 String 对象中指定位置的子字符串。
+
+　　sup 方法 将 HTML 的 标识放置到 String 对象中的文本两端。
+
+　　tan 方法 返回一个数的正切。
+
+　　test 方法 返回一个 Boolean 值，表明在被查找的字符串中是否存在某个模式。
+
+　　toArray 方法 返回一个从 VBArray 转换而来的标准 JScript 数组。
+
+　　toGMTString 方法返回一个转换为使用格林威治标准时间(GMT)的字符串的日期。
+
+　　toLocaleString 方法返回一个转换为使用当地时间的字符串的日期。
+
+　　toLowerCase 方法返回一个所有的字母字符都被转换为小写字母的字符串。
+
+　　toString 方法 返回一个对象的字符串表示。
+
+　　toUpperCase 方法返回一个所有的字母字符都被转换为大写字母的字符串。
+
+　　toUTCString 方法返回一个转换为使用全球标准时间(UTC)的字符串的日期。
+
+　　ubound 方法 返回在 VBArray 的指定维中所使用的最大索引值。
+
+　　unescape 方法 对用escape 方法编码的 String 对象进行解码。
+
+　　UTC 方法 返回 1970年1月1日零点的全球标准时间 (UTC) (或 GMT)与指定日期之间的毫秒数.
+
+　　valueOf 方法 返回指定对象的原始值
+</src>

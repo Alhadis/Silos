@@ -1,0 +1,250 @@
+#title 网购机系统安装指南
+#author OLE YANG
+#date 2012-12-20
+
+<contents>
+
+* 安装fedora 17
+
+** 启动sshd
+ 1. 关闭selinux
+<src type="bash">
+vi /etc/sysconfig/selinux
+SELINUX=disabled
+</src>
+
+ 2. 防火墙开放22端口
+<src type="bash">
+vi /etc/sysconfig/iptalbes
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp --dport 22 -j ACCEPT <---增加到COMMIT之前
+service sshd restart
+</src>
+
+ 3. 允许root
+<src type="bash">
+vi /etc/ssd/sshd_config
+PermitRootLogin yes   // 去掉注释
+</src>
+
+ 4. 启动sshd
+<src type="bash">
+service sshd restart
+</src>
+
+ 5. 自动启动
+<src type="bash">
+chkconfig sshd on
+</src>
+
+** 设置yum源
+上传163,sohu，google的源到/etc/yum.repos.d中
+<src type="bash">
+# yum -y install yum-fastestmirror
+# rpm -ivh http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-stable.noarch.rpm
+</src>
+** 更新系统
+
+<src type="bash">
+yum update -y
+</src>
+
+** 安装轻量级桌面
+<src type="bash">
+yum groupinstall lxde -y
+</src>
+在gdm中设置用lxde登陆
+
+** gdm root自动登陆
+ 1. 修改custom.conf
+<src type="bash">
+# vi /etc/gdm/custom.conf
+</src>
+添加以下内容：
+<src type="bash">
+[daemon]
+AutomaticLoginEnable=true
+AutomaticLogin=root
+</src>
+
+ 2. 用户自动登录配置：
+编辑：/etc/gdm/gdm.schemas
+<src type="xml">
+     <schema>
+      <key>daemon/AutomaticLoginEnable</key>
+      <signature>b</signature>
+      <default>true</default>        <----把false改为true
+    </schema>
+    <schema>
+      <key>daemon/AutomaticLogin</key>
+      <signature>s</signature>
+      <default>root</default>
+    </schema>
+</src>
+
+ 3. 如果想让root也能登录 ,还要修改下面的内容（经测试可以实现自动登录）
+修改/etc/pam.d下的gdm-fingerprint、gdm-passwd、gdm-smartcard三个文件，注释掉三个文件中的下面语句
+<src type="bash">
+#auth        required      pam_succeed_if.so user != root quiet
+</src>
+
+*** lxde
+lxde是一个轻量级的桌面环境
+ 1. 安装
+<src type="bash">
+yum grouinstall lxde
+</src>
+
+ 2. 修改桌面管理器
+<src type="bash">
+# vi /etc/sysconfig/desktop   # 没有就创建一个
+# 加入如下2行
+DISPLAYMANAGER=/usr/sbin/lxdm
+PREFERRED=/usr/bin/startlxde
+</src>
+
+ 3. 修改/etc/lxdm/lxdm.conf
+<src type="bash">
+# vi /etc/lxdm/lxdm.conf
+autologin=root
+white=root
+</src>
+
+重启系统
+
+** 安装google浏览器
+google 浏览器yum源
+
+<src type="bash">
+vi /etc/yum.repos.d/google.repo
+# 输入如下内容
+[google-chrome]
+name=google-chrome - 32-bit
+baseurl=http://dl.google.com/linux/chrome/rpm/stable/i386
+enabled=1
+gpgcheck=1
+gpgkey=https://dl-ssl.google.com/linux/linux_signing_key.pub
+</src>
+或者从网站上直接下载rpm包来安装
+<src type="bash">
+https://www.google.com/intl/en/chrome/browser/?&brand=CHMA&utm_campaign=en&utm_source=en-ha-na-us-bk&utm_medium=ha
+</src>
+然后用命令安装
+<src type="bash">
+yum install google-chrome-stable -y
+</src>
+** 设置桌面
+*** 桌面背景
+
+*** 隐藏工具栏
+
+
+* 有关网购机的设置
+** 获取/写入网购机编号
+vi /home/netMachine/bin/myServer.py
+
+内容如下：
+<src type="bash">
+# -*- coding: utf-8 -*-
+from socket import *
+import sys, time, encodings
+import re
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print u'错了！使用方法：python myServer.py 端口号'
+    else:
+        fileName = '/home/netMachine/MachineNo'
+        #fileName = '/tmp/MachineNo'
+        machineNo = "0"
+        
+        # AF_INET允许Internet地址
+        sockobj = socket(AF_INET, SOCK_STREAM)
+        # 允许地址复用
+        sockobj.setsockopt(SOL_SOCKET,SO_REUSEADDR,1)
+        # 绑定到指定的地址
+        sockobj.bind( ('', int(sys.argv[1])) )
+
+        # 只也许2个客户端连接
+        sockobj.listen(2)
+        
+        while True:
+            # connection：新的socket对象
+            # address： 客户端地址
+            connection,address = sockobj.accept()
+            try:
+                # 设置连接超时
+                connection.settimeout(5)
+                # 从缓冲区中获取指定长度的字符串，超过的部分会被删除
+                rcvd = connection.recv(1024)
+                if not rcvd :
+                    pass
+                else:
+                    p = re.compile('^GET\s+\/\?machineNo=(.*?)\s+')
+                    arr = p.findall(rcvd)
+
+                    if len(arr) != 0:
+                        # 写网购机号
+                        try:
+                            fileHandle = open(fileName, 'w+')
+                            strLen = fileHandle.write(arr[0])
+                            fileHandle.close()
+                        except IOError:
+                            # 读写文件错误
+                            print "write error"
+                            machineNo = "0"
+                        finally:
+                            print "finally"
+                            #fileHandle.close()
+                    else:
+                        # 读取网购机号
+                        try:
+                            fileHandle = open(fileName, 'r')
+                            machineNo = fileHandle.readline()
+                            fileHandle.close()
+                        except IOError:
+                            machineNo = "0"
+                    connection.send(machineNo)
+            except Exception, errorcode:
+                if errorcode == "timeout":
+                    print 'time out'
+                elif errorcode[0] == 10035:
+                    print "error 10035"
+            connection.close()
+</src>
+
+开机自动启动
+
+ 1. 在/etc/rc.d/rc.local中增加(如果没有就新建)
+<src type="python">
+python /home/netMachine/bin/myServer.py 14143 &
+</src>
+
+ 2. 修改可执行权限
+<src type="bash">
+chmod +x /etc/rc.d/rc.local
+</src>
+
+** 屏幕驱动
+<src type="bash">
+# cp -R tools /opt
+# /opt/tools/install.sh
+</src>
+ - 端口填/dev/ttyS0。表示把驱动安装在下屏。
+
+校准程序
+<src type="bash">
+# /opt/tools/jiaozhun
+</src> 
+点击出现的“十".
+
+生成xorg.conf,不要登陆桌面，clone
+<src type="bash">
+# Xorg -configure
+</src>
+
+
+* 程序需要改动的地方
+config.php中的地址、数据库
+** 主界面
+shopMod.class.php
+

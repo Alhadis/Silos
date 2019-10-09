@@ -1,0 +1,352 @@
+#title MongoDB
+
+<contents>
+
+* 简介
+MongoDB是一个基于分布式文件存储的数据库开源项目。由C++语言编写。旨在为WEB应用提供可护展的高性能数据存储解决方案。
+
+* 特点
+它的特点是高性能、易部署、易使用，存储数据非常方便。主要功能特性有：
+ - 面向集合存储，易存储对象类型的数据。
+ - 模式自由。
+ - 支持动态查询。
+ - 支持完全索引，包含内部对象。
+ - 支持查询。
+ - 支持复制和故障恢复。
+ - 使用高效的二进制数据存储，包括大型对象（如视频等）。
+ - 自动处理碎片，以支持云计算层次的扩展性
+ - 支持RUBY，PYTHON，JAVA，C++，PHP等多种语言。
+ - 文件存储格式为BSON（一种JSON的扩展）
+ - 可通过网络访问
+
+所谓“面向集合”（Collenction-Orented），意思是数据被分组存储在数据集中，被称为一个集合（Collenction)。每个集合在数据库中都有一个唯一的标识名，并且可以包含无限数目的文档。集合的概念类似关系型数据库（RDBMS）里的表（table），不同的是它不需要定义任何模式（schema)。
+模式自由（schema-free)，意味着对于存储在mongodb数据库中的文件，我们不需要知道它的任何结构定义。如果需要的话，你完全可以把不同结构的文件存储在同一个数据库里。
+存储在集合中的文档，被存储为键-值对的形式。键用于唯一标识一个文档，为字符串类型，而值则可以是各中复杂的文件类型。我们称这种存储形式为BSON（Binary Serialized dOcument Format）。
+
+MongoDB服务端可运行在Linux、Windows或OS X平台，支持32位和64位应用，默认端口为27017。推荐运行在64位平台，因为MongoDB
+
+在32位模式运行时支持的最大文件尺寸为2GB。
+
+MongoDB把数据存储在文件中（默认路径为：/data/db），为提高效率使用内存映射文件进行管理。所谓“面向集合”（Collenction-Orented），意思是数据被分组存储在数据集中，被称为一个集合（Collenction)。每个集合在数据库中都有一个唯一的标识名，并且可以包含无限数目的文档。集合的概念类似关系型数据库（RDBMS）里的表（table），不同的是它不需要定义任何模式（schema)。
+模式自由（schema-free)，意味着对于存储在mongodb数据库中的文件，我们不需要知道它的任何结构定义。如果需要的话，你完全可以把不同结构的文件存储在同一个数据库里。
+存储在集合中的文档，被存储为键-值对的形式。键用于唯一标识一个文档，为字符串类型，而值则可以是各中复杂的文件类型。我们称这种存储形式为BSON（Binary Serialized dOcument Format）。
+
+MongoDB服务端可运行在Linux、Windows或OS X平台，支持32位和64位应用，默认端口为27017。推荐运行在64位平台，因为MongoDB
+
+在32位模式运行时支持的最大文件尺寸为2GB。
+
+MongoDB把数据存储在文件中（默认路径为：/data/db），为提高效率使用内存映射文件进行管理。
+
+* 安装
+** Linux/OS X
+<verse>
+ 1 建立数据目录
+ mkdir -p /data/db
+ 2 下载压缩包
+ curl -O http://downloads.mongodb.org/linux/mongodb-linux-i686-latest.tgz
+ 3 解压缩文件
+ tar xzf mongodb-linux-i386-latest.tgz
+ 4 启动服务
+ bin/mongod run &
+ 5 使用自带客户端连接
+ /bin/mongo
+ 6 测试
+ db.foo.save( { a : 1 } )
+ db.foo.findOne()
+</verse>
+
+** Windows
+<verse>
+1 建立数据目录c:\data\db
+2 下载压缩包，解压文件
+3 启动服务
+ bin\mongod.exe run
+4 自带客户端
+ bin\mongon.exe
+</verse>
+
+* 应用
+在LINUX和WINDOWS系统下的使用大同小异，不同的地方主要是默认的数据存储目录。LINUX类系统下存放在/data/db下，而WINDOWS
+
+会存放在C:\data\db下。可以在启动时使用--dbpath参数指定存储目录并启动。如：bin\mongod.exe --dbpath d:\data\mongo
+
+常用启动参数：
+run 直接启动。例：./mongod run
+--dbpath 指定特定存储目录启动，若目录不存在则创建。例：./mongod --dbpath /var/data/mongo
+--port 指定端口启动。例：./mongod --port 12345
+
+停止MONGO服务：
+方法1：服务端停止，可使用Ctrl+C
+方法2：在客户端停止，可先连接客户端
+ ./mongo
+ 并使用命令
+ db.shutdownerver()
+ 然后退出客户端
+ exit
+
+使用JAVA语言操作MONGODB非常简单，只要将驱动文件加入到CLASSPATH中就可以使用。
+
+** 建立连接
+要建立MongoDB的连接，你只要指定要连接到的数据库就可以。这个数据库不一定存在，如果不存在，MongoDB会先为你建立这个
+
+库。同时，在连接时你也可以具体指定要连接到的网络地址和端口。下面的是连接本机数据库的一些例子：
+<src type="text">
+import com.mongodb.Mongo;
+import com.mongodb.DBCollection;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
+import com.mongodb.DBCursor;
+import com.mongodb.MongoAdmin;
+
+Mongo db = new Mongo("mydb");
+Mongo db = new Mongo("localhost", "mydb");
+Mongo db = new Mongo("localhost", 27017, "mydb");
+
+</src>
+
+** 安全验证（非必选）
+MongoDB服务可以在安全模式运行，此时任何客户端要连接数据库时需使用用户名和密码。在JAVA中可使用如下方法连接：
+
+boolean auth = db.authenticate(userName, password);
+
+如果用户名密码验证通过，返回值为true，否则为false
+
+** 获取集合列表
+每个数据库都存在零个或多个集合，需要时你可以获得他们的列表：
+<src type="text">
+Set<String> colls = db.getCollectionNames();
+for(String s : colls){
+ System.out.println(s);
+}
+</src>
+
+** 获得一个集合
+要获得某个特定集合，你可以指定集合的名字，并使用getCollection()方法：
+
+DBCollection coll = db.getCollection("testCollection");
+
+当你获取了这个集合对象，你就可以对数据进行增删查改之类的操作。
+
+** 插入文档
+当你获得了一个集合对象，你就可以把文档插入到这个对象中。例如，存在一个JSON式的小文档：
+{
+ "name" : "MongoDB",
+ "type" : "database",
+ "count" : 1,
+ "info" : {
+   x : 203,
+   y : 102
+  }
+}
+请注意，这个文档包含一个内部文档。我们可以使用BasicDBObject类来创建这个文档，并且使用insert()方法方便地将它插入到集合中。
+<src type="text">
+BasicDBObject doc = new BasicDBObject();
+doc.put("name", "MongoDB");
+doc.put("type", "database");
+doc.put("count", 1);
+
+BasicDBObject info = new BasicDBObject();
+info.put("x", 203);
+info.put("y", 102);
+
+doc.put("info", info);
+
+coll.insert(doc);
+</src>
+
+** 使用findOne()查找集合中第一个文档
+要查找我们上一步插入的那个文档，可以简单地使用findOne()操作来获取集合中第一个文档。这个方法返回一个单一文档（这是相对于使用DBCursor的find()操作的返回），这对于只有一个文档或我们刚插入第一个文档时很有用，因为此时并不需要使用光标。
+<src type="text">
+
+DBObject myDoc = coll.findOne();
+System.out.println(myDoc);
+</src>
+
+
+返回类似：
+<src type="text">
+
+{
+ "_id" : "ac907a1f5b9d5e4a233ed300" ,
+ "name" : "MongoDB" ,
+ "type" : 1 ,
+ "info" : {
+  "x" : 203 ,
+  "y" : 102} ,
+ "_ns" : "testCollection"
+}
+</src>
+注意_id和_ns元素是由MongoDB自动加入你的文档。记住：MongoDB内部存储使用的元素名是以“_”做为开始。
+
+** 加入多种文档
+为了做更多有趣的查询试验，让我们向集合中加入多种文档类型，象：
+<src type="text">
+{
+ "i" : value
+}
+
+</src>
+
+
+可以通过循环来实现
+<src type="text">
+
+for(int i = 0; i < 100; i++){
+ coll.insert(new BasicDBObject().append("i", i));
+}
+
+</src>
+
+注意我们可以在一个集合中插入不同类型的文档，这就是我们所说的“模式自由”（schema-free）。
+
+** 统计文档数量
+ 使用getCount()方法
+<src type="text">
+
+System.out.println(coll.getCount());
+
+</src>
+
+** 使用光标（cursor）来获取全部文档
+为了获取集合中的所有文档，我们可以使用find()方法。这个方法返回一上DBCursor对象，来允许我们将符合查询条件的文档迭代出来。
+<src type="text">
+
+DBCursor cur = coll.find();
+while(cur.hasNext()){
+ System.out.println(cur.next());
+}
+
+</src>
+
+** 在查询中获取单一文档
+我们可以创建一个查询，并传递给find()方法来获取集合中所有文档的一个子集。例如，我们想要查询域名为"i"，并且值为71的文档：
+<src type="text">
+
+BasicDBObject query = new BasicDBObject();
+query.put("i", 71);
+cur = coll.find(query);
+while(cur.hasNext()){
+ System.out.println(cur.next());
+}
+
+</src>
+
+** 使用条件查询获取集合
+例如，我们想要查询所有i>50的文档：
+<src type="text">
+BasicDBObject query = new BasicDBObject();
+query.put("i", new BasicDBObject("$gt", 50));
+cur = coll.find(query);
+while(cur.hasNext()){
+ System.out.println(cur.next());
+}
+
+</src>
+
+
+当然，我们也可以做20 < i <= 30的查询
+<src type="text">
+BasicDBObject query = new BasicDBObject();
+query.put("i", new BasicDBObject("$gt", 20).append("$lte", 30));
+cur = coll.find(query);
+while(cur.hasNext()){
+ System.out.println(cur.next());
+}
+
+</src>
+
+
+** 创建索引
+MongoDB支持索引，而且很容易在集合上增加索引。要创建索引，只需要指定要加索引的属性，并且指定升序（1）或降序即可（-1）。
+<src type="text">
+coll.createIndex(new BasicDBObject("i", 1));
+
+</src>
+
+
+** 获取索引列表
+<src type="text">
+List<DBObject> list = coll.getIndexInfo();
+for(DBObject o : list){
+ System.out.println(o);
+}
+
+</src>
+
+
+** MongoDB管理函数
+管理函数在com.mongodb.MongoAdmin类中定义。
+例A：获取数据库列表
+<src type="text">
+ MongoAdmin admin = new MongoAdmin();
+ for(String s : admin.getDatabaseNames()){
+  System.out.println(s);
+ }
+
+</src>
+
+
+例B：获取数据库对象
+<src type="text">
+ Mongo m = admin.getDB("mydb");
+
+</src>
+
+
+例C：删除数据库
+<src type="text">
+ admin.dropDatabase("mydb");
+
+</src>
+
+
+** 用DBObject存储JAVA对象
+MongoDB for JAVA驱动中提供了用于向数据库中存储普通对象的接口DBObject
+例如，存在一个需要存储的对象类Tweet
+<src type="text">
+public class Tweet implements DBObject{
+ /*...*/
+}
+
+</src>
+
+
+可以使用如下代码：
+<src type="text">
+Tweet myTweet = new Tweet();
+myTweet.put("user", userId);
+myTweet.put("message", message);
+myTweet.put("date", new Date());
+
+collection.insert(myTweet);
+</src>
+
+
+当一个文档从MongoDB中取出时，它会自动把文档转换成DBObject接口类型，要将它实例化为你的对象，需使用
+<src type="text">
+DBCollection.setObjectClass()。
+collection.setObjectClass(Tweet);
+Tweet myTweet = (Tweet)collection.findOne();
+
+</src>
+
+
+** JAVA驱动的并发性
+JAVA的MongoDB驱动是线程安全的。如果你将它用在WEB服务中，可以创建它的一个单例，并在所有请求中使用它。
+
+然而，如果你需要在一个会话（例如HTTP请求）中保证事务一致性，也许你会希望在这个会话中对驱动使用同一个端口。这仅仅在
+
+请求量非常大的环境中，例如你经常会读取刚写入的数据。
+为了这一点，你需要使用如下代码：
+<src type="text">
+Mongo m;
+m.restartStart();
+
+// code.........
+
+m.requestDone();
+
+</src>
+
+
+

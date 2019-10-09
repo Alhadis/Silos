@@ -1,0 +1,222 @@
+#title Taxonomy of Communication Networks
+<contents>
+
+* Overview
+[[network_taxonomy.png]]
+
+* Broadcast Networks
+definition ::
+Nodes share a common channel;information transmitted by a node is received by all other nodes in the network
+
+examples ::
+ - TV
+ - radio
+
+* Switched Networks
+definition ::
+Information is transmitted to a small sub-set(usually only one) of the nodes
+
+**  Circuit switching
+definition ::
+dedicated circuit per call/session
+
+example ::
+ - telephone
+ - GSM High-Speed Circuit-Switched Data(HSCSD)
+
+feature ::
+ - each link has a number of "circuits"
+(sometimes we refer to a "circuit" as a channel or a line)
+
+ - an end-to-end connection reserves one "circuit" at each link
+
+[[circuit_switch_link.png]]
+
+multiplexing for sharing resources ::
+
+ - TDM(Time-Division Multiplexing)
+
+[[time_division_multiplexing.png]]
+ - FDM(Frequency-Division Multiplexing)
+ - Others,e.g., CDM(Code-Division Multiplexing), color/lambda division
+
+*** three phases
+1. circuit establishment
+2. data transfer
+3. circuit termination
+
+*** circuit switch delay
+[[circuit_switch_data_delay.png]]
+
+**** propagation delay
+delay for the first bit to go from a source to a destination
+ - d = length of physical link
+ - s = propagation speed in propogation speed in medium(~2 * 10^5 km/sec)
+ - propagation delay = d / s
+<example>
+Suppose the distance between A and B is 4000km, 
+then one-way propagation delay is:
+4000km / (200,000km/s) = 20ms
+</example>
+
+**** transmission delay
+time to pump data onto link at reserved rate
+ - R = reserved bandwidth(bps)
+ - L = message length(bits)
+ - time to send a packet into link = L / R
+<example>
+Suppose we reserve a one slot HSCSD channel
+ - each HSCSD frame can transmit about 115kbs
+ - a frame is divided into 8 slots, each is about 14kbs
+Then the transmission delay of using one reserved slot for a message of 1 kbits:
+1kbits / 14kbps = 70ms
+</example>
+
+[[circuit_switch_example.png]]
+
+** Packet switching
+definition ::
+data sent through network in discrete "chunks"
+
+example ::
+ - Internet
+ - Gneneral Packet Radio Service(GPRS)
+
+feature ::
+
+
+ - Each end-to-end data *flow* (ie., a sender-receiver pair) divided into *packets*.
+*** packet structure
+[[packet_switch_structure.png]]
+  - header and trailer carry control information(eg., destination address, check sum)
+
+ - At each node the entire packet is received, processed(e.g.,routing), stored briefly, and then forwarded to the next node; thus packet-switched networks are also callled *store-and-forward networks*.
+
+[[packet_switching.png]]
+
+*** packet switching router
+[[packet_switching_router.png]]
+
+*** resources
+ - resources used as needed
+ - on its turn, a packet used full link bandwidth
+
+
+** Circuit switching vs Packet switching
+||  || circuit switching || packet switching ||
+| resource | partitioned | not partitioned |
+| reservation / setup | need reservation(setup delay) | no reservation |
+| resources contention | busy signal(session loss) | congestion(long delay and packet losses|
+| service guarantee | yes | no |
+| charing | time | packet |
+| header | no header | per packet header |
+| fast path processing | fast | per packet processing |
+
+** Four types of delay at each hop
+*** Nodal processing delay
+check errors & routing
+*** Queueing
+time waiting for its turn at output link
+*** Transmission delay
+time to pump packet onto a link at link speed
+*** Propagation delay
+router to router propagation
+
+The focus is on uqeueing and transmission delay.
+
+*** Comparasion
+<example>
+Assume:
+R = link bandswidth(bps)
+L = average packet length(bits)
+a = average packet arrival rate(pkt/sec)
+R / L = packet service rate(pkt/sec)
+</example>
+
+<example>
+Case 1(not reserve) :
+Packet arrival rate: λ
+Packet service rate: μ
+</example>
+
+$utilization:\ \rho = \frac{\lambda}{\mu} = \frac{a}{R / L} = \frac{La}{R}$
+$p_k\lambda = p_{k+1}\mu $
+$p_{k+1} = \frac{\lambda}{\mu}p_k = (\frac{\lambda}{\mu})^{k+1}p_0 = \rho^{k+1}p_0$
+$p_0 = 1 - \rho$
+
+Average queue size:
+<latex inline="true" scale="1">$$ E(Q) = \sum_{i=0}^{\infty}ip_i = (1 - \rho)\sum_{i=0}^{\infty}i\rho^i = \frac{\rho}{1 - \rho}$$</latex>
+
+Average queue delay:
+$ w = \frac{L}{R}\frac{\rho}{1-\rho} $
+
+Transmission delay:
+$ \frac{L}{R} $
+
+Queueing + transmission:
+$ \frac{L}{R} \frac{1}{1-\rho} $
+
+[[queue_delay.svg]]
+
+ - ρ ~ 0 : average queueing delay small
+ - ρ -> 1 : delay becomes large
+ - ρ > 1 : more "work" arriving than can be serviced, average delay infinite!
+
+*** Statistical Multiplexing
+**** Reservation/Dedication(aka circuit-switching)
+ - n flows.
+ - each flow has an arrival rate of a/n.
+ - each flow uses its own reserved (sub)link with rate R/n.
+ - queueing delay + transimission delay: *n* * L/R * (1 / (1 - ρ))
+**** No reservation(aka packet switching)
+ - all arrival into the single link with rate a.
+ - the link has bandwidth R.
+ - queueing delay + transimission delay: L/R * (1 / (1 - ρ))
+
+
+ - On-demand time-division
+ - Schedule link on a per-packet basis
+ - Packets from different sources interleaved on link
+ - Buffer packets that are contending for the link
+ - Buffer(queue) overflow is called congestion
+
+** Datagram nerwork
+ - each packet of a flow is switched independently
+  - each packet header contains complete destination address
+  - receibing a packet, a router looks at the packet's destination address and searches its current routing table to determine the possible next hops, and pick one.
+ - commonly, when we say packet switching we mean datagram switching
+  - e.g. IP networks
+ - analogy:postal mail system 
+*** time delay
+[[datagram_delay.png]]
+
+** Virtual circuit network
+ - all packets from one flow are sent along a pre-established path(= virtual circuit)
+  - e.g. Multiple Label Packet Switching(MPLS) in IP networks
+ - fixed path determined at virtual circuit setup time, remains fixed thru flow
+ - each packet carries a short tag (virtual-circuit (VC) #); tag determines next hop
+
+*** time delay
+**** three phases
+ - VC establishment
+ - data transfer
+ - VC disconnect
+
+**** time delay
+[[vc_delay.png]]
+
+** Packet Switching vs. Circuit Switching
+*** Advantages
+ - most important advantage of packet-switching over circuit switching is stastical multiplexing, and therefore efficient bandwidth usage.
+*** Disadvantages
+ - potential congestion: packet delay and high loss
+  - protocols needed for reliable data transfer, congestion control
+  - it is possible to guarantee quality of service(QoS) in packet-switched networks and still gain statistical multiplexing, but it adds much complexity
+ - packet header overhead
+ - per packet processing overhead
+* Questions
+1. Where is the control information for circuit switching ?
+2. How big is the lookup table at each rouer ?
+3. How about datagram ?
+4. What are the benefits of datagram switching over virtual circuit switching ?
+5. What are the benefits of virtual circuit switching over datagram switching ?

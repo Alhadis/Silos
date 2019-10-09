@@ -1,0 +1,268 @@
+#title Using Leiningen to build Clojure code
+#keywords leiningen, clojure, build tool, lein, howto, tutorial
+
+This article describes the Leiningen tool (version 1.x) for building of projects, written in Clojure.[5]
+
+<contents>
+
+* What is Leiningen?
+
+[[http://github.com/technomancy/leiningen][Leiningen]] is a tool for building of code, written in Clojure.  Leiningen is much simpler
+comparing with [[./ClojureMaven][Maven]] and allows to define project's configuration using Clojure[1].
+Leiningen uses external tools and libraries to resolve dependencies and build a code, so
+it's pretty small.  This tool is getting more popularity between Clojure developers --
+it's extensible by using additional modules (plugins), such as plugin for compilation of
+Java code, and many others.
+
+Out of box Leiningen implements basic tasks -- compilation of code, testing, creation of
+package, installation, etc.  Besides this, it also provides basic support for work with
+Maven, so you can use packages, built by this tool in other projects.
+
+* Installation
+
+Leiningen's installation procedures for Unix-like OSes and for MS Windows are slightly
+different.  Installation on Unix is quite easy -- you just need to download [[http://github.com/technomancy/leiningen/raw/stable/bin/lein][lein]] script,
+make it executable, copy to directory, listed in =PATH=, and execute =lein self-install=
+command.  During execution of this command, Leiningen will download and install all
+packages, that are needed to its work.
+
+To install Leiningen on MS Windows you need to download [[http://github.com/downloads/technomancy/leiningen/lein-win32.zip][lein-win32.zip]] file from project's
+page.  This file contains all necessary programs, so you can unzip it into any directory,
+add this directory into search path, perform =lein self-install= command, and start to work
+with Leiningen.
+
+* Structure of Leiningen's project
+
+Leiningen uses fixed structure of project -- in the root directory of the project you need
+to have the =project.clj= file, that contains project's definition.  The only necessary
+component of the definition is =defproject= -- Clojure's macro, that is expanded into set of
+build instructions.  =project.clj= can also include other code, written in Clojure, that
+will executed during build process.
+
+Project's source code should be stored in =src= directory, tests -- in =test= directory, and
+additional resources, used by project -- in =resources= directory.  The =lib= directory is
+used to store libraries, used by project -- they are copied there with the =lein deps=
+command.  List of libraries is calculated using information about dependencies, declared
+in project.  If you want to use library, that isn't stored in one of the Maven's
+repositories, then you can just copy this library into =lib= directory, and it will
+available to your project.
+
+But names of directories aren't hard-coded -- you can use <code>defproject</code>'s options
+to change their values:
+ =:source-path= :: name of directory with project's source code (by default -- =src=);
+ =:compile-path= :: name of directory for resulting Java classes (by default --
+   =classes/=);
+ =:resources-path= :: name of directory with project's resources (by default -- =resources/=);
+ =:test-path= ::  name of directory with test's source code (by default -- =test/=);
+ =:library-path= ::  name of directory, where libraries are stored (by default -- =lib/=).
+
+You can also add additional information to project's definition -- description (the
+=:description= option) and link to project's home page (the =:url= option).
+
+The fastest way to create a new project is to use =lein new= command, that accepts one
+required argument -- name of the project.  This command will create a new directory with
+name of the project, and will create inside it the =project.clj= file with declaration of
+the project (including dependencies on Clojure and =clojure-contrib=), the =README= file with
+template of project's description, and two directories -- =src= and =test= for source code &
+tests.  Now you can start to work with you project.
+
+** Project's example
+
+Let look to simple project specified in =project.clj= with following code (full code of this
+project you can find at [[http://github.com/alexott/lein-simple-project/][github]]):
+
+<src lang="clojure">
+(defproject test-project "1.0-SNAPSHOT"
+  :description "A test project."
+  :url "http://my-cool-project.com"
+  :dependencies [[org.clojure/clojure "1.1.0"]
+                 [org.clojure/clojure-contrib "1.1.0"]]
+  :dev-dependencies [ [swank-clojure "1.2.0"] ]
+)
+</src>
+
+We define a project =test-project= with dependencies on Clojure and =clojure-contrib=
+libraries, and also have additional dependency on library, that we'll use during
+development -- =swank-clojure=.
+
+In the =src= directory there is only one file -- =simple.clj=, that declares namespace =simple=
+with following code inside:
+
+<src lang="clojure">
+(ns simple)
+
+(defn hello
+  ([] "Hello world!")
+  ([name] (str "Hello " name "!")))
+</src>
+
+In the =test= directory we have file =simple_test.clj=, that contains test for =simple=.  We're
+using standard library =clojure.test= to implement test.  Test's source code looks following
+way:
+<src lang="clojure">
+(ns simple-test
+  (:use clojure.test)
+  (:use simple))
+
+(deftest simple-test
+  (is (= (hello) "Hello world!"))
+  (is (= (hello "test") "Hello test!")))
+</src>
+
+This is complete project, and we could execute any Leiningen's command for it.
+
+** How to specify dependencies
+
+One of important parts of =defproject= is declaration of dependencies on external libraries.
+For code, written in Clojure, main dependency is Clojure itself, as this shown in example
+above.
+
+There are different types of dependencies and different project options for them:
+ =:dependencies= option :: standard dependencies -- for libraries, that are used in your
+   code;
+ =:dev-dependencies= option :: dependencies for libraries, that are used during development.
+  For example, dependency on =swank-clojure=, Leiningen's plugins, etc.
+
+Besides this, exists [[http://github.com/swannodette/native-deps][native-deps]] plugin, that implements support for dependencies on
+platform-dependent libraries (native libraries).  [[http://nakkaya.com/2010/04/05/managing-native-dependencies-with-leiningen/][Here]] is example of use of this plugin.
+
+Each of these options is a vector, where each element is another vector, holding
+description of concrete library.  This description consists from three elements (you
+already had seen these descriptions in project's example):
+ - symbol, that defines name of library (combination of group name & name of library, same
+   as in [[./ClojureMaven][Maven]]), for example, =org.clojure/clojure=;
+ - string, that defines version of library.  To specify version of concrete package, you
+   just write version as normal string, ="1.1.0"= or ="1.2.0-master-SNAPSHOT"=, for example.
+   But you can also list several "supported" versions, if you specify version as vector
+   with values, separated by comma, ="[1.1,1.2-SNAPSHOT]"=, for example;
+ - options (optional) could be used to adjust dependencies, make them more accurate. For
+   example, you can exclude some libraries from dependencies using the =:exclusions= option.
+   Here is example of excluding of some not necessary dependencies for =log4j= library:
+<src lang="clojure">
+[log4j "1.2.15" :exclusions [javax.mail/mail
+                             javax.jms/jms
+                             com.sun.jdmk/jmxtools
+                             com.sun.jmx/jmxri]]
+</src>
+
+** Repositories
+
+By default Leiningen uses three repository:
+ - Maven's [[http://mvnrepository.com/][standard repository]];
+ - [[http://build.clojure.org/snapshots/][repository]] with Clojure's daily builds;
+ - [[http://clojars.org/repo/][the Clojars repository]], that is used to host libraries, written in Clojure.
+
+Besides this, user can specify additional repositories with =:repositories= option.  This
+option take one parameter -- map with names and URLs of repositories.  For example, we can
+add repository of [[http://apache.org][Apache project]] with following code:
+<src lang="clojure">
+(defproject test2 "1.0.0-SNAPSHOT"
+  :dependencies [....]
+  :repositories {"apache-releases" "http://repository.apache.org/content/repositories/releases/"}
+  )
+</src>
+
+* Work with Leiningen
+
+Typical workflow when you use Leiningen looks following way: 
+ - you create a project (=lein new=), define dependencies on external libraries and download
+   them with =lein deps= command (you need to run it after each change of dependencies);
+ - you write your code, periodically running =lein compile=, =lein test=, and may be using
+   =lein repl=, =lein swank= or =lein nailgun= (depending on your personal preferences) for
+   interactive development;
+ - if you develop a library, that you plan to use in other projects, then you can install
+   it into Maven's local repository with =lein install= command, or you can upload it to
+   [[http://clojars.org/][Clojars]] (with =scp=, as suggested in documentation, or by using the =lein-clojars= plugin);
+ - if you develop a program for end-user, then you can pack your code into package with
+   =lein jar= command (only your code, without dependencies), or with =lein uberjar=, with all
+   dependencies included into package -- it's much easier to distribute such packages to
+   end users.
+
+This process is pretty simple and you repeat it until your code is complete :-)
+
+** Basic Leiningen's commands
+
+List of Leiningen's commands isn't fixed -- plugins could add new commands to it.  In
+basic configuration, Leiningen implements following commands, that could be run as =lein
+command [options]=:
+ =help [command]= :: shows help on Leiningen's usage.  If you specify name of the
+  command after =help=, then description of command will shown (except =repl=)
+ =new project_name [options]= :: creates a new empty project;
+ =deps= :: download (if necessary) and copies all dependencies into =lib/= directory.  *This
+  command should executed after each change in dependencies!*;
+ =compile= :: performs compilation of code (AOT, ahead-of-time) into Java classes.  These
+  classes are stored in =classes/= directory.  User can control which namespaces should be
+  compiled -- you can use =:namespaces= option to specify a list of namespaces to compile;
+ =test [list_of_namespace]= :: runs tests from all (or only from specified) namespaces;
+ =jar= :: creates a package with your code;
+ =uberjar= :: create independent package with your code and all dependencies included into
+  it (it's much easier to distribute such packages). If you will run this package with
+  =java -jar ...= then entry point will namespace, specified in =:main= option, specified
+  =defproject=;
+ =pom= :: creates =pom.xml= file, that contains description of project.  This file is needed
+  if you plan to use your package in another project;
+ =install= :: installs package into Maven's local repository;
+ =clean= :: deletes all files, created during build (including libraries from =lib/=
+   directory);
+ =repl= :: runs REPL with correctly specified classpath -- it includes libraries from =lib/=
+  directory, and also directories =src/= and =classes/=.  During start =lein=[2] automatically
+  detects presence of jline library, and uses it, so you'll have command history, etc.
+
+** Additional commands
+
+Additional commands are implemented by [[#plugin][plugins]], that are used to extend Leiningen's
+functionality.  There are many popular plugins for Leiningen, and you can find short
+description of many of them in [[http://blog.licenser.net/2010/04/20/leiningen-the-clojure-build-tool][following blog posting]].  For example, this are plugins for
+running of Swank and Nailgun servers, that are implementing interactive work from Emacs or
+Vim.  If you run these servers, then they are using all necessary dependencies, so you
+will work in the same environment, as your program.
+
+To use Swank server you need to add dependency on  [[http://clojars.org/swank-clojure][swank-clojure]][3] in =:dev-dependencies=
+option[4], and after this you could use =lein swank= command.  After execution of this
+command you'll get Swank server, running on port 4005 and you can connect to it with
+Emacs' =slime-connect= command.  And if you prefer to use Vim editor, then you need to add
+dependency on [[http://clojars.org/lein-nailgun][lein-nailgun]] plugin (more about work with Nailgun you can read on
+[[http://kotka.de/projects/clojure/vimclojure.html][vimclojure]]'s site).
+
+#plugin
+* Extending Leiningen's functionality
+
+Leiningen is extensible -- if necessary, you can add your own commands.  To do this you
+need to create a project, in which exists =leiningen.command_name= namespace, containing
+implementation of your command as a function with name =command_name=.  This function
+receives project's object as an argument.  More detailed information on writing plugins
+you can find in [[http://nakkaya.com/2010/02/25/writing-leiningen-plugins-101/][following blog post]].  One of example of plugins for Leiningen is the
+=lein-swank= plugin, that implements support for Swank server -- you can find it in
+Leiningen's [[http://github.com/technomancy/leiningen/tree/master/lein-swank/][repository with source code]].
+
+There are several plugins for Leiningen in [[http://clojars.org/][Clojars repository]].  These plugins implement
+different functionality -- automatic uploading of code into Clojars repository, building
+of Java source code, etc.  Names of these plugins usually starting with =lein-=, that you
+can use in [[http://clojars.org/search?q=lein-][search]].  To use these plugins in your project, you need to add them into
+development dependencies (the =:dev-dependencies= option).
+
+* Conclusion
+
+I hope, that this article helps you in your work with Leiningen.  If you have questions
+you can write me [[mailto:alexott@gmail.com][e-mail]] or leave a comment on site -- I'll try to answer on all of them.
+
+
+Footnotes: 
+[1] I should also mention the [[http://polyglot.sonatype.org/][Polyglot Maven]] project, that should allow to describe
+    Maven's configurations using different languages -- Clojure, Scala, Groovy, etc.
+
+[2] In contrast to other commands, =repl= is implemented directly in =lein=, not written in
+    Clojure.
+
+[3] example of =swank-clojure= dependency you can see in project's example.
+
+[4] and don't forget to run =lein deps= after adding this dependency!
+
+[5] there is also [[http://github.com/technomancy/leiningen/blob/master/TUTORIAL.md][small document]] in Leiningen's distribution, that describes basic
+    operations.
+
+;  LocalWords:  Leiningen  TODO Maven Vim Leiningen's Clojure plugins plugin
+;  LocalWords:  swank Emacs Nailgun lein-swank Clojars repl lein Clojure's clj
+;  LocalWords:  compile test install deps nailgun polyglot-maven Groovy Maven's
+;  LocalWords:  defproject namespace clojars scp namespaces AOT uberjar xml src
+;  LocalWords:  classpath jline leiningen

@@ -1,0 +1,354 @@
+#title 华高定制开发注意的问题
+
+<contents>
+
+* MWT_Util::redirect_to
+** 参数必须编码,要不然会出现乱码
+<src type="php">
+<?php
+MWT_Util::redirect_to('http://xxx?keyword=urlencode("深圳")');// 深圳必须用urlencode
+?>
+</src>
+
+<src type="php">
+<?php
+// 如果上面的没有编码,手机上这里取keyword就会出现乱码
+$buffer['keyword'] = $_GET['keyword'];
+?>
+</src>
+
+* node节点
+** pass_fetch、auto_redirect、allow_redirect_circle
+pass_fetch=>true 通过fetch,不让引擎去获取,而是通过自己编写脚本来获取.
+<src type="php">
+<?php
+nodes[...] = array(
+  'name' => '处理脚本名,没有后缀(.php)',
+  'pass_fetch' => true,  // 引擎不主动获取网页的内容,而是通过写的脚本去处理
+  'auto_redirect' => true, // 允许重定向,如何头里面有location,允许进一步获取location指向网页的内容
+  'allow_redirect_circle' => true,  // 允许环形的链接: a->b->a
+?>
+</src>
+
+* coolpad
+** Jquery
+*** width()宽度不包括padding的宽度
+<src type="javascript">
+$(function(){
+  alert($("#box").width());  // 300-6=294
+});
+<div id="box" style="width: 300px;height: 300px; padding-left: 6px;">
+This is show box
+</div>
+</src>
+
+** 必须发送accept
+在fetch的时候必须发送头部accept才能访问web版，否则会返回wap版
+<src type="php">
+<?php
+$opt['accpet'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+$httpclient->fetch($url, $opt);
+?>
+</src>
+
+*** jquery需要用1.4才能够有效果,不要使用min
+<src type="javascript">
+<script src="jquery.1.4.js">
+</src>
+
+* 属性名小写，属性值有大小写之分
+* query
+是查询现有的节点，也就是深度和广度都都照顾到了
+
+查找tr
+<src type="html">
+<table>
+  <tr>--------------------------  1
+    <td>
+     <table>
+       <tr><td></td></tr> ------  2
+     </table>
+    </td>
+  </tr>
+</table>
+<table><tr><td></td></table> ---- 3
+
+$tr_node = $doc->query($table, 'tr');
+count($tr_node);   // 3个
+</src>
+
+
+* preg_query
+这个函数是查询节点，并且可以用正则表达式来匹配节点中的值（不是属性值）
+
+查找含有“深圳”的a节点
+<src type="html">
+<a href="#">深圳之窗</a>
+<a href="#">深圳800</a>
+<a href="#">搜狐网</a>
+<a href="#">网易</a>
+<a href="#">腾讯网</a>
+
+$doc->preg_query($node, 'a', '深圳');
+</src>
+
+[]里面不能有中文，因为[]里面匹配一个字符，而中文是双字节
+
+查找含有深或者是网的a节点
+<src type="html">
+$doc->preg_query($node, 'a', '[深网]'); // 忽略“深网",会把所有的啊节点都找出来
+</src>
+
+* if 里面不要用多个查询
+例如：
+<src type="php">
+<?php
+if( $title_node = $doc->query($dom, 'div', 'id', 'title') && $content_node = $doc->query( $dom, 'div', 'id', 'content'){
+
+?>
+</src>
+这样会出现$doc->outerText($title_node[0])没有东西
+
+
+* 标签必须关闭
+在使用query,query_delete,modify_attribute, delete_attrbute等的时候如果标签没有关闭叫会影响结果,
+
+查看标签是否关闭在firebug上是看不见的,要在"查看源代码"上才能看得见,可以把节点echo出来
+<src type="html">
+<div id="top">
+<div>
+  <p style="color:red">这个标签没有关闭
+</div>
+</div>
+
+上面的html代码中如果
+$top = $doc->query('div', 'id', 'top');
+$p = $doc->query($top[0], 'p');  这个可能会查不到
+$p = $doc->delete_attribute($top[0], 'p', 'style');  这个可能会查不到
+
+</src>
+
+* 定制注意的问题
+** 定制方面
+*** 直接法
+对需要取的内容直接取，不需要层层往下拨。
+
+*** 取id优于去class
+
+** 节点
+*** 节点支持 正则的 "|"等符号
+有的时候有一些URL只是某一部分的是诧异的,这个时候我只要简单的加上"|"就可以解决问题
+<src type="php">
+<?php
+nodes['/^http:\/\/(ent|news)\.sina\.com\.cn\/\d+\/(.*?)\/index.shtml'] = array(
+  'name' => 'sina.com.cn',
+  'option' => array(
+    'pass_fetch' => true,
+    'auto_redirect' => true,
+    'allow_redirect_circle' => true,
+  ),
+);
+?>
+</src>
+
+| 之间的内容要加上[]，不然会出现问题
+<src type="php">
+<?php
+// miniblog search
+$nodes[ '/^http:\/\/t\.sina\.com\.cn\/k|search/i' ] = 
+array(
+	'name' => 't_search',
+	'options' => array(
+		'pass_fetch' => true,
+		'auto_redirect' => true, 
+		'allow_redirect_circle' => true,
+	),
+);
+?>
+</src>
+如果在k|search上不加[k|search],当输入下面的url的时候会给t_search捕获
+<src type="text">
+http://iweb.wacosoft.com.cn:8080/xweb/ent/http://t.sina.com.cn/follow?action=add&follow_id=1197161814&referer=http://t.sina.com.cn/search 
+</src>
+
+*** 加上url
+以后有新的url需要匹配的时候需要修改/增加节点,这个时候可以参考原来的url,打开查看html结构,看看是不是和新的url有很相似的地方,只要只需要在原来的脚本基础上做很少的修改就可以完成工作.
+<src type="php">
+<?php
+// http://fanfu.people.com.cn/GB/13467842.html
+nodes['...'] = array(...
+?>
+</src>
+
+** 脚本
+*** 写好注释
+比如这段代码是做什么那段又是做什么的,对以后自己活着是他人的修改和维护由很大的方便
+<src type="php">
+<?php
+// 取标题
+if( ... ){
+  coding...
+}
+// 取内容
+if( ... ){
+  coding...
+}
+?>
+</src>
+
+*** 不要把取节点的语句放在foreach中
+<src type="php">
+<?php
+foreach( $doc->query( $node, 'div', 'id', 'zoom' ) as $zoom ){
+  code..
+}
+?>
+</src>
+上面代码会导致重复执行$doc->query($node, 'div', 'id', 'zoom'),导致内存多次复制
+
+*** 删除/修改font/a标签
+以前的做法是用正则,但是从效率上来看不是最好的,我们的api也提供相似的功能函数: modify_tagname
+<src type="php">
+<?php
+$doc->modify_tagname($node, 'font', 'p');
+?>
+</src>
+
+
+** 模板
+*** 格式化代码
+代码需要有层次感,不然很难看,标签很容易文件关闭标签
+
+没有缩进的代码
+<src type="html">
+<div id="newsContainer">
+<h1><{$news_title}></h1>
+<div class="newsInfo">
+<span><{$news_info.pubdate}></span> 
+<span><{$news_info.media_name}></span>
+</div>
+<div class="newsContent">
+<{$news_content}>
+</div>
+
+<{if $news_page_nav}>
+<div class="newsPageNav">
+<{foreach from=$news_page_nav item=page name=page}>
+<{if !$smarty.foreach.page.last}>
+<ul><li><a href="<{$page.link}>" target="_self"><{$page.txt}></a> | </li></ul>
+<{else}>
+<ul><li><a href="<{$page.link}>" target="_self"><{$page.txt}></a></li></ul>
+<{/if}>
+</div>
+<{/if}>
+
+<{if $news_othercontent}>
+<{foreach from=$news_othercontent item=othercontent}>
+<div class="newsOtherContent">
+<{$othercontent}>
+</div>
+<{/foreach}>
+<{/if}>
+
+</div>
+</src>
+
+有缩进的代码
+<src type="html">
+<div id="newsContainer">
+  <h1><{$news_title}></h1>
+  <div class="newsInfo">
+    <span><{$news_info.pubdate}></span> 
+    <span><{$news_info.media_name}></span>
+  </div>
+  <div class="newsContent">
+    <{$news_content}>
+  </div>
+
+  <{if $news_page_nav}>
+    <div class="newsPageNav">
+      <{foreach from=$news_page_nav item=page name=page}>
+        <{if !$smarty.foreach.page.last}>
+          <ul><li><a href="<{$page.link}>" target="_self"><{$page.txt}></a> | </li></ul>
+        <{else}>
+          <ul><li><a href="<{$page.link}>" target="_self"><{$page.txt}></a></li></ul>
+        <{/if}>
+    </div>
+  <{/if}>
+
+  <{if $news_othercontent}>
+    <{foreach from=$news_othercontent item=othercontent}>
+      <div class="newsOtherContent">
+        <{$othercontent}>
+      </div>
+    <{/foreach}>
+  <{/if}>
+
+</div>
+</src>
+代码有层次阅读起来也让人舒服,容易找到问题
+
+** 动手之前先简单查看页面源代码
+
+* 取得重定向的url
+<src type="php">
+<?php
+// 如果不加这个，header中location会给干掉
+$options = array(
+	'auto_redirect' => false,
+);
+$response = $httpclient->fetch($target_url, $options);
+$redirect_url = $response->get_header_value("Location");
+if ($redirect_url) {
+	header("Location: $redirect_url");
+	exit;
+}
+?>
+</src>
+
+* 日志
+如何通过服务器的日志来查看需要的内容，一般位置~/logs,当然可以配置
+** debug
+debug 日志是记录url是否匹配等
+
+** fetch
+fetch日志是查看fetch函数发送和获取的内容，比如查看发送的头部（filder无法捕获）
+
+** error
+此日志记录php，tpl等发生的错误
+
+* 希望有的功能
+希望提供修改属性名的功能，例如新浪微博中的图片是
+<src type="text">
+<img dynamic-src="/imgs/smile.png" />
+</src>
+如果有modify_attrname,就可以直接把dynamic-src修改成src
+<src type="php">
+<?php
+$doc->modify_attrname($img[0], 'dynamic-src', 'src');
+?>
+</src>
+
+* 有问题的函数
+** query
+广度和深度都照顾到，而不是广度优先,比如查找dom中的div，会把页面中所有的div都找出来，不管深度多深
+
+** delete
+$td_node = $doc->query($tr_node, 'td');
+// 删除第一个
+$doc->delete($td_node[0]);
+foreach($td_node as $td){
+  echo $doc->outerText($td);  // 这里还有$td_node[0]
+}
+
+** toText
+<src type="html">
+<div>
+  <a>link</a>
+  Some Text
+</div>
+
+$div = $doc->query($dom, 'div');
+$txt = $doc->toText($div[0]);  // 变成 linkSome Text
+</src>
+也就是说<a>link</a>也给弄进来了。

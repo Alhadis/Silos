@@ -1,0 +1,291 @@
+#title MySQL
+
+<contents>
+
+
+* 忘记密码
+<src type="bash">
+# killall mysqld
+# mysqld_safe --skip-grant-tables &
+# mysql                         ; 现在就可以不用密码登录
+mysql> use mysql;
+mysql> update user set Password=password("new password") where user="root";
+mysql> \q;
+# killall mysqld
+# service mysqld restart
+</src>
+
+* 数据库存放的位置
+查看配置文件：
+<src type="text">
+$ cat /etc/mysql/my.conf
+...
+innodb_data_home_dir = /var/lib/mysql
+...
+</src>
+
+
+
+* cluster
+MySQL Cluster 是MySQL集群.
+
+** 参考
+[[http://dev.mysql.com/doc/refman/5.1/zh/ndbcluster.html][官方中文说明]]
+
+** 环境
+192.168.1.66 mysql ndb
+
+192.168.1.70 mysql ndb
+
+192.168.1.73 lvs mysql mgm mc
+
+3台服务器都作为mysql节点，其中73还充当lvs mgm的服务器，lvs中配置66 70 73 分别为mysql负载均衡服务器，mgm中设置这70 73为数据节点
+
+** 下载
+[[http://cdn.mysql.com/Downloads/MySQL-Cluster-7.2/mysql-cluster-gpl-7.2.10-linux2.6-x86_64.tar.gz][http://cdn.mysql.com/Downloads/MySQL-Cluster-7.2/mysql-cluster-gpl-7.2.10-linux2.6-x86_64.tar.gz]]
+
+** 安装
+创建用户
+<src type="bash">
+groupadd mysql
+useradd -r -g mysql mysql
+</src>
+
+<src type="bash">
+mkdir ~/src
+cd src
+wget http://cdn.mysql.com/Downloads/MySQL-Cluster-7.2/mysql-cluster-gpl-7.2.10-linux2.6-x86_64.tar.gz
+tar xf mysql-cluster-gpl-7.2.10-linux2.6-x86_64.tar.gz
+cp -R src/mysql-cluster-gpl-7.2.10-linux2.6-x86_64.tar.gz /opt/mysqlc
+mkdir /data /data/ndb_data /data/mysqld_data
+</src>
+32位的地址：http://cdn.mysql.com/Downloads/MySQL-Cluster-7.2/mysql-cluster-gpl-7.2.10-linux2.6-i686.tar.gz
+
+** 配置
+在73的/etc/中创建2个文件my.cnf和my_cluster.ini。my.cnf是启动mysqld所需的配置文件;my_cluster.ini是管理ndb节点的配置文件。
+
+my.cnf内容如下：
+<src type="bash">
+[mysqld]
+ndbcluster			# 以ndb engine的方式来启动mysqld
+ndb-connectstring=192.168.1.73 # mgm节点的ip，即管理节点的ＩＰ
+datadir=/data/mysqld_data # mysql数据存放的目录
+basedir=/opt/mysqlc		# mysql的根目录
+port=3306
+
+# 可选的ndbd配置
+[MYSQL_CLUSTER]                 
+ndb-connectstring=192.168.1.73  # location of MGM node
+</src>
+ - ndbcluster mysqld启动的类型
+ - datadir 数据存放的目录
+ - basedir mysql程序根目录
+ - port mysql的端口，默认是3306
+
+管理节点的配置文件
+my_cluster.ini
+<src type="bash">
+[NDB_MGMD]
+hostname=192.168.1.73
+datadir=/data/ndb_data # ＭＧＭ 节点的日志存放目录
+NodeId=1
+
+[NDBD DEFAULT]
+NoOfReplicas=3			# Number of replicas
+DataMemory=3G			# How much memory to allocate for data storage
+IndexMemory=1024M   # How much memory to allocate for index storage
+                  # For DataMemory and IndexMemory, we have used the
+                  # default values. Since the "world" database takes up
+                  # only about 500KB, this should be more than enough for
+                  # this example Cluster setup.
+datadir=/data/ndb_data # 数据存放目录
+NodeId=2
+
+[NDBD]
+hostname=192.168.1.73		# 不要使用主机名，用IP地址
+NodeId=3			# 节点的ＩＤ,
+datadir=/data/ndb_data          # 存放节点数据的目录 
+
+[NDBD]
+hostname=192.168.1.66		# 数据节点配置。可以是主机名或者是ＩＰ地址
+NodeId=4			# 节点的ＩＤ
+datadir=/data/ndb_data          # 存放节点数据的目录
+
+[NDBD]
+hostname=192.168.1.70
+NodeId=5
+datadir=/data/ndb_data         # 存放节点数据的目录
+
+[mysqld]
+hostname=192.168.1.73
+NodeId=50
+</src>
+
+73服务器中运行下面命令，初始化mysqld数据库
+<src type="bash">
+[user1@ws2 ~]$ cd /opt/mysqlc
+[user1@ws2 mysqlc]$ scripts/mysql_install_db --user=mysql --no-defaults --datadir=/data/mysqld_data/
+</src>
+
+启动mysqld
+<src type="bash">
+[user1@ws2 ~]$ /opt/mysqlc/bin/mysqld --defaults-file=/etc/my.cnf &
+</src>
+
+启动mgm
+<src type="bash">
+[user1@ws2 mysqlc]$ /opt/mysqlc/bin/ndb_mgmd -f /etc/my_cluster.ini --initial --configdir=/etc/
+</src>
+
+查看节点情况
+<src type="bash">
+[user1@ws2 mysqlc]$ /opt/mysqlc/bin/ndb_mgm -e show
+</src>
+
+在66和70服务器上分别执行下面命令
+<src type="bash">
+rsync -avz root@192.168.1.73:/opt/mysqlc /opt/   # 同步
+mkdir /data/ndb_data /data/mysqld_data -p # 保持和上面my_mycluster中的datadir的目录一致
+groupadd mysql
+useradd -r -g mysql mysql
+/opt/mysqlc/bin/ndbd --initial -c 192.168.1.73:1186 --user=mysql  # 在第一次才需要加载才需要--initial参数
+</src>
+
+初始化mysqld数据库
+<src type="bash">
+[user1@ws2 ~]$ cd /opt/mysqlc
+[user1@ws2 mysqlc]$ scripts/mysql_install_db --user=mysql --no-defaults --datadir=/data/mysqld_data/
+</src>
+
+创建/etc/my.cnf，内容和73的一样
+<src type="bash">
+[mysqld]
+ndbcluster			# 以ndb engine的方式来启动mysqld
+ndb-connectstring=192.168.1.73 # mgm节点的ip，即管理节点的ＩＰ
+datadir=/data/mysqld_data # mysql数据存放的目录
+basedir=/opt/mysqlc		# mysql的根目录
+port=3306
+user=mysql
+
+# 可选的ndbd配置
+[MYSQL_CLUSTER]                 
+ndb-connectstring=192.168.1.73  # location of MGM node
+</src>
+
+启动mysqld
+<src type="bash">
+/opt/mysqlc/bin/mysqld --defaults-file=/etc/my.cnf --user=mysql &
+</src>
+
+启动节点
+<src type="bash">
+/opt/mysqlc/bin/ndbd -c 192.168.1.73:1186
+</src>
+
+关闭节点
+
+在管理节点(73)中运行
+<src type="bash">
+/opt/mysqlc/bin/ndb_mgm -e shutdown
+</src>
+
+注意事项：
+采用群集的数据库中的表引擎必须为
+<src type="bash">
+ENGINE=NDB或ENGINE=NDBCLUSTER
+</src>
+例如：
+<src type="bash">
+DROP TABLE IF EXISTS City;
+CREATE TABLE City (
+       ID int(11) NOT NULL auto_increment,
+       Name char(35) NOT NULL default '',
+       CountryCode char(3) NOT NULL default '',
+       District char(20) NOT NULL default '',
+       Population int(11) NOT NULL default '0',
+       PRIMARY KEY  (ID)
+) ENGINE=NDBCLUSTER;
+</src>
+不是MyISAM或者是innodb
+
+* 备份
+<src type="text">
+
+#!/bin/bash 
+#This is a ShellScript For Auto DB Backup 
+#Powered by aspbiz 
+#2004-09 
+
+#Setting 
+#设置数据库名，数据库登录名，密码，备份路径，日志路径，数据文件位置，
+#以及备份方式 
+#默认情况下备份方式是tar，还可以是mysqldump,mysqldotcopy 
+#默认情况下，用root(空)登录mysql数据库，备份至/root/dbxxxxx.tgz 
+DBName=mysql 
+DBUser=root 
+DBPasswd= 
+BackupPath=/root/ 
+LogFile=/root/db.log 
+DBPath=/var/lib/mysql/ 
+#BackupMethod=mysqldump 
+#BackupMethod=mysqlhotcopy 
+#BackupMethod=tar 
+#Setting End 
+
+
+NewFile="$BackupPath"db$(date +%y%m%d).tgz 
+DumpFile="$BackupPath"db$(date +%y%m%d) 
+OldFile="$BackupPath"db$(date +%y%m%d --date='5 days ago').tgz 
+
+echo "-------------------------------------------" >> $LogFile 
+echo $(date +"%y-%m-%d %H:%M:%S") >> $LogFile 
+echo "--------------------------" >> $LogFile 
+#Delete Old File 
+if [ -f $OldFile ] 
+then 
+   rm -f $OldFile >> $LogFile 2>&1 
+   echo "[$OldFile]Delete Old File Success!" >> $LogFile 
+else 
+   echo "[$OldFile]No Old Backup File!" >> $LogFile 
+fi 
+
+if [ -f $NewFile ] 
+then 
+   echo "[$NewFile]The Backup File is exists,Can't Backup!" >> $LogFile 
+else 
+   case $BackupMethod in 
+   mysqldump) 
+      if [ -z $DBPasswd ] 
+      then 
+         mysqldump -u $DBUser --opt $DBName > $DumpFile 
+      else 
+         mysqldump -u $DBUser -p$DBPasswd --opt $DBName > $DumpFile 
+      fi 
+      tar czvf $NewFile $DumpFile >> $LogFile 2>&1 
+      echo "[$NewFile]Backup Success!" >> $LogFile 
+      rm -rf $DumpFile 
+      ;; 
+   mysqlhotcopy) 
+      rm -rf $DumpFile 
+      mkdir $DumpFile 
+      if [ -z $DBPasswd ] 
+      then 
+         mysqlhotcopy -u $DBUser $DBName $DumpFile >> $LogFile 2>&1 
+      else 
+         mysqlhotcopy -u $DBUser -p $DBPasswd $DBName $DumpFile >>$LogFile 2>&1 
+      fi 
+      tar czvf $NewFile $DumpFile >> $LogFile 2>&1 
+      echo "[$NewFile]Backup Success!" >> $LogFile 
+      rm -rf $DumpFile 
+      ;; 
+   *) 
+      /etc/init.d/mysqld stop >/dev/null 2>&1 
+      tar czvf $NewFile $DBPath$DBName >> $LogFile 2>&1 
+      /etc/init.d/mysqld start >/dev/null 2>&1 
+      echo "[$NewFile]Backup Success!" >> $LogFile 
+      ;; 
+   esac 
+fi 
+
+echo "-------------------------------------------" >> $LogFile 
+</src>

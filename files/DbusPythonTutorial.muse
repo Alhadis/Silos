@@ -1,0 +1,596 @@
+#title dbus-python 指南
+#author Simon McVittie, Collabora Ltd.
+
+This tutorial requires Python 2.4 or up, and dbus-python 0.80rc4 or up.
+
+
+指南需要：Python 2.4 或更高的版本， dbus-python 0,80rc4或更高的版本
+
+<contents depth="3">
+
+* Connecting to the Bus (连接Bus)
+
+Applications that use D-Bus typically connect to a bus daemon, which forwards messages between the applications. To use D-Bus, you need to create a Bus object representing the connection to the bus daemon.
+
+使用 D-Bus 的应用程序常常连接到一个 bus 服务上，这个服务在应用程序之间传递消息。想要使用 D-Bus ,你需要创建一个 Bus 对象来代表一个到 bus 服务的连接。
+
+There are generally two bus daemons you may be interested in. Each user login session shouldhave a session bus, which is local to that session. It's used to communicate between desktop applications. Connect to the session bus by creating a SessionBus object:
+
+一般你会对两个 bus 服务感兴趣。第一个用户会话 (user login session) 应该有一个会话 bus (session bus)。以那个会话 (session) 来看 session bus 是本地的。想要连接到一个 session bus 可以通过创建一个 SessionBus 对象：
+
+<verse>
+    import dbus
+    
+    session_bus = dbus.SessionBus()
+
+</verse>
+
+The System bus is global and usually started during boot; it's used to communicate with system services like udev, NetworkManager, and the Hardware Abstraction Layer daemon (hald). To connect to the system bus, create a Systembus object:
+
+系统 bus 是全局的，常常在启动 (boot) 的时候运行；它用来与系统服务传递信息，如 udev, NetworkManager 和 the Hardware Abstraction Layer daemon (hald)。想要连接到一个 system bus 可以通过创建一个 SystemBus 对象：
+
+<verse>
+    import dbus
+    
+    system_bus = dbus.SystemBus()
+
+</verse>
+
+Of course, you can connect to both in the same application.
+
+当然，你可以在同一个应用程序里同时连接两个 bus。
+
+For special purposes, you might use a non-default Bus, or a connection which isn't a Bus at all, using some new API added in dbus-python 0.81.0. This is not described here, and will at some stage be the subject of a separate tutorial.
+
+为了达到特殊的目的，你也许要用到非默认的 Bus (non-default Bus), 或者根本不是一个 Bus 连接，那么就使用添加到 dbus-python 0,81.0 中的新的API。它不会出现在这里，可能会出现在其它主题的某些阶段。
+
+* Making method calls (制造一个方法调用)
+
+D-Bus applications can export objects for other applications'use . To start working with an object in another application, you need to know:
+
+D-Bus 应用程序能够输出对象让其它应用使用。为了能够使用另一个应用程序提供的对象，你需要知道：
+
+ - The bus name. This identifies which application you want to communicate with. You'll usually identify applications by a well-known name, which is a dot-separated string starting with a reversed domain name, such as org.freedesktop.NetworkManager or com.example.WordProcessor.
+   
+   bus名称(bus name)。它标识着你想与哪个应用程序进行通讯。你会常常通过众所周知的名称(well-known name)来标识一个应用程序，它是反转域名后用 `.' 分割的字符串，例如: org.freedesktop.NetworkManager 或 com.example.WordProcessor。
+
+ - The object path. Applications can export many object - for instance, example.com's word processor might provide an object representing the word processor application itself and an object for each document window opened, or it might also provide an object for each paragraph within a document.
+
+   对象路径(object path)。应用程序可以输出很多对象，例如， example.com 的文字处理进程会提供一个代表文字处理进程自身对象，还会为每一个打开的文档窗口都提供一个对象。或者它还可以为一个文档的每一段都提供一个对象。
+
+   To identify which one you want to interact with, you use an object path, a slash-separated string resembling a filename. For instance, example.com's word processor might provide an object at / representing the word processor itself, and objects at /documents /123 and /documents/345 representing opened document windows.
+
+   为了标识你想与谁通讯，你需要使用对象路径(object path)，它是一个用 `/' 分割的字符串，就像文件名一样。例如， example.com 的文字处理进程会提供一个对像 `/' ，它代表文字进程自身， 和代其它已打开文档窗口的对象，/documents/123 和 /document/345 。
+
+As you'd expect, one of the main thing you can do with remote objects is to call their methods. As in Python, methods may have parameters, and they may return one or more values.
+
+就像你期望的，你可以通过远程对象做的最主要的事情之一就是调用它们的方法。就像在 Python 中，方法有一些参数，它们会返回一个或多个值。
+
+** Proxy objects (代理对像)
+
+To interact with a remote object, you use a proxy object. This is a Python object which acts as a proxy or "stand-in" for the remote object - when you call a method on a proxy object, this causes dbus-python to make a method call on the remote object, passing back any return values from the remote object's method as the return values of the proxy method call.
+
+为了与一个远程对象 (remote object) 通讯，你需要使用代理对象 (proxy object)。它是一个行为像代理人一样的 Python 对像，或者说就是 remote object 的标准输入 - 当你通过 proxy object 调用一个方法时，结果， dbus-python 在 remote object 上创建了一个方法调用来， 传回任何中从 remote object 的方法返回的值就像代理方法调用的返回值一样。 (这一段翻译的很烂-_-b)
+
+To obtain a proxy object, call the get_object method on the Bus. For example, NetworkManager has the well-known name org.freedesktop.NetworkManager and exports an object whose object path is /org/freedesktop/NetworkManager, plus an object per network interface at object paths like /org/freedesktop/NetworkManager/Devices/eth0. You can get a proxy for the object representing eth0 like this:
+
+为了获取一个 proxy object，需要在 Bus 上调用 get_object 方法。例如，NetworkManager 拥有一个 well-known name org.freedesktop.NewworkManager 和 输出的路径为 /org/freedesktop/NetworkManager 的对象。还为每一个网络接口，如 /org/freedesktop/NetworkManager/Devices/eth0 ，都添加了一个对象。你可以取得一个代表eth0 的 proxy object ，操作如下：
+
+<verse>
+    import dbus
+    bus = dbus.SystemBus()
+    proxy = bus.get_object('org.freedesktop.NetworkManager',
+                           '/org/freedesktop/NetworkManager/Devices/eth0')
+    # proxy is a dbus.proxies.ProxyObject
+
+</verse>
+
+** interfaces and methods (接口和方法)
+
+D-Bus uses interfaces to provide a namespacing mechanism for methods. An interface is a group of related methods and signals (more on signals later), identified by a name which is a series of dot-separated components starting with a reversed domain name. For instance, each NetworkManager object representing a network interface implements the interface org.freedesktop.NetworkManager.Devices, which has methods like getProperties.
+
+D-Bus 使用接口来为方法提供命名空间的机制。一个接口是相关方法和信号 (后来更多在信号上) 的集合，这个集合的名称是由一系列的点分元素构成，并且它们是域名的反转。例如，每一个 NetworkManager 代表一个网络接口的对象实现为 org.freedesktop.NetworkManager.Devices，它们拥有方法 getProperties。
+
+To call a method, call the method of the same name on the proxy object, passing in the interface name via the dbus_interface keyword argument:
+
+为了调用一个方法，在 proxy object 上调用同样名称的方法，通过 dbus_interface 关键词参数传递接口的名称。
+
+<verse>
+import dbus
+bus = dbus.SystemBus()
+eth0 = bus.get_object('org.freedesktop.NetworkManager',
+                      '/org/freedesktop/NetworkManager/Devices/eth0')
+props = eth0.getProperties(dbus_interface='org.freedesktop.NetworkManager.Devices')
+# props is a tuple of properties, the first of which is the object path
+
+</verse>
+
+As a short cut, if you're going to be calling many methods with the same interface, you can construct a dbus.Interface object and call methods on that, without needing to specify the interface again:
+
+如果你要用同样的接口调用很多的方法，作为一个快捷的办法，你可构造一个 dbus.Interface 对像，然后在它上面调用方法，而不需要再次指定接口：
+
+<verse>
+    import dbus
+    bus = dbus.SystemBus()
+    eth0 = bus.get_object('org.freedesktop.NetworkManager',
+                          '/org/freedesktop/NetworkManager/Devices/eth0')
+    eth0_dev_iface = dbus.Interface(eth0,
+        dbus_interface='org.freedesktop.NetworkManager.Devices')
+    props = eth0_dev_iface.getProperties()
+    # props is the same as before
+    
+</verse>
+*** See also
+
+See the example in examples/example-client.py. Before running it, you'll need to run examples/example-service.py in the background or in another shell.
+
+参考 examples/example-client.py 中的例子。在运行它之前，你需要在后台或在另一个 shell 中运行 examples/example-service.py。
+
+** Data types (数据类型)
+
+Unlike Python, D-Bus is statically typed - each method has a certain signature representing the types of its arguments, and will not accept arguments of other types.
+
+不像 Python , D-Bus 是静态类型 (statically typed) - 每一个方法都有一个代表它们参数类型的标识，并且不接受其它类型的参数。
+
+D-Bus has an introspection mechanism, which dbus-python tries to use to discover the correct argument types. If this succeeds, Python types are converted into the right D-Bus data types automatically, if possible; TypeError is raised if the type is inappropriate.
+
+D-Bus 有一个内省 (introspections) 机省，dbus-python 使用它来发现正确的参数类型。如果内省 (introspections) 成功，Python 类型会被自动的转化成正确的 D-Bus 数据类型，如果可能的话。
+
+If the introspection mechanism fails (or the argument's type is variant - see below), you have to provide arguments of the correct type. dbus-python provides Python types corresponding to the D-Bus data types, and a few native Python types are also converted to D-Bus data types automatically. If you use a type which isn't among these, a TypeError will be raised telling you that dbus-python was unable to guess the D-Bus signature.
+
+如果 introspections 失败 (或者参数的类行是可变的 - 参考下面)，你将不得不提供正确的类型。 dbus-python 提供 Python 类型相当 D-Bus 数据类型，一些天生的 Python 类型也可以自动的转换为 D-Bus 类型。 如果你使用的类型不在其中，一个 TypeError 将会出现来告诉你， dbus-python 不能猜出 D-Bus 的标识。
+
+*** Basic types (基本类型)
+
+The following basic data types are supported.
+
+下面的基本数据类型是支持的：
+
+|| Python type || converted to D-Bus type || notes ||
+| D-Bus proxy object | ObjectPath (signature 'o') | (+) |
+| dbus.Interface | ObjectPath (signature 'o') | (+) |
+| dbus.service.Object | ObjectPath (signature 'o') | (+) |
+| dbus.Boolean | Boolean (signature 'b') | a subcalss of int |
+| dbus.Byte | byte (signature 'y') | a subclass of int |
+| dbus.Int16 | 16-bit signed integer ('n') | a subclass of int |
+| dbus.Int32 | 32-bit signed integer ('i') | a subclass of int |
+| dbus.Int64 | 64-bit signed integer ('x') | (=*=) |
+| dbus.Uint16 | 16-bit unsigned integer ('q') | a subclass of int |
+| dbus.Uint32 | 32-bit unsigned integer ('u') | (=*=) |
+| dbus.Uint64 | 64-bit unsigned integer ('t') | (=*=)  |
+| dbus.Double | double-precision float ('d') | a subclass of float |
+| dbus.ObjectPath | object path ('o') | a subclass of str |
+| dbus.Signature | signature ('g') | a subclass of str |
+| dbus.String | string ('s') | a subclass of unicode |
+| dbus.UTF*String | string ('s') | a subclass of str |
+| bool | Boolean ('b') | 
+| int or subclass | 32-bit signed inter ('i') | 
+| long or subclass | 64-bit signed integer ('x') | 
+| float or subclass | double-precision float ('d') | 
+| str or subclass | string ('s') | must be valid UTF-8 |
+||| unicode or subclass ||| string ('s') |||
+
+Types marked (=*=) may be a subclass of either int or long, depending on platform.
+
+标记为(=*=)的类型是 int 或 long 的子类，平台相关。
+
+(+): D-Bus proxy objects, exported D-Bus service objects and anything else with the special attribute __dbus_object_path__, which must be a string, are converted to their object-path. This might be useful if you're writing an object-oriented API using dbus-python.
+
+*** Basic type conversions (基本类型约定)
+
+If introspection succeeded, dbus-python will also accept:
+
+如果 introspection 成功， dbus-python 将接受：
+
+ - for Boolean parameters, any object (converted as if via int(bool(...)))
+
+   对于 Boolean 参数，任何 object (被转换通过 int(bool(...)))
+
+ - for byte parameters, a single-character string (converted as if via ord())
+
+   对于 byte 参数，一个单字符串 (single-character string) (被转换通过 ord())
+
+ - for byte and integer parameters, any integer (must be in the correct range)
+
+   对于 byte 和 integer 参数，任何 integer (必须在正确的范围内)
+
+ - for object-path and signature parameters, any str or unicode subclass (the value must follow the appropriate syntax)
+
+   对于 object-path 和 signature 参数，任何 str 或 unicode subclass (必须有适当的语义)
+
+*** Container types (容器类型)
+
+D-Bus supports four container types: array (a variable-length sequence of the same type), struct (a fixed-length sequence whose members may have different types), dictionary (a mapping from values of the same basic type to values of the same type), and variant (a container which may hold any D-Bus type, including another variant).
+
+D-Bus 支持四种容器类型：数组 (同一类型的可变长队列)，结构 (一个拥有不同成员类型的定长队列)，字典 (从同一 _基础_ 类型的值开到同一类型的值的映射)和变体 (variant) (可以存储任意 D-Bus 类型，包括 variant 自身)
+
+Arrays are represented by Python lists, or by dbus.Array, a subclass of list. When sending an array, if an introspected signature is available, that will be used; otherwise, if the signature keyword parameter was passed to the Array constructor, that will be used to determine the contents' signature; otherwise, dbus-python will guess from the array's first item.
+
+数组可以由 Python lists, 或 dbus.Array (a subclass of list) 表示。当发送一个数组，如果 introspected 标识是可用的，它将会被使用；如果标识关键参数是传递给数组构造函数，那么它将被用来决定内容的的标识；否则， dubs-python 将会从数组的第一项猜测。
+
+The signature of an array is 'ax' where 'x' represents the signature of one item. For instance, you could also have 'as' (array of strings) or 'a(ii)' (array of structs each containing two 32-bit integers).
+
+一个数组的标识是 'ax' ，这里的 'x' 代表一个元素的标识。例如，你可以使用 'as' (字符串数组) 或 'a(ii)' (包含两个 32-bit 整数的结构体数组)
+
+There's also a type dbus.ByteArray which is a subclass of str, used as a more efficient representation of a D-Bus array of bytes (signature 'ay').
+
+dbus.ByteArray是一个字符字符串的子类，被用开更有效率的代表 D-Bus的字节数组 (标识 'ay')。
+
+Structs are represented by Python tuples, or by dbus.Struct, a subclass of tuple. When sending a struct, if an introspected signature is available, that will be used; otherwise, if the signature keyword parameter was passed to the Array constructor, that will be used to determine the contents' signature; otherwise, dbus-python will guess from the array's first item.
+
+结构使用 Python 的元组 (tuples)，或 dbus.Struct (元组的子类)表示。当传递一个结构体时，如果 introspected 标识是可用的，它将会被使用；如果标识关键参数是传递给数组构造函数，那么它将被用来决定内容的的标识；否则， dubs-python 将会从数组的第一项猜测。
+
+The signature of a struct consists of the signatures of the contents, in parentheses - for instance '(is)' is the signature of a struct containing a 32-bit integer and a string.
+
+由内容的标识的构成的结构体的标识在括号里 - 例如， '(is)' 是一个包含一个 32-bit 整数和字符串的标识。
+
+Dictionaries are represented by Python dictionaries, or by dbus.Dictionary, a subclass of dict. When sending a dictionary, if an introspected signature is available, that will be used; otherwise, if the signature keyword parameter was passed to the Dictionary constructor, that will be used to determine the contents' key and value signatures; otherwise, dbus-python will guess from an arbitrary item of the dict.
+
+字典由 Python 字典或 dbus.Dictionary (dict 的子类)表示。当传递一个字典时，如果 introspected 标识是可用的，它将会被使用；如果标识关键参数是传递给字典构造函数，那么它将被用来决定内容的键值标识；否则， dubs-python 将会从字典的任意元素进行猜测。
+
+The signature of a dictionary is 'a{xy}' where 'x' represents the signature of the keys (which may not be a container type) and 'y' represents the signature of the values. For instance, 'a{s(ii)}' is a dictionary where the keys are strings and the values are structs containing two 32-bit integers.
+
+字典的标识是 'a{xy}' 这里的 'x' 代表键的标识 (它不能是一个容器)， 'y' 代表值的标识。例如， 'a{s(ii)}' 是一个字典，它的键是字符串，值是包含两个 32-bit 整数的结构体。
+
+Variants are represented by setting the variant_level keyword argument in the constructor of any D-Bus data type to a value greater than 0 (variant_level 1 means a variant containing some other data type, variant_level 2 means a variant containing a variant containing some other data type, and so on). If a non-variant is passed as an argument but introspection indicates that a variant is expected, it'll automatically be wrapped in a variant.
+
+变体 (variants) ... (不会翻)。如果 non-variant 作为一个参数被传递，但 introspection 指示期望一个 variant ，它将会自动的包在一个变体中。
+
+The signature of a variant is 'v'.
+
+variant 的标识是 'v'。
+
+*** Return values, and the byte_arrays and utf8_strings options (返回值， byte_arrays 和 utf8_strings 选项)
+
+If a D-Bus method returns no value, the Python proxy method will return None.
+
+如果 D-Bus 方法没有返回值，那么 Python 代理方法将会返回 None.
+
+If a D-Bus method returns one value, the Python proxy method will return that value as one of the dbus. types - by default, strings are returned as dbus.String (a subclass of Unicode) and byte arrays are returned as a dbus.Array of dbus.Byte.
+
+如果 D-Bus 方法返回一个值，那么 Python 代理方法将会以 dbus.types 之一返回那个值 - 默认情况下，字符串作为 dbus.String (Unicode 的子类)，字节数组作为 dbus.Array of dbus.Byte 。
+
+If a D-Bus method returns multiple values, the Python proxy method will return a tuple containing those values.
+
+如果 D-Bus 方法返回多个值，那么 Python 代理方法会返回一个元组包含这些值。
+
+If you want strings returned as dbus.UTF8String (a subclass of str) pass the keyword parameter utf8_strings=True to the proxy method.
+
+如果你想要字符串作为 dbus.UTF8String (str 的子类) 传递关键词参数 utf8_strings=True 到代理方法。
+
+If you want byte arrays returned as dbus.ByteArray (also a subclass of str - in practice, this is often what you want) pass the keyword parameter byte_arrays=True to the proxy method.
+
+如果你要字节数组作为 dbus.ByteArray (也是 str 的子类 - 实践中，它常常是你想要的)传递关键词参数 byte_arrays=True 到代理方法。
+
+* Making asynchronous method calls (使用异步方法调用)
+
+Asynchronous (non-blocking) method calls allow multiple method calls to be in progress simultaneously, and allow your application to do other work while it's waiting for the results. To make asynchronous calls, you first need an event loop or "main loop".
+
+异步(非阻塞)方法调用允许同时有多个方法正在调用，允许你的应用在等待结果的时候可以做一些其它的工作。为了使用异步调用，你首先需要一个事件循环或 "main loop"。
+
+** Setting up an event loop (设置事件循环)
+
+Currently, the only main loop supported by dbus-python is GLib.
+
+目前，dbus-python 唯一支持的 main loop 是 GLib 。
+
+dbus-python has a global default main loop, which is the easiest way to use this functionality. To arrange for the GLib main loop to be the default, use:
+
+dbus-python 有一个全局默认的 main loop ，它是使用这个功能最容易的方法。把 GLib main loop 设置为默认，使用:
+
+<verse>
+from dbus.mainloop.glib import DBusGMainLoop
+
+DBusGMainLoop(set_as_default=True)
+</verse>
+
+You must do this before connecting to the bus.
+
+你必须要连接 bus 之前做些工作。
+
+Actually starting the main loop is as usual for pygobject:
+
+实际上常常为 pygobject 启动 main loop。
+
+<verse>
+import gobject
+
+loop = gobject.MainLoop()
+loop.run()
+</verse>
+
+While loop.run() is executing, GLib will run your callbacks when appropriate. To stop, call loop.quit().
+
+当 loop.run() 在运行， GLib 将会在适当的时候运行你的回调函数。调用 loop.quit() 停止。
+
+You can also set a main loop on a per-connection basis, by passing a main loop to the Bus constructor:
+
+你可以在每一个连接的基础上设置一个 main loop，通过传递一个 main loop 到 Bus 构造函数。
+
+<verse>
+import dbus
+from dbus.mainloop.glib import DBusGMainLoop
+
+dbus_loop = DBusGMainLoop()
+
+bus = dbus.SessionBus(mainloop=dbus_loop)
+
+</verse>
+
+This isn't very useful until we support more than one main loop, though.
+
+这不是非常有用，除非我们支持多个 main loop 。
+
+*** Backwards compatibility: dbus.glib (向后兼容: dbus.glib)
+
+In versions of dbus-python prior to 0.80, the way to set GLib as the default main loop was:
+
+在 dbus-python 0.80 之前的版本里，设置 GLib 作为默认 main loop 的方法是:
+
+<verse>
+import dbus.glib
+</verse>
+
+Executing that import statement would automatically load the GLib main loop and make this the default. This is now deprecated, since it's highly non-obvious, but may be useful if you want to write or understand backwards-compatible code.
+
+执行那个 import 语句将会自动的加载 GLib main loop 并设置它为默认。不赞成使用它，因为它是高不可见的，但是如果你想写或者理解向后兼容的代码是有用的。
+
+*** The Qt main loop (Qt main loop)
+
+PyQt v4.2 and later includes support for integrating dbus-python with the Qt event loop. To connect D-Bus to this main loop, call dbus.mainloop.qt.DBusQtMainLoop instead of dbus.mainloop.glib.DBusGMainLoop. Otherwise the Qt loop is used in exactly the same way as the GLib loop.
+
+PyQt v4.2 或更新的版本支持 Qt 事情循环。调用 dbus.mainloop.qt.DbusQtMainLoop 代替 dbus.mainloop.glib.DBusGMainLoop 来连接 D-Bus。否则 Qt loop 的使用将与 GLib loop 完全相同。
+
+** Making asynchronous calls (创建异步调用)
+
+To make a call asynchronous, pass two callables as keyword arguments reply_handler and error_handler to the proxy method. The proxy method will immediately return None. At some later time, when the event loop is running, one of these will happen: either
+
+通过传递两个可调用 (callables) 的关键词参数 reply_handler 和 error_handler 到 proxy method 来生成一个异步调用。proxy method 将会立即返回 None。一段时间后，当事件循环执行时，它们中的一个将会发生:
+
+  - the reply_handler will be called with the method's return values as arguments; or
+
+    reply_handler 将会被调用，它的参数是上面方法的返回值。 
+
+  - the error_handler will be called with one argument, an instance of DBusException representing a remote exception.
+
+    error_handler 将被调用，它的参数是一个代表远程异常的 DBusException 的一个实例。
+
+*** See also 
+
+examples/example-async-client.py makes asynchronous method calls to the service provided by examples/example-service.py which return either a value or an exception. As for examples/example-client.py, you need to run examples/example-service.py in the background or in another shell first.
+
+examples/example-async-client.py 制作异步方法调用 example-service.py 提供的服务，这个方法返回一值或一个异常。就像 examples/example-client.py，你需要先在后台或另一个 shell 中运行 examples/example-service.py。
+
+* Receiving signals (接收信号)
+
+To receive signals, the Bus needs to be connected to an event loop - see section Setting up an event loop. Signals will only be received while the event loop is running.
+
+为了收到一个信号，Bus 需要被连接到一个事件循环 - 参考设置事件循环那章。信号只在事件循环运行的时候才能收到。
+
+** Signal matching (匹配信号)
+
+To respond to signals, you can use the add_signal_receiver method on Bus objects. This arranges for a callback to be called when a matching signal is received, and has the following arguments:
+
+为了对信息产生响应，你要在 Bus object 上使用 add_signal_receiver 方法。当一个匹配的信号收到后，安排好的回调函数将被调用，传入以后参数：
+
+  - a callable (the handler_function) which will be called by the event loop when the signal is received - its parameters will be the arguments of the signal
+
+    当收到信号时，一个可调函数 (callable) (the handler_fucntion) 将会被事件循环调用 - 它的参数是信息的参数。
+
+  - the signal name, signal_name: here None (the default) matches all names
+
+    信号名称，signal_name: 这里为 None (默认) 则匹配所有名称。
+
+  - the D-Bus interface, dbus_interface: again None is the default, and matches all interfaces
+
+    D-Bus 接口， dbus_interface: None 是默认的，匹配所有接口。
+
+  - a sender bus name (well-known or unique), bus_name: None is again the default, and matches all senders. Well-known names match signals from whatever application is currently the primary owner of that well-known name.
+
+    发送者的 bus 名称 (well-known 或 unique)，bus_name: None是默认的，匹配所有发送者。Well-known 名称匹配来自当前拥有那个 well-known 名称的应用程序的信号，无论应用程序是谁。
+
+  - a sender object path, path: once again None is the default and matches all object paths
+
+    一个发送者的 object path，path: None 是默认的，匹配所有 object paths，
+
+add_signal_receiver also has keyword arguments utf8_strings and byte_arrays which influence the types used when calling the handler function, in the same way as the byte_arrays and utf8_strings options on proxy methods.
+
+add_signal_receiver 也有关键词参数 utf8_strings 和 byte_arrays，当调用 handler fucntion时，它们影响使用的类型。影响的方式与 byte_arrays 和 utf8_strings 选项在 proxy method 上相同。
+
+add_signal_receiver returns a SignalMatch object. Its only useful public API at the moment is a remove method with no arguments, which removes the signal match from the connection.
+
+add_signal_receiver 返回一个 SignalMatch 对像。目前，它唯一有用的公共 API 是一个没有参数移除方法，它用来移除从连接上匹配的连接。
+
+** Getting more information from a signal (从信号中获取更多信息)
+
+You can also arrange for more information to be passed to the handler function. If you pass the keyword arguments sender_keyword, destination_keyword, interface_keyword, member_keyword or path_keyword to the connect_to_signal method, the appropriate part of the signal message will be passed to the handler function as a keyword argument: for instance if you use
+
+你也可以安排更多的信息传递给处理函数。如果你传递了关键词参数 sender_keyword, destination_keyword, interface_keyword, member_keyword 或 path_keyword 到 connect_to_signal 方法，信号消息适当的部分将会作为关键词参数被传递给处理函数:例如，如果你
+
+<example>
+def handler(sender=None):
+    print "got signal from %r" % sender
+
+iface.connect_to_signal("Hello", handler, sender_keyword='sender')
+
+</example>
+
+and a signal Hello with no arguments is received from com.example.Foo, the handler function will be called with sender='com.example.Foo'.
+
+一个来自 com.example.Foo 的没有参数的 Hello 信号将会被收到，处理函数将会被调用，它的参数 sender='com.example.Foo'。
+
+** String argument matching (匹配字符串参数)
+
+If there are keyword parameters for the form argn where n is a small non-negative number, their values must be unicode objects or UTF-8 strings. The handler will only be called if that argument of the signal (numbered from zero) is a D-Bus string (in particular, not an object-path or a signature) with that value.
+
+如果有关键词的格式是 argn，其中 n 是一个小的非负数，它们的值必须是 unicode 对象 或 UTF-8 字符串。(后面理不清)
+
+** Receiviing signals from a proxy object (接收来自 proxy 对象的信号)
+
+Proxy objects have a special method connect_to_signal which arranges for a callback to be called when a signal is received from the corresponding remote object. The parameters are:
+
+Proxy 对象有一个特殊的方法 connect_to_signal ，当收到一个来自相应远程对象的信号时， connect_to_signal 将安排一个回调函数被调用。
+
+  - the name of the signal
+
+    信号名称
+
+  - a callable (the handler function) which will be called by the event loop when the signal is received - its parameters will be the arguments of the signal
+
+    当收到信号时，一个可调函数 (callable) (the handler_fucntion) 将会被事件循环调用 - 它的参数是信息的参数。
+
+  - the handler function, a callable: the same as for add_signal_receiver
+
+    处理函数 (callable): 与 add_signal_receiver 相同
+
+  - the keyword argument dbus_interface qualifies the name with its interface
+
+    关键词参数 dbus_interface 限定接口的名称。
+
+
+dbus.Interface objects have a similar connect_to_signal method, but in this case you don't need the dbus_interface keyword argument since the interface to use is already known.
+
+dbus.Interface 对象有一个相似的 connect_to_signal 方法，但这种情况下，你不需要 dbus_interface 关键词参数，因为使用的接口已经知道了。
+
+The same extra keyword arguments as for add_signal_receiver are also available, and just like add_signal_receiver, it returns a SignalMatch.
+
+对于 add_signal_receiver 而言，同样的关键词参数也是可用的，就像 add_signal_receiver ， 它返回一个 SignalMatch 。
+
+You shouldn't use proxy objects just to listen to signals, since they might activate the relevant service when created, but if you already have a proxy object in order to call methods, it's often convenient to use it to add signal matches too.
+
+你不应该只用 proxy 对象来监听信号，因为当他们创建的时候也许会激活相关的服务，但如果你为了调用方法已经有一个 proxy 对象，使用它添加信号匹配常常很方便。
+
+** See also
+
+examples/signal-recipient.py receives signals - it demonstrates general signal matching as well as connect_to_signal. Before running it, you'll need to run examples/signal-emitter.py in the background or in another shell.
+
+examples/signal-recipient.py 接收信号 - 它示范了通用信号的匹配以及 connect_to_signal 。你需要先在后台或另一个 shell 中运行 examples/signal-emitter.py。
+
+* Claiming a bus name (声名一个 bus name)
+
+FIXME describe BusName - perhaps fix its API first?
+
+** The unique-instance idiom
+
+FIXME provide exemplary code, put it in examples
+
+* Exporting objects (导出对象)
+
+Objects made available to other applications over D-Bus are said to be exported. All subclasses of dbus.service.Object are automatically exported.
+
+在 D-Bus 上让另外一个应用程序可用的对像称作导出 (exported)。所有的 dbus.service.Object 的子类是自动被 exported。
+
+To export objects, the Bus needs to be connected to an event loop - see section Setting up an event loop. Exported methods will only be called, and queued signals will only be sent, while the event loop is running.
+
+为了 export 对象， Bus 需要连接到事件循环 - 参考设置事件循环那章。只有在事件循环运行时，导出方法也才会被调用，队列中的信号才会被传递。
+
+** Inheriting from dbus.service.Object (继承 dbus.service.Object)
+
+To export an object onto the Bus, just subclass dbus.service.Object. Object expects either a BusName or a Bus object, and an object-path, to be passed to its constructor: arrange for this information to be available. For example:
+
+在 Bus 导出一个对象，它仅是 dbus.service.Object 的子集。这个对象期待一个 BusName 或 Bus 对象以及 object-path ，来传递给它的构造函数：为这些要使用的信息做准备。例如：
+
+<example>
+class Example(dbus.service.Object):
+    def __init__(self, object_path):
+        dbus.service.Object.__init__(self, dbus.SessionBus(), path)
+</example>
+
+This object will automatically support introspection, but won't do anything particularly interesting. To fix that, you'll need to export some methods and signals too.
+
+这个对象会自动支持 introspection ，但不做任何特别的事情。为了修正它，你需要导出一些方法和信号。
+
+FIXME also mention dbus.gobject.ExportedGObject once I've written it
+
+** Exporting methods with dbus.service.method (使用 dbus.service.method 导出方法)
+
+To export a method, use the decorator dbus.service.method. For example:
+
+为了导出方法，使用 dbus.service.method 操作，例如:
+
+<example>
+class Example(dbus.service.Object):
+    def __init__(self, object_path):
+        dbus.service.Object.__init__(self, dbus.SessionBus(), path)
+
+    @dbus.service.method(dbus_interface='com.example.Sample',
+                         in_signature='v', out_signature='s')
+    def StringifyVariant(self, variant):
+        return str(variant)
+</example>
+
+The in_signature and out_signature are D-Bus signature strings as described in Data Types.
+
+in_signature 和 out_signature 是 D-Bus 的标识字符串，描述数据的类型。
+
+As well as the keywords shown, you can pass utf8_strings and byte_arrays keyword arguments, which influence the types which will be passed to the decorated method when it's called via D-Bus, in the same way that the byte_arrays and utf8_strings options affect the return value of a proxy method.
+
+像关键词显示的，你可以传递 utf8_string 和 byte_arrays 关键词参数，当你通过 D-Bus 调用方法时，它将影响传递参数的类型。 byte_arrays 和 utf8_strings 选项以同样的方式影响返回值。
+
+You can find a simple example in examples/example-service.py, which we used earlier to demonstrate examples/example-client.py.
+
+你可以找到一个简单的例子 examples/example-service.py ，我们先前用来它来示范 examples/example-client.py 。
+
+*** Finding out the caller's bus name
+
+The method decorator accepts a sender_keyword keyword argument. If you set that to a string, the unique bus name of the sender will be passed to the decorated method as a keyword argument of that name:
+
+方法描述接受 sender_keyword 关键词参数。如果你把它设置为一个字符串，发送者的唯一 bus 名称将作为一个关键词参数传递到描述方法。
+
+<example>
+class Example(dbus.service.Object):
+    def __init__(self, object_path):
+        dbus.service.Object.__init__(self, dbus.SessionBus(), path)
+
+    @dbus.service.method(dbus_interface='com.example.Sample',
+                         in_signature='', out_signature='s',
+                         sender_keyword='sender')
+    def SayHello(self, sender=None):
+        return 'Hello, %s!' % sender
+        # -> something like 'Hello, :1.1!'
+</example>
+
+*** Asynchronous method implementations (异步方法的实现)
+
+FIXME and also add an example, perhaps examples/example-async-service.py
+
+** Emitting signals with dbus.service.signal
+
+To export a signal, use the decorator dbus.service.signal; to emit that signal, call the decorated method. The decorated method can also contain code which will be run when called, as usual. For example:
+
+<example>
+class Example(dbus.service.Object):
+    def __init__(self, object_path):
+        dbus.service.Object.__init__(self, dbus.SessionBus(), path)
+
+    @dbus.service.signal(dbus_interface='com.example.Sample',
+                         signature='us')
+    def NumberOfBottlesChanged(self, number, contents):
+        print "%d bottles of %s on the wall" % (number, contents)
+
+e = Example('/bottle-counter')
+e.NumberOfBottlesChanged(100, 'beer')
+# -> emits com.example.Sample.NumberOfBottlesChanged(100, 'beer')
+#    and prints "100 bottles of beer on the wall"
+</example>
+
+The signal will be queued for sending when the decorated method returns - you can prevent the signal from being sent by raising an exception from the decorated method (for instance, if the parameters are inappropriate). The signal will only actually be sent when the event loop next runs.
+
+
+
+*** Example
+
+examples/example-signal-emitter.py emits some signals on demand when one of its methods is called. (In reality, you'd emit a signal when some sort of internal state changed, which may or may not be triggered by a D-Bus method call.)
+
+当发送信号的方法之一被调用， examples/example-signal-emitter.py 会按要求发送一些信号。
+
+* License for this document
+
+Copyright 2006-2007 Collabora Ltd.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+

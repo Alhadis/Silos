@@ -1,0 +1,2081 @@
+#title Linux Tutorial
+#author Ole Yang
+#date `date`
+
+ <contents>
+
+* 安装
+** 发行版本
+强烈推荐安装Archlinux
+
+** fstab
+生成fstab文件
+<src type="text">
+
+</src>
+
+** grub
+grub2和grub1不一样，配置文件是：/boot/grub/grub.cnf.
+
+主配置文件在/boot/grub/grub.cfg
+
+分开的配置文件
+
+/boot/grub.d/
+
+生成配置文件的方法
+<src type="text">
+grub-mkconfig -o /boot/grub/grub.cfg
+</src>
+
+
+** 桌面环境
+*** 登陆器
+**** gdm
+**** lxdm
+**** slim
+配置文件
+<src type="text">
+/etc/slim.conf
+</src>
+slim是读取~/.xinitrc,下面是一份样版
+<src type="text">
+#!/bin/sh
+#
+# ~/.xinitrc
+#
+# Executed by startx (run your window manager from here)
+
+# exec gnome-session
+# exec startkde
+# exec startxfce4
+# ...or the Window Manager of your choice
+exec ck-launch-session dbus-launch --exit-with-session startxfce4
+</src>
+添加ck-launch-session dbus-launch 是为了thur文件管理器能够有权限去挂载设备
+
+
+** X管理程序
+*** lxde
+这个不错，轻。基本上不用配置就可以使用
+
+**** 自动启动程序
+自动启动的程序位于：
+<src type="text">
+/etc/xdg/lxsession/LXDE/autostart
+</src>
+如果需要增加一条命令
+<src type="text">
+@/home/ole/bin/KeyMap.sh
+</src>
+
+**** 启动触摸板的点击功能
+修改/usr/share/X11/xorg.conf.d/50-synaptics.conf 
+<src type="text">
+Section "InputClass"
+      Identifier "touchpad catchall"
+      Driver "synaptics"
+      MatchIsTouchpad "on"
+      MatchDevicePath "/dev/input/event*"
+            Option "TapButton1" "1"
+            Option "TapButton2" "2"
+            Option "TapButton3" "3"
+EndSection 
+</src>
+
+如果需要立即生效允许如下命令
+<src type="text">
+synclient TapButton1=1
+synclient TapButton2=2
+synclient TapButton3=3
+</src>
+
+
+*** xfce4
+**** 安装
+<src type="text">
+# pacman -S xfce4
+</src>
+让thur能够显示挂载的设备
+<src type="text">
+pacman -S thur-volman
+</src>
+
+**** 让普通的用户有挂载的权限
+1. 安装polkit-gnome
+<src type="text">
+pacman -S polkit-gnome
+</src>
+2. 修改.xinitr成如下
+<src type="text">
+exec ck-launch-session dbus-launch --exit-with-session startxfce4
+</src>
+
+**** 解决窗口可以标题栏
+
+出现过好几次了，xfce4没有标题栏，鼠标在桌面上也显示一个X，也不能按C-T来切换窗口，以前是重新安装，今天有出现这样的问题，再也不能让它这么嚣张，于是在google中搜索：xfce4 没有标题栏，还真找到了，原来是没有运行xfwm4这个程序，运行起来就可以了。产生的原因就是因为每次注销的选了：保存会话。如果是在注销的出现问题，然后又保存的会话就会出现问题。
+
+解决的办法： 运行xfwm4，然后在保存会话退出
+
+<src type="text">
+$ xfwm4
+</src>
+
+**** 解决Ctrol-Alt-f给占用的问题
+用emacs的时候，按C-A-f 弹出一个粘贴内容管理器，也不知道是什么程序。用esc键代替alt，痛苦好长一段时间，在设置中心也没有发现有这样的快捷键设置。后来忽然发现原来是cliplt这个小程序占有了这个快捷键，清除其所有占有的快捷键。哇噻！在emacs中如鱼得水了。感谢linux，感谢emacs
+
+
+*** fvwm
+很好，配置性非常高，支持完全键盘操作。轻量级。就是配置编辑复杂
+*** openbox
+*** gnome
+大，但是在笔记本很多功能只有它才能有，比如功能键
+
+* 目录结构的介绍
+** /boot
+就是存放Linux的核心和启动菜单配置文件
+
+其中里面的/boot/grub/stage1是对磁盘RMB512KB的一个copy，如果是系统启动参考出现错误可以使用下面的命令来恢复
+<src type="bash">
+dd -if=/boot/grub/stage1 /dev/sda
+</src>
+stag2也是一个启动的文件，因为stage1大小有限制，对启动时不够的，所以需要这个文件，这个文件的大小也是不止512
+
+** /dev
+dev下的是设备文件
+
+*** /dev/shm
+这个就是linux的内存的映射，也就是内存本身
+
+
+** /proc
+系统运行时进程都有一个和进程ID对应的文件夹
+<src type="bash">
+# service httpd status  // 显示httpd的状态主要是显示它的id号
+httpd (pid  2647) is running...
+</src>
+那么在/proc 就有一个叫2647的文件夹
+
+比如里面的acpi就是系统的电源管理
+
+比如fans就是系统风扇的情况
+
+** /etc
+** /skell
+这个目录中的文件在新建用户的时候会copy到用户的家目录中.
+
+<src type="bash">
+# toucn /etc/skell/wellcome
+# adduser test
+# ls /home/test
+wellcome
+</src>
+自动把/etc/skell的文件copy到/home/test中去.这个挺有用的.
+
+* ssh
+** 设置ssh远程连接不需要密码
+*** Linux 系统
+参考 http://www.linuxhorizon.ro/ssh-wo-passw.html
+
+原理： 在本地使用ssh-keygen生成一个密码为空（passphrase不输入任何东西，直接按回车）id_rsa.pub，把id_rsa.pub追加到在远程ssh服务器上.ssh/authorized_keys上。
+
+ - 在本地电脑上生成key<br>
+<src type="bash">
+$> ssh-keygen -t rsa
+Generating public/private rsa key pair.
+Enter file in which to save the key (/home/ole/.ssh/id_rsa): 
+Enter passphrase (empty for no passphrase): 
+Enter same passphrase again: 
+Your identification has been saved in /home/ole/.ssh/id_rsa.
+Your public key has been saved in /home/ole/.ssh/id_rsa.pub.
+The key fingerprint is:
+5c:91:24:c4:2f:f2:02:c8:05:ec:28:57:8c:bf:ba:f8 ole@myhost
+The key's randomart image is:
++--[ RSA 2048]----+
+| ..+   oo.o.     |
+|  o +   ....     |
+| + =     ..      |
+|o = o .....      |
+|..   o oS.       |
+|    . . .        |
+|   .   .         |
+| ..              |
+|..E.             |
++-----------------+
+</src>
+注意 Enter passphrase (empty for no passphrase): 直接敲回车。
+ - 把本地的id_rsa.pub添加到远程服务器.ssh/authorized_keys中去。下面的方法出错。
+<pre>
+[ole@myhost ~]$ cat .ssh/id_rsa.pub | ssh -l yangsh yangsh@2010 \
+> `cat >> .ssh/authorized_keys`
+</pre>
+我用的另外的方法，先用sftp上传，然后在附加到.ssh/authorized_keys上
+<src type="bash">
+sftp yangsh@192.168.5.200
+yangsh@192.168.5.200's password: 
+Connected to 192.168.5.200.
+sftp> pwd
+Remote working directory: /home/yangsh
+sftp> lpwd
+Local working directory: /home/ole
+sftp> put .ssh/id_rsa.pub .ssh/yangsh.rsa
+Uploading .ssh/id_rsa.pub to /home/yangsh/.ssh/yangsh.rsa
+.ssh/id_rsa.pub                         100%  392     0.4KB/s   00:00    
+sftp> exit
+[ole@myhost ~]$ ssh yangsh@192.168.5.200
+yangsh@192.168.5.200's password: 
+Last login: Wed May 18 12:03:12 2011 from 192.168.5.101
+[yangsh@WebTronics ~]$ cat .ssh/yangsh.rsa >> .ssh/authorized_keys
+[yangsh@WebTronics ~]$ exit
+logout
+Connection to 192.168.5.200 closed.
+[ole@myhost ~]$ ssh yangsh@192.168.5.200
+Last login: Wed May 18 12:22:17 2011 from 192.168.5.101
+[yangsh@WebTronics ~]$ pwd
+/home/yangsh
+</src>
+另外一种上传id_rsa.pub到远程服务器的方法
+<src type="bash">
+$>scp .ssh/id_rsa.pub root@114.113.230.70:/root/.ssh/authorized_keys
+id_rsa.pub                      100%  392     0.4KB/s   00:00
+</src>
+如果出现下面的错误提示
+<src type="bash">
+[~]$ scp .ssh/id_rsa.pub root@114.113.230.73:/root/.ssh/authorized_keys
+root@114.113.230.73's password: 
+bash: scp: command not found
+lost connection
+</src>
+则需要检查远程服务器是否安装openssh的server和client
+
+上传id_rsa.pub成功以后，ssh登录192.168.5.200已经不需要密码了，这个方法同样对sftp、scp适用
+如果还是不行修改本机/etc/ssh/ssh_conf文件，取消#   IdentityFile ~/.ssh/id_rsa的注释
+<src type="bash">
+IdentityFile ~/.ssh/id_rsa
+</src>
+在emacs中.emacs设置一下：
+<src type="text">
+(require 'tramp)
+(setq tramp-default-method "sftp")
+(setq tramp-default-user "yangsh")
+</src>
+然后在emacs中输入/192<TAB>自动补全并且连接
+
+如果上的步骤都做了还是需要密码，则需要检查远程服务器是否安装openssh的server和client
+<src type="bash">
+[root@DB-1 ~]# rpm -qa | grep ssh
+openssh-server-5.3p1-70.el6.x86_64
+openssh-5.3p1-70.el6.x86_64
+ksshaskpass-0.5.1-4.1.el6.x86_64
+openssh-askpass-5.3p1-70.el6.x86_64
+openssh-clients-5.3p1-70.el6.x86_64
+libssh2-1.2.2-7.el6_1.1.x86_64
+</src>
+如果没有可以用下面的命令安装
+<src type="bash">
+[root@DB-1 ~]# yum install -y openssh*
+</src>
+
+*** windows
+在Windows下设置ssh登陆不需要输入密码原理和Linux的一样.但是需要借助putty工具.
+ - 安装putty
+ - 生成key
+    运行PUTTYGEN.EXE, 设置SSH-2 RSA,Number of bits in a generated key: 填 2056.这样生成的key为380个字符. 再点击Generate,然后不停移动鼠标,这个时候进度条会动的.如果不动鼠标,就没有种子进度条也不会动.等可以生成好了以后复制并且保持key到一个文件(不要点Save as Public Key那个没有什么用),然后上传到服务器,把key加到服务器的authorized_keys中(没有次文件就创建一个),
+        <src type="text">
+cat 上传的key >> ~/.ssh/authorized_keys          
+        </src>
+    把key保存为private key. 点击Save Private key保存,例如: my-ssh-private-key.ppk
+ - 设置putty
+       - 设置session
+        -  清除default设置
+        -    填写Host Name 例如: 192.168.1.200
+        -    填写Save Sessions 例如:200
+        -    指定登陆远程访问服务器的用户名.Connection->Rlogin->Local username 例如: username
+        -    指定private key文件.Connection->SSH->Auth->Private key file for authentication.例如: d:\back\my-ssh-private-key.ppk
+ - 保存设置: Session->Save
+
+经过上面的设置,使用putty ssh登陆远程服务器就不需要密码了
+
+
+* 显示
+** xrandr
+[[http://mcs.szu.edu.cn/user/shendasky/Article_61761][参考]]
+
+xrandr是调整图形界面显示方式的。
+
+ - 显示有几个外接显示设备
+<src type="bash">
+[~]$ xrandr
+Screen 0: minimum 320 x 200, current 1280 x 800, maximum 8192 x 8192
+LVDS1 connected 1280x800+0+0 (normal left inverted right x axis y axis) 331mm x 207mm
+   1280x800       60.0*+   50.1  
+   1024x768       60.0  
+   800x600        60.3     56.2  
+   640x480        59.9  
+VGA1 connected (normal left inverted right x axis y axis)
+   1440x900       60.0 +   75.0  
+   1280x1024      75.0     60.0  
+   1280x960       60.0  
+   1366x768       60.0  
+   1360x768       60.0  
+   1280x800       74.9     59.8  
+   1152x864       75.0  
+   1280x768       74.9     59.9  
+   1152x720       60.0  
+   1024x768       75.1     70.1     60.0  
+   1024x576       60.0  
+   832x624        74.6  
+   800x600        72.2     75.0     60.3     56.2  
+   848x480        60.0  
+   640x480        72.8     75.0     60.0  
+   720x400        70.1  
+HDMI1 disconnected (normal left inverted right x axis y axis)
+DP1 disconnected (normal left inverted right x axis y axis)
+DP2 disconnected (normal left inverted right x axis y axis)
+</src>
+LVDS1、VGA1分别代表2个设备的名称，LVDS1是内置显示器，VGA1外接显示器
+
+** gtf
+
+
+
+
+
+
+* 用户管理
+** 查看用户信息
+存放用户的信息的文件时/etc/passwd
+
+密码存放的位置是:/etc/shadow
+
+*** id
+显示用户的主要信息，包括用户id，组id
+
+*** finger
+显示用户的主目录和登录shell，登录的信息（上次登录等）
+
+** acl
+用户访问控制列表，一个必要的条件就是在分区挂载的时候需要加上acl的选项，/分区挂载的时候就用主要的选项。用acl可以很好的控制那个文件那个用户可以访问，不用再通过修改用户或者是组的权限来实现
+
+例如： 修改/etc/httpd/conf/httpd.conf 为ole可写
+
+先查看/etc/httpd/conf/httpd.conf的权限
+<src type="bash">
+# getfacl /etc/httpd/conf/httpd.conf
+</src>
+
+结果：
+<src type="bash">
+getfacl: Removing leading '/' from absolute path names
+# file: etc/httpd/conf/httpd.conf
+# owner: root
+# group: root
+user::rw-
+group::r--
+mask::r--
+other::r--
+</src>
+
+添加权限：
+<src type="bash">
+setfacl -m u:ole:rw- /etc/httpd/conf/httpd.conf
+</src>
+查看一下
+<src type="bash">
+# getfacl /etc/httpd/conf/httpd.conf
+
+getfacl: Removing leading '/' from absolute path names
+# file: etc/httpd/conf/httpd.conf
+# owner: root
+# group: root
+user::rw-
+user:ole:rw-
+group::r--
+mask::rw-
+other::r--
+</src>
+
+很方便吧。还真是很方面
+
+这个是今天在看linux的视频的时候看见的，网址如下：http://v.ku6.com/show/OjbO-VQOjUyofBld.html
+
+感谢、感谢！
+
+** 批量创建用户
+如何去批量创建用户和默认的密码呢? 这里就要使用到管道符号和passwd中的一个选项--stdin
+<src type="bash">
+
+</src>
+
+* 字体
+搜索ttf,找到几个
+
+* 常用软件
+** 编辑器
+*** Emacs
+*** gvim
+
+** 图形图像
+*** gimp
+*** gpview
+*** dia
+*** inkscape
+画矢量图
+
+*** yed
+
+*** freemind
+画流程图
+
+** 办公软件 
+*** 永中office EIoffice
+http://www.yozosoft.com/download/zmo.jsp
+
+** web开发
+*** firefox
+安装firebug
+
+*** charles
+类似filder，不是免费软件，不注册30分钟需要重启一次
+
+** pdf
+*** apvlv
+完全支持vim的操作模式，并且在Windows/Linux上都有软件。但是加载大文件时会没有响应
+
+*** epdfview
+支持J,K移动
+
+** chm
+*** chmsee
+*** kchmviewer
+
+
+* Other
+** switch keymap
+refer to http://c2.com/cgi/wiki?RemapCapsLock
+[[http://emacswiki.org/emacs/MovingTheCtrlKey]]
+
+*** X (using xmodmap)
+新建一个文件，名为： ~/.xmodmap,内容如下：
+<src type="text">
+!
+! Swap Caps_Lock and Control_L
+!
+remove Lock = Caps_Lock
+remove Control = Control_L
+keysym Control_L = Caps_Lock
+keysym Caps_Lock = Control_L
+add Lock = Caps_Lock
+add Control = Control_L 
+</src>
+然后在~/.profile中添加
+<src type="text">
+xmodmap ~/.xmodmap
+</src>
+
+*** X(using xkb)
+在命令行中输入下面中的其中一条命令
+<src type="bash">
+setxkbmap -option ctrl:swapcaps  # 交换大写和ctrl,这一句好像没有作用
+setxkbmap -option ctrl:nocaps    # Make caps as a ctrol key
+</src>
+
+如果是fedora，另外一个方法就是：添加下面一行到~/.Xkbmap,下一次登陆的时候就生效
+<src type="bash">
+-option ctrl:swapcaps
+</src>
+
+* 软件
+** 屏幕录像
+*** vnc2flv
+这是一个录制屏幕，输出flv格式到软件，需要安装x11vnc作为服务端来运行，然后运行flvrec.py
+ - 安装<br>
+<src type="bash">
+yaourt -S vnc2flv
+</src>
+ - 运行<br>
+<src type="bash">
+$ x11vnc
+$ flvrec.py
+</src>
+
+*** xvidcap
+
+***
+
+* apache+svn+submin
+** 说明
+apache+svn+submin可以实现用submin来管理svn。通过http访问就可以管理svn了
+
+** 安装
+<src type="text">
+yum install apache_dav_mod subversion
+</src>
+
+下载submin
+<src type="text">
+wget http://
+</src>
+
+
+** 建立环境
+<src type="bash">
+# 创建一个工作目录
+mkdir ~/workspace
+cd ~/workspace
+
+# 检出代码
+svn checkout https://svn.wacosoft.net/svn/projects/ctc_one_portal/
+svn checkout svn://222.35.138.176/mag  // 礼物中国
+#这个时候会出现一个信任的问题。
+(R)eject, accept (t)emporarily or accept (p)ermanently? 
+# 按 t 尝试接受
+# 出现输入密码，如果svn用户名不是你登录到用户名，
+# 你随便输入一个密码以后要求你输入用户名，然后是密码。输入正确以后就等待检出
+
+</src>
+
+** 使用
+<src type="text">
+# 进入代码文件夹
+cd ctc_one_portal/trunk/code/vnet/apps/ctc.mobixweb.com/scripts/
+# 锁定文件,但是不能锁定文件夹
+svn lock life_detail.php -m "锁定文件，我将在2011-01-31之前完成修改" --uname yangsh --password mypasswd
+# 用自己熟悉的编辑器修改/编辑
+emacs life_detail.php
+# 由于修改到时间比较长，在这个过程中可能已经有人提交来代码，所以修改完以后提交之前先要update
+svn update
+# 提交修改到文件
+svn commit -m "life_detail.php: 增加分页程序"
+# 添加文件
+svn add file1
+</src>
+
+如果本地的某个文件夹不希望在commit的时候提交，可以使用svndumpfilter。
+
+案例：ecmall中的data/config.inc.php是配置文件和服务器上的配置当然不一样啦，如果避免上传的时候把本地的配置文件上传到服务器呢？
+<src type="text">
+svndumpfilter exclude data
+</src>
+执行了这条命令以后，运行svn ci -m ''就不会上传data开头的文件夹的文件。如果要解除，运行下面的命令
+<src type="text">
+svndumpfilter include data
+</src>
+不错的功能
+
+** 再次修改
+重复 **使用** 部分
+
+* toupad
+参考网址： https://wiki.archlinux.org/index.php/Touchpad_Synaptics
+ - 安装 xf86-input-synaptics
+<src type="bash">
+sudo pacman -S xf86-input-synaptics
+</src>
+ - 在启动文件中增加 synclient TouchpadOff=1 禁止使用touchpad
+<src type="bash">
+emacs ~/.bash_profile
+# disable touchpad
+synclient TouchpadOff=1
+</src>
+
+* bash 命令
+** find
+<src type="bash">
+find 目录 参数 查找内容
+</src>
+
+查找当前目录和子目录下.php .inc的文件
+<src type="bash">
+find . \( -name "*.php" -o -name "*.inc" \) -print
+</src>
+\(\)是转义括号为正则表达式的括号，和php的正好相反，php中的正则表达式\(是转义成字面上的字符
+
+在当前目录查找大于100k小于10M的文件，然后删除
+<src type="bash">
+$ find . -size +100k -size -10M -exec rm -f {} \;
+</src>
+
+** cd
+<src type="text">
+cd - #回到上次所在目录，这个技巧我原来还真是不知道，感觉还是比较有用，省略了很多输入。
+
+cd !$ #把上个命令的参数作为输入。（这个在其它命令也是通用的，一定要习惯运用会简化很多工作）
+
+cd #回到主目录
+
+cd ~ #同样也是回到主目录
+
+cd .. #回到上一级目录
+
+cd ../../ #回到上上级目
+</src>
+
+** lsof 用法小全
+
+lsof abc.txt 显示开启文件 abc.txt 的进程
+
+lsof -i :22 知道 22 端口现在运行什么程序
+
+lsof -c nsd 显示 nsd 进程现在打开的文件
+
+lsof -g gid 显示归属 gid 的进程情况
+
+lsof +d /usr/local/ 显示目录下被进程开启的文件
+
+lsof +D /usr/local/ 同上，但是会搜索目录下的目录，时间较长
+
+lsof -d 4 显示使用 fd 为4 的进程
+
+lsof -i [i] 用以显示符合条件的进程情况
+
+语法: lsof -i[46] [protocol][@hostname|hostaddr][:service|port]
+
+有时在umount的时候，会提示设备忙不能卸载，可以通过lsof来查看情况，然后把进程kill掉，例如，/dev/sdb1 mount 在的/home/ole/mnt/usb
+<src type="text">
+[ole@myhost ~]$ sudo umount -a
+密码：
+umount: /home/ole/mnt/usb: device is busy.
+        (In some cases useful info about processes that use
+         the device is found by lsof(8) or fuser(1))
+...
+
+[ole@myhost ~]$ lsof | grep usb
+tumblerd  27710        ole    8r      REG       8,17  4089480 20054034 /home/ole/mnt/usb/Video/女孩弹吉他.flv
+tumblerd  27710        ole    9r      REG       8,17 52864177 20054031 /home/ole/mnt/usb/Video/99年阅兵.flv
+tumblerd  27710        ole   10r      REG       8,17 39877380 20054036 /home/ole/mnt/usb/Video/瑜伽.flv
+tumblerd  27710        ole   11r      REG       8,17 65457317 20054035 /home/ole/mnt/usb/Video/十里长街送总理.flv
+tumblerd  27710 27711  ole    8r      REG       8,17  4089480 20054034 /home/ole/mnt/usb/Video/女孩弹吉他.flv
+tumblerd  27710 27711  ole    9r      REG       8,17 52864177 20054031 /home/ole/mnt/usb/Video/99年阅兵.flv
+tumblerd  27710 27711  ole   10r      REG       8,17 39877380 20054036 /home/ole/mnt/usb/Video/瑜伽.flv
+tumblerd  27710 27711  ole   11r      REG       8,17 65457317 20054035 /home/ole/mnt/usb/Video/十里长街送总理.flv
+tumblerd  27710 27712  ole    8r      REG       8,17  4089480 20054034 /home/ole/mnt/usb/Video/女孩弹吉他.flv
+tumblerd  27710 27712  ole    9r      REG       8,17 52864177 20054031 /home/ole/mnt/usb/Video/99年阅兵.flv
+tumblerd  27710 27712  ole   10r      REG       8,17 39877380 20054036 /home/ole/mnt/usb/Video/瑜伽.flv
+tumblerd  27710 27712  ole   11r      REG       8,17 65457317 20054035 /home/ole/mnt/usb/Video/十里长街送总理.flv
+source:sr 27710 27713  ole    8r      REG       8,17  4089480 20054034 /home/ole/mnt/usb/Video/女孩弹吉他.flv
+source:sr 27710 27713  ole    9r      REG       8,17 52864177 20054031 /home/ole/mnt/usb/Video/99年阅兵.flv
+source:sr 27710 27713  ole   10r      REG       8,17 39877380 20054036 /home/ole/mnt/usb/Video/瑜伽.flv
+source:sr 27710 27713  ole   11r      REG       8,17 65457317 20054035 /home/ole/mnt/usb/Video/十里长街送总理.flv
+source:sr 27710 27714  ole    8r      REG       8,17  4089480 20054034 /home/ole/mnt/usb/Video/女孩弹吉他.flv
+source:sr 27710 27714  ole    9r      REG       8,17 52864177 20054031 /home/ole/mnt/usb/Video/99年阅兵.flv
+source:sr 27710 27714  ole   10r      REG       8,17 39877380 20054036 /home/ole/mnt/usb/Video/瑜伽.flv
+source:sr 27710 27714  ole   11r      REG       8,17 65457317 20054035 /home/ole/mnt/usb/Video/十里长街送总理.flv
+source:sr 27710 27715  ole    8r      REG       8,17  4089480 20054034 /home/ole/mnt/usb/Video/女孩弹吉他.flv
+source:sr 27710 27715  ole    9r      REG       8,17 52864177 20054031 /home/ole/mnt/usb/Video/99年阅兵.flv
+source:sr 27710 27715  ole   10r      REG       8,17 39877380 20054036 /home/ole/mnt/usb/Video/瑜伽.flv
+source:sr 27710 27715  ole   11r      REG       8,17 65457317 20054035 /home/ole/mnt/usb/Video/十里长街送总理.flv
+source:sr 27710 27716  ole    8r      REG       8,17  4089480 20054034 /home/ole/mnt/usb/Video/女孩弹吉他.flv
+source:sr 27710 27716  ole    9r      REG       8,17 52864177 20054031 /home/ole/mnt/usb/Video/99年阅兵.flv
+source:sr 27710 27716  ole   10r      REG       8,17 39877380 20054036 /home/ole/mnt/usb/Video/瑜伽.flv
+source:sr 27710 27716  ole   11r      REG       8,17 65457317 20054035 /home/ole/mnt/usb/Video/十里长街送总理.flv
+[ole@myhost ~]$ kill -9  27710
+[ole@myhost ~]$ sudo umount /dev/sdb1
+[ole@myhost ~]$ lsof | grep usb
+[ole@myhost ~]$ 
+</src>
+
+** 用户操作
+*** 查看在线用户
+<src type="bash">
+$ w
+ 11:00:00 up  1:26,  3 users,  load average: 0.10, 0.19, 0.26
+USER     TTY        LOGIN@   IDLE   JCPU   PCPU WHAT
+ole      tty7      03:54    1:26m  2:11   0.11s /usr/bin/lxsession -s LXDE
+ole      pts/0     03:54    1.00s  0.62s  0.00s w
+ole      pts/1     03:57    7:01m  2:07   0.47s bash
+$ who
+ole      tty7         2011-03-19 03:54 (:0)
+ole      pts/0        2011-03-19 03:54 (:0.0)
+ole      pts/1        2011-03-19 03:57 (:0.0)
+</src>
+
+*** 查看用户情况
+查看/etc/passwd有多少用户，和用户的简要情况，如果用户少，可以用
+<src type="bash">
+$ cat /etc/passwd
+root:x:0:0:root:/root:/bin/bash
+bin:x:1:1:bin:/bin:/bin/false
+daemon:x:2:2:daemon:/sbin:/bin/false
+mail:x:8:12:mail:/var/spool/mail:/bin/false
+ftp:x:14:11:ftp:/srv/ftp:/bin/false
+http:x:33:33:http:/srv/http:/bin/false
+nobody:x:99:99:nobody:/:/bin/false
+dbus:x:81:81:System message bus:/:/bin/false
+ole:x:1000:100:OLE YANG,906,26508120,13794460719,13249096864:/home/ole:/bin/bash
+avahi:x:84:84:avahi:/:/bin/false
+hal:x:82:82:HAL daemon:/:/bin/false
+gdm:x:120:120:Gnome Display Manager:/var/lib/gdm:/sbin/nologin
+mysql:x:89:89::/var/lib/mysql:/bin/false
+usbmux:x:140:140:usbmux user:/:/sbin/nologin
+ntp:x:87:87:Network Time Protocol:/var/empty:/bin/false
+lxdm:x:121:121:LXDE Display Manager user:/var/lib/lxdm:/sbin/nologin
+</src>
+当然，上面的目录有很多无用的信息，如何只显示用户名、UID、GID。下面的命令就可以做到
+<src type="bash">
+$ cat /etc/passwd | grep -v nologin | grep -v halt | grep -v shutdown | awk -F":" '{ print $1"|"$3"|"$4 }' | more
+</src>
+ - v ：revert，就是不包含
+ - -F ： 按照：分列
+ - $1,$3,$4: 只显示1，3，4列
+
+** grep
+是一个在文本文件中查找某个字符串的命令
+
+在所有的.php文件中查找MyClass
+<src type="bash">
+$ find . -iname "*.php" | xargs grep -i "MyClass"
+</src>
+
+*** 忽略大小写-i
+
+在当前目录和子目录下所有.php文件中查找“cache”忽略大小写
+<src type="bash">
+$ grep -iR "cache" *.php
+</src>
+
+*** 只显示匹配的文件名 -l
+<src type="text">
+$ grep tr *.pl -l
+</src>
+结果
+<src type="text">
+array.pl
+reg.pl
+test.pl
+</src>
+
+*** 只显示匹配的部分 -o
+显示有谁在猜服务器的密码
+<src type="text">
+grep -o '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}' /var/log/secure | sort | uniq -c
+</src>
+
+<src type="text">
+   1227 103.7.156.251
+    109 106.240.250.243
+      1 113.110.188.118
+      2 113.110.188.170
+      2 113.110.193.19
+      2 120.31.131.241
+      2 123.126.92.68
+    229 124.160.194.27
+    130 185.12.45.26
+     61 202.116.102.7
+     36 202.99.235.86
+      2 203.156.206.76
+    300 204.45.58.117
+   3886 211.160.74.250
+     96 211.167.111.43
+      7 218.93.205.108
+    906 219.138.203.198
+     17 219.144.17.74
+      1 221.204.253.107
+     14 31.3.245.178
+      7 61.147.68.70
+     78 61.156.238.56
+     21 85.214.55.55
+      1 87.107.133.4
+     35 95.211.58.97
+</src>
+
+
+
+pgrep 显示进程的id
+<src type="text">
+[ole@myhost ~]$ pgrep httpd
+1313
+1323
+1325
+1326
+1327
+1328
+1329
+[ole@myhost ~]$ 
+</src>
+
+
+
+** wget
+ -c 断点续传
+ - --spider 启用爬虫的功能，只探测文件，显示头部信息，不下载文件内容，对检测文件/url是否存在有很大的作用。和curl中-I选项一样
+<src type="bash">
+[ole@myhost tmp]$ wget --spider "http://file17.top100.cn/201105200943/65DF91038E8FC8DBA831F4EFF1618149/Special_350121/%E5%9B%A0%E4%B8%BA%E7%88%B1%E6%83%85.mp3"
+开启 Spider 模式。检查是否存在远程文件。
+--2011-05-20 09:43:53--  http://file17.top100.cn/201105200943/65DF91038E8FC8DBA831F4EFF1618149/Special_350121/%E5%9B%A0%E4%B8%BA%E7%88%B1%E6%83%85.mp3
+正在解析主机 file17.top100.cn... 119.147.104.233, 121.14.235.174
+正在连接 file17.top100.cn|119.147.104.233|:80... 已连接。
+已发出 HTTP 请求，正在等待回应... 200 OK
+长度：8684854 (8.3M) [application/octet-stream]
+存在远程文件。
+</src>
+ - O “另存为”的文件名
+<src type="bash">
+$ wget "http://zhangmenshiting.baidu.com/service/2d7e9cef93066b1be3e83da0160ecef4.mp3?xcode=a7c1e5ec3639a22f52f81344843b869a" -O "春天里.mp3"
+</src>
+
+** watch
+*** 格式
+<src type="text">
+watch [-nvdt] <command>
+</src>
+ - n 秒数
+ - v 显示watch的版本号
+ - d --diffrent 如果内容有变化高亮显示
+ - t --no-title 不显示头部
+
+*** 说明
+每隔一定的时间执行某个命令
+
+*** 例子
+ 1. 实时显示apache进程数（httpd）
+<src type="text">
+watch -n 1 -d "pgreg httpd | wc -l"
+</src>
+显示结果：
+<src type="text">
+Every 1.0s: gpreg httpd | wc -l
+12
+</src>
+
+ 2. 显示属于ole文件的情况
+<src type="text">
+watch -n 10 -d "ls -l | fgrep ole | wc -l"
+</src>
+显示结果：
+<src type="text">
+Every 1.0s: ls-l | fpreg ole | wc -l
+120
+</src>
+
+** ab
+*** 说明
+ab是ApacheBenche的缩写，是用来测试apache承受能力
+
+*** 格式
+<src type="text">
+ab [-n] [-c] [http[s]://]hostname[:port]/path
+</src>
+ - n requires 总共请求数
+ - c concurency 并发数，就是每次发多少请求
+
+
+*** 例子
+发10000个请求，每次100个并发
+<src type="text">
+ab -n 10000 -c 100 http://localhost/index.php
+</src>
+注意一定要有path（index.php)
+测试结果：
+<src type="text">
+This is ApacheBench, Version 2.3 <$Revision: 655654 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking localhost (be patient)
+Completed 1000 requests
+Completed 2000 requests
+Completed 3000 requests
+Completed 4000 requests
+Completed 5000 requests
+Completed 6000 requests
+Completed 7000 requests
+Completed 8000 requests
+Completed 9000 requests
+Completed 10000 requests
+Finished 10000 requests
+
+
+Server Software:        Apache/2.2.17
+Server Hostname:        localhost
+Server Port:            80
+
+Document Path:          /index.php
+Document Length:        20 bytes
+
+Concurrency Level:      100
+Time taken for tests:   8.739 seconds
+Complete requests:      10000
+Failed requests:        0
+Write errors:           0
+Total transferred:      2600000 bytes
+HTML transferred:       200000 bytes
+Requests per second:    1144.32 [#/sec] (mean)
+Time per request:       87.388 [ms] (mean)
+Time per request:       0.874 [ms] (mean, across all concurrent requests)
+Transfer rate:          290.55 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   1.3      0      13
+Processing:     2   87  41.3     79     534
+Waiting:        1   74  26.7     73     532
+Total:          2   87  41.2     79     535
+
+Percentage of the requests served within a certain time (ms)
+  50%     79
+  66%     86
+  75%     95
+  80%    103
+  90%    128
+  95%    162
+  98%    219
+  99%    268
+ 100%    535 (longest request)
+</src>
+
+** ps
+*** 说明
+显示进程情况
+
+显示firefox进程情况
+<src type="text">
+ps -aux | grep firefox
+</src>
+结果
+<src type="text">
+ole       1798  6.6  6.1 557608 187912 ?       Sl   07:48   0:54 firefox
+ole       1847  0.0  0.5  94640 16432 ?        Sl   07:49   0:00 /usr/lib/xulrunner-2.0/plugin-container /usr/lib/mozilla/plugins/libflashplayer.so -grebase /usr/lib/xulrunner-2.0 -appbase /usr/lib/firefox-4.0 1798 plugin
+ole       1887  0.0  0.0   6032   828 pts/2    S+   08:02   0:00 grep firefox
+</src>
+
+** pgrep
+单单显示进程的ID号
+
+统计httpd进程有几个
+<src type="text">
+$ pgrep httpd | wc -l
+32
+</src>
+
+** fpreg
+
+*** 格式
+<src type="text">
+ps [-aux]
+</src>
+
+*** 例子
+计算httpd占用内存的平均数:
+<src type="text">
+ps aux|grep -v grep|awk '/httpd/{sum+=$6;n++};END{print sum/n}'
+</src>
+
+
+** ls
+ls 是linux下最常用的命令
+
+以列表的形式显示详细信息
+<src type="bash">
+$ ls -l
+-rw-r--r-- 1 ole users   37  4月 15 06:21 EXAMPLE.TXT
+-rw-r--r-- 1 ole users  126  5月 29 12:56 F1
+-rw-r--r-- 1 ole users   68  4月 20 22:34 F2
+drwxr-xr-x 2 ole users 4096  5月 30 11:00 folder
+-rw-r--r-- 1 ole users   10  4月 14 07:06 SED_SCRIPT
+-rw-r--r-- 1 ole users   67  3月 20 13:58 TEXTFILE
+</src>
+
+一行显示一个文件名 -1（是数字1）
+<src type="bash">
+$ ls -1
+EXAMPLE.TXT
+F1
+F2
+folder
+SED_SCRIPT
+TEXTFILE
+</src>
+这样对处理文件是很有好处的。比如需要批量修改文件名的后缀<br>
+<literal>
+$ ls -1 | grep '\.suf1$' | sed -e 's/\(.*\.\)suf1/mv & \1suf2/' | sh
+</literal>
+
+
+显示所有文件
+<src type="bash">
+$ ls -a
+.  ..  EXAMPLE.TXT  F1  F2  folder  SED_SCRIPT  TEXTFILE
+</src>
+
+不显示 . 和 .. 文件夹
+<src type="bash">
+$ ls -A
+EXAMPLE.TXT  F1  F2  folder  SED_SCRIPT  TEXTFILE
+</src>
+
+不显示用户名
+<src type="bash">
+$ ls -lg
+总用量 24
+-rw-r--r-- 1 users   37  4月 15 06:21 EXAMPLE.TXT
+-rw-r--r-- 1 users  126  5月 29 12:56 F1
+-rw-r--r-- 1 users   68  4月 20 22:34 F2
+drwxr-xr-x 2 users 4096  5月 30 11:00 folder
+-rw-r--r-- 1 users   10  4月 14 07:06 SED_SCRIPT
+-rw-r--r-- 1 users   67  3月 20 13:58 TEXTFILE
+</src>
+
+不显示组名
+<src type="bash">
+$ ls -lG
+总用量 24
+-rw-r--r-- 1 ole   37  4月 15 06:21 EXAMPLE.TXT
+-rw-r--r-- 1 ole  126  5月 29 12:56 F1
+-rw-r--r-- 1 ole   68  4月 20 22:34 F2
+drwxr-xr-x 2 ole 4096  5月 30 11:00 folder
+-rw-r--r-- 1 ole   10  4月 14 07:06 SED_SCRIPT
+-rw-r--r-- 1 ole   67  3月 20 13:58 TEXTFILE
+</src>
+当然可以用gG用户名和组名都不显示
+
+显示最后修改时间,并且按照名称从小到大排列
+<src type="bash">
+$ ls -cl
+总用量 24
+-rw-r--r-- 1 ole users   37  4月 21 00:26 EXAMPLE.TXT
+-rw-r--r-- 1 ole users  126  5月 29 12:56 F1
+-rw-r--r-- 1 ole users   68  4月 21 00:26 F2
+drwxr-xr-x 2 ole users 4096  5月 30 11:00 folder
+-rw-r--r-- 1 ole users   10  4月 21 00:26 SED_SCRIPT
+-rw-r--r-- 1 ole users   67  4月 21 00:26 TEXTFILE
+</src>
+从上面的例子中我们可以看出EXAMPLE.TXT最后的修改时间是4月21号 00：26，注意这个不是创建文件的时间，创建文件的时间从上个例子中可以看出是： 4月15号 06：21。Windows怎么去察看修改时间呢？不知道！
+
+显示最后修改时间,并且按照时间排列
+<src type="bash">
+$ ls -lct
+总用量 24
+drwxr-xr-x 2 ole users 4096  5月 30 11:00 folder
+-rw-r--r-- 1 ole users  126  5月 29 12:56 F1
+-rw-r--r-- 1 ole users   67  4月 21 00:26 TEXTFILE
+-rw-r--r-- 1 ole users   10  4月 21 00:26 SED_SCRIPT
+-rw-r--r-- 1 ole users   68  4月 21 00:26 F2
+-rw-r--r-- 1 ole users   37  4月 21 00:26 EXAMPLE.TXT
+</src>
+folder的创建时间和修改时间都是5月30 11：00，现在我们来修改folder的修改时间，在folder中创建一个a文件
+<src type="bash">
+$ cd folder
+$ touch a
+</src>
+再来看看folder的最后修改时间
+<src type="bash">
+$ ls -lct
+总用量 24
+drwxr-xr-x 2 ole users 4096  5月 30 11:21 folder
+-rw-r--r-- 1 ole users  126  5月 29 12:56 F1
+-rw-r--r-- 1 ole users   67  4月 21 00:26 TEXTFILE
+-rw-r--r-- 1 ole users   10  4月 21 00:26 SED_SCRIPT
+-rw-r--r-- 1 ole users   68  4月 21 00:26 F2
+-rw-r--r-- 1 ole users   37  4月 21 00:26 EXAMPLE.TXT
+</src>
+folder的最后修改时间为: 11:21
+
+按时间从新->旧
+<src type="bash">
+$ ls -lt
+总用量 24
+drwxr-xr-x 2 ole users 4096  5月 30 11:00 folder
+-rw-r--r-- 1 ole users  126  5月 29 12:56 F1
+-rw-r--r-- 1 ole users   68  4月 20 22:34 F2
+-rw-r--r-- 1 ole users   37  4月 15 06:21 EXAMPLE.TXT
+-rw-r--r-- 1 ole users   10  4月 14 07:06 SED_SCRIPT
+-rw-r--r-- 1 ole users   67  3月 20 13:58 TEXTFILE
+</src>
+folder是最新的，TEXTFILE是最旧的
+
+按时间排序，从旧->新
+<src type="bash">
+$ ls -ltr
+总用量 24
+-rw-r--r-- 1 ole users   67  3月 20 13:58 TEXTFILE
+-rw-r--r-- 1 ole users   10  4月 14 07:06 SED_SCRIPT
+-rw-r--r-- 1 ole users   37  4月 15 06:21 EXAMPLE.TXT
+-rw-r--r-- 1 ole users   68  4月 20 22:34 F2
+-rw-r--r-- 1 ole users  126  5月 29 12:56 F1
+drwxr-xr-x 2 ole users 4096  5月 30 11:00 folder
+</src>
+
+显示子文件夹的内容
+<src type="bash">
+$ ls -lR
+.:
+总用量 24
+-rw-r--r-- 1 ole users   37  4月 15 06:21 EXAMPLE.TXT
+-rw-r--r-- 1 ole users  126  5月 29 12:56 F1
+-rw-r--r-- 1 ole users   68  4月 20 22:34 F2
+drwxr-xr-x 2 ole users 4096  5月 30 11:21 folder
+-rw-r--r-- 1 ole users   10  4月 14 07:06 SED_SCRIPT
+-rw-r--r-- 1 ole users   67  3月 20 13:58 TEXTFILE
+
+./folder:
+总用量 0
+-rw-r--r-- 1 ole users 0  5月 30 11:21 a
+</src>
+
+
+按文件名排序
+<src type="bash">
+$ ls -lu
+总用量 24
+-rw-r--r-- 1 ole users   37  5月 29 12:54 EXAMPLE.TXT
+-rw-r--r-- 1 ole users  126  5月 29 12:56 F1
+-rw-r--r-- 1 ole users   68  5月 28 13:18 F2
+drwxr-xr-x 2 ole users 4096  5月 30 11:00 folder
+-rw-r--r-- 1 ole users   10  5月 28 13:18 SED_SCRIPT
+-rw-r--r-- 1 ole users   67  5月 28 13:18 TEXTFILE
+</src>
+从E->T,当然反向可以加个r
+<src type="bash">
+$ ls -lur
+总用量 24
+-rw-r--r-- 1 ole users   67  5月 28 13:18 TEXTFILE
+-rw-r--r-- 1 ole users   10  5月 28 13:18 SED_SCRIPT
+drwxr-xr-x 2 ole users 4096  5月 30 11:00 folder
+-rw-r--r-- 1 ole users   68  5月 28 13:18 F2
+-rw-r--r-- 1 ole users  126  5月 29 12:56 F1
+-rw-r--r-- 1 ole users   37  5月 29 12:54 EXAMPLE.TXT
+</src>
+
+按版本排序
+<src type="bash">
+$ ls -lv
+总用量 24
+-rw-r--r-- 1 ole users   37  4月 15 06:21 EXAMPLE.TXT
+-rw-r--r-- 1 ole users  126  5月 29 12:56 F1
+-rw-r--r-- 1 ole users   68  4月 20 22:34 F2
+-rw-r--r-- 1 ole users   10  4月 14 07:06 SED_SCRIPT
+-rw-r--r-- 1 ole users   67  3月 20 13:58 TEXTFILE
+drwxr-xr-x 2 ole users 4096  5月 30 11:00 folder
+</src>
+
+按大小排序 -S
+<src type="bash">
+$ ls -lS
+总用量 24
+drwxr-xr-x 2 ole users 4096  5月 30 11:21 folder
+-rw-r--r-- 1 ole users  126  5月 29 12:56 F1
+-rw-r--r-- 1 ole users   68  4月 20 22:34 F2
+-rw-r--r-- 1 ole users   67  3月 20 13:58 TEXTFILE
+-rw-r--r-- 1 ole users   37  4月 15 06:21 EXAMPLE.TXT
+-rw-r--r-- 1 ole users   10  4月 14 07:06 SED_SCRIPT
+</src>
+当然也可以加上h让显示更加人性化
+
+
+
+
+
+察看文件的大小，并且自动计算
+<src type="bash">
+$ ls -lh
+总用量 24K
+-rw-r--r-- 1 ole users   37  4月 15 06:21 EXAMPLE.TXT
+-rw-r--r-- 1 ole users  126  5月 29 12:56 F1
+-rw-r--r-- 1 ole users   68  4月 20 22:34 F2
+drwxr-xr-x 2 ole users 4.0K  5月 30 11:00 folder
+-rw-r--r-- 1 ole users   10  4月 14 07:06 SED_SCRIPT
+-rw-r--r-- 1 ole users   67  3月 20 13:58 TEXTFILE
+</src>
+folder 自动显示为4.0K而不是想上面例子中的4096,这样方便看
+
+
+
+
+** sed
+*** 描述
+sed 是一个流编辑器(Stream EDitor) ，一次处理一行内容，先把当前处理的行存储在临时缓冲区中，称为“pattern space”（模式空间），接着用sed处理缓冲区中的内容，处理完以后发送到屏幕。不对原来的内容有影响，除非使用重定向。
+
+*** 定址
+可以用数字来定位要操作的行，行的范围可以用逗号隔开，注意： 1，3 表示1，2，3行，这个和vi中不一样。
+
+例如： 删除2行（包括第二行）以后的行
+<src type="bash">
+$ sed '2,$d' example.txt
+</src>
+
+*** 作用
+通过对单个/多个文件的操作，简化对文件的*反复*操作.
+
+它有两种形式：
+<src type="text">
+sed [options] ‘command’ file(s)
+sed [options] -f script-file file(s)
+</src>
+
+*** command
+ - a\ <br>
+在匹配到的位置下，添加一行，append，例如： 下所有含有“target”字符的行后面添加一行“This is new line".
+
+<src type="text">
+[ole@myhost sed]$ cat example1.txt
+This is 1st line.
+This is target line.
+This is last line.
+[ole@myhost sed]$ cat script1-file
+/target/a\
+This is new line
+[ole@myhost sed]$ sed -f script1-file example1.txt 
+This is 1st line.
+This is target line.
+This is new line
+This is last line.
+[ole@myhost sed]$ 
+</src>
+
+ - c\ 替换匹配行的内容和a\类似
+
+ - i\ 表示插入
+ - b lable <br>
+分支到脚本中带有标记的地方，如果没有找到标记，则在文件末尾
+
+ - d 删除匹配行的内容,是整行都删除，不是匹配的某个字符或者是字符串
+<src type="text">
+// 删除example中的第三行
+$ sed '3d' example
+// 删除example中的前三行
+$ sed '1,3d' example
+</src>
+ - g G 在匹配的内容的行后面加上连续的空格（hold space），其实就是增加一空行。注意这个是行操作符，是在匹配的行后面，而不是匹配的字符后面
+<src type="text">
+// 简单在每一行之间增加一空行，相当于增大行距
+sed G example_file
+// 1-3行后面增加一空行
+sed 1,3G example_file
+</src>
+ - n 只输出匹配的行
+只显示5，10行
+<src type="bash">
+$ sed -n '5,10p' /etc/passwd
+</src>
+
+
+ -e 多点编辑
+<src type="text">
+// 删除前3行
+$ sed -e '1,3d' example   // 这里的-e可以省略，因为只有一个命令
+// 删除1，3，5行
+$ sed -e '1d' -e '3d' -e '5d' exmaple
+</src>
+
+*** 元字符
+元字符只有二种作用：
+
+<src type="text">
+1. 表示定位
+^   ： 表示描锭开始。 /^sed/表示以sed开头的行；
+$   ： 表示结尾。  /sed$/表示以sed结尾的行；
+.   ： 匹配除换行符以后的所有单个字符,注意它不涉及数量。 /s.d/ 匹配所有s后面跟任意一个字符，后面跟着d；
+[]  : 匹配[]任意一个字符，里面的字符是或者的关系。 [Ss]ed 匹配Sed或者是sed；
+[^] : 匹配不在这个范围内的内容。 [^Ss]ed 匹配除Sed或者是sed以外的内容；
+\<  : 匹配单词开始；
+\>  : 匹配单词结束； \<sed\>les
+\(\): 保存匹配的字符串。 s/\(lover\)able/\1rs 把loverable替换成lovers, \1代表第一个括号的lover
+&   : 保存匹配到的字符串。 s/love/**&** 把love替换成**love**
+
+2. 表示次数
+*  ： 重复前面的内容0次或者以上，就是任意多次。 [Ss]*ed 匹配含有0个以上S或者s开头后面跟着ed。能匹配： ed,Sed,SSSSSed,sed,ssssed
+?  : 重复前面的字符最多1次，也是有（1次）或者没有（0次）。  sed "/se?d/" example 删除含有sed或者是sd的行
+\+ ： 匹配前面的字符一次或者多次. sed "/se\+d/d" example 删除含有s和d之间一个e以上的行，例如:sed,seed,seeeed.
+x\{m\}: 重复前面的x m次，注意{}表示语句块。 S\{3\}ed 匹配SSSed 
+x\{m,\} : 重复前面的x m次以上。 S\{3,\}ed 匹配SSSed,SSSSSSSSSed
+x\{m,n\}: 重复前面的x 最少m次，最多n次
+ - ^ <br>
+描锭行的开始，就是表示行的开始，例如： /^sed/ 匹配所有以sed开头的行
+ - $ <br>
+表示行的结束，例如： /sed$/ 表示所有以sed结尾的行
+ - . <br>
+匹配除非换行符以外的所有字符（数量位一个）， 例如： /s.d/ 匹配所有s后面
+
+3. 普通字符
+和php中的正则表达式有区别
+ - <空格> 匹配空白。 删除所有开头和结尾的空白: sed -e "s/^ *//" -e "s/ *$//" example
+</src>
+
+*** 例子
+替换所有行前的空白并且在前增加一行
+
+创建文件example.txt，内容如下
+<src type="bash">
+$ cat example.txt
+1st line
+  2st line
+last line
+</src>
+注意 2st line 前有2个空格
+
+创建文件sed_script, 内容如下：
+<src type="text">
+s/^ */\
+/g
+</src>
+\表示换行符，相当于把每行开头的空白替换成换行符
+
+执行
+<src type="bash">
+[ole@myhost sed]$ sed -f sed_script example.txt 
+
+1st line
+
+2st line
+
+last line
+[ole@myhost sed]$
+</src>
+
+在每行下面增加一空行
+
+还是用到上面的example.txt
+<src type="bash">
+[ole@myhost sed]$ sed G example.txt 
+1st line
+
+  2st line
+
+last line
+
+[ole@myhost sed]$
+</src>
+没有指定规则就表示所有的行，G对匹配的行下面添加一新空白行
+
+删除所有空行(不包含如何字符，包括空格，跳格\t
+<src type="bash">
+[ole@myhost sed]$ cat example.txt 
+1st line
+
+  2st line
+
+
+last line
+</src>
+/^$/表示匹配空行,/^ *$/表示所有
+<src type="bash">
+[ole@myhost sed]$ sed /^$/d example.txt 
+1st line
+  2st line
+last line
+[ole@myhost sed]$ 
+</src>
+
+在原有的行后添加新的内容就用&
+
+在DirectoryIndex index.html index.html.var 后面加上index.htm index.php,除了用保存字符串以外，可以使用&
+<src type="bash">
+sed -i 's/DirectoryIndex index.html index.html.var/& index.htm index.php /g' /usr/local/apache2/conf/httpd.conf 
+</src>
+
+
+转义特殊字符用\
+
+/usr/local/apache2/htdocs改成/var/www/html
+<src type="bash">
+sed -i 's/\/usr\/local\/apache2\/htdocs/\/var\/www\/html/g' /usr/local/apache2/conf/httpd.conf
+</src>
+
+替换当面目录中所有“hansyang”为“oleyang”
+<src type="text">
+$ sed -i "s/hansyang/oleyang/g" `grep -rl "hansyang" *`
+</src>
+ - i inplace edit 就地修改文件，也就是修改写入文件
+ - grep -r 表示递归文件夹，也就是所有子文件夹
+ - grep -l 表示之列出匹配的文件名
+ 
+*** POSIX 字符类
+ - [:alnum:] 匹配0-9a-zA-Z,匹配所有的字符或者是数字
+ - [:digit:] 匹配数字
+ - [:alpha:] 匹配字母
+ - [:xdigi:] 匹配十六进制0-9a-fA-F
+ - [:blank:] 匹配一个空格或者是制表符
+ - [:space:] 空格和水平制表符
+ - [:cntrl:] 控制符
+ - [:graph:] 可见字符，ASCII 33-126之间的字符
+ - [:print:] 可打印字符，ASCII 32-126之间的字符 比graph多了一个空格
+ - [:lower:] 小写字母a-z
+ - [:upper:] 大写字母A-Z
+posix字符类一般要求用[[]]包围起来，例如： [[:digit:]].txt
+
+
+** crontab
+crontab是计划任务，能够在指定的时间里重复执行任务
+
+*** 格式
+<src type="text">
+分钟 小时 日期 月份 星期 执行的命令[ 参数]
+</src>
+注意命令必须是全路径
+
+** 符号
+ - - 范围 比如： 1-3 表示1，2，3
+ - /表示每 比如每2天 */2
+
+** 查看服务有没有起来
+<src type="bash">
+[ole@myhost ~]$ ps -aux | grep crond
+Warning: bad ps syntax, perhaps a bogus '-'? See http://procps.sf.net/faq.html
+root      2713  0.0  0.0   6012   676 ?        Ss   02:03   0:00 /usr/sbin/crond -S -l info
+ole       2716  0.0  0.0  12928   976 pts/1    S+   02:03   0:00 grep crond
+</src>
+如果是服务没有起，archlinux用下面的命令
+<src type="bash">
+[ole@myhost ~]$ sudo /etc/rc.d/crond start
+:: Starting Cron Daemon 
+</src>
+
+centos用下面的命令
+<src type="bash">
+$ sudo service crond start
+</src>
+
+
+** 查看已经添加的任务
+列出当前用户的计划任务
+<src type="bash">
+$ crontab -l
+</src>
+root用户可以查看如何用户的计划任务
+
+查看ole的计划任务
+<src type="bash">
+[ole@myhost ~]$ sudo crontab -u ole -l
+00 08 * * * /bin/rm -rf /home/ole/tmp
+</src>
+
+** 添加计划任务
+每天的8：00 删除/home/ole/tmp中的内容
+<src type="bash">
+$ crontab -e
+</src>
+进入vi编辑器，
+<src type="bash">
+00 08 * * * /bin/rm -rf /home/ole/tmp
+</src>
+保存退出：
+<src type="bash">
+:wq
+</src>
+查看是否添加成功
+<src type="bash">
+$ crontab -l
+[ole@myhost ~]$ crontab -l
+00 08 * * * /bin/rm -rf /home/ole/tmp
+</src>
+
+每隔2小时
+<src type="bash">
+* */2 * * * ...
+</src>
+
+每星期天,8:20
+<src type="bash">
+20 08 * * 0 ...
+</src>
+
+星期1到5
+<src type="bash">
+* * * * 1-5 ...
+</src>
+
+
+* iptables
+iptables 是Linux下自带的防火墙，主要分为3块，
+
+ - INPUT 对连入的限制
+ - FORWARD 指向其他端口
+ - OUTPUT 对输出的限制
+
+** 查看防火墙的状态
+<src type="text">
+# iptables -L -n
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination         
+
+Chain FORWARD (policy ACCEPT)
+target     prot opt source               destination         
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination   
+</src>
+Chain INPUT 表示进入这台机器的规则，ACCEPT表示放行
+
+Chain FORWARD 表示这台机器对进入以后跳转的规则，ACCEPT表示没有跳转，
+
+Chain OUTPUT 表示从这台机器出去的规则，ACCEPT表示放行
+
+** 只允许ssh登录
+ssh的端口为22，先把所有进入、跳转、出去的规则都设置为DROP（丢弃），
+<src type="bash">
+[root@myhost ~]# iptables -P INPUT DROP
+[root@myhost ~]# iptables -P FORWARD DROP
+[root@myhost ~]# iptables -P OUTPUT DROP
+</src>
+上面的设置只是临时的，重启iptables服务器以后将丢失，所有需要保存设置,
+<src type="bash">
+[root@myhost ~]# iptables -L
+Chain INPUT (policy DROP)
+target     prot opt source               destination         
+
+Chain FORWARD (policy DROP)
+target     prot opt source               destination         
+
+Chain OUTPUT (policy DROP)
+target     prot opt source               destination         
+[root@myhost ~]# /etc/rc.d/iptables save
+:: Saving IP Tables                                                                                                                                   [DONE] 
+[root@myhost ~]# 
+</src>
+在centos中，iptables的配置文件保存在/etc/iptables中，
+
+archlinux 保存在/etc/iptables/iptables.rules
+
+<src type="bash">
+[root@myhost ~]# cat /etc/iptables/iptables.rules 
+[root@myhost ~]# Generated by iptables-save v1.4.10 on Sun Apr  3 16:59:43 2011
+*filter
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT DROP [0:0]
+COMMIT
+# Completed on Sun Apr  3 16:59:43 2011
+</src>
+
+** 开放web端口
+<src type="bash">
+[root@myhost ~]# iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+[root@myhost ~]# iptables -A OUTPUT -p tcp --sport 80 -j ACCEPT
+[root@myhost ~]# iptables -L
+Chain INPUT (policy DROP)
+target     prot opt source               destination         
+ACCEPT     tcp  --  anywhere             anywhere            tcp dpt:http 
+
+Chain FORWARD (policy DROP)
+target     prot opt source               destination         
+
+Chain OUTPUT (policy DROP)
+target     prot opt source               destination         
+ACCEPT     tcp  --  anywhere             anywhere            tcp spt:http 
+
+</src>
+ - A append 添加
+ - p protocol 协议，tcp, udp cimp等
+ - --dport<br>
+表示 destination port 目标地址，对于服务器来说，外面的机器范围服务器的80端口
+ - j jump
+ - --sport<br>
+source port 表示源端口，对于服务器来说，从服务器本身80端口出去
+
+第一条规则的意思是： 凡是从外面的机器访问服务器80端口的都跳转到接受
+
+第二条规则的意思是： 凡是从服务器80端口出去的数据的都跳转到接受
+
+** 开放ssh
+ssh的端口是22
+<src type="bash">
+[root@myhost ~]# iptables -L
+Chain INPUT (policy DROP)
+target     prot opt source               destination         
+ACCEPT     tcp  --  anywhere             anywhere            tcp dpt:http 
+ACCEPT     tcp  --  anywhere             anywhere            tcp dpt:ssh 
+
+Chain FORWARD (policy DROP)
+target     prot opt source               destination         
+
+Chain OUTPUT (policy DROP)
+target     prot opt source               destination         
+ACCEPT     tcp  --  anywhere             anywhere            tcp spt:http 
+ACCEPT     tcp  --  anywhere             anywhere            tcp spt:ssh 
+
+</src>
+
+** 删除规则
+每一天规则都有它的编号，查看编号用--line-num
+<src type="bash">
+[root@myhost ~]# iptables -L -n --line-num
+Chain INPUT (policy DROP)
+num  target     prot opt source               destination         
+1    ACCEPT     tcp  --  0.0.0.0/0            0.0.0.0/0           tcp dpt:80 
+2    ACCEPT     tcp  --  0.0.0.0/0            0.0.0.0/0           tcp dpt:22 
+
+Chain FORWARD (policy DROP)
+num  target     prot opt source               destination         
+
+Chain OUTPUT (policy DROP)
+num  target     prot opt source               destination         
+1    ACCEPT     tcp  --  0.0.0.0/0            0.0.0.0/0           tcp spt:80 
+2    ACCEPT     tcp  --  0.0.0.0/0            0.0.0.0/0           tcp spt:22 
+
+</src>
+删除INPUT中的第一条规则
+<src type="bash">
+[root@myhost ~]# iptables -D INPUT 1
+[root@myhost ~]# iptables -L -n --line-num
+Chain INPUT (policy DROP)
+num  target     prot opt source               destination         
+1    ACCEPT     tcp  --  0.0.0.0/0            0.0.0.0/0           tcp dpt:22 
+
+Chain FORWARD (policy DROP)
+num  target     prot opt source               destination         
+
+Chain OUTPUT (policy DROP)
+num  target     prot opt source               destination         
+1    ACCEPT     tcp  --  0.0.0.0/0            0.0.0.0/0           tcp spt:80 
+2    ACCEPT     tcp  --  0.0.0.0/0            0.0.0.0/0           tcp spt:22 
+
+</src>
+删除OUTPUT 第一条规则
+<src type="bash">
+[root@myhost ~]# iptables -D INPUT 1
+[root@myhost ~]# iptables -L -n --line-num
+Chain INPUT (policy DROP)
+num  target     prot opt source               destination         
+1    ACCEPT     tcp  --  0.0.0.0/0            0.0.0.0/0           tcp dpt:22 
+
+Chain FORWARD (policy DROP)
+num  target     prot opt source               destination         
+
+Chain OUTPUT (policy DROP)
+num  target     prot opt source               destination         
+1    ACCEPT     tcp  --  0.0.0.0/0            0.0.0.0/0           tcp spt:80 
+2    ACCEPT     tcp  --  0.0.0.0/0            0.0.0.0/0           tcp spt:22 
+
+</src>
+
+** 限制ip访问
+只有192.168.1.100才能访问这台服务器
+<src type="bash">
+[root@myhost ~]# iptables -A INPUT -s 192.168.1.100 -j ACCEPT
+[root@myhost ~]# iptables -A OUTPUT -d 192.168.1.100 -j ACCEPT
+[root@myhost ~]# iptables -L
+Chain INPUT (policy DROP)
+target     prot opt source               destination         
+ACCEPT     all  --  192.168.1.100        anywhere            
+
+Chain FORWARD (policy DROP)
+target     prot opt source               destination         
+
+Chain OUTPUT (policy DROP)
+target     prot opt source               destination         
+ACCEPT     all  --  anywhere             192.168.1.100
+</src>
+ - -s source,表示源地址
+ - -d destination 表示目的地址
+
+凡是从192.168.1.100中进来的，和凡是发给192.168.1.100都跳到ACCEPT
+
+** 指定ip和指定端口
+只有192.168.1.100才能通过ssh登录到服务器
+<src type="bash">
+[root@myhost ~]# iptables -A INPUT -p tcp -s 192.168.1.100 --dport 22 -j ACCEPT
+[root@myhost ~]# iptables -A OUTPUT -p tcp -d 192.168.1.100 --sport 22 -j ACCEPT
+</src>
+凡是从192.168.1.100，目的端口为22 和凡是从服务器22端口出去到192.168.1.100的都跳转到ACCEPT
+
+** 打开dns
+dns查找域名和ip的对应关系。dns对应的端口是多少呢？可以通过下面方法得知
+<src type="bash">
+[root@myhost ~]# cat /etc/services | grep domain
+domain           53/tcp    # Domain Name Server
+domain           53/udp    # 
+#                          identify "authentication domains"
+#			   Jakob Kaivo <jkaivo&nodomainname.net>
+#                          Engineering Dept. <domains&badgernt.com>
+#			   Pratik Wadher <pratik&datadomain.com> May 2007
+#                          Murray Freeman <murray&officedomain.com>
+domaintime      9909/tcp   # domaintime
+domaintime      9909/udp   # domaintime
+
+</src>
+从中可以开出dns对应的是udp中 53端口 tcp中的53端口是服务器端
+<src type="bash">
+[root@myhost ~]# iptables -L
+Chain INPUT (policy DROP)
+target     prot opt source               destination         
+
+Chain FORWARD (policy DROP)
+target     prot opt source               destination         
+
+Chain OUTPUT (policy DROP)
+target     prot opt source               destination   
+[root@myhost ~]# host g.cn
+;; connection timed out; no servers could be reached      
+[root@myhost ~]# iptables -A INPUT -p udp --sport 53 -j ACCEPT
+[root@myhost ~]# iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
+[root@myhost ~]# host g.cn
+g.cn has address 74.125.71.147
+g.cn has address 74.125.71.106
+g.cn has address 74.125.71.99
+g.cn has address 74.125.71.104
+g.cn has address 74.125.71.105
+g.cn has address 74.125.71.103
+g.cn mail is handled by 10 google.com.s9a2.psmtp.com.
+g.cn mail is handled by 10 google.com.s9b2.psmtp.com.
+g.cn mail is handled by 10 google.com.s9a1.psmtp.com.
+g.cn mail is handled by 10 google.com.s9b1.psmtp.com.
+[root@myhost ~]#
+</src>
+在没有开放udp的53端口的时候host g.cn是 time out
+
+开放了53端口以后可以解析g.cn的ip
+
+** ftp的问题
+ftp的端口为21和20，但是目录和数据传输的端口是不固定的。所以单单开放21，20端口是不够的。
+
+首先需要在vsft的配置文件的最后中增加最小端口和最大端口
+<src type="bash">
+# vi /etc/vsftp.conf
+</src>
+增加内容如下：
+<src type="bash">
+pasv_enable=YES
+pasv_min_port=30001
+pasv_max_port=31000
+</src>
+
+然后再在iptables中开放30001~31000的端口
+<src type="bash">
+# iptables -A INPUT -p tcp --dport 30001:31000 -j ACCEPT
+# iptables -A OUTPUT -p tcp --sport 30001:31000 -j ACCEPT
+</src>
+
+
+* 小技巧
+** 批量改名
+把所有的.suf1改成.suf2
+<src type="text">
+ls -1|grep '\.suf1$'|sed -e 's/\(.*\.\)suf1/mv & \1suf2/'|sh
+</src>
+
+注意 ls -1(数字1)不是l. 表示一行一个文件名
+
+在所有的.php的文件中增加一行"include_once("abc.php");"
+<src type="text">
+<?php
+</src>
+变成
+<src type="text">
+<?php
+include_once("abc.php");
+</src>
+代码如下：
+<src type="bash">
+find . -iname "*.php" -exec sed -i -e 's/\(<?php\s*\)/\1\ninclude_once("abc.php");/' {} \;
+</src>
+ - -i 表示结果直接应用到源文件
+
+** curl 查看web响应时间
+<src type="text">
+$ curl -o /dev/null -s -w %{time_connect}:%{time_starttransfer}:%{time_total}"\n" http://www.163.com
+</src>
+ - -o 获取到的文件输出到那里去,/dev/null这里是指丢弃
+ - -s  安静模式
+ - -w write-out 写出格式
+结果如下:
+<src type="text">
+5.253:5.396:6.311
+</src>
+ - time_connect 建立到服务器TCP连接所需的时间,即连接到网站所需的时间
+ - time_starttransfer 发出请求后,到Web服务器返回第一个字节所需的时间
+ - time_total 完成请求所需的时间
+服务器处理请求和开始发送数据所需的时间: 5.396-5.253=0.143秒
+
+数据传输的时间: 6.311-5.396=0.085秒
+
+** 拷贝文件
+把/source/directory中的文件copy到/dest/directory中
+<src type="bash">
+$ (cd /source/directory && tar cf - . ) | (cd /dest/directory && tar xvfp -)
+</src>
+上面的命令特别是/source/directory中很多小文件的时候优势特别大
+ - - 表示重定向
+
+
+** 测试磁盘速度
+把/dev/zero copy 到当前目录下，名字为100mb.bin,
+
+ - bs: 块大小
+ - count： 块的个数
+<src type="bash">
+[ole@myhost ~]$ dd if=/dev/zero of=100mb.bin bs=100M count=1
+1+0 records in
+1+0 records out
+104857600 bytes (105 MB) copied, 0.295652 s, 355 MB/s
+[ole@myhost ~]$ 
+</src>
+速度为每秒355MB/s.注意/dev/zero是存在的一个设备
+
+** 清空指定大小的文件
+删除~/logs/mws下大于30M的文件
+<src type="bash">
+$ find ~/logs/mws/ -size "+30M" -exec　cp /dev/null {} \;
+</src>
+当然可以写成一个脚本,然后在crontab中指定执行
+
+** 查找今天创建的文件
+<src type="text">
+$ find . -type f -daystart -ctime -1
+</src>
+ - daystart 定义开始的时间为现在,而不是24小时之前
+ - -1 表示之内. -ctime -1 表示一天之内
+ - +1 表示之外. -ctime +1 表示一天之外,也就是大于1天
+ - 1 表示刚好等于. -ctime 1 表示chang时间刚好等于1天
+
+** 查找3天之前5天以内修改过的文件
+<src type="text">
+$ find . -type f -mtime +3 -mtime -5
+</src>
+
+** 删除文件名中不包含某个字符的文件
+删除文件中不包含下划线的文件
+<src type="bash">
+$ find . -iname "*[^_]*" -exec rm {} \;
+</src>
+
+当然可以写成一个脚本,然后在crontab中指定执行
+
+** 合并文件
+合并f1,f2并且重复的行只留一行
+<src type="bash">
+[ole@myhost sed]$ cat f1
+this is first line
+this is 2 line
+this is 3line
+end line
+[ole@myhost sed]$ cat f2
+this is first line
+this is 2 line
+this is 3 line different
+end line
+[ole@myhost sed]$ cat f1 f2 | uniq
+this is first line
+this is 2 line
+this is 3line
+end line
+this is first line
+this is 2 line
+this is 3 line different
+end line
+[ole@myhost sed]$ cat f1 f2 | sort | uniq
+end line
+this is 2 line
+this is 3line
+this is 3 line different
+this is first line
+[ole@myhost sed]$ cat f1 f2 | sort
+end line
+end line
+this is 2 line
+this is 2 line
+this is 3line
+this is 3 line different
+this is first line
+this is first line
+[ole@myhost sed]$ 
+</src>
+合并f1,f2，取交集
+<src type="bash">
+[ole@myhost sed]$ cat f1 f2 | sort | uniq -d
+end line
+this is 2 line
+this is first line
+[ole@myhost sed]$ 
+</src>
+删除交集，留下不同行
+<src type="bash">
+[ole@myhost sed]$ cat f1 f2 | sort | uniq -u
+this is 3line
+this is 3 line different
+[ole@myhost sed]$ 
+
+</src>
+
+实例二: 把当前目录下所有文件及目录名中的大写字符改为小写符号
+方法一:
+
+1. 创建一个ucase脚本, 内容如下:
+<src type="bash">
+#!/bin/bash
+# All names are converted to lower-case before matching
+# [A-Z]* matches upper case names
+
+for i in [A-Z]* ; do
+j=`echo $i | tr ‘[A-Z]’ ‘[a-z]’`
+mv $i $j
+done
+
+$ chmod +x ucase 
+</src>
+
+** 如何防止某个关键文件被修改
+在 Linux 下，有些配置文件是不允许任何人（包括 root）修改的。为了防止被误删除或修改
+可以设定该文件的“不可修改位(immutable) ”。命令如下：
+<src type="bash">
+# chattr +i /etc/fstab 
+</src>
+
+** 查看系统日志信息，如：查看哪些用户什么时候登录过等。
+<src type="bash">
+/var/log/messages
+/var/log/secure
+lastlog
+</src>
+
+** 设置ssh 上来能不自动断线
+
+修改自己 HOME 目录下的.bash_profile文件，加上
+
+export TIMEOUT=1000000 (以秒为单位)
+
+然后运行 source .bash_profile 
+
+** 处理有空格的文件名
+要批量解压某个文件夹下的所有rar文件，但是由于文件名有空格所以用下面的命令的时候出现错误。看例子
+<src type="text">
+$ ls 72\ 分裂尾声.rar 
+72 分裂尾声.rar
+$ for f in `ls *.rar`; do unrar x $f; done
+UNRAR 4.10 freeware      Copyright (c) 1993-2012 Alexander Roshal
+
+Cannot open 72.rar
+没有那个文件或目录
+No files to extract
+
+UNRAR 4.10 freeware      Copyright (c) 1993-2012 Alexander Roshal
+
+Cannot open 分裂尾声.rar
+没有那个文件或目录
+No files to extract
+</src>
+显然吧"72 分裂尾声.rar" 拆成"72"和"分裂尾声.rar"二个文件了。为什么会出现这样的现象呢？
+
+出现这样的情况是因为shell的的单词分隔符$IFS(Internal Field Separator)的变量的值为" \n\t"（不包括引号）
+<src type="text">
+keakons-MacBook-Pro:test keakon$ echo $IFS
+
+keakons-MacBook-Pro:test keakon$ echo "$IFS" | od -t x1
+0000000    20  09  0a  0a                                                
+0000004
+keakons-MacBook-Pro:test keakon$ echo "" | od -t x1
+0000000    0a                                                            
+0000001
+</src>
+只要把bash的单词分隔符改成“\n\b“就可以了
+<src type="text">
+keakons-MacBook-Pro:test keakon$ SAVEIFS=$IFS                  ; 保存旧值
+keakons-MacBook-Pro:test keakon$ IFS=$(echo -en "\n\b")
+</src>
+在运行
+<src type="text">
+for f in `ls *.rar`; do unrar x $f; done
+</src>
+OK
+
+再把变量值还原
+<src type="text">
+$ IFS=$SAVEIFS
+</src>
+
+** 服务器很慢
+公司内部的开发服务器（192.168.0.8)很慢，开始以为是测试iptables的时候设置防火墙弄的，清空防火墙以后发现问题依旧，排除防火墙的问题。ssh和web的都很慢，但是ping没有问题。后来想增加修改过/etc/resolv.conf的nameserver，清空resolv.conf，瞬间变快。
+
+* 其他
+** 100常见的linux守护进程
+100个最常见Linux守护进程简介
+    1．alsasound：Alsa声卡驱动守护程序。Alsa声卡驱动程序本来是为了一种声卡Gravis UltraSound（GUS)而写的，该程序被证明很优秀，于是作者就开始为一般的声卡写驱动程序。Alsa和OSS/Free及OSS/Linux兼容，但是有自己的接口，甚至比OSS优秀。
+    2．acpid：acpid（Advanced Configuration and Power Interface）是为替代传统的APM电源管理标准而推出的新型电源管理标准。通常笔记本电脑需要启动电源进行管理。
+    3．atalk：AppleTalk网络守护进程。注意不要在后台运行该程序，该程序的数据结构必须在运行其他进程前先花一定时间初始化。
+    4．amd：自动安装NFS守护进程。
+    5．anacron：一个自动化运行任务守护进程。Red Hat Linux随带四个自动化任务的工具：cron、anacron、at和batc。当你的Linux服务器并不是全天运行时，这个anacron就可以帮你执行在"crontab"设定的时间内没有执行的工作。
+    6．apmd：apmd（Advanced Power Management）是高级电源管理。传统的电源管理标准，对于笔记本电脑比较有用，可以了解系统的电池电量信息。并将相关信息通过syslogd写入日志。也可以用来在电源不足时关机。
+    7．arptables_jf：为arptables网络的用户控制过滤的守护进程。
+    8．arpwatch：记录日志并构建一个在LAN接口上看到的以太网地址和IP地址对数据库。
+    9．atd：at和batch命令守护进程，用户用at命令调度的任务。batch用于在系统负荷比较低时运行批处理任务。
+    10．autofs：自动安装管理进程automount，与NFS相关，依赖于NIS服务器。
+    11．bootparamd：引导参数服务器，为LAN上的无盘工作站提供引导所需的相关信息。
+    12．bluetooch：蓝牙服务器守护进程。
+    13．crond：cron是UNIX下的一个传统程序，该程序周期性地运行用户调度的任务。比起传统的UNIX版本，Linux版本添加了不少属性，而且更安全，配置更简单。类似于计划任务。
+    14．chargen：使用tcp协议的chargen server，chargen（Character Generator Protocol）是一种网络服务，主要功能是提供类似于远程打字的功能。
+    15．chargen-udp：使用UDP协议的chargen server。
+    16．cpuspeed：监测系统空闲百分比，降低或加快CPU时钟速度和电压，从而在系统空闲时将能源消耗降为最小，而在系统繁忙时最大化加快系统执行速度。
+    17．dhcpd：动态主机控制协议（Dynamic Host Control Protocol）的服务守护进程。
+    18．cups：cups(Common UNIX Printing System)是通用UNIX打印守护进程，为Linux提供第三代打印功能。
+    19．cups－config－daemons：cups打印系统切换守护进程。
+    20．cups-lpd：cups行打印守护进程。
+    21．daytime：使用TCP协议的Daytime守护进程，该协议为客户机实现从远程服务器获取日期和时间的功能。预设端口：13。
+    22．daytime-udp：使用UDP协议的Daytime守护进程。
+    23．dc_server：使用SSL安全套接字的代理服务器守护进程。
+    24．dc_client：使用SSL安全套接字的客户端守护进程。
+    25．diskdump：服务器磁盘备份守护进程。
+    26．echo：服务器回显客户数据服务守护进程。
+    27．echo-udp：使用UDP协议的服务器回显客户数据服务守护进程。
+    28．eklogin：接受rlogin会话鉴证和用kerberos5加密的一种服务的守护进程。
+    29．gated：网关路由守护进程。它支持各种路由协议，包括RIP版本1和2、DCN HELLO协议、OSPF版本2，以及EGP版本2到4。
+    30．gpm：gpm（General Purpose Mouse Daemon）守护进程为文本模式下的Linux程序如mc(Midnight Commander)提供了鼠标的支持。它也支持控制台下鼠标的复制、粘贴操作，以及弹出式菜单。
+    31．gssftp：使用kerberos 5认证的FTP守护进程。
+    32．httpd：Web服务器Apache守护进程，可用来提供HTML文件及CGI动态内容服务。
+    33．inetd：因特网操作守护程序。监控网络对各种它管理的服务的需求，并在必要的时候启动相应的服务程序。在Redhat和Mandrake linux中被xinetd代替。Debian，Slackware，SuSE仍然使用。
+    34．innd：Usenet新闻服务器守护进程。
+    35．iiim：中文输入法服务器守护进程。
+    36．iptables：iptables防火墙守护进程。
+    37．irda：红外端口守护进程。
+    38．isdn：isdn启动和中止服务守护进程。
+    39．krb5－telnet：使用kerberos 5认证的Telnet守护进程。
+    40．klogin：远程登录守护进程。
+    41．keytable：该进程的功能是转载在/etc/sysconfig/keyboards里定义的键盘映射表，该表可以通过kbdconfig工具进行选择。你应该使该程序处于激活状态。
+    42．irqbalance：对多个系统处理器环境下的系统中断请求进行负载平衡的守护程序。如果你只安装了一个CPU，就不需要加载这个守护程序。
+    43．kshell：kshell守护进程。
+    44．kudzu：硬件自动检测程序，会自动检测硬件是否发生变动，并相应进行硬件的添加、删除工作。当系统启动时，kudzu会对当前的硬件进行检测，并且和存储在/etc/sysconfig/hwconf中的硬件信息进行对照，如果某个硬件从系统中被添加或者删除时，那么kudzu就会察觉到，并且通知用户是否进行相关配置，然后修改etc/sysconfig/hwconf，使硬件资料与系统保持同步。如果/etc/sysconfig/hwconf这个文件不存在，那么kudzu将会从/etc/modprobe.conf，/etc/sysconfig/network-scripts/和etc/X11/XF86Config中探测已经存在的硬件。如果你不打算增加新硬件，那么就可以关闭这个启动服务，以加快系统启动时间。
+    45．ldap：ldap（Lightweight Directory Access Protocol）目录访问协议服务器守护进程。
+    46．lm_seroems：检测主板工作情况守护进程。
+    47．lpd：lpd是老式打印守护程序，负责将lpr等程序提交给打印作业。
+    48．mdmonitor：RAID相关设备的守护程序。
+    49．messagebus：D-BUS是一个库，为两个或两个以上的应用程序提供一对一的通信。dbus-daemon-1是一个应用程序，它使用这个库来实现messagebus守护程序。多个应用程序通过连接messagebus守护程序可以实现与其他程序交换信息。
+    50．microcode_ctl：可编码及发送新的微代码到内核以更新Intel IA32系列处理器守护进程。
+    51．mysqld：一个快速、高效、可靠的轻型SQL数据库引擎守护进程。
+    52．named：DNS（BIND）服务器守护进程。
+    53．netplugd：netplugd（network cable hotplug management daemon）守护程序，用于监控一个或多个网络接口的状态，当某些事件触发时运行一个外部脚本程序。
+    54．netdump：远程网络备份服务器守护进程。
+    55．netfs：Network Filesystem Mounter，该进程安装和卸载NFS、SAMBA和NCP网络文件系统。
+    56．nfs：网络文件系统守护进程。
+    57．nfslock：NFS是一个流行的通过TCP/IP网络共享文件的协议，此守护进程提供了NFS文件锁定功能。
+    58．ntpd：Network Time Protocol Daemon（网络时间校正协议）。ntpd是用来使系统和一个精确的时间源保持时间同步的协议守护进程。
+    59．network：激活/关闭启动时的各个网络接口守护进程。
+    60．psacct：该守护进程包括几个工具用来监控进程活动的工具，包括ac，lastcomm，accton和sa。
+    61．pcmcia：主要用于支持笔记本电脑接口守护进程。
+    62．portmap：该守护进程用来支持RPC连接，RPC被用于NFS及NIS等服务。
+    63．postgresql：postgreSQL关系数据库引擎。
+    64．postfix：postfix是邮件传输代理的守护进程。
+    65．proftpd：proftpd是UNIX下的一个配置灵活的FTP服务器的守护程序。
+    66．pppoe：ADSL连接守护进程。
+    67．random：保存和恢复系统的高质量随机数生成器，这些随机数是系统一些随机行为提供的。
+    68．rawdevices：在使用集群文件系统时用于加载raw设备的守护进程。
+    69．readahead、readahead_early：readahead和readahead_early是在Fedora core 2中最新推出的两个后台运行的守护程序。其作用是在启动系统期间，将启动系统所要用到的文件首先读取到内存中，然后在内存中执行，以加快系统的启动速度。
+    70．rhnsd：Red Hat网络服务守护进程。通知官方的安全信息及为系统打补丁。
+    71．routed：该守护程序支持RIP协议的自动IP路由表维护。RIP主要使用在小型网络上，大一点的网络就需要复杂一点的协议。
+    72．rsync：remote sync远程数据备份守护进程。
+    73．rsh：远程主机上启动一个shell，并执行用户命令。
+    74．rwhod：允许远程用户获得运行rwho守护程序的机器上所有已登录用户的列表。
+    75．rstatd：一个为LAN上的其他机器收集和提供系统信息的守候进程。
+    76．ruserd：远程用户定位服务，这是一个基于RPC的服务，它提供关于当前记录到LAN上一个机器日志中的用户信息
+    77．rwalld：激活rpc.rwall服务进程，这是一项基于RPC的服务，允许用户给每个注册到LAN机器上的其他终端写消息。
+    78．rwhod：激活rwhod服务进程，它支持LAN的rwho和ruptime服务。
+    79．saslauthd：使用SASL的认证守护进程。
+    80．sendmail：邮件服务器sendmail守护进程。
+    81．smb：Samba文件共享/打印服务守护进程。
+    82．snmpd：本地简单网络管理守护进程。
+    83．squid：代理服务器squid守护进程。
+    84．sshd：OpenSSH服务器守护进程。Secure Shell Protocol可以实现安全地远程管理主机。
+    85．smartd：Self Monitor Analysis and Reporting Technology System，监控你的硬盘是否出现故障。
+    86．syslog：一个让系统引导时启动syslog和klogd系统日志守候进程的脚本。
+    87．time：该守护进程从远程主机获取时间和日期，采用TCP协议。
+    88．time-udp：该守护进程从远程主机获取时间和日期，采用UDP协议。
+    89．tux：在Linux内核中运行Apache服务器的守护进程。
+    90．vsftpd：vsftpd服务器的守护进程。
+    91．vncserver：VNC（Virtual Network Computing，虚拟网络计算），它提供了一种在本地系统上显示远程计算机整个"桌面"的轻量型协议。
+    92．vtun：VPN守护进程。
+    93．xfs：X Window字型服务器守护进程，为本地和远程X服务器提供字型集。
+    94．xinetd：支持多种网络服务的核心守护进程。
+    95．ypbind：为NIS（网络信息系统）客户机激活ypbind服务进程。
+    96．yppasswdd：NIS密码服务器守护进程。
+    97．ypserv：NIS主服务器守护进程。
+    98．yum：RPM操作系统自动升级和软件包管理守护进程。
+    99．ypxfrd：更快地传输NIS地图。
+    100．zebra：路由管理守护进程。

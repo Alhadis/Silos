@@ -1,0 +1,770 @@
+#title openstack
+<contents>
+* 脚本安装
+通过devstack.org提供的shell脚本来安装和配置openstack。
+** 安装Ubtuntu 11.10(Oneiric)
+最稳妥的是安装Ubuntu Server 11.10 64bits。我在Unbuntu Desktop Edition上也试过运行脚本，但是会出现Host Ip没有指定的情况，应该另外配置一下就可以了，但我没有继续研究下去。
+
+** 下载DevStack脚本
+*** 安装git
+下载脚本需要用到git，如果你的系统还没有安装过git，可以在控制台中用下面的命令安装。
+<literal>
+<pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo apt-get install git
+</pre>
+</literal>
+
+*** 下载脚本
+cd到准备存放脚本的文件夹下，然后在控制台执行下面的命令。
+<literal>
+<pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+git clone git://github.com/cloudbuilders/devstack.git
+</pre>
+</literal>
+
+** 运行脚本
+<literal>
+<pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+cd devstack # The folder you just cloned
+./stack.sh # run the script
+</pre>
+</literal>
+
+** 安装期间
+ - 第一次安装时，脚本可能会提示你设置几个密码，不要嫌烦哦。
+ - 如果想要修改默认的配置，可以在顶层文件夹中新建一个localrc文件进行配置。当然你也可以直接修改现有的配置文件（我就是这么干的）。
+ - 安装时间可能会比较长，趁次机会，不妨看一看[[http://devstack.org/stack.sh.html][脚本]]究竟干了些什么，注释还是很详细的。
+
+*** 可能遇到的错误
+ - 卡在某个地方
+  - 在安装python的一些程序时，我遇到过卡在<code>Downloading/Unpacking django-nose-selenium</code>的情况，尝试过修改配置文件，但没有成功，卡住的具体原因不明。
+  - 解决方法：手动进行安装
+<literal>
+<pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+pip install django-nose-selenium
+</pre>
+</literal>
+虽然安装的版本可能和脚本默认的不太一样，不过最后的Dashboard一切正常，那就无所谓了。
+ - gzip: stdin: not in gzip format
+  - 尝试了很多办法，最后发现是因为一个压缩包没有下载完整，脚本再次运行时也没有重新下载，导致解压的这一步一直报错
+  - 解决方法：手动下载完整的压缩包进行覆盖，重新运行脚本
+   - 当然我想删掉压缩包，重新运行脚本可能也是可以的。
+
+** 安装完成
+安装完成后会提示你各个配置信息,包括默认的用户名和密码。
+比如访问Dashboard的地址<code>horizon is now available at http://10.0.2.15/</code>
+*** 访问Dashboard
+即使Ubuntu Server默认没有安装桌面环境，一样可以通过控制台中的浏览器访问Dashboard
+<literal>
+<pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+w3m http://10.0.2.15
+</pre>
+</literal>
+**** 登录页面是这样的
+[[w3m_login.png]]
+**** 登录后
+[[w3m_logged.png]]
+** Virtualbox
+如果是在Virtualbox中安装openstack，可以通过NAT和Port Forwarding在原来的系统(Host)内访问虚拟机中系统(Guest)的服务。其原理是将发向Host的某个Ip地址和端口的请求转发给Guest的某个Ip地址和端口，达到在Host上访问Guest的目的，具体设置步骤如下
+ - 右键单击虚拟机系统，选择Settings
+ - 在左边的选项栏中选择Network
+ - 点击Advanced
+ - 点击Port Forwarding,进行设置
+
+**** 网络设置
+[[network_settings.png]]
+**** Port Forwaring设置
+[[port_forwarding.png]]
+
+**** 登录
+[[openstack_login.png]]
+
+**** 登录后
+[[openstack_logged.png]]
+
+* 脚本学习
+注意，下面￥的地方其实都是￥。
+** 相关bash命令与变量
+*** . <filename>
+ - 相当于source <filename>，执行filename文件种的脚本
+
+*** ￥EUID
+ - 用户权限, 0为特权用户
+
+*** ￥USER
+ - 当前用户
+
+*** var=￥{str:-expr}
+ - 如果str未赋值或为空，var=expr
+ - 否则，var=￥str
+
+*** getent database [key ...]
+ - 从一些文本数据库中获取我们需要的信息，如getent passwd joe
+
+*** tee [OPTION]... [FILE]..
+ - 从标准输入读入，写入到标准输出和文件
+
+*** mktemp
+ - 创建临时文件或临时目录
+
+*** /sbin/ifconfig eth0 |grep -m 1 'inet addr:' |cut -d: -f2 |awk '{print ￥1}'
+
+**** grep -m 1 "inet addr:"
+ - 第一次匹配成功就结束
+
+**** cut -d: -f2
+ - 以“：”来划分块，保留2个块
+
+*** read -e ￥var
+ - 读行
+
+*** tr -cd [SET]
+ - 从标准输入读入，对<SET>取反，从输入中删除取反后<SET>中的字符，输出到标准输出》
+
+*** trap [[arg] sigspec ...]
+ - 当收到sigspec信号时，读取和执行arg命令
+
+*** dpkg -l <package>
+ - dpkg是debian的包管理工具，这条命令列出匹配的包
+
+*** useradd -U -G <group> -s <shell> -d <home_dir> -m <create_home>
+ - 增加用户，-U，-G增加用户组，-s确定使用的shell，-d为登录目录，-m为创建的用户目录
+
+
+*** grep -q <pattern> <file>
+ - grep结果不输出到标准输出（quietly）
+
+*** chown -R <user> <dir>
+ - 改变目录和其子目录、文件的拥有者
+
+*** whoami
+ - 输出当前用户名
+
+*** id -g
+ - 输出用户组（数字）
+
+** 待确定命令
+
+*** ~=
+ - 怀疑是smart operator，含有多种功能
+
+*** set -o xtrace / set +o xtrace
+ - 疑似-o在标准输出时再次输出命令，+o则不重复输出命令
+
+*** STACK_DIR="￥DEST/￥{PWD##*/}"
+ - 未知
+
+
+
+* 脚本拆解手动安装
+安装环境为 ubuntu 11.10 server 64bits，语言选择英语。由于手动安装加入了“人工智能”，相对脚本有所简化，不过通用性不如脚本来得好。
+** 目录结构
+ - functions 常用函数
+ - stackrc 大部分为默认的git clone地址，并读取localrc的内容
+ - files（D） 安装依赖、配置模板等
+
+** 安装步骤
+假设用户名为openstack，密码为opensecret
+
+*** 查看本机ip
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+ifconfig eth0
+</pre></literal>
+记录结果中的<code>inet addr:</code>后的ip地址，如<code>10.0.2.15</code>我们记为<code><host_ip></code>，稍后使用。
+
+*** 安装apt包
+**** 更新
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo apt-get update
+</pre></literal>
+
+**** 安装通用包
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo apt-get install pep8 pylint python-pip screen unzip wget psmisc git-core \
+     lsof openssh-server vim-nox locate python-virtualenv python-unittest2 \
+     iputils-ping wget curl tcpdump euca2ools
+</pre></literal>
+
+**** 安装nova包
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo apt-get install dnsmasq-base dnsmasq-utils kpartx parted iputils-arping \
+     python-mysqldb python-xattr python-lxml kvm gawk iptables ebtables \
+     sqlite3 kvm vlan curl socat python-mox python-paste python-migrate \
+     python-gflags python-greenlet python-libvirt python-libxml2 \
+     python-routes python-netaddr python-pastedeploy python-eventlet \
+     python-cheetah
+</pre></literal>
+
+**** 安装swift包
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo apt-get install curl gcc python-configobj python-coverage python-dev \
+     python-eventlet python-greenlet python-netifaces python-nose \
+     python-pastedeploy python-setuptools python-simplejson python-webob \
+     python-xattr sqlite3 xfsprogs
+</pre></literal>
+
+**** 安装glance包
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo apt-get install python-eventlet python-routes python-greenlet \
+     python-argparse python-sqlalchemy python-wsgiref python-pastedeploy \
+     python-xattr
+</pre></literal>
+
+**** 安装keystone包
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo apt-get install python-setuptools python-dev python-lxml \
+     python-pastescript python-pastedeploy python-paste sqlite3 \
+     python-pysqlite2 python-sqlalchemy python-webob python-greenlet \
+     python-routes libldap2-dev libsasl2-dev
+</pre></literal>
+
+**** 安装horizon包
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo apt-get install python-dateutil python-paste python-pastedeploy \
+     python-anyjson python-routes python-xattr python-sqlalchemy python-webob \
+     python-kombu pylint pep8 python-evenlet python-nose python-mox \ 
+     python-coverage python-cherrypy3 python-django python-django-mailer \
+     python-django-nose python-django-registration python-cloudfiles \
+     python-migrate
+</pre></literal>
+
+**** 安装其他nova包
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo apt-get install python-dateutil lvm2 open-iscsi open-iscsi-utils \
+     python-numpy tgt
+</pre></literal>
+
+*** 安装python依赖
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo pip install django-nose-selenium pycrypto==2.3 PassLib pika
+</pre></literal>
+
+*** git库下载
+**** 下载nova&nova-client
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+git clone https://github.com/openstack/nova.git
+git clone https://github.com/openstack/python-novaclient.git
+</pre></literal>
+
+**** 下载novnc
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+git clone https://github.com/cloudbuilders/noVNC.git
+</pre></literal>
+
+**** 下载swift
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+git clone https://github.com/openstack/swift.git
+</pre></literal>
+
+**** 下载glance
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+git clone https://github.com/openstack/glance.git
+</pre></literal>
+
+**** 下载keystone&keystone-client&swift-keystone
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+git clone https://github.com/openstack/keystone
+git clone https://github.com/cloudbuilders/swift-keystone2.git
+git clone https://github.com/openstack/python-keystoneclient
+</pre></literal>
+
+**** 下载horizon
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+git clone https://github.com/openstack/horizon.git
+</pre></literal>
+
+**** 下载quantum&quantum-client
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+git clone https://github.com/openstack/quantum
+git clone https://github.com/openstack/python-quantumclient
+</pre></literal>
+
+**** 下载melange&melange-client
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+git clone https://github.com/openstack/melange.git
+git clone https://github.com/openstack/python-melangeclient.git
+</pre></literal>
+
+*** 安装git库
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+cd keystone
+sudo python setup develop
+cd ../swift
+sudo python setup develop
+cd ../swift-keystone2
+sudo python setup develop
+
+cd ../glance
+sudo python setup develop
+
+cd ../python-novaclient
+sudo python setup develop
+
+cd ../nova
+sudo python setup develop
+
+cd ../python-keystoneclient
+sudo python setup develop
+
+cd ../horizen/horizen
+sudo python setup develop
+
+cd ../openstack-dashboard
+sudo python setup develop
+
+cd ../../quantum
+sudo python setup develop
+
+cd ../melange
+sudo python setup develop
+cd ../python-melangeclient
+sudo python setup develop
+
+</pre></literal>
+
+*** 安装syslog
+略
+
+*** 安装rabbitmq
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo apt-get install rabbitmq-server
+sudo rabbitmqctl change_password guest <rabbit_passwd> #密码从guest改为<rabbit_passwd>
+</pre></literal>
+
+*** 安装mysql
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo apt-get install mysql-server
+</pre></literal>
+ - 期间设置mysql密码，记为<mysql_root_passwd>
+
+**** 配置mysql用户
+新建~/.my.conf,并及加入下面几行的内容
+<example>
+[client]
+user=root
+password=<mysql_root_passwd>
+host=localhost
+</example>
+运行下面命令设置文件的权限
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+chmod 0600 ~/.my.cnf
+</pre></literal>
+修改配置，使得mysql绑定到任意的ip地址，然后重启mysql服务
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mysql/my.cnf
+sudo service mysql restart
+</pre></literal>
+
+*** 安装horizon服务器
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo apt-get install apache2 libapache2-mod-wsgi
+</pre></literal>
+链接到quantum
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+rm -fr horizon/openstack-dashboard/quantum
+ln -s python-quantumclient/quantum horizon/openstack-dashboard/quantum
+</pre></literal>
+删除没用的数据库
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+rm -f horizon/openstack-dashboard/local/dashboard_openstack.sqlite3
+</pre></literal>
+复制horizon的设置
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+cp files/horizon_settings.py horizon/openstack-dashboard/local/local_settings.py
+</pre></literal>
+在设置文件中启用quantum
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo sed -e "s,QUANTUM_ENABLED = False,QUANTUM_ENABLED = True,g" -i horizon/openstack-dashboard/local/local_settings.py
+</pre></literal>
+初始化数据库
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+cd horizon/openstack-dashboard/
+python manage.py syncdb
+</pre></literal>
+创建apache使用的目录
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo mkdir -p horizon/.blackhole
+</pre></literal>
+配置apache，运行horizon，记当前用户为<user>
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo cp $FILES/000-default.template /etc/apache2/sites-enabled/000-default
+sudo sed -e "
+     s,%USER%,<user>,g;
+     s,%GROUP%,<user>,g;
+     s,%HORIZON_DIR%,/home/<user>/devstack/horizon,g;
+     " -i /etc/apache2/sites-enabled/000-default
+sudo service apache2 restart
+</pre></literal>
+
+*** 配置glance
+建立images目录
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+mkdir -p glance/images
+</pre></literal>
+配置glance的mysql
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+mysql -uroot -p<mysql_passwd> -e 'CREATE DATABASE glance;'
+</pre></literal>
+复制glance-registry配置模板
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+cp files/glance-registry.conf glance/etc/glance-registry.conf
+</pre></literal>
+修改glance/etc/glance-registry.conf，将内容按照如下替换,其中<service_token>为自己设定的口令
+ - %KEYSTONE_AUTH_HOST% -> <host_ip>
+ - %KEYSTONE_AUTH_PORT% -> 35357
+ - %KEYSTONE_AUTH_PROTOCOL% -> http
+ - %KEYSTONE_SERVICE_HOST% -> <host_ip>
+ - %KEYSTONE_SERVICE_PORT% -> 5000
+ - %KEYSTONE_SERVICE_PROTOCOL% -> http
+ - %SERVICE_TOKEN -> <service_token>
+ - %SQL_CONN% -> mysql://root:<mysql_passwd>@localhost/glance
+ - %DEST% -> /home/<user>/devstack/
+ - %SYSLOG% -> False
+
+复制glance-registry初始化配置
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+cp files/glance-registry-paste.ini glance/etc/glance-registry-paste.ini
+</pre></literal>
+
+对glance/etc/glance-registry-paste.ini的内容做和上面相同的替换。
+
+将glance-registry初始化配置文件的内容加入到配置文件中
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+cat glance/etc/glance-registry-paste.ini >> glance/etc/glance-registry.conf
+</pre></literal>
+
+复制glance-api配置
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+cp files/glance-api.conf glance/etc/glance-api.conf
+</pre></literal>
+对glance/etc/glance-api.conf做用同样的替换处理
+
+复制glance-api初始化配置
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+cp files/glance-api-paste.ini glance/etc/glance-api-paste.ini
+</pre></literal>
+
+对glance-api-paste.ini做同样的替换处理
+
+将glance-api初始化配置加入到配置文件中
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+cat glance/etc/glance-api-paste.ini >> glance/etc/glance-api.conf
+</pre></literal>
+
+*** 配置nova
+复制nova的初始化文件
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+cp nova/etc/nova/api-paste.ini nova/bin/nova-api-paste.ini
+</pre></literal>
+替换nova/bin/nova-api-paste.ini的内容
+ - %SERVICE_TOKEN% -> <service_token>
+ - ec2cloud -> ec2faultwrap logrequest totoken authtoken keystonecontext cloudrequest authorizer validator ec2executor
+ - ec2admin -> ec2faultwrap logrequest totoken authtoken keystonecontext adminrequest authorizer ec2executor
+ - openstack_compute_api_v2 -> faultwrap authtoken keystonecontext ratelimit osapi_compute_app_v2
+ - openstack_volume_api_v1 -> faultwrap authtoken keystonecontext ratelimit osapi_volume_app_v1
+
+*** 安装libvirt-bin
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo apt-get install libvirt-bin
+</pre></literal>
+尝试载入网络块设备模块和kvm模块
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo modprobe ndb
+sudo modprobe kvm
+</pre></literal>
+测试一下kvm是否可用
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+file /dev/kvm # maybe other better command for test
+</pre></literal>
+将用户加入libvirtd中，并且重启libvirt服务
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo usermod -a -G libvirtd <user>
+sudo /etc/init.d/libvirt-bin restart
+</pre></literal>
+创建nova instances目录
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+mkdir -p nova/instances
+</pre></literal>
+
+*** 清除iptables规则
+略
+
+*** 删除旧的instances
+略
+
+*** 建立nova-network文件夹
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+rm -rf nova/networks
+mkdir -p nova/networks
+</pre></literal>
+
+*** 配置储存服务
+新建swift.img，初始化写入1G大小的0,然后格式化成xfs格式，并挂载。
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo mkdir -p swift/data/drives
+sudo chown -R <user>:1000 swift/data
+mkdir -p swift/data/drives/images
+sudo touch swift/data/drives/images/swift.img
+sudo chown <user>: swift/data/drives/images/swift.img
+dd if=/dev/zero of=swift/data/drives/images/swift.img bs=1024 count=0 seek=1000000
+mkfs.xfs -f -i size=1024 swift/data/drives/images/swift.img
+sudo mount -t xfs -o loop, noatime, nodiratime, nobarrier, logbufs=8 swift/data/drives/sdb1
+</pre></literal>
+创建链接
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo ln -sf swift/data/drives/sdb1/1 swift/data/1
+sudo ln -sf swift/data/drives/sdb1/2 swift/data/2
+sudo ln -sf swift/data/drives/sdb1/3 swift/data/3
+sudo ln -sf swift/data/drives/sdb1/4 swift/data/4
+sudo install -o <user> -g 1000 -d <directory> # <directory>以下内容替代,如果文件夹存在
+# swift/data/drives/sdb1/1
+# swift/data/drives/sdb1/2
+# swift/data/drives/sdb1/3
+# swift/data/drives/sdb1/4
+# swift/data/1/node/sdb1
+# swift/data/2/node/sdb1
+# swift/data/3/node/sdb1
+# swift/data/4/node/sdb1
+# swift/config/object-server
+# swift/config/container-server
+# swift/config/account-server
+# /var/run/swift
+</pre></literal>
+改变权限
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo chown -R <user>: swift/data/1/node
+sudo chown -R <user>: swift/data/2/node
+sudo chown -R <user>: swift/data/3/node
+sudo chown -R <user>: swift/data/4/node
+sudo chown -R <user>: swift/config
+</pre></literal>
+创建swift-init需要的/etc/swift(这是一个bug)
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo ln -sf swift/config /etc/swift
+</pre></literal>
+
+替换files/swift/rsyncd.conf的内容，然后写入/etc/rsyncd.conf
+ - %GROUP% -> 1000
+ - %USER% -> user
+ - %SWIFT_DATA_LOCATION% -> /home/<user>/devstack/swift/data
+
+将/etc/default/rsync中RSYNC_ENABLE=false中的false改为true
+
+安装memcached
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo apt-get install memcached
+</pre></literal>
+
+安装特别版的bin/swift来支持openstack api 2.0
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo curl -s -o/usr/local/bin/swift 'https://review.openstack.org/gitweb?p=openstack/swift.git;a=blob_plain;f=bin/swift;hb=48bfda6e2fdf3886c98bd15649887d54b9a2574e'
+</pre></literal>
+
+替换files/swift/proxy-srever.conf的内容，然后写入swift/config/proxy-server.conf
+ - %SWIFT_CONFIG_LOCATION% -> /home/<user>/devstack/swift/config
+ - %USER% -> <user>
+ - %SREVICE_TOKEN% -> <service_token>
+ - %AUTH_SERVER% -> keystone
+
+替换files/swift/swift.conf的内容，然后写入swift/config/swift.conf
+ - %SWIFT_HASH% -> <random_hash>,<random_hash>为一个随机值
+
+<num>依次取1-4
+将files/swift/object-server.conf的内容替换，写入swift/config/object-server.conf
+ - %SWIFT_CONFIG_LOCATION% -> /home/<user>/devstack/swift/config
+ - %USER% -> <user>
+ - %NODE_PATH% -> swift/data/<num>
+ - %BIND_PORT% -> 6010
+ - %LOG_FACILITY% -> 2
+
+将files/swift/container-server.conf的内容替换，写入swift/config/object-server.conf
+ - %SWIFT_CONFIG_LOCATION% -> /home/<user>/devstack/swift/config
+ - %USER% -> <user>
+ - %NODE_PATH% -> swift/data/<num>
+ - %BIND_PORT% -> 6011
+ - %LOG_FACILITY% -> 2
+
+将files/swift/account-server.conf的内容替换，写入swift/config/object-server.conf
+ - %SWIFT_CONFIG_LOCATION% -> /home/<user>/devstack/swift/config
+ - %USER% -> <user>
+ - %NODE_PATH% -> swift/data/<num>
+ - %BIND_PORT% -> 6012
+ - %LOG_FACILITY% -> 2
+
+
+创建swift的日志目录
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+mkdir -p swift/data/logs/hourly
+chown -R syslog:adm swift/data/logs/hourly
+</pre></literal>
+
+将files/swift/rsyslog.conf的内容替换，写入/etc/rsyslog.d/10-swift.conf
+ - %SWIFT_LOGDIR% swift/data/logs
+
+重启rsyslog
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo restart rsyslog
+</pre></literal>
+
+**** 创建帮助脚本
+略
+
+*** 配置volume service
+安装包
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo apt-get install tgt
+</pre></literal>
+
+**** 配置
+略
+
+**** 重新启动
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+sudo stop tgt
+sudo start tgt
+</pre></literal>
+
+*** 配置nova
+**** 重写nova.conf
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+rm -f nova/bin/nova.conf
+</pre></literal>
+在nova/bin/nova.conf中加入下面几行内容
+ - --verbose
+
+ - --allow_admin_api
+
+ - --scheduler_driver=nova.scheduler.simple.SimpleScheduler
+
+ - --dhcpbridge_flagfile=/home/<user>/bin/nova.conf
+
+ - --fixed_rage=10.0.0.0/24
+
+ - --s3_host=<host_ip>
+
+ - --network_manager=nova.network.quantum.manager.QuantumManager
+
+ - --quantum_connection_host=localhost
+
+ - --quantum_connection_port=9696
+
+ - --quantum_ipam_lib=nova.network.quantum.melange_ipam_lib
+
+ - --use_melange_mac_generation
+
+ - --melange_host=localhost
+
+ - --melange_port=9898
+
+ - --libvirt_vif_type=ethernet
+
+ - --libvirt_vif_driver=nova.virt.libvirt.vif.LibvirtOpenVswitchDriver
+
+ - --linuxnet_interface_driver=nova.network.linux_net.LinuxOVSInterfaceDriver
+
+ - --quantum_use_dhcp
+
+ - --volume_group=nova-volumes
+
+ - --volume_name_template=volume-%08x
+
+ - --iscsi_helper=tgtadm
+
+ - --osapi_compute_extension=nova.api.oopenstack.compute.contrib.standard_extensions
+
+ - --my_ip=<host_ip>
+
+ - --public_interface=eth0
+
+ - --vlan_interface=eth0
+
+ - --sql_connection=mysql://root:<mysql_passwd>@localhost/nova
+
+ - --libvirt_type=kvm
+
+ - --instance_name_template=instace-%08x
+
+ - --novncproxy_base_url="http:/<host_ip>:6080/vnc_auto.html"
+
+ - --xvpvncproxy_base_url="http://<host_ip>:6081/console
+
+ - --vncserver_listten=127.0.0.1
+
+ - --vncserver_proxyclient_client=127.0.0.1
+
+ - --api_paste_config=nova/bin/nova-api-paste.ini
+
+ - --image_service=nova.image.glance.GlanceImageService
+
+ - --ec2_dmz_host=eth0
+
+ - --rabbit_host=localhost
+
+ - --rabbit_password=<rabbit_passwd>
+
+ - --glance_api_servers=9292
+
+ - --force_dhcp_release
+
+ - --connection_type=libvirt
+
+ - --firewall_driver=nova.virt.libvirt.firewall.IptablesFirewallDriver
+
+ - --flat_network_bridge=br100
+
+ - --flat_interface=eth0
+
+
+*** 配置nova数据库
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+mysql -uroot -p<mysql_passwd> -e 'CREATE DATABASE nova;'
+nova/bin/nova-manage db sync
+</pre></literal>
+
+*** 配置keystone
+创建数据库 
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+mysql -uroot -p<mysql_passwd> -e 'CREATE DATABASE keystone;'
+nova/bin/nova-manage db sync
+</pre></literal>
+替换files/keystone.conf，并写入到keystone/etc/keystone.conf
+ - %SQL_CON% -> mysql://root:<mysql_passwd>@localhost/keystone
+ - %DEST% -> /home/<user>/devstack/keystone.conf
+
+替换files/keystone_data.sh，并写入到keystone/bin/keystone_data.sh
+ - %KEYSTONE_AUTH_HOST% -> <host_ip>
+ - %KEYSTONE_AUTH_PORT% -> 35357
+ - %KEYSTONE_AUTH_PROTOCOL% -> http
+ - %KEYSTONE_SERVICE_HOST% -> <host_ip>
+ - %KEYSTONE_SERVICE_PORT% -> 5000
+ - %KEYSTONE_SERVICE_PROTOCOL% -> http
+ - %SERVICE_HOST% -> <host_ip>
+ - %SERVICE_TOKEN -> <service_token>
+ - %ADMIN_PASSWORD%, <admin_passwd>
+
+让数据库准备就绪
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+keystone/bin/keystone-manage db sync_database
+</pre></literal>
+
+运行脚本
+<literal><pre class="brush:bash; gutter:true; toolbar:false; ruler:false;">
+ENABLED_SERVICE=g-api,g-reg,key,n-api,n-crt,n-obj,n-cpu,n-net,n-sch,n-novnc,n-xvnc,n-cauth,horizon,mysql,rabbit \
+BIN_DIR=/home/<user>/bin \
+bash keystone/bin/keystone_data.sh
+</pre></literal>
+
+*** 开启服务
+略
+
+
+*** 未完待续。。。
+
+* ISO 安装
+精简了的ubuntu linux server 10.04，并剔除了openstack不需要的包，所以大小只有300M左右。但是安装完之后还要到网站注册，收集机器信息，然后部署，比较麻烦，放在这里仅供参考
+ - [[http://www.linuxso.com/linuxrumen/17399.html][介绍]]、[[http://sourceforge.net/projects/stackops/files/][下载]]、 [[http://docs.stackops.org.][文档]]、 [[http://getsatisfaction.com/stackops][支持]]
+
+
+
+
+

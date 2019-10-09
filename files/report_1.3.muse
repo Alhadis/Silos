@@ -1,0 +1,184 @@
+#title Задание 1-3.
+#author Лапин Ярослав
+
+* Рассчитать исправленные геомагнитные координаты в величины конуса потерь вдоль траектории спутника.
+
+        Выполнил Лапин Ярослав. 12/12/2010.
+
+** Данные
+
+Использовались данные спутника Polar из [[https://github.com/JLarky/magnetosphere-magnetic-field/tree/master/task_1.1/][задания 1.1]].
+
+* Исправленные геомагнитные координаты
+Исправленные геомагнитные координаты (CGM) заданной точки это
+координаты (широта и долгота), которые вычисляются следующий образом.
+Из заданной точки вдоль силовой линии магнитного поля IGRF (без
+внешнего поля) вычисляется проекция на дипольный геомагнитный экватор
+(с помощью п/п TRACE), потом нужно вернуться на ту же высоту вдоль
+линии поля магнитного поля DIP (без внешнего поля) и полученные широта
+и догота и будут исправленными геомагнитными координатами.
+
+** Рассчёт исправленных геомагнитных координат
+В работе мы будем использовать другой подход. Так как IGRF и DIP
+совпадают на большом отдалении от земли, то уходить и возвращаться
+обратно достаточно до расстояния 6 <literal>$R_E$</literal>. Чтобы
+точку из координатной системы GSM перевести в CGM нужно сначала
+используя GEOGSM перевести в GEO, потом используя GEOMAG перевести в
+MAG и используя SPHCAR перевести координаты MAG в широту, долготу.
+
+** Определение положения проекции 
+
+<example>
+	subroutine get_footprint_gsm(XGSM,YGSM,ZGSM, XF, YF, ZF)
+	dimension parmod(10)	! -- dummy
+	external dip, zero, igrf_gsm ! declare dip, zero as subroutine names
+	real :: XX(1000),YY(1000),ZZ(1000) ! array containing all poins along field line
+	RLIM = 60.0
+	R0 = 1.
+	IOPT = 1
+
+	dir = -1.
+	call TRACE (XGSM,YGSM,ZGSM, DIR,RLIM,R0,IOPT,PARMOD,ZERO,IGRF_GSM,
+     _       XF,YF,ZF,XX,YY,ZZ,L)
+	r = sqrt(Xf**2+Yf**2+Zf**2)
+	if (r.gt.2.) then ! field line going to tail. 
+	   ! I don't know how to handle that, so we will skip it
+	   print *, 'error', XGSM,YGSM,ZGSM, XF,YF,ZF
+	   XF = 0.;YF = 0.;ZF = 0.; !mark skiped points
+
+	end if
+	end subroutine get_footprint_gsm
+</example>
+
+** Пересчёт положения проекции в исправленных геомагнитных координатах
+<example>
+	subroutine get_cgm_from_gsm(XGSM,YGSM,ZGSM, LAT, LONG)
+	dimension parmod(10)	! -- dummy
+	external dip, zero, igrf_gsm ! declare dip, zero, igrf_gsm as subroutine names
+	real :: XX(1000),YY(1000),ZZ(1000) ! array containing all poins along field line
+	RLIM = 6.0 ! we dont need to go further, because in this area igrf=dip
+	R0 = 1.0
+	IOPT = 1
+
+	dir = 1.
+	call TRACE (XGSM,YGSM,ZGSM, DIR,RLIM,R0,IOPT,PARMOD,ZERO,IGRF_GSM,
+     _       XF1,YF1,ZF1,XX,YY,ZZ,L)
+	r = sqrt(Xf1**2+Yf1**2+Zf1**2)
+	if (r.lt.5.9) then ! if final point closer than RLIM that means
+	   ! field line is closed and we must find point from trajectory
+	   ! that lies on equatorial plane (this point have max distant 
+	   ! from Earth)
+	   do i = 1, L		! find most distant point from XX,YY,ZZ
+	      r_curr = sqrt(XX(i)**2+YY(i)**2+ZZ(i)**2)
+	      if (r_curr .gt. r) then ! is more distant
+		 r = r_curr 
+		 XF1=XX(i);YF1=YY(i);ZF1=ZZ(i)
+	      end if
+	   end do
+	   print *, 'error2', XGSM,YGSM,ZGSM, XF1,YF1,ZF1, l
+	end if
+	dir = -1.
+	call TRACE (XF1,YF1,ZF1, DIR,RLIM+2.,R0,IOPT,PARMOD,ZERO,DIP,
+     _       XF,YF,ZF,XX,YY,ZZ,L)
+	r = sqrt(Xf**2+Yf**2+Zf**2)
+	if (r.gt.2.) then
+	   print *, 'error3', XF1,YF1,ZF1, XF,YF,ZF, l
+	   stop
+	end if
+
+	call gsm_to_mag_ll(XF,YF,ZF, THETA,PHI)
+	end subroutine
+
+	subroutine gsm_to_mag_ll(XGSM,YGSM,ZGSM, THETA,PHI)
+	! convert gsm to geo
+	call GEOGSM (XGEO,YGEO,ZGEO,XGSM,YGSM,ZGSM,-1)
+	print *, 'geo', XGEO,YGEO,ZGEO
+	! convert geo to mag
+	call GEOMAG (XGEO,YGEO,ZGEO,XMAG,YMAG,ZMAG,1)
+	! convert mag to spherical
+	call SPHCAR (R,THETA,PHI,Xmag,Ymag,Zmag,-1)
+	print *, R,THETA,PHI
+	end subroutine gsm_to_mag_ll
+</example>
+
+** Определение pitch-угла на ионосферной высоте
+<example>
+	subroutine get_pitch_angle(XI,YI,ZI,pa)
+        dimension parmod(10) ! -- dummy
+	external dip, zero ! declare dip, zero as subroutine names
+	real :: XX(1000),YY(1000),ZZ(1000) ! array containing all poins along field line
+
+	RLIM = 30.0
+	R0 = 1.+100./6371.
+	IOPT = 1
+
+	dir = 1.
+	call TRACE (XI,YI,ZI,DIR,RLIM,R0,IOPT,PARMOD,ZERO,DIP,
+     _       XF,YF,ZF,XX,YY,ZZ,L)
+	call get_fields(xx,yy,zz,l, tf1_min, tf1_max)
+	dir = -1.
+	call TRACE (XI,YI,ZI,DIR,RLIM,R0,IOPT,PARMOD,ZERO,DIP,
+     _       XF,YF,ZF,XX,YY,ZZ,L)
+	call get_fields(xx,yy,zz,l, tf2_min, tf2_max)
+
+	tf_min = min(tf1_min,tf2_min)
+	tf_max = max(tf1_max,tf2_max)
+
+	pa = asin(sqrt(tf_min/tf_max))
+	print *, 'pitch', pa, tf_max, tf_min
+
+	end subroutine get_pitch_angle
+
+	subroutine get_fields(xx,yy,zz,l,tf_min,tf_max)
+	real :: xx(l), yy(l), zz(l)
+c	move along field line
+	tf_max = 0.
+	tf_min = 1e10
+	do i = 1, l
+	! calculate field module
+	  call IGRF_GSM (xx(i),yy(i),zz(i),BXGSM,BYGSM,BZGSM)
+	  tf = sqrt(bxgsm**2+bygsm**2+bzgsm**2)
+	  if (tf.gt.tf_max) then
+	    tf_max = tf
+	  end if
+	  if (tf.lt.tf_min) then
+            tf_min = tf
+	  end if
+c	  print *, tf, xx(i),yy(i),zz(i)
+	end do
+	! mark cases when we going from the Earth
+	if (sqrt(xx(i-1)**2+yy(i-1)**2+zz(i-1)**2).gt.1.1) then
+	  tf_min = 0.
+	end if
+	end subroutine
+</example>
+
+
+* Результат
+Пример выходного файла. Первые три столбика это данные положения
+спутника в GSM, следующие 2 это широта и долгота в CGM, последний
+столбик pitсh-угол в радианах.
+
+<example>
+ -3.867320      -3.533450       5.691220      11.155639     -45.251049       0.004627
+ -3.868140      -3.536140       5.675300      11.165236     -45.517414       0.004663
+  0.406071      -0.371808      -1.799490      10.440798    -165.892334       0.004657
+  0.941303       0.459064      -1.615260       0.000000    -180.000000       0.005627
+  0.970187       0.510048      -1.594390      14.451489      19.946859       0.007649
+  0.998444       0.560733      -1.572560      15.843851      19.342142       0.010046
+  1.800820       3.016750       1.077590      31.618912     -53.864365       0.101282
+  1.798830       3.034230       1.115560      31.416204     -53.930561       0.099608
+  1.796670       3.051390       1.153450      31.213699     -53.997005       0.098027
+  1.038670       3.812680       4.609000      22.014292       3.847968       0.019313
+  1.028960       3.815000       4.631320      21.933226       3.739136       0.019196
+  1.019220       3.817260       4.653560      21.852413       3.630972       0.018795
+  1.009460       3.819440       4.675710      21.771917       3.523329       0.018711
+  0.999676       3.821550       4.697770      21.691704       3.413526       0.018345
+</example>
+
+[[trace.png][Визуализация широты и долготы проекции положения спутника в CGM]]
+
+[[pitch.png][Питч-угол был посчитан в поле IGRF, поэтому заметны аномалии, но в целом связь между широтой и pitch-углом явная.]]
+
+; TODO: Можно было бы и написаровать картинки для дипольного поля, но
+; уже лень

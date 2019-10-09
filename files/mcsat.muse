@@ -1,0 +1,226 @@
+#author Shankar Natarajan, Bruno Dutertre, and Sam Owre
+#desc User Manual for mcsat
+#title MCSAT User Manual
+
+#bibsource mcsat
+
+* Introduction
+
+MCSAT is an implementation of the MCSAT algorithm described in
+<cite>Poon&Domingos2006</cite>.  It is intended to be usable as a library,
+a standalone system, or as an OAA agent, but currently it is an alpha
+release and only the standalone version is supported.
+
+* Installation
+
+MCSAT is distributed as a tar file =mcsat-alpha.tgz=.  Simply untar the
+file, which creates an =mcsat= subdirectory.  Prebuilt binaries for Windows
+and Linux are in the =mcsat/bin= subdirectory.  If you want to build for
+other platforms, you will need to edit the =Makefile= and run =make=.
+
+* Running MCSAT
+
+The interactive system is called =mcsat= (or =mcsat.exe=) in the =bin=
+subdirectory.  It is run with no arguments.  Commands are then entered at
+the =mcsat>= prompt, followed by a semicolon.  =quit;= quits, and =help;=
+displays a brief description of the available commands.
+
+** Syntax
+
+MCSAT has a very simple syntax.  Names (identifiers) start with a letter,
+followed by any character other than parentheses, commas, semicolon,
+colon, vertical bar, space, or control characters.  Numbers are simple
+floating point numbers: an optional plus or minus, followed by digits
+and an optional decimal point.  Whitespace is ignored.
+
+Atoms are predicates applied to constants, e.g., =p(x, y, z)=.  As described
+below, predicates have an arity and a signature.  Literals are atoms or
+negated atoms, where the tilde "=~=" is used for negation.  Clauses are
+disjunctions of literals, separated by vertical bars "=|=".
+
+** Commands
+
+Commands are case-insensitive, and terminated with a semicolon.
+
+*** sort
+
+  Description ::
+    MCSAT uses simple sorts - all sorts are disjoint and introduced with
+    the =sort= command.
+  Syntax ::
+    =sort= =NAME= ;
+  Example ::
+    =sort File;=
+ 
+*** const
+
+  Description ::
+    Sorts are empty initially, the =const= command is used to introduce
+    elements of a given sort.
+  Syntax ::
+    =const= =NAMES= : =NAME= ;
+  Example ::
+    =const fi8, fi22, fi23: File=
+
+*** predicate
+
+  Description ::
+    MCSAT supports predicates of any arity, but the sort signature must be
+    given.  MCSAT also makes a distinction between direct (observable),
+    and indirect predicates.   Internally, direct predicates satisfy
+    the closed world assumption, and indirect predicates do not.
+  Syntax ::
+    =predicate NAME ( NAMES ) IND ;=
+
+    where IND is "=direct=", "=indirect=", or omitted, defaulting to "=direct=".
+  Example ::
+    =predicate fileHasTask(File, Task) indirect;=
+
+<comment>
+*** atom
+
+  Description ::
+    The atom command simply introduces an atom into MCSAT, without any
+    associated truth value or weight.  
+  Syntax ::
+    =atom ATOM ;=
+  Example ::
+    =atom attached(fi42, em58);=
+</comment>
+
+*** assert
+
+  Description ::
+    Similar to atom, but used to introduce facts.  Note that negative
+    literals may not be asserted, and the predicate must be direct.
+  Syntax ::
+    =assert ATOM ;=
+  Example ::
+    =assert fileHasTask(fi8, ta1);=
+
+*** add
+
+  Description ::
+    Add is used to introduce weighted clauses and rules.  Rules include
+    variables, which are introduced before the clauses.
+  Syntax :: <example>
+add CLAUSE WT ;
+add ( VARIABLES ) CLAUSE WT ;
+</example>
+
+    where =WT= is an optional floating point weight.  If weight is missing,
+    the clause or rule is considered as a "hard" clause or rule. (This is
+    the same as having infinite weight).
+  Example :: <example>
+add fileHasTask(fi22, ta1)  1.286;
+</example>
+    adds a weighted ground clause.
+    <example>
+add (File, Email, Task)
+    ~fileHasTask(File, Task) | ~attached(File, Email)
+      | emailHasTask(Email, Task);
+</example>
+    adds a rule with infinite weight.  This is essentially asserting the
+    axiom
+
+    <math>\forall F, E, T: fileHasTask(F, T) \,\wedge\,
+attached(F, E) \Rightarrow emailHasTask(E, T)</math>
+
+
+*** mcsat
+
+  Description ::
+    Runs the MCSAT process, as described in <cite>Poon&Domingos2006</cite>.
+  Syntax ::
+    =mcsat NUMS=
+
+    where NUMS is a comma-separated list of numbers, representing, in order:
+
+    Parameter || Type || Dflt || Description
+    =sa_probability= | 0.0 .. 1.0 | 0.5 | probability of a simulated annealing step
+    =samp_temperature= | > 0.0 | 0.91 | temperature for simulated annealing
+    =rvar_probability= | 0.0 .. 1.0 | 0.2 | probability used by a Walksat step (see Note)
+    =max_flips= | nat | 1000 | bound on the number of sample_sat steps
+    =max_extra_flips= | nat | 10 | number of samplesat steps performed
+       |  |  | after a model is found
+    =max_samples= | nat | 1000 | number of samples generated
+       |  |  |  
+
+    **Note**: A walksat step selects an unsat clause and flips one of its variables
+    with probability rvar_probability, that variable is chosen randomly
+    with probability 1(-rvar_probability), that variable is the one that
+    results in minimal increase of the number of unsat clauses.
+
+    Parameters may be omitted, but to set one all preceding ones must also
+    be given.
+
+*** ask
+
+  Description ::
+    The mcsat command generates probabilities for all atoms, and the =ask=
+    command returns ground atoms that match a literal pattern and whose
+    probabilities are above a threshold.  Example literal patterns are: <example>
+    emailHasTask(em38, ta2)
+    ~emailHasTask(em38, ta2)
+    (X) emailHasTask(X, ta2)
+    (X, Y) ~P(X, Y)
+    (X) P(X, X) </example>
+  Syntax :: <example>
+ask LITERAL THRESHOLD OPTION ;
+ask ( VARIABLES ) LITERAL THRESHOLD OPTION ;
+</example>
+
+    where =THRESHOLD= is a number between 0.0 and 1.0.  =OPTION= can be
+    either "=best=", which prints match with the highest probability over the
+    threshold, or "=all=" which prints all matches over the threshold, 
+    in decreasing probability order.  If no =OPTION= is given, "=best=" is assumed.
+  Example :: <example>
+ask emailHasTask(em38, ta2) 0.1;
+</example>
+    checks if the probability of the atom is above 0.1, and prints 
+    the atom and its probability if it is.<example>
+ask (T) emailHasTask(em38, T) .7 all
+</example>
+    prints all matching atoms whose probability is greater than .7.
+
+*** reset
+
+  Description ::
+    Resets the probabilities and number of samples.
+  Syntax ::
+    =reset ;=
+
+*** dumptables
+
+  Description ::
+    Displays the current state of the system.  This includes the sorts
+    with their constants, the predicates, all known atoms with their
+    current probabilities, clauses, and rules.
+  Syntax ::
+    =dumptables ;=
+
+*** verbosity
+
+  Description ::
+    Sets the verbosity level, used to control how much is printed.
+    Defaults to 1.
+  Syntax ::
+    =verbosity NUM ;=
+
+*** help
+
+  Description ::
+    Provides a brief summary of the commands.
+  Syntax ::
+    =help ;=
+
+*** quit
+
+  Description ::
+    Exits mcsat.
+  Syntax ::
+    =quit ;=
+
+* Example
+
+<include file="../tests/calo1" markup="example">

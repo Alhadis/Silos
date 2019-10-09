@@ -1,0 +1,180 @@
+#title MySQL | PostgreSQL
+
+* MySQL
+* PostgreSQL
+** Intalling PostgreSQL
+*** On debian derivative
+我自己现在用的发行版是 ubuntu，然而潜意识下还是把自己当 debian 用户。
+安装方式自然使用 apt，外网有 [[http://www.supriyadisw.net/2006/06/installing-postgresql-on-debian][一篇入门文章]] 还不错。在常规的几个包之外推
+荐安装 =postgresql-docs= 这个包，文档很详细，到时候在
+=/usr/share/doc/postgresql/html/= 这里就找到了。有个东西要提醒的就是，第
+一次执行 createdb[1] 的时候可能会遭遇到错误，
+<example>
+nil@ubuntu:~$ createdb haha
+createdb: could not connect to database postgres: FATAL:  role "nil" does not exist
+</example>
+在文档中也有描述。因为 debian 的包装好之后创建的用户是 postgres，遇到
+上述错误后有两个选择：su 到 postgres 用户再进行操作，此其一；把自己的
+用户名添加进 postgresql 支持的用户列表里面去。后者可以参考文档，前者在
+su 之前请记得先给 postgres 用户设置密码。
+
+*** Managing Roles
+
+上面并没有讲清楚，事实上角色(role)并非就是系统中的用户，于系统的用户和组没
+有直接联系，需要管理角色的话可以参考用户手册第十八章。
+<quote>
+As an explanation for why this works: PostgreSQL user names are
+separate from operating system user accounts. When you connect to a
+database, you can choose what PostgreSQL user name to connect as; if
+you don't, it will default to the same name as your current operating
+system account. As it happens, there will always be a PostgreSQL user
+account that has the same name as the operating system user that
+started the server, and it also happens that that user always has
+permission to create databases. Instead of logging in as that user you
+can also specify the -U option everywhere to select a PostgreSQL user
+name to connect as. 
+</quote>
+
+不过时刻区分角色与用户感觉不是很有必要，下面我就不区分了，不过会引起混
+淆的时候我会说明的。切换到 postgres 用户下执行如下命令即可：
+<example>
+# su postgres
+# createdb mydb
+# createuser foo -P 
+# exit
+# psql mydb			; if you're logged on as foo
+</example>
+创建用户的时候会让你简单选择用户的一些选项，比如是否超级用户之类。
+还可以通过修改配置文件来得到系统用户登录的效果，我并没有尝试，具体做法
+参考上面那个连接。
+
+* Learning SQL
+
+** Just A Few Notes
+*** Joins Between Tables
+ - inner join
+ - outer join
+<example>
+SELECT * FROM weather, cities WHERE city = name;
+SELECT weather.city, weather.temp_lo, weather.temp_hi,
+       weather.prcp, weather.date, cities.location
+    FROM weather, cities
+    WHERE cities.name = weather.city;
+SELECT *
+    FROM weather INNER JOIN cities ON (weather.city = cities.name);
+SELECT *
+    FROM weather LEFT OUTER JOIN cities ON (weather.city = cities.name);
+SELECT W1.city, W1.temp_lo AS low, W1.temp_hi AS high,
+    W2.city, W2.temp_lo AS low, W2.temp_hi AS high
+    FROM weather W1, weather W2
+    WHERE W1.temp_lo < W2.temp_lo
+    AND W1.temp_hi > W2.temp_hi;
+SELECT *
+    FROM weather w, cities c
+    WHERE w.city = c.name;
+</example>
+*** Aggregate Functions
+<example>
+SELECT city FROM weather WHERE temp_lo = max(temp_lo);     WRONG
+</example>
+<quote>
+ but this will not work since the aggregate max cannot be used in the
+WHERE clause. (This restriction exists because the WHERE clause
+determines which rows will be included in the aggregate calculation;
+so obviously it has to be evaluated before aggregate functions are
+computed.) However, as is often the case the query can be restated to
+accomplish the desired result, here by using a subquery: 
+</quote>
+<example>
+SELECT city FROM weather
+    WHERE temp_lo = (SELECT max(temp_lo) FROM weather);
+
+     city
+---------------
+ San Francisco
+(1 row)
+</example>
+
+The LIKE operator does pattern matching
+
+*** Views
+<quote>
+Suppose the combined listing of weather records and city location is
+of particular interest to your application, but you do not want to
+type the query each time you need it. You can create a view over the
+query, which gives a name to the query that you can refer to like an
+ordinary table. 
+</quote>
+<example>
+CREATE VIEW myview AS
+    SELECT city, temp_lo, temp_hi, prcp, date, location
+        FROM weather, cities
+        WHERE city = name;
+
+SELECT * FROM myview;
+</example>
+
+Footnotes: 
+[1]  如果后面不加参数，那么一般的默认情况是给你创建与你的用户名相同的
+     数据库。
+
+*** Transactions
+PostgreSQL actually treats every SQL statement as being executed
+within a transaction. If you do not issue a BEGIN  command, then each
+individual statement has an implicit BEGIN and (if successful) COMMIT
+wrapped around it. A group of statements surrounded by BEGIN and
+COMMIT  is sometimes called a transaction block. If, partway through
+the transaction, we decide we do not want to commit (perhaps we just
+noticed that Alice's balance went negative), we can issue the command
+ROLLBACK instead of COMMIT, and all our updates so far will be
+canceled. 
+
+It's possible to control the statements in a transaction in a more
+granular fashion through the use of savepoints. Savepoints allow you
+to selectively discard parts of the transaction, while committing the
+rest. After defining a savepoint with SAVEPOINT, you can if needed
+roll back to the savepoint with ROLLBACK TO. All the transaction's
+database changes between defining the savepoint and rolling back to it
+are discarded, but changes earlier than the savepoint are kept. 
+
+After rolling back to a savepoint, it continues to be defined, so you
+can roll back to it several times. Conversely, if you are sure you
+won't need to roll back to a particular savepoint again, it can be
+released, so the system can free some resources. Keep in mind that
+either releasing or rolling back to a savepoint will automatically
+release all savepoints that were defined after it.  
+
+ - BEGIN & COMMIT
+ - ROLLBACK (TO)
+ - SAVEPOINT
+
+<example>
+BEGIN;
+UPDATE accounts SET balance = balance - 100.00
+    WHERE name = 'Alice';
+SAVEPOINT my_savepoint;
+UPDATE accounts SET balance = balance + 100.00
+    WHERE name = 'Bob';
+-- oops ... forget that and use Wally's account
+ROLLBACK TO my_savepoint;
+UPDATE accounts SET balance = balance + 100.00
+    WHERE name = 'Wally';
+COMMIT;
+</example>
+
+*** Inheritance
+<example>
+CREATE TABLE cities (
+  name       text,
+  population real,
+  altitude   int     -- (in ft)
+);
+
+CREATE TABLE capitals (
+  state      char(2)
+) INHERITS (cities);
+
+SELECT name, altitude
+    FROM ONLY cities		-- (to run over capitals)
+    WHERE altitude > 500;
+</example>

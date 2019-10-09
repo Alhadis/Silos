@@ -1,0 +1,197 @@
+#title Integration with  Perforce
+#keywords emacs, perforce, p4
+
+<contents>
+
+*Perforce* -- popular version control system that is often used in development of commercial
+software.  Links to information about this system you can find at section
+"[[#addinfo][Additional information]]".  Users can work with this system from Emacs if they install *p4*
+package.
+
+* Installation
+
+To install this package you need to download it from  [[http://p4el.sourceforge.net][project's site]] and put it to place,
+where Emacs can find it.  And after this, you can load it with following command:
+
+<src lang="emacs-lisp">
+(require 'p4)
+</src>
+
+This package can work with GNU Emacs and XEmacs.  All components (*Ediff*, etc.), that are
+needed to its work come together with Emacs's distribution, so you doesn't need to install
+anything else.
+
+* Work with package
+
+All functions, implemented by this package we can split into several groups -- work with
+repository, obtaining information about files, work with files and branches, work with
+changes, etc.  All these topics will described in following sections.
+
+User can execute functions via key bindings, calling they by name, or using the =P4= menu,
+that will available after loading of package.  This menu contains almost all functions,
+implemented by package.  Some of functions also accept additional arguments, that could
+passed via as standard prefix arguments (via =C-u= key binding).
+
+** Work with repository, files, jobs and branches
+
+Synchronisation of local files with repository is performed by =p4-get= function (=C-x p G=).
+This function can synchronise individual files, and whole directory content.  User can
+pass version number to which files will updated.
+
+After retrieving files from repository, user can start change them.  To open file for
+modification, user can use =p4-edit= function (=C-x p e=) -- it change state of file from
+read-only and allows to edit it.  User can specify changeset number for new changes and also,
+specify type of file.  User can also open already opened file with new parameters with
+=p4-reopen= function (=C-x p E=).  And, user can also open file directly in repository, with
+=p4-depot-find-file= function, that bound to =C-x p C-f=.
+
+Addition of files is performed with =p4-add= function (=C-x p a=).  By passing additional
+arguments, user can specify file type (binary or text), and link this addition to concrete
+changeset.  If file type was not specified, then *Perforce* try to detect it automatically.
+To delete file from repository, user can use =p4-delete= function (=C-x p x=).  After
+execution of this function file is deleted from repository and from client's machine.  If
+file was already opened, then it re-opened to deletion and assigned to next unconfirmed
+changeset.  User can also rename file with =p4-rename= function (=C-x p m=), that also
+supports usage of globs, so user can rename bunch of files with one function.
+
+*P4* supports work with jobs, existing in *Perforce* -- package implements several functions
+for this task.  The =p4-jobs= function (=C-x p J=) is used to get list of all tasks, defined
+in VCS.  By specifying additional arguments, user can narrow list of tasks (list of
+supported arguments you can find in documentation for *p4* package).  Creation and
+modification of job is performed with =p4-job= function (=C-x p j=).  User can also use it to
+delete job, if he specify prefix argument.  And to link job with changeset number, user
+can use =p4-fix= function (=C-x p X=).
+
+To change branch specification there is =p4-branch= function, that bound to =C-x p B=.  User
+can perform merging of changes between branches with =p4-integ= function (=C-x p I=), that
+allows to perform merging between concrete files, and whole branches.  By specifying
+prefix argument, user can select to which changeset this merging will applied.
+
+The package also supports work with labels.  To get list of labels the =p4-labels= function
+(=C-x p L=) could be used.  Modification of label's specification is performed with =p4-label=
+function (=C-x p L=), and to synchronize labels the =p4-labelsync= function (=C-x p l=) is
+defined.
+
+** Work with changes
+
+Work with changes is important part of all version control systems.  The *p4* implements
+many functions related to work with changes.
+
+To retrieve list of changes, user can use =p4-changes= function, that bound to =C-x p C=.
+This function displays list of delayed and confirmed changes for given file.  If user
+executes this function without any arguments, then this function displays list of changes
+for files in current directory and all sub-directories.  To get list of files, that are
+opened for delayed change, user can use =p4-opened= function (=C-x p o=).
+
+Detailed list of changes could be retrieved with =p4-diff= function (<code>C-x p =</code>)
+-- it displays list of changes between current file and its version in repository.  But
+changes for current file are displayed only if this file was opened for editing.  If
+current file wasn't opened for editing, then this function displays list of changes for all
+opened files and their versions in repository.  And by specifying command line arguments
+for =diff=, user can display only data for new files, for opened files, etc.
+
+Besides =p4-diff= function, there are several additional functions, that could be used to
+get detailed list of changes.  To compare to files in repository, user can use =p4-diff2=
+function (=C-x p d=).  The =p4-diff-head= function displays changes between current file and
+its latest version in repository.  There are also functions, that perform same operations
+as their counterparts, but use *Ediff* to display changes -- =p4-ediff= & =p4-ediff2=.
+
+To commit changes to repository, user can use =p4-submit= function (=C-x p S=) -- it commits
+delayed changeset and all files in it.  If program couldn't lock before commit all files,
+related to changeset, then commit process is canceled.  User can notify other users about
+modification he did.  To do this, he can use =p4-notify= function (=C-x p n=) to perform
+manual notification.  But he also able to perform automatic notification of users on each
+commit.  List of users, that will be notified on each commit, is specified by
+=p4-set-notify-list= function.  All notifications are performed via e-mail, so you need to
+set correct path to =sendmail= program.
+
+To cancel changes in current file user can use =p4-revert= function, that bound to =C-x p r=.
+If =SHOW-OUTPUT= argument has true value, then results of execution of this function are
+displayed in the =*P4 Output*= buffer.  To update not opened files from repository, user can
+use =p4-refresh= function (=C-x p R=), so you will need to use both these functions to update
+opened and not opened files from repository.
+
+** Obtaining an information
+
+To obtain information about concrete changeset user can use =p4-describe= function (=C-x p
+D=).  It displays description of changeset, its number, user name, date when it was
+created, and other information, also including list of files, detailed list of changes,
+etc.
+
+To view history of changes for current file the =p4-filelog= function (=C-x p f=) could be
+used.  This information shown in decreasing order, until the time when file was added to
+repository.
+
+To get file from repository together with history of changes, user can use
+=p4-print-with-rev-history= function (=C-x p V=).  To get only file without history, user can
+use another function -- =p4-print= (=C-x p p=).  Both these function doesn't change list of
+files retrieved by current user.
+
+To get information about *Perforce's* client and server the =p4-info= function (=C-x p i=) could
+be used.  It displays information about client -- user name, name of the client, and work
+directory, and also some information about current server.
+
+To find information about relation between local files and files in repository, user can
+use  =p4-where= function (=C-x p w=).   To display list of versions, that was fetched from
+repository in last synchronisation, user can use  =p4-have= function (=C-x p H=).  
+
+There is also function =p4-files= (=C-x p F=) that could be used to retrieve a list of files
+from repository.  User can retrieve full list of files, or only list of files matching
+given mask.
+
+** Repository's administration
+
+The *p4* allows user to administer *Perforce's* repository without leaving Emacs.  This
+includes administration of users, groups, and also clients.
+
+Creation of new user is performed with =p4-user= function (=C-x p u=).  The same function could
+be used to change specification for existing user.  This specification is stored in
+temporary file, and editor, specified by =EDITOR= environment variable, is invoked on it.
+User's data includes name of user, its full name, access level and other parameters.
+Usually user's specification is created automatically on execution of every function, that
+can update repository.  List of existing users could be retrieved with =p4-users= function
+(=C-x p U=).
+
+To list groups of users on the =p4-groups= could be used, and to create or modify groups
+user can use =p4-group= function.  But to create group of users, current user should have
+special access rights.
+
+Editing of client's specification is performed with =p4-client= function (=C-x p c=).
+Client's specification includes its name, description, list of files, that will available
+in repository, and other parameters.  By default, new clients are created with ability to
+see all files in repository.
+
+** Other functions
+
+The =C-x p h= key bindings runs =p4-help= function, that could be used to getting help about
+whole package or concrete function.  All key bindings, provided by *p4* package, could be
+listed with =p4-describe-bindings= function (=C-x p ?=).
+
+Version number of *p4* package could be retrieved with =p4-emacs-version= function (=C-x p v=).
+And if you find a bug in this package, you can use =p4-bug-report= function (=C-x p b=) to
+submit bug report.
+
+If *Perforce* server is not available you can disable checking of file versions when opening
+them.  This could be performed with =p4-toggle-vc-mode= function (=C-x p t=).
+
+* Customization
+
+To work with *p4* (and *Perforce*) you need to set some environment variables -- =P4CLIENT=,
+=P4USER= and =P4PORT=.  You can use special functions to do this: =p4-set-client= (=C-x p s=) and
+=p4-set-p4-port= (=C-x p P=).  You can get client's name, that currently used to work with
+repository, with =p4-get-client-name= function (=C-x p g=).
+
+With standard Emacs's customization routines user can set different parameters of the
+package -- path to executable files, variables, controlling output, etc.  Corresponding
+customization group has same name as package -- *p4*.
+
+#addinfo
+* Additional information
+
+Full description of functions and key bindings of *p4* package you can find at the
+[[http://p4el.sf.net][project's site]].  Additional information about *Perforce* could be found at [[http://www.perforce.com][company's site]].
+Besides it, there are many descriptions of this package in Internet.
+
+<div id="rule">[[./index][Back to main page]]</div>
+
+;  LocalWords:  VCS

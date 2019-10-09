@@ -1,0 +1,598 @@
+#title emacs
+#author OLE
+
+<contents>
+
+* 简介
+
+* 安装
+最好下载源码来编译安装，这样速度比较快
+<src type="text">
+./configure --prefix=/usr --enable-font-backend --with-x --with-xft --with-freetype && make bootstrap && make info && sudo make install
+</src>
+
+
+* windows
+** 右键添加"Edit with Emacs"
+ 1. 设置环境变量HOME<br>
+这个就相当于Linux中的家目录"~",这样就可以把.emacs和.emacs.d等文件放在一个固定的地方.
+例如: 设置HOME=d:\ole. "我的电脑->属性->高级->环境变量->用户变量设置->添加"
+<src type="text">
+name: HOME
+value: d:\ole
+</src>
+ 2. 设置emacs以server mode模式启动<br>
+这样就可以在一个界面中打开其他的编辑的文件,而不会打开很多窗口.
+在d:\ole\.emacs中增加
+<src type="text">
+(server-start)
+</src>
+ 3. 设置EMACS_SERVER_FILE<br>
+设置
+<src type="text">
+EMACS_SERVER_FILE=d:\ole\.emacs.d\server\server
+</src>
+设置的方法同步骤1
+实际就是设置emacs服务模式启动产生server文件的路径,关闭emacs以后这个文件自动删除
+ 4. 添加emacs\bin目录到path变量中<br>
+这样做的目的是让bin目录下的文件可以直接运行.添加的方法和步骤1类似
+"我的电脑->属性->高级->环境变量->系统变量设置->Path"在后面添加
+<src type="text">
+;d:\ole\emacs\bin
+</src>
+注意路径要根据自己的来添加
+ 5. 新建emacs.bat和emacs.vbs<br>
+新建emacs.bat,放在EMACS_INSTALL_PATH\bin下,内容如下<br>
+emacs.bat
+<src type="text">
+tasklist /FI "IMAGENAME eq emacs.exe" /NH | find "emacs.exe" && goto check || goto new
+:new
+d:\ole\emacs\bin\runemacs.exe
+:check
+if not exist "%EMACS_SERVER_FILE%" goto check
+:existing
+d:\ole\emacs\bin\emacsclientw.exe -n %1
+</src>
+ emacs.vbs
+<src type="text">
+DIM objShell
+set objShell=wscript.createObject("wscript.shell")
+iReturn=objShell.Run("cmd.exe /C d:\ole\emacs\bin\emacs.bat " & """" & WScript.Arguments(0) & """", 0, TRUE) 
+</src>
+ 6. 修改注册表<br>
+<src type="text">
+Windows Registry Editor Version 5.00
+[HKEY_CLASSES_ROOT\*\shell\Open with emacs]
+[HKEY_CLASSES_ROOT\*\shell\Open with emacs\command]
+@="Wscript.exe \"d:\\ole\\emacs\\bin\\emacs.vbs\" \"%1\""
+</src>
+
+** putty 远程ftp
+如果需要通过sft编辑远程机器上的文件,需要用到putty
+
+打开文件的方法，注意要在server（dev.wacosoft.net)后面加上一个冒号（:）
+<src type="text">
+M-x /sftp:yangsh@dev.wacosoft.net:/home/yangsh/mws/tv_imusic/scripts/
+</src>
+
+
+* html
+** 用浏览器浏览html文件
+如果需要使用外面的浏览器（例如：firefox）来显示html文件，可以使用browse-url-of-file
+<src type="text">
+M-x browse-url-of-file
+</src>
+如果想浏览html本身，可以用
+<src type="text">
+C-c C-v
+</src>
+
+
+** nxml-mode
+在编辑html文件的时候发如果使用html-mode来编辑缩进有问题，今天在网上找如果让外面的浏览器来显示html文件发现可以使用nxml-mode来使用，还可以C-ERT(nxml-complete)来自动完成
+<src type="text">
+M-x nxml-mode
+</src>
+
+* svn
+[[http://lifegoo.pluskid.org/wiki/EmacsSubversion.html][参考]] [[http://lifegoo.pluskid.org/wiki/EmacsVC.html#AnchorBasicUnderstanding][参考2]]
+
+如何在emacs中使用svn的功能，首先建立svn仓储
+<src type="text">
+mkdir ecmall
+</src>
+
+check out
+<src type="text">
+svn co http://192.168.0.8/svn/ecmall .
+</src>
+
+用emacs编辑文件
+<src type="text">
+emacs index.php
+</src>
+
+修改文件，然后commit，只要在emacs中用快捷键C-x v v(vc-next-action)就会根据需要commit文件，查看emacs中minibar中的svn版本就知道增加了1.
+
+svn的指令
+
+快捷键 || 命令名 || 动作
+C-x v v | vc-next-action | 让当前文件进入下一个合理的version control状态
+C-x v d | vc-directory | 显示目录中所有注册到版本控制下的文件
+C-x v = | vc-diff | 产生一个diff报告
+C-x v u | vc-revert-buffer | 丢弃自从check in以来文件所有的修改
+C-x v ~ | vc-version-otder-window | 取出指定的版本，在另外一个窗口打开
+C-x v l | vc-print-log | 显示一个文件的历史和日志
+C-x v i | vc-register | 把文件注册到版本控制系统里面去
+C-x v h | vc-insert-header | 在文件里面插入version control header
+C-x v s | vc-create-snapshot | 创建一个name project快照
+C-x v c | vc-cancel-version | 丢弃一个已经保存的版本
+C-x v a | vc-update-change-log | 更新一个GNU-style的Change log文件
+
+
+
+
+* tips
+** C-s C-w
+查找光标所在的词，就是查找光标所在的单词
+
+
+** inetutils
+我用的是archlinux，由于没有安装inetutils在使用ftp等命令的时候输入密码总是提示密码，好像是输入密码不对，其实对的。就是由于没有安装inetutils。
+
+<src type="text">
+pacman -S inetutils
+</src>
+
+** 编辑多个文件
+今天在网上看见一篇文件，惊叹EMACS的强大
+
+参考 http://blog.nethazard.net/emacs-tip-how-to-edit-multiple-files/
+<verse>
+Recently I had to edit a huge amount of files (239 in total) scattered in a bunch of directories and subdirectories.
+
+What I had to do was add the Google Analytics script snippet to a part of a website that was being maintained by a pair of <your favorite bad adjective here>.
+
+So, first I thought of using sed or awk or something like that. But the reality is that I don’t know how to use this tools and don’t have time to start investigating and testing.
+
+But wait, I have Emacs! So, the first thing to do is find and list all the files you need to edit.
+
+   1.
+      Open the parent directory
+      Use dired to open the parent directory where all the files and directories are. Open dired with: M-x find-dired and enter the path for the directory.
+   2.
+      Find the files
+      Emacs will then ask you “Run find (with args): ”. So if you need to edit all HTML files, or in my case, PHP files, you type “-name *.php”. If you want all files regardless of type, enter “-type f”. Basically you can type in any arguments you want if you know how to use the find command.
+   3.
+      Mark the files you need to edit
+      A list of all found files will appear in a dired buffer. Now you need to mark the files you want to work with. Typically you’ll mark all files since you already filtered them. Press “t” to toggle marks and all files will get marked. Or if you want to hand pick them, move the cursor to the file line or name and press “m”.
+   4.
+      Do the find and replace
+      Type:M-x dired-do-query-replace-regexp to run the find and replace command. It will prompt you first for the text you want to find, then will prompt you with the text you want to replace it with. Then Emacs will start the find and replace operation, and will prompt you on every find if you want to replace the text or skip it. To replace, type “y”, to skip to the next find type “n”. To replace all occurrences without asking, type “!”. To cancel the operation, type C-g.
+   5.
+      Save the edited files
+      Now that you’ve made all these changes, you need to save the files. To avoid saving manually all files, you can open ibuffer M-x ibuffer Which will list all you opened files (called buffers). Now, like in dired, you need to mark the buffers you want to work with. To mark all unsaved files, type “* u” and then type “S” (that’s shift+s, for the capital letter) to save them.
+
+</verse>
+
+* ibus 输入法
+很是郁闷阿，输入法的问题折腾了我好几天，终于可以了，总结一些：
+ - LC_CTYPE=zh_CN.utf-8
+ - ~/.Xresources
+<src type="text">
+! xrdb -load
+Emacs.useXIM:true
+Xft.antialias: 1
+! 可以尝试把hinting关了对比效果，有些显示器上不开反而更好看
+Xft.hinting: 1
+Xft.hintstyle: hintfull 
+Xft.rgba: rgb
+Emacs.FontBackend: xft
+Emacs.Geometry: 100x32+4+4
+Emacs.Font:fontset-chinese
+Emacs.Fontset-0:-*-fixed-medium-r-*-*-14-*-*-*-c-*-fontset-chinese,\
+chinese-gb2312:-*-wenquanyi bitmap song-medium-*-normal--16-*-*-*-*-*-iso10646-1,\
+chinese-big5-1:-*-wenquanyi bitmap song-medium-*-normal--16-*-*-*-*-*-iso10646-1,\
+chinese-big5-2:-*-wenquanyi bitmap song-medium-*-normal--16-*-*-*-*-*-iso10646-1 
+</src>
+ - 字体的问题<br>
+安装需要的字体，比如wyq，Monaco<br>
+不行就删除/etc/X11/xorg.conf, 2011-04-21这次就是因为这个文件的问题。
+
+
+* 常用的命令
+** 文件编码
+ - set-buffer-with-coding-system<br>
+设置当前buffer的编码，这样可以把文件另存为想要的编码。例如把文件存为utf-8-unix
+<src type="lisp">
+M-x set-buffer-file-coding-system ENT  utf-8-unix
+M-x save-buffer
+</src>
+这样就把文档另存为utf-8-unix编码
+
+ - revert-buffer<br>
+重新加载文件。
+
+ - global-auto-revert-mode
+当文件有改变时，自动重新加载文件
+
+** 长句子换行
+在编写html网页的时候如果让句子换行看起来一团糟，根本就没有结构感，这个时候就希望不要换行，做法就是
+<src type="lisp">
+M-x toggle-truncate-lines
+</src>
+如果想让设置一劳永逸，可以在.emacs中设置，也可以
+<src type="lisp">
+M-x customize-option
+</src>
+
+** customize
+[[http://lpn.rnbhq.org/tools/xemacs/emacs_ref.html][参考 http://lpn.rnbhq.org/tools/xemacs/emacs_ref.html]]
+
+** 查看按键绑定的命令
+想知道某个组合键执行来哪个命令,有时很有必要，比如最近我在windows中C-l没有反应，也不知道为什么，所以我就想知道C-l执行来哪个命令，然后绑定到其他的按键上
+<src type="lisp">
+M-x describe-key ERT C-l
+(recenter-top-bottom)
+;; 知道了什么命令就可以修改来,该到C-，上
+(set-global-key "\C-," 'recenter-top-bottom)
+</src>
+
+** 全选
+<src type="lisp">
+C-x h
+</src>
+
+** 窗口
+*** 垂直分割成2个窗口
+<src type="lisp">
+C-x 3
+</src>
+
+*** 水平分割成2个窗口
+<src type="lisp">
+C-x 2
+M-x split-window
+</src>
+
+*** 关闭当前窗口
+<src type="lisp">
+C-x 0
+M-x delete-window
+</src>
+
+*** 关闭其他窗口
+<src type="lisp">
+C-x 1
+M-x delete-other-windows
+</src>
+
+
+
+
+
+* replace-regexp
+正则查找替换
+
+
+** 例子
+*** 在所有行前面加上#
+<src type="lisp">
+M-x replace-regexp RET ^ RET # RET
+</src>
+
+*** 单词的首字母转化成大写
+当然可以用alt+c来把首字母转换成大写,但是这里讲的是用正则替换来实现
+<src type="lisp">
+abc
+22a
+def
+ad2
+
+M-x replace-regexp RET
+\(\w+\) RET
+\,(capitalize \1)
+
+// 结果
+Abc
+22a
+Def
+Ad2
+</src>
+
+说明:
+ - \(\) 保存字符串<br>
+  - \是转义,"\("转义成表示正则的"(" 即不是传统意义上"(",这里正好和php中的相反,不匹配(
+  - \w  匹配单个字母,和一般的正则表达式中的匹配一个单词不一样
+  - +  指前面的\w出现一次以上
+  - ERT 不用输入,表示按回车
+ - \,(capitalize \1) 替换成这个表达式匹配到的内容
+  - \, 
+  - capitalize 大写匹配到的内容
+  - \1 第一个括号中的内容,就是(\w+)
+
+*** 所以下面的的规则就是把所有的字母都替换成大写
+<src type="lisp">
+\(\w\)
+\,(capitalize \1)
+</src>
+
+*** 把单词中的最后一个字符转换成大写
+<src type="lisp">
+\(\w+\)\(\w\)
+\1\,(capitalize \2)
+</src>
+
+*** 添加前缀
+
+在所有的函数前面添加get,并且把函数名的第一个字母大写
+<src type="lisp">
+public Relative father() { return this.father; }
+public Relative mother() { return this.mother; }
+public Relative sister() { return this.sister; }
+public Relative brother() { return this.brother; }
+public Relative auntie() { return this.auntie; }
+public Relative uncle() { return this.uncle; }
+
+\(public Relative \)\(\w\)\(\w+\)
+\1get\,(capitalize \2)\3
+</src>
+
+*** 处理数字开头的行
+为所有数字开头的行变成: 空格数字.空格,例如: 1这是第一行 变成: <空格>1.<空格>这是第一行
+<src type="text">
+^\([0-9]+\)    
+ \1. 
+</src>
+
+
+* 输入控制字符
+输入回车
+<src type="lisp">
+C-q C-j  
+</src>
+
+* calendar & diary
+如果用emacs来写日记呢？当然用muse模式也是可以的，但是觉得还是用calendar来写日记比较好
+
+** 配置
+在.emacs中设置diary保存到位置，默认是~/.例如把保存所位置设置为~/emacs/diary
+<src type="lisp">
+;; 日记
+(setq diary-file "~/emacs/diary")
+(setq diary-mail-addr "oleyang@gmail.com")
+(add-hook 'diary-hook 'appt-make-list)
+</src>
+
+** 写日记
+打开calendar
+<src type="lisp">
+M-x calendar
+</src>
+
+在要学日记到日期上按i d 就是 diary-insert-entry,其他到命令如下：
+<src type="lisp">
+i d
+    Add a diary entry for the selected date (diary-insert-entry).
+i w
+    Add a diary entry for the selected day of the week (diary-insert-weekly-entry).
+i m
+    Add a diary entry for the selected day of the month (diary-insert-monthly-entry).
+i y
+    Add a diary entry for the selected day of the year (diary-insert-yearly-entry).
+i a
+    Add an anniversary diary entry for the selected date (diary-insert-anniversary-entry).
+i b
+    Add a block diary entry for the current region (diary-insert-block-entry).
+i c
+    Add a cyclic diary entry starting at the date (diary-insert-cyclic-entry).
+
+d
+    Display all diary entries for the selected date (diary-view-entries).显示该日期上的日记
+Mouse-3 Diary
+    Display all diary entries for the date you click on.
+s
+    Display the entire diary file (diary-show-all-entries).显示所有的日记
+m
+    Mark all visible dates that have diary entries (diary-mark-entries).
+u
+    Unmark the calendar window (calendar-unmark).
+M-x diary-print-entries
+    Print hard copy of the diary display as it appears.
+M-x diary
+    Display all diary entries for today's date.
+M-x diary-mail-entries
+    Mail yourself email reminders about upcoming diary entries. 
+</src>
+中文说明
+<src type="text">
+C-f：让当前日期向前一天
+C-b:让当前日期向后一天
+C-n:让当前日期向前一周
+C-p:让当前日期向后一周
+M-}:让当前日期向前一个月
+M-{:让当前日期向后一个月
+C-x ]:让当前日期向前一年
+C-x [:让当前日期向后一年
+C-a:移动到当前周的第一天
+C-e:移动到当前周的最后一天
+M-a:移动到当前月的第一天
+M-e:多动到当前月的最后一天
+M-:移动到当前年的最后一天
+默认情况下，星期天是一周的第一天，如果想使用周一作为一周的第一天，可以设置calendar-week-start-day的值为1.
+Calendar模式支持移动多种移动到特珠日期的方式。
+g d 移动到一个特别的日期
+o 使某个特殊的月分作为中间的月分
+.移动到当天的日期
+p d显示某一天在一年中的位置，也显示本年度还有多少天。
+C-c C-l刷新Calendar窗口
+Calendar支持生成LATEX代码。
+t m 按月生成日历
+t M 按月生成一个美化的日历
+t d 按当天日期生成一个当天日历
+t w 1在一页上生成这个周的日历
+t w 2在两页上生成这个周的日历
+t w 3生成一个ISO-SYTLE风格的当前周日历
+t w 4生成一个从周一开始的当前周日历
+t y 生成当前年的日历
+EMACS Calendar支持配置节日：
+h:显示当前的节日
+x:定义当天为某个节日
+u:取消当天已被定义的节日
+e:显示所有这前后共三个月的节日。
+M-x holiday:在另外的窗口的显示这前后三个月的节日。
+另外，还有一些特殊的，有意思的命令：
+S:显示 当天的日出日落时间
+如果想自定义这些日出日落时间，可以使用下面的方法：
+(setq calendar-latitude 40.1)
+(setq calendar-longitude -88.2)
+(setq calendar-location-name "Urbana, IL")
+设置时区可以使用下面的方法：
+(setq calendar-time-zone -360)
+(setq calendar-standard-time-zone-name "CST")
+(setq calendar-daylight-time-zone-name "CDT")
+</src>
+
+* 版本控制器
+** cvs
+
+** git
+*** 安装git
+<src type="text">
+yum install -y git
+</src>
+
+*** 安装git-emacs
+<src type="text">
+$ cd ~/.emacs.d/site-lisp
+$ git clone https://github.com/tsgates/git-emacs.git
+</src>
+
+*** 配置
+<src type="text">
+$ vi ~/.emacs
+</src>
+
+添加如下内容
+<src type="text">
+;;git-emacs
+(add-to-list 'load-path "~/.emacs.d/site-lisp/git-emacs/")
+(require 'git-emacs)
+</src>
+
+*** 使用
+**** 提交
+<src type="text">
+M-x git-commit/git-commit-all/git-commit-file
+</src>
+弹出一个框要求填写注释，写完注释以后C-c C-c提交,C-c C-q取消。
+
+**** 查看历史
+<src type="text">
+M-x git-history/git-log
+</src>
+
+**** pull
+<src type="text">
+M-x git-pull-ff-only
+</src>
+
+
+
+
+
+
+
+* etags
+etags用来全局查找字符。
+
+** 安装emacs-etags-select
+<src type="text">
+yaourt -S emacs-etags-select
+</src>
+
+** 安装hasktags
+好像要装这个吧，要不然没有etags.emacs（etags）这个命令，
+
+** 生成TAG文件
+etags不支持递归，可以使用find函数来完成
+<src type="bash">
+find . -name "*.php" -exec etags.emacs -a {} \;
+</src>
+ - -a append 附加到原来的TAGS文件上
+
+** 用法
+在Emacs中指定使用的TAG文件
+<src type="text">
+M-x visit-tags-table
+</src>
+让emacs自动读取tag文件内容:
+    在~/.emacs文件中类似如下内容:
+    (setq tags-file-name "~/project/src/TAGS")
+
+
+使用方法：
+<src type="text">
+M-. ： 查找(find-tag)
+C-U M-. 下一个
+M-* ： 上一个
+
+</src>
+
+* cscope
+cscope是用来建立索引文件的，原来是对c文件的索引，下面是讲如何对php进行索引
+
+** 安装
+<src type="text">
+yum install -y cscope
+</src>
+
+** 配置
+修改cscope-indexer,在140,增加对后缀名为php sh inc文件的索引。修改成如下
+<src type="text">
+vi /usr/bin/cscope-indexer
+egrep -i '\.([chly](xx|pp)*|cc|hh|x|php|sh|inc)$' | \
+</src>
+
+修改xcscope.el,增加php的hook，在2461行下增加
+<src type="text">
+vi /usr/share/emacs/site-lisp/xcscope.el
+(add-hook 'php-mode-user-hook (function cscope:hook))
+(add-hook 'python-mode-hook (function cscope:hook))
+(add-hook 'sh-mode-hook (function cscope:hook))
+(add-hook 'sh-mode-hook (function cscope:hook)
+</src>
+随便把python和sh的也加上
+
+** 使用方法
+ 1. 在.emacs中家族xcscope (require 'xcscope)
+ 2. 设置目录 C-c s a
+ 3. 建立索引 C-c s I
+
+建立索引以后就可以查找函数在哪里定义和使用了
+
+快捷键
+<src type="text">
+;; cscope的主要功能和对应的快捷键：
+;; C-c s a             设定初始化的目录，一般是你代码的根目录
+;; C-c s I             对目录中的相关文件建立列表并进行索引
+;; C-c s s             序找符号
+;; C-c s g             寻找全局的定义
+;; C-c s c             看看指定函数被哪些函数所调用
+;; C-c s C             看看指定函数调用了哪些函数
+;; C-c s e             寻找正则表达式
+;; C-c s f             寻找文件
+;; C-c s i             看看指定的文件被哪些文件include)
+</src>
+
+
+
+
+
+* 问题
+** css-mode
+在css-mode中输入border自动完成的时候emacs就冻主(freeze),解决的办法就是更新autocomplete.el
+
+下载地址： [[https://github.com/m2ym/auto-complete]]
+
+参考： [[http://www.cnblogs.com/yourihua/archive/2012/04/19/2457844.html]]

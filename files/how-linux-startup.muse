@@ -1,0 +1,112 @@
+#title ArchLinux的启动过程
+
+#author 00948267 刘智猷
+
+** 环境说明
+本文档叙述的是ArchLinux的启动过程，具体环境为ArchLinux+grub,kernel版本为3.2.7-1。下面将按时间顺序进行说明。
+
+** BIOS
+计算机加电后，将会自动启动BIOS，BIOS是一段事先编写，固定于硬件上的程序。该程序将会对整个计算机系统做初步的初始化工作。在此之后，其将引导盘MBR中的引导程序（又称bootloader，在我的计算机上，也就是下面提到的grub）加载到内存中，并将对计算机的控制权转移到该bootloader手上。
+
+** grub
+由于grub的配置文件是保存在磁盘中的，grub会先对自己和磁盘做一些配置，读取出自己的配置文件。其后，会在屏幕上显示一个引导菜单，询问用户希望启动哪个系统或哪一个内核。在用户选定一个Linux内核要求启动后，grub会将配置文件中被选择条目对应kernel映像（kernel image）和initrd（init ram disk）文件加载到内存中，并以设置的参数启动kernel。
+
+** kernel
+kernel在接收控制权后，会对CPU进行更进一步的配置。例如进入保护模式，建立内存管理和虚拟内存映射机制，建立进程调度机制等等。同时，它以initrd文件中的内容创建一个ram disk，临时地挂载到根目录上。之后，kernel会启动第一个用户进程，该进程将执行initrd上的/init脚本，该脚本的部分内容如下：
+<src lang="sh">
+#!/usr/bin/ash
+PATH=/usr/bin
+
+. /init_functions
+
+......
+
+# if available, start udevd at this stage
+if [ -x /lib/udev/udevd ]; then
+    msg ":: Starting udevd..."
+    /lib/udev/udevd --daemon --resolve-names=never
+    udevd_running=1
+    msg "done."
+else
+    udevd_running=0
+fi
+
+......
+
+. /config
+
+[ -n "${MODULES## }" ] && modprobe -qab $MODULES
+
+......
+
+# Mount root at /new_root
+${mount_handler:-default_mount_handler} /new_root
+
+init=${init:-/sbin/init}
+
+......
+
+exec env -i "TERM=$TERM" /sbin/switch_root /new_root $init "$@"
+
+# vim: set ft=sh ts=4 sw=4 et:
+
+</src>
+可以看出该脚本会挂载一些设置的模块,在ArchLinux中,一般会将挂载真正的root需要用到的模块打包在initrd中。那么，这时就可以将这些模块加载到kernel中。在类似这样的一些准备工作完成后，该脚本挂载了真正的root，并通过exec sbin中的switch_root脚本将/目录切换到真正的root下,最后,switch_root将启动$init变量中指定的脚本。一般而言，该脚本即/sbin/init（真正的root下的）
+
+** /sbin/init
+这就是我们在进入系统后通过ps aux命令看到的pid为1的进程所执行的程序。在ArchLinux中，其行为由/etc/inittab决定。在我的系统中，该文件如下：
+<src>
+#
+# /etc/inittab
+#
+
+#  Runlevels:
+#    0    Halt
+#    1(S)   Single-user
+#    2    Not used
+#    3    Multi-user
+#    4    Not used
+#    5    X11
+#    6    Reboot
+
+## Only one of the following two lines can be uncommented!
+# Boot to console
+id:3:initdefault:
+
+rc::sysinit:/etc/rc.sysinit
+rs:S1:wait:/etc/rc.single
+rm:2345:wait:/etc/rc.multi
+rh:06:wait:/etc/rc.shutdown
+su:S:wait:/sbin/sulogin -p
+
+# -8 options fixes umlauts problem on login
+c1:2345:respawn:/sbin/agetty -8 -s 38400 tty1 linux
+c2:2345:respawn:/sbin/agetty -8 -s 38400 tty2 linux
+c3:2345:respawn:/sbin/agetty -8 -s 38400 tty3 linux
+c4:2345:respawn:/sbin/agetty -8 -s 38400 tty4 linux
+c5:2345:respawn:/sbin/agetty -8 -s 38400 tty5 linux
+c6:2345:respawn:/sbin/agetty -8 -s 38400 tty6 linux
+
+# Serial Virtual Console for KVM and others VMs
+#s0:2345:respawn:/sbin/agetty -8 -s 9600 ttyS0 linux
+
+# Hypervisor Virtual Console for Xen and KVM
+#h0:2345:respawn:/sbin/agetty -8 -s 38400 hvc0 linux
+
+ca::ctrlaltdel:/sbin/shutdown -t3 -r now
+
+# End of file
+</src>
+首先应该注意到 *id:3:initdefault:* 这说明我默认的runlevel为3。在runlevel为3时，init进程将顺序地执行脚本/etc/rc.sysinit，/etc/rc.multi，其后则会执行
+<src>
+/sbin/agetty -8 -s 38400 tty1 linux
+/sbin/agetty -8 -s 38400 tty2 linux
+/sbin/agetty -8 -s 38400 tty3 linux
+/sbin/agetty -8 -s 38400 tty4 linux
+/sbin/agetty -8 -s 38400 tty5 linux
+/sbin/agetty -8 -s 38400 tty6 linux
+</src>
+上面几个程序会同时被执行。而且，在整个系统的运行过程中，如果这几个进程中的任意一个因为某种原因被终止了，init都会将其重新启动。这几个程序实际上为用户提供了tty1到tty6六个文字终端，用户在登陆之后，其再通过查看/etc/profile或者是~/.bashrc设置相应环境，执行默认的shell程序供用户使用。
+
+
+而rc.sysinit和rc.multi其实上是系统级的启动脚本，在这两个脚本里，会启动更多的后台服务，加载更多的模块，挂载所有的文件系统，建立其一个真正的生产环境。

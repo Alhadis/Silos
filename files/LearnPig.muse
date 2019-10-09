@@ -1,0 +1,875 @@
+#title Pig 笔记
+
+* 安装
+
+svn 代码：
+<example>
+$ svn co http://svn.apache.org/repos/asf/hadoop/pig/trunk pig
+</example>
+
+发布版本下载 http://www.apache.org/dyn/closer.cgi/hadoop/pig
+
+* 运行
+
+需要设置环境变量：
+<example>
+export PIGDIR=/path/to/src/pig
+export PIG_CLASSPATH=$PIGDIR/pig.jar:$HADOOP_HOME/conf
+</example>
+
+运行 grunt shell：
+<example>
+$PIGDIR/bin/pig -x local
+</example>
+
+运行本地脚本：
+<example>
+$PIGDIR/bin/pig -x local local.pig
+</example>
+
+运行 hadoop 脚本：
+<example>
+java -cp $PIG_CLASSPATH org.apache.pig.Main hadoop.pig
+</example>
+
+* Pig Cookbook
+** 使用最新的代码
+** 使用类型
+默认数字类型是double。如果不需要高精度，可以使用 integer 或 long 类型。
+这通加快算术运算，也能在早期发现错误。
+
+** 使用需要的字段
+如果一些字段没有用，可以在早期去除这些字段。
+<example>
+A = load 'myfile' as (t, u, v);
+A1 = foreach A generate t, u;
+</example>
+** 尽早过滤
+** 减少不必要的管道操作
+** 使用算术类型 UDF
+** Join 前去除 NULL
+** 使用 Join 优化
+join 表格的最后一个是从 stream 导入而不是加载到内存，所以把大表格放到
+最后一个导入。
+<example>
+small = load 'small_file' as (t, u, v);
+large = load 'large_file' as (x, y, z);
+C = join small by t, large by x;
+</example>
+** 使用 replicate join
+** 使用 PARALLEL
+** 使用 LIMIT
+** 使用 DISTINCT 而不是 GROUP BY - GENERATE
+
+* Pig UDF (用户自定义函数)
+** 简单的 Eval 函数
+
+<example>
+-- myscript.pig
+REGISTER myudfs.jar;
+A = LOAD 'student_data' AS (name: chararray, age: int, gpa: float);
+B = FOREACH A GENERATE myudfs.UPPER(name);
+DUMP B;
+</example>
+
+第一行 REGISTER 注册 UDF 定义的 jar 文件。这个文件需要能在 classpath
+中找到，或者是绝对路径的文件，或者是相对 pig 启动时的相对路径。如果未
+找到 jar 文件将报错 =java.io.IOException: Can't read jar file:
+myudfs.jar= 。
+
+可以注册多个文件，如果有相同的函数，根据 java 规则是使用第一次出现的函
+数。
+
+UDF 必须使用带 package 的全称，否则会报函数找不到的错误
+=java.io.IOException: Cannot instantiate:UPPER= 。
+
+下面是 UPPER 函数的实现：
+<src lang="java">
+package myudfs;
+import java.io.IOException;
+import org.apache.pig.EvalFunc;
+import org.apache.pig.data.Tuple;
+import org.apache.pig.impl.util.WrappedIOException;
+
+public class UPPER extends EvalFunc<String>
+{
+    public String exec(Tuple input) throws IOException {
+        if (input == null || input.size() == 0)
+            return null;
+        try{
+            String str = (String)input.get(0);
+            return str.toUpperCase();
+        }catch(Exception e){
+            throw WrappedIOException.wrap("Caught exception processing input row ", e);
+        }
+    }
+}
+</src>
+
+UDF 扩展了 EvalFunc 类。它的参数是函数的返回值。
+这个类实现一个 exec 函数，这个函数将操作于每一个 tuple 。它的顺序与
+pig 脚本中传入值一致。首先需要对传入值做检查。如果数据格式与要求不符，
+将得到一个 NULL 值。如果输入数据是另一种类型，说明数据已经发生了一次转
+换，这里我们抛出一个异常。
+
+编译：
+<example>
+$ javac -cp $PIG_CLASSPATH UPPER.java
+$ cd ..
+$ jar -cf myudfs.jar myudfs
+</example>
+
+** 聚集函数
+聚集函数是接受一个 bag 参数，返回 scalar 值的函数。聚集函数的一个特性
+是能分布计算中增量计算，这样的函数称为是算术 (algebraic) 的函数。
+
+<src lang="java">
+package myudfs;
+
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map;
+
+import org.apache.pig.Algebraic;
+import org.apache.pig.EvalFunc;
+import org.apache.pig.backend.executionengine.ExecException;
+import org.apache.pig.data.DataBag;
+import org.apache.pig.data.Tuple;
+import org.apache.pig.data.TupleFactory;
+import org.apache.pig.impl.util.WrappedIOException;
+
+public class COUNT extends EvalFunc<Long> implements Algebraic{
+    public Long exec(Tuple input) throws IOException {
+        return count(input);
+    }
+    public String getInitial() {return Initial.class.getName();}
+    public String getIntermed() {return Intermed.class.getName();}
+    public String getFinal() {return Final.class.getName();}
+    static public class Initial extends EvalFunc<Tuple> {
+        public Tuple exec(Tuple input) throws IOException {
+            return TupleFactory.getInstance().newTuple(count(input));
+        }
+    }
+    static public class Intermed extends EvalFunc<Tuple> {
+        public Tuple exec(Tuple input) throws IOException {
+            return TupleFactory.getInstance().newTuple(sum(input));
+        }
+    }
+    static public class Final extends EvalFunc<Long> {
+        public Long exec(Tuple input) throws IOException {
+            return sum(input);
+        }
+    }
+    static protected Long count(Tuple input) throws ExecException {
+        Object values = input.get(0);
+        if (values instanceof DataBag)
+            return ((DataBag)values).size();
+        else if (values instanceof Map)
+            return new Long(((Map)values).size());
+        else
+            return null;
+    }
+    static protected Long sum(Tuple input) throws ExecException, NumberFormatException {
+        DataBag values = (DataBag)input.get(0);
+        long sum = 0;
+        for (Iterator<Tuple> it = values.iterator(); it.hasNext();) {
+            Tuple t = it.next();
+            sum += (Long)t.get(0);
+        }
+        return sum;
+    }
+}
+</src>
+
+Algebraic 的接口如下：
+<src lang="java">
+public interface Algebraic{
+    public String getInitial();
+    public String getIntermed();
+    public String getFinal();
+}
+</src>
+
+Algebraic 由三个 EvalFunc 类构成。Initial 类中的 exec 函数只调用一次，
+它接受的是原始的输入 tuple。输出是包含部分结果的 tuple。Intermed 函数
+调用 0 或者多次，输入是由 Initial 输出的部分结果的 tuple。输出还是部分
+结果的 tuple。最终调用 Final 类，输出 scalar 结果。
+
+Hadoop 中是这样的：Initial 类在 map 过程中调用，产生部分结果。Intermed
+类由 combiner 调用，也是产生部分的结果。Final 类由 reducer 调用产生最
+终的结果。
+
+** Filter 函数
+
+Filter 函数是返回 bool 值的函数。
+
+<src lang="java">
+package myudfs;
+import java.io.IOException;
+import java.util.Map;
+import org.apache.pig.FilterFunc;
+import org.apache.pig.backend.executionengine.ExecException;
+import org.apache.pig.data.DataBag;
+import org.apache.pig.data.Tuple;
+import org.apache.pig.data.DataType;
+import org.apache.pig.impl.util.WrappedIOException;
+
+public class IsEmpty extends FilterFunc {
+    public Boolean exec(Tuple input) throws IOException {
+        if (input == null || input.size() == 0)
+            return null;
+        try {
+            Object values = input.get(0);
+            if (values instanceof DataBag)
+                return ((DataBag)values).size() == 0;
+            else if (values instanceof Map)
+                return ((Map)values).size() == 0;
+            else{
+                throw new IOException("Cannot test a " +
+                    DataType.findTypeName(values) + " for emptiness.");
+            }
+        } catch (ExecException ee) {
+            throw WrappedIOException.wrap("Caught exception processing input row ", ee);
+        }
+    }
+}
+</src>
+
+** 数据类型
+
+| Pig Type  | Java Class          |
+|-----------+---------------------|
+| bytearray | DataByteArray       |
+| chararray | String              |
+| int       | Integer             |
+| long      | Long                |
+| float     | Float               |
+| double    | Double              |
+| tuple     | Tuple               |
+| bag       | DataBag             |
+| map       | Map<Object, Object> |
+
+Tuple 和 DataBag 不是实际的类，而是 interface，所有不能直接初始化 bag
+或 tuple，而需要使用 TupleFactory 和 BagFactory 来创建。
+
+<src lang="java">
+package org.apache.pig.builtin;
+
+import java.io.IOException;
+import java.util.StringTokenizer;
+import org.apache.pig.EvalFunc;
+import org.apache.pig.data.BagFactory;
+import org.apache.pig.data.DataBag;
+import org.apache.pig.data.Tuple;
+import org.apache.pig.data.TupleFactory;
+
+public class TOKENIZE extends EvalFunc<DataBag> {
+    TupleFactory mTupleFactory = TupleFactory.getInstance();
+    BagFactory mBagFactory = BagFactory.getInstance();
+
+    public DataBag exec(Tuple input) throws IOException
+        try {
+            DataBag output = mBagFactory.newDefaultBag();
+            Object o = input.get(0);
+            if (!(o instanceof String)) {
+                throw new IOException("Expected input to be chararray, but  got " + o.getClass().getName());
+            }
+            StringTokenizer tok = new StringTokenizer((String)o, " \",()*", false);
+            while (tok.hasMoreTokens()) output.add(mTupleFactory.newTuple(tok.nextToken()));
+            return output;
+        } catch (ExecException ee) {
+            // error handling goes here
+        }
+    }
+}
+</src>
+
+** Schema
+如果 UDF 返回值是 scalar 或 map 可以不用处理，但是如果返回 tuple 或
+bag，需要指定 tuple 内的数据类型。如果不指定，Pig 将把 tuple 内的数据
+当作 bytearray 对待。
+
+下面这个 Swap 函数，如果没有指定 tuple 的 schema，在生成 C 时会出错，
+因为 pig 会认为 B 只有两个 field。
+<example>
+REGISTER myudfs.jar;
+A = LOAD 'data/student.txt' AS (name: chararray, sub, gpa: float);
+B = foreach A generate flatten(myudfs.Swap(name, sub)), gpa;
+C = foreach B generate $2;
+D = limit B 20;
+dump D;
+</example>
+正确的 swap 函数如下：
+<src lang="java">
+package myudfs;
+import java.io.IOException;
+import org.apache.pig.EvalFunc;
+import org.apache.pig.data.Tuple;
+import org.apache.pig.data.TupleFactory;
+import org.apache.pig.impl.logicalLayer.schema.Schema;
+import org.apache.pig.data.DataType;
+
+public class Swap extends EvalFunc<Tuple> {
+    public Tuple exec(Tuple input) throws IOException {
+        if (input == null || input.size() < 2 )
+            return null;
+        try{
+            Tuple output = TupleFactory.getInstance().newTuple(2);
+            output.set(0, input.get(1));
+            output.set(1, input.get(0));
+            return output;
+        } catch(Exception e){
+            System.err.println("Failed to process input; error - " + e.getMessage());
+            return null;
+        }
+    }
+    public Schema outputSchema(Schema input) {
+        try{
+            Schema tupleSchema = new Schema();
+            tupleSchema.add(input.getField(1));
+            tupleSchema.add(input.getField(0));
+            return new Schema(new Schema.FieldSchema(getSchemaName(this.getClass().getName().toLowerCase(), input),tupleSchema, DataType.TUPLE));
+        }catch (Exception e){
+                return null;
+        }
+    }
+}
+</src>
+
+** Load/Store 函数
+LoadFunc 类接口如下:
+<src lang="java">
+public interface LoadFunc {
+    public void bindTo(String fileName, BufferedPositionedInputStream is, long offset, long end) throws IOException;
+    public Tuple getNext() throws IOException;
+    // conversion functions
+    public Integer bytesToInteger(byte[] b) throws IOException;
+    public Long bytesToLong(byte[] b) throws IOException;
+    ......
+    public void fieldsToRead(Schema schema);
+    public Schema determineSchema(String fileName, ExecType execType, DataStorage storage) throws IOException;
+}
+</src>
+
+bindTo 在处理数据前调用一次,用于连接到输入。
+ - fileName 输入文件名，大多数时候是没有用的。
+ - is 输入流 (input stream)。
+ - offset 
+ - end
+
+在 Hadoop 中，输入数据是连续的字节流，slicer 用于将数据分割成块，每一
+块作单独的任务。它不保证 tuple 是完整的。一种方法是跳过第一个部分的
+tuple，如果结束于部分的 tuple 时，继续读取这个 tuple。
+
+getNext 函数用于读入输入流，返回下一个 tuple。如果结束时返回 null。如
+果出错时抛出 IOException。
+
+* Pig Latin
+
+** 语句 (Statement)
+Pig Latin 语句是以一个 relation 作输入产生另一个 relation (LOAD 和
+STORE 语句除外)。
+
+pig 执行过程：
+ 1. 检查语法和语义
+ 2. 当遇到 DUMP 或 STORE 时，PIG 执行和这个 DUMP 或 STORE 相关的所有语
+句。
+
+下面这个例子，PIG 会检查语句，但是不会执行：
+<example>
+A = LOAD 'student' USING PigStorage() AS (name:chararray, age:int, gpa:float);
+B = FOREACH A GENERATE name;
+</example>
+
+** 注释
+多行注释使用 <literal>/* */</literal> 。
+单行注释使用 <literal>--</literal> 。
+
+** Relations, Bags, Tuples, Fields
+
+ 1. relation 是 bag, 更精确的说是一个 outer bag
+ 2. bag 是 tuple 集合
+ 3. tuple 是一个有序的 fields
+ 4. field 是一块数据
+
+pig 的 relation 与关系数据库中的关系表很相似，但是不需要每个 tuple 的
+列数相同，也不需要 tuple 内的数据类型一致。
+
+relation 是无序的，所以不能保证 tuple 是以特定顺序处理（而且很可能是并行处
+理的）。
+
+relation 是使用名字（或别名）引用。名字是在 Pig Latin 语句中进行指定。比如
+下面这个例子中定义的关系 A：
+<example>
+A = LOAD 'student' USING PigStorage() AS (name:chararray, age:int, gpa:float);
+DUMP A;
+(John,18,4.0F)
+(Mary,19,3.8F)
+(Bill,20,3.9F)
+(Joe,18,3.8F)
+</example>
+
+field 使用位置或者名字来引用：
+ 1. 位置由系统产生，使用 $ 加数字的形式，从0开始，比如：$0, $1, $2
+ 2. 名字是使用 schema 时指定。可以使用任何不是 pig 关键字的名字
+
+比如下面这个关系：
+|                                                | First Field | Second Field | Third Field |
+| Data type                                      | chararray   | int          | float       |
+| Positional notation (generated by system)      | $0          | $1           | $2          |
+| Possible name (assigned by you using a schema) | name        | age          | gpa         |
+| Field value (for the first tuple)              | John        | 18           | 4.0         |
+
+如果使用位置形式取 field，数组越界时将在执行前报错
+=java.io.IOException: Out of bound access. Trying to access
+non-existent  : 3. Schema {f1: bytearray,f2: bytearray,f3: bytearray}
+has 3 column(s). etc …= 。
+
+tuple 的 field 可以是任意的数据类型，包括复杂类型： bag, tuple, map。
+复杂的 fields 可以使用复杂数据类型的 schema 产生。比如：
+<example>
+cat data;
+(3,8,9) (4,5,6)
+(1,4,7) (3,7,5)
+(2,5,8) (9,5,8)
+A = LOAD 'data' AS (t1:tuple(t1a:int, t1b:int,t1c:int),t2:tuple(t2a:int,t2b:int,t2c:int));
+DUMP A;
+((3,8,9),(4,5,6))
+((1,4,7),(3,7,5))
+((2,5,8),(9,5,8))
+X = FOREACH A GENERATE t1.t1a,t2.$0;
+DUMP X;
+(3,4)
+(1,3)
+(2,9)
+</example>
+
+relation 和 field 的别名都是大小写敏感的。Pig Latin 函数也是这样。但是
+参数和 Pig Latin 关键字都是大小写不敏感的。例如：
+ 1. 关系名 A,B,C 都是大小写敏感
+ 2. 关系名字段 f1, f2, f3 都是大小写敏感
+ 3. 函数 PigStorage 和 COUNT是大小写敏感
+ 4. 关键字 LOAD, USING, AS, GROUP, BY, FOREACH, GENERATE, DUMP 都是大
+小写不敏感。
+
+** 处理数据
+通常数据处理方式包括：
+ 1. 使用 FILTER 操作 tuple 或者称为 row。
+ 2. 使用 FOREACH 处理 field 或 column
+ 3. 使用 GROUP 将数据分组。
+ 4. 使用 COGROUP 和 JOIN 将两组或多组数据合并
+ 5. 使用 UNION 合并两个或多个关系。
+ 6. 使用 SPLIT 操作将一个关系分解成多个关系
+
+在 COGROUP, CROSS, DISTINCT, GROUP, JOIN, ORDER 操作时使用 PARALLEL 关
+键字使操作并行进行。 PARALLEL 控制并行的 reducer 数量。
+
+使用 DUMP 将数据显示到屏幕，使用 STORE 将数据写入到文件系统。
+
+使用 DESCRIBE 可以显示关系的 schema。
+使用 EXPLAIN 操作可以查看 逻辑、物理、map reduce 执行计划。
+使用 ILLUSTRATE 查看语句每一步的执行。
+
+数据类型：
+ 1. 标量类型： int，long，float, double
+ 2. 数组类型： chararray, bytearray
+ 3. 复杂数据类型：tuple, bag, map
+
+数据类型一般在 schema 中指定，如果没有指定默认是 bytearray 类型。在操
+作过程中可能会根据上下文发现隐式的数据类型转换。比如：
+<example>
+A = LOAD 'data' AS (f1,f2,f3);
+B = FOREACH A GENERATE f1 + 5;
+C = FOREACH A generate f1 + f2;
+</example>
+
+在 B 中 f1 转换在整数，而在 C 中 f1, f2 转换成 double。
+
+如果在 LOAD 过程中数据类型不一致，将产生 null 或者错误。
+
+如果显示的类型转换失败将产生错误，比如：
+<example>
+A = LOAD 'data' AS (name:chararray, age:int, gpa:float);
+B = FOREACH A GENERATE (int)name;
+</example>
+
+如果隐式转换时类型不兼容，也将产生错误，比如：
+<example>
+A = LOAD 'data' AS (name:chararray, age:int, gpa:float);
+B = FOREACH A GENERATE name + gpa;
+</example>
+
+** COGROUP
+COGROUP 将两组或多组关系按相同的字段合并成这新的结构 (join_field, A, B)。语法如下：
+<example>
+alias = COGROUP alias BY field_alias [INNER|OUTER], alias BY field_alias[INNER|OUTER] [PARALLEL n];
+</example>
+ - alias 是关系名。
+ - field_alias 是关系中的一个或多个字段。当使用多个字段时，两个关系中的字段数必须一致。
+
+<example>
+A = LOAD 'data1' AS (owner:chararray,pet:chararray);
+DUMP A;
+(Alice,turtle)
+(Alice,goldfish)
+(Alice,cat)
+(Bob,dog)
+(Bob,cat)
+B = LOAD 'data2' AS (friend1:chararray,friend2:chararray);
+DUMP B;
+(Cindy,Alice)
+(Mark,Alice)
+(Paul,Bob)
+(Paul,Jane)
+X = COGROUP A BY owner, B BY friend2;
+DESCRIBE X;
+X: {group: chararray,A: {owner: chararray,pet: chararray},B: {firend1:chararray,friend2: chararray}}
+(Alice,{(Alice,turtle),(Alice,goldfish),(Alice,cat)},{(Cindy,Alice),(Mark,Alice)})
+(Bob,{(Bob,dog),(Bob,cat)},{(Paul,Bob)})
+(Jane,{},{(Paul,Jane)})
+</example>
+
+** CROSS
+计算关系的笛卡尔积。
+<example>
+alias = CROSS alias, alias[, alias ...] [PARALLEL n];
+</example>
+
+<example>
+A = LOAD 'data1' AS (a1:int,a2:int,a3:int);
+DUMP A;
+(1,2,3)
+(4,2,1)
+B = LOAD 'data2' AS (b1:int,b2:int);
+DUMP B;
+(2,4)
+(8,9)
+(1,3)
+X = CROSS A, B;
+DUMP X;
+(1,2,3,2,4)
+(1,2,3,8,9)
+(1,2,3,1,3)
+(4,2,1,2,4)
+(4,2,1,8,9)
+(4,2,1,1,3)
+</example>
+
+** DISTINCT
+
+语法：
+<example>
+alias = DISTINCT alias [PARALLEL n];
+</example>
+
+<example>
+A = LOAD 'data' AS (a1:int,a2:int,a3:int);
+DUMP A;
+(8,3,4)
+(1,2,3)
+(4,3,3)
+(4,3,3)
+(1,2,3)
+X = DISTINCT A;
+DUMP X;
+(1,2,3)
+(4,3,3)
+(8,3,4)
+</example>
+
+** FILTER
+
+<example>
+alias = FILTER alias BY expression;
+</example>
+
+<example>
+A = LOAD 'data' AS (a1:int,a2:int,a3:int);
+DUMP A;
+(1,2,3)
+(4,2,1)
+(8,3,4)
+(4,3,3)
+(7,2,5)
+(8,4,3)
+X = FILTER A BY f3 == 3;
+DUMP X;
+(1,2,3)
+(4,3,3)
+(8,4,3)
+</example>
+
+** FOREACH ... GENERATE ..
+
+<example>
+alias = FOREACh { gen_blk | nested_gen_blk } [ AS schema ];
+</example>
+alias 关系名
+gen_blk 语法结构为
+<example>
+FOREACH alias GENERATE expression[, expression ...]
+</example>
+nested_gen_blk 语法结构为：
+<example>
+FOREACH nested_alias {
+   alias = nested_op; [ alias = nested_op; .. ]
+   GENERATE expression [ expression ... ]
+};
+</example>
+nested_op 包括 FILTER, ORDER, DISTINCT。
+schema 如果使用 FLATTEN 关键字，则 schema 要用括号括起，否则不要用括号。
+
+使用示例：
+<example>
+A = LOAD 'data1' AS (a1:int,a2:int,a3:int);
+DUMP A;
+(1,2,3)
+(4,2,1)
+(8,3,4)
+(4,3,3)
+(7,2,5)
+(8,4,3)
+B = LOAD 'data2' AS (b1:int,b2:int);
+DUMP B;
+(2,4)
+(8,9)
+(1,3)
+(2,7)
+(2,9)
+(4,6)
+(4,9)
+C = COGROUP A BY a1 inner, B BY b1 inner;
+DUMP C;
+(1,{(1,2,3)},{(1,3)})
+(4,{(4,2,1),(4,3,3)},{(4,6),(4,9)})
+(8,{(8,3,4),(8,4,3)},{(8,9)})
+ILLUSTRATE C;
+--------------------------------------------------------------------------------------
+| C     | group: int | A: bag({a1: int,a2: int,a3: int}) | B: bag({b1: int,b2: int}) |
+--------------------------------------------------------------------------------------
+|       | 1          | {(1, 2, 3)}                       | {(1, 3)}                  |
+--------------------------------------------------------------------------------------
+(1,{(1,2,3)},{(1,3)})
+(4,{(4,2,1),(4,3,3)},{(4,6),(4,9)})
+(8,{(8,3,4),(8,4,3)},{(8,9)})
+</example>
+
+简单的 project：
+<example>
+X = FOREACH A GENERATE *;
+X = FOREACH A GENERATE a1, a2;
+</example>
+
+nested project:
+<example>
+X = FOREACH C GENERATE group, B.b2;
+(1,{(3)})
+(4,{(6),(9)})
+(8,{(9)})
+X = FOREACH C GENERATE group, A.(a1, a2);
+(1,{(1,2)})
+(4,{(4,2),(4,3)})
+(8,{(8,3),(8,4)})
+</example>
+
+Schema:
+<example>
+X = FOREACH A GENERATE a1+a2 AS f1:int;
+</example>
+
+使用函数：
+<example>
+X = FOREACH C GENERATE group, SUM (A.a1);
+(1,1L)
+(4,8L)
+(8,16L)
+</example>
+
+FLATTEN：
+<example>
+X = FOREACH C GENERATE group, FLATTEN(A);
+(1,1,2,3)
+(4,4,2,1)
+(4,4,3,3)
+(8,8,3,4)
+(8,8,4,3)
+X = FOREACH C GENERATE GROUP, FLATTEN(A.a3);
+(1,3)
+(4,1)
+(4,3)
+(8,4)
+(8,3)
+</example>
+在 C 的 group '4' 中，A 和 B 都有两个 tuple，在使用 flatten 时将产生
+cross ：
+<example>
+X = FOREACH C GENERATE FLATTEN(A.(a1, a2)), FLATTEN(B.$1);
+(1,2,3)
+(4,2,6)
+(4,2,9)
+(4,3,6)
+(4,3,9)
+(8,3,9)
+(8,4,9)
+</example>
+
+nested block：
+<example>
+A = LOAD 'data' AS (url:chararray,outlink:chararray);
+(www.ccc.com,www.hjk.com)
+(www.ddd.com,www.xyz.org)
+(www.aaa.com,www.cvn.org)
+(www.www.com,www.kpt.net)
+(www.www.com,www.xyz.org)
+(www.ddd.com,www.xyz.org)
+B = GROUP A BY url;
+(www.aaa.com,{(www.aaa.com,www.cvn.org)})
+(www.ccc.com,{(www.ccc.com,www.hjk.com)})
+(www.ddd.com,{(www.ddd.com,www.xyz.org),(www.ddd.com,www.xyz.org)})
+(www.www.com,{(www.www.com,www.kpt.net),(www.www.com,www.xyz.org)})
+X = foreach B {
+       FA= FILTER A BY outlink == 'www.xyz.org';
+       PA = FA.outlink;
+       DA = DISTINCT PA;
+       GENERATE group, COUNT(DA);
+};
+(www.aaa.com,0L)
+(www.ccc.com,0L)
+(www.ddd.com,1L)
+(www.www.com,1L)
+</example>
+
+** GROUP
+
+<example>
+alias = GROUP alias [BY {[field_alias [, field_alias]] | * | [expression] } [ALL] [PARALLEL n];
+</example>
+
+field_alias 可以是一个或者多个。
+<literal>*</literal>  表示按所有字段。
+ALL 表示所有 touple 分到一个 group 中。
+
+** JOIN
+<example>
+alias = JOIN alias BY field_alias, alias BY field_alias [, alias BY field_alias ..] [USING "replicated"] [PARALLEL n];
+</example>
+replicated 当数据量小时直接将关系存储到内存中。
+
+** LIMIT
+
+<example>
+alias = LIMIT alias n;
+</example>
+
+** DUMP
+<example>
+DUMP alias;
+</example>
+
+** LOAD
+<example>
+alias = LOAD 'data' [USING function] [AS schema];
+</example>
+
+** ORDER
+<example>
+alias = ORDER alias BY { * [ASC|DESC] | field_alias [ASC|DESC] [, field_alias [ASC|DESC] …] } [PARALLEL n];
+</example>
+在 pig 中关系都是没有顺序的。如果用 ORDER 对关系 A 产生 X，X 和 A 实际
+上还是一样，但是从 X 中取数据时保证是有顺序的。如果对 X 作操作不能保证
+是有顺序的，比如 FILTER X BY $0>1。
+
+** SPLIT
+<example>
+SPLIT alias INTO alias IF expression, alias IF expression [, alias IF expression ...]
+</example>
+SPLIT 应该是增强的 FILTER。
+
+<example>
+A = LOAD 'data' AS (f1:int,f2:int,f3:int);
+DUMP A;
+(1,2,3)
+(4,5,6)
+(7,8,9)
+SPLIT A INTO X IF f1< 7, Y IF f2==5, Z IF (f3<6 OR f3>6);
+DUMP X;
+(1,2,3)
+(4,5,6)
+DUMP Y;
+(4,5,6)
+DUMP Z;
+(1,2,3)
+(7,8,9)
+</example>
+
+** STREAM
+<example>
+alias = STREAM alias [, alias ...] THROUGH { `command` | cmd_alias } [ AS schema ];
+</example>
+STREAM 操作用于向外界脚本输出数据。
+
+** UNION
+是 SPLIT 反操作。
+<example>
+alias = UNION alias, alias [, alias …];
+</example>
+
+** EXPLAIN
+<example>
+EXPLAIN alias;
+</example>
+
+** ILLUSTRATE
+<example>
+ILLUSTRATE alias;
+</example>
+
+** DEFINE
+
+<example>
+DEFINE alias { function | [`command` [input] [output] [ship] [cache]] }
+</example>
+
+** 函数
+
+*** AVG
+参数是一个 bag，返回平均值。
+<example>
+A = LOAD 'student.txt' AS (name:chararray, term:chararray, gpa:float);
+DUMP A;
+(John,fl,3.9F)
+(John,wt,3.7F)
+(John,sp,4.0F)
+(John,sm,3.8F)
+(Mary,fl,3.8F)
+(Mary,wt,3.9F)
+(Mary,sp,4.0F)
+(Mary,sm,4.0F)
+B = GROUP A BY name;
+DUMP B;
+(John,{(John,fl,3.9F),(John,wt,3.7F),(John,sp,4.0F),(John,sm,3.8F)})
+(Mary,{(Mary,fl,3.8F),(Mary,wt,3.9F),(Mary,sp,4.0F),(Mary,sm,4.0F)})
+C = FOREACH B GENERATE A.name, AVG(A.gpa);
+DUMP C;
+({(John),(John),(John),(John)},3.850000023841858)
+({(Mary),(Mary),(Mary),(Mary)},3.925000011920929)
+</example>
+
+*** COUNT
+参数是一个 bag。计算 bag 内的 tuple 数。
+
+*** SUM
+参数是一个 bag，计算 bag 内所有数据之和。
+
+*** CONCAT
+连接两个 chararray。
+
+*** DIFF
+
+A = LOAD 'bag_data' AS (B1:bag{T1:tuple(t1:int,t2:int)},B2:bag {T2:tuple(f1:int,f2:int)});
+
+*** MAX
+*** MIN
+*** SIZE
+*** TOKENIZE
+

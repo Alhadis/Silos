@@ -1,0 +1,338 @@
+#author John Wiegley
+#title The Emacs Muse
+
+<contents>
+
+Emacs Muse 是一个基于 Emacs 的写作和发布平台。它简化了文档编辑
+过程，并且可以选择多种格式进行发布。
+
+Muse 包括两个主要部分：一个增强的 text 模式，用来编辑文档和在 
+Muse 工程中随意浏览文档；一组发布策略，用来产生各种不同的格式输出。
+
+
+
+* 关于本文档
+
+本文档提供一个 Muse 标记以及功能的例子作为一个 Muse 的快速指南。
+
+要查看本文档发布后的形式，输入 =make examples=。你就会获得一个 Info 文档，
+一个 HTML 文档和一个 PDF 文档（假设你已经安装了 LaTeX，并带有必须的字体）。
+
+* 开始
+
+要使用 Muse，添加包含 Muse 文件的目录到你的 =load-path= 变量中，它一般在
+你的 =.emacs= 文件中定义。然后，加载写作模式和你想要发布的文档风格。
+
+<example>
+(add-to-list 'load-path "<path to Muse>")
+
+(require 'muse-mode)     ; load authoring mode
+
+(require 'muse-html)     ; load publishing styles I use
+(require 'muse-latex)
+(require 'muse-texinfo)
+(require 'muse-docbook)
+</example>
+
+一旦 Muse 模式被加载，命令 =M-x muse-publish-this-file= 将发布一个输入
+文档为任意可用的风格。如果你想在一个 buffer 中启用 =muse-mode= ，那么
+输入 =M-x muse-mode= ，它被绑定到 =C-c C-t=。
+
+* 创建一个 Muse 项目
+
+通常你希望自动将一个目录中的所有文件发布为一组特定的输出风格，
+为此， Muse 允许创建“项目”。下面是一个定义在你的 =.emacs= 文件
+中的项目范例。
+
+<example>
+(require 'muse-project)
+
+(setq muse-project-alist
+      '(("website"                      ; my various writings
+         ("~/Pages" :default "index")
+         (:base "html" :path "~/public_html")
+         (:base "pdf" :path "~/public_html/pdf"))))
+</example>
+
+上面定义了一个名为“website”的项目，该项目所有的文件都位于目录 
+=~/Pages= 下，默认的访问页为 =index=。当该项目被发布时，每一页将会以 
+HTML 格式输出到 =~/public_html= 目录中，并以 PDF 格式输出到 =~/public_html/pdf= 
+目录中。在项目中的任一页中，你可以使用语法 =[[pagename]]= 创建到
+其他页的链接。
+
+* 标记规则
+
+一个 Muse 文档使用特别的、文脉上的标记规则来决定怎样格式化输出结果。
+例如，如果一个段落被缩进了，Muse 就认为它应该被引用。
+
+并没有太多的标记规则，而且所有的标记规则力争简单以便让使用者更加
+专注于文档创作，而不是格式。
+
+** 段落
+
+在 Muse 中段落必须通过一个空行来隔开。
+
+例如，本节的输入文本如下：
+
+<example>
+在 Muse 中段落必须通过一个空行来隔开。
+
+例如，本节的输入文本如下：
+</example>
+
+** 段落居中和引用
+
+以六个或者更多的空白字元（Tab 或者空格）开始的一行表示一个
+居中的段落。
+
+                           这一段居中
+
+  但是如果一行以空白字元开始，但空白字元不足六个，这表示一个
+  引用的段落。
+
+** 标题
+
+依赖于输出风格一个标题会成为打印输出的一章或者一节。以一个或
+几个星号开始一个新的段落，后面跟一个空格和标题题目，来表示一
+个标题。然后另起一段输入这部分的正文。
+
+<example>
+* First level
+
+** Second level
+
+*** Third level
+</example>
+
+** 水平线
+
+四个或者更多的破折号（-）表示一个水平线。确保其前后都是空行，
+否则它将被看作是前面或后面段落的一部分！
+
+----
+
+上面分隔符由下面的输入产生：
+
+<example>
+----
+</example>
+
+** 强调文本
+
+使用某些特别地认可的字符包围文本以强调文本：
+
+<example>
+*emphasis*
+**strong emphasis**
+***very strong emphasis***
+_underlined_
+=verbatim and monospace=
+</example>
+
+上面的列表生成：
+
+<verse>
+*emphasis*
+**strong emphasis**
+***very strong emphasis***
+_underlined_
+=verbatim and monospace=
+</verse>
+
+** 添加脚注
+
+一个脚注引用就是简单的一个在方括号中的数字<verbatim>[1]</verbatim>，[1]
+在你的文件底部放置脚注的注解来定义它。 =footnote-mode= 可以被用来非常
+方便的生成这种脚注。
+
+<example>
+ Footnotes:
+ [1]  Footnotes are defined by the same number in brackets
+      occurring at the beginning of a line.  Use footnote-mode's
+      C-c ! a command, to very easily insert footnotes while
+      typing.  Use C-x C-x to return to the point of insertion.
+</example>
+
+** 诗章
+
+诗要求空白字元被保留，但不采取等宽。为显示诗使用下面的标签，
+它让我们想起 email 引用的方式。
+
+<example>
+> A line of Emacs verse;
+>   forgive its being so terse.
+</example>
+
+上面的输入生成：
+
+> A line of Emacs verse;
+>   forgive its being so terse.
+
+你也可以使用 =<literal><verse></literal>= 标签，如果你喜欢：
+
+<example>
+<verse>
+A line of Emacs verse;
+  forgive its being so terse.
+</verse>
+</example>
+
+** 抄录段落
+
+=<literal><example></literal>= 标签用于示例，其中空白应该被保留，
+等宽间距文本，且输出风格的任意特殊字符都被转义。
+
+还有一个 =<literal><literal></literal>= 标签，作用是使得所标记的
+块全部原样输出。比如这可以用来插入一段手编的 HTML 代码到 HTML 输出。
+
+** 列表
+
+列表是由行首使用的特殊字符产生，在符号列表项或数字列表项前必须
+有一个空白字元用于区别那些字符可能确实出现在一个句子中的情况。
+
+Muse 提供的列表种类如下：
+
+<example>
+  - bullet item one
+  - bullet item two
+
+  1. Enumerated item one
+  2. Enumerated item two
+
+Term1 :: A definition one
+
+Term2 :: A definition two
+</example>
+
+它们生成一个符号列表：
+
+  - bullet item one
+  - bullet item two
+
+一个枚举列表：
+
+  1. Enum item one
+  2. Enum item two
+
+和是一个定义列表：
+
+Term1 ::
+  This is a first definition
+  And it has two lines;
+  no, make that three.
+
+Term2 ::
+  This is a second definition
+
+** 表
+
+Muse 仅仅支持很简单的表格，语法如下：
+
+<example>
+  Double bars  || Separate header fields
+
+  Single bars   | Separate body fields
+  Here are more | body fields
+
+  Triple bars ||| Separate footer fields
+</example>
+
+上面的输入生成：
+
+Double bars  || Separate header fields
+
+Single bars   | Separate body fields
+Here are more | body fields
+
+Triple bars ||| Separate footer fields
+
+<comment>
+Double bars  || Separate header fields
+
+Single bars   | Separate body fields
+Here are more | body fields
+
+Triple bars ||| Separate footer fields
+</comment>
+
+** 锚和标记的链接
+
+#example 如果你以“#anchor”开始一行 ── 其中“anchor”可以是任意不包含
+空白字元的单词 ── 那么它在所在位置定义了一个进入文档内部的锚。
+在一个 Muse 链接中使用“page#anchor”作为目标就可以引用这个锚点。（如下）
+
+点击 [[#example][这里]] 回到前面一段。
+
+** URLs 和 E-mail 地址
+
+如果输出风格支持，输入文本中的一个 URL 或者 email 地址被发布为一个
+超链接。如果是一个图片的 URL，它将会被直接插入如果可能。例如
+最近更新的 Muse 源码可以从 http://download.gna.org/muse-el 下载，
+邮件可以被发送至 mwolson@gnu.org
+
+** 链接
+
+一个超级链接可以引用一个 URL或者某个 Muse 项目中的其他页面。另外，
+描述文本可以被指定并在支持链接描述的输出风格中显示，而不是显示链接
+文本。语法如下：
+
+<example>
+[[link target][link description]]
+[[link target without description]]
+</example>
+
+因此，Muse 可以在 [[http://download.gna.org/muse-el/][这里]] 下载，或者在
+[[http://download.gna.org/muse-el/]].
+
+** 嵌入 lisp
+
+使用 =<literal><lisp></literal>= 标签可以得到任意种类的标记，它也是仅有
+的在一个风格的页眉和页脚文本中支持的 Muse 标签。使用 =<literal><lisp></literal>= 
+标签你可以生成任意你想要的输出。如果 =<literal><lisp></literal>= 标签出现
+在文档正文内部，那么插入的输出将会被标记出。
+
+<example>
+<lisp>(concat "This form gets " "inserted")</lisp>
+</example>
+
+上面的输入生成：This form gets inserted.
+
+* 发布风格
+
+Muse 的一个基本特色是它能够把一个简单的输入文本发布成种种不同风格的输出。
+Muse 也使得创建一个新的风格或者从一个存在的风格中派生新风格变得容易。
+
+** 从一个存在的风格中派生
+
+使用 =muse-derive-style= 从一个存在的风格生成一个新的风格：
+
+<example>
+(muse-derive-style DERIVED-NAME BASE-NAME STYLE-PARAMETERS)
+</example>
+
+DERIVED-NAME 是定义新风格的一个字符串，比如“my-html”。BASE-NAME 
+必须是一个存在的风格，比如“html”（如果你加载了 =muse-html= ）。 
+STYLE-PARAMETERS 与用来创建一个风格的参数相同，只是它们去掉了基风格
+中存在的所有定义。但是，一些定义仅仅部分弃除。下面的这些参数支持部分弃除：
+
+ - =:functions= -- 如果一个标记函数在派生的风格函数表中没有被找到，
+那么基风格的函数表将会被查询。
+
+ - =:strings=
+
+ - =:before=
+
+ - =:before-end=
+
+ - =:after=
+
+** 重写一个存在的风格
+
+Write me.
+
+** 创造一个新的风格
+
+Write me.
+
+Footnotes:
+[1]  这是一个脚注。

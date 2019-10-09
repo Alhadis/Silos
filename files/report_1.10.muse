@@ -1,0 +1,100 @@
+#title Задание 1-10.
+#author Лапин Ярослав
+
+* Расчет по магнитосферной модели объема силовой трубки
+
+        Выполнил Лапин Ярослав. 07/06/2011.
+
+* Ход работы
+
+** Пример вывода
+<example>
+	program task10
+	external igrf_gsm, t89c
+	real*4 :: xx(1000), yy(1000), zz(1000)
+
+	R0=1.+100./6371.
+	RLIM=60.0
+	IOPT=1	  
+	
+	call recalc(2000,90,1,1,1)
+
+	! take point from geostationary orbit (approx)
+	Xgsm = 6.!Re
+	Ygsm = 0.
+	Zgsm = 0.
+
+	r = sqrt(Xgsm**2+Ygsm**2+Zgsm**2)
+
+	if (Xgsm.gt.0.) then
+	   print *, 'noon R=', r
+	else
+	   print *, 'midnight R=', r
+	end if
+
+	! find Earth projection
+	dir = 1.
+	call trace(XGSM,YGSM,ZGSM,dir,RLIM,R0,IOPT,PARMOD,T89C,
+     _	       IGRF_GSM,XF,YF,ZF,XX,YY,ZZ,L)
+
+	! find line from Earth surface
+	Xgsm = XF
+	Ygsm = YF
+	Zgsm = ZF
+	dir = -dir
+	call trace(XGSM,YGSM,ZGSM,dir,RLIM,R0,IOPT,PARMOD,T89C,
+     _	       IGRF_GSM,XF,YF,ZF,XX,YY,ZZ,L)
+
+	V_full = 0.
+	V_close = 0.
+	do i = 1, l-1
+	   rh = 1.+1000./6400. ! distance from Earth to 1000km
+	   r = sqrt(xx(i)**2+yy(i)**2+zz(i)**2)
+	   dl = sqrt((xx(i)-xx(i+1))**2+(yy(i)-yy(i+1))**2+(zz(i)-zz(i+1))**2)
+	   call t89c(iopt,parmod,ps,xx(i),yy(i),zz(i),bx,by,bz)
+	   call IGRF_GSM (xx(i),yy(i),zz(i),HXGSM,HYGSM,HZGSM)
+	   B = sqrt((bx+HXGSM)**2+(by+HYGSM)**2+(bz+HZGSM)**2)
+	   dv = dl/B
+	   V_full = V_full+dv
+	   if (rh > r) then
+	      V_close = V_close+dv
+	   end if
+	end do
+	
+	print *
+	print *, V_full, V_close, V_close/V_full*100., '%'
+
+	end program
+</example>
+
+* Результаты
+
+Программа рассчитала объём трубки (пересекающей экватор на расстоянии
+6 Re), часть на расстоянии до 1000km и долю в процентах этой части
+
+<example> 0.036887072 6.7318383E-6 0.018249858% </example>
+
+Видно, что из-за огромных значений поля вблизи Земли объём трубки в
+этой области очень мал и составляет сотые доли процента.
+
+** Зависимость от расстояния
+
+<example>
+ midnight R= 4.0
+ 8.441974E-3 1.0643172E-5 0.12607443%
+ midnight R= 6.0
+ 0.041513953 9.486481E-6 0.022851307%
+ midnight R= 10.0
+ 0.29684314 7.744163E-6 2.6088401E-3%
+
+ noon R= 4.0
+ 7.399017E-3 8.130239E-6 0.10988269%
+ noon R= 6.0
+ 0.036887072 6.7318383E-6 0.018249858%
+ noon R= 10.0
+ 0.27093932 5.888586E-6 2.1733967E-3%
+
+</example>
+
+Видно, что трубки на ночной стороне имеют больший обём, что связано с
+тем, что на начной стороне магнитное поле меньше (значит 1/B больше).

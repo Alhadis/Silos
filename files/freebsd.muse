@@ -1,0 +1,276 @@
+#title FreeBSD Notes
+
+* FreeBSD at home for fun
+在家无聊，Ubuntu 早就没有新鲜感，不想折腾电脑。于是我装了虚拟机然后装
+了 FreeBSD-6.2-release。本页主要都是一些笔记。
+
+** Install Environment
+ Host :: winmsd output 
+OS 名称	       || Microsoft Windows XP Professional
+版本	       | 5.1.2600 Service Pack 2 内部版本号 2600
+OS 制造商      | Microsoft Corporation
+系统名称	 | 7B876E2FF33444C
+系统制造商	| BIOSTAR Group
+系统模式	| TF560 A2+
+系统类型	| 基于 X86 的 PC
+处理器	| x86 Family 15 Model 107 Stepping 2 AuthenticAMD ~2310 Mhz
+处理器	| x86 Family 15 Model 107 Stepping 2 AuthenticAMD ~2310 Mhz
+BIOS 版本/日期	| Phoenix Technologies, LTD 6.00 PG, 2007-6-11
+SMBIOS 版本	| 2.4
+Windows 目录	| C:\WINDOWS
+系统目录	| C:\WINDOWS\system32
+启动设备	| \Device\HarddiskVolume1
+地区	| 中华人民共和国
+硬件抽象层	| 版本 = "5.1.2600.2180 (xpsp_sp2_rtm.040803-2158)"
+用户名称	| 7B876E2FF33444C\nil
+时区	| 中国标准时间
+总的物理内存	| 2,048.00 MB
+可用物理内存	| 769.63 MB
+总的虚拟内存	| 2.00 GB
+可用虚拟内存	| 1.96 GB
+分页文件空间	| 3.35 GB
+页文件	|||  C:\pagefile.sys
+
+ Client :: blah blah
+
+* During Installation
+
+** GDM & GNOME
+<quote>
+Do _NOT_ use /etc/ttys to start gdm at boot time. Instead, add
+gdm_enable="YES" to /etc/rc.conf.
+
+GDM uses its own locale.alias file to determine its language and
+especially the GNOME 2 fontencoding. This file is located in
+/usr/local/etc/gdm/locale.alias. By default, the character set for
+every country using the EURO currency is set to ISO8859-15 in order to
+enable the EURO sign.
+</quote>
+
+** su in BSD sytle
+在 FreeBSD 中从普通用户 su 到 root，需要将该用户加入 wheel 组。安装的
+时候添加账户时，即在使用 user_add 添加账户的时候就有选项询问是否要将该
+用户添加到 wheel 组的，我眼拙，错过了。于是得用 pw(8)，摘录一段
+manpages 如下，得注意两者之间的区分。
+
+<example>
+     -M memberlist  This option provides an alternative way to add existing
+                    users to a new group (in groupadd) or replace an existing
+                    membership list (in groupmod).  memberlist is a comma sep-
+                    arated list of valid and existing user names or uids.
+
+     -m newmembers  Similar to -M, this option allows the addition of existing
+                    users to a group without replacing the existing list of
+                    members.  Login names or user ids may be used, and dupli-
+                    cate users are silently eliminated.
+</example>
+
+所以执行命令如下即可：
+<example>freebsd# pw groupmod wheel -m nil</example>
+
+*** diff /etc/group /etc/group.origin
+<example>
+3c3
+< wheel:*:0:root,nil
+---
+> wheel:*:0:root
+</example>
+
+好像加 newmembers 之后的区别就是如此，不知道还有没有改别的文件，如果没
+的话，直接编辑该文件应该也是一样。
+
+这里还得记录另外一个命令 vipw，与 debian 中的 visudo 有异曲同工之妙，
+同样是调用 vi，后者只是编辑 sudoer 列表，前者直接打开 /etc/passwd 文件。
+
+*** diff su su-
+
+ - su 只能切换到管理员用户权限,不使用管理员的登陆脚本和搜索路径
+ - su- 不但能切换到管理员权限而且使用管理员登陆脚本和搜索路径
+
+*** safer sudo
+
+更偏好 sudo，步骤如下：安装 sudo package 之后，visudo 然后将其中某行去
+掉注释使得 wheel 组内的用户都可以 sudo 即可。
+
+* Storage
+
+** Physical Disk Naming Regulation
+驱动器类型			|| 驱动设备命名
+IDE 硬盘驱动器 	 		| ad
+IDE CDROM 驱动器  		| acd
+SCSI 硬盘以及 USB 大容量存储设备	| da
+SCSI CDROM 驱动器		| cd
+各类非标准 CDROM 驱动器		| 用于 Mitsumi CD-ROM 的 mcd 以及用于 Sony CD-ROM 驱动器的 scd
+Floppy drives	 		| fd
+SCSI tape drives		| sa
+IDE tape drives			| ast
+Flash drives			| fla for DiskOnChip® Flash device
+RAID drives			||| aacd for Adaptec® AdvancedRAID, mlxd and mlyd for Mylex®, amrd for AMI MegaRAID®, idad for Compaq Smart RAID, twed for 3ware® RAID.
+
+FreeBSD 中分区叫做 slices，事情是这样的：
+<quote>
+　　因为 FreeBSD 运行在 IBM-PC 兼容机上，它必须遵循 PC BIOS 分区规范。 这
+与传统的 BSD 分区是不同的。一个 PC 的磁盘最高只能有四个 BIOS 主分区。
+如果磁盘只安装 FreeBSD 您可以使用 dedicated 模式。另外， FreeBSD 必须
+安装在 PC BIOS 支持的分区内。FreeBSD 把分区叫作 slices 这可能会把人搞
+糊涂。您也可以在只安装 FreeBSD 的磁盘上使用 slices，也可以在安装有其它
+操作系统的磁盘上使用 slices。这不会影响其它操作系统的 fdisk 分区工具。 
+
+　　在 slice 方式表示下，驱动器被添加到 /dev/da1s1e。可以读作：SCSI 磁
+盘，编号为 1 (第二个SCSI 磁盘)， slice 1 (PC BIOS 分区 1)， 的 BSD 分
+区 e 。在有些例子中，也可以简化为 /dev/da1e。
+</quote>
+
+*** RAID
+RAID (Redundant Array of Independent Disks)  [reid] ::
+  n.  raid, 一大堆廉价没用的磁盘, 有几个硬盘驱动器可以安全存储快速提取信息的系统 (计算机用语)
+
+ATA specification ::
+  ATA 规格, IDE 磁盘标准以之为基础的规格 (计算机用语)
+
+** Data Exchange With Windows & GNU/Linux In VMware
+关于 [[http://vmware.com/][VMware]] 的部分请参考 
+[[windows][Windows Notes]]，不过书归正传，重头还是在 FreeBSD 中的部分。我最初的想法
+是把 Windows 和 Linux 下的分区都挂载在虚拟机中，然而在写数据的时候出现
+了问题，就算是 FAT32 格式的分区都写不了，很伤脑筋。百度了下还有如下方
+法可取：
+ - 设置一块虚拟硬盘而不是直接挂在物理硬盘，VMware 提供了一个工具叫做
+   VMware-mount.exe 之类的东西，就可算是拿来在 Ubuntu 和 Windows 之间
+   中转了。
+ - 制作一个 ISO 文件，在虚拟机中挂载然后往里面写数据，以前也看过一个文
+   章利用光盘镜像节省磁盘空间的，不过这方面不熟，也就没尝试。
+ - 而我自己用的方法还是使用网络连接，在 FreeBSD 下装了 SSH，然后通过
+   sftp 协议下载，安装方法么：<example>freebsd# pkg_add -r sshd</example>
+
+*** How To Mount ext3 Partition
+FreeBSD 支持 ext2 文件系统，所以按照如下方式操作应该就可以了，如果你装
+的 FreeBSD 版本比较老旧或者不管怎样和我的不一样的话请重新编译并在配置
+内核选项的时候注意加入 ext2 文件系统支持（Windows 的 NTFS 也在那里配
+置）。 
+<quote>
+If the disk you have the Linux partition is wd0,
+then try running ``disklabel -r wd0''
+
+Then figure out which partition holds your ext2
+filesystem.
+
+mount -t ext2fs /dev/wd0a /mnt
+
+Should work, if your ext2 partition is "wd0a".
+
+Since ext3 is basically the same as
+ext2, only with journaling, you should be able to mount
+a ext3 partition as ext2.
+</quote>
+
+*** And How To Mount ntfs Partition?
+根据 [[http://firesk.blog.51cto.com/180373/48325][这篇文章]] 的描
+述，ntfs 在这里和 ext3 的挂载没有区别，都是需要在内核配置选项中打开而
+已。
+
+不过照理还有另外一种方法，使用 [[http://www.ntfs-3g.org/][ntfs-3g]]，
+所以一开始我按照 debian 的思维方式
+<example>pkg_add -r ntfs-3g</example>
+结果说没有，就想当然地以为 FreeBSD 不支持，去官方主页看了下，结果常用
+的非 NT 系统基本都支持，研究中。
+
+主页上给出的连接是
+[[http://www.freshports.org/sysutils/fusefs-ntfs][FreeBSD FreshPorts]]
+。正如其名，这个网站提供许多崭新的东西。安装然后挂载操作步骤如下：
+<example>
+# To install the port:
+freebsd# cd /usr/ports/sysutils/fusefs-ntfs/ && make install clean
+# To add the package: 
+freebsd# pkg_add -r fusefs-ntfs
+mount -t ntfs-3g /dev/sda1 /mnt/windows
+</example>
+要自动挂载的话则修改 /etc/fstab 的末尾：
+<example>/dev/sda1 /mnt/windows ntfs-3g defaults 0 0</example>
+
+*** Dependency Of fusefs-ntfs
+
+安装的时候碰到了问题，主页找到依赖关系如下：
+
+ - required to build: sysutils/fusefs-libs, devel/libtool15
+ - required to run: sysutils/fusefs-kmod
+ - required libraries: sysutils/fusefs-libs, devel/libublio
+
+于是安装 fusefs-kmod：
+<example>
+freebsd# pkg_add -r fusefs-kmod
+...
+In order to automatically load the fuse module on startup, you need to
+set the following settings:
+
+ - Set the module path in /etc/sysctl.conf:
+   kern.module_path=%%MODULE_PATH%%
+
+ - Add fusefs_enable="YES" to your /etc/rc.conf
+
+%%PREFIX%%/etc/rc.d/fusefs start will load the module for the first
+  time after the installation. Set "sysctl vfs.usermount=1" if you
+  want to be able to mount fuse devices as an ordinary user.
+</example>
+
+* Packages & Ports
+ Package 的优点 ::
+    - 一个压缩的 package 通常要比一个压缩的包含源代码的应用程序小得多。
+    - package 不需要进行额外的编译。 对于大型应用程序如 Mozilla， KDE
+    或 GNOME 来说这显得尤为重要，特别是在您的系统资源比较差的情况下。 
+    - package不需要您知道如何在FreeBSD上编译软件的详细过程。
+ Ports 的优点 ::
+    - package 在编译时通常使用比较保守的选项， 这是为了保证它们能够运
+    行在大多数的系统上。通过从 port 安装， 您可以细微调整编译选项来产
+    生适合于处理器的代码 (针对于 Pentium 4 或 AMD 的 Athlon CPU)。 
+    - 一些软件包已经把与它们相关的能做和不能做的事情的选项都编译进去了。
+    例如， Apache 可能就配置了很多的选项。 从 port 中安装时，您不一定
+    要接受默认的选项， 可以自己来设置。 
+
+    在一些例子中，一个软件有不同的配置存在多个package。 例如，
+    Ghostscript存在 ghostscript package 和 ghostscript-nox11 package两
+    个配置package，这取决于您是否安装了X11服务器。 这样的调整对package
+    是可能的，但如果一个应用程序有超过一个或两个不同的编译时间选项时，
+    就不行了。 
+    - 一些软件的许可条件禁止采用二进制形式发行。 它们必须带上源代码。
+    - 一些人不信任二进制发行形式。 至少有了源代码， (理论上) 可以亲自
+    阅读它，寻找潜在的问题。 
+    - 如果您要自己对软件打补丁，您就需要有源代码。
+    - 一些人喜欢整天围着源代码转， 所以他们喜欢亲自阅读源代码， 修改源
+    代码等等。 
+
+** Package
+
+*** Amend pkg_add(1)'s Target Source
+
+您可以通过修改环境变量 PACKAGESITE 来改变这一行为。 例如， 如果您运行
+FreeBSD 5.4-RELEASE 系统， 默认情况下 pkg_add(1) 将尝试从
+ftp://ftp.freebsd.org/pub/FreeBSD/ports/i386/packages-5.4-release/Latest/
+下载预编译的软件包。 如果您希望强制 pkg_add(1) 下载 FreeBSD 5-STABLE
+的软件包， 则可以将 PACKAGESITE 设置为
+ftp://ftp.freebsd.org/pub/FreeBSD/ports/i386/packages-5-stable/Latest/
+
+因此 6.2/amd64 版本的
+[[http://www.freebsdchina.org][freebsdchina.org]] 镜像的连接如下： 
+<example>
+freebsd# setenv PACKAGESITE \
+? ftp://ftp.cn.freebsd.org/pub/FreeBSD/ports/amd64/packages-6.2-release/Latest/
+</example>
+
+** Ports
+
+研究中，先看文档吧。
+
+* Network Servers
+
+** SSH (Secure SHell)
+百度到了 [[http://hi.baidu.com/%D4%C6%B5%AD%B7%E7%C7%E5st/blog/item/4808acd413316800a18bb7cf.html][一篇 SSH 配置解释]]:
+ 1. 首先vi编辑 /etc/inetd.conf，去掉 ssh 前的#，保存退出
+ 2. 编辑 /etc/rc.conf 最后加入：<code>sshd_enable="yes"</code>即可
+ 3. 激活sshd服务： <example># /etc/rc.d/sshd start</example>
+ 4. 用下面命令检查服务是否启动，在22端口应该有监听。
+ <example># netstat -an ## check port 22</example>
+ 5. 最后 <example># vi /etc/ssh/sshd_config</example>
+
+不过按照官方手册的描述，应该使用 inetd 来运行那些负载不重的服务，反正
+个人用户随便用用不需要多少嘛，所以我自作主张将上述步骤的第二部改成了
+<code>inetd_enable</code> 毕竟还要配置 ftp 什么的嘛。

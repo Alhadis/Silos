@@ -1,0 +1,156 @@
+#title 東京エリアDebian勉強会 課題提出方法
+
+この資料は Debian 勉強会予約システム導入以前の手順を説明しています。
+2010年以降はDebian 勉強会予約システム (http://debianmeeting.appspot.com/) を利用してください。
+
+* 更新方法
+
+** 0.  Git と Latex の設定をします。
+
+*** apt-lineにcontrib non-freeを追加します。
+/etc/apt/sources.listの該当する行を次のように編集してください。
+
+<example>
+deb http://ftp.jp.debian.org/debian/ lenny main contrib non-free
+deb-src http://ftp.jp.debian.org/debian/ lenny main contrib non-free
+</example>
+
+編集後、rootに移行しaptを更新します。
+
+<example>
+# apt-get update && apt-get upgrade
+</example>
+
+*** 課題作成に必要なパッケージを導入します。
+
+<example>
+# apt-get install git-core make lv ptex-bin okumura-clsfiles \
+xpdf xpdf-japanese texlive-latex-extra \
+ghostscript dvipdfmx latex-beamer ttf-sazanami-mincho \
+ttf-mona ttf-vlgothic gs-cjk-resource
+</example>
+
+
+*** 新クラスファイルを追加します。
+
+<example>
+# jisftconfig add
+</example>
+
+*** gitを設定します。
+
+課題を作成するユーザに戻り、gitにメールアドレスや名前を設定します。
+
+<example>
+$ git config --global user.email foo@example.com
+$ git config --global user.name "Tarou Debian"
+</example>
+
+** 1. 勉強会資料のリポジトリを持ってない人は、git clone コマンドを使ってコピーします。
+
+(既に持っている人は2. から読んでください。)
+<example>
+$ git clone git://git.debian.org/git/tokyodebian/monthly-report.git
+Initialized empty Git repository in /tmp/monthly-report/.git/
+remote: Counting objects: 2100, done.
+remote: Compressing objects: 100% (910/910), done.
+......
+Resolving deltas: 100% (1428/1428), done.
+</example>
+
+** 2. ディレクトリに移動し、取得したファイルをビルドします。
+<example>
+$ cd monthly-report
+$ cp -p git-pre-commit.sh .git/hooks/pre-commit
+$ make
+</example>
+ビルドが終了すると100個以上のpdfファイルが作成されます。
+
+** 3. 現在チェックアウトしているローカルブランチを確認します。
+<example>
+$ git branch
+* 200904
+  master
+</example>
+もし、master に前にアスタリスク( * )がついていない場合、masterローカルブランチをチェックアウトします。
+<example>
+$ git checkout master
+</example>
+
+再度、masterローカルブランチをチェックアウトしているか確認します。
+<example>
+$ git branch
+  200904
+* master
+</example>
+
+** 4. リモートリポジトリからリポジトリ情報を取得します。
+<example>
+$ git pull
+</example>
+
+** 5. 課題を作成する年月(2009年11月の場合は200911) のローカルブランチを作成します。
+<example>
+$ git branch 200911
+</example>
+
+** 6. 作成したローカルブランチをチェックアウトします。
+<example>
+$ git checkout 200911
+Switched to branch '200911'
+</example>
+
+** 7. 課題を作成する年月用のディレクトリ(2009年11月の場合はimage200911)にあるprework.texに自分の課題を追加します。
+利用するエディタはお好きなものをどうぞ。
+
+debianmeetingresume<YYYYMM>.texが勉強会資料で、事前課題はこのファ
+イルから読み込まれているimage<YYYYMM>/prework.texにお好みのエディ
+タを使用して追記します。
+
+<example>
+$ gnuclient images200911/prework.tex
+$ vi images200911/prework.tex
+</example>
+
+image<YYYYMM>/prework.texはMakefileの依存対象となっていないため、
+debianmeetingresume<YYYYMM>.texの日付を変更するなりしてビルドし
+ます。
+
+<example>
+$ touch debianmeetingresume200911.tex
+$ make
+</example>
+
+まれにdebianmeetingresume<YYYYMM>.texのimage<YYYYMM>/prework.tex
+を読み込んでいる箇所がコメントアウトされている場合がありますので、
+結果が反映されない場合はご確認ください。
+
+
+** 8. 課題を書いたら、変更をローカルブランチにコミットします。
+<example>
+$ git commit -m "Add iwamatsu prework" images200911/prework.tex
+[master 0b0f025] images200911/prework.tex
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+</example>
+
+** 9. 変更をパッチで出力します。
+<example>
+$ git format-patch -o /tmp HEAD~
+/tmp/0001-Add-iwamatsu-prework.patch
+</example>
+
+/tmp/0001-Add-iwamatsu-prework.patch がパッチです。
+
+** 10. パッチを課題用メーリングリストに投稿します。
+
+真のgit使いは git send-email コマンドを使いますが、各々が使っている
+MUA を使って送るのがいいでしょう。
+2009年度向けのメーリングリストは http://lists.alioth.debian.org/mailman/listinfo/tokyodebian-2009 です。
+
+** 11 . メーリングリストに投稿できたら、masterローカルブランチをチェックアウトします。
+
+<example>
+$ git checkout master
+Switched to branch 'master'
+</example>
+

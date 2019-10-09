@@ -1,0 +1,188 @@
+#title Language Specification
+
+* Muster Language Specification
+** Introduction
+Muster is an implicit parallel, declarative data processing language.  It is organized by connecting data sources
+(streams or collections) to a series of operations.  Operations are implicitly called in parallel until they need to
+be collected in order to pass to another operation.  The call semantics are different than other languages to allow
+for this parallelism and special note should be taken to cover that section.
+
+** Lexical elements
+
+*** Comments
+Comments are delimited by <verbatim>/* ... */</verbatim> and can span multiple lines.  Comments do not nest.
+
+*** Identifiers
+Identifieres are named program entities, such as definitions.  It is a sequence of one or more letters, digits and symbols.
+
+<src lang="ebnf">
+identifier           = identifier_start { identifier_component } .
+identifier_component = identifier_start | symbol .
+identifier_start     = letter | symbol .
+</src>
+
+*** Keywords
+There are very few reserved keywords in Muster.  They are:
+ - define
+ - declare
+ - import
+ - serial
+
+*** Operators and Delimiters
+The set of operators and delimiters are:
+<src>
+( ) + & << "
+[ ] - | >> '
+{ } * ^ ||
+< > / . &&
+: ; % , :=
+</src>
+
+*** Integer literals
+An integer literal is a sequence of digits that represent an integer constant.
+
+<src lang="ebnf">
+decimal_digit = "0" ... "9" .
+octal_digit   = "0" ... "7" .
+hex_digit     = "0" ... "9" | "A" ... "F" | "a" ... "f" .
+
+int_lit       = decimal_lit | octal_lit | hex_lit .
+decimal_lit   = ( "1" ... "9" ) { decimal_digit } .
+octal_lit     = "0" { octal_digit } .
+hex_lit       = "0" "x" hex_digit { hex_digit } .
+</src>
+
+*** Floating-point literals
+A floating point literal is a decimal representation of a floating point constant
+
+<src lang="ebnf">
+float_lit = decimals "." [ decimals ] | "." decimals .
+decimals  = decimal_digit { decimal_digit } .
+</src>
+
+*** String literals
+A string literal represents a string constant obtained from concatenating a sequence of characters.
+
+<src lang="ebnf">
+string_lit = `"` { unicode_char | newline } `"`
+</src>
+
+** Blocks
+A block is a possibly empty sequence of declarations, definitions and statements within matching brace brackets.  Evaluation
+of the block is determined based on its use.
+
+<src lang="ebnf">
+Block         = "{" StatementList "}" .
+StatementList = { Statement ";" } .
+</src>
+
+*** Declaration Blocks
+A declaration is a block that takes 0 or more values as input and evaluates to 0 or more values.  A declaration block is not
+evaluated when it is declared, only when used within an expression.
+
+<src lang="ebnf">
+Declaration   = "declare" Signature Block .
+Signature     = Parameters [ ":" Result ] .
+Parameters    = "(" [ ParameterList [ "," ]] ")" .
+Result        = Parameters | Type .
+ParameterList = ParameterDecl { "," ParameterDecl } .
+ParameterDecl = [ identifier ":" Type ] .
+Type          = identifier [ "(" identifier ")" ] .
+</src>
+<src lang="muster">
+declare (a: system.Stream, b: MyType): List(String) {
+  [a, b];
+};
+</src>
+
+*** Serial Blocks
+A serial block indicates that every statement contained in the block should be executed serially, rather than in parallel.
+Normally, individual statements are executed in sequence, but each statement may be evaluated in parallel.  Serial blocks
+insure that this does not happen.
+
+<src lang="ebnf">
+Serial = "serial" Block .
+</src>
+
+<src lang="muster">
+serial {
+  system.out.println < ["Hello", "World"];
+};
+</src>
+
+*** Definitions
+A definition is a label applied to a value.  If the value is a statement or block, it is not evaluated at the time the definition
+is created, it is only evaluated when it is used in a statement.
+
+<src lang="ebnf">
+Definition = "define" identifier ":" Type ":=" Value
+Value      = Case | Serial | Declaration | Constant | Statement .
+Type       = identifier [ "(" identifier ")" ] .
+</src>
+
+<src lang="muster">
+define x: system.Stream := declare (a: system.Stream): system.Stream {
+  a;
+};
+</src>
+
+** Types
+Type specifications in Muster are different than other systems.  Types are not explicitly created, every definition is an implicit
+type.  This mechanism also means that there are no "built-in" types, they are all wrapped by system definitions.  The only type
+that can be said to exist without a definition is Constant, which includes constant strings and numbers.  These are automatically
+coerced into the system provided type (system.String, system.Number, system.Integer, system.Float).  Declarations form a 'template'
+for the requirments of a type.
+
+Given the following:
+
+<src lang="muster">
+/* Define Foo as a declaration with bar and baz definitions */
+define Foo := declare () {
+  define bar: system.String := declare (): system.String { "a"; };
+  define baz: system.Number := 5;
+  define oh: Foo := declare (): Foo {
+    define b: system.String := "e";
+    Foo;
+  };
+};
+
+/* Define Bar as a declaration with bar and baz definitions */
+define Bar := declare () {
+  define bar: system.String := "b";
+  define baz: system.Number := 10;
+  define oh: Foo := declare (): Foo {
+    define a: system.String := "e";
+    Foo;
+  };
+};
+
+/* Define Baz as a declaration with bar, baz and bam definitions */
+define Baz := declare () {
+  define bar: system.String := "c";
+  define baz: system.Number := 5;
+  define bam: system.String := "d";
+  define oh: Foo := declare (): Foo {
+    define d: system.String := "e";
+    Foo;
+  };
+};
+
+/* Define call as a declaration that takes a type of Foo */
+define call := declare (a: Foo) {};
+
+/* Define bunk as a declaration that takes a type of Baz */
+define bunk := declare (a: Baz) {};
+
+/* All 3 are valid */
+call < Foo;
+call < Bar;
+call < Baz;
+
+/* Both are invalid, they fail the type checks */
+bunk < Foo;
+bunk < Bar;
+</src>
+
+When a definition is used as a type, the type that is generated is the components of the definition.  Only the top-level
+definitions are considered for the type check.  As can be seen, the 'oh' definition in each one differs on what it contains,
+but would not result in a compile error.

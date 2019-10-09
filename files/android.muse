@@ -1,0 +1,529 @@
+#title Android学习笔记
+#author OleYang
+#desc Android 学习笔记
+#date @date
+<contents>
+
+* 安装
+** Fedora
+<src type="bash">
+sudo yum install glibc.i686 glibc-devel.i686 libstdc++.i686 zlib-devel.i686 ncurses-devel.i686 libX11-devel.i686 libXrender.i686 libXrandr.i686
+sudo yum install -y zlib.i686
+</src>
+
+** 开发环境
+需要安装三个东西
+ - JDK java开发工具
+
+*** JDK
+java 开发工具
+
+*** Eclipse
+下载地址： [[www.eclipse.org/downloads][download]]
+
+在“帮助->安装新软件”中添加ADT（Android Develop Tools）插件
+
+ADT插件地址：http://dl-ssl.google.com/android/eclipse
+
+*** SDK
+ 
+* 四大组件
+** Activity
+[[android/activity_lifecycle.png]]
+
+只能在主线程中更新activity
+
+** Service
+
+Service也是允许在主线程中（UI线程）所以如果需要较长时间的操作(如下载)，就需要在service中生成一个新的线程来操作。
+
+*** 通信方式
+主界面启动service
+ - startService(inent)
+ - 使用IPC
+
+service发送消息给主界面有两种方式
+ 1. 使用broadcast
+<src type="java">
+
+</src>
+ 2. 使用handler<br>
+在主界面定义handler
+
+MyActivity.java
+<src type="java">
+        TextView tv = ……;//这里省略
+
+        public static Handler handler = new Handler(new Callback() {
+
+		@Override
+		public boolean handleMessage(Message msg) {
+			tv.setText(msg.getData().getString("content"));
+			return false;
+		}
+	});
+</src>
+在service中调用handler
+
+MyService.java
+<src type="java">
+Message msg = MyActivity.handler.obtainMessage();
+Bundle data = new Bundle();
+data.putString("content",content);
+msg.setData(data);
+msg.sendToTarget();
+</src>
+
+*** IntentService
+[[android/IntentService.png][示意图]]
+    IntentService是service的子类，主要是用来处理异步的请求。客户端通过startService(intent)来启动一个IntentService，IntentService通过worker thread来处理每一个intent对象，所有的intent对象通过排队的方式来处理，当处理完所有的itent对象的时候，service自动退出。
+ 
+    worker thread处理所有传递过来的请求，创建一个work queue，一次只传递一个intent对象到onHandleIntent中，处理完所有的intent对象掉用stopSelf()
+
+    IntentService 的使用方法：
+ 1. 写构造函数
+ 2. 复写onHandleIntent
+注意在构造函数中要修改super(name)为super("类名"),不然会出现下面的错误
+<src type="text">
+no empty constructor
+</src>
+由
+<src type="java">
+public class CallService extends IntentService {
+	
+	public CallService(String name) {
+		super(name);
+		System.out.println("Construct");
+		// TODO Auto-generated constructor stub
+	}
+}
+</src>
+改成
+<src type="java">
+public class CallService extends IntentService {
+
+	public CallService() {
+		super(“CallService”); // 注意这里
+		System.out.println("Construct");
+		// TODO Auto-generated constructor stub
+	}
+}
+</src>
+
+*** 生命周期
+[[android/service_lifetime.gif]]
+[[android/service_lifetime.png][Service启动顺序]]
+
+context.startService() 启动流程：
+<src type="text>
+context.startService()  -> onCreate()  -> onStart()  -> Service running  -> context.stopService()  -> onDestroy()  -> Service stop
+</src>
+ - 如果Service还没有运行，则android先调用onCreate()然后调用onStart()；
+ - 如果Service已经运行，则只调用onStart()，所以一个Service的onStart方法可能会重复调用多次。 
+ - 如果stopService的时候直接onDestroy，如果是调用者自己直接退出而没有调用stopService的话，Service会一直在后台运行，该Service的调用者再启动起来后可以通过stopService关闭Service。
+所以调用startService的生命周期为：onCreate --> onStart(可多次调用) --> onDestroy
+ - 如果service没有启动，先调用onCreate(),否则调用onStart()
+
+context.bindService()启动流程：
+<src type="text">
+context.bindService()  -> onCreate()  -> onBind()  -> Service running  -> onUnbind()  -> onDestroy()  -> Service stop
+</src> 
+onBind()将返回给客户端一个IBind接口实例，IBind允许客户端回调服务的方法，比如得到Service的实例、运行状态或其他操作。这个时候把调用者（Context，例如Activity）会和Service绑定在一起，Context退出了，Srevice就会调用onUnbind->onDestroy相应退出。 所以调用bindService的生命周期为：onCreate --> onBind(只一次，不可多次绑定) --> onUnbind --> onDestory。在Service每一次的开启关闭过程中，只有onStart可被多次调用(通过多次startService调用)，其他onCreate，onBind，onUnbind，onDestory在一个生命周期中只能被调用一次。
+
+
+*** 例子
+**** 更新主线程的ＵＩ,更新图片
+ThradHandlerActivity.java
+<src type="java">
+public class ThreadHandlerActivity extends Activity { 
+    /** Called when the activity is first created. */
+      
+    private static final int MSG_SUCCESS = 0;//获取图片成功的标识 
+    private static final int MSG_FAILURE = 1;//获取图片失败的标识 
+      
+    private ImageView mImageView; 
+    private Button mButton; 
+      
+    private Thread mThread; 
+      
+    private Handler mHandler = new Handler() { 
+        public void handleMessage (Message msg) {//此方法在ui线程运行 
+            switch(msg.what) { 
+            case MSG_SUCCESS: 
+                mImageView.setImageBitmap((Bitmap) msg.obj);//imageview显示从网络获取到的logo 
+                Toast.makeText(getApplication(), getApplication().getString(R.string.get_pic_success), Toast.LENGTH_LONG).show(); 
+                break; 
+  
+            case MSG_FAILURE: 
+                Toast.makeText(getApplication(), getApplication().getString(R.string.get_pic_failure), Toast.LENGTH_LONG).show(); 
+                break; 
+            } 
+        } 
+    }; 
+      
+    @Override 
+    public void onCreate(Bundle savedInstanceState) { 
+        super.onCreate(savedInstanceState); 
+        setContentView(R.layout.main); 
+        mImageView= (ImageView) findViewById(R.id.imageView);//显示图片的ImageView 
+        mButton = (Button) findViewById(R.id.button); 
+        mButton.setOnClickListener(new OnClickListener() { 
+              
+            @Override 
+            public void onClick(View v) { 
+                if(mThread == null) { 
+                    mThread = new Thread(runnable); 
+                    mThread.start();//线程启动 
+                } 
+                else { 
+                    Toast.makeText(getApplication(), getApplication().getString(R.string.thread_started), Toast.LENGTH_LONG).show(); 
+                } 
+            } 
+        }); 
+    } 
+      
+    Runnable runnable = new Runnable() { 
+          
+        @Override 
+        public void run() {//run()在新的线程中运行 
+            HttpClient hc = new DefaultHttpClient(); 
+            HttpGet hg = new HttpGet("http://csdnimg.cn/www/images/csdnindex_logo.gif");//获取csdn的logo 
+            final Bitmap bm; 
+            try { 
+                HttpResponse hr = hc.execute(hg); 
+                bm = BitmapFactory.decodeStream(hr.getEntity().getContent()); 
+            } catch (Exception e) { 
+                mHandler.obtainMessage(MSG_FAILURE).sendToTarget();//获取图片失败 
+                return; 
+            } 
+            mHandler.obtainMessage(MSG_SUCCESS,bm).sendToTarget();//获取图片成功，向ui线程发送MSG_SUCCESS标识和bitmap对象 
+  
+//          mImageView.setImageBitmap(bm); //出错！不能在非ui线程操作ui元素 
+  
+//          mImageView.post(new Runnable() {//另外一种更简洁的发送消息给ui线程的方法。 
+//               
+//              @Override 
+//              public void run() {//run()方法会在ui线程执行 
+//                  mImageView.setImageBitmap(bm); 
+//              } 
+//          }); 
+        } 
+    }; 
+      
+}
+</src>
+service 必须在AndroidManifest.xml中声明
+<src type="xml">
+<application>
+    <activity>
+        ...
+    </activity>
+        <service android:name=".CallService"></service>
+</application>
+</src>
+如果没有声明会出现如下错误提示
+<src type="text">
+Unable to start service Intent { cmp=pad.openo2o.bobo.bobo_callclient/.CallService (has extras) }: not found
+</src>
+
+*** 参考
+[[~/workspace/BoBo_CallClient/src/pad/openo2o/bobo/bobo_callclient/][参考文章]]
+[[http://www.cnblogs.com/keis/archive/2011/03/08/1977242.html][参考文章]]
+[[http://blog.csdn.net/nkmnkm/article/details/7359321][参考文章--比较详细]]
+
+[[http://developer.android.com/guide/components/services.html][官方参考]]
+
+** ContentPrivader
+
+** BrocastReciever
+把信息加入到系统广播中，所有的程序都可以接收
+
+* socket
+
+** server
+[[android/Socket.png]]
+
+ 1. 主界面用startService(intent)来启动一个没有界面的Activity即service；
+ 2. new SocketServer(port)
+ 3. new Thread(new MyRunable())
+ 4. 在MyRunable类里面的run函数中用while(true) { Socket client=socketServer.accept();}不停的监听客户端的请求
+ 5. 通过InputStreamReader嵌套socket的getInputStream(),把字节流转化成字符流；BufferedReader嵌套InputStreamReader把字符流读到buffer中；通过BufferedReader的readLine函数读出字符
+ 6. 根据读出的字符做相关逻辑处理，比如：更新界面
+ 7. printWriter(bufferedWriter(OutputStreamWriter(getOutputStream))) 输出到socket
+ 8. 关闭输入/输出流
+
+具体的代码:
+<src type="java">
+
+</src>
+
+** client
+
+* Intent
+Intent 的作用：从一个Activity启动另外一个Activity或者Service
+
+<src type="text">
+Intent intent = new Intent();
+intent.putExtra("num1", 1); // 也可以用putString来设置，只不过putString只能设置字符串
+intent.setClass(类名.this, 需要启动的Activity的类名.class);
+startActivity(intent);// startService(intent) 启动Service
+</src>
+
+获取itent中的值
+<src type="text">
+Intent intent = this.getIntent();
+int num1 = intent.getStringExtr("num1");
+// 或者
+//int num1 = intent.getExtras().getString("num1");
+</src>
+
+* 其他的知识点
+** 定时执行
+<src type="java">
+  new Timer().schedule(new TimerTask(){
+	  publc void run() {
+	      some code...；
+		  }
+      },0,200);
+</src>
+  some code ...就是要执行的任务。
+
+  0: 第一次启动任务以后多少微妙以后执行任务
+
+  200: 多少微妙执行some code...
+  
+
+** px、dip(dp)、sp、dpi
+[[http://blog.csdn.net/moruite/article/details/6028547][参考文章]]
+ - px: 像素,也就是屏幕上显示的点
+ - dip： Device Independent Pixels （设备独立像素）的缩写。
+ - sp: Scaled Pixel (鳞片像素)和像素没有关系，主要用在字体上
+ - dpi: Dot Per Inch (每英寸中含有的点)
+ - 屏幕密度： 屏幕单位面积含有多少的像素
+ - 分辨率： 屏幕含有总的像素
+
+** service、handler、Thread的区别
+ - service 这是一个看不见的Activity
+ - handler 是控制消息队列的，可以用来更新Activity；线程之间的通信
+ - thread 是线程
+
+
+** 如何编译源码
+[[http://www.metsky.com/archives/526.html][参考]]
+*** 下载源码
+ 1. 下载repo命令
+<src type="bash">
+https://dl-ssl.google.com/dl/googlesource/git-repo/repo > ~/bin/repo
+</src>
+ 2. 把~/bin/repo加入到系统的path中
+<src type="bash">
+
+</src>
+ 3. 赋予repo可执行权限
+<src type="bash">
+chmod +x ~/bin/repo
+</src>
+ 4. 指定下载版本
+<src type="bash">
+repo init -u https://android.googlesource.com/platform/manifest -b android-4.0.3_r1
+</src>
+ 5. 开始下载
+<src type="bash">
+repo sync
+</src>
+如果中途断开了，重新执行repo sync命令
+
+这个过程中需要google帐号。
+
+*** 编译
+ 1. 更新环境变量
+<src type="bash">
+$ source build/envsetup.sh
+</src>
+
+ 2. 选择编译目标对象
+<src type="bash">
+lunch full-eng
+</src>
+ 3. 编译Android源码
+<src type="bash">
+make -j4
+</src>
+
+*** 编译room
+[[http://wiki.cyanogenmod.com/wiki/HTC_Desire_(GSM):_Compile_CyanogenMod_(Linux)][参考]]
+
+<verse>
+我自己用G7（必须要ship off才行）试过下面这种搭配：
+1 boot.img用CM最新的，通过fastboot flash boot xxxx/boot.img方式烧写boot
+2 system.img用google源码编译，下面是大体步骤
+  2.1 source build/envsetup.sh --->设置环境变量
+  2.2 choosecombo，选择默认
+  2.3 export TARGET_PRODUCT=full_passion  这个是官方源码提供的HTC Passion的样板（在device/htc目录下），
+  2.4 make systemimage。这样就可以编译system.image了。这个速度还行，4核，1.8G内存，虚拟UBUNTU10.04，大概30分钟左右
+  2.5 fastboot flash system xxxx/system.img，把system烧上去
+3 问题解决：
+  1 android framework肯定跑不起来，原因是audio没有正确的so，所以跑不起来。修改方法，只能换成使用GENERIC_AUDIO方式了。
+  2 按键不是很正常。没关系，下载miui的G7 update包，解开，将system/usr/keychars/bravo-keypad.kcm.bin 和system/usr/keylayout/bravo-keypad.kl 通过adb push到手机对应目录下。
+4 最终：
+  能跑，但是速度很慢，因为我编的是eng版。这个可能不是最终的原因。我发现显示有点问题，老是闪，估计是显示那块的libgalloc.so有问题，可能得用G7的。
+ 不过终于能自己编译ROM了，以后定制化就方便多了。
+下一步要基于CM的版本试试看。
+不知道各位网友有兴趣尝试下么？呵呵
+谢谢大家对《深入理解android 卷I/卷II》的支持。
+</verse>
+
+** 开机自动启动
+[[http://www.metsky.com/archives/526.html][参考]]
+*** 下载源码
+ 1. 下载repo命令
+<src type="bash">
+https://dl-ssl.google.com/dl/googlesource/git-repo/repo > ~/bin/repo
+</src>
+ 2. 把~/bin/repo加入到系统的path中
+<src type="bash">
+
+</src>
+ 3. 赋予repo可执行权限
+<src type="bash">
+chmod +x ~/bin/repo
+</src>
+ 4. 指定下载版本
+<src type="bash">
+repo init -u https://android.googlesource.com/platform/manifest -b android-4.0.3_r1
+</src>
+ 5. 开始下载
+<src type="bash">
+repo sync
+</src>
+如果中途断开了，重新执行repo sync命令
+
+这个过程中需要google帐号。
+
+*** 编译
+ 1. 更新环境变量
+<src type="bash">
+$ source build/envsetup.sh
+</src>
+
+ 2. 选择编译目标对象
+<src type="bash">
+lunch full-eng 
+</src>
+ 3. 编译Android源码
+<src type="bash">
+make -j4
+</src>
+
+*** 编译room
+[[http://wiki.cyanogenmod.com/wiki/HTC_Desire_(GSM):_Compile_CyanogenMod_(Linux)][参考]]
+
+<verse>
+我自己用G7（必须要ship off才行）试过下面这种搭配：
+1 boot.img用CM最新的，通过fastboot flash boot xxxx/boot.img方式烧写boot
+2 system.img用google源码编译，下面是大体步骤
+  2.1 source build/envsetup.sh --->设置环境变量
+  2.2 choosecombo，选择默认
+  2.3 export TARGET_PRODUCT=full_passion  这个是官方源码提供的HTC Passion的样板（在device/htc目录下），
+  2.4 make systemimage。这样就可以编译system.image了。这个速度还行，4核，1.8G内存，虚拟UBUNTU10.04，大概30分钟左右
+  2.5 fastboot flash system xxxx/system.img，把system烧上去
+3 问题解决：
+  1 android framework肯定跑不起来，原因是audio没有正确的so，所以跑不起来。修改方法，只能换成使用GENERIC_AUDIO方式了。
+  2 按键不是很正常。没关系，下载miui的G7 update包，解开，将system/usr/keychars/bravo-keypad.kcm.bin 和system/usr/keylayout/bravo-keypad.kl 通过adb push到手机对应目录下。
+4 最终：
+  能跑，但是速度很慢，因为我编的是eng版。这个可能不是最终的原因。我发现显示有点问题，老是闪，估计是显示那块的libgalloc.so有问题，可能得用G7的。
+ 不过终于能自己编译ROM了，以后定制化就方便多了。
+下一步要基于CM的版本试试看。
+不知道各位网友有兴趣尝试下么？呵呵
+谢谢大家对《深入理解android 卷I/卷II》的支持。
+</verse>
+
+** 开机自动启动
+[[http://billhoo.blog.51cto.com/2337751/761230][参考]]
+
+ 1. 捕获开机信号<br>
+系统每次开机都会发一个广播，ACTION_BOOT_COMPLETED，只广播一次，需要新建立一个接受广播的类文件例如叫:BootCompletedReceiver.java,内容如下：
+<src type="java">
+package pad.openo2o.bobo.bobo_callserver;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+
+public class BootCompletedReceiver extends BroadcastReceiver {
+	@Override
+	public void onReceive(Context context, Intent intent) {
+		if (intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED)) {
+			Intent newIntent = new Intent(context, StartService.class);
+			newIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // 注意，必须添加这个标记，否则启动会失败
+			context.startService(newIntent);  // 也可以是startActivity
+		}
+	}
+}
+</src>
+
+ 2. 设置权限<br>
+在AndroidManifest.xml中声明receiver
+<src type="xml">
+<!-- receivers --> 
+        <receiver android:name=".BootCompletedReceiver"> 
+            <intent-filter> 
+                <action android:name="android.intent.action.BOOT_COMPLETED" /> 
+            </intent-filter> 
+        </receiver>
+</src>
+
+如果是service，添加service声明
+<src type="xml">
+<service android:name=".StartService" >
+</service>
+</src>
+
+添加捕获广播的权限
+<src type="xml">
+<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+</src>
+整个AndroidManifest.xml内容如下
+<src type="xml">
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="pad.openo2o.bobo.bobo_callserver"
+    android:versionCode="1"
+    android:versionName="1.0" >
+
+    <uses-sdk
+        android:minSdkVersion="8"
+        android:targetSdkVersion="16" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme" >
+        <activity
+            android:name="pad.openo2o.bobo.bobo_callserver.CallServerMain"
+            android:label="@string/app_name" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- receivers --> 
+        <receiver android:name=".BootCompletedReceiver"> 
+            <intent-filter> 
+                <action android:name="android.intent.action.BOOT_COMPLETED" /> 
+            </intent-filter> 
+        </receiver> 
+        
+        <service android:name=".StartService" >
+        </service>
+    </application>
+
+</manifest>
+</src>
+开机的时候可以通过eclipse的DDMS监控到程序是否启动

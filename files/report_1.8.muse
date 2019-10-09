@@ -1,0 +1,102 @@
+#title Задание 1-8.
+#author Лапин Ярослав
+
+* Определение высокоширотных зон повышенной корпускулярной радиации  в периоды интенсивных солнечных космических лучей.
+
+        Выполнил Лапин Ярослав. 06/06/2011.
+
+* Исходные данные
+Данные были получены со спутника NOAA за 8 сентября 2002. На сайте
+[[http://cdaweb.gsfc.nasa.gov/istp_public/][cdaweb.gsfc.nasa.gov]] нужно было выбрать спутник NOAA и Instrument ---
+Particles, и выбрать:
+ - Fractional Day of Year 
+ - Latitude
+ - Longitude
+ - MEPED Count Rates for 0 Deg. telescopes, 4 proton and 2 electron
+   energy bands (counts_0dg)
+
+* Обработка данных
+Файл был переведён в формат пригодный для дальнейшей обработки
+<example>
+	program task8
+	real::lat,long,day,kev1,kev2,kev3,kev4,kev5,kev6
+	CHARACTER(100) :: filename
+
+	filename = 'NOAA14_MEPED1MIN_05-07-2011.dat'
+	filename = 'NOAA14_MEPED1MIN_08-07-2011.dat'
+        open (unit=1, file=filename,status='OLD')
+        open (unit=2, file='data.dat')
+
+	L=0;
+123    format(i2,1x,i2,1x,i4,1x,i2,1x,i2,1x,f6.3,3f14.5,15f23.6)
+	do
+	read (1,123,end=34,err=35) IDAY,MON,IYEAR,IHOUR,MIN,ISEC,DAY,
+     _		lat,long,notusable,kev1,kev2,kev3,kev4,notusable,kev5,kev6
+	print *, IDAY,MON,IYEAR,IHOUR,MIN,ISEC,day,lat,long,
+     _		kev1,kev2,kev3,kev4,kev5,kev6
+
+        L=L+1
+	if (long.gt.180) then
+	   long = long - 360
+	end if
+	write (2,*) DAY,lat,long,kev1,kev2,kev3,kev4,kev5,kev6
+	end do
+
+35    print *, 'error L=', L
+	stop 1
+34    print *, 'End of file L=', L
+
+	end program
+</example>
+
+** Преобразование долготы
+Не очень понятно почему, но мы сдвинули координаты от 180 до 360
+градусов в область -180--0.
+
+** Программа для визуализации
+
+Та же что и в [[https://github.com/JLarky/magnetosphere-magnetic-field/blob/master/task_1.5/plot.py][задании 1-5]] без каких-либо изменений.
+
+<literal>\clearpage</literal>
+
+** Данные в солнечном ветре
+
+[[OMNI_HRO_5MIN_26098_000.png]]
+
+Из данных видно, что большой поток частиц начинается, когда резко
+увеличивается давление и отрицательная Bz-компонента.
+
+** Энергетические спектры до и во время потока высокоэнергичных частиц
+
+Видно, что как и в условиях с низким потоком высокоэнергичных частиц
+наиболее опасными зонами являются зоны Бразильской аномалии и
+высокоширотная область.
+
+<literal>
+\newpage\begin{figure}[htb]
+\begin{center}\leavevmode
+\includegraphics[width=1.1\textwidth]{energies_05-07-2011.png}
+\end{center}\caption{05-07-2011}
+\end{figure}</literal>
+
+<literal>
+\newpage\begin{figure}[htb]
+\begin{center}\leavevmode
+\includegraphics[width=1.1\textwidth]{energies_08-07-2011.png}
+\end{center}\caption{08-07-2011}
+\end{figure}</literal>
+
+
+<literal>\clearpage</literal>
+
+** Сравнение потока протонов и электронов при спокойных условиях
+
+[[e_variations.png]]
+
+Сравнивая высыпания протонов 0.8--2.5 кэВ с электронами 100--300 кэВ
+видно, что интенсивность высыпания электронов максимальна в области
+полярного овала и имеет "яму" в интенсивности в полярной шапке, в то
+время как в протонах интенсивность высыпаний остаётся неизменной при
+пролёте всей высокоширотной области.
+
+; TODO: 

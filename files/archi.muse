@@ -1,0 +1,333 @@
+#title Ube Architecture Specification
+#author Pierre-Henri Trivier
+#desc This is the architecture spec for the game ube
+
+<contents>
+
+* Introduction
+
+This should give a high-level idea of the architecture of ube
+
+* Generalities
+
+** Dependencies
+
+C++ is used as the main language.
+
+Lua is used for data storage, preferencies and extendibility
+.
+
+** Libraries
+
+ - boost
+ - lua
+ - SDL
+ - SDL_image
+ - SDL_mixer
+ - SDL_ttf
+
+** Engine
+
+ube-engine is a C++ lib that provides the meat of the game. 
+
+It should only depends on "model" stuff. 
+
+It should make it possible to play a puzzle from start to end. 
+
+It should also contain the logic of loading puzzles, and playing any lua scripts. 
+
+It should not use exceptions to communicate errors, but rather define an ErrorHandler class to communicate error state (See Defenser)
+
+** Client
+
+The client is a MVC application, using SDL for inputs and display.
+
+The client should be fully translated using gettext.
+
+* Libraries / Packages
+
+** ube-commons
+
+This is the place for elements that are not game specific.
+
+*** Error Reporting
+
+'assert' will be used throughout the code to check for things that should never logically happen. 
+
+I will not use exception. 
+
+However, any code that handles data coming from outside will have to clean it and report error. 
+
+So instead of having this in the Puzzle class : 
+
+<example>
+void set_dimensions(i,j) {
+ if (i<0 || j < 0) throw logic_error(...);
+ ...
+}
+</example>
+
+I'll simply have an assert in the Puzzle class, a bit of dcumentation about params, but it will be the responsibility of any caller of set_dimensions that's outside the baricade (typically, the puzzle loader's outside function). 
+
+<example>
+// In puzzle.cpp
+void set_dimension(i,j) {
+  assert(i>=0);
+  assert(j>=0);
+  ...
+}
+</example>
+
+In the lua puzzle loader : 
+
+<example>
+ int h = readHeightFromLuaFile();
+ if (h < 0) {
+   // ... report error (see below)
+ }
+ int w = readWidthFromLuaFile();
+ if (w < 0) {
+   // ... report error (see below)
+ }
+</example>
+
+As a rule, any class that read text from any location (lua file, configuration, command line, etc...) is responsible for checking that the text read is valid. 
+
+Is it possible, in situations where it make sense, to sanitaze inputs (read something, fix it and continue), but I prefer not to abuse it too much. Die early, that's better.
+
+A dependency to an "ErrorReporter" will be added to those class that actually have to report an error. 
+An error reporter could be something that prints to the standard error (for parsing of command line arguments, for example), or something that displays a message, or whatever fits. 
+
+The 'observable' pattern could also be used (ErrorReporter has a number of error listeners that get a chance to do something with the error. The interface should be : 
+
+<example>
+ // An error code, a short description, and a detail
+ pErrorReporter->report_error(LuaFileLoader::BAD_DIMENSIONS, _("Error while loading puzzle file"), str(format(_("The dimension of the puzzle should be positive, found (%1%,%2%) instead.")) % h % w);
+</example> 
+
+The error code is there so that an external caller (the errorReporter, or one of its listeners) can do something different for different errors (skip the level, force dimensions, insult the user cleverly, etc...)
+
+Note that any string passed to report_error should be translated with gettext (since it will end up in the user's face).
+
+It is also possible that ErrorReporter will be coupled to a Logger (see below) so that errors are logged amoung other stuffs...
+
+*** Resource management
+
+Sometimes you need to check whether a resource is available, whether a File exists, to get the location of an image, etc... Some of the code to do this : 
+
+- AbstractResourceResolver, to make it possible to locate lua files, images, puzzle files ?
+
+- FileChecker, to be able to check for a file existence
+
+- PrefixResourceResolver, to make it possible to 
+
+Note : the resource resolvement will be done using a prefix. A complicated solution is to use a common prefix and look for stuff with complicated rules. Why not simply have a prefix for each kind of resources ? 
+
+This gives a lot of flexibility, and will make a lot of things easier.
+
+*** Lua management
+
+The game should be configurable, controlled and extendible via Lua. So there should be one common Lua context, and some classes around it to make it more manageable.
+
+*** Logging
+
+No matter how hard I try, I will need to log stuff. I suppose there are some boost libraries to do that... I need to pick one and use it, to be able to choose a level of logging, and show debug information.
+
+** ube-engine
+
+*** Cell
+
+A cell is the smallest element of a puzzle. 
+It is either empty or walkable. It has a position in the puzzle.
+
+*** Puzzle
+
+The main class is the puzzle.
+
+It is the static part that contains cells. 
+
+A puzzle does not know where it is loaded from (this is the job of a PuzzleLoader class)
+
+A puzzle has en entry and an exit. 
+
+Cells in a puzzle can be given a name (only one name per cell).
+
+There is a notion of a 'current' cell in a puzzle. 
+
+*** Move
+
+A move is a way of moving inside a puzzle.
+The different moves should not be hardcoded ; there should typically be one class per move, and the logic of the moves could be stored in a Lua script rather than written in C++.
+
+Given a Puzzle, it can try to compute a path to another cell. A path is a list of cell.
+
+*** Puzzle Loader
+
+This is the class that actually parse a Lua File to create a puzzle. It should use the LuaContext from the ube-commons
+
+*** Chapter
+
+This is the notion of a bundle of puzzles, with name.
+A ChapterLoader should make it possible to load the details of a chapter from a lua file.
+
+*** Saved games management
+
+The system will make it possible to load the stored games. Where from ? How ? I dunno know. This has to be portable across platfroms, so both something like $HOME or ApplicationData. 
+
+This will have to handle multi-user properly on windows... However it can be acceptable to have only one set of saved games.
+
+
+** ube-mvc
+
+This is the MVC part of the client. 
+It makes it possible to define the notion of a game loop, of making stuff Observable
+
+*** Observable
+
+This is the Observer / Observable pattern.
+Object communicates mostly using this, with events (that are nothing but ints in bare desguise. Not in desguise at all, actually.)
+
+*** GameLoop
+
+This is the main loop of the game. It will browser through a bunch of GameMode representing all the possible states, and delegates to those modes the actual logic.
+
+THe loop might depend on a Clock, or stuff like that, to hide GameLoop details.
+
+*** GameMode
+
+A GameMode plays with the controller and the view to make stuff happen in the screen. Model is not defined since it can be anything (and is not too constrainable for the moment)
+
+*** Controller, View
+
+This is what handles the user inputs, and what displays stuff.
+There are basics SDL implementation that assumes that the SDL is initialized, and make it easier to only 
+
+** ube-client
+
+This is where we create an ube-mvc client that actually handles the game of ube (yeepee). 
+
+It's main purpose is to create the appropriate GameModes, Views and Controller (let us call that a triplet, shall we?).
+
+
+*** A triplet for the Startup screen
+
+Should display the options leading to the chapter selection screens. Will make the saved games available.
+
+*** A triplet for the Select chapter / Select puzzle screens
+
+Using the information from the saved games, and the loadable chapters
+
+*** A triplet for the main game screen
+
+Actually, there might be several, very similar triplets,to handle the following cases : 
+
+ - In game 
+ - Game in pause
+ - Player using the UI
+ - Help (if any ?)
+
+* Tests
+
+All components should have a set of Google Test / Google Mocks units tests. Abstract classes should be used as interfaces for any object that serves as dependencies to another object.
+
+* Use of Abstract classes
+
+Do I name every Abstract class "abstract" ? Does it really help ? It tends to put everything next to each other, and does not really make things any clearer
+
+* Run-time file organisation
+
+** bin (or, idealy, games)
+The executable for the client
+
+** lib
+The convenience libraries (though everything could go into the same executable)
+
+** share/ube
+
+The run-time elements
+
+*** share/ube/fonts
+
+TTF files
+
+*** share/ube/images
+
+Sprites, background, etc... in PNG format
+
+*** share/ube/lua/engine
+
+Lua files that are part of the engine (that the engine needs to work)
+
+*** share/ube/lua/puzzles
+
+Lua files for puzzles. All puzzles are next to each other, although chapters make it possible to group puzzles together.
+
+*** share/ube/lua/chapters
+
+Lua files describing chapters. A chapter file has minimal information (mostly a list of corresponding puzzle file names)
+
+*** share/ube/ogg
+
+For ogg background music (and potentially sound effects, If i play some)
+
+Note : why not puzzles under chapters ? Because this way, it is possible to implement puzzles without implementing chapters at all. Just in case ;)
+
+* Lua files for puzzles
+
+A typical lua file for a puzzle could be : 
+
+<example>
+set_puzzle_dimensions(3,4)
+
+-- This set the puzzle cells
+set_puzzle_rows({"###",
+		 "#-O",
+		 "I-#",
+		 "###"})
+
+-- This name cells
+name_cell(1,1,"middle-up")
+name_cell(2,1,"middle-down")
+
+-- This creates a tunnel between two named cells
+make_tunnel("middle-up", "middle-down")
+
+-- This sets up the list of available moves for this puzzle
+set_puzzle_moves({"normal","double","normal","normal"})
+</example>
+
+Note : I explicitely removed the "quote" stuff because it is much harder to deal with (because of i18n) than I though. And it is not that usefull...at least for the moment.
+
+Anyway : the translation of the "lua" content will not follow the same rules as the application one, since it will most probably be puzzle-dependant. So it makes sense to group the translation of whatever translatable string is in a puzzle file *inside* the puzzle.
+        
+* Client options / configuration
+
+The client will have to be made configurable. 
+Command line arguments will be used (altough a lua conf would do the trick, would'nt it ?)
+
+** Logging
+
+It should be possible to configure the client to log to the console, or to a file, with an appropriate level.
+
+The configuration will most probably be in a file : it should be possible to pass it to the client.
+
+** Resources location
+
+It should be possible to force the "prefixes" used in resource management (this is usefull to force using a certain set of files at run-time).
+
+** Puzzle selection
+
+It should be possible to launch the client with a specific puzzle file name. 
+
+The idea is to be able to use a command line like 
+
+<example>
+ ube --puzzle-prefix=~/prj/ube/data/puzzles --puzzle-name=puzzle1.lua --debug-config-file=log-config
+</example>
+
+* WTF ? 
+
+** No file editor ?
+
+Yes, I know, you would probably like a puzzle editor. I suppose it would be possible to write one using ube-commons, and ube-engine (plus any other kind of GUI framework). That's a task for when I am in better shape. 
+

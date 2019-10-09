@@ -1,0 +1,329 @@
+#title http 详解
+#author Ole Yang
+
+<contents>
+
+* httpd.conf
+
+** 基本配置
+参考 http://blog.chinaunix.net/space.php?uid=13982689&do=blog&cuid=81394   http://www.demi.cn/archives/482.html
+*** ServerType
+ - inetd 通过网络管理进程来管理httpd进程， 只支持Linux<br>
+inetd是监听所有端口小于1024的internet连接的守护进程（一个服务器进程），每当有新的请求的时候inetd启动一个新的httpd进程来处理，连接结束时进程也结束。如果以这种方式启动，还需要编辑/etc/inetd.conf
+ - standalong 单独的进程运行apache
+以单独的守护进程在后台监听特定端口（通过Port指定，默认80）有请求的时候，启动一个子httpd进程来处理请求，当请求结束的时候子进程也没有退出，而是等待新的请求。当然消耗点内存，但是响应请求的速度比较快
+
+例如：
+<src type="text">
+ServerType stardalong
+</src>
+
+*** ServerRoot
+目录树的根目录，配置文件、日志、出错信息等都不错在这个目录下
+<src type="text">
+ServerRoot "/etc/httpd"
+</src>
+
+*** DocumentRoot
+设置网站的根目录
+<src type="text">
+DocumentRoot "/var/httpd/html"
+</src>
+
+*** Listen
+apache监听的端口，可以是多个
+<src type="text">
+Listen 12.34.45.78:80
+Listen 8080
+</src>
+
+*** ServerName
+网站的主机名名
+<src type="text">
+ServerName www.net.cn:80
+</src>
+
+*** ServerAdmin
+管理员的邮箱
+<src type="text">
+ServerAdmin admin@localhost
+</src>
+
+*** 对目录访问的控制
+<src type="text">
+<Directory "/var/httpd/html">
+Options FollowSymLinks
+AllowOverride None
+Order allow deny
+Allow from all
+</Directory>
+</src>
+ - Options 如果没有使用+、-，会清除之前设置的值。
+  - ExecCGI 允许在此目录指向CGI程序
+  - FollowSymLinks  允许打开目录中的符号
+  - SymLinksIfOwnerMatch：如果连接文件拥有者和实际文件的owner一样时才允许打开连接文件，但是每一个请求apache都会调用lsstat()检验
+  - Indexes 用户访问此目录的时候，如果访问的DirectoryIndexes指定的文件在找不到，是否列出此目录中的文件
+ - AllowOverride 是否让目录下的.htaccess文件重新目录的权限，.htaccess是目录权限控制文件，它提供了对每个目录配置的方法，文件的名称可以通过AccessFileName来指定，不一定就是.htaccess，例如 AccessFileName .conf
+  - None 不搜索每个目录中的.htaccess的文件，可以减少服务器开销。
+  - All 每个目录的.htaccess文件生效
+  - AuthConfig 
+  - FileInfo
+  - Limit
+ - Order 设置顺序，先检查Allow允许的设定，再检查Deny的设定。如果Allow from all 所有访问都通过，会覆盖Deny设置。<br>
+禁止某些IP访问
+<src type="text">
+Order deny, allow
+Deny from ip1 ip2
+或者
+Order Allow,Deny
+Allow from all
+Deny from ip1 ip2
+</src>
+如果上面的设定改成
+<src type="text">
+Order Deny,Allow
+Allow from all
+Deny from ip1 ip2
+</src>
+Deny的部分将不会生效，因为先检查Deny部分，然后再检查Allow部分，最后的Allow from all 会覆盖Deny from ip1 ip2 的设定
+
+*** 对文件权限控制
+.htaccess 文件不让其他人访问
+<src type="text">
+<Files ~ "^\.ht">
+Order allow,deny
+Deny from all
+</Files>
+</src>
+
+*** PidFile
+记录apache启动第一个进程的ID。（其他的进程为子进程）
+<src type="text">
+PidFile run/httpd.pid
+</src>
+
+*** ScoreBoardFile
+<src type="text">
+ScoreBoardFile run/httpd.scoreboard
+</src>
+设定在某些平台父进程和子进程沟通的档案。此文档记录内部文档
+
+** 日志设置
+*** 错误日志
+错误日志保存在/var/logs/httpd/error_log
+<src type="text">
+ErrorLog "/var/logs/httpd/error_log"
+</src>
+如果在虚拟目录中没有设置ErrorLog，那么该虚拟目录的错误日志也保存在此位置
+
+*** 错误日志级别
+LogLevel 是定义错误日志的级别，就是什么样的错误才记录到error_log中去，可用的级别：
+ - debug
+ - info
+ - notice
+ - warn
+ - error
+ - crit
+ - alert
+ - emerg
+<src type="text">
+LogLevel warn
+</src>
+ 
+*** 错误日志记录格式
+LogFormat 设置错误日志的格式
+<src type="text">
+LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\""
+LogFormat "%h %l %u %t \"%r\" %>s %b" common
+</src>
+ - %h 客户端的IP或者是主机名
+ - %l 
+
+**  持久性设置
+*** KeepAlive
+设置客户端连接服务器，数据下载完成以后是否仍然保持连接
+<src type="text">
+KeepAlive On
+</src>
+如果设置了On，当请求完成的时候连接仍然保持。如果在KeepAliveTimeout设定的时间内再有连接，服务器就不用在分配进程(或者线程来处理请求）。这样就能够节省点服务器cpu的开支，但是会增大内存占有。
+
+如果是图片比较多的
+
+*** KeepAliveTimeout
+保持多长时间断开连接
+<src type="text">
+KeepAliveTimeout 30
+</src>
+设置30秒，默认为15秒
+
+*** MaxKeepAliveRequests
+最多有多少个连接同时存在，也就是说apache服务器在同一时间能最多处理多少个请求
+<src type="text">
+MaxKeepAliveRequests 100
+</src>
+
+*** Timeout
+断开连接的时间，如果在指定的时间内没有任何的连接、发送数据，连接就断开
+
+** HTTP返回头部信息
+***  ServerTokens
+设置http头部返回apache版本信息。可以用的选项：
+ - Prod 仅软件名称， 例如： apache
+ - Major 包括主版本号 例如：apache/2
+ - Minor 包括次版本号 例如： apache/2.0
+ - Min 完成版本号 例如： apache/2.0.54
+ - OS 包括操作系统信息 例如： apache/2.0.45(Unix)
+ - Full 包括支持模块及模块的版本号  例如： Apache/2.0.54 (Unix) mod_ssl/2.0.54 OpenSSL/0.9.7g
+
+*** ServerSignature
+设置页面产生错误时，是否输出版本信息。最好为off
+<src type="text">
+ServerSignature off
+</src>
+
+
+
+* mpm.conf
+MPM(Muti-Processing-Modules 多处理模块)，安装apache的时候可以显示加上
+<src type="text">
+--with-mpm=MPM
+</src>
+MPM可选值
+<src type="text">
+MPM={beos|worker|prefork|mpmt_os2|perchild|leader|threadpool}
+</src>
+如果没有显示指定，默认的方式是perfork
+ - beos
+ - worker
+ - prefork
+ - mpmt_os2
+ - perchild
+ - leader
+ - threadpool
+
+
+ 查看使用的模式
+<src type="text">
+ httpd -l
+prefork.c 表示使用prefork
+worker.c 表示使用worker方式
+</src>
+
+** prefork.c
+prefork 方式是apache启动的时候先启动一个父进程，然后在派生出预先设置的子进程数（StartServers）（没有使用到线程）。
+<src type="text">
+<IfModule prefork.c>
+StartServers 5
+MinSpareServers 5
+MaxSpareServers 10
+MaxClients 150
+MaxRequestsPerChild 1000
+</IfModule> 
+</src>
+ - StartServers 5                             # 启动apache时启动进程的个数
+ - MinSpareServers 10       # 最小的空闲进程数
+ - MaxSpareServers 25      # 最大空闲的进程数
+ - MaxClients 150             # 最大并发连接数
+ - MaxRequestsPerChild  1000  # 每个子进程被请求多少次以后被kill掉，重新fork。0表示不限制
+ 
+** work.c
+此模式是以线程的方式来处理请求，apache启动的时候按照设定的个数启动进程的个数（StartServers)，然后每个进程再启动指定的线程数。 有新的连接，空闲线程会接管，如果没有空闲线程，就生成新的进程。
+<src type="text">
+StartServers 2                      # apache刚刚启动时启动多少个进程
+MaxClients 150                   # 最大连接数
+ThreadPerChild  25             # 每个进程产生多少线程
+MinSpareThreads 25           # 最小空闲线程数
+MaxSpareThreads 75          # 最大空闲线程数
+MaxRequestsPerChild 0      # 子进程被请求多少次以后kill掉， 0表示不限制
+</src>
+上面的配置每次启动apache的时候产生2个子进程（加上父进程），每个进程产生25个线程，所以一共就有2x25=50个线程
+
+** perchild.c
+进程的数量是固定的，线程的数量是不限制的。
+<src type="text">
+NumServers 5                              # 服务器启动时启动的子进程数
+StartThreads 5                             # 每个子进程启动时启动的线程数
+MinSpareThreads 5                     # 最小空闲线程数
+MaxSpareThreads 25                   # 最大空闲线程数
+MaxThreadsPerChild 2000           # 线程响应请求多少次以后退出
+MaxRequestsPerChild 10000        # 进程响应多少请求以后被kill，重新fork出来 
+</src>
+
+* 虚拟目录
+** 居于端口的虚拟目录
+80端口进入web80目录  8080 进入web8080目录
+ - 创建目录
+<src type="text">
+$ mkdir web80 web8080
+</src>
+ - 创建相应的index文件
+<src type="text">
+$ echo "I'am 80" > web80/index.html
+$ echo "I'am 8080" > web8080/index.html
+</src>
+ - 添加侦听端口
+<src type="text">
+$ vi /etc/httpd/conf/httpd.conf
+增加如下：
+Listen 80
+Listen 8080
+</src>
+ - 控制目录权限
+<src type="text">
+$ vi /etc/httpd/conf/httpd.conf
+增加：
+<Directory "/var/www/web80">
+  Options FollowSymLinks
+  AllowOverride None
+  Order allow,deny
+  Allow from all
+</Directory>
+<Directory "/var/www/web8080">
+  Options FollowSymLinks
+  AllowOverride None
+  Order allow,deny
+  Allow from all
+</Directory>
+</src>
+ - 添加虚拟主机
+<src type="text">
+<VitualHost *:80>
+  ServerAdmin admin@localhost
+  DocumentRoot "/var/www/web80/"
+</VitualHost>
+<VitualHost *:8080>
+  ServerAdmin admin@localhost
+  DocumentRoot "/var/www/web8080/"
+</VitualHost>
+</src>
+当然也可以写在专门的vhost的文件（extral/httpd-vhosts.conf),但是需要在httpd.conf中include这个文件
+<src type="text">
+Include conf/extra/httpd-vhost.conf
+</src>
+
+* 日志
+** 控制日志的级别
+在httpd.conf中有这个一个选项
+<src type="text">
+LogLevel warn
+</src>
+可选的选项有：
+ - debug
+ - info
+ - warn
+ - notice
+ - error
+ - crit
+ - alert
+ - emerg
+当然如果要控制error_log中的内容，还需要设置php.ini的选项中的error_reporting
+<src type="text">
+error_reporting = E_COMPILE_ERROR|E_RECOVERABLE_ERROR|E_ERROR|E_CORE_ERROR
+</src>
+
+** 日志文件分日期分割成单一的文件
+需要安装日志的分割程序
+
+
+
+

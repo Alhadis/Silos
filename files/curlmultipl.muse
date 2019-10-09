@@ -1,0 +1,88 @@
+* Introduction
+
+In the perl world, if you need to fetch a webpage, the canonical way
+to do it would be use [[http://search.cpan.org/~gaas/libwww-perl/][LWP]].  However, there is one another way to fetch
+webpages (or to be more precise, interact programatically with a
+website) and that is to use the [[http://search.cpan.org/~szbalint/WWW-Curl/][WWW::Curl]] module.
+
+WWW::Curl is a simple wrapper over the excellent [[http://curl.haxx.se/libcurl/][libcurl]] library.
+Before diving into the main topic of this article, which is to show
+how to fetch multiple webpages concurrently, let us take a small
+detour and see how to use the WWW::Curl module itself.
+
+* Using WWW::Curl
+
+Here is a snippet to show how to use the WWW::Curl to fetch a webpage
+(taken and modified from the WWW::Curl documentation itself)
+
+<include file="plcurl.pl" markup="src" lang="perl">
+
+
+Curl allows you to set a lot of options, however, the essential ones
+that we use here are
+ - =CURLOPT_URL= - The actual URL to deal with
+ - =CURLOPT_WRITEDATA= - a  filehandle where we want to write the server response to
+ - =CURLOPT_WRITEHEADER= -a filehandle where we want to write the header
+   data sent back by server
+(In our example, we are opening "in memory" files).
+
+The list of all the options that you can set is documented in
+[[http://curl.haxx.se/libcurl/c/curl_easy_setopt.html][the curl_easy_setopt]] man page.  
+
+
+To run the above script, copy it to a file (for example, into
+=plcurl.pl=) and run it =perl ./plcurl.pl=).  You should see an output similar to this
+
+<example>
+Transfer went ok
+Received header: HTTP/1.1 200 OK
+Date: Wed, 17 Jun 2009 06:33:41 GMT
+Server: Apache/2.2.3 (CentOS)
+Last-Modified: Tue, 15 Nov 2005 13:24:10 GMT
+ETag: "b80f4-1b6-80bfd280"
+Accept-Ranges: bytes
+Content-Length: 438
+Connection: close
+Content-Type: text/html; charset=UTF-8
+
+
+Received body: <HTML>
+<HEAD>
+  <TITLE>Example Web Page</TITLE>
+</HEAD> 
+<body>  
+<p>You have reached this web page by typing &quot;example.com&quot;,
+&quot;example.net&quot;,
+  or &quot;example.org&quot; into your web browser.</p>
+<p>These domain names are reserved for use in documentation and are not available 
+  for registration. See <a href="http://www.rfc-editor.org/rfc/rfc2606.txt">RFC 
+  2606</a>, Section 3.</p>
+</BODY>
+</HTML>
+
+</example>
+
+* Using WWW::Curl::Multi
+
+Let us now turn our attention to the problem of fetching multiple
+webpages.  In many cases, the webpages can be fetched parallely.  This
+option is supported by curl and we can use it with the
+WWW::Curl::Multi module.  This module is a wrapper over [[http://curl.haxx.se/libcurl/c/libcurl-multi.html][libcurl-multi]]
+library.  
+
+To use WWW::Curl::Multi, you should
+ - create a multi handle
+ - each single transfer is built up with an WWW::Curl::Easy
+   handle. You must create them, and setup the appropriate options for
+   each WWW::Curl::Multi handle, using the WWW::Curl::Easy->setopt
+   function
+ - add the easy handle to the multi handle using
+   WWW::Curl::Multi->add_handle
+ - Adding the easy handle to the multi handle does not start the
+   transfer.  You drive the transfers by invoking
+   WWW::Curl::Multi->perform
+ - Keep checking on the number of active transfers and call
+   WWW::Curl::Multi->info_read to get the details of the successful
+   transfer.
+
+<include file="curlmultipl.pl" markup="src" lang="perl">

@@ -1,0 +1,112 @@
+#title Ubuntu
+<contents>
+
+本页的内容主要针对的是ubuntu11.04， Unity桌面
+* 小技巧
+** 切换workspace
+Ctrl + Alt + Arrow
+
+* Launcher Bar
+** 鼠标中键点击图标可以打开一个新的应用程序
+** 快速切换任务
+按住<code>Super</code>键（<code>Window</code>键），这时任务栏上会显示数字。按下相应数字即可跳到该程序。
+
+** 新建应用程序图标
+一般来说，只要运行程序后，在launcher bar中右键点击程序图标，选择<code>Keep In Launcher</code>，就可以在launcher bar中添加应用程序了。
+
+但是对一些程序来说，这个方法并不管用。就笔者个人而言，当时是在ubuntu11.04下编译Emacs23.3后，遇到这个问题的。编译安装后，通过命令行<code>emacs</code>启动程序，能添加到launcher bar，不过再点击图标的时候，并不能运行程序。
+
+后来在网上查了资料，发现这种情况只要为程序编写一个<code>.desktop</code>桌面文件就可以了。一个比较简单的方法是在桌面上点击右键，选择<code>Create Launcher...</code>,然后再选择相应的可执行文件就可以产生一个桌面图标（也就是<code>.desktop</code>文件)了。如果用文本编辑器打开，会发现其中的内容是类似这样的
+<example>
+#!/usr/bin/env xdg-open
+
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Icon[en_US]=emacs
+Exec=/usr/local/bin/emacs
+Name[en_US]=GNU Emacs
+Name=GNU Emacs
+Icon=emacs
+</example>
+
+这些内容手动编辑和添加，效果也是一样的。
+然后就能通过launcher bar启动程序了。
+
+不过这还没完呢。在使用过程中发现已经启动的Emacs程序并不会出现launcher bar的emacs图标里。也就是说，launcher bar的一大主要功能--切换程序没有了。又去网上查了一下，找到了解决方案，只需要在原来的<code>.desktop</code>文件的末尾添加一个<code>StartupWMClass</code>属性。
+<example>
+... # the previous contents
+StartupWMClass=Emacs
+</example>
+最后再log out、log in一下，试一试，大功告成！
+
+好事者可能会问，为什么<code>StartupWMClass</code>的值是<code>Emacs</code>,我自己取个名可不可以呢？
+
+这个大概是不可以的。对于<code>StartupWMClass</code>代表的是什么含义，笔者这个linux菜鸟也不甚了解。笔者猜测，这应该是应用程序本身的熟悉。看到网上有人说可以在命令行中通过如下方法获得:
+<src lang="shell">
+xprop | grep "WM_CLASS" | awk '{ print $4 }'
+</src>
+输入命令后，通过点击相应应用程序的窗口，就可以获取<code>StartupWMClass</code>要填的值了。
+比如对于Emacs23.3,获得的结果是:
+<example>
+"Emacs"
+</example>
+那么就在<code>.desktop</code>文件中加入:
+<example>
+StartupWMClass=Emacs
+</example>
+关于<code>xprop</code>、<code>grep</code>、<code>awk</code>等命令的含义，自己在命令行下<code>man</code>一下吧。
+
+* 加载iso镜像
+** 创建挂载点
+<src lang="shell">
+$ sudo mkdir /mnt/iso
+</src>
+** 挂载镜像
+<src lang="shell">
+$ sudo mount -o loop -t iso9660 ISO_NAME.iso /mnt/iso/
+</src>
+** 查看和使用
+<src lang="shell">
+$ cd /mnt/iso/
+$ ls -l
+</src>
+** 移除挂载
+<src lang="shell">
+$ sudo umount /mnt/iso/
+</src>
+
+* 配置
+** 安装指纹识别
+电脑是thinkpad的，windows下指纹识别用得挺习惯的。在ubuntu下，也能用指纹识别吗？
+
+网上搜索了一下，大概有两种方法
+*** 使用thinkfinger
+**** 安装
+<src code="shell">
+sudo apt-get install thinkfinger-tools libpam-thinkfinger
+
+sudo /usr/lib/pam-thinkfinger/pam-thinkfinger-enable
+</src>
+**** 执行命令登记指纹
+<src code="shell">
+tf-tool --acquire # acquire the finger index
+
+tf-tool-verify # verify the finger index
+</src>
+在我的电脑上，执行<code>"tf-tool --acquire"</code>时提示错误<code>usb device not found</code>,重启后也没有效果。最后是用下面的方法解决的。
+*** 使用fingerprint-gui
+**** 安装
+<src code="shell">
+sudo add-apt-repository ppa:fingerprint/fingerprint-gui
+
+sudo apt-get update
+
+sudo apt-get install fingerprint-gui
+</src>
+**** 使用
+<src code="shell">
+sudo fingerprint-gui
+</src>
+

@@ -1,0 +1,129 @@
+#title Emacs Lisp
+<contents>
+
+* 基础知识
+** defgroup
+defgroup group members odc [keyword value]...
+<example>
+(defgroup grep nil
+  "Run grep as inferior of Emacs, parse error messages."
+  :group 'tools
+  :group 'processes)
+</example>
+
+** defvar
+defvar symbol [value [doc-string]]
+<example>
+(defvar grep-host-defaults-alist nil
+  "Default values depending on target host.
+`grep-compute-defaults' returns default values for every local or
+remote host `grep' runs.  These values can differ from host to
+host.  Once computed, the default values are kept here in order
+to avoid computing them again.")
+</example>
+** defun
+defun name argument-list body-forms
+<example>
+(defun grep-apply-setting (symbol value)
+  "Set SYMBOL to VALUE, and update `grep-host-defaults-alist'.
+SYMBOL should be one of `grep-command', `grep-template',
+`grep-use-null-device', `grep-find-command',
+`grep-find-template', `grep-find-use-xargs', or
+`grep-highlight-matches'."
+  (when grep-host-defaults-alist
+    (let* ((host-id
+	    (intern (or (file-remote-p default-directory) "localhost")))
+	   (host-defaults (assq host-id grep-host-defaults-alist))
+	   (defaults (assq nil grep-host-defaults-alist)))
+      (setcar (cdr (assq symbol host-defaults)) value)
+      (setcar (cdr (assq symbol defaults)) value)))
+  (set-default symbol value))
+</example>
+
+** when
+when condition then-forms...
+<example>
+(when grep-host-defaults-alist
+    (let* ((host-id
+	    (intern (or (file-remote-p default-directory) "localhost")))
+	   (host-defaults (assq host-id grep-host-defaults-alist))
+	   (defaults (assq nil grep-host-defaults-alist)))
+      (setcar (cdr (assq symbol host-defaults)) value)
+      (setcar (cdr (assq symbol defaults)) value)))
+</example>
+
+** let
+let (bindings...) forms...
+<example>
+(let* ((host-id
+	    (intern (or (file-remote-p default-directory) "localhost")))
+	   (host-defaults (assq host-id grep-host-defaults-alist))
+	   (defaults (assq nil grep-host-defaults-alist)))
+      (setcar (cdr (assq symbol host-defaults)) value)
+      (setcar (cdr (assq symbol defaults)) value))
+</example>
+
+** defcustom
+decustom option standard doc [keyword value]...
+
+* 实例
+** 复制行
+一般在emacs复制某行的内容，有两种方法：
+
+首先到行首，然后
+
+1. C-space C-e M-w
+
+2. C-k C-y
+
+这样有时候会让人觉得比较麻烦，那么写个小函数来解决这个问题吧。
+
+<example>
+(global-set-key (kbd "C-c C-w") 'copy-lines)
+
+(defun copy-lines(&optional arg)
+  (interactive "p")
+  (save-excursion
+    (beginning-of-line)
+    (set-mark (point))
+    (next-line arg)
+    (kill-ring-save (mark) (point))
+    )
+  )
+</example>
+这样，不用先移动到行首，在任意位置只要<code>C-c C-w</code>就可以复制整行的内容了。
+
+** 插入标题
+<example>
+(defun insert-headline (headline-level)
+  "Insert a headline in muse-mode"
+  (interactive)
+  (setq num 0)
+  (while (< num headline-level)
+    (insert "*")
+    (setq num (1+ num)))
+  (insert " ")
+  (insert (read-string "Headline:"))
+  (insert "\n - "))
+
+(defun insert-headline-level-2 ()
+  "Insert a headline of level two in muse-mode"
+  (interactive)
+  (insert-headline 2))
+
+(global-set-key "\C-c2" 'insert-headline-level-2)
+
+(defun insert-headline-level-3 ()
+  "Insert a headline of level three in muse-mode"
+  (interactive)
+  (insert-headline 3))
+
+(global-set-key "\C-c3" 'insert-headline-level-3)
+
+(defun insert-headline-level-4 ()
+  "Insert a headline of level four in muse-mode"
+  (interactive)
+  (insert-headline 4))
+
+(global-set-key "\C-c4" 'insert-headline-level-4)
+</example>

@@ -1,0 +1,210 @@
+#title Tweak Emacs
+#layout post
+#date 2006-07-13
+#category Productivity
+
+After I used Emacs, Eclipse and Intellij Idea for a period of time. I
+gradually found some of their best features that we use everyday. I
+found Intellij idea is quite good, but it’s heavy and not very
+suitable for editing some kind of files(ruby, for instance). I like
+Emacs but when I use it, I found some features and key bindings are
+not well designed to be very efficient (at least for me). So I decide
+to add those features and change the key bindings to make it more
+comfortable to use it.
+
+Here are some features that I think a good editor or IDE should have:
+
+ - Move(word, sentence, sexp, paragraph, page).
+ - Transpose(line, that is to move one line upward or downward)
+ - Mark (word, string, sexp, paragraph, page, whole document, C-w in
+   idea)
+ - Delete(word, space, empty lines, one line, zap to char)
+ - Insert(split line, open line, duplicate one line)
+ - Case change(word, region)
+ - Live template. I like to invoke the template by pressing <tab>
+ - Auto completion. Auto completion was bound to C-SPC in idea,
+   alt-enter in eclipse. There should be only one key binding for all
+   kinds of auto completion. If there are multiple choices, there
+   should be some easy way to choose what you really want.
+   - auto completion while typing. like pabbrev
+   - for pairing tags like xml tags, finish typing the first part
+     should invoke the insertion of the second part and the cursor
+     should stay between them in the end.
+   - library auto completion
+   - tag auto completion
+ - Comment and uncomment should use same key binding. Editor should be
+   able to check if some text has been commented and execute the
+   corresponding command. Generally, if a selected region containing
+   some lines that are not commented, the command should comment the
+   region, otherwise uncomment it. C-/ is a good key binding for this.
+ - Navigation:
+   - Go back and forward. In idea, they are bound to C-M-Left and
+     C-M-Right.
+   - Go to declaration. In emacs, the tag can support this to some
+     extent. Need investigation.
+   - Last edit position which is pretty much like the above one.
+ - Document reference support
+ - Spell checking
+ - Tab bar. The tabbar design can referred to idea.
+ - Should provide an unobtrusive way to popup a window displaying a
+   directory structure or type hierarchy etc.
+
+IDE feature:
+
+ - Support unit test running, comipling and run the application etc.
+ - Refactoring
+ - More sophiscated ide can support intentional programming.
+
+* Some thoughts
+
+ - Moving is a very common operation. Usually people use mouse to move
+   their cursor. But they can be done using pure keyboard too, emacs
+   does that perfectly. But those moving key bindings should be simple
+   and not be scattered, which means you don’t need to press many keys
+   to move and the switch from moving by word to by sentence or sexp
+   should be very comfortable.
+ - C-w style marking implemented by IDEA is very nice.
+ - Delete extra space or empty lines are nice features. They can also
+   be done while formatting the code. And deleting word, sexp or
+   sentence where the cursor is in are also very useful.
+
+Frequent operations should be bound to key bindings that are easy to
+press. such as copy, paste, cut, delete one line. The key binding
+should also consider using mouse. Actually, mouse can be very
+useful. I think the key to be efficient is not that you don’t have to
+move your hands outside the keyboard to finish all tasks but be able
+to do what you want by very simple and few steps. If you can use mouse
+to select a region and your left hand can easily and comfortably
+perform cut and paste operation, I think that’s better than using C-N
+or C-P like key combination to select a region.
+
+The design of idea is intentional programming. You do not have to
+browse the file structure to select the file you want to edit. You can
+navigate easily while you are thinking, to finish your job you don’t
+need many mouse clicks and key pressing, that’s partly why people says
+ecplise is not as good as idea. You just have to click more and press
+more to finish a job than using idea and Eclipse don’t support you to
+program smoothly.
+
+The same idea can be applied to emacs. Do it simple. Frequent
+operations should be able to be done by very simple steps. More
+unusual operations can be bound to more complex key sequence. For
+example, moving by sexps in lisps should be simple to do. Moreover, if
+you don’t want to let your hands leave the keyboard, most moving
+operations should not need more than 1 key pressing to do it. Like
+moving by paragraph, the default key binding is C-S-Up or Down, which
+is good, while you are holding the C and S, you can move the cursor by
+paragraph as many times as you wish by just pressing up or down. Some
+other operations like compile, open html file in browser etc. are not
+very frequently used, so they can be bound to key sequence over 2 key
+pressing( such as C-c C-v ).
+
+Don’t complain that emacs doesn’t support some ide feature like file
+structure pane very well. Anyway, we should provide them ,but the
+important thing is to make programming in emacs don’t need you to use
+them very often, like in idea.
+
+* How to make emacs more comfortable to use
+
+ - (done)Swap the caps lock and left control on your dell d610 keyboard, just because the design is bad.
+ - Kill-buffer command (C-x k) is used very often(at least for me), which can be bound to a more convenient key binding.
+ - Idea has a nice feature(maybe controversial): when it loses the focus, it saves all open files in its window.
+ - (done)When a region is selected, pressing Backspace or DEL Should delete the region
+ - Speedbar should be better too. Refer to the design of textmate.
+ - Scroll bar. the vertical bar is not necessary, but there should be some convenient way to scroll horizontally.
+ - Different major modes should be able to have different set of live templates.
+ - Tabbar
+ - Auto completion
+ - Navigation
+ - Unit test support
+ - (done)Move one line upward or downward
+ - (done)Duplicate one line
+ - (done)Delete one line
+ - (done)Comment and uncomment a region or one line
+
+Here are some key bindings that easy to use:
+
+ - <tab>, TAB
+ - C-, M-, C-M-
+ - C-c … C-x … C-h …
+
+(M here means ‘alt’ key)
+
+some features that are often forgotten in emacs:
+
+ - keyboard macro
+ - register
+ - bookmark
+ - rectangle
+
+The following are some code of those above works that I have marked (done):
+<example>
+<src lang="elisp">
+(defun tweakemacs-delete-region-or-char ()
+  "Delete a region or a single character."
+  (interactive)
+  (if mark-active
+      (kill-region (region-beginning) (region-end))
+    (delete-char 1)))
+(global-set-key (kbd "C-d") 'tweakemacs-delete-region-or-char)
+ 
+(defun tweakemacs-backward-delete-region-or-char ()
+  "Backward delete a region or a single character."
+  (interactive)
+  (if mark-active
+      (kill-region (region-beginning) (region-end))
+    (backward-delete-char 1)))
+(global-set-key [backspace] 'tweakemacs-backward-delete-region-or-char)
+ 
+(defun tweakemacs-duplicate-one-line ()
+  "Duplicate the current line. There is a little bug: when current line is the last line of the buffer, this will not work as expected. Anyway, that's ok for me."
+  (interactive)
+  (let ((start (progn (beginning-of-line) (point)))
+	(end (progn (next-line 1) (beginning-of-line) (point))))
+    (insert-buffer-substring (current-buffer) start end)
+    (forward-line -1)))
+(global-set-key (kbd "C-=") 'tweakemacs-duplicate-one-line)
+ 
+(defun tweakemacs-delete-one-line ()
+  "Delete current line."
+  (interactive)
+  (beginning-of-line)
+  (kill-line)
+  (kill-line))
+(global-set-key "M-o" 'tweakemacs-delete-one-line)
+ 
+(defun tweakemacs-move-one-line-downward ()
+  "Move current line downward once."
+  (interactive)
+  (forward-line)
+  (transpose-lines 1)
+  (forward-line -1))
+(global-set-key [C-M-down] 'tweakemacs-move-one-line-downward)
+ 
+(defun tweakemacs-move-one-line-upward ()
+  "Move current line upward once."
+  (interactive)
+  (transpose-lines 1)
+  (forward-line -2))
+(global-set-key [C-M-up] 'tweakemacs-move-one-line-upward)
+ 
+;; There is a bug in the uncomment-region. When you select
+;; the last line of the buffer and if that is a comment,
+;; uncomment-region to that region will throw an error: Can't find the comment end.
+;; Because I use uncomment-region here, so this command also has this bug.
+(defun tweakemacs-comment-dwim-region-or-one-line (arg)
+  "When a region exists, execute comment-dwim, or if comment or uncomment the current line according to if the current line is a comment."
+  (interactive "*P")
+  (if mark-active
+      (comment-dwim arg)
+    (save-excursion
+      (let ((has-comment? (progn (beginning-of-line) (looking-at (concat "\s-*" (regexp-quote comment-start))))))
+	(push-mark (point) nil t)
+	(end-of-line)
+	(if has-comment?
+	    (uncomment-region (mark) (point))
+	  (comment-region (mark) (point)))))))
+(global-set-key (kbd "C-/") 'tweakemacs-comment-dwim-region-or-one-line)
+
+</src>
+</example>

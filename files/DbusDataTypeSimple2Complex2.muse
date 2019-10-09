@@ -1,0 +1,765 @@
+#title DBus glib 各数据类型接收与发送详解—C语言（2）
+
+<contents depth="3">
+* 动机
+说到 **DBus** 用过的人大概都能明白其工作的流程。典型的使用流程是，向 DBus 服务进程发送数据，然后接收其返回的数据。简单的说，就像调用函数一样，向服务进程发送数据就相当于函数的参数，其返回的数据就相当于函数返回的结果。虽然明白了流程，但想要使用 **C语言** 通过已有的　DBus 服务进行操作，仍然是一项不太容易的工作（对像我这样的菜鸟^_^），因为数据的类型真是太多了, 使用 **Python** 会简单一点。简单点的有 **Boolean**, **Byte**, **Int32**, **Int64**, **String**, **ObjectPath**, **Signature** 等; 复杂一点的有 **Array**, **Struct**, **Dict** 等。如果不能弄清楚它们之间的联系，那么将是一件非常头痛的事。为了使我研究的结果不被淡忘，于是有了这篇文章。
+
+* 前置知识
+ - 能够熟练使用 C语言；
+ - 了解 DBus 各数据类型的表示, 参考 [[http://dbus.freedesktop.org/doc/dbus-specification.html][D-Bus Specification]]
+ - 对 DBus-glib 有基本的了解，能够与 DBus 服务进程进行简单的交互。
+ - 简单使用 d-feet, 参考 [[http://blog.csdn.net/fmddlmyy/article/details/3585730][D-Bus 实例讲解]] 
+ - 大概对 Python 有些了解（只是为了说明我的分析思路，如果你只想找 C 的解决方法，那完全可以不了解）；
+ - 简单了解 python dbus
+
+* 正文
+上一篇讨论了基本的数据类型的传递，这次我们就讨论难一点的， **高级数据类型** 的传递。这里我们会讨论四种高级的（也就是难一点的）数据类型的传递： ARRAY, STRUCT, DICT_ENTRY, VARIANT， 具体请参照 [[http://dbus.freedesktop.org/doc/dbus-specification.html][D-Bus Specification]]。
+
+同样先给出 Python 编写的服务与测试（这次没有 shell 脚本了）。
+** Python DBus 服务进程  
+ **advanced_data_deliver_service.py**
+<example>
+#!/usr/bin/env python
+
+import gobject
+
+import dbus
+import dbus.service
+import dbus.mainloop.glib
+
+class AdvancedData(dbus.service.Object):
+    def __init__(self, bus, object_path):
+        dbus.service.Object.__init__(self, bus, object_path)
+        self._last_input = None
+
+    @dbus.service.method('airead.fan.AdvancedDataType', in_signature='ai', out_signature='ai')
+    def IntArrayPrint(self, ai):
+        print "receive int array:", ai
+        for i in range(len(ai)):
+            print ai[i],
+            ai[i] = ai[i] + 1
+        print '\n' + '=' * 33
+        return ai
+
+    @dbus.service.method('airead.fan.AdvancedDataType', out_signature='(sidb)')
+    def StructPrint(self, struct):
+        print "receive struct:", struct
+        for value in struct:
+            print value
+        print '=' * 33
+        return ('Li', 24, 55.1, False)
+
+    @dbus.service.method('airead.fan.AdvancedDataType', in_signature='a{ss}', out_signature='a{ss}')
+    def DictPrint(self, dict):
+        print "receive dict:", dict
+        for k in dict:
+            print "%s: %s" % (k, dict[k])
+        print '=' * 33
+        return {'fan': "male", 'li': "female"}
+
+    @dbus.service.method('airead.fan.AdvancedDataType', in_signature='v', out_signature='v')
+    def VariantPrint(self, variant):
+        print "receive variant:", variant
+        print '=' * 33
+        return {'fan': "male", 'li': "female"}
+
+if __name__ == '__main__':
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+    session_bus = dbus.SessionBus()
+    name = dbus.service.BusName("airead.fan.AdvancedDataType", session_bus)
+    object = AdvancedData(session_bus, '/airead/fan/AdvancedDataType')
+
+    mainloop = gobject.MainLoop()
+    print "Running example service."
+    mainloop.run()
+
+</example>
+
+** Python 测试服务
+ **advanced_data_deliver_test_py.py**
+<example>
+#!/usr/bin/python
+
+import sys
+import dbus
+from traceback import print_exc
+
+def main():
+
+    bus = dbus.SessionBus()
+            
+    try:
+        remote_object = bus.get_object("airead.fan.AdvancedDataType", "/airead/fan/AdvancedDataType")
+        dbus_interface = dbus.Interface(remote_object, "airead.fan.AdvancedDataType")
+
+        #test dictionary
+        dic = {'a':'apple', 'b':'banana', 'c':'cherry'}
+        ret = dbus_interface.DictPrint(dic)
+        print ret
+        print '=' * 33 + "\n"
+
+        #test int array
+        intarray = [1, 2, 3, 4, 5, 6]
+        ret = dbus_interface.IntArrayPrint(intarray)
+        print ret
+        print '=' * 33 + "\n"
+
+        #test struct
+        struct = ("fan", 24, 70.5, False)
+        ret = dbus_interface.StructPrint(struct)
+        print ret
+        print '=' * 33 + "\n"
+
+        #test variant
+        variant = dic
+        ret = dbus_interface.VariantPrint(variant)
+        print ret
+        print '-' * 33 + "\n"
+        
+        variant = intarray
+        ret = dbus_interface.VariantPrint(variant)
+        print ret
+        print '-' * 33 + "\n"
+
+        variant = struct
+        ret = dbus_interface.VariantPrint(variant)
+        print ret
+        print '-' * 33 + "\n"
+
+    except dbus.DBusException:
+        print_exc()
+        sys.exit(1)
+
+main()
+</example>
+
+** 使用 C 实现高级数据类型的传递
+以下代码仅仅为了演示数据类型的传递，不保证没有内存泄漏，请仔细检查后再使用。
+*** ARRAY
+ARRAY: glib->garray *, G_TYPE_ARRAY, dbus->'a'
+
+传递字节数组的话使用 "ay", 传递 ObjectPath 数组的话使用 "ao", 传递整数数组的话使用 "ai", 具体可以使用 Python 来写 service 进行测试。下面是一个传递整数数组的例子。在这个例子中有几个要点：
+ - garray 的相关操作；
+ - 传递 int array 时，要使用 DBUS_TYPE_G_INT_ARRAY. 关于 DBUS_TYPE_G_INT_ARRAY 是怎么来的将在后面讨论；
+ - 注意传递的是指针。
+<example>
+int send_recv_int_array(DBusGProxy *proxy)
+{
+    char *method;
+    GError *error;
+    GArray *garray, *ret;
+    gint i, j;
+    
+    garray = g_array_new (FALSE, FALSE, sizeof (gint));
+    for (i = 0; i < 6; i++) {
+        j = i + 1;
+        g_array_append_val(garray, j);
+    }
+
+    method = "IntArrayPrint";
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           DBUS_TYPE_G_INT_ARRAY, garray,
+                           G_TYPE_INVALID,
+                           DBUS_TYPE_G_INT_ARRAY, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+
+    g_print("receive int array:\n");
+    for (i = 0; i < ret->len; i++) {
+        g_print("%d ", g_array_index(ret, gint, i));
+    }
+    g_print("\n=================================\n\n");
+    
+    return 0;
+}
+</example>
+*** STRUCT
+STRUCT: glib->GValueArray *, ????, dbus->'()'
+
+结构体在 D-Bus 服务进程中的声名为 (??), 其中 `?' 可以任意数据类型。比如
+<verse>
+// (si)
+struct str_int {
+    gchar *s;
+    gint i;
+};
+
+// (sidb)
+struct str_int_double_boolean {
+    gchar *s;
+    gint i;
+    gdouble d;
+    gboolean b;
+};
+</verse>
+下面演示了 (sidb) 在 D-Bus 中的传递。代码分为三大块:
+ 1. define 需要的结构；
+ 2. 创建输入数据；
+ 2. 调用命令；
+ 3. 打印接收到的数据；
+<example>
+#define DBUS_STRUCT_STRING_INT_DOUBLE_BOOLEAN (                         \
+        dbus_g_type_get_struct ( "GValueArray", G_TYPE_STRING, G_TYPE_INT, \
+                                 G_TYPE_DOUBLE, G_TYPE_BOOLEAN, G_TYPE_INVALID))
+
+int send_recv_struct(DBusGProxy *proxy)
+{
+    char *method;
+    GError *error = NULL;
+    GValueArray *ret, *send_array;
+    GValue *gval;
+    GValue send_gval[4] = {{0}};
+    int i;
+    
+    g_value_init (&send_gval[0], G_TYPE_STRING);
+    g_value_set_string(&send_gval[0], "fan");
+    g_value_init (&send_gval[1], G_TYPE_INT);
+    g_value_set_int(&send_gval[1], 24);
+    g_value_init (&send_gval[2], G_TYPE_DOUBLE);
+    g_value_set_double(&send_gval[2], 70.2);
+    g_value_init (&send_gval[3], G_TYPE_BOOLEAN);
+    g_value_set_boolean(&send_gval[3], FALSE);
+    
+    send_array = g_value_array_new(0);
+    for (i = 0; i < 4; i++) {
+        send_array = g_value_array_append(send_array, &send_gval[i]);
+    }
+
+    method = "StructPrint";
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           DBUS_STRUCT_STRING_INT_DOUBLE_BOOLEAN, send_array,
+                           G_TYPE_INVALID,
+                           DBUS_STRUCT_STRING_INT_DOUBLE_BOOLEAN, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+
+    g_print("receive struct:\n");
+    for (i = 0; i < ret->n_values; i++) {
+        gval = g_value_array_get_nth(ret, i);
+        if (G_VALUE_TYPE(gval) == G_TYPE_STRING) {
+            g_print("%s\n", g_value_get_string(gval));
+        } else if (G_VALUE_TYPE(gval) == G_TYPE_DOUBLE) {
+            g_print("%f\n", g_value_get_double(gval));
+        } else if (G_VALUE_TYPE(gval) == G_TYPE_INT) {
+            g_print("%d\n", g_value_get_int(gval));
+        } else if (G_VALUE_TYPE(gval) == G_TYPE_BOOLEAN) {
+            g_print("%d\n", g_value_get_boolean(gval));
+        }
+    }
+
+    g_print("\n=================================\n\n");
+    
+    return 0;
+}
+</example>
+回忆一下，在传递 ARRAY 中我们遇到了 **DBUS_TYPE_G_INT_ARRAY** , 那么它是如何定义的呢？
+<verse>
+#define DBUS_TYPE_G_INT_ARRAY (dbus_g_type_get_collection ("GArray", G_TYPE_INT))
+</verse>
+它是 dbus-glib 库帮我定义的，使用到了 dbus_g_type_get_collection() 函数。当我们传递某些特殊数据的时候，如果 dbus-glib 库没有它的定义，那我们需要使用
+ - dbus_g_type_get_collection()
+ - dbus_g_type_get_map()
+ - dbus_g_type_get_struct()
+
+等相关函数自行定义。上面的例子中我们就定义一个 struct 类型:
+<verse>
+#define DBUS_STRUCT_STRING_INT_DOUBLE_BOOLEAN (                         \
+        dbus_g_type_get_struct ( "GValueArray", G_TYPE_STRING, G_TYPE_INT, \
+                                 G_TYPE_DOUBLE, G_TYPE_BOOLEAN, G_TYPE_INVALID))
+</verse>
+具体细节请参考 [[http://dbus.freedesktop.org/doc/dbus-glib/dbus-glib-Specializable-GType-System.html][Specializable GType System]]，以及详解中其它的类型定义。 map 对应 GHashTable, collection 对应 GArray, struct 对 GValueArray 等。
+
+另外，STRUCT 数据还有另一种构造方法，在 `使用 VARINAT 传递 STRUCT' 中，我也不知道哪种方法更好。
+*** DICT_ENTRY
+DICT_ENTRY: glib->GHashTable, ????, dbus->a{??}
+
+参考 STRUCT 中 `?' 的示例，下面我们演示了 a{ss} 的传递代码。其中 DBUS_TYPE_G_STRING_STRING_HASHTABLE，是库帮我们定义的：
+<verse>
+#define DBUS_TYPE_G_STRING_STRING_HASHTABLE (dbus_g_type_get_map ("GHashTable", G_TYPE_STRING, G_TYPE_STRING))
+</verse>
+代码同样分为三大块，与 STUCT 流程相似。
+<example>
+
+int send_recv_dict(DBusGProxy *proxy)
+{
+    char *method;
+    GHashTable *table, *ret;
+    GHashTableIter iter;
+    gpointer key, value;
+    GError *error = NULL;
+    char *str[3];
+
+    table = g_hash_table_new(NULL, NULL);
+
+    str[0] = "apple";
+    str[1] = "banana";
+    str[2] = "cherry";
+
+    g_hash_table_insert(table, "a", str[0]);
+    g_hash_table_insert(table, "b", str[1]);
+    g_hash_table_insert(table, "c", str[2]);
+
+    method = "DictPrint";
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           DBUS_TYPE_G_STRING_STRING_HASHTABLE, table,
+                           G_TYPE_INVALID,
+                           DBUS_TYPE_G_STRING_STRING_HASHTABLE, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+
+    g_print("receive: dictionary\n");
+    g_hash_table_iter_init(&iter, ret);
+    while (g_hash_table_iter_next(&iter, &key, &value)) {
+        g_print("key: %s, %s\n", (char *)key, (char *)value);
+    }
+    g_print("=================================\n\n");
+
+    g_hash_table_unref(table);
+    g_hash_table_unref(ret);
+
+    return 0;
+}
+</example>
+*** VARIANT
+VARIANT: glib->GValue, G_TYPE_VALUE, dbus->'v'
+
+VARIANT 是一个通用的容器，它可以装任意数据类型。如：所有基本类型，ARRAY, STRUCT, DICT_ENTRY 甚至容纳自身。以下代码演示了装 INT_ARRAY 和 STRUCT 的 VARIANT 的传递，它们分为两个函数。
+<example>
+int send_recv_variant(DBusGProxy *proxy)
+{
+    char *method;
+  
+    method = "VariantPrint";
+    
+    send_recv_variant_int_array(proxy, method);
+    send_recv_variant_struct(proxy, method);
+
+    return 0;
+}
+</example>
+**** 使用 VARINAT 传递 INT_ARRAY
+重点就是如何将 INT_ARRAY 装入 GValue 中。这里的办法是，先产生一个容器，然后从容器中获取指针进行赋值。试这个的时候费了我老大劲了-_-!。注意，服务进程返回的是 DICT_ENTRY 类型的数据。
+<example>
+
+int send_recv_variant_int_array(DBusGProxy *proxy, char *method)
+{
+    GError *error = NULL;
+    GValue gval = G_VALUE_INIT;
+    GValue ret = G_VALUE_INIT;
+    GHashTable *table;
+    GHashTableIter iter;
+    gpointer key, value;
+    GArray *garray;
+    gint i, j;
+    
+    g_value_init(&gval, DBUS_TYPE_G_INT_ARRAY);
+    g_value_take_boxed(&gval, dbus_g_type_specialized_construct(DBUS_TYPE_G_INT_ARRAY));
+    garray = g_value_get_boxed(&gval);
+    for (i = 0; i < 6; i++) {
+        j = i + 1;
+        g_array_append_val(garray, j);
+    }
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           G_TYPE_VALUE, &gval,
+                           G_TYPE_INVALID,
+                           G_TYPE_VALUE, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+
+    g_print("receive variant:\n");
+    table = g_value_get_boxed(&ret);
+    
+    g_hash_table_iter_init(&iter, table);
+    while (g_hash_table_iter_next(&iter, &key, &value)) {
+        g_print("key: %s, %s\n", (char *)key, (char *)value);
+    }
+   
+    g_print("\n=================================\n\n");
+
+    return 0;
+}
+</example>
+**** 使用 VARINAT 传递 INT_STRUCT
+重点就是如何将 STRUCT 装入 GValue 中。这里出现了构造 STRUCT 的第二种方法。注意，服务进程返回的是 DICT_ENTRY 类型的数据。
+<example>
+
+int send_recv_variant_struct(DBusGProxy *proxy, char *method)
+{
+    GError *error = NULL;
+    GValue gval = G_VALUE_INIT;
+    GValue ret = G_VALUE_INIT;
+    GHashTable *table;
+    GHashTableIter iter;
+    gpointer key, value;
+    
+    g_value_init(&gval, DBUS_STRUCT_STRING_INT_DOUBLE_BOOLEAN);
+    g_value_take_boxed(&gval, dbus_g_type_specialized_construct(DBUS_STRUCT_STRING_INT_DOUBLE_BOOLEAN));
+    
+    dbus_g_type_struct_set(&gval, 0, "fan",
+                           1, 24,
+                           2, 70.1,
+                           3, FALSE, G_MAXUINT);
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           G_TYPE_VALUE, &gval,
+                           G_TYPE_INVALID,
+                           G_TYPE_VALUE, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+
+    g_print("receive variant:\n");
+    table = g_value_get_boxed(&ret);
+    
+    g_hash_table_iter_init(&iter, table);
+    while (g_hash_table_iter_next(&iter, &key, &value)) {
+        g_print("key: %s, %s\n", (char *)key, (char *)value);
+    }
+   
+    g_print("\n=================================\n\n");
+
+    return 0;
+}
+</example>
+
+*** C D-Bus 测试完整代码
+ **advanced_data_deliver_test_c.c**
+<example>
+/**
+ * @file advanced_data_deliver_test_c.c
+ * @brief 
+ * @author Airead Fan <fgh1987168@gmail.com>
+ * @date 2012/03/23 11:28:29
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <dbus/dbus-glib.h>
+
+#define METHOD_STRLEN 128
+
+int send_recv_dict(DBusGProxy *proxy)
+{
+    char *method;
+    GHashTable *table, *ret;
+    GHashTableIter iter;
+    gpointer key, value;
+    GError *error = NULL;
+    char *str[3];
+
+    table = g_hash_table_new(NULL, NULL);
+
+    str[0] = "apple";
+    str[1] = "banana";
+    str[2] = "cherry";
+
+    g_hash_table_insert(table, "a", str[0]);
+    g_hash_table_insert(table, "b", str[1]);
+    g_hash_table_insert(table, "c", str[2]);
+
+    method = "DictPrint";
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           DBUS_TYPE_G_STRING_STRING_HASHTABLE, table,
+                           G_TYPE_INVALID,
+                           DBUS_TYPE_G_STRING_STRING_HASHTABLE, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+
+    g_print("receive: dictionary\n");
+    g_hash_table_iter_init(&iter, ret);
+    while (g_hash_table_iter_next(&iter, &key, &value)) {
+        g_print("key: %s, %s\n", (char *)key, (char *)value);
+    }
+    g_print("=================================\n\n");
+
+    g_hash_table_unref(table);
+    g_hash_table_unref(ret);
+
+    return 0;
+}
+
+int send_recv_int_array(DBusGProxy *proxy)
+{
+    char *method;
+    GError *error;
+    GArray *garray, *ret;
+    gint i, j;
+    
+    garray = g_array_new (FALSE, FALSE, sizeof (gint));
+    for (i = 0; i < 6; i++) {
+        j = i + 1;
+        g_array_append_val(garray, j);
+    }
+
+    method = "IntArrayPrint";
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           DBUS_TYPE_G_INT_ARRAY, garray,
+                           G_TYPE_INVALID,
+                           DBUS_TYPE_G_INT_ARRAY, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+
+    g_print("receive int array:\n");
+    for (i = 0; i < ret->len; i++) {
+        g_print("%d ", g_array_index(ret, gint, i));
+    }
+    g_print("\n=================================\n\n");
+    
+    return 0;
+}
+
+#define DBUS_STRUCT_STRING_INT_DOUBLE_BOOLEAN (                         \
+        dbus_g_type_get_struct ( "GValueArray", G_TYPE_STRING, G_TYPE_INT, \
+                                 G_TYPE_DOUBLE, G_TYPE_BOOLEAN, G_TYPE_INVALID))
+
+int send_recv_struct(DBusGProxy *proxy)
+{
+    char *method;
+    GError *error = NULL;
+    GValueArray *ret, *send_array;
+    GValue *gval;
+    GValue send_gval[4] = {{0}};
+    int i;
+    
+    g_value_init (&send_gval[0], G_TYPE_STRING);
+    g_value_set_string(&send_gval[0], "fan");
+    g_value_init (&send_gval[1], G_TYPE_INT);
+    g_value_set_int(&send_gval[1], 24);
+    g_value_init (&send_gval[2], G_TYPE_DOUBLE);
+    g_value_set_double(&send_gval[2], 70.2);
+    g_value_init (&send_gval[3], G_TYPE_BOOLEAN);
+    g_value_set_boolean(&send_gval[3], FALSE);
+    
+    send_array = g_value_array_new(0);
+    for (i = 0; i < 4; i++) {
+        send_array = g_value_array_append(send_array, &send_gval[i]);
+    }
+
+    method = "StructPrint";
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           DBUS_STRUCT_STRING_INT_DOUBLE_BOOLEAN, send_array,
+                           G_TYPE_INVALID,
+                           DBUS_STRUCT_STRING_INT_DOUBLE_BOOLEAN, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+
+    g_print("receive struct:\n");
+    for (i = 0; i < ret->n_values; i++) {
+        gval = g_value_array_get_nth(ret, i);
+        if (G_VALUE_TYPE(gval) == G_TYPE_STRING) {
+            g_print("%s\n", g_value_get_string(gval));
+        } else if (G_VALUE_TYPE(gval) == G_TYPE_DOUBLE) {
+            g_print("%f\n", g_value_get_double(gval));
+        } else if (G_VALUE_TYPE(gval) == G_TYPE_INT) {
+            g_print("%d\n", g_value_get_int(gval));
+        } else if (G_VALUE_TYPE(gval) == G_TYPE_BOOLEAN) {
+            g_print("%d\n", g_value_get_boolean(gval));
+        }
+    }
+
+    g_print("\n=================================\n\n");
+    
+    return 0;
+}
+
+int send_recv_variant_int_array(DBusGProxy *proxy, char *method)
+{
+    GError *error = NULL;
+    GValue gval = G_VALUE_INIT;
+    GValue ret = G_VALUE_INIT;
+    GHashTable *table;
+    GHashTableIter iter;
+    gpointer key, value;
+    GArray *garray;
+    gint i, j;
+    
+    g_value_init(&gval, DBUS_TYPE_G_INT_ARRAY);
+    g_value_take_boxed(&gval, dbus_g_type_specialized_construct(DBUS_TYPE_G_INT_ARRAY));
+    garray = g_value_get_boxed(&gval);
+    for (i = 0; i < 6; i++) {
+        j = i + 1;
+        g_array_append_val(garray, j);
+    }
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           G_TYPE_VALUE, &gval,
+                           G_TYPE_INVALID,
+                           G_TYPE_VALUE, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+
+    g_print("receive variant:\n");
+    table = g_value_get_boxed(&ret);
+    
+    g_hash_table_iter_init(&iter, table);
+    while (g_hash_table_iter_next(&iter, &key, &value)) {
+        g_print("key: %s, %s\n", (char *)key, (char *)value);
+    }
+   
+    g_print("\n=================================\n\n");
+
+    return 0;
+}
+
+int send_recv_variant_struct(DBusGProxy *proxy, char *method)
+{
+    GError *error = NULL;
+    GValue gval = G_VALUE_INIT;
+    GValue ret = G_VALUE_INIT;
+    GHashTable *table;
+    GHashTableIter iter;
+    gpointer key, value;
+    
+    g_value_init(&gval, DBUS_STRUCT_STRING_INT_DOUBLE_BOOLEAN);
+    g_value_take_boxed(&gval, dbus_g_type_specialized_construct(DBUS_STRUCT_STRING_INT_DOUBLE_BOOLEAN));
+    
+    dbus_g_type_struct_set(&gval, 0, "fan",
+                           1, 24,
+                           2, 70.1,
+                           3, FALSE, G_MAXUINT);
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           G_TYPE_VALUE, &gval,
+                           G_TYPE_INVALID,
+                           G_TYPE_VALUE, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+
+    g_print("receive variant:\n");
+    table = g_value_get_boxed(&ret);
+    
+    g_hash_table_iter_init(&iter, table);
+    while (g_hash_table_iter_next(&iter, &key, &value)) {
+        g_print("key: %s, %s\n", (char *)key, (char *)value);
+    }
+   
+    g_print("\n=================================\n\n");
+
+    return 0;
+}
+
+int send_recv_variant(DBusGProxy *proxy)
+{
+    char *method;
+  
+    method = "VariantPrint";
+    
+    send_recv_variant_int_array(proxy, method);
+    send_recv_variant_struct(proxy, method);
+
+    return 0;
+}
+
+int main(int argc, char *argv[])
+{
+    DBusGConnection *connection;
+    GError *error = NULL;
+    DBusGProxy *proxy;
+
+    g_type_init();
+
+    /* conect system connection and get proxy */
+    connection = dbus_g_bus_get(DBUS_BUS_SESSION, &error);
+    if (connection == NULL) {
+        g_printerr("get system bus failed: %s\n", error->message);
+        g_error_free(error);
+        return -1;
+    }
+    
+    /* get proxy */
+    proxy = dbus_g_proxy_new_for_name(connection, 
+                                      "airead.fan.AdvancedDataType",
+                                      "/airead/fan/AdvancedDataType",
+                                      "airead.fan.AdvancedDataType");
+    
+    send_recv_dict(proxy);
+    send_recv_int_array(proxy);
+    send_recv_struct(proxy);
+    send_recv_variant(proxy);
+
+    return 0;
+}
+</example>
+* Makefile
+有些东西实际上没用，我也懒得去了。
+<example>
+CC	= gcc
+
+CFLAGS	= -Wall -g
+CFLAGS += $(shell pkg-config --cflags glib-2.0 )
+CFLAGS += $(shell pkg-config --cflags dbus-glib-1)
+#CFLAGS += $(shell pkg-config --cflags gtk+-2.0)
+
+LDFLAGS	= 
+LDFLAGS += $(shell pkg-config --libs glib-2.0)
+LDFLAGS += $(shell pkg-config --libs dbus-glib-1)
+#LDFLAGS += $(shell pkg-config --libs gtk+-2.0)
+
+SOURCE =  $(wildcard *.c)
+TARGETS	:= $(patsubst %.c, %, $(SOURCE))
+TARGETS_OUT = common_marshaler basic_data
+TARGETS := $(filter-out $(TARGETS_OUT), $(TARGETS))
+TARGETS := $(addsuffix .out, $(TARGETS))
+
+%.out: %.c
+	@echo CC $< -o $@
+	@$(CC) $< common_marshaler.c basic_data.c $(CFLAGS) -o $@ $(LDFLAGS)
+
+.PHONY: all clean test marshaler
+
+all: $(TARGETS) 
+
+marshaler: 
+	glib-genmarshal --prefix _common_marshal --header common_marshaler.list > common_marshaler.h
+	glib-genmarshal --prefix _common_marshal --body common_marshaler.list > common_marshaler.c
+	dbus-binding-tool --prefix=airead_fan --mode=glib-server all_basic_data_deliver_server.xml > all_basic_data_deliver_server.h
+
+clean:
+	rm -f *~ a.out *.o $(TARGETS) core.*
+
+test:
+	@echo TARGETS: $(TARGETS)
+
+</example>

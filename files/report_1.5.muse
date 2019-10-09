@@ -1,0 +1,183 @@
+#title Задание 1-5.
+#author Лапин Ярослав
+
+* Определение зон повышенной корпускулярной радиации в области захвата энергичных частиц. Сравнение с результатами расчета по моделям геомагнитного поля.
+
+        Выполнил Лапин Ярослав. 20/12/2010.
+
+* Исходные данные
+Данные были получены со спутника NOAA за 12-16 августа 2002. На сайте
+[[http://cdaweb.gsfc.nasa.gov/istp_public/][cdaweb.gsfc.nasa.gov]] нужно было выбрать спутник NOAA и Instrument ---
+Particles, и выбрать:
+ - Fractional Day of Year 
+ - Latitude
+ - Longitude
+ - MEPED Count Rates for 0 Deg. telescopes, 4 proton and 2 electron
+   energy bands (counts_0dg)"
+
+* Обработка данных
+Файл был переведён в формат пригодный для дальнейшей обработки
+<example>
+	program task5
+	real::lat,long,day,kev1,kev2,kev3,kev4,kev5,kev6
+
+        open (unit=1, file='../data/NOAA14_MEPED1MIN.dat',status='OLD')
+        open (unit=2, file='data.dat')
+
+	L=0;
+123    format(i2,1x,i2,1x,i4,1x,i2,1x,i2,1x,f6.3,3f14.5,15f23.6)
+	do
+	read (1,123,end=34,err=35) IDAY,MON,IYEAR,IHOUR,MIN,ISEC,DAY,
+     _		lat,long,notusable,kev1,kev2,kev3,kev4,notusable,kev5,kev6
+	print *, IDAY,MON,IYEAR,IHOUR,MIN,ISEC,day,lat,long,
+     _		kev1,kev2,kev3,kev4,kev5,kev6
+
+        L=L+1
+	if (long.gt.180) then
+	   long = long - 360
+	end if
+	write (2,*) DAY,lat,long,kev1,kev2,kev3,kev4,kev5,kev6
+	end do
+
+35    print *, 'error L=', L
+	stop 1
+34    print *, 'End of file L=', L
+
+	end program
+</example>
+
+** Преобразование долготы
+Не очень понятно почему, но мы сдвинули координаты от 180 до 360
+градусов в область -180--0.
+
+** Исходные данные
+<example>
+12-08-2002 00:00:00.000 224.000 -45.5800 82.6313 426.750
+  0.0312500 0.0156250 0.0156250 0.218750 104.750 0.468750 0.00000
+12-08-2002 00:01:00.000 224.001 -48.9957 81.1686 434.214
+  0.285714 0.0178570 0.0178570 0.339286 111.429 1.67857 0.00000
+</example>
+
+** Обработаныне даныне
+<example>
+ 224.0 -45.58 82.6313 0.03125 0.015625 0.015625 0.21875 0.46875 0.0E+0
+ 224.001 -48.9957 81.1686 0.285714 0.017857 0.017857 0.339286 1.67857 0.0E+0
+ 224.001 -52.3988 79.5212 13.9219 0.453125 0.015625 0.3125 1.90625 0.0E+0
+</example>
+
+** Программа для визуализации
+
+<example>
+#!/usr/bin/python
+
+from matplotlib.mlab import griddata
+import numpy as np
+import matplotlib.pyplot as plt
+
+def plotone(x,y,z):
+    z = np.maximum( z, 0.001); z = np.minimum( z, 40 );
+
+    xi = np.linspace(-180,180, 200)
+    yi = np.linspace(-90,90, 100)
+    zi = griddata(x, y, z, xi, yi)
+
+    CS = plt.contour(xi,yi,zi,15,linewidths=0.5,colors='k')
+    CS = plt.contourf(xi,yi,zi,15,cmap=plt.cm.jet)
+    plt.xlim(np.min(xi),np.max(xi))
+    plt.ylim(np.min(yi),np.max(yi))
+    plt.colorbar() # draw colorbar
+
+
+plt.figure(num=None, figsize=(12, 10), dpi=90, facecolor='w', edgecolor='k') 
+
+data = np.genfromtxt("data.dat")
+
+x = data[:,2]
+y = data[:,1]
+
+plt.subplot(3, 2, 1);plotone(x,y,data[:,3])
+plt.title('80-250KEV_PRTN(0_DG)')
+
+plt.subplot(3, 2, 2);plotone(x,y,data[:,4])
+plt.title('250-800KEV_PRTN(0_DG)')
+
+plt.subplot(3, 2, 3);plotone(x,y,data[:,5])
+plt.title('800-2500KEV_PRTN(0_DG)')
+
+plt.subplot(3, 2, 4);plotone(x,y,data[:,6])
+plt.title('>2500KEV_PRTN(0_DG)')
+
+plt.subplot(3, 2, 5);plotone(x,y,data[:,7])
+plt.title('>100KEV_ELEC(0_DG)')
+
+plt.subplot(3, 2, 6);plotone(x,y,data[:,8])
+plt.title('>300KEV_ELEC(0_DG)')
+
+plt.savefig("energies.png")
+</example>
+
+** Вывод
+
+Карта магнитного поля Земли находится в хорошем согласии с картами
+высыпаний (Бразильская аномалия видна явна, но приполярные зоны в
+карте отсутствуют).
+Особо зависимой от магнитных бурь зоной является полярная зона. Хотя
+зона Бразильской аномалии так же зависит от магнитных бурь
+(увеличивается площадь).
+Особо опасной с точки зрения радиационной безопасности является зона
+Бразильской аномалии. Приполюсная зона так же является опасной,
+особенно во время магнитных бурь.
+
+[[field_map.png][Величина поля]]
+[[field_diff.png][Разность поля в сопряженных точках]]
+
+** Сравнительный анализ
+
+Нужно было сравнить соотношения потоков протонов разной энергии (80
+кэВ и 800 кэВ) высыпающихся в области Бразильской аномалии и
+высокоширотных зонах в спокойных условиях и в переод магнитных
+бурь. По высыпаниям 12-08-2002 (спокойные условия) протонов 80-250 кэВ
+видно, что интенсивность Бразильской аномалии выше, чем высокоширотной
+области, а если рассматривать протоны 800-2500 кэВ, то на них
+интенсивность высокоширотной области практически нулевая, а
+интенсивность Бразильской аномалии значительно ниже, чем протонов
+80-250 кэВ.
+
+Интенсивноть высыпаний 11-08-2000 (период магнитной бури) в протонах
+80-250 кэВ значительно выше во всех областях, причём в высокоширотной
+области интенсивность практически сравнима с интенсивностю в
+Бразильской аномалии. В протонах 800-2500 кэВ во время бурь
+интенсивность в зоне Бразильской аномалии увеличивается достаточно
+слабо, а в высокоширотной области как и в случае спокойных условий
+высыпания практически не заметны.
+
+<literal>
+\newpage\begin{figure}[htb]
+\begin{center}\leavevmode
+\includegraphics[width=1.1\textwidth]{energies_12-08-2002.png}
+\end{center}\caption{12-08-2002}
+\end{figure}</literal>
+
+<literal>
+\newpage\begin{figure}[htb]
+\begin{center}\leavevmode
+\includegraphics[width=1.1\textwidth]{energies_21-10-2001.png}
+\end{center}\caption{21-10-2001}
+\end{figure}</literal>
+
+<literal>
+\newpage\begin{figure}[htb]
+\begin{center}\leavevmode
+\includegraphics[width=1.1\textwidth]{energies_01-10-2002.png}
+\end{center}\caption{01-10-2002}
+\end{figure}</literal>
+
+<literal>
+\newpage\begin{figure}[htb]
+\begin{center}\leavevmode
+\includegraphics[width=1.1\textwidth]{energies_11-08-2000.png}
+\end{center}\caption{11-08-2000}
+\end{figure}</literal>
+
+
+; TODO: 

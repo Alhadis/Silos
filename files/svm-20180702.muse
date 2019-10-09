@@ -1,0 +1,423 @@
+#title 支持向量机原理与python实现
+
+* 支持向量机概述
+
+所谓支持向量是指那些在间隔区边缘的训练样本点。 这里的“机（machine，机器）”实际上是一个算法。在机器学习领域，常把一些算法看做是一个机器。支持向量机(Support vector machines，SVM)与神经网络类似，都是学习型的机制，但与神经网络不同的是SVM使用的是数学方法和优化技术。
+
+* 解决的问题
+将给定数据分为两类，当有一个数据点需要进行预测时，可以根据已经分类好的结果，对其进行归类。在support vector machines（SVM） 中，一个数据点表示为一个p维的向量。我们需要找到一个p-1维的超平面（hyperplane）。SVM是一种线性分类器（Linear classifier)。
+<br/>
+  什么是线性可分?
+                 [[file://D:/pictures/线性不可分.png][线性不可分]]
+  下图线性可分的例子中，有各种各样的分割方式，那么选择哪种方式最优？ 损失函数如何确定？
+                 [[file://D:/pictures/线性可分与各种分割方式.png][线性可分与各种分割方式]]
+* 问题描述
+               [[file://D:/documents/wiki/ml/image/坐标系1.png][样本点]]
+
+正样本和负样本如上图中所示，我们需要找到一条线将正负样本分开。需要找到下图的红线。
+               [[file://D:/documents/wiki/ml/image/坐标系2.png][红线（超平面）]]
+               [[file://D:/documents/wiki/ml/image/坐标系3.png][法向量方向的投影]]
+
+如果是正样本，投影距离应该大于某个常数。
+
+        <latex>\[
+\vec w \cdot \vec u > c
+\]</latex>
+
+
+为了更加通用，我们使用下面的方式来进行表示。
+
+        如果 <latex>\[
+\vec w \cdot \vec u +b >0
+\]</latex>表示是正样本。
+
+上面的公式是一个决策函数，我们需要加上些约束条件，来求解向量w和b。
+
+我们添加的约束条件：
+            <latex>\[
+\left\{
+\begin{array}{lcl}
+\vec w \cdot \vec x_+ + b \ge 1 \\
+\vec w \cdot \vec x_- + b \le -1
+\end{array}
+\right.
+\]</latex>
+
+            约束条件1
+
+为什么选择1和-1？ 
+
+如果所有的样本点都满足上面的条件，那么一定满足下面的条件
+
+            <latex>\[
+\left\{
+\begin{array}{lcl}
+\vec w \cdot \vec x_+ + b > 0 \\
+\vec w \cdot \vec x_- + b < 0
+\end{array}
+\right.
+\]</latex>
+
+换句话说：数学上的便利
+
+            约束条件2
+
+约束条件1 比较难求，因此引入y，描述如下：
+
+对于正样本，y取1；对于负样本，y取-1。得到新的约束条件。
+
+             <latex>\[
+\left\{
+\begin{array}{lcl}
+y_i (\vec w \cdot \vec x_i + b) \ge 1 \\
+y_i (\vec w \cdot \vec x_i + b) \ge 1
+\end{array}
+\right.
+\]</latex>
+
+因此有：
+
+             <latex>\[
+y_i (\vec w \cdot \vec x_i + b) -1 \ge 0
+\]</latex>
+
+对于那些处在边界上的点有：
+
+             <latex>\[
+y_i (\vec w \cdot \vec x_i + b) -1 = 0
+\]</latex>
+
+               [[file://D:/documents/wiki/ml/image/坐标系4.png][法向量方向的投影]]
+
+橙色的线表示正样本向量，蓝色的线表示负样本向量，绿色的线表示差值，方向量方向投影表示正负样本间的距离。
+
+                <latex>\[
+\left\{
+\begin{array}{lcl}
+\max width = \dfrac {\vec w}{\left\|\vec w\right\|}  \cdot (\vec x_+ -\vec x_-) \\
+F(x_i) = y_i * (\vec w \cdot \vec x_i + b) -1  = 0
+\end{array}
+\right.
+\]</latex>
+
+                <latex>\[
+\left\{
+\begin{array}{lcl}
+\max width = \dfrac {2}{\left\|\vec w\right\|} \\
+F(x_i) = y_i * (\vec w \cdot \vec x_i + b) -1  = 0
+\end{array}
+\right.
+\]</latex>
+
+上面做的变换关键是：1-b - (-1 -b)
+
+               <latex>\[
+\left\{
+\begin{array}{lcl}
+\min \dfrac {1}{2} \left\|\vec w\right\|^2 \\
+F(x_i) = y_i * (\vec w \cdot \vec x_i + b) -1  = 0
+\end{array}
+\right.
+\]</latex>
+
+为什么 求1/x的最大值 用 (1/2)*x^2的最小值替代？ 数学上的便利
+
+* 问题推导 
+[[https://baike.baidu.com/item/%%E6%%8B%%89%%E6%%A0%%BC%%E6%%9C%%97%%E6%%97%%A5%%E4%%B9%%98%%E5%%AD%%90%%E6%%B3%%95/1946079][拉格朗日乘子法]]
+        <latex>\[
+\left\{
+\begin{array}{lcl}
+L = \dfrac {1}{2} \left\|\vec w\right\|^2 - \sum_{i=1}^n \alpha_i  (y_i * (\vec w \cdot \vec x_i + b) -1) \\
+\alpha_i \ge 0
+\end{array}
+\right.
+\]</latex>
+
+求偏导
+
+        <latex>\[
+\left\{
+\begin{array}{lcl}
+\dfrac{\partial L}{\partial w} = \vec w - \sum_{i=1}^n \alpha_iy_i\vec x_i \\
+\dfrac{\partial L}{\partial b} = \sum_{i=1}^n \alpha_iyi \\
+\end{array}
+\right.
+\]</latex>
+
+偏导为零后，最后得到
+
+        <latex>\[
+\left\{
+\begin{array}{lcl}
+\vec w = \sum_{i=1}^n \alpha_iy_i\vec x_i \\
+\sum_{i=1}^n \alpha_iyi = 0  \\
+b = - \vec w \cdot \vec x_k + y_k   for\ some\ \alpha_k > 0
+\end{array}
+\right.
+\]</latex>
+
+
+代回到L中可以得到：
+
+        <latex>\[
+L = \sum_{i=1}^n \alpha_i - \dfrac {1}{2} \sum_{i=1,j=1}^n \alpha_iy_ix_i\alpha_jy_jx_j  \\
+\]</latex>
+
+* SVM  python 实现
+<example>
+def train_a(x, label, a, used, length, step):
+    """
+    x 标识测试数据
+    label 标签
+    a 标识 alpha
+    used 表示 被计算过的数
+    length 表示跨度，在这个0-length的跨度内找最大值
+    step 表示步长
+    """
+    for i in range(0,len(a)):
+        max_value = -1
+        max_j = 0
+        max_index = -1
+        if used[i] == 0:
+            used[i] = 1
+            # 选aj
+            for j in range(0,len(a)):
+                if j != i and used[j] == 0:
+                    used[j] = 1
+                    # 确定ai的值
+                    for d in range(1,length):
+                        a[i]  = d/step
+                        oldja = a[j]
+                        aj = cal_aj(a,i,label,j)
+                        if aj >= 0:
+                            k = calculate(a,x,label)
+                            if k> max_value:
+                                # 选取最大值
+                                max_value = k
+                                max_index = d
+                                max_j = j
+                        else:
+                            a[j]=oldja
+                    if max_index > -1 :
+                        # 找到第一个符合条件的aj就可以
+                        a[i] = max_index/step
+                        a[max_j] = cal_aj(a,i,label,max_j)
+                        break
+                    else:
+                        # 如果没找到 需要回溯
+                        used[j]=0
+                        #a[j] = oldaj
+    return a
+</example>
+上面这种实现，非常暴力，因此引入另一种实现方式，基于目标函数一次优化两个alpha变量，这两个alpha变量对应的label值是相反的，因为只有这样在才能取一对alpha都大于零并满足等式约束条件，推导过程这里就略去，和下面的SMO推导过程类似，但简化了不少。大体思路是由于一对alpha是线性关系，经过线性变换代入到L中，可以发现对于单独alpha是一个二次函数，求其导数为零，即可确定一对alpha的值。
+推导出的公式如下：
+    <latex>\[
+\left\{
+\begin{array}{lcl}
+\alpha_1 = \dfrac {y_1(\vec x_1 - \vec x_2)(tx_2 - \sum_{i=3}^n \alpha_i y_i \vec x_i)+y_1y_2-1}{-\vec x_1^2 -\vec x_2^2 + 2 \vec x_1 \vec x_2} \\
+s.t. \sum_{i=1}^n\alpha_i y_i=0 \\
+s.t. \alpha_1 y_1 +\alpha_2 y_2 = t
+\end{array}
+\right.
+\]</latex>
+<example>
+def calculate_alpha_i(i,j):
+    return -1*(label[i]*mul_i_j(sub_i_j(x[i],x[j]),sub_i_j(t_mul_x(get_t(i,j),x[j]),sum_c(i,j)))+label[i]*label[j]-1)/(mul_i_j(x[i],x[i])+mul_i_j(x[j],x[j])-2*mul_i_j(x[i],x[j]))
+def cal_alpha():
+    i,j = random_get()
+    while i!=-1 and j!=-1:
+        alpha_i=calculate_alpha_i(i,j)
+        alpha_j=(get_t(i,j)-alpha_i*label[i])*label[j]
+        alpha[i]=alpha_i
+        alpha[j]=alpha_j
+        i,j=random_get()
+</example>
+源代码上传到 GitHub上 [[https://github.com/parker78/machine-learning/blob/master/svm-learn.ipynb][svm python实现]]
+
+* SMO 算法推导
+
+针对SMO算法,为了增强少数异常点的容忍度，引入松弛变量<latex>\[\varepsilon\]</latex>（epsilon，）
+
+详情请见[[https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/tr-98-14.pdf][tr-98-14.pdf]]
+John C. Platt, “Using Analytic QP and Sparseness to Speed Training of Support Vector Machines” in Advances in Neural Information Processing Systems 11, M. S. Kearns, S. A. Solla, D. A. Cohn, eds( MIT Press, 1999), 557– 63.
+
+        <latex>\[
+\left\{
+\begin{array}{lcl}
+\min \dfrac {1}{2} \left\|\vec w\right\|^2 + C \sum_{i=1}^n \varepsilon_i \\
+\forall i \  y_i (\vec w \cdot \vec x_i + b) \ge 1-\varepsilon_i \\
+\forall i \  \varepsilon_i \ge 0
+\end{array}
+\right.
+\]</latex>
+
+根据拉格朗日对偶，得到如下公式：
+
+        <latex>\[
+\left\{
+\begin{array}{lcl}
+L = \dfrac {1}{2} \left\|\vec w\right\|^2 + C \sum_{i=1}^n \varepsilon_i - \sum_{i=1}^n \alpha_i  (y_i * (\vec w \cdot \vec x_i + b) -1 + \varepsilon_i ) - \sum_{i=1}^n\mu_i\varepsilon_i \\
+\forall i\ \alpha_i \ge 0 \\
+\forall i\ \mu_i \ge 0
+\end{array}
+\right.
+\]</latex>
+
+求偏导为0，得到如下：
+
+        <latex>\[
+\left\{
+\begin{array}{lcl}
+\vec w = \sum_{i=1}^n \alpha_i y_i \vec x_i \\
+\sum_{i=1}^n \alpha_i y_i = 0 \\
+\forall i \ C-\alpha_i - \mu_i = 0
+\end{array}
+\right.
+\]</latex>
+
+
+最后代回到 上面的式子，得到如下结果：
+
+
+        <latex>\[
+\left\{
+\begin{array}{lcl}
+L = \sum_{i=1}^n \alpha_i - \dfrac {1}{2} \sum_{i=1,j=1}^n \alpha_iy_ix_i\alpha_jy_jx_j  \\
+0 \le \alpha_i \le C \\
+\sum_{i=1}^n \alpha_iyi = 0 
+\end{array}
+\right.
+\]</latex>
+
+
+还会用到一个[[http://www.cnblogs.com/zhangchaoyang/articles/2726873.html][KKT]]（Karush-Kuhn-Tucker)
+
+SMO算法推导：
+<latex>
+\[
+\begin{array}{lcl}
+L(\alpha_1 ,\alpha_2) = \alpha_1 + \alpha_2 - \dfrac{1}{2} \alpha_1^2 y_1^2K_{1,1} - \dfrac{1}{2} \alpha_2^2 y_2^2K_{2,2} - \alpha_1 \alpha_2 y_1 y_2 K_{1,2} - \alpha_1 y_1 \sum_{i=3}^n \alpha_i y_i K_{i,1} - \alpha_2 y_2 \sum_{i=3}^n \alpha_i y_i K_{i,2} + C \\
+\alpha_1 y_1 + \alpha_2 y_2 = t \to \alpha_1= (t-\alpha_2 y_2)y_1
+\end{array}
+\]
+</latex>
+
+
+得到
+
+<latex>
+\[
+\begin{array}{lcl}
+L(\alpha_2) = (t-\alpha_2 y_2)y_1 + \alpha_2 - \dfrac{1}{2} ((t-\alpha_2 y_2)y_1)^2 y_1^2K_{1,1} - \dfrac{1}{2} \alpha_2^2 y_2^2K_{2,2} - (t-\alpha_2 y_2)y_1 \alpha_2 y_1 y_2 K_{1,2} - (t-\alpha_2 y_2)y_1 y_1 \sum_{i=3}^n \alpha_i y_i K_{i,1} - \alpha_2 y_2 \sum_{i=3}^n \alpha_i y_i K_{i,2} + C \\
+v_1 = \sum_{i=3}^n \alpha_i y_i K_{i,1} \\
+v_2 = \sum_{i=3}^n \alpha_i y_i K_{i,2}
+\end{array}
+\]
+</latex>
+
+得到
+
+<latex>
+\[
+\begin{array}{lcl}
+L(\alpha_2) = (t-\alpha_2 y_2)y_1 + \alpha_2 - \dfrac{1}{2} ((t-\alpha_2 y_2)y_1)^2 y_1^2K_{1,1} - \dfrac{1}{2} \alpha_2^2 y_2^2K_{2,2} - (t-\alpha_2 y_2)y_1 \alpha_2 y_1 y_2 K_{1,2} - (t-\alpha_2 y_2)y_1 y_1 v_1 - \alpha_2 y_2 v_2 + C 
+\end{array}
+\]
+</latex>
+
+求偏导
+<latex>\[
+\left\{
+\begin{array}{lcl}
+\dfrac{\partial L}{\partial \alpha_2} = - y_1y_2 + 1  + (y_2 t  - \alpha_2 y_2^2)K_{1,1} - \alpha_2 y_2^2 K_{2,2} - t y_1^2 y_2K_{1,2} + 2 \alpha_2 y_1^2 y_2^2 K_{1,2} + y_2 y_1^2 v_1 - y_2v_2 = 0 \\
+f(x) = \sum_{i=1}^n \alpha_i y_i K_{x_i,x} + b \\
+\to
+v_1 = f(x_1) - \alpha_1 y_1 K_{1,1} - \alpha_2 y_2 K_{1,2} -b \to v_1 = f(x_1) - (t-\alpha_2 y_2)y_1 y_1 K_{1,1} - \alpha_2 y_2 K_{1,2} -b \\
+\to
+v_2 = f(x_2) - \alpha_1 y_1 K_{1,2} - \alpha_2 y_2 K_{2,2} -b \to v_2 = f(x_2) - (t-\alpha_2 y_2)y_1 y_1 K_{1,2} - \alpha_2 y_2 K_{2,2} -b \\
+\end{array}
+\right.
+\]</latex>
+
+<latex>
+\[
+\begin{array}{lcl}
+\dfrac{\partial L}{\partial \alpha_2} = - \alpha_2^{new}(K_{2,2}+K_{1,1}-2K_{1,2}) + \alpha_2^{old}(K_{1,1}+K_{2,2}-2K_{1,2}) + y_2(f(x_1)-f(x_2))-y_1y_2+y_2y_2 = 0 \\
+E_i = f(x_i)-y_i \\
+\dfrac{\partial L}{\partial \alpha_2} = - \alpha_2^{new}(K_{2,2}+K_{1,1}-2K_{1,2}) + \alpha_2^{old}(K_{1,1}+K_{2,2}-2K_{1,2}) + y_2(E_1 - E_2) = 0 \\
+\alpha_2^{new} = \alpha_2^{old} +  \dfrac {y_2(E_1-E_2)}{K_{2,2}+K_{1,1}-2K_{1,2}} 
+\end{array}
+\]
+</latex>
+
+<latex>
+\[
+\begin{array}{lcl}
+\alpha_1 y_1 + \alpha_2 y_2 = t \\
+0 \le \alpha_i \le C
+\end{array}
+\]
+</latex>
+
+可得当<latex>\[ y_1 \ne y_2 \] </latex> 时
+
+下界：<latex>\[ L = \max( 0,\alpha_2^{old}-\alpha_1^{old}) \]</latex>
+
+上界：<latex>\[ H = \min( C,C+\alpha_2^{old}-\alpha_1^{old}) \]</latex>
+
+可得当<latex>\[ y_1 = y_2 \] </latex> 时
+
+下界：<latex>\[ L = \max( 0,\alpha_2^{old}+\alpha_1^{old} - C ) \]</latex>
+
+上界：<latex>\[ H = \min( C, \alpha_2^{old}+\alpha_1^{old} ) \]</latex>
+
+可以归纳出
+<latex>
+\[
+\alpha_2^{new} =
+\begin{array}{lcl}
+H \ \ \ \ \ \ \ \  \alpha_2^{new} > H \\
+\alpha_2^{new} \ \ L \le \alpha_2^{new} \le H \\
+L \ \ \ \ \ \ \ \  \alpha_2^{new} < L 
+\end{array}
+\]
+</latex>
+
+由于 <latex>\[\alpha_1^{old}y_1+\alpha_2^{old}y_2 = \alpha_1^{new}y_1+\alpha_2^{new} y_2 \]</latex>
+
+所以 <latex>\[\alpha_1^{new} = \alpha_1^{old}+y_1y_2(\alpha_2^{old} -\alpha_2^{new})\]</latex>
+
+由于存在 <latex>\[ f(x) = \sum_{i=1}^n \alpha_i y_i K_{x_i,x} + b \]</latex>
+
+因此可以得到
+
+<latex>
+\[
+\begin{array}{lcl}
+b_1^{new} = -E_1 -y_1K_{1,1}(\alpha_1^{new} - \alpha_1^{old}) - y_2K_{2,1}(\alpha_2^{new} - \alpha_2^{old}) + b^{old}\\
+b_2^{new} = -E_1 -y_1K_{1,2}(\alpha_1^{new} - \alpha_1^{old}) - y_2K_{2,2}(\alpha_2^{new} - \alpha_2^{old}) + b^{old}\\
+\end{array}
+\]
+</latex>
+
+
+* SMO算法 python实现
+
+SMO算法的目标是求出一系列alpha和b，一旦求出了这些alpha，就很容易计算出权重向量w并得到分隔超平面。
+
+SMO算法的工作原理是：每次循环中选择两个alpha进行优化处理。一旦找到一对合适的alpha，那么就增大其中一个同时减小另一个。这里所谓的“合适”就是指两个alpha必须要符合一定的条件，条件之一就是这两个alpha必须要在间隔边界之外，而其第二个条件则是这两个alpha还没有进行过区间化处理或者不在边界上。
+
+<example>
+创建一个alpha向量并将其初始化为0向量
+当迭代次数小于最大迭代次数时（外循环）
+    对数据集中的每个数据向量（内循环）：
+        如果该数据向量可以被优化：
+            随机选择另外一个数据向量
+            同时优化这两个向量
+            如果两个向量都不能被优化， 退出内循环
+如果所有向量都没被优化， 增加迭代数目， 继续下一次循环
+</example>
+
+源码地址已上传至
+https://github.com/parker78/machine-learning/blob/master/SMO-learn.ipynb
+

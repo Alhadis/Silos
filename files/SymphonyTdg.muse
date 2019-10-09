@@ -1,0 +1,727 @@
+#title Symfony - The definitely guide
+
+* 术语
+frontend controller 指的是 web 目录里的 php 前端脚本。
+
+ - sfController 解码请求，转交给 action
+ - sfRequest 包含所有请求的元素：参数、cookies、header
+ - sfResponse 响应头，内容等。将直接转换成 HTML 内容，发送给用户。
+ - content 使用 sfContext::getInstance 得到，包含所有核心对象和配置。可以
+在任何地方访问。
+
+ - 项目 是同一域名下的一组服务和操作，共享相同的对象模型
+ - 应用 操作按逻辑分成不同的应用。一般包括frontend 和backend 应用，它们使用相同的数据库
+ - 模块 不同的操作还可以分组成为一个模块。
+ - action
+
+* 目录结构
+项目目录结构：
+<example>
+    apps/
+      frontend/
+      backend/
+    cache/
+    config/
+    data/
+      sql/
+    doc/
+    lib/
+      model/
+    log/
+    plugins/
+    test/
+      bootstrap/
+      unit/
+      functional/
+    web/
+      css/
+      images/
+      js/
+      uploads/
+</example>
+
+应用目录结构：
+<example>
+    apps/
+      [application name]/
+        config/
+        i18n/
+        lib/
+        modules/
+        templates/
+          layout.php
+</example>
+
+模块目录结构：
+<example>
+    apps/
+      [application name]/
+        modules/
+          [module name]/
+              actions/
+                actions.class.php
+              config/
+              lib/
+              templates/
+                indexSuccess.php
+</example>
+
+web 目录结构：
+<example>
+    web/
+      css/
+      images/
+      js/
+      uploads/
+</example>
+
+* PEAR 安装 symfony
+
+<example>
+$ pear channel-discover pear.symfony-project.com
+$ pear remote-list -c symfony
+$ pear install symfony/symfony
+</example>
+
+* 命令
+symfony init-project proj_name
+
+使用此命令创建目录结构：
+<example>
+    apps/
+    cache/
+    config/
+    data/
+    doc/
+    lib/
+    log/
+    plugins/
+    test/
+    web/
+</example>
+
+symfony init-app app_name
+使用此命令创建目录：
+<example>
+    apps/
+      frontend/
+        config/
+        i18n/
+        lib/
+        modules/
+        templates/
+
+    web/
+      index.php
+      frontend_dev.php
+</example>
+
+index.php 是只有第一个应用时会生成这个文件，后续添加的应用将生成
+app_name.php 和 app_name_dev.php。
+
+symfony init-module app_name module_name
+此命令创建文件：
+<example>
+    apps/
+      frontend/
+        modules/
+          content/
+            actions/
+              actions.class.php
+            templates/
+              indexSuccess.php
+
+    test/
+      functional/
+        frontend/
+          contentActionsTest.php
+</example>
+
+* 项目配置
+
+服务器配置：(略)
+
+默认目录：
+<src lang="php">
+// `config/ProjectConfiguration.class.php`
+class ProjectConfiguration extends sfProjectConfiguration
+{
+   public function setup()
+   {
+     $this->setWebDir($this->getRootDir().'/www');
+   }
+}
+</src>
+
+Symfony 配置文件分成：project, application, module 三个层次。
+
+** 项目的配置
+ - ProjectConfiguration.class.php 任何请求和命令都需要包含的第一个文件。
+ - databases.yml 数据库配置。可以在 application 层覆盖。
+ - properties.ini 包含一些在命令行使用的参数，比如项目名，远端连接
+ - rsync_exclude.txt
+ - schema.yml, propel.ini 是 Propel 配置。propel.ini 是自动生成的，不
+应被修改。
+
+** 应用的配置
+主要在 web 目录的前端控制器，apps/config 和 apps/i18n 目录。
+
+控制器文件：
+<src lang="php">
+    require_once(dirname(__FILE__).'/../config/ProjectConfiguration.class.php');
+
+    $configuration = ProjectConfiguration::getApplicationConfiguration('frontend', 'prod', false);
+    sfContext::createInstance($configuration)->dispatch();
+</src>
+
+getApplicationConfiguration 第一个参数 frontend 是应用名，第二个参数
+prod 是环境，第三个参数表示是否启用 debug。
+$configuration 的一些有用的方法：
+ - getRootDir() 是项目根目录
+ - getApplication() 项目名
+ - getEnvironment() 环境名
+ - isDebug()
+
+应用配置文件：
+ - app.yml 应用全局配置变量
+ - frontendConfiguration.class.php 应用初始化类，继承 ProjectConfiguration
+ - factories.yml 如果需要使用自己的类来处理
+request，session，response，可以在这设置
+ - filters.yml 用于过滤每个请求
+ - routing.yml routing 规则
+ - settings.yml 指定应用的 i18n，语言，请求超时时间，缓存设置
+ - view.yml
+
+在 $sf_symfony_lib_dir/config/config/ 目录中也有一些配置。如果需要修改
+这些配置，只需要在 frontend/config 目录中创建相应的同名文件。
+
+** 模块的配置
+模块是默认没有配置的。
+ - generator.yml 对于由数据库生成的模块作配置
+ - module.yml 模块层的配置，对应于 app.yml
+ - security.yml 访问控制
+ - view.yml
+
+** 环境
+
+默认有三种环境：prod, test, dev。可以自定义新的环境。
+
+配置级联：
+  1. Module
+  2. Application
+  3. Project
+  4. Specific environment
+  5. All environments
+  6. Default
+
+在开发环境下，每次请求时需要检查配置是否修改。而在生产环境下只在第一次
+请求时解析配置，以后只从 cache中读取配置。所以在生产环境下如果修改配
+置，需要使用 cache:clear 命令清空配置。
+
+** 访问配置
+sfConfig::get($name, $default_value=null)
+sfConfig::set($name, $value)
+
+前缀：
+ - sf_ 对应 settings.yml
+ - app_ 对应 app.yml
+ - mod_ 对应 module.yml
+
+在配置文件中以点开头的的项实际没有用，只是为了结构清晰。
+如果需要将配置的值设置成数组需要使用 .array 。
+
+在配置文件中可以用 % 加大写字母访问配置的值，比如 %SF_SYMFONY_LIB_DIR%
+代表 sfConfig::get('sf_symfony_lib_dir')。但是需要注意的是这个值必须存
+在，所以需要考虑配置文件的加载顺序。
+
+另一个办法是使用 php 脚本。
+
+* Controller
+
+控制层分成几个组件：
+ - front controller 应用的入口
+ - action 应用逻辑
+ - request, response, session
+ - filters 每次请求在 action 之前或之后执行的代码
+
+Front controller 的工作：
+ - 加载项目配置和 symfony 库
+ - 创建应用配置和 symfony context
+ - 加载初始化核心框架类
+ - 加载配置
+ - 解码请求 url，决定 action
+ - 如果 action 不存在，跳转到 404 页面
+ - 激活 filter
+ - 执行 filter
+ - 执行 action，渲染 view
+ - 执行 filter
+ - 输出响应
+
+Action 中的方法使用 execute 开头。有两种方式定义 action，一是在
+actions.class.php 中定义 executeActionName 方法，二是在 actions 目录中
+创建 actionNameAction.class.php，方法名为 execute。
+
+action 一般都是很简洁的，如果代码过多，应该作重构，将代码转移到 model
+层。
+
+execute 方法的第一个参数是 $request。
+
+sfActions 的方法：
+ - getModuleName
+ - getActionName
+ - getUser
+ - getRequest
+ - getResponse
+ - getController
+ - getContext
+
+sfContext 的方法：
+ - getController
+ - getResponse
+ - getRequest
+ - getUser
+ - getLogger
+ - getDatabaseConnection
+ - getLogger
+ - getI18N
+
+中止 action ：
+  - sfView::SUCCESS 默认值，执行 actionNameSuccess.php 模板
+  - sfView::ERROR 执行 actionNameError.php
+  - 'MyResult' 执行 actionNameMyResult.php 模板
+  - sfView::NONE 不执行任何模板
+  - sfView::HEADER_ONLY 只发送 HTTP header
+
+如：
+<src lang="php">
+    public function executeIndex()
+    {
+      $this->getResponse()->setContent("<html><body>Hello, World!</body></html>");
+      return sfView::NONE;
+    }
+</src>
+等价于：
+<src lang="php">
+    public function executeIndex()
+    {
+      return $this->renderText("<html><body>Hello, World!</body></html>");
+    }
+</src>
+
+<src lang="php">
+    public function executeRefresh()
+    {
+      $output = '<"title","My basic letter"],["name","Mr Brown">';
+      $this->getResponse()->setHttpHeader("X-JSON", '('.$output.')');
+
+      return sfView::HEADER_ONLY;
+    }
+</src>
+
+<src lang="php">
+    $this->setTemplate('myCustomTemplate');
+</src>
+
+** Request
+
+$request->getParameter($name, $default=null)
+$sf_request->get($name, $default=null)
+$sf_params->has($name)
+
+ - isMethod($method)
+ - getMethodName()
+ - getHttpHeader($name, $prefix='http')
+ - getCookie($name, $default=null)
+ - isSecure()
+ - hasParameter($name)
+ - getParameter($name, $default=null)
+ - getParameterHolder()->getAll()
+ - getUri()
+ - getPathInfo()
+ - getReferer()
+ - getHost()
+ - getScriptName()
+ - getLanguages()
+ - getCharsets()
+ - getAcceptableContentTypes()
+
+对于上传文件：
+ - hasFiles()
+ - getFileNames()
+ - getFileName($file)
+ - getFileSize($file)
+ - getFileType($file)
+ - hasFileError($file)
+ - moveFile($file, $dir)
+
+** User
+
+ - setAttribute($name, $value)
+ - getAttribute($name, $default_value=null)
+ - hasAttribute($name)
+ - getAttributeHolder()
+ - setFlash($name, $value)
+ - getFlash($name, $default_value=null)
+
+AttributeHolder 是 sfParameterHolder 对象。
+
+Session 的客户端是通过 cookie 设置，cookie 名为 symfony，如果需要修改，要
+修改 factories.yml 文件：
+<src lang="yaml">
+    all:
+      storage:
+        class: sfSessionStorage
+        param:
+          session_name: my_cookie_name
+</src>
+
+服务器端如果需要使用数据库保存 session，也是配置 factories.yml 文件：
+<src lang="yaml">
+    all:
+      storage:
+        class: sfMySQLSessionStorage
+        param:
+          db_table:    session              # Name of the table storing the sessions
+          database:    propel               # Name of the database connection to use
+          # Optional parameters
+          db_id_col:   sess_id              # Name of the column storing the session id
+          db_data_col: sess_data            # Name of the column storing the session data
+          db_time_col: sess_time            # Name of the column storing the session timestamp
+</src>
+
+可选的类包括：
+ - sfMySQLSessionStorage
+ - sfMySQLiSessionStorage
+ - sfPostgreSQLSessionStorage
+ - sfPDOSessionStorage
+
+如果需要禁用 session ，使用 sfNoStorage 类。
+
+默认 session 过期时间为 30 分钟。通过配置 user factory 修改：
+<src lang="yaml">
+    all:
+      user:
+        class:       myUser
+        param:
+          timeout:   1800           # Session lifetime in seconds
+</src>
+
+** Security
+应用通过两步实现 security：
+ - 为每个应用声明保密要求
+ - 让登录用户访问保密的 action
+
+在 security.yml 文件中设置 action 的 security。
+
+** 验证
+
+ - validateActionName 在 executeActionName 之前调用，如果返回 false 将
+调用 handleErrorActionName。如果 handleErrorActionName 不存在，则使用
+handleError 方法。如果 handleError方法不存在，使用 actionNameError.php
+模板。
+ - handleErrorActionName
+
+** Filter Chain
+
+当接收到请求时，第一个 filter 是 sfRenderingFilter。最后一个是
+sfExecutionFilter。
+
+默认的 filters.yml 是空的，表示继承 symfony 库的设置。
+如果要禁用某个 filter ，不能直接从 filters.yml 移除，这样会抛出异常，
+而是：
+<src lang="yml">
+        common:
+          enabled: off
+</src>
+
+创建自己的 filter 也很简单，放到 lib/ 目录下就通自动加载。因为 action
+可以 forward 或者 redirect，如果需要限制第一次进行 action 时才执行，可
+以使用 isFirstCall 作判断。
+
+filter 配置中 condition 参数是特殊的，它会在执行 filter 链时作判断。
+
+* View
+
+action 通过设置 $this->varName 向 view 传递信息。在 view 里可以通过
+$varName 得到设置的变量。
+
+在模板中可以使用这些变量：$sf_request, $sf_params, $sf_response,
+$sf_user。
+
+声明使用 helper 函数：
+<src lang="php">
+    <?php use_helper('Text') ?>
+</src>
+下列 helper 不需要声明：
+ - Helper
+ - Tag
+ - Url
+ - Assert
+ - Partial
+ - Cache
+ - Form
+可以在 settings.yml 文件中配置 standard_helpers。
+在代码中可以通过
+sfProjectConfiguration::getActive()->loadHelpers($helpers) 加载。
+
+在 layout.php 文件中 head 标签内的信息都是从 response 对象中得到。
+
+在 template 中有三种代码片断：
+ - 轻量级 称为 Partials，它是可重用的代码片断
+ - 重量级 称为 Components
+ - 重用
+
+在同一模块内的 partials 代码，可以直接用：
+<src lang="php">
+    <?php include_partial('mypartial1') ?>
+</src>
+
+在同一应用的其它模块内，可以用：
+<src lang="php">
+    <?php include_partial('foobar/mypartial2') ?>
+</src>
+
+在应用全局的 templates 目录里，可以用：
+<src lang="php">
+    <?php include_partial('global/mypartial3') ?>
+</src>
+
+partial 模板中的变量不会从action 中继承，必须在 include_partial 函数中
+指定：
+<src lang="php">
+    <?php include_partial('mypartial', array('mytotal' => $total)) ?>
+</src>
+
+component 与 action 很相似，但是比 action 执行得更快。
+引用 component：
+<src lang="php">
+    <?php include_component('news', 'headlines') ?>
+</src>
+
+modules/news/actions/components.class.php 文件：
+modules/news/templates/_headlines.php：
+
+在 template 中定义slot，然后在另的地方用。slot 执行结果将放到 response 对象
+中。
+
+View 的组成：
+  - action 生成的 HTML，包括 template，layout
+  - 其它：
+    - Meta 声明：keywords，description，cache
+    - title
+    - javascript, css 引用
+    - layout，比如弹出
+
+除了 HTML 之外的其它都称为 View 的配置。symfony 通过两种方法配置：
+ - 设置 view.yml
+ - 设置 sfResponse 对象
+
+需要注意的是在 view.yml 文件中，关键字是 template 的名字，而不是
+action 的名字。
+
+<example>
+    // In the view.yml
+    indexSuccess:
+      stylesheets: [mystyle1, mystyle2]
+      javascripts: [myscript]
+
+    // In the Action
+    $this->getResponse()->addStylesheet('mystyle1');
+    $this->getResponse()->addStylesheet('mystyle2');
+    $this->getResponse()->addJavascript('myscript');
+
+    // In the Template
+    <?php use_stylesheet('mystyle1') ?>
+    <?php use_stylesheet('mystyle2') ?>
+    <?php use_javascript('myscript') ?>
+</example>
+
+link_to:
+<example>
+(string) link_to ($name, $internal_uri, $options)
+$name	name of the link, i.e. string to appear between the <a> tags
+$internal_uri	'module/action' or '@rule' of the action
+$options	additional HTML compliant <a> tag parameters
+</example>
+选项：
+ - absolute - if set to true, the helper outputs an absolute URL
+ - query_string - to append a query string (starting by ?) to the routed url
+ - anchor - to append an anchor (starting by #) to the routed url
+ - confirm - displays a javascript confirmation alert when the link is clicked
+ - popup - if set to true, the link opens a new browser window
+ - post - if set to true, the link submits a POST request instead of GET (caution: do not use inside a form)
+ - method - if set to post, delete, or put, the link submits a request
+with the given HTTP method instead of GET (caution: do not use inside
+a form)
+
+$options 可以是一个字符串或数组。
+
+url_for:
+<example>
+(string) url_for ($internal_uri, $absolute)
+$internal_uri	'module/action' or '@rule' of the action
+$absolute	return absolute path?
+</example>
+
+* Model
+
+** schema 语法
+第一个 key 是连接名。
+每个表可以有多个属性：
+ - phpName 产生的类名
+
+列定义：
+ - column type
+  - boolean
+  - integer
+  - float
+  - date
+  - varchar(size)
+  - longvarchar
+ - required
+ - default
+ - phpName
+
+* Form
+
+<src lang="php">
+// lib/form/ContactForm.class.php
+class ContactForm extends sfForm
+{
+  public function configure()
+  {
+    $this->setWidgets(array(
+      'name'    => new sfWidgetFormInput(),
+      'email'   => new sfWidgetFormInput(),
+      'message' => new sfWidgetFormTextarea(),
+    ));
+  }
+}
+</src>
+
+<src lang="php">
+// apps/frontend/modules/contact/actions/actions.class.php
+class contactActions extends sfActions
+{
+  public function executeIndex(sfWebRequest $request)
+  {
+    $this->form = new ContactForm();
+  }
+}
+</src>
+
+<src lang="html">
+<!-- apps/frontend/modules/contact/templates/indexSuccess.php -->
+<form action="<?php echo url_for('contact/submit') ?>" method="POST">
+  <table>
+    <?php echo $form ?>
+    <tr>
+      <td colspan="2">
+        <input type="submit" />
+      </td>
+    </tr>
+  </table>
+</form>
+</src>
+
+默认的标签名由字段名产生，可以通过 setLables 或 setLabel 方法设置标签名：
+<src lang="php">
+$this->widgetSchema->setLabels(array(
+  'name'    => 'Your name',
+  'email'   => 'Your email address',
+  'message' => 'Your message',
+));
+$this->widgetSchema->setLabel('email', 'Your email address');
+</src>
+
+默认的 form 结构是用 table 产生 (sfWidgetFormSchemaFormatter)，可以通过 setFormFormatterName 修改：
+<src lang="php">
+    $this->widgetSchema->setFormFormatterName('list');
+</src>
+
+在用户使用 POST 提交数据之后使用 redirect 好处：
+ - 防止刷新时重新提交表单
+ - 用户使用后退按钮时不会提示将提交表单
+
+如果需要数据保存在数组中，可以使用 setNameFormat 函数：
+<src lang="php">
+// lib/form/ContactForm.class.php
+    $this->widgetSchema->setNameFormat('contact[%s]');
+</src>
+
+在 html 里将使用 contact[name] 作为 name 属性，contact_name 作为 input
+的 id。
+| Name    | Attribute name   | Attribute id    |
+|---------+------------------+-----------------|
+| name    | contact[name]    | contact_name    |
+| email   | contact[email]   | contact_email   |
+| message | contact[message] | contact_message |
+
+由于 index 是 GET 方法，而 submit 是 POST 方法，所以可以把这两个
+action 合成一个：
+<src lang="php">
+class contactActions extends sfActions
+{
+  public function executeIndex($request)
+  {
+    $this->form = new ContactForm();
+
+    if ($request->isMethod('post'))
+    {
+      $this->redirect('contact/thankyou?'.http_build_query($request->getParameter('contact')));
+    }
+  }
+}
+</src>
+
+<src>
+// apps/frontend/modules/contact/templates/indexSuccess.php
+<form action="<?php echo url_for('contact/index') ?>" method="POST">
+</src>
+
+sfWidgetFormSelect 参数：
+ - choices
+ - multiple
+<src lang="php">
+class ContactForm extends sfForm
+{
+  protected static $subjects = array('Subject A', 'Subject B', 'Subject C');
+  public function configure()
+  {
+    $this->setWidgets(array(
+      'name'    => new sfWidgetFormInput(),
+      'email'   => new sfWidgetFormInput(),
+      'subject' => new sfWidgetFormSelect(array('choices' => self::$subjects)),
+      'message' => new sfWidgetFormTextarea(),
+    ));
+  }
+}
+</src>
+sfWidgetFormInput 参数：
+ - type 
+ - is_hidden
+
+widget html 属性可能通过第二个参数设置。
+
+widget 的默认值可以通过 setDefaults 和 setDefault 设置。
+
+sfValidator ：
+ - sfValidatorString
+ - sfValidatorEmail
+ - sfValidatorChoice
+
+参数：
+ - required 默认为 true
+ - time 默认为 false
+
+sfValidatorString 参数：
+ - max_length
+ - min_length
+
+sfValidatorEmail 参数：
+ - pattern
+
+sfValidatorChoice 参数：
+ - choices
+
+

@@ -1,0 +1,723 @@
+#title Network Applications:Overview, Email, Ftp
+<contents>
+* Secure Socket Layer: Services
+ - Server authentication
+  - Authentication through trusted certificate authority(CA):server obtains a certificate from one of the trusted CAs
+ - Data encryption and integrity
+ - Client authentication(optional)
+
+** Public-Key Algorithmsn
+ - Both public key and private key can be used to encode and decode
+ - One can generate public key from private key, but not in the other direction.
+*** Properties
+ - D(E(P)) = P
+ - It is exceedingly difficult to deduce D from E
+ - E cannot be broken by a chosen plaintext attack
+*** Examples
+ - Knapsack
+ - RSA
+ - Elliptic curves
+
+*** Certification Authorities
+ - Certification authority(CA): binds public key to particular entity, E
+ - E(person, router) registers its public key with CA.
+  - E provides "proof of identity" to CA
+  - CA creates certificate binding E to its public key.
+  - Certificate contains E's public key digitally signed by CA -- CA says "this is E's public key"
+ - When Alice wants Bob's public key
+  - Gets Bob's certificate
+  - Apply CA's public key to Bob's certificate, get Bob's public key.
+
+**** A Certificate Contains
+ - Serial number(unique to issuer)
+ - Info about certificate owner, including algorithm and key value itself
+ - Info about certificate issuer
+ - valid dates
+  - digital signature by issuer
+
+[[ssl_architecture.png]]
+
+[[ssl_format.png]]
+* Application layer overview
+** Killer Applications
+ - 70s and 80s
+  - Text email, remote access, file transfers, newsgroups, text chat
+ - 90s
+  - WWW - surfing, search, e-commenrce
+  - At the end of millennium -IM, P2P file sharing
+ - New century
+ - Multimedia(YouTube, Flickr, Youku)
+ - Social networking(Facebook, Twitter, Weibo)
+
+ 
+** Conceptual + implementation aspects of network application protocols
+*** Client server paradigm
+**** Client
+ - Initiates contact with server("speaks first")
+ - Typically reuests service from server
+ - For Web, client is implemented in browser; for email, in mail reader
+
+**** Server
+ - Provides reuested service to client, e.g. Web server sends requested Web page; mail server delivers e-mail.
+
+**** Two questions to ask about a C-S application
+- How does a client locate a server process?
+- Is the application scalable, extensible,robust?
+
+*** Peer to peer paradigm
+
+** Common application-layer protocols
+ - SMTP/POP
+ - HTTP
+ - FTP
+ - DNS
+ - P2P
+
+** What Transport Service Does an App Need?
+ - Data loss
+  - Some apps can to tolerate some packet losses
+  - Other apps require 100% reliable data transfer
+ - Bandwidth
+  - Some apps require minimum amount of bandwidth to be "effective"
+  - Other apps make use of whatever bandwidth they get
+ - Timing
+  - Some apps require low delay to be "effective"
+
+[[applications_transport_protocal.png]]
+
+
+[[applications_transport_requirements.png]]
+* Examples
+** Electronic Mail
+*** Three major components
+ - User agents
+ - Mail servers
+ - Protocols
+  - Between mail servers: STMP
+  - Between mail server and user agent
+   - POP3:Post Office Protocol
+   - IMAP:Internet Mail Access Protocol
+*** workflow
+   - HELO
+   - MAIL FROM
+   - RCPT TO
+   - DATA
+   - QUIT
+
+*** Mail Message Format
+SMTP: protocol for exchanging email msgs
+
+RFC 822: standard for text message format
+ - Header line
+  - To:
+  - From:
+  - Subject:
+ - Body
+  - the "message", ASCII characters only
+
+MIME: multimedia mail extention, RFC 2045, 2056
+ - Addictional lines in smg header declare MIMI content type
+
+*** POP3 Protocol: Mail Access
+**** Authorization phase
+ - Client commands:
+  - user: declare username
+  - pass: password
+ - Server responses
+  - +OK
+  - -ERR
+**** Transaction phase
+  - list: list message numbers
+  - retr: retrive message by number
+  - dele: delete
+  - quit
+
+*** Positive
+ - Separate protocols for different functions
+  - Email retrieval(e.g. POP3, IMAP)
+  - Mail transmission(SMTP)
+ - Simple/basic request to implement basic control; fine-grain control through ASCII header and message body
+  - Make the protocol easy to read/debug/extend(analogy with end-to-end layered design)
+  - Status code in response makes message easy to parse
+
+*** Negative
+ - Some design features which are missing
+  - Handling spam
+
+** FTP: the File Transfer Protocol
+Transfer files to/from remote host
+FTP: RFC 959, server port 21(smtp 25, http 80)
+ - Two Parallel TCP connections opened
+  - Control: exchange commands, responses between client, server
+   - out of band control
+   - port 21 at server
+  - Data: file data to/from server
+   - port 20 at server
+ - FTP server maintains "state", e.g.
+  - Current directory
+  - Earlier authentication
+
+*** Sample commands
+ - sent as ASCII text over control
+ - USER: username
+ - PASS: password
+ - PORT h1,h2,h3,h4,p1,p2: specifies the IP address and port the client receives its data
+ - LIST: return list of file in current
+ - RETR filename: retrieves(get) file
+ - STOR filename: stores file
+
+*** Sample return codes
+ - 331 Username OK, password required
+ - 125 data connection already open; transfer 
+ - 425 Can’t open data connection
+ - 452 Error writing file
+
+*** Active Mode
+ - Server initiates data connection to the client's port
+
+[[ftp_active_mode.png]]
+*** Passive Mode
+ - Server acks with a port number
+ - Client connects to server's data port
+
+[[ftp_passive_mode.png]]
+** HTTP: hypertex transfer protocol
+Web's application layer protocol
+ - HTTP uses TCP as transport service
+ - Client/server model
+  - Client: browser that requests, receives, "display" Web objects
+  - Server: Web server sends objects in response to requests
+ - Http 1.0: RFC 1945, HTTP 1.1: RFC 2068
+
+*** Message flow
+ - Web server waiting for TCP connection at port 80(default)
+ - Client initiates TCP connection(creates socket) to server, port 80
+ - Server "accepts" connection, ack client and waits for request from clients
+ - Client sends request message(containing URL) into TCP connection socket for a document
+ - Web server receives request message, forms response message containing the document, and sends message into socket(slow-start).
+ - Web server closes TCP connection closed
+ - Client parses the document to find embedded objects(images)
+  - Repeat above for each image
+
+*** HTTP Request Message: General Format
+[[http_request_format.png]]
+
+[[http_request_message.png]]
+
+*** Http Response Message
+
+[[http_response_message.png]]
+
+**** Status Codes
+In the first line of the response message.
+ - 200 OK
+  - request succeeded, requested object later in this message
+ - 301 Moved Permanently
+  - requested object moved, new location specified later in this message(Location:)
+ - 400 Bad Request
+  - request message not understood by server
+ - 404 Not Found 
+  - requested document not found on this server
+ - 505 HTTP Version Not Supported
+
+*** HTTP/1.0 Delay
+ - For each object
+  - TCP handshake --- 1 RTT
+  - Client request and server responds --- at least 1 RTT
+
+*** Persistent HTTP
+ - Default to HTTP/1.1
+ - On same TCP connection: server parse request, responds, parse new request, ...
+ - Client sends requests for all referenced objects as soon as it receives base HTML
+ - Fewer RTTs
+
+*** Browser Cache and Conditional GET
+Goals: don't send object if client has up-to-date stored(cached) version
+ - client: specify date of cached copy in http request
+  - If-modified-since:<date>
+ - server: response contains no object if cached copy up-to-date
+  - HTTP/1.0 304 Not Modified
+
+*** Keeping State: Cookies
+Goal: no explicit application level session
+ - Server sends "cookie" to client in response msg
+  - Set-cookie: 1678353
+ - Client presents cookie in later requests
+  - Cookie: 1678453
+ - Server matches presented-cookie with server-stored info
+  - Authentication
+  - Remebering user preferences, previous choices
+
+*** Authentication(401: authorization req.)
+Goal: control access to server documents
+ - Stateless:client must present authorization in each request
+ - Authorization: typically name, password
+  - Authorization: header line in request
+  - If no authorization presented, server refuses access, sends WWW-authenticate: header line in response
+ - Browser caches name & password so that user does not have to repeatedly enter it.
+
+
+** DNS: Domain Name System(port 53)
+ - gethostbyname()
+
+*** Translate Machine Names to IPs
+ - etc/hosts
+  - OK for small networks
+  - Not scalable, up-to-date
+  - Conflicts
+ - DNS
+  - Solve the above problems
+
+*** How it works
+ - A distributed database managed by authoritative name servers
+  - Each zone has its own authoritative name servers
+  - An authoritative name server of a zone may delegate a subset (i.e. a sub-tree) of its zone to another name server
+ - The root zone is managed by the root name servers
+  - 13 root name servers worldwide
+ - Each name server knows the address of the root servers
+ - Each name server knows the address of its immediate children
+
+*** Types of Queries
+ - Recursive query
+  - Put burden of name resolution on contacted names server, the contacted name server resolves the name completely
+ - Iterated query
+  - Contacted server relies with name of server to contact
+ - The hybrid case
+
+*** DNS Records
+DNS distributed db storing resource recors(RR)
+ - RR format: (name, type, value, ttl)
+ - Type = A
+  - name is hostname
+  - value is IP address
+ - Type = NS
+  - name is domain(e.g. yale.edu)
+  - value is the name of the authoritative name server for this domain
+ - Type = CNAME
+  - name is an alias name for some "canonical"(the real) name
+  - value is canonical name 
+ - Type = MX
+  - value is hostname of mail server associated with name
+ - Type = SRV
+  - general extension
+
+*** DNS Protocol, Messages
+Over UDP/TCP; query and reply messages,both with the same message format.
+
+[[dns_message_format.png]]
+
+ - identification: 16 bit # for query, the reply to a query uses the same #
+ - flags:
+ - Query or reply
+ - Recursion desired
+ - Recursion available
+ - Reply is authoritative
+
+*** Observing DNS
+dig +trace www.cnn.com
+
+*** What DNS did Right?
+ - Hierachical delegation avoids central control, improve manageability and scalability
+ - Redundant servers improve robustness
+ - Caching reduces workload and improve robustness
+
+*** Problems of DNS
+ - Domain names may not be the best way to name other resources, e.g. files
+ - Relatively static resource types make it hard to introduce new services or handle mobility
+ - Although theoretically you can update the values of the records, it is rarely enabled
+ - Simple query model make it hard to implement advanced query
+ - Early binding (separation of DNS query from application query) does not work well in mobile, dynamic environments
+ - e.g. load balancing, locate the nearest printer
+
+** P2P
+*** Summary of Traditional C-S Network Applications
+ - down speed to the clients
+  - slashdot effect
+  - CNN on 9/11
+
+*** Objectives of P2P
+ - Bypass DNS to access resources!
+  - Examples: instant messaging, skype
+ - Share the storage and bandwidth of individual clients to improve scalability
+  - Examples: file sharing and streaming
+
+*** What is P2P
+P2P is simply an iteration of scalable distributed systems
+
+*** History and Now
+ -Original Internet was a P2P system:
+  -The original ARPANET connected UCLA, Stanford
+  -Research Institute, UCSB, and Univ. of Utah
+  -No DNS or routing infrastructure, just connected by phone lines
+  -Computers also served as routers
+
+ - Quickly grown in popularity:
+  - 50-80% Internet traffic is P2P
+
+*** Centralized Database: Napster
+ - Application-level, client-server protocol over TCP
+ - A centralized index system that maps files (songs) to machines that are alive and with files
+
+**** Steps:
+ - Connect to Napster server
+ - Upload your list of files (push) to server
+ - Give server keywords to search the full list
+ - Select “best” of hosts with answers
+
+**** Summary of features: a hybrid design
+  - Control: client-server (aka special DNS) for files
+  - Data: peer to peer
+
+**** Advantages
+ - Simplicity, easy to implement sophisticated search engines on top of the index system
+**** Disadvantages
+ - Application specific (compared with DNS)
+ - Lack of robustness, scalability: central search server single point of bottleneck/failure
+ - Easy to sue !
+
+**** Variation: BitTorrent
+ - A global central index server is replaced by one tracker per file (called a swarm)
+   - Reduces centralization; but needs other means to locate trackers
+ - The bandwidth scalability management technique is more interesting
+
+*** Decentralized Flooding: Gnutella
+ - On startup, client contacts other servents (server + client) in network to form interconnection/peering relationships
+  - Servent interconnection used to forward control (queries, hits, etc)
+
+**** How to find a resource record: decentralized flooding
+ - Send requests to neighbors
+ - Neighbors recursively forward the requests
+ - Each node forwards the query to its neighbors other than the one who forwards it the query
+ - Each node should keep track of forwarded queries to avoid loop !
+  - Nodes keep state (which will time out---soft state)
+  - Carry the state in the query, i.e. carry a list of visited nodes
+
+**** Messages
+ - Basic message header
+  - Unique ID, TTL, Hops
+ - Message types
+  - Ping – probes network for other servents
+  - Pong – response to ping, contains IP addr, # of files, etc.
+  - Query – search criteria + speed requirement of servent
+  - QueryHit – successful response to Query, contains addr + port to transfer from, speed of servent, etc.
+ - Ping, Queries are flooded
+ - QueryHit, Pong: reverse path of previous message
+
+**** Advantages:
+ - Totally decentralized, highly robust
+
+**** Disadvantages
+ - Not scalable; the entire network can be swamped with flood
+requests
+ - Especially hard on slow clients; at some point broadcast traffic on Gnutella exceeded 56 kbps
+ - To alleviate this problem, each request has a TTL to limit the
+scope
+ - Each query has an initial TTL, and each node forwarding it reduces it by one; if TTL reaches 0, the query is dropped (consequence?)
+
+**** Aside
+ - Search Time
+ - All Peers Equal(bandwidth)?
+ - Network Resilience(what if some servents die)
+
+
+**** Flooding: FastTrack (aka Kazaa)
+Modifies the Gnutella protocol into two-level hierarchy
+ - Supernodes
+  - Nodes that have better connection to Internet
+  - Act as temporary indexing servers for other nodes
+  - Help improve the stability of the network
+ - Standard nodes
+  - Connect to supernodes and report list of files
+***** Search
+  - Broadcast (Gnutella-style) search across supernodes
+**** Disadvantages
+  - Kept a centralized registration -> prone to law suits
+
+
+*** Freenet
+ - Goals:
+  - Totally distributed system without using centralized index or broadcast (flooding)
+  - Respond adaptively to usage patterns, transparently moving, replicating files as necessary to provide efficient service
+  - Provide publisher anonymity, security
+  - Free speech : resistant to attacks – a third party shouldn‘t be able to deny (e.g., deleting) the access to a particular file (data item, object)
+
+**** Basic Structure
+(id, next_hop, file)
+ - Each machine stores a set of files; each file is identified by a unique identifier (called key or id)
+ - Each node maintains a “routing table"
+  - id – file id, key
+  - next_hop node – where a file corresponding to the id might be available
+  - file – local copy if one exists
+
+**** Query
+Upon receiving a query for file id, check whether the queried file is stored locally
+ - If yes, return it; otherwise
+ - Check TTL to limit the search scope
+  - Each query is associated a TTL that is decremented each time the message is forwarded
+  - When TTL=1, the query is forwarded with a probability
+  - TTL can be initiated to a random value within some bounds to obscure distance to originator
+ - Look for the “closest” id in the table with an unvisited next_hope node
+  - If found one, forward the query to the corresponding next_hop
+  - Otherwise, backtrack
+   - Ends up performing a Depth First Search (DFS)-like traversal
+   - Search direction ordered by closeness to target
+ - When file is returned it is cached along the reverse path (any advantage?)
+
+**** Insert
+ - First attempt a “search” for the file to be inserted
+ - If found, report collision
+ - If not found, insert the file by sending it along the query path
+ - Inserted files are placed on nodes already possessing files with similar keys
+ - A node probabilistically replaces the originator with itself (why?)
+
+**** Freenet Analysis
+ - Authors claim the following effects:
+  - Nodes eventually specialize in locating similar keys
+   - If a node is listed in a routing table, it will get queries for related keys
+   - Thus will gain “experience” answering those queries
+  - Popular data will be transparently replicated and will exist closer to requestors
+  - As nodes process queries, connectivity increases
+   - Nodes will discover other nodes in the network
+
+ - Caveat: lexigraphic closeness of file names/keys may not imply content similarity
+
+**** Experiment
+High percentage of highly connected nodes provide shortcuts/bridges
+ - Make the world a “small world”
+ - Most queries only traverse a small number of hops to find the file
+
+**** Distributed Search
+ - In other words, if double distance, increase number of neighbors by a constant
+
+**** Properties
+ - Query using intelligent routing
+  - Decentralized architecture -> robust
+  - Avoid flooding -> low overhead
+  - DFS search guided by closeness to target
+ - Integration of query and caching makes it
+  - Adaptive to usage patterns: reorganize network reference structure
+  - Free speech: attempts to discover/supplant existing files will just spread the files !
+ - Provide publisher anonymity, security
+  - Each node probabilistically replaces originator with itself
+
+**** Issues
+ - Does not always guarantee that a file is found, even if the file is in the network
+ - Good average-case performance, but a potentially long search path in a large network
+  - ❍  Approaching small-world...
+
+
+
+
+
+*** Unstructed P2P Summary
+All of the previous P2P systems are called unstructured P2P systems
+
+**** Advantages of unstructured P2P
+ - Algorithms tend to be simple
+ - Can optimize for properties such as locality
+
+**** Disadvantages
+ - Hard to make performance guarantee
+ - Failure even when files exist
+
+*** Distributed Hash Tables(DHT)
+**** Motivation
+ - Frustrated by popularity of all these “half-baked” P2P apps. We can do better! (so they said)
+ - Guaranteed lookup success for data in system
+ - Provable bounds on search time
+ - Provable scalability to millions of node
+
+**** Abstraction
+a distributed hash-table (DHT) data structure
+ - put(key, value) and get(key) → value
+ - DHT imposes no structure/meaning on keys
+ - One can build complex data structures using DHT
+
+**** Implementation
+ - Nodes in system form an interconnection network: ring, zone, tree, hypercube, butterfly network, ...
+
+*** Chord
+
+ - Provides lookup service:
+  - Lookup(key) → IP address
+  - Chord does not store the data; after lookup, a node queries the IP address to store or retrieve data
+ - m bit identifier space for both keys and nodes
+  - Key identifier = SHA-1(key), where SHA-1() is a popular hash function
+   - Key=“Matrix3” → ID=60
+  - Node identifier = SHA-1(IP address)
+   - IP=“198.10.10.1” → ID=123
+
+**** Storage using a Ring
+A key is stored at its successor: node with next higher ID.
+
+**** How to Search: One Extreme
+ - Every node knows of every other node
+ - Routing tables are large O(N)
+ - Lookups are fast O(1)
+
+**** How to Search: the Other Extreme
+ - Every node knows its successor in the ring
+ - Requires O(N) lookups
+
+**** Chord Solution: “finger tables”
+Node K knows the node that is maintaining $ K +  2^i $, where K is mapped id of current node
+ - Increase distance exponentially (small world?)
+
+**** Joining the Ring
+ -  Use a contact node to obtain info
+ -  Transfer keys from successor node to new node
+ -  Updating fingers of existing nodes
+
+**** DHT:Chord Routing
+ - Upon receiving a query for item id, a node checks whether stores the item
+locally
+ - If not, forwards the query to the largest node in its successor table that does not exceed id
+
+
+*** Content Addressable Network(CAN)
+Key space is an (virtual) d-dimensional Cartesian space
+ - Associate to each item a unique coordinate in the space
+ - Partition the space amongst all of the nodes
+
+**** Routing
+ - A node maintains state only for its immediate neighboring nodes
+ - Forward to neighbor which is closest to the target point
+  - a type of greedy, local routing scheme
+
+**** Example: Two Dimensional Space
+ - Space divided among nodes
+ - Each node covers either a square or a rectangular area of ratios 1:2 or 2:1
+
+***** node I::insert(K,V)
+ - a = hx(K), b = hy(K)
+ - route(K,V) -> (a,b)
+ - (K, V) is stored at (a, b)
+
+***** node I::retrieve(K)
+ - a = hx(K), b = hy(K)
+ - route “retrieve(K)” to (a,b)
+
+***** Join
+Inserting a new node affects only a single other node and its immediate neighbors
+ - Discover some node J already in CAN
+ - pick a random point (p,q) in space
+ - J routes to (p,q), discovers node N
+ - split N's zone in half... new node owns one half
+
+CAN Complexity
+ - Guaranteed to find an item if in the network
+ - Scalability
+  - For a uniform (regularly) partitioned space with n nodes and d dimensions
+   - Per node, number of neighbors is 2d
+   - Routing path length is dn1/d
+   - Average routing path is (dn1/d)/3 hops (due to Manhattan distance routing, expected hops in each dimension is dimension length * 1/3)
+  - A fixed d can scale the network without increasing per-node state
+ - Load balancing
+  - Hashing achieves some load balancing
+  - Overloaded node replicates popular entries at neighbors
+ -  Robustness 
+  - No single point of failure
+  - Can route around trouble
+
+*** Chord/CAN Summary
+ - Each node owns some portion of the key-space
+  - In CAN, it is a multi-dimensional “zone”
+  - In Chord, it is the key-id-space between two nodes in 1-D ring
+ - Files and nodes are assigned random locations in key-space
+  - Provides some load balancing
+  - Probabilistically equal division of keys to nodes
+ - Routing/search is local (distributed) and greedy
+  - Node X does not know of a path to a key Z
+  - But if node Y appears to be closest to Z among all of the nodes known to X
+  - So route to Y
+
+*** Tapestry (Zhao et al)
+ - Keys interpreted as a sequence of digits
+ - Incremental suffix routing
+  - Source to target route is accomplished by correcting one digit at a time
+  - For instance: (to route from 0312 → 1643)
+  - 0312 → 2173 → 3243 → 2643 → 1643
+ - Each node has a routing table
+
+*** Skip List
+ - Each node linked at higher level with probability 1/2.
+ - Time for search: O(log n) on average.
+ - On average, constant number of pointers per node.
+ - Link at level i to nodes with matching prefix of length i. Think of a tree of skip lists that share lower layers.
+
+
+
+*** Summary: DHT
+ - Underlying metric space.
+ - Nodes embedded in metric space
+ - Location determined by key
+ - Hashing to balance load
+ - Greedy routing
+ - Typically
+  - O(logn) space at each node
+  - O(log n) routing time
+
+*** Summary: the lookup problem
+ - Napster (central query server; distributed data server)
+ - Gnutella (decentralized, flooding)
+ - Freenet (search by routing)
+ - Chord (search by routing on a virtual ring)
+ - Content Addressable Network (virtual zones)
+
+*** BitTorrent
+**** Metadata File Structure
+ - Announce URL of tracker
+ - File name
+ - File length
+ - Piece length (typically 256KB)
+ - SHA-1 hashes of pieces for verification
+ - Also creation date, comment, creator, ...
+
+**** Tracker Protocol
+ - Communicates with clients via HTTP/HTTPS
+ - Client GET request
+  - Info_hash: uniquely identifies the file
+  - Peer_id: chosen by and uniquely identifies the client
+  - Client IP and port
+  - Numwant: how many peers to return (defaults to 50)
+  - Stats: bytes uploaded, downloaded, left
+ - Tracker response
+  - Interval: how often to contact the tracker
+  - List of peers, containing peer id, IP and port
+  - Stats: complete, incomplete
+ - Tracker-less mode; based on the Kademlia DHT
+
+**** Piece Selection: Requests/Interests
+ - When downloading starts: choose at random and request them from the peers
+  - Get pieces as quickly as possible
+  - Obtain something to offer to others
+ - After 4 pieces: request (local) rarest first
+  - Achieves the fastest replication of rare pieces
+  - Obtain something of value
+ - Endgame mode
+ - Defense against the “last-block problem”: cannot finish because missing a few last pieces
+ - Send requests for missing sub-pieces to all peers in our peer list
+ - Send cancel messages upon receipt of a sub-piece
+
+**** Peer Selection – Response/Unchoking
+ - Periodically (typically every 10 seconds) calculate data-receiving rates from all peers
+ - Upload to (unchoke) the fastest
+  - constant number (4) of unchoking slots
+
+**** Optimistic Unchoking
+ - Periodically select a peer at random and upload to it
+  - Typically every 3 unchoking rounds (30 seconds)
+ - Multi-purpose mechanism
+  - Allow bootstrapping of new clients
+  - Continuously look for the fastest peers (exploitation vs exploration)
+
+**** Summary
+ - Very widely used
+  - Mainline: written in Python
+  - Azureus: the most popular, written in Java
+  - Other popular clients: ABC, BitComet, BitLord, BitTornado, μTorrent, Opera browser
+ - Many explorations, e.g.
+  - BitThief
+  - BitTyrant
+ - Better understanding
+is needed

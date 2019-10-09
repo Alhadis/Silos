@@ -1,0 +1,96 @@
+#title ACPID
+
+* What is ACPID
+
+* Configurations in Linux
+
+** Fn Key Surpport
+最近又有大更新，欣喜地发现 VOLUPBTN 与 VOLMUTE 甚至屏幕亮度调节都能用
+了，然而却同时发现本来唯一可用的 VOLDOWNBTN 现在成了拖后腿的人。人生真
+奇妙，无奈记录下自己以前把这东西搞定的方式，希望以后用不到。
+
+实际上 /etc/apci/ 目录下那些 dot sh 文件只是对基本的命令的包装而已，比
+如以前可用的 VOLDOWNBTN，打开相应的 voldownbtn.sh，可以看到它先测试
+acpi 是否可用，然后读入一堆记录对应键值的常量，再通过 acpi_fakekey 调
+用相应的基本命令进行处理，OSD 和基本的效果什么的（音量、亮度等调节）。
+所以看到这里你可以先自己尝试一下，执行如下步骤：
+<example># xev </example>
+通过上面这个找到自己比如 Fn + F3 的键值，我的是 114 ，然后
+<example># acpi_fakekey 114</example>
+就看到实际效果了。
+
+那么基本的命令是什么呢？在音量调节上，是 amixer。如果你使用 GNOME 的
+话，可以打开 Multimedia -> Volume Control，每列上方都名字，按从左到右
+的顺序是：Master Headphone PCM …… 不一而足。现在，在终端里面执行：
+<example># amixer get 'Master'</example>
+可以看到如下结果：
+<example>
+Simple mixer control 'Master',0
+  Capabilities: pvolume pswitch
+  Playback channels: Front Left - Front Right
+  Limits: Playback 0 - 31
+  Mono:
+  Front Left: Playback 11 [35%] [-30.00dB] [on]
+  Front Right: Playback 11 [35%] [-30.00dB] [on]
+</example>
+如果你也看到类似结果的话请再执行上面提到的 acpi 命令，然后再让电脑执行
+本命令看看，看到结果了吧？走到这一步，就离自己写 voldownbtn.sh 距离不
+远了。man 一下 amixer 的命令参数，就可以开始动手了，闲话休提，贴代码如
+下：
+
+*** Shell Script Source
+<src type="shell-script">
+#!/bin/sh
+# voldownbtn.sh
+
+test -f /usr/share/acpi-support/power-funcs || exit 0
+
+HEADPHONE_VOLUME=$(cat /var/local/volume)
+
+if [ "$HEADPHONE_VOLUME" -gt 1 ]; then
+    HEADPHONE_VOLUME=$(( $HEADPHONE_VOLUME - 2 ))
+    echo $HEADPHONE_VOLUME > /var/local/volume
+    echo "HEADPHONE_VOLUME=$HEADPHONE_VOLUME"
+    [ -x /usr/bin/amixer ] && /usr/bin/amixer sset 'Headphone' 2- > /dev/null
+fi
+</src>
+
+<src type="shell-script">
+#!/bin/sh
+# volupbtn.sh
+
+test -f /usr/share/acpi-support/power-funcs || exit 0
+
+HEADPHONE_VOLUME=$(cat /var/local/volume)
+
+if [ "$HEADPHONE_VOLUME" -lt 31 ]; then
+    HEADPHONE_VOLUME=$(( $HEADPHONE_VOLUME + 2 ))
+    echo $HEADPHONE_VOLUME > /var/local/volume
+    echo "HEADPHONE_VOLUME=$HEADPHONE_VOLUME"
+    [ -x /usr/bin/amixer ] && /usr/bin/amixer sset 'Headphone' 2+ > /dev/null
+fi
+</src>
+
+<src type="shell-script">
+#!/bin/sh
+#mutebtn.sh
+
+test -f /usr/share/acpi-support/power-funcs || exit 0
+
+HEADPHONE_VOLUME=$(cat /var/local/volume)
+HEADPHONE_STATE=$(cat /var/local/volume_state)
+
+if [ "$HEADPHONE_STATE" -lt 0 ]; then
+    #unmute
+    HEADPHONE_STATE=$((HADPHONE_STATE + 2))
+    echo $HEADPHONE_STATE > /var/local/volume_state
+    echo "HEADPHONE_VOLUME=$HEADPHONE_VOLUME"
+    [ -x /usr/bin/amixer ] && amixer sset 'Headphone' unmute > /dev/null
+else
+    mute (and remember current volume level)
+    HEADPHONE_STATE=$((HADPHONE_STATE - 2))
+    echo $HEADPHONE_STATE > /var/local/volume_state
+    echo "HEADPHONE_VOLUME=$HEADPHONE_VOLUME"
+    [ -x /usr/bin/amixer ] && amixer sset 'Headphone' mute > /dev/null
+fi 
+</src>

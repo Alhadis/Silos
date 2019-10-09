@@ -1,0 +1,72 @@
+#title Plymouth themes: Fix, install, create in Ubuntu 10.04 (Lucid Lynx)
+
+Quick tips for those having trouble with their splash screens in lucid.
+
+Plymouth replaces Usplash as the default boot splash program in lucid lynx. Some users have found that either they do not see the splash at all on startup or only for a split second before the login screen appears.
+
+At present there are only a few Plymouth themes available in the repositories. Open synaptic and type Plymouth into the quick search field to see a list of the available themes.
+
+
+To change the default splash screen:
+
+<verse>
+sudo update-alternatives --config default.plymouth
+sudo update-initramfs -u
+</verse>
+
+To fix the delayed loading of the splash:
+
+<verse>
+sudo -s
+echo FRAMEBUFFER=y >>/etc/initramfs-tools/conf.d/splash
+update-initramfs -u
+</verse>
+
+To install new themes manually; First copy the downloaded theme to /lib/plymouth/themes/mytheme; Then execute (replace mytheme with the name of the theme you are installing):
+
+<verse>
+sudo update-alternatives --install /lib/plymouth/themes/default.plymouth default.plymouth /lib/plymouth/themes/mytheme/mytheme.plymouth 100
+sudo update-alternatives --config default.plymouth
+sudo update-initramfs -u
+</verse>
+
+To create a very basic theme (wallpaper only) try the following:
+
+1. sudo mkdir /lib/plymouth/themes/simple
+
+2. Find a wallpaper you like and copy it to /lib/plymouth/themes/simple/wallpaper.png (must be a png!)
+
+2. sudo gedit /lib/plymouth/themes/simple/simple.plymouth and paste the following:
+
+<example>
+[Plymouth Theme]
+Name=Simple
+Description=Wallpaper only
+ModuleName=script
+
+[script]
+ImageDir=/lib/plymouth/themes/simple
+ScriptFile=/lib/plymouth/themes/simple/simple.script
+</example>
+
+3. sudo gedit /lib/plymouth/themes/simple/simple.script and paste the following:
+
+<example>
+wallpaper_image = Image(“wallpaper.png”);
+screen_width = Window.GetWidth();
+screen_height = Window.GetHeight();
+resized_wallpaper_image = wallpaper_image.Scale(screen_width,screen_height);
+wallpaper_sprite = Sprite(resized_wallpaper_image);
+wallpaper_sprite.SetZ(-100);
+
+</example>
+
+4. sudo update-alternatives --install /lib/plymouth/themes/default.plymouth default.plymouth /lib/plymouth/themes/simple/simple.plymouth 100
+
+5. sudo update-alternatives --config default.plymouth (select simple from the list)
+
+6. sudo update-initramfs -u
+
+Reboot and you should see a boot splash of the image you copied.
+
+For more details on creating plymouth themes check out: http://brej.org/blog/?p=197

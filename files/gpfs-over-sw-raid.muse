@@ -1,0 +1,237 @@
+#title GPFS поверх software raid
+
+Если вы не в курсе что такое GPFS, то информация, расположенная ниже, скорее всего, является для вас
+бесполезной.
+
+* Зачем это?
+
+В GPFS имеется ограничение на максимальное количество реплик одного файла, равное двум. Это значит,
+что при создании файловой системы на обычных дисках (без шареного стораджа), при потере двух
+дисков, есть ненулевая вероятность потерять данные. При росте количества дисков, эта вероятность,
+само собой, растет, что совершенно не прикольно.
+
+Большие дядьки обычно используют для этого шареные стораджи на FC, но простым людям тоже хочется
+как-то жить, не опасаясь за свои данные. В этом случае можно использовать RAID на каждой
+storage-ноде GPFS.
+
+* Как правильно готовить MD
+
+Чтобы GPFS выполнял ввод-вывод через MD, а не через низлежащие устройства, необходимо ему об этом
+сказать. Нужно это по причине особенностей поиска GPFS своих томов. 
+
+Поиск заключается в том, что GPFS по очереди считывает первый сектор со всех дисков, упомянутых в
+/proc/partition. Если в первом секторе находится сигнатура существующего NSD, то GPFS считает что
+может использовать это блочное устройство для выполнения ввода-вывода. Это очень удобно, когда
+дурной linux может изменять имена дисков между перезагрузками, а также для больших стораджей, когда
+один и тот же кусок стораджа может быть виден несколькими разными путями с нескольких машин.
+
+Однако, это создает проблему при использовании raid1 (да и при raid0-raid10 могут возникнуть глюки,
+если с размером страйпа не повезет). Чтобы этого избежать, нужно объяснить GPFS на каких дисках
+искать злосчастные метки. Это осуществляется через создание скрипта /var/mmfs/etc/nsddevices,
+примерно с таким содержимым:
+<example>
+#!/bin/sh
+
+for i in /dev/md*; do
+  echo $i generic
+done
+exit 0
+</example>
+
+То есть, этот скрипт должен выводить в stdout список имен устройств со специальным словом generic
+(для AIX тут возможны варианты, для x86 -- только generic). После этого, GPFS будет выполнять поиск
+NSD только среди блочных девайсов, которые выводит скрипт.
+
+* Проблема с BIO MD
+
+Симптомы: при попытке создать файловую систему на NSD-дисках, являющихся софтварным рейдом, mmcrfs
+зависает навсегда.
+
+Небольшое исследование показало следующую последовательность событий:
+
+  1. mmcrfs выполняется несколько проверок и, если все хорошо, запускает tscrfs.
+  1. tscrfs создает сокет, через msgqueue сообщает демону порт. Соединение устанавливается, tscrfs
+   говорит демону "создай ФС"
+  1. демон выполняет ioctl 0x1b (27) на файл /dev/ss0
+  1. этот ioctl проваливается в функцию модуля mmfs ss_ioctl, затем в DiskSched::synchIO
+  4. synchIO создает IOWaitQueue (cxiAllocIOWaitQueue), на которой выполняется cxiWaitIO
+  5. создается BIO, по завершении которого вызывается фукнция bioDone. В ней написано вот что:
+<example>
+  /* Ignore if bi_size is still non-zero */
+  if (bioP->bi_size)
+#if LINUX_KERNEL_VERSION >= 2062700
+    return;
+#else
+    return 1;
+#endif
+</example>
+  Именно эта проверка и срабатывает в случае md. Для обычных блочных устройств в поле bi_size честный
+  ноль.
+
+* Решение со стороны GPFS
+
+Не проверять =bi_size=. Патч номер раз:
+<example>
+diff -Nru src.orig/gpl-linux/cxiIOBuffer.c src/gpl-linux/cxiIOBuffer.c
+--- src.orig/gpl-linux/cxiIOBuffer.c    2009-09-04 14:39:34.000000000 +0400
++++ src/gpl-linux/cxiIOBuffer.c 2009-09-04 14:39:43.000000000 +0400
+@@ -1570,14 +1570,6 @@
+ {
+   struct cxiBufHeadChunk_t* bhcHeadP;
+
+-  /* Ignore if bi_size is still non-zero */
+-  if (bioP->bi_size)
+-#if LINUX_KERNEL_VERSION >= 2062700
+-    return;
+-#else
+-    return 1;
+-#endif
+-
+   bhcHeadP = (struct cxiBufHeadChunk_t*)bioP->bi_private;
+   /* Decrement number of outstanding bios */
+   /* If this is the last bio in the chunk list, enqueue the chunk list
+</example>
+
+
+* Решение со стороны ядра
+
+MD не обнуляет поле =bi_size= перед вызовом bi_end_io. Патч номер два:
+<example>
+commit efe768b308145df0097bfea5d7afcee7e491bace
+Author: Max Lapan <max.lapan@gmail.com>
+Date:   Tue Sep 8 15:42:02 2009 +0400
+
+    Fix non-zero bio->bi_size in MD's bi_end_io callback.
+    
+    bi_size value in BIO object passed in bi_end_io callback is not null for successfully completed
+    BIOs, which is confusing sometimes.
+    
+    Signed-off-by: Max Lapan <max.lapan@gmail.com>
+
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index 8726fd7..b95e9a2 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -242,6 +242,8 @@ static void raid_end_bio_io(r1bio_t *r1_bio)
+ 			(unsigned long long) bio->bi_sector +
+ 				(bio->bi_size >> 9) - 1);
+ 
++		if (test_bit(R1BIO_Uptodate, &r1_bio->state))
++			bio->bi_size = 0;
+ 		bio_endio(bio,
+ 			test_bit(R1BIO_Uptodate, &r1_bio->state) ? 0 : -EIO);
+ 	}
+@@ -364,6 +366,7 @@ static void raid1_end_write_request(struct bio *bio, int error)
+ 					       (unsigned long long) mbio->bi_sector,
+ 					       (unsigned long long) mbio->bi_sector +
+ 					       (mbio->bi_size >> 9) - 1);
++					mbio->bi_size = 0;
+ 					bio_endio(mbio, 0);
+ 				}
+ 			}
+diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+index 3d9020c..ebe883b 100644
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -235,6 +235,8 @@ static void raid_end_bio_io(r10bio_t *r10_bio)
+ {
+ 	struct bio *bio = r10_bio->master_bio;
+ 
++	if (test_bit(R10BIO_Uptodate, &r10_bio->state))
++		bio->bi_size = 0;
+ 	bio_endio(bio,
+ 		test_bit(R10BIO_Uptodate, &r10_bio->state) ? 0 : -EIO);
+ 	free_r10bio(r10_bio);
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index b8a2c5d..fb9560d 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -3446,6 +3446,7 @@ static void raid5_align_endio(struct bio *bi, int error)
+ 	rdev_dec_pending(rdev, conf->mddev);
+ 
+ 	if (!error && uptodate) {
++		raid_bi->bi_size = 0;
+ 		bio_endio(raid_bi, 0);
+ 		if (atomic_dec_and_test(&conf->active_aligned_reads))
+ 			wake_up(&conf->wait_for_stripe);
+@@ -3747,7 +3748,7 @@ static int make_request(struct request_queue *q, struct bio * bi)
+ 
+ 		if ( rw == WRITE )
+ 			md_write_end(mddev);
+-
++		bi->bi_size = 0;
+ 		bio_endio(bi, 0);
+ 	}
+ 	return 0;
+@@ -4121,8 +4122,10 @@ static int  retry_aligned_read(raid5_conf_t *conf, struct bio *raid_bio)
+ 	spin_lock_irq(&conf->device_lock);
+ 	remaining = raid5_dec_bi_phys_segments(raid_bio);
+ 	spin_unlock_irq(&conf->device_lock);
+-	if (remaining == 0)
++	if (remaining == 0) {
++		raid_bio->bi_size = 0;
+ 		bio_endio(raid_bio, 0);
++	}
+ 	if (atomic_dec_and_test(&conf->active_aligned_reads))
+ 		wake_up(&conf->wait_for_stripe);
+ 	return handled;
+</example>
+
+
+* Какое решение правильное?
+
+Nail Brown [[http://lkml.indiana.edu/hypermail/linux/kernel/0909.1/00575.html][считает]] что правильно патчить GPFS, так как bi_size в функции bi_end_io не
+определена. Думаю что он прав. В любом случае, GPFS патчить проще.
+
+* Продолжение эпопеи
+
+Примерно через полгода после написания предыдущей заметки, IBM выпустила новую версию GPFS, в
+которой предыдущей проблемы не наблюдается. Однако, GPFS по прежнему не работает с MD :).
+
+Теперь, проблема заключается в том, что GPFS пытается отправлять BIO размером, больше чем
+максимально поддерживаемый MD. В этом случае, в dmesg появляется ошибка "bio too big device md0 (256
+> 255)". Немного покопавшись, мы опять приходим к тому, что эту ошибку проще решить на стороне
+GPFS. Делает это [[gpfs/0001-Fix-bug-with-GPFS-over-MD-in-3.3-version.patch][следующий патч]]:
+
+<example>
+From b3e93f4030bc95581ada44c5fc6d8b87f41a348d Mon Sep 17 00:00:00 2001
+From: Max Lapan <max.lapan@gmail.com>
+Date: Thu, 11 Feb 2010 12:49:01 +0300
+Subject: [PATCH] Fix bug with GPFS over MD in 3.3 version.
+
+When GPFS generates BIOs for block device, it uses bio_get_nr_vecs, which returns rough estimation
+of maximum BIO size for device. Unfortunately, for MD devices, this routine returns 32 pages, but MD
+allows only 255 sectors. So, we forced to decrease max BIO for MD to 31 pages.
+
+In fact, this would be much better to resolve on MD-size, but several LKML discussions demostrates
+that this is not so simple and straightforward.
+---
+ gpl-linux/cxiIOBuffer.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/gpl-linux/cxiIOBuffer.c b/gpl-linux/cxiIOBuffer.c
+index 0e3eb33..cbf58a0 100644
+--- a/gpl-linux/cxiIOBuffer.c
++++ b/gpl-linux/cxiIOBuffer.c
+@@ -88,6 +88,7 @@
+ #include <linux/fs.h>
+ #include <linux/smp_lock.h>
+ #include <linux/bio.h>
++#include <linux/major.h>
+ 
+ #include <Logger-gpl.h>
+ #include <Trace.h>
+@@ -1493,6 +1494,10 @@ cxiStartIO(int ioVecSize,
+   LOGASSERT(bdevP != NULL && bdevP->bd_disk != NULL);
+   maxIOVec = bio_get_nr_vecs(bdevP); /* query max device vectors */
+ 
++  /* There is a special hack for MD */
++  if (bdevP->bd_disk->major == MD_MAJOR)
++      maxIOVec--;
++
+ #ifdef VDISK_LOOP_DEVICES
+   /* Linux can report an inaccurate value from bio_get_nr_vecs
+   *  for loop devices.  Apply necessary adjustments for experimental use. */
+-- 
+1.5.6.5
+</example>

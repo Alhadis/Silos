@@ -1,0 +1,2696 @@
+#title php 笔记
+#autor Ole Yang
+#date 2011-06-06
+
+<contents>  
+
+
+
+* 概述
+php是1994年？？为了统计网站的访问人数用perl写第一个程序，后来用C改写，后来加入了波兰的Zeev 和 End？？
+
+请认真仔细地从头到尾阅读php手册
+
+* 语言基础
+** separation(分隔符)
+php默认支持下面2中分隔符
+ - <?php ?>
+ - <script language="php"> </script>
+还可以通过配置php.ini来打开短符号支持（short tag），例如： <? ?>,也可以打开asp tag来支持asp的风格<% %>
+
+最后的关闭符(?>)不是必须的，如果省略，那么会把脚本最后所有的空白都去除，比如在include(),require()引进的文件里面，或者是当输出字符串中不希望有尾部的空白
+
+** 嵌入HTML
+php是嵌入到HTML中解析执行
+<src type="html">
+<html>
+  <header><title>My first Page</title></header>
+  <body>
+    <?php
+       echo "Hello World!";
+    ?>
+  </body>
+</html>                                 
+</src>
+<?php ... ？>中的内容会被php引擎替换为php执行的结果，也就是输出的内容Hello World!非php代码将会原样发送给浏览器。早期为了迎合asp的用户php的边界符号也可以使用<%...%>,另外如果在php.ini中开启了short_open_tag,则可以使用<?...?>这样的缩写，但是不建议这样写，因为short_open_tag件默认是关闭的，这样不利于移植。
+
+** 注释
+php有三种注释
+
+C风格
+<src type="php">
+/* 这是C语言风格的注释标准
+ * 可以多行注释
+ */
+</src>
+
+C++ 风格
+<src type="text">
+// 这是行尾注释
+</src>
+
+bash 风格
+<src type="text">
+# 这也是行尾注释
+</src>
+注释可以出现在单独的一行或者是代码行尾中
+<src type="php">
+<?php
+/**
+* 函数名称: sayHi
+* 参    数: $name
+* 返 回 值: string
+* 作    用: only say hi to somebody
+*/
+function myFunc($name)
+{
+    echo "Hi $name";
+}
+?>
+</src>
+
+** require/include
+require 和include很相似，都是引用文件.
+
+注意：
+ - 如果引用的文件包含路径符号（/;./;../）将忽略include_path定义的路径；
+ - 作用域。被包含文件内部的作用域和包含它的文件位置的作用域一致；被包含的文件中的变量、函数、类对于包含文件是全局的。但是在函数中引用文件，被引用文件中的变量、函数、类的作用域是函数内部的。
+ - 返回值。成功返回int(1),失败：require直接终断脚本；include返回false
+ 
+区别：
+ - 产生错误级别不一样 require产生的错误是E_COMPILE_ERROR,程序终止；include产生E_WARNNING,程序继续执行
+
+require可以在函数中传
+<src type="text">
+function test($arg) {
+    var_dump($arg);
+}
+
+test(require('a.php'));
+</src>
+a.php
+<src type="text">
+<?php
+$arr = array(1, 2);
+?>
+</src>
+
+
+
+** 数据类型
+ - 标量(scalar)
+  - boolean
+  - integer
+  - float(又叫double)
+  - string
+
+ - 组合(compound)
+  - arrary
+  - object
+
+ - special(特殊)
+  - source
+  - NULL
+
+ - 伪造(pseudo)
+  - mixed
+  - number
+  - callback
+*** boolean
+以下类型为false
+ - FALSE(无大小写之分)
+ - integer 0
+ - float 0.0
+ - empty string'' or '0'
+ - 没有元素的数组
+ - 没有元素的simpleXML
+ - NULL（包括unset变量）
+ - 没有元素的object（PHP 4 only）
+
+*** 字符串
+单个字符也可以自加
+<src type="php">
+<?php
+$s = 'a';
+echo ++$s;   // b
+$s = 'z';
+echo ++$s;  // z
+$s = 'A';
+echo ++$s;  // B
+?>
+</src>
+
+
+** 时间/日期
+*** time
+*** date
+<src type="text">
+string date( string $format [,int timestamp] )
+</src>
+ - $format
+  - DATE_ATOM  date(DATE_ATOM)
+  - DATE_COOKIE
+  - DATE_RSS
+  - DATE_RFC8602
+
+* PHP 5 新特性
+** 概述
+PHP5主要增加了对像的支持，XML，错误处理
+
+** 面向对象
+*** public/protected/private访问修饰，主要是对i类中的属性和方法
+*** 统一的构造函数 __contruct
+*** 统一的析构函数__destructor
+*** interface 接口
+一个类只能继承另外一个类，但是可以有多个接口
+*** instanceof 判断对象是否某个类
+原来php4中的is_a不推荐使用
+<src type="php">
+<?php
+if ($obj instanceof MyClass)
+{
+
+}
+?>
+</src>
+
+*** final
+如果修饰类，该类将不能被继承
+
+下面的用法将提示错误
+<src type="php">
+<?php
+final class MyClass{
+}
+
+class OtherClass extends MyClass{
+}
+?>
+</src>
+
+*** abstract
+如果修饰类，该类将不能实例化，但是被可以继承
+
+包含抽象方法的类一定是抽象类
+
+*** __autoload
+在使用到类的时候才自动去加载文件
+
+*** 静态函数/属性
+**** 静态函数
+静态函数通过类名来访问，不要实例化类；
+<src type="php">
+<?php
+class StaticClass{
+  private $name;
+  static function get_name 
+?>
+</src>
+函数内部不能使用$this来应用其他的函数
+<src type="php">
+<?php
+class MyClass{
+  private $name;
+  static function setName($name)
+  {
+    $this->$name=$name; // 这样是错误的    
+  }
+?>
+</src>
+
+**** 静态属性
+
+**** 单件模式
+作用：
+
+[[http://php.lampbrother.net/html/70-1/1121.htm]]
+
+** 错误处理机制
+php5中增加来错误处理机制try/throw/catch
+<src type="php">
+<?php
+try{
+  ...
+  throw new SQLException("can't connect to database");
+} catch (SQLException $e){
+  print "Caught an SQLException with problem $obj->problem";
+} catch (Exception $e){
+  print "Caught an unrecognized exception";
+}
+?>
+</src>
+
+** 引用& can set default value
+<src type="php">
+<?php
+function (&$v=NULL){
+
+}
+?>
+</src>
+
+
+* 函数
+** 时间/日期
+*** gmmktime
+<src type="text">
+int gmmktime(hour, minute, second, Mon, day, year)
+</src>
+返回从1970-1-1 0：0：0 到指定时间经过的秒数，例如1970-1-2 0：0：0离1970-1-1 0：0：0 经过的秒数是多少
+<src type="text">
+echo gmmktime(0, 0, 0, 1, 2, 1970)  // 86400
+</src>
+也就是说一天的时间为86400秒，这个函数和time类似，但是time只是获取当前距离1970-1-1 0：0：0 经过的秒数
+
+*** mktime
+*** gmdate
+
+*** time
+<src type="text">
+int time();
+</src>
+返回1970-1-1 0：0：0 离目前经过的秒数。
+<src type="text">
+echo time()  // 1307440754
+</src>
+
+
+*** pase_str
+
+*** pase_url
+
+*** http_build_query
+
+*** preg_quote
+<src type="php">
+<?php
+string preg_quote( string $str [, string $delimiter = NULL] )
+?>
+</src>
+Takes *str* and puts a blackslash in front of every character that is part of the regular expression sytax.就是把str中含有正则表达式中的特殊字符前都加上'\',如果delimiter给出来了就会在delimiter前也加上'\',看例子
+<src type="php">
+<?php
+$str = 'http://www.google.com';
+echo preg_quote( $str );   // 结果
+?>
+</src>
+
+** 字符串
+
+*** strpos
+查找字符串的位置
+
+*** strstr
+
+
+*** strtolower
+转化成小写
+
+*** str_replace
+替换*所有*匹配的字符串
+<src type="php">
+<?php
+mixed str_replace( mixed $search, mixed $replace, mixed $subject [, int limited] )
+?>
+</src>
+ - $search,$replace<br>
+是mixed类型，不单单是字符串类型，也可以是数组什么的
+ - limited<br>
+限制替换几个匹配到的内容
+<src type="php">
+<?php
+$subject = "a b c d";
+$search = array('a', 'b', 'c');
+$replace = array('b', 'c', 'd');
+echo str_replace($search, $replace, $subject);
+?>
+</src>
+答案如下：
+<src type="text">
+d d d d
+</src>
+为什么呢?php先把$subject中的所有a替换成b，再把替换后的字符串进行第二个替换，又把b替换成c，接着有把c替换成d，所以就变成a->b->c->d,就是a->d
+如何避免这样的问题发生，可以使用preg_replace或者是preg_replace_callback
+
+*** trim/ltrim/rtrim
+删除字符串头尾的字符，不仅仅是空白
+
+删除最后的中文的问号“？”,
+<src type="php">
+<?php
+$str = '你是谁？';
+$str = rtrim($str, '？');
+?>
+</src>
+
+*** implode
+把数组的值转换成字符串，注意数组的key不会转
+<src type="php">
+<?php
+string implode( [string $seperator,] array $arr );
+?>
+</src>
+
+*** explode
+把数组分割成字符串
+<src type="text">
+string explode(string $delimiter, array $arr);
+</src>
+
+*** substr
+查找字符串
+
+*** strpos
+查找字符串的位置
+
+** 数组
+
+*** foreach
+foreach 的方式是复制,操作不影响用数组
+<src type="php">
+<?php
+$data = array( 'name', 'age' );
+foreach( $data as $v ){
+  if( $v == 'age' ){
+    $v = 'sex';  // 这里操作对原始数据$data没有影响,除非用 $data as &$v
+  }
+}
+?>
+</src>
+
+*** each
+一次取出一条数组的记录,指向数组的指针向下移动,如果到了数组的尾部,返回false
+
+取出的值包涵4个元素: 01和key,value;0和key的值是数组的key,1和value是值;
+<src type="php">
+<?php
+$people = array("Peter", "Joe", "Glenn", "Cleveland");
+print_r (each($people));
+// 结果:
+Array
+(
+    [1] => Peter
+    [value] => Peter
+    [0] => 0
+    [key] => 0
+)
+?>
+</src>
+这个时候指针指向"Joe".
+
+each经常和list一起使用来遍历数组
+<src type="php">
+<?php
+reset($people);  // 重新把指针指向开头
+while(list($key,$value) = each($people)){
+  echo "$key=>$value <br />";
+}
+// 结果
+0=>Peter
+1=>Joe
+2=Glenn
+3=Cleveland
+?>
+</src>
+
+*** array_keys
+取得数组所有key值，返回为数组
+数组函数分组
+
+*** array_count_values
+统计数组中所有的值出现的次数
+
+*** array_product
+计算数组中所有值的乘积
+
+*** array_sum
+计算数组中所有值的和
+
+*** count
+计算数组中的单元数目或对象中的属性个数
+
+*** sizeof
+count()的别名
+ 
+*** array_key_exists
+检查给定的键名或索引是否存在于数组中
+
+*** array_search
+在数组中搜索给定的值，如果成功则返回相应的键名
+
+*** in_array
+检查数组中是否存在某个值
+
+*** array_multisort
+对多个数组或多维数组进行排序
+
+*** arsort
+对数组进行逆向排序并保持索引关系
+
+*** asort
+对数组进行排序并保持索引关系
+
+*** krsort
+对数组按照键名逆向排序
+
+*** ksort
+对数组按照键名排序
+
+*** natcasesort
+用“自然排序”算法对数组进行不区分大小写字母的排序
+
+*** natsort
+用“自然排序”算法对数组排序
+
+*** rsort
+对数组逆向排序
+
+*** sort
+对数组排序
+
+*** uasort
+使用用户自定义的比较函数对数组中的值进行排序并保持索引关联
+
+*** uksort
+使用用户自定义的比较函数对数组中的键名进行排序
+
+*** usort
+使用用户自定义的比较函数对数组中的值进行排序
+
+*** shuffle
+将数组打乱
+
+*** array_chunk
+将一个数组分割成多个
+
+*** array_filter
+用回调函数过滤数组中的单元
+
+*** array_keys
+返回数组中所有的键名
+
+*** array_slice
+从数组中取出一段
+
+*** array_values
+返回数组中所有的值
+
+*** array_pop
+将数组最后一个单元弹出（出栈）
+
+*** array_rand
+从数组中随机取出一个或多个单元
+
+*** current
+返回数组中的当前单元
+
+*** each
+返回数组中当前的键／值对并将数组指针向前移动一步
+
+*** end
+将数组的内部指针指向最后一个单元
+
+*** key
+返回数组中当前单元的键名
+
+*** list
+把数组中的值赋给一些变量
+
+*** next
+将数组中的内部指针向前移动一位
+
+*** pos
+current() 的别名
+
+*** prev
+将数组的内部指针倒回一位
+
+*** reset
+将数组的内部指针指向第一个单元
+
+*** array_combine
+<src type="text">
+array array_combine($arr1, $arr2)
+</src>
+ - 参数 $arr1 和 $arr2的个数必须一致
+  - $arr1,$arr1中的值作为返回数组的key
+  - $arr2,$arr2中的值作为返回数组的value
+ - 说明 创建一个数组，用一个数组的值作为其键名，另一个数组的值作为其值
+ - 返回值 数组
+ - 例子
+<src type="text">
+$arr1 = array('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3');
+$arr2 = array('k1' => 'v1', 'k2' => 'v2', 'k3' => 'v3');
+$arr = array_combine($arr1, $arr2);  // $arr = array('key1'=>'v1', 'key2'=>'v2', 'key3' => 'v3')
+</src>
+
+
+*** array_fill
+ 用给定的值填充数组
+
+生成3个元素的数组，每个元素的值都为ole
+<src type="text">
+$arr = array_fill( 1, 5, "ole" );
+</src>
+
+*** array_flip
+ 交换数组中的键和值
+
+*** array_map
+ 将回调函数作用到给定数组的单元上
+
+*** array_merge_recursive
+ 递归地合并一个或多个数组
+
+*** array_merge
+ 合并一个或多个数组
+
+<src type="php">
+<?php
+array array_merge( array $arr1 [,array $arr2[,array $arr3[, ... ]]] );
+?>
+</src>
+把$arr1,$arr2...中的元素取出，合并成一个新数组。如果有重复的key,就用后面的值替换前面
+
+例如： 二维数组变成一维数组
+
+数据如下：
+<src type="text">
+$arr[] = array( 'a' => 'a', 'a1' => 'a1' );
+$arr[] = array( 'b' => 'b', 'b1' => 'b1');
+</src>
+$arr是一个二维数组，现在把它合并成一维数组
+<src type="text">
+$data = array_merge($arr[0], $arr[1]);
+</src>
+原理
+<src type="text">
+$data[] = $arr[0][0];
+$data[] = $arr[0][1];
+$data[] = $arr[1][1];
+$data[] = $arr[1][1];
+</src>
+一个个取其中的元素赋值
+
+
+*** array_pad
+ 用值将数组填补到指定长度
+
+*** array_push
+ 将一个或多个单元压入数组的末尾（入栈）
+
+*** array_reverse
+返回一个单元顺序相反的数组
+
+*** array_shift
+将数组开头的单元移出数组
+
+*** array_splice
+ 把数组中的一部分去掉并用其它值取代
+
+*** array_unique
+ 移除数组中重复的值
+
+*** array_unshift
+ 在数组开头插入一个或多个单元
+
+*** array_walk_recursive
+ 对数组中的每个成员递归地应用用户函数
+
+*** array_walk
+ 对数组中的每个成员应用用户函数
+
+*** compact
+ 建立一个数组，包括变量名和它们的值
+
+*** range
+ 建立一个包含指定范围单元的数组
+
+*** array_intersect_assoc
+ 带索引检查计算数组的交集
+
+*** array_intersect_key
+<src type="text">
+array array_intersect_key($arr1, $arr2)
+</src>
+ - 参数： $arr1、$arr2 都是数组，$arr1、$arr2的长度可以不一样
+ - 说明： 使用键名比较计算数组的交集。
+ - 返回值： 数组。即返回$arr1中$arr1和$arr2中共同存在key的元素组成的数组
+ - 例子：
+<src type="text">
+$arr1 = array('k1' => 'value1', 'k2' => 'value2', 'key3' => 'value3');
+$arr2 = array('k1' => 'v1', 'k2' => 'v2', 'k3' => 'v3');
+$arr = array_combine($arr1, $arr2);  // $arr = array('k1'=>'value1', 'k2'=>'value2')
+</src>
+
+
+*** array_intersect_uassoc
+ 带索引检查计算数组的交集，用回调函数比较索引
+
+*** array_intersect_ukey
+用回调函数比较键名来计算数组的交集
+
+*** array_intersect
+计算数组的交集
+
+*** array_key_exists
+用回调函数比较键名来计算数组的交集
+
+*** array_uintersect_assoc
+带索引检查计算数组的交集，用回调函数比较数据
+
+*** array_uintersect
+ 计算数组的交集，用回调函数比较数据
+
+*** array_udiff_assoc
+带索引检查计算数组的差集，用回调函数比较数据
+
+*** array_udiff_uassoc
+带索引检查计算数组的差集，用回调函数比较数据和索引
+
+*** array_udiff
+用回调函数比较数据来计算数组的差集
+
+*** array_diff_assoc
+带索引检查计算数组的差集
+
+*** array_diff_key
+ 使用键名比较计算数组的差集
+
+*** array_diff_uassoc
+用用户提供的回调函数做索引检查来计算数组的差集
+
+*** array_diff_ukey
+用回调函数对键名比较计算数组的差集
+
+*** array_diff
+计算数组的差集
+
+*** array_reduce
+用回调函数迭代地将数组简化为单一的值
+
+*** extract
+从数组中将变量导入到当前的符号表
+
+*** array
+新建一个数组 
+
+** 函数
+
+*** statice
+静态函数
+
+*** call_user_func_array
+**** 函数原型
+<src type="text">
+mixed call_user_func_array( callback $function, array $param_arr )
+</src>
+ - function 调用函数的名称，在php5中可以使用数组调用类中的方法array( $class_name, $method),php4中只能使用字符串，也就是说只能使用函数名不能调用类
+ - $param_arr 是参数列表array($arg1, $arg2)，如果是单个参数也可以是字符串，比如： $arg1
+**** 作用
+可以动态调用自定义的函数。
+
+调用方法
+<src type="text">
+class HelloWorld {
+    function display( $count ) {
+        for ( $i = 0; $i < $count; $i++ ) {
+            print "Hello World \n";
+        }
+        return $count;
+    }
+}
+
+class HelloWorldDelegator2 {
+    public $obj;
+    function __construct(  ) {
+        $this->obj = new HelloWorld(  );
+    }
+
+    function __call ( $method, $args ) {
+        return call_user_func_array( array( $this->obj, $method ), $args );
+    }
+}
+
+$helloWorld = new HelloWorldDelegator();
+$helloWorld->display(3);
+</src>
+结果:
+<src type="text">
+Hello World Hello World Hello World 
+</src>
+
+动态调用函数
+<src type="text">
+function t1( $arg ) {
+    echo __FUNCTION__ . ' called width 1 arguments';
+}
+function t2( $arg1, $arg2 ) {
+    echo __FUNCTION__ . ' called with ' . func_num_args(  ) . ' arguments.';
+}
+function t3( $arg1, $arg2, $arg3 ) {
+    echo __FUNCTION__ . ' called with ' . func_num_args(  ) . ' arguments.';
+}
+
+function t( ) {
+    call_user_func_array( 't'.func_num_args(  ), func_get_args(  ) );
+}
+t( 1,2,3 );
+</src>
+结果
+<src type="text">
+t3 called with 3 arguments.
+</src>
+
+
+
+
+** header
+header 是发送头部给html，必须在没有内容输出之前，例如如果有echo，然后在header是没有效果的
+
+*** 设置HTML过期时间
+参考：
+ - http://www.badpenguin.org/php-howto-control-page-caching
+ - http://vancouver-webpages.com/CacheNow/detail.html
+<src type="php">
+<?php
+$offset = 3600 * 24;
+$expire = "Expires: " . gmdate("D, d M Y H:i:s", time() + $offset) . " GMT";
+$lastModify = "Last-Modified: " . gmdate("D, d M Y H:i:s", time()) . " GMT";
+header($expire);
+header($lastModify);
+?>
+</src>
+设置结果
+<src type="text">
+Expires	Fri, 17 Jun 2011 03:27:38 GMT
+Cache-Control	no-store, no-cache, must-revalidate, post-check=0, pre-check=0
+Pragma	no-cache
+Last-Modified	Thu, 16 Jun 2011 03:27:38 GMT
+</src>
+
+
+** cookie
+*** 设置cookie
+<src type="php">
+<?php
+setcookie('cookie_name', 'cookie_value', 'expire_time', 'path');
+?>
+</src>
+
+例如在网站的根目录设置username,过期时间为1天
+<src type="php">
+<?php
+if($username){
+  setcookie('username', $username, time()+24*3600, '/');
+}
+?>
+</src>
+
+把过期时间设置为-1就是设置cookie永不过期
+<src type="php">
+<?php
+setcookie('username', $username, -1, '/');
+?>
+</src>
+
+清空cookie， 把过期时间设置为以前的时间
+<src type="php">
+<?php
+setcookie('username', '', time()-1, '/');
+?>
+</src>
+
+*** 获取cookie
+<src type="php">
+<?php
+$cookie = $_SERVER['HTTP_COOKIE'];
+?>
+</src>
+
+** json 数据
+json就是一个数据的格式，是一个字符串
+*** 格式
+<src type="text">
+[
+{iid:123,title:"t1",link:"http://test.com/"},
+{iid:453,title:"t2",link:"http://test.com/"}
+]
+</src>
+要测试格式是怎么样的，可以自己来构造
+<src type="php">
+<?php
+$data = array(
+  array(iid=>123,title=>'t1',link=>'http://test.com'),
+  array(iid=>453,title=>'t2',link=>'http://test.com'),
+);
+
+$json_data = json_encode($data);
+var_dump($json_data);
+?>
+</src>
+
+** 有用的函数
+*** 字符串截取
+<src type="text">
+/**
+ * @name: cut_str
+ * @access: 
+ * @param: 
+ * @param: 
+ * @param:
+ * @return: 截取以后的字符串
+ * @desc: UTF-8 字符串。从开始截取制定长度的字符串
+ */
+function cut_str($sourcestr,$cutlength)
+{
+    $returnstr='';
+    $i=0;
+    $n=0;
+    $str_length=strlen($sourcestr);//字符串的字节数
+    while (($n<$cutlength) and ($i<=$str_length))
+    {
+        $temp_str=substr($sourcestr,$i,1);
+        $ascnum=ord($temp_str);//得到字符串中第$i位字符的ascii码
+        if ($ascnum>=224)    //如果ASCII位高与224，
+        {
+            $returnstr=$returnstr.substr($sourcestr,$i,3); //根据UTF-8编码规范，将3个连续的字符计为单个字符         
+            $i=$i+3;            //实际Byte计为3
+            $n++;            //字串长度计1
+        }elseif ($ascnum>=192) //如果ASCII位高与192，
+        {
+            $returnstr=$returnstr.substr($sourcestr,$i,2); //根据UTF-8编码规范，将2个连续的字符计为单个字符
+            $i=$i+2;            //实际Byte计为2
+            $n++;            //字串长度计1
+        }elseif ($ascnum>=65 && $ascnum<=90) //如果是大写字母，
+        {
+            $returnstr=$returnstr.substr($sourcestr,$i,1);
+            $i=$i+1;            //实际的Byte数仍计1个
+            $n++;            //但考虑整体美观，大写字母计成一个高位字符
+        }else{
+            //其他情况下，包括小写字母和半角标点符号，
+            $returnstr=$returnstr.substr($sourcestr,$i,1);
+            $i=$i+1;            //实际的Byte数计1个
+            $n=$n+0.5;        //小写字母和半角标点等与半个高位字符宽...
+        }
+    }
+    if ($str_length>$cutlength){
+        $returnstr = $returnstr . "...";//超过长度时在尾处加上省略号
+    }
+    return $returnstr;
+
+} 
+</src>
+
+
+* 错误处理
+** 内置API
+*** echo(print)
+*** print_r
+*** printf
+*** var_dump(var_export)
+
+*** debug_zval_dump 
+
+** 错误控制
+*** error_reporting
+*** display_error
+*** log_error(error_log_path)
+
+** 错误抛出和处理
+*** trigger_error
+*** set_error_handler
+set_error_handler 通过自定义函数处理错误主要是通过trigger_error引发的错误,
+
+把所有trigger_error的日志分Notice,Warning,Error三个文件来记录,并且每日一个文件
+<src type="php">
+<?php
+$error_handler = set_error_handler( "custom_error_handler" );
+
+function custom_error_handler( $errno, $errstr, $errfile, $errline ) {
+    $log_file = "PHP_Log_%s" . date( 'Ymd' ) . ".log";
+    $now = date( 'Y-m-d H:i:s' );
+    if ( strtolower(substr(PHP_OS, 0, 3)) == 'win' ) {
+        $template_str = "[$now] %s on line $errline in file $errfile: $errstr \r\n";
+    } else {
+        $template_str = "[$now] %s on line $errline in file $errfile: $errstr \n";
+    }
+    
+    $log_str = '';
+    switch( $errno ) {
+    case E_USER_ERROR:
+        $log_file = sprintf( $log_file, 'Error' );
+        $log_str = sprintf( $template_str, 'Errror' );
+        break;
+    case E_USER_WARNING:
+        $log_file = sprintf( $log_file, 'Warning' );
+        $log_str = sprintf( $template_str, 'Warning' );
+        break;
+    case E_USER_NOTICE:
+        $log_file = sprintf( $log_file, 'Notice' );
+        $log_str = sprintf( $template_str, 'Notice' );
+        break;
+    }
+    if ( $log_str != ''  ) {
+        file_put_contents( $log_file, $log_str, FILE_APPEND );
+    }
+    return true;
+}
+
+function notice( $int ) {
+    if ( ! is_int( $int ) ) {
+        trigger_error( 'Input not an integer.', E_USER_NOTICE );
+        return false;
+    } else {
+        echo "OK";
+        return true;
+    }
+}
+
+function warn( $int ) {
+    if ( ! is_int( $int ) ) {
+        trigger_error( 'Input not an integer.', E_USER_WARNING );
+        return false;
+    } else {
+        echo "OK";
+        return true;
+    }
+}
+
+function error( $int ) {
+    if ( ! is_int( $int ) ) {
+        trigger_error( 'Input not an integer.', E_USER_ERROR );
+        return false;
+    } else {
+        echo "OK";
+        return true;
+    }
+}
+
+notice( 'a' );
+warn( 'a' );
+error( 'a' );
+
+// 设置对未知错误的处理
+set_exception_handler( 'exception_handler' );
+
+function exception_handler( $exception ) {
+    echo "Uncaught exception: " . $exception->getMessage(  ) , "\n";
+}
+
+throw new Exception( 'Uncaught Exception' );
+</src>
+*** 错误抑制@
+
+* 正则表达式
+** 元字符
+<src type="text">
+[\s\S]*
+</src>
+ - \s<br>
+匹配所有非空白
+ - \S<br>
+匹配所有空白
+ - []<br>
+括号中的选一个有点类似 |
+ - * <br>
+表示前面的[\s\S]出现零次或者是以上。
+
+去除文字中的超级链接
+<src type="php">
+<?php
+preg_replace('/<a([\s\S]*?)>(.*?)</a>/i', '\2', $a_str);
+?>
+</src>
+
+** 模式修正符
+ - s DOTALL<br>
+字符串视为单行,换行符当成普通字符,也就是(.)能够匹配所有字符,包括换行符
+ - m MULTILINE<br>
+字符串当成多行,就是^,$能够匹配换行符\n之前和之后的字符，如果没有^,$ m模式没有如何用处
+ - D DOLLAR END ONLY<br>
+默认情况下$匹配字符串的最后一个字符,包括字符串中的换行符,有D以后就不匹配换行符，当有m是D失效，
+ - U <br>
+匹配最近的字符串,第一个匹配到
+ - i <br>
+忽略大小写
+ - x<br>
+忽略模式中的空白
+
+
+* 技巧
+** 递归函数的应用
+*** 创建多层目录
+创建/tmp/test1/test2/test3
+
+<src type="php">
+<?php
+function mkdirs( $path, $mode=0777 ){
+    if( !file_exists( $path ) ){
+        mkdirs( dirname( $path ) );
+        mkdir ( $path, $mode );
+    }     
+}
+?>
+</src>
+
+<verse>
+原理：
+dirname返回字符串中的父目录，结尾不包含/。例如： dirname('/home/ole/tmp/') 结果： /home/ole
+当$path不存在时，就调用mkdirs,然后mkdir($path, $mode);会给压栈，保存现场
+当$path递减到指定的目录/文件存在时，出栈，mkdir($path,$mode)就执行
+</verse>
+
+5.0以后的mkdir提供一个选项可以递归创建目录，但是mode必须是0744才行
+<src type="text">
+bool mkdir(string $file, [int mode=0777, bool $is_recursively])
+</src>
+ - $file 需要创建的文件名
+ - $mode 默认为0777
+ - $recursively 是否递归创建，如果是true，如果出现权限错误,尝试$mode等于0744，为什么搞不清楚？
+
+
+<src type="text">
+mkdir('/tmp/httpd/var/data/test', 0744, true);
+</src>
+
+
+
+* 试题
+** One
+http://blog.csdn.net/phpsome/archive/2009/04/16/4085464.aspx
+
+ - 一 、基础题:
+  1. 表单中 get与post提交方法的区别?
+
+  2. session与cookie的区别?
+
+  3. 数据库中的事务是什么?
+
+ - 二、简述题:
+
+  1、用PHP打印出前一天的时间格式是2006-5-10 22:21:21(2分)
+
+  2、echo(),print(),print_r()的区别(3分)
+
+  3、能够使HTML和PHP分离开使用的模板(1分)
+
+  5、使用哪些工具进行版本控制?(1分)
+
+  6、如何实现字符串翻转?(3分)
+
+  7、优化MYSQL数据库的方法。(4分，多写多得)
+
+  8、PHP的意思(送1分)
+
+  9、MYSQL取得当前时间的函数是?，格式化日期的函数是(2分)
+
+  10、实现中文字串截取无乱码的方法。(3分)
+
+  11、您是否用过版本控制软件? 如果有您用的版本控制软件的名字是?(1分)
+
+  12、您是否用过模板引擎? 如果有您用的模板引擎的名字是?(1分)
+
+  13、请简单阐述您最得意的开发之作(4分)
+
+  14、对于大流量的网站,您采用什么样的方法来解决访问量问题?(4分)
+
+  15、用PHP写出显示客户端IP与服务器IP的代码1分)
+
+  16、语句include和require的区别是什么?为避免多次包含同一文件，可用(?)语句代替它们? (2分)
+
+  17、如何修改SESSION的生存时间(1分).
+ 
+  18、有一个网页地址, 比如PHP开发资源网主页: http://www.phpres.com/index.html,如何得到它的内容?($1分)
+
+  19、在HTTP 1.0中，状态码401的含义是(?);如果返回“找不到文件”的提示，则可用 header 函数，其语句为(?);(2分)
+
+  20、在PHP中，heredoc是一种特殊的字符串，它的结束标志必须?(1分)
+
+  21、谈谈asp,php,jsp的优缺点(1分)
+
+  22、谈谈对mvc的认识(1分)
+
+  23、写出发贴数最多的十个人名字的SQL，利用下表：members(id,username,posts,pass,email)(2分)
+
+  24、请说明php中传值与传引用的区别。什么时候传值什么时候传引用?(2分)
+
+  25、在PHP中error_reporting这个函数有什么作用? (1分)
+
+  26、请写一个函数验证电子邮件的格式是否正确 (2分)
+
+  27、简述如何得到当前执行脚本路径，包括所得到参数。(2分)
+
+  28、JS表单弹出对话框函数是?获得输入焦点函数是? (2分)
+
+  29、JS的转向函数是?怎么引入一个外部JS文件?(2分)
+
+  30、foo()和@foo()之间有什么区别?(1分)
+
+  31、如何声明一个名为”myclass”的没有方法和属性的类? (1分)
+
+  32、如何实例化一个名为”myclass”的对象?(1分)
+
+  33、你如何访问和设置一个类的属性? (2分)
+
+  34、mysql_fetch_row() 和mysql_fetch_array之间有什么区别? (1分)
+
+  35、GD库是做什么用的? (1分)
+
+  36、指出一些在PHP输入一段HTML代码的办法。(1分)
+
+  37、下面哪个函数可以打开一个文件，以对文件进行读和写操作?(1分) <br>
+    (a) fget() (b) file_open() (c) fopen() (d) open_file()  
+
+  38、下面哪个选项没有将 john 添加到users 数组中? (1分)<br>
+   <verse>
+　　(a) $users[] = ‘john’;
+　　(b) array_add($users,’john’);
+　　(c) array_push($users,‘john’);
+　　(d) $users ||= ‘john’;  
+  </verse>
+  39、下面的程序会输入是否?(1分)<br>
+<verse>
+　　$num = 10;
+　　function multiply(){
+　　$num = $num * 10;
+　　}
+　　multiply();
+　　echo $num;
+　　?>
+</verse>
+
+  40、使用php写一段简单查询，查出所有姓名为“张三”的内容并打印出来 (2分)
+<verse>
+　　表名User
+　　Name Tel Content Date
+　　张三 13333663366 大专毕业 2006-10-11
+　　张三 13612312331 本科毕业 2006-10-15
+　　张四 021-55665566 中专毕业 2006-10-15
+　　请根据上面的题目完成代码：
+</verse>
+　　
+  41、如何使用下面的类,并解释下面什么意思?(3)
+<verse>
+　　class test{
+     function Get_test($num){
+　　    $num=md5(md5($num)."En");
+　　    return $num;
+　　 }
+　　}
+</verse>
+
+  42、写出 SQL语句的格式 : 插入 ，更新 ，删除 (4分)
+<verse>
+　　表名User
+　　Name Tel Content Date
+　　张三 13333663366 大专毕业 2006-10-11
+　　张三 13612312331 本科毕业 2006-10-15
+　　张四 021-55665566 中专毕业 2006-10-15
+　　(a) 有一新记录(小王 13254748547 高中毕业 2007-05-06)请用SQL语句新增至表中
+    
+　　(b) 请用sql语句把张三的时间更新成为当前系统时间
+    
+　　(c) 请写出删除名为张四的全部记录
+</verse>    
+
+  43、请写出数据类型(int char varchar datetime text)的意思; 请问varchar和char有什么区别(2分)
+
+  44、写出以下程序的输出结果 (1分)
+<verse>
+　　$b=201;
+　　$c=40;
+    $a=$b>$c?4:5;
+　　echo $a;
+　　?>
+</verse>
+
+  45、检测一个变量是否有设置的函数是否?是否为空的函数是?(2分)
+
+  46、取得查询结果集总数的函数是?(1分)
+
+  47、$arr = array('james', 'tom', 'symfony'); 请打印出第一个元素的值 (1分)
+
+  48、请将41题的数组的值用','号分隔并合并成字串输出(1分)
+
+  49、$a = 'abcdef'; 请取出$a的值并打印出第一个字母(1分)
+
+  50、PHP可以和sql server/oracle等数据库连接吗?(1分)
+
+  51、请写出PHP5权限控制修饰符(3分)
+
+  52、请写出php5的构造函数和析构函数(2分)
+
+  53、完成以下:
+<verse>
+   (一)创建新闻发布系统，表名为message有如下字段 (3分)
+　　id 文章id
+　　title 文章标题
+　　content 文章内容
+　　category_id 文章分类id
+    hits 点击量
+
+    (二)同样上述新闻发布系统：表comment记录用户回复内容，字段如下 (4分)
+　　comment_id 回复id
+　　id 文章id，关联message表中的id
+　　comment_content 回复内容
+　　现通过查询数据库需要得到以下格式的文章标题列表,并按照回复数量排序，回复最高的排在最前面
+　　文章id 文章标题 点击量 回复数量
+　　用一个SQL语句完成上述查询，如果文章没有回复则回复数量显示为0
+
+　　(三)上述内容管理系统，表category保存分类信息，字段如下 (3分)
+　　category_id int(4) not null auto_increment;
+　　categroy_name varchar(40) not null;
+　　用户输入文章时，通过选择下拉菜单选定文章分类
+　　写出如何实现这个下拉菜单
+</verse>
+
+ - 三、编程题:
+  1. 写一个函数，尽可能高效的，从一个标准 url 里取出文件的扩展名<br>
+   例如: http://www.sina.com.cn/abc/de/fg.php?id=1 需要取出 php 或 .php
+
+  2. 在 HTML 语言中，页面头部的 meta 标记可以用来输出文件的编码格式，以下是一个标准的 meta 语句
+<verse>
+　　请使用 PHP 语言写一个函数，把一个标准 HTML 页面中的类似 meta 标记中的 charset 部分值改为 big5
+　　请注意:
+　　1. 需要处理完整的 html 页面，即不光此 meta 语句
+　　2. 忽略大小写
+   3. ' 和 " 在此处是可以互换的
+   4. 'Content-Type' 两侧的引号是可以忽略的，但 'text/html; charset=gbk' 两侧的不行
+　 5. 注意处理多余空格
+</verse>
+
+  3. 写一个函数，算出两个文件的相对路径
+<verse>
+　　如 $a = '/a/b/c/d/e.php';
+　　$b = '/a/b/12/34/c.php';
+　　计算出 $b 相对于 $a 的相对路径应该是 ../../c/d将()添上
+</verse>
+
+ - 四、填空题:
+  1. 在PHP中，当前脚本的名称(不包括路径和查询字符串)记录在预定义变量____中;而链接到当前页面的URL记录在预定义变量____中
+
+  2. 执行程序段<?php echo 8%(-2) ?>将输出____。
+
+  3. 在HTTP 1.0中，状态码 401 的含义是____;如果返回“找不到文件”的提示，则可用 header 函数，其语句为____。
+
+  4. 数组函数 arsort 的作用是____;语句 error_reporting(2047)的作用是____。
+
+  5. PEAR中的数据库连接字符串格式是____。
+
+  6. 写出一个正则表达式，过虑网页上的所有JS/VBS脚本(即把scrīpt标记及其内容都去掉):
+
+  7. 以Apache模块的方式安装PHP，在文件http.conf中首先要用语句____动态装载PHP模块，然后再用语句____使得Apache把所有扩展名为php的文件都作为PHP脚本处理。
+
+  8. 语句 include 和 require 都能把另外一个文件包含到当前文件中，它们的区别是____;为了避免多次包含同一文件，可以用语句____来代替它们。
+
+  9. 类的属性可以序列化后保存到 session 中，从而以后可以恢复整个类，这要用到的函数是____。
+
+  10. 一个函数的参数不能是对变量的引用，除非在php.ini中把____设为on.
+
+  11. SQL中LEFT JOIN的含义是____。如果 tbl_user记录了学生的姓名(name)和学号(ID)，tbl_score记录了学生(有的学生考试以后被开除了，没有其记录)的学号(ID)和考试成绩(score)以及考试科目(subject)，要想打印出各个学生姓名及对应的的各科总成绩，则可以用SQL语句____。
+
+  12. 在PHP中，heredoc是一种特殊的字符串，它的结束标志必须____。
+
+ -  五、编程题:
+  1. 写一个函数，能够遍历一个文件夹下的所有文件和子文件夹。
+
+  2. 简述论坛中无限分类的实现原理。
+
+*** 答案
+ -  一、
+  1. 答:get是发送请求HTTP协议通过url参数传递进行接收,而post是实体数据,可以通过表单提交大量信息.
+
+  2. 答:
+   session:储存用户访问的全局唯一变量,存储在服务器上的php指定的目录中的（session_dir）的位置进行的存放<br>
+   cookie:用来存储连续訪問一个頁面时所使用，是存储在客户端，对于Cookie来说是存储在用户WIN的Temp目录中的。<br>
+   两者都可通过时间来设置时间长短
+
+  3. 答:事务则提交，其修改将作用于所有其他数据库进程。如果一个操作失败，则事务将回滚，该事务所有操作的影响都将取消。事务（transaction）是作为一个单元的一组有序的数据库操作。如果组中的所有操作都成功，则认为事务成功，即使只有一个操作失败，事务也不成功。如果所有操作完成，
+  4. 
+
+ - 二、
+  1. 答:echo date('Y-m-d H:i:s', strtotime('-1 days'));
+
+  2.
+<verse>
+答:echo是PHP语句, print和print_r是函数,语句没有返回值,函数可以有返回值(即便没有用) 
+   print（）    只能打印出简单类型变量的值(如int,string) 
+   print_r（） 可以打印出复杂类型变量的值(如数组,对象) 
+   echo     输出一个或者多个字符串
+</verse>
+
+  3. 答:Smarty,Dwoo,TinyButStrong,Template Lite,Savant,phemplate,XTemplate
+
+  4. 
+  5. 答:cvs,svn,vss;
+
+  6. 答:echo strrev($a);
+
+  7. 
+<verse>
+答:
+1、选取最适用的字段属性,尽可能减少定义字段长度,尽量把字段设置NOT NULL,例如'省份,性别',最好设置为ENUM
+2、使用连接（JOIN）来代替子查询:
+   a.删除没有任何订单客户:DELETE FROM customerinfo WHERE customerid NOT in(SELECT customerid FROM orderinfo)
+   b.提取所有没有订单客户:SELECT FROM customerinfo WHERE customerid NOT in(SELECT customerid FROM orderinfo)
+   c.提高b的速度优化:SELECT FROM customerinfo LEFT JOIN orderid customerinfo.customerid=orderinfo.customerid
+   WHERE orderinfo.customerid IS NULL
+3、使用联合(UNION)来代替手动创建的临时表
+   a.创建临时表:SELECT name FROM `nametest` UNION SELECT username FROM `nametest2`
+4、事务处理:
+   a.保证数据完整性,例如添加和修改同时,两者成立则都执行,一者失败都失败
+   mysql_query("BEGIN");
+   mysql_query("INSERT INTO customerinfo (name) VALUES ('$name1')";
+   mysql_query("SELECT * FROM `orderinfo` where customerid=".$id");
+   mysql_query("COMMIT");
+5、锁定表,优化事务处理:
+   a.我们用一个 SELECT 语句取出初始数据，通过一些计算，用 UPDATE 语句将新值更新到表中。
+     包含有 WRITE 关键字的 LOCK TABLE 语句可以保证在 UNLOCK TABLES 命令被执行之前，
+     不会有其它的访问来对 inventory 进行插入、更新或者删除的操作
+   mysql_query("LOCK TABLE customerinfo READ, orderinfo WRITE");
+   mysql_query("SELECT customerid FROM `customerinfo` where id=".$id);
+   mysql_query("UPDATE `orderinfo` SET ordertitle='$title' where customerid=".$id);
+   mysql_query("UNLOCK TABLES");
+6、使用外键,优化锁定表
+   a.把customerinfo里的customerid映射到orderinfo里的customerid,
+     任何一条没有合法的customerid的记录不会写到orderinfo里
+   CREATE TABLE customerinfo
+   (
+     customerid INT NOT NULL,
+     PRIMARY KEY(customerid) 
+   )TYPE = INNODB;
+   CREATE TABLE orderinfo
+   (
+     orderid INT NOT NULL,
+     customerid INT NOT NULL,
+     PRIMARY KEY(customerid,orderid),
+     FOREIGN KEY (customerid) REFERENCES customerinfo
+     (customerid) ON DELETE CASCADE  
+   )TYPE = INNODB;
+   注意:'ON DELETE CASCADE',该参数保证当customerinfo表中的一条记录删除的话同时也会删除order
+         表中的该用户的所有记录,注意使用外键要定义事务安全类型为INNODB;
+7、建立索引:
+   a.格式:
+   (普通索引)->
+   创建:CREATE INDEX <索引名> ON tablename (索引字段)
+   修改:ALTER TABLE tablename ADD INDEX [索引名] (索引字段)
+   创表指定索引:CREATE TABLE tablename([...],INDEX[索引名](索引字段))
+   (唯一索引)->
+   创建:CREATE UNIQUE <索引名> ON tablename (索引字段)
+   修改:ALTER TABLE tablename ADD UNIQUE [索引名] (索引字段)
+   创表指定索引:CREATE TABLE tablename([...],UNIQUE[索引名](索引字段))
+   (主键)->
+   它是唯一索引,一般在创建表是建立,格式为:
+   CREATA TABLE tablename ([...],PRIMARY KEY[索引字段])
+8、优化查询语句
+   a.最好在相同字段进行比较操作,在建立好的索引字段上尽量减少函数操作
+   例子1:
+   SELECT * FROM order WHERE YEAR(orderDate)<2008;(慢)
+   SELECT * FROM order WHERE orderDate<"2008-01-01";(快)
+   例子2:
+   SELECT * FROM order WHERE addtime/7<24;(慢)
+   SELECT * FROM order WHERE addtime<24*7;(快)
+   例子3:
+   SELECT * FROM order WHERE title like "%good%";
+   SELECT * FROM order WHERE title>="good" and name<"good";
+
+</verse>
+
+  8. 答:PHP是一个基于服务端来创建动态网站的脚本语言，您可以用PHP和HTML生成网站主页
+
+  9. 答:now(),date()
+
+  10. 答:
+<src type="text">
+function GBsubstr($string, $start, $length) {
+    if(strlen($string)>$length){
+     $str=null;
+     $len=$start+$length;
+     for($i=$start;$i<$len;$i++){
+    if(ord(substr($string,$i,1))>0xa0){
+     $str.=substr($string,$i,2);
+     $i++;
+    }else{
+     $str.=substr($string,$i,1);
+     }
+    }
+   return $str.'...';
+    }else{
+   return $string;
+   }
+}
+</src>
+
+  11. 
+
+  12. 答:用过,smarty
+
+  13. 答:信息分类
+
+  14. 答:确认服务器硬件是否足够支持当前的流量,数据库读写分离,优化数据表, 程序功能规则,禁止外部的盗链,控制大文件的下载,使用不同主机分流主要流量
+
+  15. 答:打印客户端IP:echo $_SERVER[‘REMOTE_ADDR’]; 或者: getenv('REMOTE_ADDR');  打印服务器IP:echo gethostbyname("www.bolaiwu.com")
+
+  16. 答:require->require是无条件包含也就是如果一个流程里加入require,无论条件成立与否都会先执行require  include->include有返回值，而require没有(可能因为如此require的速度比include快)
+  注意:包含文件不存在或者语法错误的时候require是致命的,include不是
+
+  17.
+<src type="text">
+方法1:将php.ini中的session.gc_maxlifetime设置为9999重启apache
+   方法2:$savePath = "./session_save_dir/";
+         $lifeTime = 小时 * 秒;
+         session_save_path($savePath);
+         session_set_cookie_params($lifeTime);
+         session_start();
+   方法3:setcookie() and session_set_cookie_params($lifeTime);
+</src>
+
+  18. 
+<src type="text">
+答:方法1(对于PHP5及更高版本):
+   $readcontents = fopen("http://www.phpres.com/index.html", "rb");
+   $contents = stream_get_contents($readcontents);
+   fclose($readcontents);
+   echo $contents;
+   方法2:
+   echo file_get_contents("http://www.phpres.com/index.html");
+</src>
+
+  19. 答:状态401代表未被授权,header("Location:www.xxx.php");
+
+  20. 
+<src type="text">
+答:heredoc的语法是用"<<<"加上自己定义成对的标签，在标签范围內的文字视为一个字符串
+   例子:
+   $str = <<<SHOW
+   my name is Jiang Qihui!
+   SHOW;
+</src>
+
+  21. 
+<src type="text">
+答:ASP全名Active Server Pages，是一个WEB服务器端的开发环境， 利用它可以产生和运
+行动态的、交互的、高性能的WEB服务应用程序。ASP采用脚本语言VB Script（Java script
+）作为自己的开发语言。
+　　PHP是一种跨平台的服务器端的嵌入式脚本语言. 它大量地借用C,Java和Perl语言的语法
+, 并耦合PHP自己的特性,使WEB开发者能够快速地写出动态生成页面.它支持目前绝大多数数
+据库。还有一点，PHP是完全免费的，不用花钱，你可以从PHP官方站点(http://www.php.ne
+t)自由下载。而且你可以不受限制地获得源码，甚至可以从中加进你自己需要的特色。
+　　JSP 是Sun公司推出的新一代站点开发语言，他完全解决了目前ASP,PHP的一个通病－－
+脚本级执行（据说PHP4 也已经在Zend 的支持下，实现编译运行）.Sun 公司借助自己在Jav
+a 上的不凡造诣，将Java 从Java 应用程序 和 Java Applet 之外，又有新的硕果，就是Js
+p－－Java Server Page。Jsp 可以在Serverlet和JavaBean的支持下，完成功能强大的站点
+程序。
+　　三者都提供在 HTML 代码中混合某种程序代码、由语言引擎解释执行程序代码的能力。
+但JSP代码被编译成 Servlet 并由 Java 虚拟机解释执行，这种编译操作仅在对 JSP 页面的
+第一次请求时发生。在 ASP 、PHP、JSP 环境下， HTML 代码主要负责描述信息的显示样式
+，而程序代码则用来描述处理逻辑。普通的 HTML 页面只依赖于 Web 服务器，而 ASP 、PH
+P、JSP 页面需要附加的语言引擎分析和执行程序代码。程序代码的执行结果被重新嵌入到
+HTML 代码中，然后一起发送给浏览器。 ASP 、PHP、 JSP三者都是面向 Web 服务器的技术
+，客户端浏览器不需要任何附加的软件支持。
+</src>
+
+  22. 答:由模型(model),视图(view),控制器(controller)完成的应用程序
+   由模型发出要实现的功能到控制器,控制器接收组织功能传递给视图;
+
+  23. 答:SELECT * FROM `members` ORDER BY posts DESC limit 0,10;
+
+  24. 
+<src type="text">
+答:按值传递：函数范围内对值的任何改变在函数外部都会被忽略
+   按引用传递：函数范围内对值的任何改变在函数外部也能反映出这些修改
+   优缺点：按值传递时，php必须复制值。特别是对于大型的字符串和对象来说，这将会是一个代价很大的操作。
+   按引用传递则不需要复制值，对于性能提高很有好处。
+</src>
+
+  25. 答:设置错误级别与错误信息回报
+
+  26. 
+<src type="text">
+答:function checkEmail($email)
+  {
+    $pregEmail = "/([a-z0-9]*[-_\.]?[a-z0-9]+)*@([a-z0-9]*[-_]?[a-z0-9]+)+[\.][a-z]{2,3}([\.][a-z]{2})?/i";
+    return preg_match($pregEmail,$email); 
+  }
+
+</src>
+
+  27. 答:$script_name = basename(__file__); print_r($script_name);
+
+  28. 答:弹出对话框: alert(),prompt(),confirm()
+   获得输入焦点 focus()
+
+  29. 答:window.location.href,<script type="text/javascript" src="js/js_function.js"></script>
+
+  30. 答:@foo()控制错误输出
+
+  31. 答:class myclass{ }
+
+  32. 答:new myclass()
+
+  33. 
+<src type="text">
+答:$object = new myclass();
+   $newstr = $object->test;
+   $object->test = "info";
+
+</src>
+
+  34. 答:mysql_fetch_row是从结果集取出1行数组,作为枚举
+   mysql_fetch_array是从结果集取出一行数组作为关联数组,或数字数组,两者兼得
+
+  35. 答:gd库提供了一系列用来处理图片的API，使用GD库可以处理图片，或者生成图片。
+   在网站上GD库通常用来生成缩略图或者用来对图片加水印或者对网站数据生成报表。
+
+  36. 答:echo "<a href='index.php'>aaa</a>";
+
+  37. [  c  ]
+
+  38. [  a , c  ]
+
+  39.    输出:10
+
+  40. 
+<src type="text">
+$mysql_db=mysql_connect("local","root","pass");
+　　@mysql_select_db("DB",$mysql_db);
+    $result = mysql_query("SELECT * FROM `user` WHERE name='张三'");
+    while($rs = mysql_fetch_array($result)){
+      echo $rs["tel"].$rs["content"].$rs["date"];
+    }   
+
+</src>
+
+
+  41. 
+<verse>
+答:$testnum = "123";
+   $object = new test();
+   $encrypt = $object->Get_test($testnum);
+   echo $encrypt;
+   类test里面包含Get_test方法,实例化类调用方法多字符串加密
+</verse>
+
+  42. 
+<verse>
+a.
+mysql_query("INSERT INTO `user` (name,tel,content,date) VALUES
+    ('小王','13254748547','高中毕业','2007-05-06')")
+
+b.
+$nowDate = date("Ymd");
+    mysql_query("UPDATE `user` SET date='".$nowDate."' WHERE name='张山'");
+
+c.
+mysql_query("DELETE FROM `user` WHERE name='张四'");
+
+43. 
+答:int是数字类型,char固定长度字符串,varchar实际长度字符串,datetime日期时间型,text文本字符串
+   char的场地固定为创建表设置的长度,varchar为可变长度的字符
+</verse>
+
+  44. 答:4
+
+  45. 答:isset($str),empty($str);
+
+  46. 答:mysql_num_rows($result);
+
+  47. 答:echo $array[0];
+
+  48. 答:for($i=0;$i<count($array);$i++){ echo $array[$i].",";}
+
+  49. 答:echo $a{0} 或 echo substr($a,0,1)
+
+  50. 答:当然可以
+
+  51. 答:public(公共),private(私用),protected(继承)
+
+  52. 答:__construct , __destruct
+
+  53.
+<src type="text">
+1.
+答:CREATE TABLE 'message'(
+   'id' int(10) NOT NULL auto_increment,
+   'title' varchar(200) default NULL,
+   'content' text,
+   'category_id' int(10) NOT NULL,
+   'hits' int(20),
+   PRIMARY KEY('id');
+   )ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+2.
+答:SELECT message.id id,message.title title,IF(message.`hits` IS NULL,0,message.`hits`) hits,
+   IF(comment.`id` is NULL,0,count(*)) number FROM message LEFT JOIN
+   comment ON message.id=comment.id GROUP BY message.`id`;
+
+3.
+答:function categoryList()
+{
+    $result=mysql_query("select category_id,categroy_name from category")
+            or die("Invalid query: " . mysql_error());
+    print("<select name='category' value=''>\n");
+    while($rowArray=mysql_fetch_array($result))
+    {
+       print("<option value='".$rowArray['category_id']."'>".$rowArray['categroy_name']."</option>\n");
+    }
+    print("</select>");
+}
+
+</src>
+
+
+ - 三、
+  1. 
+<src type="text">
+答案1:
+   function getExt($url){
+   $arr = parse_url($url);
+  
+   $file = basename($arr['path']);
+   $ext = explode(".",$file);
+   return $ext[1];
+}
+答案2:
+    function getExt($url) {
+    $url = basename($url);
+    $pos1 = strpos($url,".");
+    $pos2 = strpos($url,"?");
+    if(strstr($url,"?")){
+         return substr($url,$pos1 + 1,$pos2 - $pos1 - 1);
+    } else {
+      return substr($url,$pos1);
+    }
+}
+
+</src>
+
+  2. 
+
+  3. 
+<src type="text">
+答:function getRelativePath($a, $b) {  
+    $returnPath = array(dirname($b));  
+    $arrA = explode('/', $a);  
+    $arrB = explode('/', $returnPath[0]);  
+    for ($n = 1, $len = count($arrB); $n < $len; $n++) {  
+        if ($arrA[$n] != $arrB[$n]) {  
+            break;  
+        }   
+    }  
+    if ($len - $n > 0) {  
+        $returnPath = array_merge($returnPath, array_fill(1, $len - $n, '..'));  
+    }  
+      
+    $returnPath = array_merge($returnPath, array_slice($arrA, $n));  
+    return implode('/', $returnPath);  
+   }  
+   echo getRelativePath($a, $b); 
+
+</src>
+
+
+ - 四、
+  1. $_SERVER['PHP_SELF'] $_SERVER['HTTP_REFERER']
+  2. 0
+  3.
+  4. 对数组进行逆向排序并保持索引关系   报告所有错误和警告
+  5.
+  6. preg_replace("/<script[^>].*?>.*?</script>/si", "newinfo", $script);
+  7.   LoadModule php5_module "c:/php/php5apache2.dll" , AddType application/x-httpd-php .php,
+  8. include 警告错误，脚本继续执行，require 致命错误，脚本立即停止执行    require_once||include_once
+  9. serialize
+  10. allow_call_time_pass_reference boolean
+  11. 自然左外链接
+  12. 和开头应用的标示符，例如：
+<verse>
+<<<ST
+some string
+ here is second line
+ST
+</verse>
+
+ - 五、
+<src type="file:///home/ole/doc/html/php.html#sec150text">
+答:
+function my_scandir($dir)
+{
+     $files = array();
+     if ( $handle = opendir($dir) ) {
+         while ( ($file = readdir($handle)) !== false ) {
+             if ( $file != ".." && $file != "." ) {
+                 if ( is_dir($dir . "/" . $file) ) {
+                     $files[$file] = scandir($dir . "/" . $file);
+                 }else {
+                     $files[] = $file;
+                 }
+             }
+         }
+         closedir($handle);
+         return $files;
+     }
+}
+</src>
+  2. 
+<src type="text">
+<?php
+/*
+数据表结构如下:
+CREATE TABLE `category` (
+ `categoryID` smallint(5) unsigned NOT NULL auto_increment,
+ `categoryParentID` smallint(5) unsigned NOT NULL default '0',
+ `categoryName` varchar(50) NOT NULL default '',
+ PRIMARY KEY (`categoryID`)
+) ENGINE=MyISAM DEFAULT CHARSET=gbk;
+INSERT INTO `category` ( `categoryParentID`, `categoryName`) VALUES
+(0, '一级类别'),
+(1, '二级类别'),
+(1, '二级类别'),
+(1, '二级类别'),
+(2, '三级类别'),
+(2, '333332'),
+(2, '234234'),
+(3, 'aqqqqqd'),
+(4, '哈哈'),
+(5, '66333666');
+*/
+</src>
+<src type="text">
+//指定分类id变量$category_id,然后返回该分类的所有子类
+//$default_category为默认的选中的分类
+function Get_Category($category_id = 0,$level = 0, $default_category = 0)
+{
+ global $DB;
+ $sql = "SELECT * FROM category ORDER BY categoryID DESC";
+ $result = $DB->query( $sql );
+ while ($rows = $DB->fetch_array($result))
+ {
+ $category_array[$rows[categoryParentID]][$rows[categoryID]] = array('id' => $rows[categoryID], 'parent' => $rows[categoryParentID], 'name' => $rows
+
+[categoryName]);
+ }
+ if (!isset($category_array[$category_id]))
+ {
+ return "";
+ }
+ foreach($category_array[$category_id] AS $key => $category)
+ {
+ if ($category['id'] == $default_category)
+ {
+ echo "<option selected value=".$category['id']."";
+ }else
+ {
+ echo "<option value=".$category['id']."";
+ }
+
+ if ($level > 0)
+ {
+ echo ">" . str_repeat( " ", $level ) . " " . $category['name'] . "</option>\n";
+ }
+ else
+ {
+ echo ">" . $category['name'] . "</option>\n";
+ }
+ Get_Category($key, $level + 1, $default_category);
+ }
+ unset($category_array[$category_id]);
+}
+
+</src>
+
+<src type="text">
+/*
+函数返回的数组格式如下所示:
+Array
+(
+ [1] => Array ( [id] => 1 [name] => 一级类别 [level] => 0 [ParentID] => 0 )
+ [4] => Array ( [id] => 4 [name] => 二级类别 [level] => 1 [ParentID] => 1 )
+ [9] => Array ( [id] => 9 [name] => 哈哈 [level] => 2 [ParentID] => 4 )
+ [3] => Array ( [id] => 3 [name] => 二级类别 [level] => 1 [ParentID] => 1 )
+ [8] => Array ( [id] => 8 [name] => aqqqqqd [level] => 2 [ParentID] => 3 )
+ [2] => Array ( [id] => 2 [name] => 二级类别 [level] => 1 [ParentID] => 1 )
+ [7] => Array ( [id] => 7 [name] => 234234 [level] => 2 [ParentID] => 2 )
+ [6] => Array ( [id] => 6 [name] => 333332 [level] => 2 [ParentID] => 2 )
+ [5] => Array ( [id] => 5 [name] => 三级类别 [level] => 2 [ParentID] => 2 )
+ [10] => Array ( [id] => 10 [name] => 66333666 [level] => 3 [ParentID] => 5 )
+)
+*/
+
+//指定分类id,然后返回数组
+function Category_array($category_id = 0,$level=0)
+{
+ global $DB;
+ $sql = "SELECT * FROM category ORDER BY categoryID DESC";
+ $result = $DB->query($sql);
+ while ($rows = $DB->fetch_array($result))
+ {
+ $category_array[$rows['categoryParentID']][$rows['categoryID']] = $rows;
+ }
+
+ foreach ($category_array AS $key=>$val)
+ {
+ if ($key == $category_id)
+ {
+ foreach ($val AS $k=> $v)
+ {
+ $options[$k] =
+ array(
+ 'id' => $v['categoryID'], 'name' => $v['categoryName'], 'level' => $level, 'ParentID'=>$v['categoryParentID']
+ );
+
+ $children = Category_array($k, $level+1);
+
+ if (count($children) > 0)
+ {
+ $options = $options + $children;
+ }
+ }
+ }
+ }
+ unset($category_array[$category_id]);
+ return $options;
+}
+
+?>
+
+</src>
+
+<src type="text">
+<?php
+class cate
+{
+
+        function Get_Category($category_id = 0,$level = 0, $default_category = 0)
+        {
+             echo $category_id;
+             $arr = array(
+              '0' => array(
+                             '1' => array('id' => 1, 'parent' => 0, 'name' => '1111'),
+                             '2' => array('id' => 2, 'parent' => 0, 'name' => '2222'),
+                            '4' => array('id' => 4, 'parent' => 0, 'name' => '4444')   
+                          ),
+              '1' => array(
+                              '3' => array('id' => 3, 'parent' => 1, 'name' => '333333'),
+                            '5' => array('id' => 5, 'parent' => 1, 'name' => '555555')    
+                            ),
+                         
+              '3' => array(
+                            '6' => array('id' => 6, 'parent' => 3, 'name' => '66666'),
+                            '7' => array('id' => 7, 'parent' => 3, 'name' => '77777')
+                            ),
+              '4' => array(
+                            '8' => array('id' => 8, 'parent' => 4, 'name' => '8888'),
+                            '9' => array('id' => 9, 'parent' => 4, 'name' => '9999')
+                            )   
+             );
+
+             if (!isset($arr[$category_id]))
+             {
+                return "";
+             }
+   
+             foreach($arr[$category_id] AS $key => $cate)
+             {
+                 if ($cate['id'] == $default_category)
+                 {
+                     $txt = "<option selected value=".$cate['id']."";
+                 }else{
+                     $txt = "<option value=".$cate['id']."";
+                 }
+           
+                 if ($level > 0)
+                 {
+                    $txt1 = ">" . str_repeat( "-", $level ) . " " . $cate['name'] . "</option>\n";
+                 }else{
+                     $txt1 = ">" . $cate['name'] . "</option>\n";
+                 }
+                 $val = $txt.$txt1;
+                 echo $val;
+                 self::Get_Category($key, $level + 1, $default_category);
+             }
+           
+        }
+       
+       
+        function getFlush($category_id = 0,$level = 0, $default_category = 0)
+        {
+           
+            ob_start();
+
+            self::Get_Category($category_id ,$level, $default_category);
+
+            $out = ob_get_contents();
+
+            ob_end_clean();
+            return $out;
+        }   
+}
+$id =$_GET['id'];
+echo "<select>";
+$c = new cate();
+//$c->Get_Category();
+$ttt=  $c->getFlush($id,'0','3');
+echo $ttt;
+echo "</select>";
+?>
+</src>
+
+**  【51.COM】
+2008-10-7 上海51.COM公司PHP笔试题
+ 1. 禁用COOKIE 后 SEESION 还能用吗?
+ 2. 抓取远程图片到本地,你会用什么函数?
+ 3. 已知姓名A,姓名B,给一个求他们缘份的算法
+ 4. 你觉得在PV10W的时候, 同等配置下,LUNIX 比WIN快多少?
+ 5. 简述POST 和GET传输的最大容量分别是多少?
+ 6. 用最少的代码写一个求3值最大值的函数.
+
+*** 答案
+ 1.
+<src type="text">
+可以，session保存在服务器上，通过客户端传来的session_id来标示session的值，
+cookie虽然是保存session_id，如果禁用session_id会通过get的方式在url后面传递给服务器
+</src>
+
+ 2.
+<src type="text">
+curl
+or
+file_get_contents
+file_put_contents
+</src>
+
+ 3.
+
+ 4. 20%+
+
+ 5. get: 1k post: 没有限制，不过web服务器有限制。php默认为： 8m post_max_size=8m
+
+ 6. max($a, $b, $c)
+
+
+
+
+**   【百度】
+2007-11-07百度笔试题（web开发和新产品搜索方向）
+
+*** 第一部分：
+
+ 1. 解释下面语句的意思：document.form["formName"].submit;
+
+ 2. 有下面语句：
+<verse>
+<input id="txt" type="text" value="baidu" />
+编写代码，当鼠标划过文本框，自动选中文本框中的内容。
+</verse>
+
+ 3. 将字符09转换成十进制数字。
+ 4. 将1234567890转换成1,234,567,890 每3位用逗号隔开的形式。
+ 5. 关于HTML和CSS的，忘记了。
+ 6. 在文本框中输入一个年份，判断其生肖，并输出在文本框旁边。<br />
+   对html和javaServlet都要求写出。
+ 7. Ajax从服务器取数据 {id:123, name:"baidu", username:"mm",checked:true};<br>
+   分析name对应的值（"baidu").(题目较长，不记得了）
+ 8. 谈关于客户体验的问题。
+
+*** 第二部分：
+
+ 1. Ajax,数据库触发器，GUI，中断机制的共同思想。谈一谈该种思想（机制）。
+ 2. 把一篇英文文档中所有单词的首字母转为大写，文档存在doc.txt中。可以在多种编程语言中选择（C\C++,JAVA,PHP...)写出你的思路，尽量优化你的程序。
+ 3. 关于树的数据结构.
+
+ 4. 数据库优化：
+<verse>
+有一个表 PRODUCT(ID,NAME,PRICE,COUNT);
+在执行一下查询的时候速度总是很慢：
+SELECT * FROM PRODUCT WHERE PRICE=100;
+在price字段上加上一个非聚簇索引，查询速度还是很慢。
+   （1）分析查询慢的原因。
+   （2）如何进行优化。
+</verse>
+ 5.
+<verse>
+CREATE TABLE topid{
+topicId int not null primary key auto_increment,
+title text,
+author varchar(30),
+content blob,
+isDeleted int
+......   //好像在author上定义了一个索引
+}
+CREATE TABLE reply{
+topicId int foreign key,
+replyId int primary key auto_increment,
+replyAuthor varchar(30),
+replyTime datetime,
+context blob
+....... //定义了一个索引和key
+}
+一个为主题表，一个为回复表。
+
+1.问从性能上考虑，这样做有什么不足。
+2.查询回复时间不超过一个特定的时间段，回复的作者名字以MIKE开头的主题
+   的title，以如下的查询：
+   select * from topic where replyid in (select replyid from reply where
+   replyAuthor like 'mike%' and (currentTime()-replyTime<specialTime))
+   从性能上考虑上述的查询语句有什么不足？
+   如何进行优化？
+</verse>
+
+*** 答案
+*** 第一部份
+ 1.
+ 2. <input id="txt" type="text" value="baidu" onmouseover="this.select();" />
+
+** Yahoo
+ 1. Which of the following will not add john to the users array?
+<verse>
+  1). $users[] = 'john';
+  2). array_add($users,'john');
+  3). array_push($users,'john');
+  4). $users ||= 'john';
+</verse>
+ 2. What's the difference between sort(), asort() and ksort? Under what circumstances would you use each of these?
+ 3. What would the following code print to the browser? Why?
+<verse>
+     $num = 10;
+     function multiply(){
+          $num = $num * 10;
+     }
+     multiply();
+     echo $num;
+</verse>
+ 4. What is the difference between a reference and a regular variable? How do you pass by reference & why would you want to?
+ 5. What functions can you use to add library code to the currently running script?
+ 6. What is the difference between foo() & @foo()?
+ 7. How do you debug a PHP application?
+ 8. What does === do? What's an example of something that will give true for '==', but not '==='?
+ 9. How would you declare a class named “myclass” with no methods or properties?
+ 10. How would you create an object, which is an instance of “myclass”?
+ 11. How do you access and set properties of a class from within the class?
+ 12. What is the difference between include & include_once? include & require?
+ 13. What function would you use to redirect the browser to a new page?
+<verse>
+     1). redir()
+     2). header()
+     3). location()
+     4). redirect()
+</verse>
+ 14. What function can you use to open a file for reading and writing?
+<verse>
+     1). fget();
+     2). file_open();
+     3). fopen();
+     4). open_file();
+</verse>
+ 15. What's the difference between mysql_fetch_row() and mysql_fetch_array()?
+ 16. What does the following code do? Explain what's going on there.
+<verse>
+     $date='08/26/2003';
+     print ereg_replace(“([0-9]+)/([0-9]+)/([0-9]+)”,2/1/3,$date);
+</verse>
+ 17. Given a line of text $string, how would you write a regular expression to strip all the HTML tags from it?
+ 18. What's the difference between the way PHP and Perl distinguish between arrays and hashes?
+ 19. How can you get round the stateless nature of HTTP using PHP?
+ 20. What does the GD library do?
+ 21. Name a few ways to output (print) a block of HTML code in PHP?
+ 22. Is PHP better than Perl? – Discuss.
+
+这里有参考答案：http://d.download.csdn.net/down/505057/AnsonYe
+
+
+**  酷讯
+ - 一、 基础操作题<br>
+  ● 有三个php文件位于同一目录下，内容为
+<verse>
+a.php:-------
+<?php function fa() { echo "in Function A\n"; }?>
+b.php:-------
+<?php include 'a.php'; ?>
+<?php function fb() { fa(); echo "in Function B\n"; } ?>
+c.php:-------
+<?php include 'a.php'; ?>
+<?php include 'b.php'; ?>
+<?php fa(); fb(); ?>
+使用浏览器访问 c.php，请问是否存在问题。
+如果存在问题，请指出修正方法并写出浏览器查看效果
+如果不存在问题，请写出浏览器查看效果
+</verse>
+  ● 从表login中选出name字段包含admin的前10条结果所有信息的sql语句
+  ● 准确的指出以下代码的显示结果
+<verse>
+<table border=1 width=500 style="text-align:center;">
+  <tr>
+    <td rowspan=2 width=50% height=50>a</td>
+    <td width=50% eight=25>d</td>
+  </tr>
+  <tr><td width=50% height=25>b</td></tr>
+  <tr height=25><td colspan=2>c</td></tr>
+</table>
+</verse>
+
+  ● 准确的指出以下代码的显示结果
+<verse>
+<style>
+.a {
+  position:relative;
+  height:200px;
+  width:500px;
+  border:solid 1px #000;
+  background:#FFF;
+}
+#b,#c {position:absolute; width:250px; height:90px;}
+#b {top:30px;left:50px; background:#FF0000; z-index:1;}
+#c {bottom:30px; right:50px; background:#0000FF;}
+</style>
+<div class="a">
+  <div id="b"></div>
+  <div id="c"></div>
+</div>
+</verse>
+  ● 请说明HTML文档中DTD的意义和作用
+  ● 判断以下代码是否正确，如果有错，请指出错误，如果正确，请指出运行结果
+<verse>
+var arr = new Array(new Array(1,2,3,4),
+  new Array('abc', "def", "xyz"),
+);
+for(i = 0; i < arr.length; i++) {
+  document.write(arr[0])
+}
+</verse>
+  ● 如何使用javascript获取当前DOM元素(obj)的左上角在整个文档中的位置
+  ● 可以使用哪些方法使用javascript向服务器发出请求且不离开当前页面，简单对比各自的特点（如果存在）
+  ●        请写出php连mysql连接中，获取下一个自增长id值的方法，可以写多个。
+  ●        请问cgi和fastcgi有什么不同，你在什么情况下会选择哪个
+  ●        Php中如何判断一个字符串是否是合法的日期模式：2007-03-13 13:13:13 。要求代码不超过5行。
+  ●        Php中，如何获得一个数组的键值？
+  ●        zend optimizer是什么
+  ●         如何用命令把mysql里的数据备份出来
+  
+ - 二、 Linux操作：
+  ● ｖｉ编辑器中，选中、复制、粘贴、删除的命令各是什么
+  ● 获取文件行数
+  ● 输入文件的最后5行到另一个文件中
+  ● 查找文件中包含hello的行
+  ●        查找当前目录下所有目录名为CVS的子目录的命令
+  ●        删除当前目录下所有目录名为CVS的子目录的命令
+  ●        如何让一个程序在后台运行并把输入定向到指定的文件
+  ●        如何把一个文件的内容添加到另一个文件的末尾
+  ●        如何实时的显示一个文件的输出
+  ●        定时执行一个程序的方法有什么
+  ●        Vi编辑器中，如何替换指定的字符串
+  ●        当更新后，cvs中文件有冲突时。如何判断哪些你编辑的内容和更新下来的内容
+  
+
+** 腾讯
+ - 一、 第一部份
+  1． 请对POSIX风格和兼容Perl风格两种正则表达式的主要函数进行类比说明
+  2． 请说明在php.ini中safe_mode开启之后对于PHP系统函数的影响
+  3． PHP5中魔术方法函数有哪几个，请举例说明各自的用法
+  4． 请写出让，并说明如何在命令行下运行PHP脚本（写出两种方式）同时向PHP脚本传递参数？
+  5． PHP的垃圾收集机制是怎样的
+  6．使对象可以像数组一样进行foreach循环，要求属性必须是私有。
+(Iterator模式的PHP5实现，写一类实现Iterator接口)
+  7．请写一段PHP代码，确保多个进程同时写入同一个文件成功
+  8． 用PHP实现一个双向队列
+  9． 使用正则表达式提取一段标识语言（html或xml）代码段中指定标签的指定属性值（需考虑属性值对不规则的情况，如大小写不敏感，属性名值与等号间有空格等）。此处假设需提取test标签的attr属性值，请自行构建包含该标签的串
+  10．请使用socket相关函数（非curl）实现如下功能：构造一个post请求，发送到指定http server的指定端口的指定请求路径（如http://www.example.com:8080/test）。 请求中包含以下变量：
+<verse>
+用户名（username）：温柔一刀
+密码（pwd）：&123=321&321=123&
+个人简介（intro）：Hello world!
+且该http server需要以下cookie来进行简单的用户动作跟踪：
+cur_query：you&me
+last_tm：...（上次请求的unix时间戳，定为当前请求时间前10分钟）
+cur_tm：...（当前请求的unix时间戳）
+设置超时为10秒，发出请求后，将http server的响应内容输出。
+</verse>
+  11．你用什么方法检查PHP脚本的执行效率（通常是脚本执行时间）和数据库SQL的效率（通常是数据库Query时间），并定位和分析脚本执行和数据库查询的瓶颈所在？
+   1． 脚本执行时间，启用xdebug，使用WinCacheGrind分析。
+   2． 数据库查询，mysql使用EXPLAIN分析查询，启用slow query log记录慢查询。
+
+ - 二、 第二部份
+PHP LAMP Engineer Test Paper
+  - Question 1
+<verse>
+What does <? echo count ("123") ?> print out?
+A) 3
+B) False
+C) Null
+D) 1
+E) 0
+</verse>
+  - Question 2
+<verse>
+Which of the following snippets prints a representation of 42 with two decimal places?
+A) printf("%.2d\n", 42);
+B) printf("%1.2f\n", 42);
+C) printf("%1.2u\n", 42);
+</verse>
+  - Question 3
+<verse>
+Given
+$text = 'Content-Type: text/xml';
+Which of the following prints 'text/xml'?
+A) print substr($text, strchr($text, ':'));
+B) print substr($text, strchr($text, ':') + 1);
+C) print substr($text, strpos($text, ':') + 1);
+D) print substr($text, strpos($text, ':') + 2);
+E) print substr($text, 0, strchr($text, ':')
+</verse>
+ - Question 4
+<verse>
+What is the value of $a?
+<?php
+$a = in_array('01', array('1')) == var_dump('01' == 1);
+?>
+A) True
+B) False
+</verse>
+
+  - Question 5
+<verse>
+What is the value of $result in the following PHP code?
+<?php
+function timesTwo($int) {
+$int = $int * 2;
+}
+$int = 2;
+$result = timesTwo($int);
+?>;
+Answer: NULL
+</verse>
+  - Question 6
+<verse>
+The code below ___________ because ____________.
+<?php
+class Foo {
+?>
+<?php
+function bar() {
+print "bar";
+}
+}
+?>
+A) will work, class definitions can be split up into multiple PHP blocks.
+B) will not work, class definitions must be in a single PHP block.
+C) will not work, class definitions must be in a single file but can be in multiple PHP blocks.
+D) will work, class definitions can be split up into multiple files and multiple PHP blocks.
+</verse>
+  - Question 7
+<verse>
+When turned on, ____________ will _________ your script with different variables from HTML forms and cookies.
+A) show_errors, enable
+B) show_errors, show
+C) register_globals, enhance
+D) register_globals, inject
+</verse>
+  - Question 8
+<verse>
+What will be the output of the following PHP code:
+<?php
+echo count(strlen("http://php.net"));
+?>
+Answer: 1
+</verse>
+  - Question 9
+<verse>
+What is the best all-purpose way of comparing two strings?
+A) Using the strpos function
+B) Using the == operator
+C) Using strcasecmp()
+D) Using strcmp()
+</verse>
+  - Question 10
+What is the difference between "print()" and "echo()"?
+Answer: print is a function,echo is a language construct
+
+*** 答案
+ 1.
+<src type="text">
+ereg          preg_match
+ereg_replace  preg_replace
+</src>
+ 2. 
+<src type="text">
+__sleep
+__wakeup
+__toString
+__set_state
+__construct,
+__destruct
+__call,
+__get,
+__set,
+__isset,
+__unset
+__sleep,
+__wakeup,
+__toString,
+__set_state,
+__clone
+__autoload
+</src>
+ 3.
+ 4.
+ 5.
+ 6.
+ 7.
+ 8.
+ 9.
+<src type="text">
+<test attr=”ddd”>
+<test attr\s*=\s*[“ &brvbar;’](.*?)[” &brvbar;’].*?>
+</src>
+ 10.
+<src type="text">
+   //复制内容到剪贴板代码:
+Function encode($data, $sep = ‘&’){
+    while (list($k,$v) = each($data)) {
+        $encoded .= ($encoded ? "$sep" : "");
+        $encoded .= rawurlencode($k)."=".rawurlencode($v);
+    }
+    Return $encoded;
+}
+Function post($url, $post, $cookie){
+    $url = parse_url($url);
+    $post = encode($data, ‘&’);
+    $cookie = encode($cookieArray, ‘;’);
+    $fp = fsockopen($url['host'], $url['port'] ? $url['port'] : 80, $errno, $errstr, 10);
+    if (!$fp) return "Failed to open socket to $url[host]";
+    fputs($fp, sprintf("POST %s%s%s HTTP/1.0\n", $url['path'], $url['query'] ? "?" : "", $url['query']));
+    fputs($fp, "Host: $url[host]\n");
+    fputs($fp, "Content-type: application/x-www-form-urlencoded\n");
+    fputs($fp, "Content-length: " . strlen($encoded) . "\n");
+    fputs($fp, "Cookie: $cookie\n\n");
+    fputs($fp, "Connection: close\n\n");
+    fputs($fp, "$post \n");
+    while (!feof($fp)) {
+        echo fgets($fp, 128);
+    }
+    fclose($fp);
+}
+$url = ‘http://www.example.com:8080/test’;
+    $encoded = username=温柔一刀& pwd=
+        $post = array(
+            ‘username’=> ‘温柔一刀’,
+            ‘pwd => ‘&123=321&321=123&’,
+            ‘intro => ‘Hello world!’
+            );
+$cookie = array(
+    ‘cur_query’ => ‘you&me,
+    ‘last_tm’ => time() - 600,
+    ‘cur_tm ‘=> time()
+    );
+Post($url, $post, $cookie);
+    
+</src>
+
+
+**  【新浪】
+1. 写一个函数，尽可能高效的，从一个标准 url 里取出文件的扩展名
+  例如: http://www.sina.com.cn/abc/de/fg.php?id=1 需要取出 php 或 .php
+2. 在 HTML 语言中，页面头部的 meta 标记可以用来输出文件的编码格式，以下是一个标准的 meta 语句
+  <META http-equiv='Content-Type' content='text/html; charset=gbk'>
+  请使用 PHP 语言写一个函数，把一个标准 HTML 页面中的类似 meta 标记中的 charset 部分值改为 big5
+  请注意:
+  (1) 需要处理完整的 html 页面，即不光此 meta 语句
+  (2) 忽略大小写
+  (3) ' 和 " 在此处是可以互换的
+  (4) 'Content-Type' 两侧的引号是可以忽略的，但 'text/html; charset=gbk' 两侧的不行
+  (5) 注意处理多余空格
+3. 写一个函数，算出两个文件的相对路径
+  如 $a = '/a/b/c/d/e.php';
+  $b = '/a/b/12/34/c.php';
+  计算出 $b 相对于 $a 的相对路径应该是 ../../c/d将()添上
+4.写一个函数，能够遍历一个文件夹下的所有文件和子文件夹。
+5.简述论坛中无限分类的实现原理。
+6.设计一个网页，使得打开它时弹出一个全屏的窗口，该窗口中有一个文本框和一个按钮。用户在文本框中输入信息后点击按钮就可以把窗口关闭，而输入的信息却在主网页中显示。
+
+* 优化
+<verse>
+用单引号代替双引号来包含字符串，这样做会更快一些。因为PHP会在双引号包围的字符串中搜寻变量，单引号则不会，注意：只有echo能这么做，它是一种可以把多个字符串当作参数的“函数”（译注：PHP手册中说echo是语言结构，不是真正的函数，故把函数加上了双引号）。
+
+1、如果能将类的方法定义成static，就尽量定义成static，它的速度会提升将近4倍。
+
+2、$row[’id’] 的速度是$row[id]的7倍。
+
+3、echo 比 print 快，并且使用echo的多重参数（译注：指用逗号而不是句点）代替字符串连接，比如echo $str1,$str2。
+
+4、在执行for循环之前确定最大循环数，不要每循环一次都计算最大值，最好运用foreach代替。
+
+5、注销那些不用的变量尤其是大数组，以便释放内存。
+
+6、尽量避免使用__get，__set，__autoload。
+
+7、require_once()代价昂贵。
+
+8、include文件时尽量使用绝对路径，因为它避免了PHP去include_path里查找文件的速度，解析操作系统路径所需的时间会更少。
+
+9、如果你想知道脚本开始执行（译注：即服务器端收到客户端请求）的时刻，使用$_SERVER[‘REQUEST_TIME’]要好于time()。
+
+10、函数代替正则表达式完成相同功能。
+
+11、str_replace函数比preg_replace函数快，但strstr函数的效率是str_replace函数的四倍。
+
+12、如果一个字符串替换函数，可接受数组或字符作为参数，并且参数长度不太长，那么可以考虑额外写一段替换代码，使得每次传递参数是一个字符，而不是只写一行代码接受数组作为查询和替换的参数。
+
+13、使用选择分支语句（译注：即switch case）好于使用多个if，else if语句。
+
+14、用@屏蔽错误消息的做法非常低效，极其低效。
+
+15、打开apache的mod_deflate模块，可以提高网页的浏览速度。
+
+16、数据库连接当使用完毕时应关掉，不要用长连接。
+
+17、错误消息代价昂贵。
+
+18、在方法中递增局部变量，速度是最快的。几乎与在函数中调用局部变量的速度相当。
+
+19、递增一个全局变量要比递增一个局部变量慢2倍。
+
+20、递增一个对象属性（如：$this->prop++）要比递增一个局部变量慢3倍。
+
+21、递增一个未预定义的局部变量要比递增一个预定义的局部变量慢9至10倍。
+
+22、仅定义一个局部变量而没在函数中调用它，同样会减慢速度（其程度相当于递增一个局部变量）。PHP大概会检查看是否存在全局变量。
+
+23、方法调用看来与类中定义的方法的数量无关，因为我（在测试方法之前和之后都）添加了10个方法，但性能上没有变化。
+
+24、派生类中的方法运行起来要快于在基类中定义的同样的方法。
+
+25、调用带有一个参数的空函数，其花费的时间相当于执行7至8次的局部变量递增操作。类似的方法调用所花费的时间接近于15次的局部变量递增操作。
+
+26、Apache解析一个PHP脚本的时间要比解析一个静态HTML页面慢2至10倍。尽量多用静态HTML页面，少用脚本。
+
+27、除非脚本可以缓存，否则每次调用时都会重新编译一次。引入一套PHP缓存机制通常可以提升25%至100%的性能，以免除编译开销。
+
+28、尽量做缓存，可使用memcached。memcached是一款高性能的内存对象缓存系统，可用来加速动态Web应用程序，减轻数据库负载。对运算码 (OP code)的缓存很有用，使得脚本不必为每个请求做重新编译。
+
+29、当操作字符串并需要检验其长度是否满足某种要求时，你想当然地会使用strlen()函数。此函数执行起来相当快，因为它不做任何计算，只返回在zval 结构（C的内置数据结构，用于存储PHP变量）中存储的已知字符串长度。但是，由于strlen()是函数，多多少少会有些慢，因为函数调用会经过诸多步骤，如字母小写化（译注：指函数名小写化，PHP不区分函数名大小写）、哈希查找，会跟随被调用的函数一起执行。在某些情况下，你可以使用isset() 技巧加速执行你的代码。
+（举例如下）
+
+if (strlen($foo) < 5) { echo “Foo is too short”$$ }
+
+（与下面的技巧做比较）
+
+if (!isset($foo{5})) { echo “Foo is too short”$$ }
+
+调用isset()恰巧比strlen()快，因为与后者不同的是，isset()作为一种语言结构，意味着它的执行不需要函数查找和字母小写化。也就是说，实际上在检验字符串长度的顶层代码中你没有花太多开销。
+
+34、当执行变量$i的递增或递减时，$i++会比++$i慢一些。这种差异是PHP特有的，并不适用于其他语言，所以请不要修改你的C或Java代码并指望它们能立即变快，没用的。++$i更快是因为它只需要3条指令(opcodes)，$i++则需要4条指令。后置递增实际上会产生一个临时变量，这个临时变量随后被递增。而前置递增直接在原值上递增。这是最优化处理的一种，正如Zend的PHP优化器所作的那样。牢记这个优化处理不失为一个好主意，因为并不是所有的指令优化器都会做同样的优化处理，并且存在大量没有装配指令优化器的互联网服务提供商（ISPs）和服务器。
+
+35、并不是事必面向对象(OOP)，面向对象往往开销很大，每个方法和对象调用都会消耗很多内存。
+
+36、并非要用类实现所有的数据结构，数组也很有用。
+
+37、不要把方法细分得过多，仔细想想你真正打算重用的是哪些代码？
+
+38、当你需要时，你总能把代码分解成方法。
+
+39、尽量采用大量的PHP内置函数。
+
+40、如果在代码中存在大量耗时的函数，你可以考虑用C扩展的方式实现它们。
+
+41、评估检验(profile)你的代码。检验器会告诉你，代码的哪些部分消耗了多少时间。Xdebug调试器包含了检验程序，评估检验总体上可以显示出代码的瓶颈。
+
+42、mod_zip可作为Apache模块，用来即时压缩你的数据，并可让数据传输量降低80%。
+
+43、在可以用file_get_contents替代file、fopen、feof、fgets等系列方法的情况下，尽量用file_get_contents，因为他的效率高得多！但是要注意file_get_contents在打开一个URL文件时候的PHP版本问题；
+
+44、尽量的少进行文件操作，虽然PHP的文件操作效率也不低的；
+
+45、优化Select SQL语句，在可能的情况下尽量少的进行Insert、Update操作(在update上，我被恶批过)；
+
+46、尽可能的使用PHP内部函数（但是我却为了找个PHP里面不存在的函数，浪费了本可以写出一个自定义函数的时间，经验问题啊！）；
+
+47、循环内部不要声明变量，尤其是大变量：对象(这好像不只是PHP里面要注意的问题吧？)；
+
+48、多维数组尽量不要循环嵌套赋值；
+
+49、在可以用PHP内部字符串操作函数的情况下，不要用正则表达式；
+
+50、foreach效率更高，尽量用foreach代替while和for循环；
+
+51、用单引号替代双引号引用字符串；
+
+52、“用i+=1代替i=i+1。符合c/c++的习惯，效率还高”；
+
+53、对global变量，应该用完就unset()掉；
+
+54、当字符串< 500时使用hash('md5, 'string') 比 md5('string') 快。 长度>500时hash和md5差不多，所以尽量用hash代替md5
+</verse>
+
+* 遇到的问题
+** session
+当一个域名有几个子域名的时候，session的共享，需要在注意2个地方
+ - 程序中setcookie时需要带上根域名
+<src type="text">
+setcookie('cookiename', 'cookievalue', '/', '.665.cn');
+</src>
+ - php.ini中需要设置domain
+<src type="text">
+session.cookie_domain = '.65.cn'
+</src>
+
+如果是跨域的话，可以在网页上设置一个小图片，去访问不同的服务器，这样就会把cookie带给不同的服务器。
+
+* 负载均衡
+** 缓存
+*** memcache
+*** ttServer
+*** squid
+*** 浏览器的缓存
+浏览器的缓存包含几个方面:
+ - 静态资源<br>
+像css,js,图片等,但是需要url中不带参数,这些东西就和头部的Last-Modified和Expire有关
+<src type="text">
+Last-Modified:
+Expire: 
+</src>
+ - 动态资源<br>
+动态资源是需要脚本解释输出的内容，可以在脚本中增加
+
+* 调试
+平时在调试php的时候，用的就是的：echo、print、var_dump、能解决大部分的问题，但是在性能上就无能为力了。并且在遇到一些莫名其妙的问题的时候就无能为力了， 例如：
+
+<src type="text">
+Fatal error: Allowed memory size of 134217728 bytes exhausted (tried to allocate 72 bytes) in /home/100msh/www/miso/protected/core.php on line 151
+</src>
+从字面来看就是内存没有分配够。但是内存在哪里给吃掉了呢？束手无策。
+
+** xdebug
+*** 下载
+<src type="text">
+wget http://xdebug.org/download.php
+</src>
+
+*** Linux
+**** 安装
+
+<src type="text">
+tar xf xdebug-2.2.3.tgz
+cd xdebug-2.2.3
+phpize
+./configure --enable-xdebug
+make
+make install
+</src>
+
+**** 配置
+在php.ini中增加(或者是在php.d/新建 xdebug.ini),内容如下：
+<src type="text">
+[xdebug]
+; 加载模块
+extension = xdebug.so
+; 是否允许Xdebug跟踪函数调用，跟踪信息以文件形式存储，默认值为0
+xdebug.auto_trace       = 1
+; 是否允许Xdebug收集函数参数
+xdebug.collect_params   = 1
+; 是否允许Xdebug跟踪函数的返回值
+xdebug.collect_return   = 1
+; 函数调用跟踪信息输出文件目录，默认值为/tmp
+xdebug.trace_output_dir = "/tmp/xdebug"
+; 打开xdebug的性能分析器，以文件形式存储，这项配置是不能以ini_set()函数配置的，默认值为0
+xdebug.profiler_enable  = 1
+; 性能分析文件的存放位置，默认值为/tmp
+xdebug.profiler_output_dir = "/tmp/xdebug"
+; 函数调用跟踪信息输出文件命名规则，默认为trace.%c
+xdebug.profiler_output_name= "script"
+;xdebug.trace_output_name="%H.%s"
+
+xdebug.remote_enable=on  
+xdebug.remote_handler=dbgp  
+xdebug.remote_host=127.0.0.1  
+xdebug.remote_port=9000
+</src>
+
+创建目录
+<src type="text">
+mkdir -p /tmp/xdebug
+chmod 0755 /tmp/xdebug
+chown apache:apache /tmp/xdebug
+</src>
+
+**** 启用
+<src type="text">
+service httpd restart
+</src>
+
+**** 停用
+<src type="text">
+xdebug.profiler_enable = 0
+</src>
+
+
+**** 使用
+
+再来看看内存溢出的的例子
+<src type="text">
+Fatal error: Allowed memory size of 134217728 bytes exhausted (tried to allocate 72 bytes) in /home/100msh/www/miso/protected/core.php on line 151
+</src>
+打开xdebug以后
+<src type="text">
+( ! ) Fatal error: Maximum function nesting level of '100' reached, aborting! in /home/100msh/www/miso/protected/core.php on line 142
+Call Stack
+#	Time	Memory	Function	Location
+1	0.0003	236008	{main}( )	../index.php:0
+2	0.0021	337912	require( '/home/100msh/www/miso/protected/core.php' )	../index.php:9
+3	0.0022	338152	run( )	../core.php:272
+4	0.0085	627200	commonController->__construct( )	../core.php:260
+5	0.0085	627232	memberController->__construct( )	../commonController.php:8
+6	0.0085	627232	baseController->__construct( )	../memberController.php:6
+7	0.0085	628856	controller->__construct( )	../baseController.php:11
+8	0.0085	628984	model( string(4) )	../controller.php:15
+9	0.0088	665408	baseModel->__construct( ??? )	../core.php:180
+10	0.0088	665496	model->__construct( ???, ??? )	../baseModel.php:5
+11	0.0088	665696	model::connect( array(16), bool )	../model.php:9
+12	0.0088	665920	model->__construct( array(16), ??? )	../model.php:16
+13	0.0088	673208	model::connect( array(49), bool )	../model.php:9
+14	0.0088	673352	model->__construct( array(49), ??? )	../model.php:16
+</src>
+然后找到controller.php，在15行发现问题。原来是数据库没有，导致函数死循环调用（11行开始是循环的错误），函数嵌套达到100的限制。
+
+xdebug 提供了很多函数
+
+查看xdebug产生的文件的工具
+ - CachegrindVisualizer
+ - Kcachegrind 
+ - webgrind [[https://github.com/jokkedk/webgrind][【下载地址】]]
+
+*** Windows
+
+
+
+*** 参考
+[[http://blog.csdn.net/21aspnet/article/details/7036087][【安装参考】]]
+
+[[http://blog.s135.com/post/257/][【参考1】]]
+
+[[http://www.cnblogs.com/qiantuwuliang/archive/2011/01/23/1942382.html][【参考2】]]
+
+[[http://www.cyrec.org/posts/php-xdebug][【参考3】]]
+
+
+
+

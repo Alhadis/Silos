@@ -1,0 +1,561 @@
+#title Blitz 使用指南
+#author Ole Yang
+#desc Blitz 使用指南
+
+<contents>
+
+* 简介
+** 什么是Blitz
+Blitz templates 是一个用C语言开发的快速的PHP模板引擎
+** 理由
+ - Fast<br/>
+Blitz is written in C and built as PHP-extension which makes it one of the fastest template engines
+ - Clear<br/>
+Blitz has quite simple and clear syntax and makes developer to build compact and easy-to-read-and-support code even for applications with very complex presentation logic
+
+
+ 1. 它是最快的模板引擎之一，它是由C编写的，并被编译为PHP 的扩展模块来使用；
+ 2. 它有简洁和清晰的语法；
+ 3. 以上二个特点让开发者得以编写紧凑和易读代码来实现非常复杂的逻辑应用。
+
+和我们现有模板引擎"惊人相似"
+* 安装
+<src type="text">
+wget http://alexeyrybak.com/blitz/blitz-0.7.1.12-dev.tar.gz
+tar xvf blitz-0.7.1.12-dev.tar.gz
+cd blitz-0.7.1.12
+phpize
+./configure
+make
+make test
+make install
+</src>
+
+** 配置
+修改php配置文件,php.ini
+<src type="text">
+vi /etc/php.ini
+[Blitz]
+extension="blitz.so"
+</src>
+重启Apache
+<src type="php">
+service httpd restart
+</src>
+
+* 使用
+** 设置单一变量
+index.tpl
+<src type="text">
+<html>
+  <head><title>Blitz Template</title></head>
+  <body>
+    Hello {{ $name }} !
+  </body>
+</html>
+</src>
+index.php
+<src type="php">
+<?php
+$tpl = new Blitz('./index.htm');
+$tpl->set(array('name'=>'665'));
+$tpl->display();
+?>
+</src>
+
+** 设置数组
+*** 一维数组
+脚本main.php
+<src type="php">
+<?php
+$tpl = new Blitz("templates/main.htm");
+$data = array(
+    'name' => "Ole",
+    'sex' => "m",
+    );
+$tpl->block('person', $data );
+$tpl->display(  );
+?>
+</src>
+
+模板文件templates/main.htm
+<src type="text">
+<html>
+  <head><title>Blitz Template -- Block</title></head>
+  <body>
+    {{ BEGIN person }}
+    name: {{ $name }}
+    sex: {{ $sex }}
+    {{ END }}
+  </body>
+</html>
+</src>
+
+*** 多维数组
+脚本: main.php
+<src type="php">
+<?php
+$data = array(
+              'Title' => 'Test',
+              array('name'=>"Ole", 'sex'=>'m'),
+              array('name'=>"Ole1", 'sex'=>'m'),
+              array('name'=>"Ole2", 'sex'=>'m'),
+              array('name'=>"Ole3", 'sex'=>'m'),
+              );
+
+$tpl->set(array('Title'=>$data['Title']));
+foreach($data as $i){
+  $tpl->block('/person', $i);
+}
+
+$tpl->display();
+?>
+</src>
+模板文件templates/main.htm
+<src type="text">
+<html>
+  <head><title>Blitz Template -- Block</title></head>
+  <body>
+    Title: {{ $Title }} <br />
+    {{ BEGIN person }}
+        Name: {{ $name }} sex: {{ $sex }} <br />
+    {{ END }}
+  </body>
+</html>
+</src>
+输出结果
+<src type="text">
+Title: Test
+Name: sex:
+Name: Ole sex: m
+Name: Ole1 sex: m
+Name: Ole2 sex: m
+Name: Ole3 sex: m 
+</src>
+
+** 模板逻辑控制
+*** if
+模板
+<src type="text">
+{{ IF $list }}
+    some html code before the list
+    {{ BEGIN list }} {{ $data }} {{ END list }}
+    some html code after the list
+{{ ELSE }}
+    some html code for empty list
+{{ END if-list }}
+</src>
+
+*** include
+
+* 异同
+** 加入模板
+不用set_file,直接在new对象的时候赋值
+<src type="text">
+$tpl->set_file('index', 'main.htm')
+</src>
+
+** 设置变量
+由set_var 改成set,并且使用数组的形式
+<src type="text">
+// 原来的模式
+$tpl->set_var('name', 'Ole');   
+// 现在的模式,和原来的设置数组一样
+$tpl->set(array('name'=>'Ole'));
+</src>
+
+** parse意义变了
+parse的语句已经变了,相当于旧的parse和get
+旧的：
+<src type="php">
+<?php
+$tpl->parse('Out_index', 'index');
+$tpl->out();
+?>
+</src>
+
+blitz:
+<src type="text">
+$html_content = $tpl->parse();
+echo $html_content();   // 或者$tpl->display()
+</src>
+
+** 没有p
+<src type="php">
+<?php
+$tpl->p('Out_index');
+?>
+</src>
+
+
+* API参考
+** 英文
+[[http://alexeyrybak.com/blitz/blitz_en.html]]
+
+
+** View API
+*** block
+<src type="text">
+boolean block(string $path [, hash $vars [, $iterate_nonexistant=FALSE] ]) 
+</src>
+参数：
+ - $path
+ - $vars
+注意，$vars是一个数组的哈希，就是有明确下标的数组；
+ - $iterate_nonexistant
+检查$path是否有效,默认值为false， 设置为true则检查$path是否有效
+
+返回值：
+
+
+<src type="text">
+$t = new Blitz();
+$t->load('Hello{{BEGIN names}} {{$name}} {{END names}}');
+
+foreach(array('Jhon', 'Lucy') as $item) {
+  $t->block('names', array('name'=>$item));
+}
+$t->display();
+</src>
+输出的结果：
+<src type="text">
+Hello Jhon  Lucy
+</src>
+为什么Hello，Jhon和Lucy之间会有空格，并且Jhon和Lucy之间有2个空格，那是因为_{{$name}}_的前后都有空格。当然Hello后面如果跟着空格也是有用的
+<src type="text">
+$t = new Blitz();
+$t->load('Hello {{BEGIN names}}{{$name}}{{END names}}');
+
+foreach(array('Jhon', 'Lucy') as $item) {
+  $t->block('names', array('name'=>$item));
+}
+$t->display();
+</src>
+输出结果
+<src type="text">
+Hello JhonLucy
+</src>
+
+多维数组
+<src type="text">
+$body ='
+<table>
+{{ BEGIN classes }}
+  <th colum="2">{{classname}}</th>
+  <tr><td> Name </td><td>Age</td></tr>
+  {{BEGIN class}}
+    <tr><td> {{ name }}</td><td>{{ age }}</td></tr>
+  {{ END class}}
+{{ END classes}}
+</table>
+';
+$T = new Blitz();
+$T->load($body);
+$data = array(
+    'classOne' => array(
+        'names' => array( 'Jhon', 'Lucy' ),
+        'age'   => array( '18', '19' ),
+        ),
+    'classTwo' => array(
+        'names' => array( 'Jim', 'Perry' ),
+        'age'   => array( '17', '20' ),
+        ),
+    );
+
+foreach( $data as $className=>$item ) {
+    $T->block( '/classes', array( 'classname'=>$className ) );
+    foreach( $item['names'] as $k=>$v ) {
+        $T->block( '/classes/class', array( 'name' => $v, 'age' =>$item['age'][$k] ), true );
+    }
+}
+
+$T->display();  
+</src>
+显示结果：
+<src type="text">
+classOne
+Name 	Age
+Jhon	18
+Lucy	19
+classTwo
+Name 	Age
+Jim	17
+Perry	20
+</src>
+
+
+
+
+*** clean
+
+*** context
+
+*** display
+设置并且输出解析过的内容
+<src type="text">
+NULL display([array $arr]);
+</src>
+参数：
+ - $arr 可以是多维数组
+返回值：
+NULL
+
+<src type="text">
+$t = new Blitz(  );
+$t->load('<html><head><title>{{$title}}</title></head><body>Hello {{$name}}!</body></html>');
+$t->display(array('title'=>'Blitz Example'));
+$t->display(array('name'=>'World'));
+</src>
+结果：
+<src type="text">
+<html><head><title>Blitz Example</title></head><body>Hello !</body></html><html><head><title>Blitz Example</title></head><body>Hello World!</body></html>
+</src>
+输出来两次<html>因为第一次还没有给name赋值，所以Hello后面没有值
+
+多维数组
+index.tpl
+<src type="text">
+{{ $question }}
+{{ BEGIN answers }}
+- {{ $text }}
+{{ END}}
+</src>
+
+index.php
+<src type="text">
+$T = new Blitz('index.tpl');
+$T->display(
+    array(
+        'question' => 'Do I make myself clear, Lebowski?',
+        'answers' => array(
+            0 => array('text' => 'Yes'),
+            1 => array('text' => 'No'),
+            2 => array('text' => 'Sorry, I wasn\'t listening'),
+        )
+    )
+);
+</src>
+
+*** dumpStruct
+
+*** fetch
+脚本和模板都有这个函数,当需要模板的一部分的时候，可以使用fetch来取得值
+有点像block，但是它返回的是解析以后的字符串
+<src type="text">
+string fetch(string $path, array $arr)
+</src>
+ - $path 就是block的$path
+ - $arr 就是block中的$var
+返回值：
+ - string
+ - NULL
+
+<src type="text">
+$body ='<html><head><title>Test</title></head><body>
+{{ BEGIN test }}
+Hello, {{ $name }}!
+{{ END }}
+</body></html>
+';
+$T = new Blitz();
+$T->load($body);
+$str = $T->fetch('test', array('name' => 'world!'));
+var_dump( $str );
+</src>
+
+结果：
+<src type="text">
+string(15) "Hello, world!! " 
+</src>
+结果中是没有<html><head>部分的内容的，只有解析以后的{{BEGIN test}}Hello, {{$name}}{{ END }}内容
+
+
+*** getContext
+
+*** getGlobals
+
+*** getIterations
+
+*** getStruct
+
+*** hasContext
+
+*** include
+把文件包含进来，返回解析过的字符串
+<src type="text">
+string include(string $filename, array $arr)
+</src>
+参数：
+ - $filename<br/>
+文件名，可以是包含路径
+ - $arr 值，也是hash的数组
+
+返回值：
+ - string
+ - false
+
+header.tpl
+<src type="text">
+<html>
+  <head><title>{{$title}}</title></head>
+  <body>
+</src>
+
+index.tpl
+<src type="text">
+    <div>
+      {{BEGIN test}}
+      Name:  {{$name}} 
+      NickName: {{$nickName}}
+      {{END test}}
+    </div>
+
+
+{{ include("templates/footer.tpl") }}    
+</src>
+
+index.php
+<src type="text">
+$T = new Blitz('templates/index.tpl');
+$header = $T->include( 'templates/header.tpl', array( 'title'=>'Blitz Example' ) );
+echo $header;
+$T->block('test', array('name' => 'world!'));
+$T->display(  );
+</src>
+
+*** iterate
+
+*** load
+load 字符串到对象中。
+<src type="text">
+boolen load(string $str);
+</src>
+参数： 
+ - $str<br>
+把$str装载到Blitz对象
+
+返回值：
+ - true  成功
+ - NULL  错误
+
+<src type="text">
+$tpl = new Blitz();
+$tpl->load('Hello {{$name}}');
+
+$tpl->block(array('name', 'World'));
+$tpl->display();
+</src>
+
+如果在new Blitz的时候给了文件名就相当与调用的load，不能再load
+<src type="text">
+$tpl->new Blitz('templates/index.tpl');
+$tpl->load('Hello {{$name}}');             // 错误，因为在new的时候已经load过
+$tpl->block(array('name', 'World'));
+$tpl->display();
+</src>
+
+再看下面的例子
+<src type="text">
+$tpl->new Blitz();
+$html = file_get_contents('templates/index.tpl');
+$tpl->load($html);             
+$tpl->block(array('name', 'World'));
+$tpl->display();
+</src>
+load里面只能用的单引号，load(''); 用双引号是错误的load("")
+<src type="text">
+$T = new Blitz(  );
+$T->load( "hello
+{{ BEGIN block }}
+  {{ BEGIN comma }} , {{ END }}
+  {{ $name }}
+{{ END }}"
+);
+
+$need_comma = FALSE;
+foreach (array('Dude', 'Sobchak', 'Donny') as $i_name) {
+   if ($need_comma) {
+       $T->block('/block/comma');
+   } else {
+       $need_comma = TRUE;
+   }
+   $T->block('/block', array('name' => $i_name));
+}
+$T->display(  );
+</src>
+结果：
+<src type="text">
+Notice: Undefined variable: name in /home/ole/www/index.php on line 9
+
+Warning: blitz::load() [blitz.load]: SYNTAX ERROR: invalid method call (noname_loaded_from_zval: line 4, pos 3) in /home/ole/www/index.php on line 10
+hello , , 
+</src>
+
+
+*** parse
+解析模板中的变量，并且返回解析以后的字符串，echo parse相当于set和display。
+
+display 是设置和输出已经解析过的内容
+
+parse 是设置和返回设置过的内容，不输出
+
+<src type="text">
+string parse([array $arr]);
+</src>
+参数：
+ - $arr 可选，需要设置的变量
+
+返回值：
+ - 字符串
+ - NULL
+
+<src type="text">
+$tpl->new Blitz();
+$tpl->load('<html><head><title>{{$title}}</title></head><body>Hello {{$name}}!</body></html>');
+$tpl->parse(array('title'=>'Blitz Example'));
+echo $t->parse(array('name'=> 'World'));
+</src>
+结果：
+<src type="text">
+<html><head><title>Blitz Example</title></head><body>Hello World!</body></html>
+</src>
+取得解析以后的html
+<src type="text">
+$tpl->new Blitz();
+$tpl->load('<html><head><title>{{$title}}</title></head><body>Hello {{$name}}!</body></html>');
+$tpl->parse(array('title'=>'Blitz Example'));
+$html = $t->parse(array('name'=> 'World'));
+echo $html;
+</src>
+$html 就是所有的解析过的html内容
+
+*** set
+设置变量的值,设置单一的变量
+<src type="text">
+boolean set( array $arr );
+</src>
+参数：
+ - $arr 需要设置的值
+返回值：
+ - true
+ - NULL  flase
+
+<src type="text">
+$tpl->new Blitz();
+$tpl->load('Hello {{$name}}');             
+$tpl->set(array('name', 'World'));
+$tpl->display();
+</src>
+
+
+*** setGlobals
+
+
+[[http://obatu.sinaapp.com/blitz_templates.html]]
+
+* 问题
+** 如何得到所有解析过的字符串
+使用parse
+
+** 加载其他的模板
+加载其他模板，并且该模板中的数据是在另外一个脚本中的赋值的  

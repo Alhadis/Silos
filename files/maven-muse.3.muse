@@ -1,0 +1,194 @@
+#title Muse format and maven site
+#author abailly@oqub.com
+
+* Installation
+
+Due to some issue with the *doxia* publishing subsystem used by *maven*
+(see http://jira.codehaus.org/browse/DOXIA-68), adding a new input
+format for processing by maven's *site* plugin is not 
+as straightforward as it should be. As a matter of fact, if you have a
+simpler solution than the one explained here, I would be more than
+grateful to use it !
+
+The big picture of installation process is the following:
+ 0. add reference to OQube repository in your settings
+ 1. download the [[http://www.oqube.com/muse-java/muse-parser/patch-doxia-1.0-alpha-8][doxia patch]] 
+ 2. download the doxia source tree
+ 3. apply 1. on 2.
+ 4. rebuild and install doxia 
+ 5. create your documentation 
+ 6. generate site as usual
+
+Steps 1-4 are covered in the [[#doxia-patch-install][following]] sub-section.
+
+An alternative to steps 1-4 above is provided in the [[http://jira.codehaus.org/browse/DOXIA-68][cited]] doxia
+issue. This will eventually be the *right way* to use the muse-paser module:
+ 1. add all site generation elements as =<extension>= to the build
+    process *and* as reports along with  *muse-module* plugin 
+
+The OQube repository can be referenced using the following XML
+fragment in your =settings.xml= file as a profile fragment:
+
+<example>
+<settings>
+  <profiles>
+    <profile>
+      <id>oqube-repo</id>
+
+      <pluginRepositories>
+        <pluginRepository>
+	  <id>oqube.com</id>
+	  <name>OQube plugin repository</name>
+	  <url>http://www.oqube.com/maven2</url>
+	  <layout>default</layout>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+	</pluginRepository>
+      </pluginRepositories>
+
+      <repositories>
+        <repository>
+	  <id>oqube.com</id>
+	  <name>OQube plugin repository</name>
+	  <url>http://www.oqube.com/maven2</url>
+	  <layout>default</layout>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+	</repository>
+      </repositories>
+  </profile>
+ </profiles>
+</settings>
+</example>
+
+#doxia-patch-install
+** Install by patching doxia
+
+*** The patch
+
+This patch inserts the *muse-module* codebase directly in *doxia-core*
+source tree thus allowing automatic processing by plexus container of
+site module and format parser. It is produced by the following svn
+command (with source tree added by =svn add=):
+
+<example>
+$> svn diff > patch-doxia-1.0-alpha-8
+</example>
+
+This patch also adds *muse-parser* as a dependency to *doxia-core*
+component. The patch can be downloaded from:
+ http://www.oube.com/projects/muse-java/muse-parser/patch-doxia-1.0-alpha-8
+
+*** Downloading doxia
+
+Of course, you need to download the correct (ie. 1.0-alpha-8) version
+of doxia. This can be retrieved from the [[http://subversion.tigris.org][subversion]] repository at the
+following URL:
+  https://svn.apache.org/repos/asf/maven/doxia/tags/doxia-1.0-alpha-8
+
+Using command-line tool:
+
+<example>
+$> svn co https://svn.apache.org/repos/asf/maven/doxia/tags/doxia-1.0-alpha-8 
+</example>
+
+This will create a =doxia-1.0-alpha-8= directory in your current dir.
+
+*** Patching doxia
+
+Once the source tree is downloaded, you need to *patch* it. Using the
+command-line =patch= tool, this can easily be done with:
+
+<example>
+$> cd doxia-1.0-alpha-8
+$> patch -p0 < ../patch-doxia-1.0-alpha-8
+</example> 
+
+*** Building doxia
+
+Thanks to maven, this is the easy part:
+
+<example>
+$> mvn install
+</example>
+ 
+This should update your local repository with patched versions of
+doxia.
+
+#muse-module
+* Usage
+
+Now that you have a nice new format to play with, you may want to
+start writing documentation in muse format and publishing using maven
+site plugin. You may want to look at the [[muse-syntax-status][syntax]] page for more
+informations on muse format. The authoritative source is the official
+[[http://www.mwolson.org/projects/MuseMode.html][muse]] project's site.
+
+** Directory structure
+
+The *muse-module* follows the standard convention of *maven-site-plugin*
+directory structure:
+ - all muse files are placed in =<PROJECT>/src/site/muse/= directory
+ - all muse files to be processed are suffixed =.muse=
+
+** POM
+
+To use *muse-module* in your project, you can do one of the following:
+  1. nothing (!) if you have patched doxia: The module will be
+     automatically used by =maven-site-plugin=
+  2. add the module as an extension, but as of this writing
+     (2006.08.24 11:19:06), you need to add **all** reports generated as
+     extensions (see http://jira.codehaus.org/browse/DOXIA-68)
+
+<example>
+  <build>
+    <extensions>
+      <!-- Site -->
+      <extension>
+        <artifactId>doxia-module-muse</artifactId>
+        <groupId>oqube.muse</groupId>
+        <version>1.0-rc1</version>
+      </extension>
+      <extension>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-site-plugin</artifactId>
+        <version>2.0-SNAPSHOT</version>
+      </extension>
+      <extension>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.1-SNAPSHOT</version>
+      </extension>
+      <extension>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <version>2.1-SNAPSHOT</version>
+      </extension>
+    </extensions>
+  </build>
+...
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.1-SNAPSHOT</version>
+      </plugin>
+    </plugins>
+  </reporting>
+</example>
+
+
+
+ 
+
+
+

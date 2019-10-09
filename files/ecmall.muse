@@ -1,0 +1,701 @@
+#title Ecmall
+
+
+<contents>
+
+
+* 安装
+
+** ucenter
+put initdata and uc_client directories into ecmall directory
+
+
+
+
+
+
+
+
+
+
+
+
+
+* 函数
+** 数据库
+*** db
+这是函数返回一个数据库对象.函数的定义
+<src type="text">
+function &db()
+</src>
+& 表示返回一个引用
+
+使用方法：
+<src type="text">
+$db =& db();
+$rs = $db->query($sql);
+</src>
+
+*** m
+函数在eccore/ecmall.php
+
+函数的定义：
+<src type="text">
+function &m($model_name, $params=array(), $is_new=false)
+</src>
+
+作用： 根据传入的model，返回一个该对象的实例。其实就是引入includes/models/$model_name.model.php.$model_name是继承BaseModel
+
+在app中的使用例子：
+
+example 1: my_store.app.php
+<src type="text">
+$this->_store_mod =& m('store');
+// 取得
+$tmp_info = $this->_store_mod->get(array(
+    'conditions' => 'belongs_to_sgrade',
+    'join'       => 'domain, functions',
+));
+$param['fields'] = 'if_service, if_deliver';
+$scates = $this->_store_mod->getRelatedData('has_scategory', $this->_store_id, $param);
+</src>
+
+example 2: store.app.php
+<src type="php">
+$conditions = '1=1';
+$groupbuy_mod =& m('groupbuy');
+$groupbuy_list = $groupbuy_mod->find(array(
+    'fields'    => 'goods.default_image, gb.group_name, gb.group_id, gb.spec_price, gb.end_time, gb.state',
+    'join'      => 'belong_goods',
+    'conditions'=> $conditions . ' AND gb.store_id=' . $id,
+    'order'     => 'group_id DESC',
+    'limit'     => $page['limit'],
+    'count'     => true
+));    
+</src>
+
+
+* 操作
+** 模板
+模板默认的目录themes,mall是商场模板，store是店铺模板，mall和store下的每一个目录就是一套模板
+
+ - 标记 变量：Hello: {$name}   <!--{}-->
+ 
+** 数据库
+*** model
+
+类的继承关系：
+
+Object->BaseMode->具体的model
+
+
+
+ 1. $db =& db(); // 第一步赋值数据库类库,
+ 2. $db->query(sql); // 第二步执行mysql 语句;
+
+常用的数据库函数：
+得到一行数据
+<src type="text">
+$user=$db->getrow("select * from ecm_member where user_id=111");
+print_r($user);
+</src>
+
+得到一列数据
+<src type="text">
+$user=$db->getcol("select user_id from ecm_member ");
+print_r($user);
+</src>
+
+得到所有数据
+<src type="text">
+$user=$db->getall("select user_id from ecm_member ");
+foreach($user as $row)
+{
+    print_r($row);
+}
+</src>
+
+得到一个数值
+<src type="text">
+$user=$db->getone("select count(*) from ecm_member ");
+echo $user;
+</src>
+
+执行sql语句
+<src type="text">
+$db->query("update ecm_member set user_name='aaa' ");
+</src>
+
+得到最后一个ID
+<src type="text">
+$db->query("insert ecm_member set user_name='aaa' ");
+$user_id= $db->insert_id();
+echo $user_id;
+</src>
+
+详细的例子：
+<src type="text">
+function userlist(){
+    $db =& db();
+    $users = $db->getall("select user_id from ecm_member ");
+    foreach( $users as $row) {
+        echo "用户姓名:" . $row['user_name'] . "用户电话:" . $row['tel'];
+    }
+}    
+</src>
+
+** 会员注册
+这里说的会员注册是居于ucenter的会员管理。
+
+例子：member.app.php
+检查必要的内容-> &ms()->ms.user.register-> _hook-> _do_login-> show_message
+
+ - ms()函数在includes/global.lib.php
+
+** 好友
+*** 添加好友
+app： friend.app.php->function add(),核心代码如下：
+<src type="text">
+$user_names = explode(',',$user_name); //将逗号分割的用户名转换成数组，$user_name:为需要添加的用户名，以逗号隔开
+$mod_member = &m('member');     // 连接member表
+$members = $mod_member->find("user_name " . db_create_in($user_names)); // 改造sql语句：‘where username in (ole，test)'
+$friend_ids = array_keys($members);                                     // 取得数组的keys，也就是user_id
+if (!$friend_ids)
+{
+    $this->pop_warning('no_such_user');
+    return;
+}
+
+$ms =& ms();                    // 连接centos用户中心，ms函数在includes/global.lib.php中，引用includes/passports/uc.passport.php
+// 下面这一句其实是调用includes/passports/uc.passport.php->add
+$ms->friend->add($this->visitor->get('user_id'), $friend_ids);
+</src>
+
+** 消息
+msg_id就是plid
+*** 发送消息
+test（uid：273）发给ole（uid：4）一条消息，内容为：t1405
+<src type="text">
+// 插入消息到pm_lists
+INSERT INTO `ucenter`.uc_pm_lists(authorid, pmtype, subject, members, min_max, dateline, lastmessage) VALUES('273', '1', 't1405', 2, '4_273', '1365746748', 'a:3:{s:12:\"lastauthorid\";s:3:\"273\";s:10:\"lastauthor\";s:4:\"test\";s:11:\"lastsummary\";s:5:\"t1405\";}');
+// 插入消息到消息索引表（indexes）
+INSERT INTO `ucenter`.uc_pm_indexes(plid) VALUES('13');
+//
+INSERT INTO `ucenter`.uc_pm_messages_3(pmid, plid, authorid, message, dateline, delstatus) VALUES('32', '13', '273', 't1405', '1365746748', 0);
+// 插入一条记录，表示uid为4的用户（信息接受者）有一条新消息
+INSERT INTO `ucenter`.uc_pm_members(plid, uid, isnew, pmnum, lastupdate, lastdateline) VALUES('13', '4', '1', '1', '0', '1365746748');
+// 插入一条记录，表示uid为273的用户（信息发送者）
+INSERT INTO `ucenter`.uc_pm_members(plid, uid, isnew, pmnum, lastupdate, lastdateline) VALUES('13', '273', '0', '1', '1365746748', '1365746748');
+// 更新
+REPLACE INTO `ucenter`.uc_newpm(uid) VALUES ('4');
+</src>
+
+*** 删除消息
+message.app.php->drop->uc.passport.php->UcPassportPM->drop->uc_client/client.php->uc_pm_delete->uc_api_mysql->uc_client/control/pm.php->pmcontrol->ondelete->uc_client/model/pm.php->deletepmbypmid
+
+** 缓存
+昨天（2013-4-01）把本地ecmall的数据库改成本地，但是当我删除用户信息的时候，同事反映开发机上的数据都给删除了。我就纳闷了，想是不是ucenter中的配置没有修改过来，于是检查ucenter/data/config.inc.php,里面的UC_DBHOST用的是localhost，于是在ecmall中搜索开发服务器的地址
+<src type="bash">
+[100msh@ole ecmall]$ grep -iR "192.168.0.8" *
+grep: data/.#tmp: 没有那个文件或目录
+grep: data/.#t2: 没有那个文件或目录
+temp/caches/0386/3650aba1f22b46088bdd773a10d59113.cache.php:      'link' => 'http://192.168.0.8:81/ecmall/index.php?app=article&act=view&article_id=13',
+temp/caches/0386/3650aba1f22b46088bdd773a10d59113.cache.php:      'link' => 'http://192.168.0.8:81/ecmall/index.php?app=article&act=view&article_id=14',
+temp/caches/0386/3650aba1f22b46088bdd773a10d59113.cache.php:      'link' => 'http://192.168.0.8:81/ecmall/index.php?app=article&act=view&article_id=14',
+grep: themes/mall/default/.#apply.step2.html: 没有那个文件或目录
+uc_client/data/cache/apps.php:    'url' => 'http://192.168.0.8:81/ecmall',
+uc_client/data/cache/apps.php:    'url' => 'http://192.168.0.8:81/scms',
+uc_client/data/cache/apps.php:  'UC_API' => 'http://192.168.0.8:81/ucenter',
+</src>
+所以有关数据库地址的配置有3个地方：
+ 1. ecmall/data/config.inc.php
+ 2. ecmall/uc_client/data/cache/apps.php
+ 3. ucenter/data/config.inc.php
+
+于是又搜索ucenter的目录
+<src type="type">
+[100msh@ole ecmall]$ grep -iR "192.168.0.8" ../ucenter/
+../ucenter/data/cache/apps.php:    'url' => 'http://192.168.0.8:81/ecmall',
+../ucenter/data/cache/apps.php:    'url' => 'http://192.168.0.8:81/scms',
+</src>
+
+于是恍然大悟，原来是数据库缓存的问题，所以以后在数据库有修改的时候注意清除缓存。
+
+另外一个缓存的地方就是商品页面（goods.app.php)
+
+* 业务逻辑
+** 店铺商品限制
+在表sgrade中设置`goods_limit`，在后台店铺设置中可以设置的
+
+** 推荐商品
+推荐商品可以在商品管理中设置。对应的表：recommend_goods。推荐商品是推荐到“推荐类型”下的，“推荐类型”在商品的分类中可以设置，所以在推荐商品之前先集团“推荐类型”，对应的表：recommend
+
+** 超特价
+<src type="text">
+SELECT g.goods_id, g.goods_name, g.default_image, gs.price, gs.stock FROM ecm_recommended_goods AS rg    LEFT JOIN ecm_goods AS g ON rg.goods_id = g.goods_id    LEFT JOIN ecm_goods_spec AS gs ON g.default_spec = gs.spec_id    LEFT JOIN ecm_store AS s ON g.store_id = s.store_id WHERE g.if_show = 1 AND g.closed = 0 AND s.state = 1 AND rg.recom_id = '9' AND g.goods_id IS NOT NULL ORDER BY rg.sort_order LIMIT 3
+SELECT g.goods_id, g.goods_name, g.default_image, gs.price, gs.stock FROM ecm_recommended_goods AS rg    LEFT JOIN ecm_goods AS g ON rg.goods_id = g.goods_id    LEFT JOIN ecm_goods_spec AS gs ON g.default_spec = gs.spec_id    LEFT JOIN ecm_store AS s ON g.store_id = s.store_id WHERE g.if_show = 1 AND g.closed = 0 AND s.state = 1 AND rg.recom_id = '10' AND g.goods_id IS NOT NULL ORDER BY rg.sort_order LIMIT 4
+</src>
+
+** 精品推荐
+<src type="text">
+SELECT g.goods_id, g.goods_name, g.default_image, gs.price, gs.stock FROM ecm_recommended_goods AS rg    LEFT JOIN ecm_goods AS g ON rg.goods_id = g.goods_id    LEFT JOIN ecm_goods_spec AS gs ON g.default_spec = gs.spec_id    LEFT JOIN ecm_store AS s ON g.store_id = s.store_id WHERE g.if_show = 1 AND g.closed = 0 AND s.state = 1 AND rg.recom_id = '11' AND g.goods_id IS NOT NULL ORDER BY rg.sort_order LIMIT 6
+</src>
+
+** 店主商品数
+<src type="text">
+SELECT store_id, COUNT(*) AS goods_count FROM ecm_goods WHERE if_show = 1 AND closed = 0 GROUP BY store_id
+</src>
+
+** 最新成交
+<src type="text">
+SELECT goods_id, goods_name, price, goods_image,order_goods.rec_id FROM ecm_order_goods order_goods LEFT JOIN ecm_order order_alias ON order_goods.order_id = order_alias.order_id WHERE status = '40' ORDER BY finished_time desc LIMIT 5
+</src>
+
+** 销售排行TOP10
+<src type="text">
+SELECT g.goods_id, g.goods_name,g.goods_id FROM ecm_goods g LEFT JOIN ecm_goods_statistics goods_statistics ON g.goods_id=goods_statistics.goods_id LEFT JOIN ecm_store s ON g.store_id = s.store_id WHERE if_show = 1 AND closed = 0 AND s.state =1 ORDER BY sales DESC LIMIT 10
+</src>
+
+** 热销推荐
+<src type="text">
+SELECT g.goods_id, g.goods_name, g.default_image, gs.price, gs.stock FROM ecm_recommended_goods AS rg    LEFT JOIN ecm_goods AS g ON rg.goods_id = g.goods_id    LEFT JOIN ecm_goods_spec AS gs ON g.default_spec = gs.spec_id    LEFT JOIN ecm_store AS s ON g.store_id = s.store_id WHERE g.if_show = 1 AND g.closed = 0 AND s.state = 1 AND rg.recom_id = '15' AND g.goods_id IS NOT NULL ORDER BY rg.sort_order LIMIT 10
+</src>
+
+** 最新上架
+<src type="text">
+SELECT g.goods_id, g.goods_name, g.default_image, gs.price, gs.stock FROM ecm_recommended_goods AS rg    LEFT JOIN ecm_goods AS g ON rg.goods_id = g.goods_id    LEFT JOIN ecm_goods_spec AS gs ON g.default_spec = gs.spec_id    LEFT JOIN ecm_store AS s ON g.store_id = s.store_id WHERE g.if_show = 1 AND g.closed = 0 AND s.state = 1 AND rg.recom_id = '12' AND g.goods_id IS NOT NULL ORDER BY rg.sort_order LIMIT 4
+SELECT g.goods_id, g.goods_name, g.default_image, gs.price, gs.stock FROM ecm_recommended_goods AS rg    LEFT JOIN ecm_goods AS g ON rg.goods_id = g.goods_id    LEFT JOIN ecm_goods_spec AS gs ON g.default_spec = gs.spec_id    LEFT JOIN ecm_store AS s ON g.store_id = s.store_id WHERE g.if_show = 1 AND g.closed = 0 AND s.state = 1 AND rg.recom_id = '13' AND g.goods_id IS NOT NULL ORDER BY rg.sort_order LIMIT 8
+</src>
+
+
+
+** 增加批量导入用户和自动开店
+公司弄了一批店铺信息方在excel表中，希望创建虚拟的用户以之对应。
+
+开店的规则是：
+ 1. 一个用户对应一个店铺；也就是说先在members表中有用户信息
+ 2. store表中的store_id必须等于对应的user_id
+ 3. user_priv表中必须有一条对应的记录，不然会没有权限编辑店铺所有的权限。user_id和store_id的值是一样的。
+<src type="text">
+function rs()
+    {
+        error_reporting(E_ALL);
+        set_time_limit(300);
+        if (isset($_GET['pre']) && isset($_GET['start']) && isset($_GET['end'])) 
+        {
+            $prefix = $_GET['pre'];
+            //$start = intval($_GET['start']);
+            //$end = intval($_GET['end']);
+        } else {
+            $prefix = 'JGHT';
+        }
+
+        $ms =& ms();
+        $store_mod  =& m('store');
+        require ROOT_PATH . '/includes/PHPExcel/PHPExcel/IOFactory.php';
+        $excelFile = ROOT_PATH . '/data/store.xls';
+        $msg = '';
+        $users_id = array(  );
+
+        $objPHPExcel = PHPExcel_IOFactory::load($excelFile);
+        $sheetData = $objPHPExcel->getActiveSheet()->toArray(null,true,true,true);
+        array_shift( $sheetData );
+        $end = count( $sheetData );
+        
+        for($start=0; $start < $end; $start++)
+        {
+            // 1. 注册用户
+            $user_name = $prefix . "_" . str_pad($start, 5, '0', STR_PAD_LEFT);
+            $password = '888888';
+            $email = $user_name . '@100msh.com';
+            $user_id = $ms->user->register($user_name, $password, $email);
+
+            if (!$user_id)
+            {
+                /* 注册不成功 */
+                echo "$user_name 已经存在";
+                $this->show_warning($ms->user->get_error());
+                return FALSE;
+                $err = $ms->user->get_error();
+                $msg .= $user_name . $err[0]['msg'] . ' Error <br />';
+            }
+            else
+            {
+                // 2. 册店铺
+                if ($store_mod->unique(trim( $sheetData[$start]['C'])))
+                {
+                    $data = array(
+                        'store_id'     => $user_id,
+                        'store_name'   => trim($sheetData[$start]['C']),
+                        'owner_name'   => trim($sheetData[$start]['B']),
+                        'owner_card'   => '',
+                        'region_id'    => 319,
+                        'region_name'  => '中国    广东省    深圳',
+                        'address'      => trim($sheetData[$start]['D']),
+                        'zipcode'      => '518000',
+                        'tel'          => trim($sheetData[$start]['E']),
+                        'end_time'     => 0,  // 有效期
+                        'start_time'   => trim($sheetData[$start]['F']),
+                        'close_time'   => trim($sheetData[$start]['G']),
+                        'sgrade'       => '2',   // 认证店铺
+                        'recommended'  => '1',   // 是否推荐
+                        'certification' => 'autonym,material',
+                        'state'        => 1,  // 是否开通
+                        'add_time'     => gmtime(),
+                        'domain'       => '',
+                        );
+                    if ($store_mod->add($data) === FALSE)
+                    {
+                        $this->show_warning($this->get_error());
+                        return FALSE;
+                    }
+                    $store_mod->unlinkRelation('has_scategory', $user_id);
+                    $cate_id = intval( $sheetData[$start]['A'] );
+                    if ($cate_id > 0)
+                    {
+                        $store_mod->createRelation('has_scategory', $user_id, $cate_id);
+                    }
+                    $msg .= "$user_name \t " . $sheetData[$start]['C'] .  "\t Success <br />";
+                }
+                else
+                {
+                    $msg .= "$user_name \t " . $sheetData[$start]['C'] .  " 已经存在\t Error <br />";    
+                }
+            }
+            break;
+        }
+        echo $msg;
+    }
+</src>
+
+关键的几点：
+ - 店铺id要和用户id一样，$store_id = $user_id,不然用户和店铺都注册了，但是对应不上
+
+** 商品评论
+表在order_goods中comment,页面在themes/store/default/commemts.html； 程序在goods.app.php
+
+** 后台
+*** 去除版权信息
+admin/templates/welcome.html
+
+去除$.getJSON函数
+<src type="bash">
+$.getJSON('http://ecmall.shopex.cn/system/notice2.php?charset={$cur_lang}&uniqueid={$uniqueid}&jsoncallback=?',function(data){
+</src>
+
+去除标签：
+<src type="bash">
+<dt>{$lang.ecmall_news}</dt>
+<dd>
+    <ul id="news">
+    </ul>
+</dd>
+</src>
+
+* 剖析
+app的命名规则： url?app=xxx&act=sss 那么文件名：app/xxx.app.php 类名：XxxApp 方法名： sss
+
+ - =& 是引用赋值
+php 手册中”Language Reference->Operaters->Assignment Operators"有解释。实际就是左边的变量引用右边的变量，而不是值的复制,其实在php5.0以后默认引用赋值
+
+** ecmall.php
+
+*** Ecmall类
+**** startup
+
+*** Object
+所有类的基类，功能如下：
+ 1. error
+ 
+*** LANG
+语言
+**** get
+改成
+<src type="bash">
+static function get
+</src>
+
+**** _valid_key
+<src type="bash">
+static function _valid_key($key)
+</src>
+
+*** Conf
+
+** controller/app.base.php
+作用： 基础控制器类
+
+这个类继承了ecmall.php/Object类
+
+ - 初始化session
+ - 执行action
+ - 模板赋值
+ - 模板显示
+ - 导入导出csv
+
+** includes/ecapp.base.php
+*** jslang
+<src type="bash">
+static function jslang($lang)
+</src>
+
+** app/frontend.base.php
+*** _curlocal
+设置位置导航. 是current local的缩写
+
+<src type="text">
+function _curlocal($arr)
+    {
+        // 设置首页的位置
+        $curlocal = array(array(
+            'text'  => Lang::get('index'),
+            'url'   => SITE_URL . '/index.php',
+        ));
+        // 如果有位置传入则合并
+        if (is_array($arr))
+        {
+            $curlocal = array_merge($curlocal, $arr);
+        }
+        else
+        {
+            $args = func_get_args();
+            if (!empty($args))
+            {
+                $len = count($args);
+                for ($i = 0; $i < $len; $i += 2)
+                {
+                    $curlocal[] = array(
+                        'text'  =>  $args[$i],
+                        'url'   =>  $args[$i+1],
+                    );
+                }
+            }
+        }
+
+        $this->assign('_curlocal', $curlocal);
+    }
+</src>
+
+
+** admin/app/backend.base.php
+*** jslang
+添加static,添加参数
+<src type="bash">
+static function jslang($lang='')
+</src>
+
+
+** eccore/model/model.base.php
+这是model的基类，里面封装了对数据库的查询和各个模型的关系。模型之间的关系有如下几种：
+ 1. HAS_ONE  一对多
+ 2. BELONGS_TO 属于（多对一）
+ 3. HAS_MANY （一对多）
+ 4. HAS_AND_BELONGS_TO_MANY （多对多）
+
+*** getRelatedData
+获取一对多、多对多关系表的数据，其他关系是获取不到的。
+
+例子： 参考store.model.php -- scategory.model.php; goods.model.php -- uploadedfile.model.php
+
+*** find
+根据条件查询数据
+
+
+
+
+* bugges
+** 出现没有选择数据库的错误
+<src type="bash">
+Fatal error: MySQL Error[1046]: No database selected MySQL Query:SELECT *,navigation.nav_id FROM ecm_navigation navigation ORDER BY type, sort_order Wrong File: /home/100msh/www/econly/eccore/model/mysql.php[534] in /home/100msh/www/econly/eccore/model/mysql.php on line 286
+</src>
+
+刚刚安装完ecmall，出现没有选择数据库的错误，我做了如下的操作
+ - php的配置没有php.ini没有，我把它放到PHPROOT/etc/php.ini,查看phpinfo，发现配置文件的应该放在PHPROOT/lib/php.ini
+ - 设置timezone=Asia/Shanghai
+
+** timezone错误
+<src type="bash">
+Warning: date(): It is not safe to rely on the system's timezone settings.
+</src>
+设置php.ini中的:date.timezone = Asia/Shanghai
+ 
+** eccore/ecmall.php
+*** Line 49
+把非静态函数当成静态函数使用
+
+修改前
+<src type="base">
+function get($key = '')
+</src>
+
+修改后
+<src type="base">
+static function startup($config = array())
+</src>
+
+*** fetch
+不是静态函数当成静态函数来使用，函数前添加static关键字
+<src type="base">
+static function fetch($lang_file)
+</src>
+
+
+*** Line 288
+不是静态函数，在很多的地方都把他当成静态函数来使用.
+
+错误描述：
+<src type="bash">
+Strict Standards: Non-static method Conf:get() should not be called staticcally, assuming $this from incompatible context in 文件frontend.base.php on line 446
+</src>
+
+修改前
+<src type="base">
+function get($key = '')
+</src>
+
+修改后
+<src type="base">
+static function get($key = '')
+</src>
+
+** includes/passport.base.php
+<src type="text">
+Declaration of UcPassportPM::get_list() should be compatible with BasePassportPM::get_list($user_id, $limit = '0, 10', $folder = 'inbox') in /home/100msh/www/ecmall/includes/global.lib.php on line 108 
+</src>
+
+modify:
+<src type="text">
+function get_list($user_id, $limit, $folder = 'inbox')
+</src>
+ 
+** uc_client/model/pm.php
+*** 无法删除短消息
+在getpmlist函数：
+<src type="text">
+$data['pmid'] = $data['plid'];
+</src>
+错误了，误把plid赋值给pmid，后面的出现又把plid当成pmid来使用，为了尽快修复这个bug，就把uc_client/control/pm.php中的ondelete函数中的deletepmbypmids改称deletepmbyplids
+<src type="text">
+$id = $_ENV['pm']->deletepmbyplids($this->user['uid'], $this->input('pmids'));
+</src>
+
+
+** app/frontend.base.php
+*** line 44
+安装完ecmall2.3.0 简体中文utf-8，打开就出现下面的错误
+
+错误描述：
+<src type="bash">
+Fatal error: Call to a member function get() on a non-object in /home/100msh/www/econly/app/frontend.base.php on line 44
+</src>
+
+修改前
+<src type="base">
+$this->assign('cart_goods_kinds', $cart->get_kinds(SESS_ID, $this->visitor->get('user_id')));
+</src>
+
+改成
+<src type="base">
+$this->assign('cart_goods_kinds', is_object($cart) && is_object($this->visitor) ? $cart->get_kinds(SESS_ID, $this->visitor->get('user_id')) : NULL);
+</src>
+
+*** jslang
+有两个问题
+ 1. 缺少static关键字
+ 2. 继承ECBaseApp，和includes/ecapp.base.php中的jslang不兼容，函数缺少参数列表
+ 
+修改以后为：
+<src type="base">
+static function jslang($lang='')
+</src>
+
+ecapp.base.php中的jslang函数前面也得加上static关键字
+
+** eccore/controller/message.base.php
+*** display
+display函数和 BaseApp::display($n)不兼容，缺少参数列表
+
+修改为：
+<src type="base">
+function display($tpl='');
+</src>
+
+** eccore/model/mysql.php
+错误描述：
+<src type="base">
+Fatal error: MySQL Error[1046]: No database selected MySQL Query:SELECT *,navigation.nav_id FROM ecm_navigation navigation ORDER BY type, sort_order Wrong File: /home/100msh/www/econly/eccore/model/mysql.php[534] in /home/100msh/www/econly/eccore/model/mysql.php on line 286
+</src>
+
+* 修改的功能
+** 添加店铺服务时间/快递时间
+在scategory表中增加2个字段，控制是否显示营业时间、配送时间
+<src type="text">
+ALTER TABLE ecm_scategory ADD if_service TINYINT(1) NOT NULL DEFAULT 1 comment "是否有服务时间限制"
+ALTER TABLE ecm_scategory ADD if_deliver TINYINT(1) NOT NULL DEFAULT 1 comment "是否有快递时间限制"
+</src>
+
+在ecm_store中增加4个字段
+<src type="bash">
+use ecmall;
+ALTER TABLE ecm_store ADD s_stime INT(10) NOT NULL comment "服务开始时间"
+ALTER TABLE ecm_store ADD s_etime INT(10) NOT NULL comment "服务结束时间"
+ALTER TABLE ecm_store ADD d_stime INT(10) NOT NULL comment "快递开始时间"
+ALTER TABLE ecm_store ADD d_etime INT(10) NOT NULL comment "快递结束时间"
+</src>
+
+* 扩展/问题
+** 缓存清除功能
+q: 在商品页面开发的时候注意缓存需要清除<br>
+
+q: 由于商品页面的缓存，导致“加入购物车”没有变化。A，B，C三类中只有A类才显示购物车<br>
+
+q: 后台没有发现缓存清除的功能<br>
+a： 在右上角
+
+
+* 陌生的函数
+** extract
+
+** var_export
+
+** array_merge
+
+** rawurlencode
+根据RFC3986对url进行编码。除了_外其他的字符都被替换成%后面跟2位十六进制数
+
+** func_get_args
+取得自定义函数的参数，返回值为array
+
+** func_num_args
+取得函数的参数个数
+
+** call_user_func
+调用用户自定义函数，当要调用的函数是通过变量来确定的时候就很有用
+
+** eval
+执行php代码
+<src type="text">
+eval("\$uc_controls['$model'] = new {$model}control();");
+</src>
+由于$model是一个变量
+
+** mysql_result
+<src type="text">
+mysql_result($res, row, field)
+</src>
+ - res mysql 记录集
+ - row 要取第几行记录，从0开始
+ - field 那一列的数据，可以是偏移量，也是从0开始；可以是字段名；可以是:tbl_name.field
+例子：
+<src type="text">
+$sql = 'select user_name, password from users';
+$res = mysql_query($sql);
+$row1 = mysql_result($res, 0, 0); // 取得第一行中，第一列（user_name）的值
+</src>
+
+** strip_tags
+去除html和php中使用的标签
+<src type="text">
+strip_tags($str,  [, string $allowable_tags ])
+</src>
+

@@ -1,0 +1,922 @@
+#title Learning Perl
+
+* 写在前面
+羊陀书太厚，于是买了这本作为入门。说不清楚自己为什么要学习 Perl，版上
+用的人似乎也不多，我知道的就只有超人。或许最主要的原因还是 Lighty，它
+的配置文件是用这个的，当初配置它的时候看了下然后把事情搞定，于是就很牛
+掰地把 Perl 写到自己会的语言清单里面去，现在想想这样的简历拿出来未免心
+虚，于是决定学一下。照老规矩贴课后习题的作业。
+
+* Chapter 1 简介
+
+** Exercise 1 Hello world.
+
+<src type="perl">
+#!/usr/bin/perl -w
+print "hello, world!\n";
+</src>
+
+** Exercise 3
+
+The code is printed on the book already. So all I have to do is type
+it in and understand it. That is not that hard to me because I have 
+been learning a little PHP and regular expressions for a while. The
+code just simply store the every line of the output of that shell
+command into array @lines, then use the foreach loop to work through
+it and change every word between '<' and '>' to upper case using
+regular expression. 
+
+As you may noticed, the print has no parameters. In perl, sometimes
+when the parameters are omitted, the magic scalar $_ will be used as
+the default parameter. So it would be @lines in this example.
+
+<src type="perl">
+#!/usr/bin/perl -w
+@lines = `perldoc -u -f atan2`;
+foreach (@lines) {
+    s/\w<([^>]+)>/\U$1/g;
+    print;
+}
+</src>
+
+* Chapter 2 标量数据
+
+** Exercise 3
+
+Previous exercises are the basis of this one, so getting this one
+posted only would be appropriate enough. This exercise works on I/O
+and operators.
+
+<src type="perl">
+#!/usr/bin/perl -w
+chomp($radius = <STDIN>);
+if ($radius <= 0 ) {
+    print "0\n";
+}
+else {
+    $circumference = 2 * 3.141592654 * $radius;
+    print $circumference . "\n";
+}
+</src>
+
+** Exercise 4 A not very robust one. :-/
+
+<src type="perl">
+#!/usr/bin/perl -w
+chomp($operand_1 = <STDIN>);
+chomp($operand_2 = <STDIN>);
+print $operand_1 * $operand_2 . "\n";
+</src>
+
+** Exercise 5
+
+Until the exercise problem prompts me use the 'x' operator, I was
+thinking some very ancient and traditional 'for' loop to solve this
+problem. So here are two solutions for this problem. The easier one is
+replace the '<literal>*</literal>' operator by 'x' in the solution of
+exercise four. My initial way is this one below.
+
+<src type="perl">
+#!/usr/bin/perl -w
+chomp($operand_1 = <STDIN>);
+chomp($operand_2 = <STDIN>);
+#print $operand_1 x $operand_2 . "\n";
+while ($operand_2 > 0) {
+    print $operand_1;
+    $operand_2 -= 1;
+}
+print "\n";
+</src>
+
+* Chapter 3 列表和数组
+
+** Exercise 1
+
+A context problem was encountered when I was doing this chapter's
+homeworks, which is a good thing for learning Perl but an boresome
+thing to get the job done, that the 'print' just ignore the fact that
+I was intend to use a list context. I think the '.' operator should be
+the most suspected.
+
+<src type="perl">
+#!/usr/bin/perl -w
+chomp(@lines = <STDIN>);
+@lines = reverse @lines;
+print "@lines\n";
+</src>
+
+** Exercise 2 mind qw.
+
+<src type="perl">
+#!/usr/bin/perl -w
+@names = qw/ fred betty barney dino wilma pebbles bamm-bamm /;
+chomp(@lines = <STDIN>);
+#@lines = reverse @lines;
+foreach $choice (@lines) {
+    print $names[$choice** 1] . "\n";
+}
+</src>
+
+** Exercise 3
+
+As I've mentioned in exercise one of this chapter, to avoid the issue
+that =print @lines . "\n";= would take the @lines as a scalar which was
+not what I intended to, I use foreach.
+
+<src type="perl">
+#!/usr/bin/perl -w
+chomp(@lines = <STDIN>);
+@lines = sort @lines;
+print "@lines\n";
+foreach $sorted (@lines) {
+    print $sorted . "\n";
+}
+</src>
+
+* Chapter 4 子例程
+
+** Exercise 1
+
+The main part of the code below is already written. My code,
+subroutine 'total', is derived from the better version of 'max' from
+this book.
+
+<src type="perl">
+#!/usr/bin/perl -w
+my @fred = qw/ 1 3 5 7 9/;
+my $fred_total = &total(@fred);
+print "The total of \@fred is $fred_total.\n";
+
+print "Enter some numbers on seperate lines: ";
+my $user_total = &total(<STDIN>);
+print "The total of those numbers is $user_total.\n";
+
+sub total {
+    my ($total) = shift @_;
+    foreach (@_) {
+	$total += $_;
+    }
+    $total;
+}
+</src>
+
+** Exercise 2
+
+Well, this one is easy if we do it the book's way. Just create an
+array variable.
+
+<src type="perl">my @array = 1..1000; # Just add this one.</src>
+
+** Exercise 3
+
+Again the code of previous subroutine can be taken advantage. 
+
+<src type="perl">
+#!/usr/bin/perl -w
+my @fred = &above_average(1..10);
+print "\@fred is @fred\n";
+print "(Should be 6 7 8 9 10)\n";
+
+my @barney = &above_average(100, 1..10);
+print "\@barney is @barney\n";
+print "(Should be jsut 100)\n";
+
+sub above_average {
+    my @above;
+    my $average = &average(@_);
+    foreach (@_) {
+	if ($_ > $average) {
+	    push (@above, $_);
+	}
+    }
+    @above;
+}
+
+sub average {
+    my ($total) = shift @_;
+    foreach (@_) {
+	$total += $_;
+    }
+    $total / ($#_ + 2);		# We've shifted @_;
+}
+</src>
+
+* Chapter 5 输入与输出
+
+** Exercise 1
+
+As a matter of fact, the while loop could be written more briefly by
+using Perl syntax sugar and its most loved variable =$_=. There is one
+more thing which I think should be aware of that the difference
+between using bare list and using list surrounded by quotation
+marks. Perl will simply get every scalar of that list printed out if
+the used in first way.
+
+<src type="perl">
+#!/usr/bin/perl -w
+#tac
+while (defined($line = <>)) {
+    push(@tac, $line);
+}
+print reverse @tac;
+</src>
+
+** Exercise 2
+
+<src type="perl">
+#!/usr/bin/perl -w
+while (defined($lines = <STDIN>)) {
+    chomp($lines);
+    push(@input, $lines);
+}
+print ((1..9, 0) x 7);
+print "\n";
+foreach (@input) {
+    printf "%20s\n", $_;
+}
+</src>
+
+** Exercise 3
+
+Whether ="%$indents\n"= will work or not has not been testified. Guess
+not. Anyway, this separation of format parameter from function printf
+does a lot of help to me. It is used in a wide range.
+
+<src type="perl">
+#!/usr/bin/perl -w
+while (defined($lines = <STDIN>)) {
+    chomp($lines);
+    push(@input, $lines);
+}
+$indent = shift @input;
+print ((1..9, 0) x ($indent / 10));
+print "\n";
+$format = "%" . $indent . "s\n";
+foreach (@input) {
+    printf $format, $_;
+}
+</src>
+
+* Chapter 6 散列
+
+** Exercise 1
+
+Just as what you see, I use the biref version of 'while' instead at
+this time. I didn't try omit the =$_= of push function, so I have no
+idea about whether that would work out or not. 
+
+The special separator <code>=></code> is just the same as comma to
+Perl. 
+
+<src type="perl">
+#!/usr/bin/perl -w
+%family = (
+    "fred" => "flintstone",
+    "barney" => "rubble",
+    "wilma" => "flintstone",
+    );
+
+while (<STDIN>) {
+    chomp;
+    push(@first, $_);
+}
+$format = "%-15s" x 2 . "\n";
+printf $format, "First Name", "Family Name";
+foreach (@first) {
+    if ($family{$_}) {
+	printf $format, $_, $family{$_};
+    }
+    else {
+	printf $format, $_, "Unknown";
+    }
+}
+</src>
+
+** Exercise 2
+
+The =if-else= branch is not essential to accomplish the work proposed by
+this exercise. Perl would transform =undef= to 0 if it encounters a data
+operating context. If the key has not been inserted to the hash yet,
+represents the key is still zero, the relevant value to this specific
+key which is undef will be used as 0 to plus 1. That is, This line of
+code will work.
+
+<src type="perl">
+#!/usr/bin/perl -w
+while (<STDIN>) {
+    chomp;
+    if (!exists $count{$_}) {
+	$count{$_} = 1;
+    }
+    else {
+	$count{$_} += 1;
+    }
+    # Actually the if-else branch is not essential, 
+    # just do this will work.
+#     $count{$_} += 1;
+}
+$format = "%-10s%5d\n";
+while (($key, $value) = each %count) {
+    printf $format, $key, $value;
+}
+
+# sort names first.
+foreach $key (sort keys %count) {
+    printf $format, $key, $count{$key};
+}
+</src>
+
+* Chapter 7 正则表达式
+
+** Exercise 1 & Exercise 2
+
+Those examples provided in this book didn't introduce the
+<code>=~</code> operator because you are not required to specifically
+using this operator to match the Perl's most loved variable to your
+pattern.
+
+<src type="perl">
+#!/usr/bin/perl -w
+unless (open FILE, "<", "fred.txt") {
+    die "Cannot open input file: $!";
+}
+while (<FILE>) {
+    # ($_ =~ /(f|F)red/) {
+    if (/(f|F)red/) {
+	print;
+    }
+}
+close FILE;
+</src>
+
+** Exercise 3 Change pattern to <code>/\./</code>. 
+
+** Exercise 4 <code>/[A-Z][a-z]+/</code> 
+
+** Exercise 5 <code>/(wilma.*fred)|(fred.*wilma)/</code> 
+
+* Chapter 8 以正则表达式进行匹配
+
+<src type="perl">
+#!/usr/bin/perl -w
+# A script to examine pattern
+while (<>) {
+    chomp;
+    if (/YOUR_PATTERN_GOES_HERE/) {
+	print "Matched: |$`<$&>$'|\n";
+    }
+    else {
+	print "No matched: |$_|\n";
+    }
+}
+</src>
+
+** Exercise 1 <code>/match/</code>
+
+** Exercise 2 <code>/\w+a\b/</code> 
+
+The anchor \b which indicates boundary of a word should not be
+omitted. If 'a' is accepted, please change \w+ to \w*.
+
+** Exercise 3 & Exercise 4
+
+<src type="perl">
+#!/usr/bin/perl -w
+while (<>) {
+    chomp;
+    if (/(\w+a)(\b.{0,4})/) {
+	print "Matched: '$1' '$2'\n";
+    }
+    else {
+	print "No matched: |$_|\n";
+    }
+}
+</src>
+
+** Exercise 5
+
+<src type="perl">
+#!/usr/bin/perl -w
+while (<>) {
+    chomp;
+    if (/\s+$/) {
+	print "$`|$&|\n";
+    }
+    else {
+	print "Sentence is not ended with white spaces.\n";
+    }
+}
+</src>
+
+* Chapter 9 以正则表达式处理文本
+
+** Exercise 1
+
+The source speaks. Wrap variables by parentheses to introduce scalar
+in pattern.
+
+<src type="perl">
+#!/usr/bin/perl -w
+chomp($what = <STDIN>);
+while(<>) {
+    chomp;
+    if (/($what){3}/) {
+	print "Matched!\n";
+    }
+}
+</src>
+
+** Exercise 2 
+
+=$^I= and the diamond command. Like Perl geeks always said, "there is
+always more than one way." Anyway, the use of 'g' and 'i' parameters is
+preferred. 
+
+<src type="perl">
+#!/usr/bin/perl -w
+use strict;
+
+$^I = ".out";
+
+while (<>) {
+    s/(F|f)red/Larry/;
+    print;
+}
+</src>
+
+** Exercise 3 
+
+At my first thought, there is no need of use some anchor like \n or
+null(\0). That was wrong.
+
+<src type="perl">#!/usr/bin/perl -w
+use strict;
+
+$^I = ".out";
+
+while (<>) {
+    chomp;
+    s/Fred/\n/gi;
+    s/Wilma/Fred/gi;
+    s/\n/Wilma/g;
+    print;
+}
+</src>
+
+** Exercise 4
+
+This works. I can't figure out what's the difference between my
+solution and the key provided by this book. Please refer to the book
+or check exercise 5 to see what the literal difference is. Maybe
+actually they are the same thing. lol
+
+<src type="perl">
+#!/usr/bin/perl -w
+use strict;
+
+$^I = ".out";
+
+while (<>) {
+    s/(^#!.*)$/$1\n## Copyright (c) 2007 by Jake/;
+    print;
+}
+</src>
+
+** Exercise 5
+
+Rewriting @ARGV is smart.
+
+<src type="perl">
+ #!/usr/bin/perl -w
+use strict;
+
+my %done;
+foreach (@ARGV) {
+    $done{$_} = 1;
+}
+while (<>) {
+    if (/^## Copyright/) {
+	delete $done{$ARGV};	# remove
+    }
+}
+print %done;
+@ARGV = sort keys %done;	# reset @ARGV
+
+$^I = ".out";
+
+while (<>) {
+    # s/(^#!.*)$/$1\n## Copyright (c) 2007 by Jake/;
+    if (/^#!/) {
+	$_ .= "## Copyright (c) 2007 by Jake\n";
+    }
+    print;
+}
+</src>
+
+** The 'official' answer
+
+The =$^I= variable is not used in this solution. It replaces the file
+extension by 'out' instead of adding something. 
+
+<src type="perl">
+#!/usr/bin/perl -w
+my $in = $ARGV[0];
+if (not defined $in) {
+    die "Usage: $0 filename";
+}
+my $out = $in;
+$out =~ s/(\.\w+)?$/.out/;	# replace file extension with .out
+unless (open IN, "<$in") {
+    die "Can't open '$in': $!";
+}
+unless (open OUT, ">$out") {
+    die "Can't write '$out': $!";
+}
+while (<IN>) {
+    s/Larry/Fred/gi;
+    print OUT $_;
+}
+</src>
+
+* Chapter 10 其他控制结构
+
+** Exercise 1
+
+We can remove the use of =$quit= by using `last'.
+
+<src type="perl">
+#!/usr/bin/perl -w
+use strict;
+
+my $key = int(1 + rand 100);
+my $quit = 0;
+while (!$quit) {
+    chomp(my $guess = <STDIN>);
+    if ($guess =~ m/quit|exit/i) {
+	print "Bye. The number is: $key\n";
+	$quit = 1;
+    }
+    elsif ($guess < $key) {
+	print "Too low: $guess\n";
+    }
+    elsif ($guess > $key) {
+	print "Too high: $guess\n";
+    }
+    else {			# Hit the key
+	print "get it!\n";
+	$quit = 1;
+    }
+}
+</src>
+
+* Chapter 11 文件测试
+
+** Exercise 1
+
+Copied from appendix one...
+
+<src type="perl">
+#!/usr/bin/perl -w
+use strict;
+
+die "There is no file specified!\n" if @ARGV == 0;
+foreach my $file (@ARGV) {
+    my $attributes = &get_attributes($file);
+    print "$file $attributes.\n";
+}
+
+sub get_attributes {
+    my $file = shift @_;
+    return 'does not exist.' unless -e $file;
+    my @attr;
+    push @attr, 'readable' if -r $file;
+    push @attr, 'writable' if -w $file;
+    push @attr, 'executable' if -x $file;
+    return 'exits' unless @attr;
+    'is ' . join ' and ', @attr;
+}
+</src>
+
+** Exercise 2
+
+High-water-mark. (ACL, Access Control List) You may notice that this
+code is just the same as the code from appendix. Well, I write this
+after reading that.
+
+<src type="perl">
+#!/usr/bin/perl -w
+use strict;
+
+die "No arguments!" if @ARGV == 0;
+
+my $oldest_file = shift @ARGV;
+my $oldest_age = -M $oldest_file;
+
+foreach my $file (@ARGV) {
+    my $age = -M $file;
+    ($oldest_file, $oldest_age) = ($file, $age)
+	if $age > $oldest_age;
+}
+
+printf "The oldest file is %s.\nIt is %.1f days old.\n",
+    $oldest_file, $oldest_age;
+</src>
+
+* chapter 12 目录操作
+ 
+** Exercise 1
+
+The title asked whether globbing is better or directory handle is more
+efficient. But my first thought is directory handle because there is
+some example source could be used already. Anyway, the answer shows
+globbing is simpler. So the branches of if-else are written in
+different ways.
+
+<src type="perl">
+#!/usr/bin/perl -w
+use strict;
+
+my $target;
+
+if (@ARGV == 0) {
+    print "No target, going home.\n";
+    chdir or die "Cannot switch directory: $!\n";
+    my @files = <*>;		# glob
+    foreach (@files) {
+	print "$_\n";
+    }
+}
+else {				# directory handle
+    $target = shift @ARGV;
+    print "Changing directory...\n";
+
+    opendir DIR, $target or die "Cannot switch directory: $!\n";
+    while (my $file = readdir DIR) {
+	print "$file\n";
+    }
+}
+</src>
+
+** Exercise 2 & 3
+
+To get those special dot files, like Larry always said, there is more
+than one way. If you intend to use glob, replace =<*>= with =<.* *>=. If
+you want to do that with directory handle, the original code will just
+do the job. To omit those files (they might be annoying), add this:
+
+<src type="perl">
+    next if $name =~ /^\./;
+</src>
+
+** Exercise 4
+
+<src type="perl">
+#!/usr/bin/perl -w
+## Copyright (c) Jake Chen 2007-11-10
+
+use strict;
+
+die "No arguments!\n" if @ARGV == 0;
+
+foreach (@ARGV) {
+    unlink $_ or warn "Cannot remove '$_'! $!\n";
+}
+</src>
+
+** Exercise 5
+
+<src type="perl">
+#!/usr/bin/perl -w
+## Copyright (c) Jake Chen 2007-11-10
+
+use strict;
+use File::Basename qw/ basename/;
+use File::Spec::Functions qw/ catfile /;
+
+die "Usage: $0 <source file> <target file>\n" unless @ARGV == 2;
+my ($source, $target) = @ARGV;
+$target = catfile($target, basename $source) if (-d $target);
+# $target =~ /\/$/; Cross platform...
+
+if (-e $target) {
+    warn "$target exits!\n";
+} elsif (rename $source, $target) {
+    
+} else {
+    warn "$0 failed: $!\n";
+}
+</src>
+
+** Exercise 6 
+
+Like the question says itself, the difference between this question
+and the question above this one is so tiny that just do some string
+replacement will finish the job well. 
+
+** Exercise 7
+
+<src type="perl">
+#!/usr/bin/perl -w
+## Copyright (c) Jake Chen 2007-11-11
+
+use strict;
+use File::Basename qw/ basename/;
+use File::Spec::Functions qw/ catfile /;
+
+die "Usage: $0 <-s> <source file> <target file>\n" 
+    unless @ARGV >= 2 && @ARGV <= 3;
+my $symlink = $ARGV[0] eq '-s';
+shift @ARGV if $symlink;
+my ($source, $target) = @ARGV;
+$target = catfile($target, basename $source) if (-d $target);
+# $target =~ /\/$/; Cross platform...
+
+if (-e $target) {
+    warn "$target exits!\n";
+} elsif ($symlink) {
+    symlink $source, $target or warn "Cannot make soft link: $!";
+} else {
+    link $source, $target or warn "Cannot make soft link: $!";
+}
+</src>
+
+** Exercise 8
+
+Both using readlink first then check whether the variable is defined or not
+and using -l operator to check its existence then readlink are okay.
+
+<src type="perl">
+#!/usr/bin/perl -w
+## Copyright (c) Jake Chen 2007-11-11
+
+use strict;
+
+foreach (<*>) {
+    printf "%s -> %s\n", $_, readlink $_ if -l $_;
+}
+</src>
+
+* Chapter 13 字符串与排序
+
+** Exercise 1
+
+<src type="perl">
+#!/usr/bin/perl -w
+## Copyright (c) Jake Chen 2007-11-11
+
+use strict;
+
+my @numbers;
+open IN, "<numbers.txt";
+push @numbers, split while (<IN>);
+foreach (sort { $a <=> $b } @numbers) {
+    printf "%20g\n", $_;
+}
+</src>
+
+** Exercise 2
+
+The cmp operator and The space craft operator.
+
+<src type="perl">
+#!/usr/bin/perl -w
+## Copyright (c) Jake Chen 2007-11-11
+
+use strict;
+
+my %names = qw/ 
+    fred flintstone Wilma Flintstone Barney Rubble 
+    betty rubble Bamm-Bamm Rubble PEBBLES FLINTSTONE
+/;
+my @result = sort by_name keys %names;
+sub by_name {
+    "\L$names{$a}" cmp "\L$names{$b}"
+	or
+	"\L$a" cmp "\L$b";
+}
+foreach (@result) {
+    printf "%15s %15s\n", $_, $names{$_};
+}
+</src>
+
+** Exercise 3
+
+Getting used to using last is important to me right now because I'm
+thinking procedures in traditional C style. 
+
+<src type="perl">
+#!/usr/bin/perl -w
+## Copyright (c) Jake Chen 2007-11-11
+
+use strict;
+
+chomp(my $string = <STDIN>);
+chomp(my $char = <STDIN>);
+my $position = 0;
+while (($position = index($string, $char, $position)) > 0) {
+    print $position++ . " ";
+}
+print "\n";
+</src>
+
+* Chapter 14 进程管理
+
+** Exercise 1
+
+<src type="perl">
+#!/usr/bin/perl -w
+use strict;
+
+system "ls -l \$HOME";		# $HOME is not a vriable in perl, but in shell.
+
+# This example shows how to use parent's environment variables.
+# It's the special hash %ENV.
+print "$ENV{'PATH'}\n";
+</src>
+
+** Exercise 2 
+
+Maybe this will work. I have been reading some book about bash
+programming for a period. This question to me is just some file handle
+redirecting. Haven't figure out whether there are some Perl ways yet. 
+
+<example>
+ls -l 1> ls.out 2> ls.err
+</example>
+
+Redirecting file handle in Perl way.
+
+<src type="perl">
+open STDOUT, ">ls.out" or die "Can't write to ls.out: $!\n";
+open STDERR, ">ls.err" or die "Can't write to ls.err: $!\n";
+</src>
+
+** Exercise 3
+
+At the beginning, I thought this task as some sort of string split
+work. But I've got a really bad habit which makes me go check the key
+before doing some real work. So when the answer points out to me that
+only saturday and sunday which consists of our weekly leisure time are
+begin with letter `S'. So, here is the code.
+
+<src type="perl">
+#!/usr/bin/perl -w
+## Copyright (c) Jake Chen 2007-11-11
+
+use strict;
+
+if (`date` =~ /^(Sat|Sun)/) {
+    print "Go play.\n";
+} else {
+    print "Work...\n";
+}
+</src>
+
+* Chapter 15 Perl 模块
+
+** Exercise 1
+
+The book recommands me refer to `the big camel' to acquire more
+knowledge about hash. It seems it's just the right thing to do.
+
+<src type="perl">
+#!/usr/bin/perl -w
+use strict;
+use Module::CoreList;
+
+my %modules = %{ $Module::CoreList::version{5.006} };
+
+print join "\n", keys %modules;
+print "\n";
+</src>
+
+** Exercise 2
+
+After Perl version 5.6, module =File::Spec= provides procedural
+functions rather than its original object oriented style.
+
+<src type="perl">
+#!/usr/bin/perl -w
+use strict;
+use Cwd;
+use File::Spec::Functions;
+
+my $directory = cwd;
+my @files = glob "*";
+foreach my $file (@files) {
+    print catfile($directory, $file) . "\n";
+}
+</src>
+
+** Exercise 3
+
+=File::Basename= has some examples in the bok already, so I'll just
+write some specific things about modules in Perl. To import specific
+functions only, add import list when you import them. 
+
+<src type="perl">
+use File::Basename qw/ basename /
+</src>
+
+If you leave the list to a single space or some spaces (\s+), Perl
+would import no functions. Type the whole function `path' to use it.

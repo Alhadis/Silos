@@ -1,0 +1,378 @@
+#title Elisp
+
+* foreword
+已经消逝已久的对 lisp 的热情似乎又回来了，因为前些天摸索着居然写出了个 =imgtag= 出来，
+于是重新开始看 =elisp-intro= ，做了两个第三章末尾的作业。以后做的作业阿笔记阿什么的，都贴这里。
+
+* Note
+** Strange Names
+<quote>
+The name of the cons function is not unreasonable: it is an abbreviation of the 
+word `construct'. The origins of the names for car and cdr, on the other hand, 
+are esoteric: car is an acronym from the phrase `Contents of the Address part 
+of the Register'; and cdr (pronounced `could-er') is an acronym from the phrase 
+`Contents of the Decrement part of the Register'. These phrases refer to 
+specific pieces of hardware on the very early computer on which the original 
+Lisp was developed. Besides being obsolete, the phrases have been completely 
+irrelevant for more than 25 years to anyone thinking about Lisp. Nonetheless, 
+although a few brave scholars have begun to use more reasonable names for these 
+functions, the old terms are still in use. In particular, since the terms are 
+used in the Emacs Lisp source code, we will use them in this introduction.
+</quote>
+** Regex in Emacs
+Two backslashes, `\\', are required before the parentheses and
+vertical bars: the first backslash quotes the following backslash in
+Emacs; and the second indicates that the following character, the
+parenthesis or the vertical bar, is special.  
+
+** func spec
+*** let*
+Bind some variables locally to particular values, and then evaluate
+the remaining arguments, returning the value of the last one. *While
+binding the local variables, use the local values of variables bound
+earlier, if any.* 
+
+*** prog1 & progn
+- prog1 -> first
+- progn -> last
+
+* Solution to Emacs Lisp Intro
+
+  Chapter 3 - Exercise 1 :: 
+    Write a non-interactive function that doubles the value of its argument, 
+    a number. Make that function interactive.
+
+<src type="elisp">
+(defun leto-double (parameter)
+  "a little function to double numbers"
+  (interactive "p")
+  (let ((number parameter)
+	)
+    (message "%d's doubled value is %d" number (* number 2))))
+</src>
+
+  Chapter 3 - Exercise 2 :: 
+    Write a function that tests whether the current value of fill-column is 
+    greater than the argument passed to the function, and if so, prints an 
+    appropriate message. 
+
+<src type="elisp">
+(defun leto-check-with-fill-column (parameter)
+  "compare the given number with fill-column"
+  (interactive "p")
+  (let ((number parameter)
+	)
+    (if (< number fill-column)
+	(message "compatible with current fill-column: %d" fill-column)
+      (message "no kidding, that's far beyond what i can take."))))
+</src>
+
+  Chapter 4 - Exercise 1 ::
+    Write your own simplified-end-of-buffer function definition; then test 
+    it to see whether it works.
+
+<src type="elisp">
+(defun leto-simplified-end-of-buffer ()
+  "go to the end of current buffer."
+  (interactive)
+  (push-mark (point))
+  (goto-char (point-max)))
+</src>
+
+  Chapter 4 - Exercise 2 ::
+    Use if and get-buffer to write a function that prints a message telling 
+    you whether a buffer exists.[1]
+
+<src type="elisp">
+(defun leto-check-buffer (parameter)
+  "check out whether the specified buffer exists or not."
+  (interactive "BCheck it out: ")
+  (let ((buf parameter))
+    (if (get-buffer buf)
+	(message "buffer %s exists!" buf)
+      (message "opps! buffer %s hasn't been created yet." buf))
+    ))
+</src>
+
+  Chapter 5 - Exercise 1 ::
+    Write an interactive function with an optional argument that tests whether 
+    its argument, a number, is greater or less than the value of fill-column, 
+    and tells you which, in a message. However, if you do not pass an argument 
+    to the function, use 56 as a default value.
+
+<src type="elisp">
+(defun leto-check-with-fill-column (&optional arg)
+  "Compare the argument given with the value of fill-column. 
+Use 56 as a default value is the argument is omitted. "
+  (interactive "P")
+  (let ((num (or (if arg
+		     ;; _if_ expression is essential, otherwise arg will 
+		     ;; default to 1 if not assigned. 
+		     (prefix-numeric-value arg))
+		 56)
+	     ))
+	(if (< num fill-column)
+	  (message "%d is compatible" num)
+	(message "no kidding."))))
+</src>
+
+(2008-09-11) Previous chapters are easy. Notice: the use of let is not
+necessary. See below as an example.
+
+<src type="elisp">
+(defun check-fill-column (&optional num)
+  "accepts a number and compare it with fill-column"
+  (interactive "P")
+  (or num
+      (setq num 56))
+  (if (> num fill-column)
+      (message "%d is greater than current fill-column value!" num)
+    (message "%d is a little bit short." num)))
+</src>
+
+  Chapter 6 - Exercise 1 ::
+    Write a function that will display the first 60 characters of the current 
+    buffer, even if you have narrowed the buffer to its latter half so that the
+    first line is inaccessible. Restore point, mark, and narrowing. For this 
+    exercise, you need to use save-restriction, widen, goto-char, point-min, 
+    buffer-substring, message, and other functions, a whole potpourri.[2]
+
+<src type="elisp">
+(defun leto-first-60 ()
+  "Return the beginning 60 characters of current buffer not regarding 
+it is narrowed or not. "
+  (interactive)
+  (save-restriction
+    (widen)
+    (save-excursion
+      (message "The first 60 characters of current buffer are: \n%s"
+	       (buffer-substring (goto-char (point-min)) 60)
+               ;; _buffer-substring_ will use current buffer as the buffer being 
+               ;; processed. _substring_ need providing the major string arg.
+	       )
+      )))
+</src>
+
+  Chapter 7 - Exercise 1 ::
+    Construct a list of four birds by evaluating several expressions with cons. 
+    Find out what happens when you cons a list onto itself. Replace the first 
+    element of the list of four birds with a fish. Replace the rest of that 
+    list with a list of other fish.
+
+<src type="elisp">
+(defun practise-fundamental ()
+  "shows the use of fundamental functions such as _cons_, _setcar_, _setcadr_. "
+  (interactive)
+  (message "cons birds: %s. \ncons birds to itself: \n%s. 
+after setcar: %s, birds: %s. \nafter setcdr: %s, \nbirds(actually fish): %s. "
+	   (setq birds 
+		 (cons 'crow 
+		       (cons 'magpie 
+			     (cons 'swallow 
+				   (cons 'lark ()))))
+		 )
+	   (cons birds birds)
+	   (setcar birds 'shark) birds
+	   (setcdr birds '(cyprinoid goldfish dorado)) birds))
+</src>
+
+(2008-09-11) Actually the printed final result won't be acurate. Emacs
+calculate the list (=cons=, =setcar=, =setcdr=, etc.) thoroughly before print
+it. function practice-fundamental does not demonstrate the process.
+
+  Chapter 8 - Exercise 1 ::
+    Write an interactive function that searches for a string. If the
+    search finds the string, leave point after it and display a message
+    that says "Found!". (Do not use search-forward for the name of this
+    function; if you do, you will overwrite the existing version of
+    search-forward that comes with Emacs. Use a name such as
+    test-search instead.) 
+   
+<src type="elisp">
+(defun leto-search-forward (str)
+  "search for a string and echo \"Found!\" if succeed."
+  (interactive "sSearch: ")
+  (when (search-forward 
+	 str nil nil 1)
+    (message "Found!")
+    ))
+</src>
+
+  Chapter 8 - Exercise 2 ::
+    Write a function that prints the third element of the kill ring in
+    the echo area, if any; if the kill ring does not contain a third
+    element, print an appropriate message.  
+
+<src type="elisp">
+(defun leto-nth-kill-ring-element (arg)
+  "get the nth element of the kill ring. And if not provided, 
+the value of n is default to 3."
+  (interactive "p")
+  ;; If the first element is nil, as it is here, information 
+  ;; about error signal is not stored by another function.
+  (condition-case nil
+     
+      ;; Tells the lisp interpreter what to do when all goes well.
+      (let ((depth (or arg 3))
+	    )
+	(when (< depth (length kill-ring))
+	  (message "%s" (car (nthcdr depth kill-ring))))
+	)
+    
+    ;; Tells the interpreter what to do with an error.
+    (message "Don't go that far plz.")
+    )
+  )
+</src>
+
+  Chapter 9 - Exercise 1 ::
+    Set flowers to violet and buttercup. Cons two more flowers on to
+    this list and set this new list to more-flowers. Set the CAR of
+    flowers to a fish. What does the more-flowers list now contain? 
+
+<src type="elisp">
+;; Press C-x C-e at the end of each line orderly.
+(setq flowers '(violet buttercup))
+(setq more-flowers (cons 'lily (cons 'rose flowers)))
+(setcar flowers 'fish)
+more-flowers
+</src>
+
+  Chapter 10 - Exercise 1 ::
+    Using C-h v (describe-variable), look at the value of your kill
+    ring. Add several items to your kill ring; look at its value
+    again. Using M-y (yank-pop), move all the way around the kill
+    ring. How many items were in your kill ring? Find the value of
+    kill-ring-max. Was your kill ring full, or could you have kept
+    more blocks of text within it? 
+
+<src type="elisp">
+(defun leto-check-kill-ring-length ()
+  "show the maximum length of kill-ring. 
+Display a message when kill-ring is full."
+  (interactive)
+  (message "capacity: %d. current: %d. \n%s." 
+	   kill-ring-max
+           (length kill-ring)
+	   (if (< (length kill-ring) kill-ring-max)
+	       "not full yet."
+	     "Ah... has been fed up already.")))
+</src>
+
+  Chapter 10 - Exercise 2 ::
+    Using nthcdr and car, construct a series of expressions to return
+    the first, second, third, and fourth elements of a list.  
+
+<src type="elisp">
+(defun leto-nth (arg)
+  "constructed in _nthcdr_ and _car_ to return the nth element of a list."
+  (interactive "p")
+  (message "%s" (car (nthcdr (1- arg) kill-ring))))
+</src>
+
+  Chapter 11 - Exercise 1 ::
+    Write a function similar to triangle in which each row has a value
+    which is the square of the row number. Use a while loop. 
+
+<src type="elisp">
+(defun triangle-square-while (row-num)
+  ""
+  (let ((sum 0))
+    (while (> row-num 0)
+      (setq sum (+ sum (* row-num row-num)))
+      (setq row-num (1- row-num)))
+    sum))
+</src>
+
+  Chapter 11 - Exercise 2 ::
+    Write a function similar to triangle that multiplies instead of
+    adds the values. 
+
+<src type="elisp">
+(defun foo (row-num)
+  ""
+  (let ((total 1))
+    (while (> row-num 0)
+      (setq total (* total row-num))
+      (setq row-num (1- row-num)))
+    total))
+</src>
+
+  Chapter 11 - Exercise 3 ::
+    Rewrite these two functions recursively. Rewrite these functions using cond.
+
+<src type="elisp">
+(defun triangle-square-recursive (row-num)
+  ""
+  (if (<= row-num 1)
+      1
+    (+ (* row-num row-num) (triangle-square-recursive (1- row-num)))))
+</src>
+
+<src type="elisp">
+(defun foo-recursive (row-num)
+  ""
+  (if (<= row-num 1)
+      1
+    (* row-num (foo-recursive (1- row-num)))))
+</src>
+
+  Chapter 11 - Exercise 2 ::
+    Write a function for Texinfo mode that creates an index entry at
+    the beginning of a paragraph for every `@dfn' within the
+    paragraph. (In a Texinfo file, `@dfn' marks a definition. For more
+    information, see @xref{Indicating, , Indicating Definitions,
+    texinfo}.) section `Indicating' in Texinfo Manual.)  
+
+N/A
+
+  Chapter 12 - Exercise 1 ::
+    Write a function to search for a regular expression that matches
+    two or more blank lines in sequence.  
+
+<src type="elisp">
+(defun leto-search-blank-line ()
+  "Search forward for blank line"
+  (interactive)
+  (push-mark)
+  (if (re-search-forward "\n\\([ \t]*\n\\)+" nil t)
+      (message "blank line found.")
+    (message "nah")))
+
+;;; bound function to F11 for test efficiency.
+(global-set-key (kbd "<f11>") 'leto-search-blank-line)
+</src>
+
+  Chapter 12 - Exercise 1 ::
+    Write a function to search for duplicated words, such as `the
+    the'. See Regexps, for information on how to write a regexp (a
+    regular expression) to match a string that is composed of two
+    identical halves. You can devise several regexps; some are better
+    than others. The function I use is described in an appendix, along
+    with several regexps. See [[http://www.gnu.org/software/emacs/emacs-lisp-intro/html_node/the-the.html][the-the Duplicated Words Function.]] 
+
+This is the author's key to this exercise.
+<src typ="elisp">
+(defun the-the ()
+  "Search forward for for a duplicated word."
+  (interactive)
+  (message "Searching for for duplicated words ...")
+  (push-mark)
+  ;; This regexp is not perfect
+  ;; but is fairly good over all:
+  (if (re-search-forward
+       "\\b\\([^@ \n\t]+\\)[ \n\t]+\\1\\b" nil 'move)
+      (message "Found duplicated word.")
+    (message "End of buffer")))
+</src>
+
+  Chapter 13 - Exercise
+
+change the pattern in count-words-region function to =[.,;:!?]=.
+
+Footnotes: 
+
+[1] For using =parameter= only will be okay, the =let= form is not essential. 
+
+[2] n. 混合物, 杂曲, 混成曲, 杂集, 大杂烩
+

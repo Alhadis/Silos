@@ -1,0 +1,295 @@
+#title fedora 安装以后需要做的
+#author Ole Yang
+#desc fedora 安装好以后需要做的东西
+#date @date
+
+<contents>
+
+* 关闭selinux
+vi /etc/selinux/config
+修改成  SELINUX=disable     禁用SeLinux
+修改成  SELINUX=enforcing   使用SeLinux
+如果只是想临时关闭selinux，可以在终端中输入：$ sudo setenforce 0
+
+* 添加YUM源
+一般系统自带的更新源速度很慢，可以使用国内网易或搜狐的镜像。
+到其开源镜像网站http://mirrors.163.com/和http://mirrors.sohu.com/下载fedora的源配置文件。
+为了区别镜像，打开下载的镜像文件后把三个中括号[]中的fedora分别替换为fedora-163与fedora-sohu。
+将修改好的配置文件保存到/etc/yum.repos.d/目录下。
+最后在终端输入：$ sudo yum makecache 生成缓存即可。
+
+<src type="text">
+rpm -ivh http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-18.noarch.rpm
+rpm -ivh http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-18.noarch.rpm
+rpm -ivh http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-stable.noarch.rpm
+rpm -ivh http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-stable.noarch.rpm
+yum update -y
+</src>
+
+
+* 安装fastestmirror YUM插件
+当YUM源很多时，安装fastestmirror插件可以使得yum从速度最快的yum源下载。
+在终端中输入命令：
+<src type="bash">
+$ sudo yum install yum-plugin-fastestmirror
+</src>
+更多YUM插件可以运行
+<src type="bash">
+$ sudo yum info yum-plugin-*
+</src>
+
+* 升级系统
+在终端中运行命令：$ sudo yum update
+#####
+
+
+* 删除废旧内核
+升级完系统后通常会有好几个内核，如何删除废旧内核呢：
+rpm -qa | grep kernel // 查看并列出所有内核
+rpm -e kernel的名字 // 删除选定名字的内核
+例子：
+<literal>
+[xie@xie ~]$ rpm -aq | grep kernel
+abrt-plugin-kerneloopsreporter-1.0.0-1.fc12.i686
+kernel-firmware-2.6.31.9-174.fc12.noarch
+kernel-2.6.31.5-127.fc12.i686
+kernel-2.6.31.9-174.fc12.i686
+kernel-headers-2.6.31.9-174.fc12.i686
+abrt-addon-kerneloops-1.0.0-1.fc12.i686
+[xie@xie ~]$ rpm -e kernel-2.6.31.5-174.fc12.i686
+</literal>
+#####
+ 
+
+06、 添加rpmfusion源
+rpmfusion源是极具影响力的第三方软件仓库，提供有版权(nonfree)和专利(free)问题的免费软件，对于一般用户来说rpmfusion源可以说是必不可少的。
+在终端中输入命令：$ sudo rpm -ivh http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-stable.noarch.rpm http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-stable.noarch.rpm
+最后输入： $sudo yum makecache 生成yum缓存即可，这样就安装了rpmfusion源。
+（以 上的两个链接也可以换为http://mirrors.163.com/rpmfusion/free/fedora/rpmfusion-free- release-stable.noarch.rpm或http://mirrors.163.com/rpmfusion/nonfree /fedora/rpmfusion-nonfree-release-stable.noarch.rpm）
+#####
+ 
+
+07、 安装多媒体解码器
+fedora默认没有安装视频解码器，所以不能听歌看视频，打开歌曲时会提示缺少MPEG-1 Layer3。
+首先确保系统已经安装rpmfusion源，在终端中输入命令：
+$ sudo yum install ffmpeg ffmpeg-libs gstreamer-ffmpeg libmatrosca xvidcore libdvdread libdvdnav lsdvd
+$ sudo yum install gstreamer-plugins-good gstreamer-plugins-bad gstreamer-plugins-ugly
+这样系统自带播放器就可以播放音乐以及视频了。
+#####
+ 
+
+08、 播放器音乐标签乱码
+网上的方法大都是说把mp格式的文件的tag用以下命令转换：mid3iconv -e gbk *.mp3。这样操作之后虽然linux下的乱码解决了，但是在windows下又会出现乱码。
+比较完美的方法是修改环境变量，以root身份修改/etc/profile文件：
+在文件最后加入下面两行
+export GST_ID3_TAG_ENCODING=GBK:UTF-8:GB18030
+export GST_ID3V2_TAG_ENCODING=GBK:UTF-8:GB18030
+注销后重新导入歌曲信息即可解决乱码。
+#####
+ 
+
+09、 gedit打开文件乱码
+由于编码格式的不同fedora打开windows下的文本文件经常会出现乱码。
+网上的解决办法通常都是通过/etc/sysconfig/i18n文件修改环境变量来达到目的，这里的方法不许要这样做。
+方法一：
+终端输入命令：
+<src type="bash">
+$ gsettings set org.gnome.gedit.preferences.encodings auto-detected "['UTF-8', 'GB18030', 'GB2312', 'GBK', 'BIG5', 'CURRENT', 'UTF-16']"
+$ gsettings set org.gnome.gedit.preferences.encodings shown-in-menu "['UTF-8', 'GB18030', 'GB2312', 'GBK', 'BIG5', 'CURRENT', 'UTF-16']"
+</src>
+方法二：
+安装dconf-editor（gconf-editor的升级版）：
+终端中输入命令：
+<src type="bash">
+$ sudo yum install dconf-tools
+</src>
+终端中输入命令：
+<src type="bash">
+$ dconf-editor
+</src>
+依次点开->org->gnome->gedit->preferences->encodings
+
+在auto-detected的value项中加入'GB18030', 写在第二位；
+
+在shown-in-menu的value项中加入'GB18030', 写在第二位。
+
+（对应着方法一中括号中的值）
+
+（在 fedora14及之前的版本中在终端中输入命令：$ sudo yum install gconf-editor安装gconf-editor，然后输入命令：$ gconf-editor 依次点开apps->gedit-2->preferences->encodings 中的auto-detected,在双击弹出对话框中加入GB18030，GBK，GB2312就可以了）
+#####
+ 
+
+10、 当前目录右键打开终端
+在终端中输入命令：$ sudo yum install nautilus-open-terminal
+重启X（Ctrl＋Alt＋Backspace）
+#####
+ 
+
+11、 安装vim、gedit
+vim是vi的加强版，可以高亮显示程序源码中的函数变量等。
+在终端中输入命令：$ sudo yum install vim
+安装完成。
+#####
+ 
+
+12、 ibus输入法
+在fedora中由于我默认安装环境是英文，所以中文输入法没有开启，可以自己打开并设置为可用状态，选择中文输入法Pinyin就行了。
+如果没有输入法可以安装ibus，在终端中输入命令：
+$ sudo yum install ibus
+$ sudo yum install ibus-sunpinyin
+#####
+ 
+
+13、 安装libreoffice
+首先安装libreoffice.org套件，终端中输入命令：
+<src type="bash">
+$ sudo yum groupinstall "Office/Productivity"
+</src>
+安装好后，由于采用默认安装，语言是英文，在终端中输入如下命令查找来安装中文语言包：
+<src type="bash">
+$ sudo yum list libreoffice*
+</src>
+....
+libreoffice-langpack-ur.i686                    1:3.3.2.2-7.fc15         fedora
+libreoffice-langpack-ve.i686                    1:3.3.2.2-7.fc15         fedora
+libreoffice-langpack-xh.i686                    1:3.3.2.2-7.fc15         fedora
+libreoffice-langpack-zh-Hans.i686               1:3.3.2.2-7.fc15         fedora
+libreoffice-langpack-zh-Hant.i686               1:3.3.2.2-7.fc15         fedora
+libreoffice-langpack-zu.i686                    1:3.3.2.2-7.fc15         fedora
+....
+然后安装中文语言包，在终端中输入命令：
+<src type="bash">
+$ sudo yum -y install libreoffice-langpack-zh-Hans
+$ sudo yum -y install libreoffice-langpack-zh-Hant
+</src>
+这样就完成了中文OpenOffice中文版的安装。
+(openoffice方法形同，只不过把libreoffice改为openoffice就可以了)
+#####
+
+
+14、 安装gcc g77
+在终端中输入命令：$ sudo yum install gcc*安装gcc
+在终端中输入命令：$ sudo yum search g77可以看到
+compat-gcc-34-g77.i686 : Fortran 77 support for compatibility compiler
+在终端中输入命令：$ sudo yum install compat-gcc-34-g77安装g77。
+#####
+ 
+
+15、 安装CHM阅读器
+gnochm是一个gnome环境下比较完美的chm阅读器了，可以说是完美支持中文的。
+在终端中输入命令：$ sudo yum install gnochm
+安装完成。
+#####
+ 
+
+16、 安装firefox flash插件
+方法一：
+到adobe官方网站下载linux下的flash插件安装。
+方法二：
+首先添加adobe软件仓并导入密钥,在终端中输入命令：
+$ sudo rpm -ivh http://linuxdownload.adobe.com/linux/i386/adobe-release-i386-1.0-1.noarch.rpm
+
+## Adobe Repository 64-bit x86_64 ##
+rpm -ivh http://linuxdownload.adobe.com/adobe-release/adobe-release-x86_64-1.0-1.noarch.rpm
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-adobe-linux
+
+$ sudo rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-adobe-linux
+然后在终端中输入命令：$ sudo yum install flash-plugin
+安装完成。
+#####
+ 
+
+17、 安装unrar
+fedora默认无法直接打开rar压缩文件，需要安装unrar。
+在终端中输入命令：$ sudo yum install unrar
+安装完成。
+#####
+ 
+
+18、 安装系统清理工具BleachBit
+BleachBit 是一款专为 Linux 设计的系统清理工具。使用 BleachBit，你可以清理系统中的缓存、历史、临时文件、cookies 等不需要的东西，这样可以释放你的磁盘空间。当前，BleachBit 能够清理 Beagle、Firefox、Opera、Epiphany、Flash、OpenOffice.org 等软件所产生的垃圾文件。
+终端中输入命令：$ sudo yum install bleachbit
+安装完成。
+#####
+ 
+
+19、 安装gnome3 tweak tool工具
+fedora 15 采用gnome3之后，gnome-tweak-tool为配置桌面必不可少的工具。
+终端中输入命令：$ sudo yum install gnome-tweak-tool
+安装完成后，找到advanced settings，这个就是tweak tool。
+#####
+ 
+
+20、 设置Delete键直接删除文件
+在Fedora 15 GNOME 3环境下，默认使用Delete键删除文件的时候，必须配合Ctrl键才能实现。一般来说这很麻烦，更改这一设置可以用如下方法.
+首先，在终端中输入命令：$ gsettings set org.gnome.desktop.interface can-change-accels true
+其次，打开Nautilus文件管理器，选中任意一个文件，然后打开“编辑（Edit）”选项，将鼠标移动到“Move to Trash（移动到回收站）”，这时，连续按“Delete”按钮两次。这样就设置Delete键直接删除文件啦。
+最后，禁用快捷键设置功能，在终端中输入命令：$ gsettings set org.gnome.desktop.interface can-change-accels false
+#####
+ 
+
+21、 安装Faenza图标集
+在终端中输入命令：$ sudo yum search faenza可以得到
+faenza-icon-theme.noarch : Icon theme designed for Equinox GTK theme
+在终端中输入命令：$ sudo yum install faenza-icon-theme安装Faenza图标集。
+安装完毕之后，使用gnome3-tweak-tool启用主题，在interface栏中的Icon Theme项中选Faenza即可。
+#####
+
+22、 安装vitrualbox
+<src type="text">
+wget http://download.virtualbox.org/virtualbox/rpm/fedora/virtualbox.repo -O /etc/yum.repos.d/virtualbox.repo
+</src>
+
+* 自动登陆
+1. 修改custom.conf
+
+<src type="bash">
+# vi /etc/gdm/custom.conf
+</src>
+
+在最后添加以下内容：
+
+<src type="bash">
+[daemon]
+TimedLoginEnable=true
+TimedLogin=jack
+TimedLoginDelay=3
+</src>
+
+简单解释一下：
+ - TimedLoginEnable=true    允许超时自动登录
+ - TimedLogin=jack      自动登录的用户为jack
+ - TimedLoginDelay=3          超时时间为3秒
+
+ 2. Fedora13中的用户自动登录配置：
+
+编辑：/etc/gdm/gdm.schemas
+<src type="xml">
+     <schema>
+      <key>daemon/AutomaticLoginEnable</key>
+      <signature>b</signature>
+      <default>true</default>        <----把false改为true
+    </schema>
+    <schema>
+      <key>daemon/AutomaticLogin</key>
+      <signature>s</signature>
+      <default>要自动登录的用户名</default>
+    </schema>
+</src>
+
+3. 如果想让root也能登录 ,还要修改下面的内容（经测试可以实现自动登录） 
+<src type="xml">
+vi /etc/pam.d/gdm
+注释其中的一行 auth required pam_succeed_if.so user != root quiet
+然后 vi /etc/pam.d/gdm-password
+注释其中的一行 auth required pam_succeed_if.so user != root quiet
+</src>
+
+* 修改启动级别
+以前是使用/etc/inittab这个文件来定义的，fedora17是用/etc/systemd/system/default.target。
+
+修改图形界面为command界面
+<src type="bash">
+# rm -f /etc/systemd/system/default
+# ln -s /lib/systemd/system/runlevel3.target /etc/systemd/system/default.target
+</src>

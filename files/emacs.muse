@@ -1,0 +1,153 @@
+#title 牛头的修行
+
+* 新版本
+emacs 22.1 总算是发布了。分布在世界各地的 emacs 腐竹跪在地上老泪纵横，六年了! 六年了!
+终于让我等到了新的稳定版本...然后站起身，打开电脑，继续用他们的 
+emacs-snapshot-unicode-gtk，也就是那个传说中 Alpha 版本可能丢失你的数据的 emacs 23。
+
+在发展与稳定之间，Richard 的犹犹豫豫患得患失似乎已经变得令人不耐烦，
+今番新版本发布也是在跳了几次票之后才千呼万唤始出来的，看看那个传说中的``下一代 emacs" 
+-- xemacs，早就加入矢量字体和图片显示支持了，而 emacs 呢? 至少新的稳定版 emacs 22.1 
+还不是 unicode 核心的。对中文支持并不算太好。
+
+不过这并不妨碍我对 emacs 的喜爱，哈哈。
+
+参考了很多人的配置，大部分是 Linux 天地@98 的前版主 pluskid[1] 的
+
+** 安装与初步配置
+推荐安装的自然是 emacs 23，关于编译安装的帖子网上已经很多了，想要这么干的话自己去百度吧。
+debian 和 ubuntu 用户则方便许多，执行下面这个命令就好了。没权限记得 sudo。
+<example># apt-get install emacs-snapshot-unicode-gtk</example>
+不过很有可能你的源里面没有这个东东，debian 的用户可以在 =sources.list= 里面加入 ustc 的
+non-official 源即可，我会在另外一篇 [[debian][汇聚社区力量 -- debian]] 里面讲。
+ubuntu 的话我不是很清楚了，因为不用很久了，加上以前就是因为那个什么 lupa world 什么的，
+提供的亚洲官方源要收费，所以不用了。当然，大部分因素不是鄙视他们，大家都要混口饭吃嘛。
+
+然后就是从此以后都要伴随你的 =customization= 了，你的 =.emacs= 文件会因此
+变得很长，成就感。哈哈，不过成就感归成就感，把配置文件分得清楚一点毕竟
+好些，请参考 kid 的配置例子。顺便提下，Windows 版的 Emacs 安装可以去
+emacswiki 上看 [[http://www.emacswiki.org/cgi-bin/wiki/MsWindowsInstallation][MsWindowsInstallation]]，上面还有关于相关设置之类的，我自
+己的笔记在 [[windows][Windows Notes]] 这里，[[http://www.gnu.org/software/emacs/windows/ntemacs.html][GNUEmacs FAQ for Windows]] 这个算是官方
+FAQ 了把。
+
+
+*** 字体
+前面已经说过，emacs 23 已经支持 [[http://www.emacswiki.org/cgi-bin/wiki/XftGnuEmacs][xfts]] 了，以前还需要加参数 =--enable-font-backend= 
+之类的东西才支持，前几天更新了之后现在已经不用鸟。
+<src type="elisp">
+(if (string-match "23" (emacs-version)) ; 老版本不支持矢量字体
+    (progn
+      (set-default-font "DejaVu Sans Mono-10") ; 选择等宽字体
+      (set-fontset-font
+       (frame-parameter nil 'font)
+       'gb18030 '("方正准圆_GBK" . "unicode-bmp")))) ; 中文显示用字体
+</src>
+如果是自己编译安装 emacs 23 的话请务必加上编译参数，昨天我就不得不重新
+编译一次一,一：
+<example># ./configure --with-gtk --with-xft --enable-font-backend</example>
+
+*** 绝对不是记事本
+作为字处理工具，emacs 于我们这些学生而言最常用的自然是写程序，因此它的 =c-mode= 变得很重要。
+emacs 本身提供的 =c-mode= 其实已经算蛮不错了，再加上一些小特点就完美了:
+ 1. 代码折叠 
+ 2. vi 风格的退格删除
+ 3. vi 风格的注释
+ 4. 换行自动缩进
+ 5. 还是不要制表符了吧...
+
+把下面这些函数绑定到相应的键就行了，照搬自 mikeandmore[3]。
+<src type="elisp">
+(defun my-indent-or-complete ()
+  (interactive)
+  (if (looking-at "\\>")
+      (hippie-expand nil)
+    (indent-for-tab-command))
+  )
+
+(defun vi-backspace-unindent ()
+  (interactive)
+  (if (looking-back "^[[:blank:]]+")
+      (let ((i 4))
+	(while (and (not (looking-at "^")) (> i 0))
+	  (backward-delete-char 1)
+	  (setq i (- i 1))))
+    (backward-delete-char 1))
+  )
+
+(defun newline-cindent ()
+  (interactive)
+  (c-indent-new-comment-line)
+  (indent-for-tab-command)
+  )
+</src>
+
+* 扩展
+
+** 扮靓
+要粉墨登场的自然是 emacs 腐竹必备之物 -- =colcor-theme=。仅仅依靠编辑 =.emacs= 
+其实也能够让 emacs 变得多姿多彩，然而这样的事情毕竟太过烦冗乏味了，而且真这么干的话，=.emacs=
+文件就太过恐怖了。所以呢，我们有叫做 emacs 扩展的这么个东西，不敢讲太细，怕被牛人看到笑话我，
+躲墙角画圈圈去了。先翻译一点 emacswiki 上的介绍来作数:
+``=color-theme= 是个提供超过50个颜色主题给您使用的 =emacs-lisp=[2] 包。"
+
+要做的只是，拷贝 color-theme.el 到 emacs 的扩展加载目录，现成的有个 
+=.emacs.d/site-lisp/=。好像是这里... 然后添加代码，下面这个是我的配置，参考了 kid 的，
+emacs lisp 我自己也是学习中。
+<src type="elisp">
+(require 'color-theme)			; 颜色主题
+(if window-system
+    (color-theme-dark-blue)
+  (color-theme-dark-blue))
+</src>
+
+*** 函数未定义
+好像是新版本的 color-theme.el 的缘故，在使用定义的主题之前需要手动将他
+们载入，即：<src type="elisp">(color-theme-initialize)</src>
+放到 require 后面就行了。不过新版本有个好就是函数 =(color-theme-print)=
+把正在使用的主题打印出来，把这段独自拿出来用，就不用每次都要加载那么大
+的库了。
+
+** 文曲星
+教主 pluskid 编写的 emacs 扩展，通过 stardict 的命令行接口 sdcv 实现在 emacs 里面
+实时查字典，很实用很好玩的功能，不用看文档看到一半开 stardict 去。
+看这个就是了，代码下载和扩展使用都在[[http://easybar.8866.org/~pluskid/EmacsStardict.html][这里]]。[4]
+
+** 家庭影院
+[[emms][../images/emms-logo-small.png]]
+
+其实没标题这么夸张，只是个多媒体管理系统而已。emms，全名是 emacs multimedia system。
+以前坚持不将 mp3 文件的标签转换成 UTF-8 编码的时候一直是依赖着它来听歌，因为可以不解析标签，
+用文件名显示列表即可，哈哈。现在基本上都用 amarok，有的时候忘开 mysql 服务了会有点烦。
+
+** 梦的编织者
+[[muse][../images/muse-made-with.png]]
+
+指的自然不是 dreamweaver :D 虽然据说这玩意也有 linux 下的版本，而且还是 deb 包，
+不过我从来没有找到过。我指的是 emacs-muse，就是我用来做这个小网站用的东西，很好玩，
+但是因为 elisp 并没有怎么深入学习过，因此在进一步实用上有点难度。
+
+* Elisp 修行
+[[elisp_intro][../images/blog_head.jpeg]]
+
+其实很多时候一般使用的话，不会 elisp 也无妨，参考一些注释比较详尽的 =.emacs= 
+文件搞搞复制黏贴也就差不多了。不过，追求无止境嘛，为了能够更上层楼，穷穷千里目看看，
+还是有必要学习下的，何况都已经是 lisp 的简化版了，能够从这个入门再去研究 common lisp 的话，
+自然皆大欢喜。
+
+Footnotes: 
+[1]  很多地方都是参考 [[http://easybar.8866.org/~pluskid/][pluskid]] 的，我是半吊子，要学习最好参考他的主页。
+
+[2]  emacs 扩展语言，是 common lisp 的方言的一种，相对比较简单易学。
+
+[3]  大零小弟弟，牛气轰轰的, 让我深深地觉得自己老了。
+
+[4]  StarDict 命令行接口 =sdcv= 与字典的安装：
+<example>
+# aptitude install sdcv
+# tar -xjvf a.tar.bz2
+# mv a /usr/share/stardict/dic
+</example>
+
+* 小贴士
+** HOWTO Replace Something with Newline in Emacs
+(2008-10-08) [[http://jeremy.zawodny.com/blog/archives/008872.html][The answer]], it turns out, is: C-q C-j.

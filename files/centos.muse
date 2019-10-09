@@ -1,0 +1,1467 @@
+#title Centos
+
+
+
+<contents>
+
+
+* 安装
+** 下载地址
+如果网络好，可以下载网络安装的iso,[[http://mirrors.sohu.com/centos/6.3/isos/i386/CentOS-6.3-i386-netinstall.iso][netinstall.iso]]
+
+如果网络不好可以下载DVD： [[][]]
+
+** 刻录到usb中
+<src type="bash">
+dd if=netinstall.iso of=/dev/sdb
+</src>
+
+** centos URL地址
+<src type="bash">
+i386: http://mirror.centos.org/centos/6/os/i386/
+x64: http://mirrors.163.com/centos/6/os/x86_64
+</src>
+
+** 更新系统
+<src type="bash">
+yum update
+</src>
+
+** 安装相关包
+<src type="bash">
+yum -y install gcc cmake make gcc-c++ autoconf wget openssh-clients libjpeg libjpeg-devel libpng libpng-devel freetype freetype-devel libxml2 libxml2-devel zlib zlib-devel curl curl-devel ncurses ncurses-devel openssl openssl-devel bison
+</src>
+
+** yum源
+添加2个国内的yum源
+[[http://mirrors.sohu.com/help/CentOS-Base-sohu.repo][sohu]] [[http://mirrors.163.com/.help/CentOS-Base-163.repo][163]]
+
+生成缓存
+<src type="bash">
+yum makecache
+</src>
+
+安装fastesmirror插件
+<src type="bash">
+yum install yum-fastestmirror* -y
+</src>
+
+**  网络
+ - 法一：<br>
+<src type="bash">
+# system-config-network
+</src>
+ - 法二:<br>
+网络的配置文件放在在
+<src type="text">
+/etc/sysconfig/network-scripts/
+</src>
+路由配置的规则
+<src type="text">
+/etc/udev/rules.d/70-persistent-net.rules
+</src>
+
+遇到硬盘装错了主机，出现网卡原来的eth0和eth1用ifconfig没有出来，而是出现eth2,eth3，在/etc/sysconfig/network-scripts/又有ifcfg-eth0和ifcfg-eth1,网络不通。出现这样的原因是因为/etc/udev/rules.d/70-persistent-net.rules里有点乱。解决的办法：
+ 1. 清空/etc/udev/rules.d/70-persistent-net.rules
+ 2. reboot
+ 3. 对着/etc/udev/rules.d/70-persistent-net.rules里面的eth0和eth1中的mac地址，修改ifcfg-eth0和ifcfg-eth1中的地址
+ 4. service network restart
+
+** 主机名
+查看主机名：
+<src type="bash">
+hostname
+</src>
+
+查看主机名对应的IP地址：
+<src type="bash">
+hostname -i
+</src>
+
+设置主机名，立即生效
+<src type="bash">
+hostname myhostname
+</src>
+
+修改主机名需要修改2个文件
+ - /etc/hosts<br>
+这个是网络中用的
+ - /etc/sysconfig/network<br>
+这个是本机用的
+
+* LAMP
+创建用户,把apache的启动用户
+<src type="bash">
+# useradd netmachine
+</src>
+
+** Apache
+*** 安装依赖软件
+ 1. apr
+<src type="text">
+# wget http://mirror.bit.edu.cn/apache//apr/apr-1.4.6.tar.bz2
+# tar xvf apr-1.4.6.tar.bz2
+# cd apr-1.4.6
+# ./configure --prefix=/usr/local/apr
+# make && make install
+</src>
+
+ 2. apr-util
+<src type="text">
+# wget http://apache.dataguru.cn//apr/apr-util-1.5.1.tar.bz2
+# tar xvf apr-util-1.5.1.tar.bz2
+# cd apr-util-1.5.1
+# ./configure --prefix=/usr/local/apr-util --with-apr=/usr/local/apr/bin/apr-1-config
+# make && make install
+</src>
+ 
+ 3. pcre
+下载地址[[ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/][pcre]]
+<src type="bash">
+#  wget -O pcre-8.32.tar.bz2 http://downloads.sourceforge.net/project/pcre/pcre/8.32/pcre-8.32.tar.bz2?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fpcre%2Ffiles%2Fpcre%2F&ts=1356418520&use_mirror=nchc
+# ./configure --prefix=/usr/local/pcre
+# make && make install
+</src>
+
+建立用户,不然会出现： httpd exit signal Segmentation fault 错误
+<src type="bash">
+# groupadd httpd
+# useradd -r -g httpd httpd
+</src>
+
+*** 安装httpd
+预编译
+<src type="bash">
+# wget http://mirror.bjtu.edu.cn/apache/httpd/httpd-2.4.3.tar.gz
+# tar xvf httpd-2.4.3.tar.gz
+# cd httpd-2.4.3
+# ./configure --prefix=/opt/httpd --enable-so --enable-rewrite --with-apr=/usr/local/apr \
+  --with-apr-util=/usr/local/apr-util/ \
+  --with-pcre=/usr/local/pcre \
+  --with-mpm=worker \
+  --enable-deflate \
+  --enable-cache \
+  --enable-disk-cache \
+  --enable-file-cache \
+  --enable-mem-cache \
+  --enable-speling \
+  --enable-ssl \
+  --with-ssl \
+  --with-z \
+  --enable-modules=all \
+  --enable-mods-shared=all
+</src>
+选项说明：
+ - --prefix=/opt/httpd<br>
+  //Apache的安装目录。
+ - --enable-module=so <br>
+  //打开 so 模块，so 模块是用来提 DSO 支持的 apache 核心模块
+ - --enable-deflate=shared //支持网页压缩
+ - --enable-expires=shared //支持 HTTP 控制
+ - --enable-rewrite=shared //支持 URL 重写
+ - --enable-cache //支持缓存
+ - --enable-file-cache //支持文件缓存
+ - --enable-mem-cache //支持记忆缓存
+ - --enable-disk-cache //支持磁盘缓存
+ - --enable-static-support //支持静态连接(默认为动态连接)
+ - --enable-static-htpasswd <br>
+  //使用静态连接编译 htpasswd - 管理用于基本认证的用户文件
+ - --enable-static-htdigest <br>
+  //使用静态连接编译 htdigest - 管理用于摘要认证的用户文件
+ - --enable-static-rotatelogs <br>
+  //使用静态连接编译 rotatelogs - 滚动 Apache 日志的管道日志程序
+ - --enable-static-logresolve <br>
+  //使用静态连接编译 logresolve - 解析 Apache 日志中的IP地址为主机名
+ - --enable-static-htdbm <br>
+  //使用静态连接编译 htdbm - 操作 DBM 密码数据库
+ - --enable-static-ab <br>
+  //使用静态连接编译 ab - Apache HTTP 服务器性能测试工具
+ - --enable-static-checkgid <br>
+  //使用静态连接编译 checkgid
+ - --disable-cgid <br>
+  //禁止用一个外部 CGI 守护进程执行CGI脚本
+ - --disable-cgi //禁止编译 CGI 版本的 PHP
+ - --disable-userdir //禁止用户从自己的主目录中提供页面
+ - --with-mpm=worker // 让apache以worker方式运行
+ - --enable-authn-dbm=shared // 对动态数据库进行操作。Rewrite时需要。
+ - --enable-mods-shared="all ssl ldap cache proxy authn_alias mem_cache 
+         file_cache authnz_ldap charset_lite dav_lock disk_cache"<br>
+ 按照apache官方文档的说法，--enable-mods-shared=all并不会启用所有的额外模块，要想把所有的模块都安装，应该使用这个方式对 --enable-modules也是一样的。呵呵，好强大。
+
+ 
+编译和安装
+<src type="bash">
+# make && make install
+</src>
+
+配置
+<src type="bash">
+vi /opt/httpd/conf/httpd.conf
+# 修改User和Group的用户
+User httpd
+Group httpd
+# 更改DocumentRoot的目录
+DocumentRoot "/home/httpd/www"
+<Directory "/home/httpd/www">
+
+# 打开url rewrite
+###取消下面一句的注释
+LoadModule rewrite_module modules/mod_rewrite.so
+### 把下面这一句None改成All
+<Directory "/home/httpd/www">
+...
+AllowOverride All
+</src>
+
+重启apache
+<src type="bash">
+# /opt/httpd/bin/httpd -k start
+</src>
+
+开通80端口
+<src typ="bash">
+# /sbin/iptables -I INPUT -p tcp --dport 80 -j ACCEPT
+</src>
+或者是在/etc/sysconfig/iptables中增加
+<src typ="bash">
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 80 -j ACCEPT
+</src>
+
+把apache加入系统service，开机自启动
+<src type="bash">
+# cp /opt/httpd/bin/apachectl /etc/init.d/httpd
+# vi /etc/init.d/httpd      #加入如下内容
+#!/bin/sh		    # 如果有这一句就不需要了
+# chkconfig: 2345 85 15     # 注意冒号是需要的，2345表示启动的级别，会在/etc/rc2(/3/4/5).d中分别建立S85httpd的软链接；
+                            # 85表示启动序号(S85),15关闭序号(K15)
+# description: Apache is a World Wide Web server. 
+sudo chmod +x /etc/init.d/httpd
+sudo /sbin/chkconfig --add httpd
+sudo /sbin/chkconfig --list httpd
+sudo ln -s /sbin/chkconfig /usr/bin/chkconfig
+sudo ln -s /sbin/service /usr/bin/service
+</src>
+
+** mysql
+*** 安装前准备
+<src type="bash">
+# groupadd mysql
+# useradd -r -g mysql mysql
+</src>
+
+*** 安装
+<src type="bash">
+# wget http://cdn.mysql.com/Downloads/MySQL-5.5/mysql-5.5.29.tar.gz
+# tar xvf mysql-5.5.29.tar.gz
+# cd mysql-5.5.29
+# cmake -DCMAKE_INSTALL_PREFIX=/opt/mysql \
+-DMYSQL_DATADIR=/opt/mysql/data \
+-DEXTRA_CHARSETS=all \
+-DDEFAULT_CHARSET=utf8 \
+-DDEFAULT_COLLATION=utf8_general_ci \
+-DWITH_READLINE=1 \
+-DWITH_SSL=bundled \
+-DWITH_EMBEDDED_SERVER=1 \
+-DENABLED_LOCAL_INFILE=1 \
+-DWITH_INNOBASE_STORAGE_ENGINE=1 \
+-DWITHOUT_PARTITION_STORAGE_ENGINE=1 \
+-DWITH_DEBUG=0 
+# make && make install
+</src>
+
+*** 权限和初始化数据库
+<src type="bash">
+# chown -R mysql:mysql /opt/mysql
+# cd /opt/mysql/  # 不执行这一步会报错：FATAL ERROR: Could not find ./bin/my_print_defaults
+### 初始化数据库,不执行会出现：Table 'mysql.host' doesn't exist,
+### 如果修改了/etc/init.d/mysqld 中的basedir，--datadir也得相应的修改
+# mkdir /home/mysql/data
+# chown -R mysql:mysql /home/mysql
+# scripts/mysql_install_db --user=mysql --datadir=/home/mysql/data
+</src>
+
+*** 配置文件
+<src type="bash">
+# cp /opt/mysql/support-files/my-medium.cnf /etc/my.cnf
+</src>
+如果在编译的时候没有加入初始数据库默认字符集参数（-DDEFAULT_CHARSET=utf8 ，-DDEFAULT_COLLATION=utf8_general_ci ），那么在安装完成后就需要编辑my.ini，在[client]和[mysqld]更改MySQL默认编码，保存并关闭。如下：
+
+<src type="bash">
+[client]
+default-character-set = utf8
+
+[mysqld]
+character-set-server = utf8
+</src>
+
+*** 启动
+<src type="bash">
+# /opt/mysql/bin/mysqld_safe --user=mysql &
+</src>
+
+*** 自动启动
+<src type="bash">
+# cp /opt/mysql/support-files/mysql.server /etc/init.d/mysqld
+# vi /etc/init.d/mysqld
+### 修改datadir的值为
+datadir=/home/mysql/data
+
+# chmod +x /etc/init.d/mysqld
+# chkconfig --add mysqld
+# chkconfig --level 345 mysqld on
+</src>
+
+*** 修改root密码
+<src type="bash">
+# mysql -uroot
+>SET PASSWORD FOR 'root'@'localhost'=PASSWORD('new_password');
+>SET PASSWORD FOR 'root'@'host_name'=PASSWORD('new_password');
+</src>
+
+另外一个修改密码的方法
+<src type="bash">
+# mysqladmin -uroot password "new Password"
+</src>
+
+*** 添加用户
+用户：username 密码： password
+<src type="text">
+> GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,DROP ON dbname.* TO 'username'@'localhost' IDENTIFIED BY 'password';
+</src>
+
+** php
+*** 安装依赖软件
+
+<src type="bash">
+# yum -y install libxml2 libxml2-devel curl curl-devel libjpeg libjpeg-devel libpng libpng-devel libXpm libXpm-devel freetype freetype-devel libtool-ltdl-devel
+</src>
+
+libmcrypt
+<src type="bash">
+# wget http://downloads.sourceforge.net/project/mcrypt/Libmcrypt/2.5.8/libmcrypt-2.5.8.tar.bz2?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fmcrypt%2Ffiles%2FLibmcrypt%2F2.5.8%2F&ts=1356486305&use_mirror=ncu
+# ./configure
+# make && make install
+</src>
+
+mhash
+<src type="bash">
+# wget http://downloads.sourceforge.net/project/mhash/mhash/0.9.9.9/mhash-0.9.9.9.tar.bz2?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fmhash%2F%3Fsource%3Ddirectory&ts=1356486612&use_mirror=nchc
+# export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+# ./configure
+# make && make install
+</src>
+
+mcrypt
+<src type="bash">
+# wget http://downloads.sourceforge.net/project/mcrypt/MCrypt/2.6.8/mcrypt-2.6.8.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fmcrypt%2F%3Fsource%3Ddirectory&ts=1356446379&use_mirror=nchc
+# ./configure
+# make && make install
+</src>
+
+*** 预编译
+<src type="bash">
+# wget http://cn2.php.net/distributions/php-5.4.10.tar.bz2
+# ./configure --prefix=/opt/php \
+  	    --with-apxs2=/opt/httpd/bin/apxs \
+	    --with-config-file-path=/opt/php/etc \
+	    --with-curl \
+	    --with-mcrypt \
+	    --enable-mbstring \
+	    --with-iconv \
+	    --with-gd \
+	    --with-jpeg-dir=/usr/local/lib \
+        --with-freetype-dir=/usr/lib64 \
+	    --enable-pdo \
+	    --with-pdo-mysql=mysqlnd \
+	    --with-mysqli=mysqlnd \
+	    --with-mysql=mysqlnd \
+	    --with-mysql=/opt/mysql \
+	    --with-mysqli=/opt/mysql/bin/mysql_config \
+	    --enable-xml \
+	    --enable-sockets \
+	    --enable-zip \
+        --with-gettext
+</src>
+
+编译和安装
+<src type="bash"> 
+# make && make install
+</src>
+
+*** 配置
+<src type="bash">
+# cp php.ini-production /opt/php/etc/php.ini
+# ln -s /opt/php/bin/php /usr/bin/php
+# ln -s /opt/php/bin/php-config /usr/bin/php-config
+# ln -s /opt/php/bin/phpize /usr/bin/phpize
+
+# vi /opt/php/lib/php.ini # 把include_path前面的分号删除，改成include_path = ".:/opt/php/lib/php"
+</src>
+
+<src type="bash">
+vi /opt/httpd/conf/httpd.conf
+# 在AddHandler中增加
+AddHandler application/x-httpd-php .php
+# 修改User和Group的用户
+User httpd
+Group httpd
+</src>
+
+重启
+<src type="bash">
+# /opt/httpd/bin/httpd -k restart
+</src>
+
+*** 测试
+<src type="bash">
+echo "<?php phpinfo();" > /opt/httpd/htdocs/phpinfo.php
+</src>
+打开：http://localhost/phpinfo.php
+
+*** 安装memcache的扩展
+<src type="bash">
+# wget http://pecl.php.net/get/memcache -O memcache-2.2.7.tgz
+# /opt/php/bin/phpize
+# ./configure --enable-memcache --with-php-config=/opt/php/bin/php-config --with-zlib-dir
+# make && make install
+</src>
+修改php配置
+<src type="bash">
+vi /opt/php/etc/php.ini
+[memcache]
+extension=memcache.so
+</src>
+*** qwry
+qwry是分析qwry.dat的一个扩展，作用就是根据IP取得地址，在天气中有用到
+<src type="bash">
+wget http://pecl.php.net/get/qqwry-0.1.0.tgz
+tar zxvf qqwry-0.1.0.tgz
+cd qqwry-0.1.0
+phpize
+./configure --with-php-config=/opt/php/bin/php-config
+make
+make install
+</src>
+vi /opt/php/etc/php.ini
+<src type="text">
+[qqwry]
+extension=qqwry.so
+</src>
+
+*** soap
+如果安装的时候没有安装soap扩展，可以通过下面的方式来安装
+<src type="bash">
+$ cd /home/netmachine/software/php-5.4.10/ext/soap
+$ /opt/php/bin/phpize
+$ ./configure -with-php-config=/opt/php/bin/php-config -enable-soap
+$ make
+$ sudo make install
+extension=soap.so   #在php.ini中加入:
+$ /opt/php/bin/php -m | grep "soap" | grep -v "grep"  # 查看是否安装成功
+$ sudo service httpd restart   # 重启apache
+</src>
+
+*** ssh2
+下载
+<src type="bash">
+wget http://pecl.php.net/get/ssh2
+</src>
+
+安装
+<src type="bash">
+/opt/php/bin/phpize
+./configure -with-php-config=/opt/php/bin/php-config --with-ssh2
+make
+make install
+</src>
+
+配置
+<src type="bash">
+extesion=ssh2.so
+</src>
+
+例子
+<src type="php">
+<?php
+$connection = ssh2_connect('192.168.0.145', 22);
+ssh2_auth_password($connection, 'username', 'password');
+
+$stream = ssh2_exec($connection, '/usr/local/bin/php -i');
+stream_set_blocking( $stream, true );
+echo (stream_get_contents($stream));
+
+$stream = ssh2_exec($connection, 'ls');
+stream_set_blocking( $stream, true );
+echo (stream_get_contents($stream));
+</src>
+
+*** phpmyadmin
+下在phpmyadmin的程序包，然后解压到指定的位置/opt/nginx/www/phpmyadmin。
+
+如果打开phmyadmin的时候出现session的错误，考虑session的保存目录（apache/nginx进程）是否有写的权限。session保存的目录通过phpinfo()函数可得知
+
+** memcached
+*** 安装前准备
+yum -y install libevent libevent-devel
+
+*** 安装
+<src type="bash">
+wget http://memcached.googlecode.com/files/memcached-1.4.13.tar.gz
+./configure --prefix=/opt/memcached
+make && make install
+</src>
+
+*** 编写服务启动脚步
+<src type="bash">
+vi /etc/init.d/memcached
+</src>
+内容如下：
+<src type="bash">
+#!/bin/sh                                                                                                                                                      
+#                                                                                                                                                              
+# Startup script for the server of memcached                                                                                                                   
+# processname: memcached                                                                                                                                       
+# pidfile: /opt/memcached/memcached.pid                                                                                                                        
+# logfile: /opt/memcached/memcached_log.txt                                                                                                                    
+# memcached_home: /etc/memcached                                                                                                                               
+# chkconfig: 345 21 79                                                                                                                                          
+# description: Start and stop memcached Service                                                                                                                
+
+# Source function library                                                                                                                                      
+. /etc/rc.d/init.d/functions
+
+RETVAL=0
+
+prog="memcached"
+basedir="/opt/memcached"
+cmd=${basedir}/bin/memcached
+pidfile=${basedir}/${prog}.pid
+logfile=${basedir}/${prog}_log
+
+# 设置启动参数                                                                                                                                                 
+ipAddr="127.0.0.1"              # 侦听地址                                                                                                                     
+port="11211"
+username="root"                 # 允许memcached的用户                                                                                                          
+max_memory=128                  # 最大使用内存128m，默认64m                                                                                                    
+max_conn=1024                   # default: 1024 | 最大同时连接数                                                                                               
+#maxcon=51200                                                                                                                                                  
+#growth_factor=1.3              # default: 1.25 | 块大小增长因子                                                                                               
+#thread_num=6                   # default: 4                                                                                                                   
+#verbose="-vv"                  # 查看详细启动信息                                                                                                             
+#bind_protocol=binary           # ascii, binary, or auto (default)                                                                                             
+
+start(){
+        echo -n $"Starting Service : ${prog}"
+        $cmd -d -m $max_memory -u $username -l $ipAddr -p $port -c $max_conn -P ${pidfile}
+        RETVAL=$?
+        echo
+        [ $RETVAL -eq 0 ] && touch /var/lock/${prog}
+}
+stop(){
+        echo -n $"Stopping Service : ${prog}"
+        run_user=`whoami`
+        pidlist=`ps -ef | grep $run_user | grep ${prog} | grep -v grep | awk '{print($2)}'`
+        for pid in pidlist
+        do
+            kill 9 $pid
+            if [ $? -ne 0 ]; then
+                return 1;
+            fi
+        done
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] && rm -f /var/lock/${prog}
+}
+
+case "$1" in
+    start)
+        start
+	;;
+    stop)
+        stop
+	;;
+    restart)
+	stop
+	start
+	;;
+    status)
+	status memcached
+	;;
+    *)
+      	echo "Usage: $0 {start|stop|restart|status}"
+	exit 1
+esac
+exit $RETVAL
+</src>
+
+自动启动
+<src type="bash">
+# chmod +x /etc/init.d/memcached
+# chkconfig --add memcached
+</src>
+
+修改防火墙设置,在/etc/sysconfig/iptables添加一行
+<src type="bash">
+-A RH-Firewall-I-INPUT -p tcp -m tcp --dport 11211 -j ACCETP
+</src>
+
+重启防火墙:
+<src type="bash">
+# service iptables restart
+</src>
+
+** 压力测试
+http://blog.licess.org/http_load-webbench-ab-siege/
+
+**** webbench
+
+**** ab
+
+**** http_load
+
+**** siege
+
+* samba
+** 安装samba
+<src type="bash">
+# yum -y install samba
+</src>
+
+** 配置
+配置文件在/etc/samba/smb.conf
+
+** 开启防火墙
+vi /etc/sysconfig/iptables,增加一些几行
+<src type="bash">
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 139 -j ACCEPT
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 445 -j ACCEPT
+-A INPUT -p udp -m udp --dport 137 -j ACCEPT
+-A INPUT -p udp -m udp --dport 138 -j ACCEPT
+</src>
+
+** 启动
+<src type="bash">
+# service smb start
+</src>
+
+** swat
+swat( Samba Web Adminstration Tool),是samba的web管理工具，这里配置https来访问
+ 1. 安装openssl
+<src type="bash">
+# yum -y install openssl
+</src>
+ 2. 安装stunnel
+<src type="bash">
+# yum -y install stunnel
+</src>
+ 3. 生成密匙
+<src type="bash">
+# mkdir /etc/stunnel
+# chmod go-rwx /etc/stunnel/
+# openssl req -new -x509 -days 365 -nodes -out /etc/stunnel/swat.pem -keyout /etc/stunnel/swat.pem
+# chmod o-r /etc/stunnel/swat.pem
+# echo "swat : 192.168.1.10" >> /etc/hosts.allow  ## 允许访问的ip地址
+</src>
+ 4. 建立swat.conf文件
+<src type="bash">
+# vi /etc/stunnel/swat.conf
+</src>
+# 内容如下：
+<src type="bash">
+cert = /etc/stunnel/swat.pem
+pid = /var/run/stunnel.swat
+service = swat
+
+[swat]
+accept = 901
+exec = /usr/sbin/swat
+execargs = swat
+TIMEOUTclose = 0
+</src> 
+ 5. 运行
+<src type="bash">
+stunnel /etc/stunnel/swat.conf
+</src>
+ 6. 测试<br>
+在192.168.1.10的机器的浏览器上打开https://serverip:901 
+
+*** swat的使用
+在的浏览器上打开https://serverip:901 ，
+ - [global] <br>
+  - [Base Options] <br>
+
+ 
+* rsync
+如果文件的路径有空格，需要使用“”（引号）。
+<src type="bash">
+# rsync -avz /run/media/"TOSIBA\ EXT"/www root@192.168.1.201:/home/netmachine
+</src>
+
+遇到：protocol version mismatch -- is your shell clean?错误 出现的这样的原因就是因为在/root/.bashrc中增加了loadkeys /lib/...,注释掉OK
+
+* 时间同步
+<src type="bash">
+yum install -y ntp
+crontab -e
+*/30 * * * * ntpdate cn.pool.ntp.org
+</src>
+
+* mplayer 视频解码
+同事转码的视频不能播放
+
+下面这个方法不行
+<src type="bash">
+ 1) Download codecs from http://www.mplayerhq.hu/MPlayer/releases/codecs/all-20071007.tar.bz2
+ 2) bunzip all-20071007.tar.bz2
+ 3) tar xvf all-20071007.tar
+ 4) shell> mv all-20071007 win32
+ 5) shell> mv win32 /usr/local/lib
+ 6) shell> mkdir /usr/lib/codecs
+ 7) shell> cp -s /usr/local/lib/win32/* /usr/lib/codecs
+ 8) shell> chmod 755 /usr/local/lib/win32/*
+ 9) shell> chmod 755 /usr/lib/codecs/*
+</src>
+
+转视频
+<src type="bash">
+ffmpeg -i old.mov -f flv new.flv
+</src>
+
+* zabix
+zabix是一个linux的监控软件
+** 安装
+*** 安装相关软件
+<src type=“bash">
+yum install -y mysql-devel
+yum -y install net-snmp.x86_64 net-snmp-devel.x86_64 net-snmp-utils.x86_64
+wget http://iksemel.googlecode.com/files/iksemel-1.4.tar.gz
+</src>
+
+*** 创建用户
+<src type="bash">
+groupadd zabbix
+useradd -g zabbix zabbix
+</src>
+
+*** 安装zabbix
+<src type=“bash">
+wget http://downloads.sourceforge.net/project/zabbix/ZABBIX%20Latest%20Stable/2.0.4/zabbix-2.0.4.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fzabbix%2Ffiles%2F&ts=1357381769&use_mirror=jaist
+./configure --enable-server --enable-agent --with-mysql --with-net-snmp --with-jabber=/usr/local/ --with-libcurl
+make install
+</src>
+
+* dhcpd
+由于贺尊的服务器的光纤线直接接入服务器，所以需要做一个dhcp的服务
+<src type="bash">
+yum install -y dhcp
+</src>
+
+配置:vi /etc/dhcp/dhcpd.cnf
+<src type="text">
+# dhcpd.conf
+#
+# Sample configuration file for ISC dhcpd
+#
+
+# option definitions common to all supported networks...
+option domain-name "example.org";
+option domain-name-servers ns1.example.org, ns2.example.org;
+
+default-lease-time 600;
+max-lease-time 7200;
+
+# Use this to enble / disable dynamic dns updates globally.
+#ddns-update-style none;
+
+# If this DHCP server is the official DHCP server for the local
+# network, the authoritative directive should be uncommented.
+#authoritative;
+
+# Use this to send dhcp log messages to a different log file (you also
+# have to hack syslog.conf to complete the redirection).
+log-facility local7;
+
+# No service will be given on this subnet, but declaring it helps the
+# DHCP server to understand the network topology.
+subnet 192.168.1.0 netmask 255.255.255.0 {
+        range dynamic-bootp 192.168.1.10 192.168.1.199;
+        option broadcast-address 192.168.1.255;
+        option routers 192.168.1.201;
+        option subnet-mask 255.255.255.0; 
+        option domain-name "hualianjt.com";
+        option domain-name-servers 8.8.8.8;
+}
+
+# Bind IP
+host HLWGJLR000005 {
+        hardware ethernet 00:50:C2:21:80:1B;
+        fixed-address 192.168.1.5;
+}
+host HLWGJLR000006 {
+        hardware ethernet 00:50:C2:21:12:D9;
+        fixed-address 192.168.1.6;
+}
+
+host HLWGJLR000008 {
+        hardware ethernet 00:50:C2:21:ED:F8;
+        fixed-address 192.168.1.8;
+}
+
+host HLWGJLR000009 {
+        hardware ethernet 00:50:C2:21:B5:B0;
+        fixed-address 192.168.1.9;
+}
+
+host HLWGJLR000010 {
+        hardware ethernet 00:50:C2:21:82:5F;
+        fixed-address 192.168.1.10;
+}
+
+host HLWGJLR000011 {
+        hardware ethernet 00:50:C2:21:BC:11;
+        fixed-address 192.168.1.11;
+}
+host HLWGJLR000012 {
+	hardware ethernet 00:50:C2:21:80:63;
+        fixed-address 192.168.1.12;
+}
+
+host HLWGJLR000013 {
+	hardware ethernet 00:50:C2:21:12:5E;
+        fixed-address 192.168.1.13;
+}
+
+host HLWGJLR000014 {
+	hardware ethernet 00:50:C2:21:80:C1;
+        fixed-address 192.168.1.14;
+}
+
+host HLWGJLR000015 {
+	hardware ethernet 00:50:C2:21:B4:FE;
+        fixed-address 192.168.1.15;
+}
+
+host HLWGJLR000016 {
+	hardware ethernet 00:50:C2:21:B6:DE;
+        fixed-address 192.168.1.16;
+}
+
+host HLWGJLR000017 {
+	hardware ethernet 00:50:C2:21:F6:E6;
+        fixed-address 192.168.1.17;
+}
+
+host HLWGJLR000018 {
+	hardware ethernet 00:50:C2:22:2C:F2;
+        fixed-address 192.168.1.18;
+}
+
+host HLWGJLR000019 {
+	hardware ethernet 00:50:C2:21:EB:EB;
+        fixed-address 192.168.1.19;
+}
+
+host HLWGJLR000020 {
+	hardware ethernet 00:50:C2:21:BC:2A;
+        fixed-address 192.168.1.20;
+}
+
+host HLWGJLR000021 {
+	hardware ethernet 00:50:C2:21:18:BB;
+        fixed-address 192.168.1.21;
+}
+
+host HLWGJLR000022 {
+	hardware ethernet 00:50:C2:21:EE:C7;
+        fixed-address 192.168.1.22;
+}
+
+host HLWGJLR000023 {
+	hardware ethernet 00:50:C2:21:B5:EF;
+        fixed-address 192.168.1.23;
+}
+
+host HLWGJLR000024 {
+	hardware ethernet 00:50:C2:21:B5:47;
+        fixed-address 192.168.1.24;
+}
+
+host HLWGJLR000025 {
+	hardware ethernet 00:50:C2:21:18:9F;
+        fixed-address 192.168.1.25;
+}
+
+host HLWGJLR000036 {
+	hardware ethernet 00:50:C2:21:7F:FA;
+        fixed-address 192.168.1.36;
+}
+
+</src>
+
+启动dhcpd
+<src type="text">
+service dhcpd restart
+</src>
+
+日志：
+
+查看错误日志，dhcp分配IP的情况
+<src type="text">
+tailf /var/log/message
+</src>
+
+修改日志的保存位置
+ 1. 修改/etc/dhcp/dhcpd.conf,在后面添加  <br>
+  <src type="text">
+    log-facility local4;
+  </src>
+ 2. 修改/etc/rsyslog配置文件 <br>
+<src type="text">
+# Save dhcpd messages also to dhcpd.log
+    local4.*                                                /var/log/dhcpd.log
+</src>
+ 3. 创建dhcpd.log
+<src type="text">
+touch /var/log/dhcpd.log
+chmod 600 /var/log/dhcpd.log
+</src>
+ 4. 重启rsyslog
+<src type="text">
+service rsyslog restart
+</src>
+
+
+
+
+
+* 双网卡
+
+nat就是ip转发，实现共享上网.网卡情况如下：
+
+eth0: 192.168.1.201 内网
+
+eth1: 202.203.187.130  外网
+
+打开ip转发
+<src type="text">
+vi /etc/sysctl.cnf
+net.ipv4.ip_forward = 1  	# 启动ip转发
+</src>
+
+iptables 启动转发
+<src type="text">
+echo "1" > /proc/sys/net/ipv4/ip_forward
+iptables -F # 刷新所有过滤规则和NAT表.
+iptables -t nat -F
+iptables --delete-chain
+#删除所有非缺省的规则链和nat表
+iptables -t nat --delete-chain
+#建立IP转发和伪装
+iptables -t nat -A POSTROUTING --o eth1 -j MASQUERADE
+iptables --append FORWARD --i eth0 -j ACCEPT
+</src>
+
+<src type="text">
+iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE
+</src>
+
+办公楼有是不想要做nat，开启了另外一个外网的网卡以后，导致无法上网，主要要的原因是路由到另外一个网卡的网关上去了。解决的办法是
+<src type="text">
+vi /etc/profile
+# 在最后面增加
+route delete default gw 221.203.171.129
+route add default gw 192.168.1.1
+</src>
+route add -net 192.168.1.0 netmask 255.255.255.0 gw 192.168.1.1
+
+route del -net 192.168.1.0 netmask 255.255.255.0
+
+* 自动更新
+自动获取服务器的getcmd.sh
+
+执行服务器返回的指令
+<src type="bash">
+#!/bin/sh
+
+SERVER='http://192.168.1.201/isupdate.php
+CMDFILE='/tmp/update.sh'
+
+wget -O $CMDFILE $SERVER
+/bin/sh $CMDFILE
+</src>
+
+
+* rc.local
+rc.local是等机器启动以后自动运行的脚本，如果/etc/rc.local是没有用的，要把脚本放在/etc/rc.d/rc.local中。因为在/etc/rc.d/rc*.d中的S99local的软链接都是../rc.local。
+
+如果rc.local不起作用，
+ 1. 查看/var/log/message,
+ 2. 检查命令是否指定全路径。例如/sbin/iptables,而不是单单iptables,
+
+* 同时启动多个firefox
+<src type="text">
+set MOZ_NO_REMOTE=1
+DISPLAY=:0.1 /home/firefox -url http://192.168.1.201/new_machine -p 'new' &
+</src>
+
+* crontab
+把要执行的脚本放在/etc/cron.XXX中，命名为xxx.cron
+
+* 负载均衡
+** lvs
+*** 介绍
+LVS： Linux Virtual Server Linux 虚拟服务器
+
+VIP： 就是通过client访问的地址。也就是整个负载均衡对外暴露的地址。一定是真实的地址，并且是client端可以访问到的地址；网络上说：虚拟地址，虚拟的意思就是这个地址可以在网卡的第二个地址（eth0:0),当然可以是实实在在的网卡上的地址(eth1）。
+
+*** 八种调度算法
+ - rr 轮叫（Round Robin)<br>
+调度器根据“轮叫”调度算法把外部请求按顺序轮流分配到集群中的实际服务器的服务请求。它均等的对待每一台服务器，不管服务器上的连接数和系统负载。
+ - wrr 加权轮叫（Weighted Round Robin)<br>
+调度器根据“加权轮叫”调度算法，根据实际服务器不同的处理能力来分配请求。调度器自动询问真实服务器的负载情况，并且动态调整其权值
+ - lc 最少连接（Least Connections）<br>
+调度器根据“最少连接”调度算法，动态的将网络请求分配到建立连接数最少的服务器上。如果群集中的真实服务器的性能相近，采用lc能够达到较好的负载均衡 
+ - wlc 加权最少连接（Weighted Least Connections）<br>
+在群集中的真实服务器性能差异较大的情况下，采用wlc算法优化负载均衡，性能较好的服务器分配较多的活动连接，调度器会自动询问，动态调整权限
+ - lblc 基于局部性最少连接（Locality-Base Least Connections)<br>
+”基于局部性最少连接“是针对目标地址（Client IP）的负载均衡，主要用在缓存（Cache）群集系统上
+ - lblcr <br>
+ - dh-sh <br>
+ 
+*** 模式
+**** NAT
+网络地址转发
+
+**** TUN
+ip tunnel ip隧道
+
+**** DR
+director routing 直接路由,保证VIP和Real Server的IP在同一个网段，并且路由器支持转发. arp表中要把RealServer信息添加上
+
+RealServer中VIP必须绑定到中的实际网口（eth0/1)，而不是lo中,关闭ip_forward.关闭VIP绑定网卡的arp广播
+
+*** 安装
+安装依赖软件
+<src type="bash">
+yum install -y gcc cmake make gcc-c++ autoconf openssl* popt*
+</src>
+
+<src type="bash">
+wget -c http://www.linuxvirtualserver.org/software/kernel-2.6/ipvsadm-1.26.tar.gz
+tar xvf ipvsadm-1.26.tar.gz
+ln -s /usr/src/kernels/2.6.32-279.19.1.el6.x86_64/ /usr/src/linux
+cd ipvsadm-1.26
+make && make install
+</src>
+
+*** DR配置
+在LD中执行
+<src type="bash">
+# echo "0" > /proc/sys/net/ipv4/ip_forward     关闭ip转发
+# echo "1" > /proc/sys/net/ipv4/conf/all/send_redirects # 启用直接路由                                                                          
+# echo "1" > /proc/sys/net/ipv4/conf/default/send_redirects
+# echo "1" > /proc/sys/net/ipv4/conf/eth0/send_redirects
+# arp -s 114.113.230.66 00:15:17:88:4e:54 # 添加rs的arp信息到arp表/proc/sys/arp,如果不添加会出现很慢（SYNC_REV现象），甚至无法访问
+# arp -s 114.113.230.70 00:15:17:5e:ee:70
+# ipvsadm -C # 清除ipvsadm规则
+# ipvsadm -A -t 114.113.230.73:80 -s wlc # 添加一条VIP为114.113.230.73端口为80基于tcp，转发规则为wlc的信息
+# ipvsadm -a -t 114.113.230.73:80 -r 114.113.230.66:80 -g -w 1 # 添加一条rs（ip：114.113.230.66)，基于t（tcp），方法为g（DR），权重w为1
+# ipvsadm -a -t 114.113.230.73:80 -r 114.113.230.70:80 -g -w 2 # 添加一条rs（ip：114.113.230.70)，基于t（tcp），方法为g（DR），权重w为2
+# ipvsadm # 查看情况
+[root@LVS ~]# ipvsadm
+IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port Scheduler Flags
+  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
+TCP  114.113.230.73:http rr persistent 10
+  -> 114.113.230.66:http          Route   1      0          0         
+  -> 114.113.230.70:http          Route   1      0          0
+
+# 查看实时情况
+# watch --interval=5 ipvsadm -Lnc # 每隔5刷新一次
+Every 5.0s: ipvsadm -Lnc                                                                                                               Thu Feb 28 03:10:43 2013
+
+IPVS connection entries
+pro expire state       source             virtual            destination
+TCP 00:54  FIN_WAIT    183.17.174.4:36246 114.113.230.73:80  114.113.230.70:80
+TCP 00:54  FIN_WAIT    183.17.174.4:36241 114.113.230.73:80  114.113.230.70:80
+TCP 00:04  NONE        183.17.174.4:0     114.113.230.73:80  114.113.230.70:80
+TCP 00:53  FIN_WAIT    183.17.174.4:36240 114.113.230.73:80  114.113.230.70:80
+TCP 00:54  FIN_WAIT    183.17.174.4:36245 114.113.230.73:80  114.113.230.70:80
+TCP 00:54  FIN_WAIT    183.17.174.4:36244 114.113.230.73:80  114.113.230.70:80
+</src>
+
+可以把上面的命令写成一个脚本。下面是LVS中的director只有一个网卡的启动脚本/etc/init.d/lvsdr
+<src type="bash">
+#!/bin/bash                                                                                                                                                    
+
+#description:start LVS of Directorserver DR                                                                                                                    
+
+VIP=114.113.230.73              # 虚拟地址在eth0                                                                                                               
+
+RIP1=114.113.230.70               # 群集服务器1地址                                                                                                            
+RIP2=114.113.230.66                 # 群集服务器2地址                                                                                                          
+RIP3=114.113.230.73                 # 群集服务器2地址                                                                                                          
+
+PORT=80
+
+. /etc/rc.d/init.d/functions
+
+arp -s 114.113.230.66 00:15:17:88:4e:54
+arp -s 114.113.230.70 00:15:17:5e:ee:70
+
+case "$1" in
+        start)
+            echo "start LVS of DirectorServer DR"
+
+            echo "0" >/proc/sys/net/ipv4/ip_forward
+            echo "1" > /proc/sys/net/ipv4/conf/all/send_redirects # 启用直接路由                                                                               
+            echo "1" > /proc/sys/net/ipv4/conf/default/send_redirects
+            echo "1" > /proc/sys/net/ipv4/conf/eth0/send_redirects
+
+            /sbin/ipvsadm -C
+            /sbin/ipvsadm -A -t $VIP:$PORT -s rr -p 10 # 仍然是轮度算法,-p表示连接的持续时间为120秒                                                            
+            /sbin/ipvsadm -a -t $VIP:$PORT -r $RIP1:$PORT -g -w 3       # -g表示采用直接路由模式,-w 3 表示权重为3                                              
+            /sbin/ipvsadm -a -t $VIP:$PORT -r $RIP2:$PORT -g -w 2
+            /sbin/ipvsadm -a -t $VIP:$PORT -r $RIP3:$PORT -g -w 1
+            ;;
+
+        stop)
+
+            echo "stop LVS of DirectorServer DR"
+            /sbin/ipvsadm -C
+            ;;
+
+        *)
+            echo "Usage:$0{start|stop}"
+            exit 1
+esac
+</src>
+
+director采用双网卡.
+
+ - eth0: 114.113.230.73
+ - eth1: 192.168.1.73
+
+rs主要的是
+ - 把VIP绑定到同VIP同一网段的网口上，这里是eth0
+ - 关闭绑定VIP网口的arp广播，所以在LD上为什么要添加arp记录
+ - 关闭ip_forward
+ 
+配置如下
+<src type="bash">
+#!/bin/bash                                                                                                                                                    
+
+#description:start realserver                                                                                                                                  
+#chkconfig 235 26 26                                                                                                                                           
+
+VIP=114.113.230.73
+
+. /etc/rc.d/init.d/functions
+
+case "$1" in
+     start)
+
+        echo " start LVS of REALServer"
+	
+	# 注意这里是eth0,不是lo
+        /sbin/ifconfig eth0:0 $VIP broadcast $VIP netmask 255.255.255.255 up
+        /sbin/route add -host $VIP dev eth0:0
+
+        echo "1" >/proc/sys/net/ipv4/conf/eth0/arp_ignore # 关闭arp响应                                                                                        
+        echo "2" >/proc/sys/net/ipv4/conf/eth0/arp_announce
+        echo "1" >/proc/sys/net/ipv4/conf/all/arp_ignore
+        echo "2" >/proc/sys/net/ipv4/conf/all/arp_announce
+        ;;
+
+    stop)
+        /sbin/ifconfig eth0:0 down
+        echo "close LVS Directorserver"
+        echo "0" >/proc/sys/net/ipv4/conf/eth0/arp_ignore
+        echo "0" >/proc/sys/net/ipv4/conf/eth0/arp_announce
+        echo "0" >/proc/sys/net/ipv4/conf/all/arp_ignore
+        echo "0" >/proc/sys/net/ipv4/conf/all/arp_announce
+        ;;
+
+    *)
+        echo "Usage: $0 {start|stop}"
+        exit 1
+
+esac
+
+</src>
+
+查看转发情况
+<src type="bash">
+watch ipvsadm -lnc
+</src>
+
+<verse>
+参考文章： http://kb.linuxvirtualserver.org/wiki/Using_arp_announce/arp_ignore_to_disable_ARP
+arp配置的含义:
+
+arp_ignore - 整型
+        当对要求解析本地目标IP地址的ARP请求做响应时，定义不同的模式：
+        0 - (缺省): 响应配置在任何接口上的任何本地目标地址
+        1 - 只有当目标IP地址是配置在进入接口上的本地地址时才响应
+        2 - 只有当目标IP地址是配置在进入接口上的本地地址，并且发送者的IP地址处于本接口的同一网段时才响应
+        3 - 不响应用scope host配置的本地地址，只有通用地址和链接地址会被响应
+        4-7 - 保留
+        8 - 不响应所有的本地地址
+
+        conf/{all,interface}/arp_ignore的最大值在{interface}上收到APR请求的时候被使用。
+
+arp_announce - 整型
+        在ARP请求被送到接口上，要在IP包中宣布本地源IP地址时，定义不同的限制级别：
+        0 - （缺省）使用配置在任何接口上的任何本地地址
+        1 - 尝试避免本接口上的本地地址不是目标的子网段。当目标主机请求的源地址是逻辑网段的一部分时候，这种模式有用。
+            如果我们生成这个请求，我们将会检查包含目标IP的所有子网，保留来自这些子网的源地址。
+            如果没有这样的子网，就用级别2的规则来选择。
+        2 - 总是使用这个目标的最好的本地地址。在这种模式下，我们忽略IP包中的源地址，尝试选择我们喜欢的本地地址给目标主机。
+            选择的方式是在输出接口上包含目标IP地址的所有子网里寻找主要的IP地址。
+            如果没有合适的的目标地址，就选择输出接口或者所有其他接口上的第一个地址。
+
+            conf/{all,interface}/arp_announce的最大值是被使用的。
+</verse>
+
+**** keepalived
+keepalived是检测real server服务器的情况，如果是一台出现问题，另外一台就会顶替上。也负责
+<src type="bash">
+wget -c http://www.keepalived.org/software/keepalived-1.2.7.tar.gz
+tar xvf keepalived-1.2.7.tar.gz
+cd keepalived-1.2.7
+./configure --prefix=/usr/local/keepalived --sysconfdir=/etc 
+make && make install
+</src>
+
+如果最后显示
+
+Use IPVS Framework : No
+
+IPVS sync daemon support : No
+
+请指定内核源码目录再运行configure
+
+./configure --prefix=/usr --sysconfdir=/etc --with-kernel-dir=/usr/src/kernels/linux-2.6.35.9
+
+keepalived.conf
+<src type="bash">
+!Configuration File for keepalived
+
+global_defs {			
+    notification_email {	! 发送email通知
+        root@localhost		! 需要本机SMTP服务
+    }
+    notification_email_from root@localhost
+    smtp_server 127.0.0.1
+    smtp_connect_timeout 30
+    router_id LVS_DEVEL
+}
+! 设置一个同步组，解决
+vrrp_sync_group vg1 {
+    group {
+        VIP_1
+    }
+}
+
+vrrp_instance VIP_1 {
+    state Master	  ! 表明这是一个master服务器,另外的机器要设置成backup
+    interface eth0	  ! HA监测网络接口（绑定VIP）开启VRRP协议的网卡
+    virtual_route_id 1	  ! 主备机的Virtual_route_id一定要相同
+    priority 100	  ! 主备机取不同的优先级，主机较大，备份机较小
+    advert_int 1	  ! VRRP Multicast广播周期的秒数;检查间隔，默认1秒
+    authentication {
+        auth_type PASS		! vrrp认证方式
+    	auth_pass 1111		! vrrp口令
+    }
+    virtual_ipaddress {
+        114.113.230.70		! LVS虚拟地址，可写多个VIP，一行一个
+    }
+}
+
+virtual_server 114.113.230.70 80 {
+    delay_loop 2		! 延时等待时间
+    lb_algo wrr			! 采用的算法
+    lb_kind DR			! 传输模式
+    persistence_timeout 120	! 单一连接保持时间
+    protocol TCP		! 转发的协议
+
+    real_server 192.168.1.66 80 {
+        weight 1		! 权重
+	TCP_CHECK {		! realserver的状态检测设置部分，单位秒
+	    connect_timeout 3
+	    nb_get_retry 3
+	    delay_before_retry 3
+	    connect_port 80	! 健康检查的端口
+	}
+    }
+    
+    real_server 192.168.1.70 80 {
+        weight 2		! 权重
+	TCP_CHECK {		! realserver的状态检测设置部分，单位妙
+	    connect_timeout 3	! 连接超市时间：3秒
+	    nb_get_retry 3	! 尝试次数
+	    delay_before_retry 3 ! 每次尝试间隔时间： 3秒
+	    connect_port 80	 ! 健康检查端口
+	}
+    }
+
+    real_server 192.168.1.73 80 {
+        weight 3		! 权重
+	TCP_CHECK {		! realserver的状态检测设置部分，单位妙
+	    connect_timeout 3
+	    nb_get_retry 3
+	    delay_before_retry 3
+	    connect_port 80	
+	}
+    }
+}
+</src>
+ - route_id 是keepalived的一个标识，保证不重复
+ - virtual_route_id 虚拟路由的标识，主备机器必须相同，值0-255之间
+ - vrrp_sync_group vg1{...}<br>
+当机器有两个网段，一个是内网，一个是外网，每个网段开启一个vrrp实例，若vrrp配置为检查内网，那么当外网出现问题时，vrrp认为自己仍然是健康的，就不会发送MASTER与BACKUP的切换，采用同步组就是解决这个问题。这里我们只有一个vrrp的实例VIP_1。
+ - auth_type 认证方式，目前有2种：1. PASS；2。AH
+ - TCP_CHECK 健康检查的方式采用TCP方式，另外还有：HTTP_GET,SSL_GET,TCP_CHECK,SMTP_CHECK,MISC_CHECK
+ - connect_port 健康检查端口
+
+如果real server有另外的网关，需要添加一条路由
+<src type="bash">
+route add default gw 192.168.1.1
+</src>
+ 
+** Nignx
+*** 下载
+<src type="text">
+wget -c http://nginx.org/download/nginx-1.2.7.tar.gz
+</src>
+
+*** 建立账户
+<src type="text">
+groupadd www
+useradd -r -g www www
+</src>
+
+*** 安装
+安装依赖文件
+<src type="bash">
+yum install pcre pcre-devel
+</src>
+
+安装nginx
+<src type="bash">
+./configure --user=www --group=www --prefix=/opt/nginx --with-http_stub_status_module --with-http_ssl_module --with-pcre=/usr/local/pcre
+make
+make install
+</src>
+
+*** 配置
+<src type="text">
+# 运行用户
+user  www www;
+# 启动进程
+worker_processes  10;
+# 全局日志
+error_log  logs/error.log  info;
+# pid文件的位置
+#pid        logs/nginx.pid;
+
+# 工作模式和连接数上线
+events {
+    use epoll;
+    worker_connections  1024;
+}
+
+# 设置http服务器，利用它的反向代理功能提供负载均衡支持
+http {
+    # 设定mime类型
+    include       mime.types;
+    # 
+    default_type  application/octet-stream;
+    # 设置日志格式
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+    
+    sendfile        on;
+
+    keepalive_timeout  65;
+    
+     #设置Web缓存区名称为cache_one，内存缓存空间大小为100MB，1天没有被访问的内容自动清除，硬盘缓存空间大小为1GB
+    proxy_cache_path /usr/local/nginx/cache_data levels=1:2 keys_zone=cache_one:100m inactive=1d max_size=1g;
+    # 设定负载均衡服务器列表
+    upstream www.test.com {
+      #ip_hash策略将同一IP的所有请求都转发到同一应用服务器
+      # ip_hash; # ip哈希，同一ip分配到同一个服务器
+      server localhost:8080 weight=1;
+      server localhost:8081 weight=2;
+    }
+    # 设定虚拟主机
+    server {
+        listen       80;
+        server_name  192.168.1.118 localhost;
+        charset utf-8;
+	# 对/启用负载均衡
+        location / {
+            root   html;
+            index  index.html index.htm;
+            proxy_pass http://www.test.com;
+            proxy_set_header X-Real-IP $remote_addr;
+            client_max_body_size 100m;
+        }
+
+	#设定查看Nginx状态的地址 
+	location /NginxStatus { 
+	    stub_status on; 
+	    access_log on; 
+	    auth_basic "NginxStatus"; 
+	    auth_basic_user_file conf/htpasswd; 
+	}
+
+        error_page   500 502 503 504  /50x.html;
+        
+        location ~* \.(gif|jpg|jpeg|png|bmp)$ {
+           proxy_cache cache_one;
+           proxy_cache_valid 200 302 304 1h;
+           proxy_cache_key $host$uri$is_args$args;
+           proxy_pass http://www.test.com;
+           add_header Last-Modified $date_gmt;
+           add_header Via $server_addr;
+           expires 30d;
+        }
+    }
+}
+</src>
+
+对path_info的支持。像canphp,thinkphp使用路径作为参数来传递的。例如: http://localhost/canphp/index.php/index/index, 在nginx中看access日志，默认在canphp/index/找index文件，这样就会出现404错误。[[http://www.laruence.com/2009/11/13/1138.html][参考]] 解决的办法有两种：第一：使用rewrite，把uri中的path分开来，看代码：（这种方法不成功，不知道为什么,不想折腾了）
+<src type="text">
+location ~ \.php($|/) {
+    root /var/www/html;
+    fastcgi_index index.php;
+    fastcgi_buffer_size 32k;
+    fastcgi_buffers 8 32k;
+    set $script $uri;
+    set $path_info "";
+
+    if($uri ~ "^(.+?\.php)(/.*)$") {
+        set $script $1;
+        set $path_info $2;
+    }
+    include fastcgi_params;
+}
+</src>
+就是把index.php/xxx后面的/xxx写到fastcgi的path_info中去。
+
+另外一种方法：
+<src type="text">
+location / {
+            root   /home/100msh/www/store;
+            index  index.php index.html index.htm;
+
+            if (!-f $request_filename){set $rule_0 1$rule_0;}
+            if (!-d $request_filename){set $rule_0 2$rule_0;}
+            if ($rule_0 = "21"){rewrite /. /index.php;}
+        }
+
+</src>
+不明白set $rule_0 1$rule_0 什么意思。给变量rule_0设置成1$rule_0。但是这个方法是可以的。
+

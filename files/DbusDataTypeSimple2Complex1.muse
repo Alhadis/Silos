@@ -1,0 +1,896 @@
+#title DBus glib 各数据类型接收与发送详解—C语言（1）
+
+<contents depth="3">
+* 动机
+说到 **DBus** 用过的人大概都能明白其工作的流程。典型的使用流程是，向 DBus 服务进程发送数据，然后接收其返回的数据。简单的说，就像调用函数一样，向服务进程发送数据就相当于函数的参数，其返回的数据就相当于函数返回的结果。虽然明白了流程，但想要使用 **C语言** 通过已有的　DBus 服务进行操作，仍然是一项不太容易的工作（对像我这样的菜鸟^_^），因为数据的类型真是太多了, 使用 **Python** 会简单一点。简单点的有 **Boolean**, **Byte**, **Int32**, **Int64**, **String**, **ObjectPath**, **Signature** 等; 复杂一点的有 **Array**, **Struct**, **Dict** 等。如果不能弄清楚它们之间的联系，那么将是一件非常头痛的事。为了使我研究的结果不被淡忘，于是有了这篇文章。
+
+* 前置知识
+ - 能够熟练使用 C语言；
+ - 了解 DBus 各数据类型的表示, 参考 [[http://dbus.freedesktop.org/doc/dbus-specification.html][D-Bus Specification]]
+ - 对 DBus-glib 有基本的了解，能够与 DBus 服务进程进行简单的交互。
+ - 简单使用 d-feet, 参考 [[http://blog.csdn.net/fmddlmyy/article/details/3585730][D-Bus 实例讲解]] 
+ - 大概对 Python 有些了解（只是为了说明我的分析思路，如果你只想找 C 的解决方法，那完全可以不了解）；
+ - 简单了解 python dbus
+
+* 正文
+对了，编译的时候要加上 dbus-glib 库，在本篇的最后会给出一个 Makefile 文件，把它放到要编译的文件的目录下，直接 make 应该就可以了，感觉说的不清楚，不过懂的话应该是懂的(-_-b)
+** Python DBus 的简单演示
+*** Python DBus 服务进程
+使用 Python 编写 DBus 服务进程是比较舒心的一件事。那么废话不多说，先来一个 "1+1=2" 的例子 (**oneonetwo_service.py**)。
+
+<example>
+#!/usr/bin/env python
+
+import gobject
+
+import dbus
+import dbus.service
+import dbus.mainloop.glib
+
+class Example(dbus.service.Object):
+    def __init__(self, bus, object_path):
+        dbus.service.Object.__init__(self, bus, object_path)
+        self._last_input = None
+
+    @dbus.service.method('airead.fan.Example', in_signature='ii', out_signature='i')
+    def IntArrayPrint(self, num1, num2):
+        print "receive:", num1, num2
+        return num1 + num2
+
+if __name__ == '__main__':
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+    session_bus = dbus.SessionBus()
+    name = dbus.service.BusName("airead.fan.Example", session_bus)
+    object = Example(session_bus, '/airead/fan/Example')
+
+    mainloop = gobject.MainLoop()
+    print "Running example service."
+    mainloop.run()
+
+</example>
+
+简单说明一下关键点：
+ -  **@dbus.service.method('airead.fan.Example', in_signature='ii', out_signature='i')** 声明了一个 DBus 服务进程的一个方法，其中 **airead.fan.Example** 是接口， **in_signature='ii'** 说明该方法需要两个输入参数且者为 Int32 类型， **out_signature='i'** 说明该方法会输出一个参数且为 Int32 类型。
+ -  **def IntArrayPrint(self, num1, num2):** 定义了接收到2个参数后的处理函数
+ -  **name = dbus.service.BusName("airead.fan.Example", session_bus)** 取得 DBus 的 **well-known Bus name** 。
+ -  **object = Example(session_bus, '/airead/fan/Example')** 将定义的 **class Example** 注册到 DBus 上。
+
+*** 调用 DBus 服务进程的方法
+调用方法： **oneonetwo_client.py**
+<example>
+#!/usr/bin/python
+
+import sys
+import dbus
+from traceback import print_exc
+
+def main():
+
+    # get Session Bus
+    bus = dbus.SessionBus()
+
+    # get remote ojbect
+    remote_object = bus.get_object("airead.fan.Example", "/airead/fan/Example")
+
+    # get D-Bus Interface
+    dbus_interface = dbus.Interface(remote_object, "airead.fan.Example")
+
+    # call Example method
+    ret = dbus_interface.Example(1, 1)
+    print "result:", ret
+
+main()
+</example>
+看注释基本就可以了。
+
+给 .py 添加可执行权限，先运行 service ,再运行 client 看结果，记得开两个shell。
+
+** 所有基本数据类型演示
+简单说一下我的思路，因为 D-Bus, glib 和 DBus-glib binding 中数据的类型真的是太多了，而我又没有系统的研究过它们三者的任何一个，所以各种数据类型的传递都是一点一点来试验的。因为 Python 使用起来简单，能够保证程序的正确性，我都是先用 Python 编写满足条件的 D-Bus 服务进程，再用 Python 编写该服务进程的测试用例，最后才开始使用C语言来发送和接收各种数据类型。所以后面就不对 Python 进行解释，直接分析 C 代码。
+*** 基本数据类型服务进程 (py)
+all_basic_data_deliver_service.py
+<example>
+#!/usr/bin/env python
+
+import gobject
+
+import dbus
+import dbus.service
+import dbus.mainloop.glib
+
+class BasicData(dbus.service.Object):
+    def __init__(self, bus, object_path):
+        dbus.service.Object.__init__(self, bus, object_path)
+        self._last_input = None
+
+    @dbus.service.method('airead.fan.BasicDataType', in_signature='y', out_signature='y')
+    def BytePrint(self, byte):
+        print "receive byte:", byte
+        return byte + 1
+
+    @dbus.service.method('airead.fan.BasicDataType', in_signature='b', out_signature='b')
+    def BooleanPrint(self, boolean):
+        print "receive boolean:", boolean
+        return not boolean
+
+    @dbus.service.method('airead.fan.BasicDataType', in_signature='n', out_signature='n')
+    def Int16Print(self, int16):
+        print "receive int16:", int16
+        return int16 + 1
+
+    @dbus.service.method('airead.fan.BasicDataType', in_signature='q', out_signature='q')
+    def Uint16Print(self, uint16):
+        print "receive uint16:", uint16
+        return uint16 + 1
+
+    @dbus.service.method('airead.fan.BasicDataType', in_signature='i', out_signature='i')
+    def Int32Print(self, int32):
+        print "receive int32:", int32
+        return int32 + 1
+
+    @dbus.service.method('airead.fan.BasicDataType', in_signature='u', out_signature='u')
+    def Uint32Print(self, uint32):
+        print "receive uint32:", uint32
+        return uint32 + 1
+
+    @dbus.service.method('airead.fan.BasicDataType', in_signature='x', out_signature='x')
+    def Int64Print(self, int64):
+        print "receive int64:", int64
+        return int64 + 1
+
+    @dbus.service.method('airead.fan.BasicDataType', in_signature='t', out_signature='t')
+    def Uint64Print(self, uint64):
+        print "receive uint64:", uint64
+        return uint64 + 1
+
+    @dbus.service.method('airead.fan.BasicDataType', in_signature='d', out_signature='d')
+    def DoublePrint(self, double):
+        print "receive double:", double
+        return double + 1.5
+
+    @dbus.service.method('airead.fan.BasicDataType', in_signature='s', out_signature='s')
+    def StringPrint(self, string):
+        print "receive string:", string
+        return string + "echo"
+
+    @dbus.service.method('airead.fan.BasicDataType', in_signature='o', out_signature='o')
+    def ObjectpathPrint(self, objectpath):
+        print "receive objectpath:", objectpath
+        return dbus.ObjectPath(objectpath + "_return")
+
+    @dbus.service.method('airead.fan.BasicDataType', in_signature='g', out_signature='g')
+    def SignaturePrint(self, signature):
+        print "receive signature:", signature
+        return signature + "s"
+
+if __name__ == '__main__':
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+    session_bus = dbus.SessionBus()
+    name = dbus.service.BusName("airead.fan.BasicDataType", session_bus)
+    object = BasicData(session_bus, '/airead/fan/BasicDataType')
+
+    mainloop = gobject.MainLoop()
+    print "Running example service."
+    mainloop.run()
+</example>
+
+*** Python DBus 测试代码
+all_basic_data_deliver_client.py
+<example>
+#!/usr/bin/python
+
+import sys
+import dbus
+from traceback import print_exc
+
+def main():
+
+    bus = dbus.SessionBus()
+    method = sys.argv[1] + "Print"
+
+    value = sys.argv[2]
+
+    if sys.argv[1] == "Signature":
+        value = dbus.Signature(value)
+    elif sys.argv[1] == "Objectpath":
+        value = dbus.ObjectPath(value)
+    elif sys.argv[1] != "Byte" and sys.argv[1] != "Objectpath" and sys.argv[1] != "String":
+        value = eval(value)
+            
+    try:
+        remote_object = bus.get_object("airead.fan.BasicDataType", "/airead/fan/BasicDataType")
+        dbus_interface = dbus.Interface(remote_object, "airead.fan.BasicDataType")
+        method_call = dbus_interface.get_dbus_method(method);
+        ret = method_call(value)
+        print ret
+
+    except dbus.DBusException:
+        print_exc()
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    if (len(sys.argv) < 3):
+	print "Usage: %s <data_type> <data_value>" % (sys.argv[0])
+	sys.exit(1)
+
+main()
+</example>
+我还写了一个比较料的 shell 脚本用来全面的进行测试。 **all_basic_data_deliver_test_py.sh**
+<example>
+#!/bin/sh
+
+echo ./all_basic_data_deliver_client.py Boolean False
+./all_basic_data_deliver_client.py Boolean False
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client.py Byte f
+./all_basic_data_deliver_client.py Byte f
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client.py Double 3.2
+./all_basic_data_deliver_client.py Double 3.2
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client.py Int16 4
+./all_basic_data_deliver_client.py Int16 4
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client.py Int32 4
+./all_basic_data_deliver_client.py Int32 4
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client.py Int64 2
+./all_basic_data_deliver_client.py Int64 2
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client.py Objectpath "/object"
+./all_basic_data_deliver_client.py Objectpath "/object"
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client.py Signature i
+./all_basic_data_deliver_client.py Signature i
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client.py String String
+./all_basic_data_deliver_client.py String String
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client.py Uint32 99
+./all_basic_data_deliver_client.py Uint32 99
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client.py Uint64 33
+./all_basic_data_deliver_client.py Uint64 33
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client.py Uint16 35
+./all_basic_data_deliver_client.py Uint16 35
+echo -e "=================================\n"
+</example>
+*** 使用 C 实现基本数据类型的传递
+使用 C 来进行基本数据类型的传递还是比较简单的。大概可以分为两类：传递 **实体**（也就是没有用指针表示） 与 传递 **指针**（也就是使用指针表示）。说得也不是很清楚，举个例子，就像你定义一个字符是用 char c = 'b'; 定义一个字符串是用 char str[] = "AireadFan" 的区别一样。
+
+Boolean, byte, int, uint 等属于 **实体**; String, ObjectPath, Signature 属于 **指针** 。下面是具体代码，最后会给出整个测试代码及 shell 脚本。
+
+**** Boolean
+Boolean: glib->gboolean, G_TYPE_BOOLEAN; D-Bus->'b';
+
+解释一下，就是说 Boolean 类型，在 D-Bus glib binding 中使用 gboolean 声名，在使用类似 dbus_g_proxy_call() 函数传递参数时使用 G_TYPE_BOOLEAN, 在服务进程或 XML 声名时使用 'b'。 注意：以后将不再进行说明！
+
+那么来看一下 Boolean 是怎么传递的吧。
+<example>
+int send_recv_boolean(DBusGProxy *proxy, char *method, char *value)
+{
+    gboolean bool, ret;
+    GError *error = NULL;
+
+    if (!strcmp(value, "False")) {
+        bool = FALSE;
+    } else {
+        bool = TRUE;
+    }
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           G_TYPE_BOOLEAN, bool,
+                           G_TYPE_INVALID,
+                           G_TYPE_BOOLEAN, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+    printf("receive %d\n", ret);
+
+    return 0;
+}
+</example>
+
+**** Byte
+Byte: glib->guchar, G_TYPE_UCHAR, dbus->'y'
+<example>
+
+int send_recv_byte(DBusGProxy *proxy, char *method, char *value)
+{
+    guchar byte, ret;
+    GError *error = NULL;
+
+    byte = value[0];
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           G_TYPE_UCHAR, byte,
+                           G_TYPE_INVALID,
+                           G_TYPE_UCHAR, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+    printf("receive %c\n", ret);
+    
+    return 0;
+}
+</example>
+**** Double
+Double: glib->gdouble, G_TYPE_DOUBLE, dbus->'d'
+<example>
+int send_recv_double(DBusGProxy *proxy, char *method, char *value)
+{
+    gdouble d, ret;
+    GError *error = NULL;
+
+    //double strtod(const char *nptr, char **endptr);
+    d = strtod(value, NULL);
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           G_TYPE_DOUBLE, d,
+                           G_TYPE_INVALID,
+                           G_TYPE_DOUBLE, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+    printf("receive %f\n", ret);
+    
+    return 0;
+}
+
+</example>
+**** Int
+Int32: glib->gint32, G_TYPE_INT, dbus->'i'
+
+这里要说明的是: int16, int32, int64, uint16, uint32, uint64 之间几乎都是一样的，困难不大。
+<example>
+
+int send_recv_int32(DBusGProxy *proxy, char *method, char *value)
+{
+    gint32 int32, ret;
+    GError *error = NULL;
+
+    int32 = strtol(value, NULL, 10);
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           G_TYPE_INT, int32,
+                           G_TYPE_INVALID,
+                           G_TYPE_INT, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+    printf("receive %d\n", ret);
+    
+    return 0;
+}
+</example>
+**** String
+String: glib->gchar *, G_TYPE_STRING, dbus->'s'
+<example>
+
+int send_recv_string(DBusGProxy *proxy, char *method, char *value)
+{
+    gchar *str, *ret;
+    GError *error = NULL;
+
+    str = value;
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           G_TYPE_STRING, str,
+                           G_TYPE_INVALID,
+                           G_TYPE_STRING, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+    printf("receive %s\n", ret);
+    
+    return 0;
+}
+
+</example>
+**** ObjectPath
+ObjectPath: glib->DBusGObjectPath *, DBUS_TYPE_G_OBJECT_PATH, dbus->'o'
+<example>
+int send_recv_objectpath(DBusGProxy *proxy, char *method, char *value)
+{
+    //typedef gchar DBusGObjectPath;
+    const DBusGObjectPath *path, *ret;
+    GError *error = NULL;
+
+    path = value;
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           DBUS_TYPE_G_OBJECT_PATH, path,
+                           G_TYPE_INVALID,
+                           DBUS_TYPE_G_OBJECT_PATH, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+
+    printf("receive %s\n", ret);
+    
+    return 0;
+}
+</example>
+**** Signature
+Signature: glib->DBusGSignature *, DBUS_TYPE_G_SIGNATURE, dbus->'g'
+<example>
+
+int send_recv_signature(DBusGProxy *proxy, char *method, char *value)
+{
+    //typedef gchar DBusGSignature;
+    DBusGSignature *signature, *ret;
+    GError *error = NULL;
+
+    signature = value;
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           DBUS_TYPE_G_SIGNATURE, signature,
+                           G_TYPE_INVALID,
+                           DBUS_TYPE_G_SIGNATURE, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+    printf("receive %s\n", ret);
+    
+    return 0;
+}
+</example>
+
+*** C D-Bus 测试完整代码及脚本
+ **all_basic_data_deliver_client.c**
+<example>
+/**
+ * @file all_basic_data_deliver_client.c
+ * @brief 
+ * @author Airead Fan <fgh1987168@gmail.com>
+ * @date 2012/03/22 10:51:21
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <dbus/dbus-glib.h>
+
+#define METHOD_STRLEN 128
+
+int send_recv_boolean(DBusGProxy *proxy, char *method, char *value)
+{
+    gboolean bool, ret;
+    GError *error = NULL;
+
+    if (!strcmp(value, "False")) {
+        bool = FALSE;
+    } else {
+        bool = TRUE;
+    }
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           G_TYPE_BOOLEAN, bool,
+                           G_TYPE_INVALID,
+                           G_TYPE_BOOLEAN, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+    printf("receive %d\n", ret);
+
+    return 0;
+}
+
+int send_recv_byte(DBusGProxy *proxy, char *method, char *value)
+{
+    guchar byte, ret;
+    GError *error = NULL;
+
+    byte = value[0];
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           G_TYPE_UCHAR, byte,
+                           G_TYPE_INVALID,
+                           G_TYPE_UCHAR, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+    printf("receive %c\n", ret);
+    
+    return 0;
+}
+
+int send_recv_double(DBusGProxy *proxy, char *method, char *value)
+{
+    gdouble d, ret;
+    GError *error = NULL;
+
+    //double strtod(const char *nptr, char **endptr);
+    d = strtod(value, NULL);
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           G_TYPE_DOUBLE, d,
+                           G_TYPE_INVALID,
+                           G_TYPE_DOUBLE, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+    printf("receive %f\n", ret);
+    
+    return 0;
+}
+
+int send_recv_int16(DBusGProxy *proxy, char *method, char *value)
+{
+    gint16 int16, ret;
+    GError *error = NULL;
+
+    int16 = strtol(value, NULL, 10);
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           G_TYPE_INT, int16,
+                           G_TYPE_INVALID,
+                           G_TYPE_INT, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+    printf("receive %d\n", ret);
+    
+    return 0;
+}
+
+int send_recv_int32(DBusGProxy *proxy, char *method, char *value)
+{
+    gint32 int32, ret;
+    GError *error = NULL;
+
+    int32 = strtol(value, NULL, 10);
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           G_TYPE_INT, int32,
+                           G_TYPE_INVALID,
+                           G_TYPE_INT, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+    printf("receive %d\n", ret);
+    
+    return 0;
+}
+
+int send_recv_int64(DBusGProxy *proxy, char *method, char *value)
+{
+    gint64 int64, ret;
+    GError *error = NULL;
+
+    int64 = strtol(value, NULL, 10);
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           G_TYPE_INT64, int64,
+                           G_TYPE_INVALID,
+                           G_TYPE_INT64, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+    printf("receive %ld\n", (long)ret);
+    
+    return 0;
+}
+
+int send_recv_objectpath(DBusGProxy *proxy, char *method, char *value)
+{
+    //typedef gchar DBusGObjectPath;
+    const DBusGObjectPath *path, *ret;
+    GError *error = NULL;
+
+    path = value;
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           DBUS_TYPE_G_OBJECT_PATH, path,
+                           G_TYPE_INVALID,
+                           DBUS_TYPE_G_OBJECT_PATH, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+
+    printf("receive %s\n", ret);
+    
+    return 0;
+}
+
+int send_recv_signature(DBusGProxy *proxy, char *method, char *value)
+{
+    //typedef gchar DBusGSignature;
+    DBusGSignature *signature, *ret;
+    GError *error = NULL;
+
+    signature = value;
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           DBUS_TYPE_G_SIGNATURE, signature,
+                           G_TYPE_INVALID,
+                           DBUS_TYPE_G_SIGNATURE, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+    printf("receive %s\n", ret);
+    
+    return 0;
+}
+
+int send_recv_string(DBusGProxy *proxy, char *method, char *value)
+{
+    gchar *str, *ret;
+    GError *error = NULL;
+
+    str = value;
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           G_TYPE_STRING, str,
+                           G_TYPE_INVALID,
+                           G_TYPE_STRING, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+    printf("receive %s\n", ret);
+    
+    return 0;
+}
+
+int send_recv_uint32(DBusGProxy *proxy, char *method, char *value)
+{
+    guint32 uint32, ret;
+    GError *error = NULL;
+
+    uint32 = strtoul(value, NULL, 10);
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           G_TYPE_UINT, uint32,
+                           G_TYPE_INVALID,
+                           G_TYPE_UINT, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+    printf("receive %u\n", ret);
+    
+    return 0;
+}
+
+int send_recv_uint64(DBusGProxy *proxy, char *method, char *value)
+{
+    guint64 uint64, ret;
+    GError *error = NULL;
+
+    uint64 = strtoul(value, NULL, 10);
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           G_TYPE_UINT64, uint64,
+                           G_TYPE_INVALID,
+                           G_TYPE_UINT64, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+    printf("receive %lu\n", (unsigned long)ret);
+    
+    return 0;
+}
+
+int send_recv_uint16(DBusGProxy *proxy, char *method, char *value)
+{
+    guint16 uint16, ret;
+    GError *error = NULL;
+
+    uint16 = strtoul(value, NULL, 10);
+
+    if (!dbus_g_proxy_call(proxy, method, &error,
+                           G_TYPE_UINT, uint16,
+                           G_TYPE_INVALID,
+                           G_TYPE_UINT, &ret,
+                           G_TYPE_INVALID)) {
+        g_printerr("call %s failed: %s\n", method, error->message);
+        g_error_free(error);
+        error = NULL;
+        return -1;
+    }
+    printf("receive %u\n", ret);
+    
+    return 0;
+}
+
+int main(int argc, char *argv[])
+{
+    DBusGConnection *connection;
+    GError *error = NULL;
+    DBusGProxy *proxy;
+    char *type, *value;
+    char method[METHOD_STRLEN];
+
+    if (argc < 3) {
+        fprintf(stderr, "usage: %s <data_type> <data_value>\n", argv[0]);
+        exit(1);
+    }
+
+    g_type_init();
+
+    type = argv[1];
+    value = argv[2];
+
+    /* conect system connection and get proxy */
+    connection = dbus_g_bus_get(DBUS_BUS_SESSION, &error);
+    if (connection == NULL) {
+        g_printerr("get system bus failed: %s\n", error->message);
+        g_error_free(error);
+        return -1;
+    }
+    
+    /* get proxy */
+    proxy = dbus_g_proxy_new_for_name(connection, 
+                                      "airead.fan.BasicDataType",
+                                      "/airead/fan/BasicDataType",
+                                      "airead.fan.BasicDataType");
+    
+    snprintf(method, METHOD_STRLEN, "%sPrint", type);
+
+    if (!strcmp(type, "Boolean")) { /* gboolean */
+        send_recv_boolean(proxy, method, value);
+    }else if (!strcmp(type, "Byte")) { /* guchar */
+        send_recv_byte(proxy, method, value);
+    }else if (!strcmp(type, "Double")) {
+        send_recv_double(proxy, method, value);
+    }else if (!strcmp(type, "Int16")) {
+        send_recv_int16(proxy, method, value);
+    }else if (!strcmp(type, "Int32")) {
+        send_recv_int32(proxy, method, value);
+    }else if (!strcmp(type, "Int64")) {
+        send_recv_int64(proxy, method, value);
+    }else if (!strcmp(type, "Objectpath")) {
+        send_recv_objectpath(proxy, method, value);
+    }else if (!strcmp(type, "Signature")) {
+        send_recv_signature(proxy, method, value);
+    }else if (!strcmp(type, "String")) {
+        send_recv_string(proxy, method, value);
+    }else if (!strcmp(type, "Uint32")) {
+        send_recv_uint32(proxy, method, value);
+    }else if (!strcmp(type, "Uint64")) {
+        send_recv_uint64(proxy, method, value);
+    }else if (!strcmp(type, "Uint16")) {
+        send_recv_uint16(proxy, method, value);
+    }
+
+    return 0;
+}
+</example>
+
+测试脚本：
+<example>
+#!/bin/sh
+
+echo ./all_basic_data_deliver_client Boolean False
+./all_basic_data_deliver_client Boolean False
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client Byte f
+./all_basic_data_deliver_client Byte f
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client Double 3.2
+./all_basic_data_deliver_client Double 3.2
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client Int16 4
+./all_basic_data_deliver_client Int16 4
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client Int32 4
+./all_basic_data_deliver_client Int32 4
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client Int64 2
+./all_basic_data_deliver_client Int64 2
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client Objectpath "/object"
+./all_basic_data_deliver_client Objectpath "/object"
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client Signature i
+./all_basic_data_deliver_client Signature i
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client String String
+./all_basic_data_deliver_client String String
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client Uint32 99
+./all_basic_data_deliver_client Uint32 99
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client Uint64 33
+./all_basic_data_deliver_client Uint64 33
+echo -e "=================================\n"
+echo ./all_basic_data_deliver_client Uint16 35
+./all_basic_data_deliver_client Uint16 35
+echo -e "=================================\n"
+</example>
+* Makefile
+有些东西实际上没用，我也懒得去了。
+<example>
+CC	= gcc
+
+CFLAGS	= -Wall -g
+CFLAGS += $(shell pkg-config --cflags glib-2.0 )
+CFLAGS += $(shell pkg-config --cflags dbus-glib-1)
+#CFLAGS += $(shell pkg-config --cflags gtk+-2.0)
+
+LDFLAGS	= 
+LDFLAGS += $(shell pkg-config --libs glib-2.0)
+LDFLAGS += $(shell pkg-config --libs dbus-glib-1)
+#LDFLAGS += $(shell pkg-config --libs gtk+-2.0)
+
+SOURCE =  $(wildcard *.c)
+TARGETS	:= $(patsubst %.c, %, $(SOURCE))
+TARGETS_OUT = common_marshaler basic_data
+TARGETS := $(filter-out $(TARGETS_OUT), $(TARGETS))
+TARGETS := $(addsuffix .out, $(TARGETS))
+
+%.out: %.c
+	@echo CC $< -o $@
+	@$(CC) $< common_marshaler.c basic_data.c $(CFLAGS) -o $@ $(LDFLAGS)
+
+.PHONY: all clean test marshaler
+
+all: $(TARGETS) 
+
+marshaler: 
+	glib-genmarshal --prefix _common_marshal --header common_marshaler.list > common_marshaler.h
+	glib-genmarshal --prefix _common_marshal --body common_marshaler.list > common_marshaler.c
+	dbus-binding-tool --prefix=airead_fan --mode=glib-server all_basic_data_deliver_server.xml > all_basic_data_deliver_server.h
+
+clean:
+	rm -f *~ a.out *.o $(TARGETS) core.*
+
+test:
+	@echo TARGETS: $(TARGETS)
+
+</example>
