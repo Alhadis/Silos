@@ -1,0 +1,88 @@
+{-# language DataKinds #-}
+{-# language KindSignatures #-}
+{-# language TypeFamilies #-}
+{-# language TypeOperators #-}
+{-# language GADTSyntax #-}
+
+signature Accordion.Universe where
+
+import Accordion.Types (Nat(..),SingNat(..),Vec(..),Finger,Map,Tree)
+import Accordion.World (World(..),Primitive,SingWorld,GroundPrimitive)
+import Control.Monad.ST (ST)
+import Data.Kind (Type)
+import Data.Type.Equality ((:~:))
+import Data.Primitive (MutablePrimArray,PrimArray)
+import Data.Word (Word8)
+
+data FieldHeight :: Nat
+data PrefixHeight :: Nat
+data ManyHeight :: Nat
+data Field :: Type
+data SingField :: Field -> Type
+data Universe :: Type
+data SingUniverse :: Universe -> Type
+
+data Extra :: Type
+data SingExtra :: Extra -> Type
+
+type family FieldIndex (d :: Field) :: Vec FieldHeight Bool where ..
+type family Interpret (v :: Vec FieldHeight Bool) :: Universe where ..
+type family InterpretExtra (e :: Extra) :: Type where ..
+
+-- Convert a universe to the user-facing type
+type family Ground (u :: Universe) :: Type where ..
+
+-- Convert a universe to a type that is used as an internal
+-- representation of the user-facing type.
+type family Represent (u :: Universe) :: World Extra where ..
+
+represent :: SingUniverse u -> SingWorld SingExtra (Represent u)
+
+-- This function is weird. There must be a better way.
+-- No, there is not.
+showIndexField :: Finger FieldHeight v -> String
+
+singFieldHeight :: SingNat FieldHeight
+index :: SingField d -> Finger FieldHeight (FieldIndex d)
+interpret :: Finger FieldHeight v -> SingUniverse (Interpret v)
+showsPrecUniverse :: SingUniverse u -> Int -> Ground u -> ShowS
+
+eqExtra :: SingExtra e -> InterpretExtra e -> InterpretExtra e -> Bool
+
+-- I really do not like having this type family in the signature.
+-- If GHC supported partially applied type families, I could avoid this.
+-- We actually have to duplicate this type family in the implementation
+-- of the signature. Not good at all.
+type family GroundWorld (w :: World Extra) :: Type where
+  GroundWorld ('Primitive p) = GroundPrimitive p
+  GroundWorld ('Other e) = InterpretExtra e
+
+toInternal ::
+     SingUniverse u
+  -> Ground u
+  -> GroundWorld (Represent u)
+
+fromInternal ::
+     SingUniverse u
+  -> GroundWorld (Represent u)
+  -> Ground u
+
+-- data RingExplicit :: Universe -> Type
+
+-- TODO: Move this function into a different module
+-- vectorizedEquality ::
+--      SingUniverse u
+--   -> Ground u
+--   -> Vectorize u
+--   -> MutablePrimArray s Word8
+--   -> Int -- offset
+--   -> Int -- length
+--   -> ST s ()
+
+-- vectorizedFilter ::
+--      SingUniverse u
+--   -> Vectorize u
+--   -> PrimArray Word8
+--   -> Int -- offset
+--   -> Int -- length
+--   -> Vectorize u

@@ -1,0 +1,143 @@
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE RankNTypes #-}
+signature Streamy where
+
+import Prelude (Functor,Applicative,Foldable,Enum,Eq,Integral,Num,Ord,Read,Real,Show,Bool)
+import Data.Ix (Ix)
+import Data.List.NonEmpty (NonEmpty)
+import Control.Monad (Monad)
+import Control.Monad.Trans.Class (MonadTrans)
+import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Morph (MFunctor)
+
+data Stream :: * -> (* -> *) -> * -> *
+
+instance Monad m => Functor (Stream o m)
+instance Monad m => Applicative (Stream o m)
+instance Monad m => Monad (Stream o m)
+instance MonadIO m => MonadIO (Stream o m) 
+instance MonadTrans (Stream o)
+instance MFunctor (Stream o) 
+
+data Groups :: * -> (* -> *) -> * -> *
+
+instance Monad m => Functor (Groups o m)
+instance Monad m => Applicative (Groups o m)
+instance Monad m => Monad (Groups o m)
+instance MonadIO m => MonadIO (Groups o m) 
+instance MonadTrans (Groups o)
+
+data Index :: *
+
+instance Enum Index
+instance Eq Index
+instance Integral Index
+instance Num Index
+instance Ord Index
+instance Read Index
+instance Real Index
+instance Show Index
+instance Ix Index
+
+yield :: Monad m => o -> Stream o m ()
+
+each :: (Monad m, Foldable f) => f a -> Stream a m ()
+
+toList :: Monad m => Stream a m r -> m ([a],r)
+
+toList_ :: Monad m => Stream a m () -> m [a]
+
+chain :: Monad m => (o -> m ()) -> Stream o m r -> Stream o m r
+
+effects :: Monad m => Stream o m r -> m r
+
+concat :: (Monad m, Foldable f) => Stream (f a) m r -> Stream a m r
+
+for :: Monad m => Stream a m r -> (a -> Stream b m ()) -> Stream b m r
+
+repeat :: Monad m => a -> Stream a m r
+
+repeatM :: Monad m => m a -> Stream a m r
+
+take :: Monad m => Index -> Stream o m r -> Stream o m () 
+
+takeWhile :: Monad m => (a -> Bool) -> Stream a m r -> Stream a m ()
+
+map :: Monad m => (a -> b) -> Stream a m r -> Stream b m r 
+
+mapM :: Monad m => (a -> m b) -> Stream a m r -> Stream b m r
+
+mapM_ :: Monad m => (a -> m b) -> Stream a m r -> m r
+
+drop :: Monad m => Index -> Stream a m r -> Stream a m r
+
+dropWhile :: Monad m => (a -> Bool) -> Stream a m r -> Stream a m r
+
+filter :: Monad m => (a -> Bool) -> Stream a m r -> Stream a m r
+
+filterM :: Monad m => (a -> m Bool) -> Stream a m r -> Stream a m r
+
+replicate :: Monad m => Index -> a -> Stream a m ()
+
+replicateM :: Monad m => Index -> m a -> Stream a m ()
+
+all_ :: Monad m => (a -> Bool) -> Stream a m () -> m Bool
+
+any_ :: Monad m => (a -> Bool) -> Stream a m () -> m Bool
+
+fold :: Monad m => (x -> a -> x) -> x -> (x -> b) -> Stream a m r -> m (b,r)
+fold_ :: Monad m => (x -> a -> x) -> x -> (x -> b) -> Stream a m () -> m b
+foldM :: Monad m => (x -> a -> m x) -> m x -> (x -> m b) -> Stream a m r -> m (b,r)
+foldM_ :: Monad m => (x -> a -> m x) -> m x -> (x -> m b) -> Stream a m () -> m b
+
+scan :: Monad m => (x -> a -> x) -> x -> (x -> b) -> Stream a m r -> Stream b m r
+scanM :: Monad m => (x -> a -> m x) -> m x -> (x -> m b) -> Stream a m r -> Stream b m r
+
+group :: (Monad m, Eq a) => Stream a m r -> Groups a m r
+
+groupBy :: Monad m => (a -> a -> Bool) -> Stream a m r -> Groups a m r
+
+chunksOf :: Monad m => Index -> Stream a m r -> Groups a m r 
+
+maps :: Monad m => (forall x. Stream a m x -> Stream b m x) -> Groups a m r -> Groups b m r
+
+concats :: Monad m => Groups a m r -> Stream a m r
+
+intercalates :: Monad m => Stream a m () -> Groups a m r -> Stream a m r 
+
+yields :: Monad m => Stream a m r -> Groups a m r
+
+takes :: Monad m => Index -> Groups a m () -> Groups a m ()
+
+folds :: Monad m => (x -> a -> x) -> x -> (x -> b) -> Groups a m r -> Stream b m r
+foldsM :: Monad m => (x -> a -> m x) -> m x -> (x -> m b) -> Groups a m r -> Stream b m r
+
+splitAt :: Monad m => Index -> Stream a m r -> Stream a m (Stream a m r)
+
+span :: Monad m => (a -> Bool) -> Stream a m r -> Stream a m (Stream a m r)
+
+{-| Find groups in a stream while keeping an internal state.
+
+    For each step, a new state is returned along with a nonempty list of lists.
+    The head of the nonempty represents elements which continue a previously
+    started group. The tail of the nonempty represents new groups that have
+    been found in the current step. The last group in the tail will be
+    continued by the next step.
+
+    You should start a group in the tail of the nonempty before returning
+    anything in the head of the nonempty; otherwise the elements will be
+    discarded.
+
+    Trivial example that puts each incoming element in its own single-element
+    group:
+
+    > delimit (\() a -> ((), [] :| [[a]])) (\() -> [] :| []) () 
+
+-}
+delimit :: Monad m 
+        => (x -> a -> (x, NonEmpty [b]))    -- ^ step returning new state, continuation of previous group, new groups
+        -> (x -> NonEmpty [b])              -- ^ final step
+        -> x                                -- ^ initial state
+        -> Stream a m r 
+        -> Groups b m r
+
