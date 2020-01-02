@@ -1,0 +1,14450 @@
+;--------------------------------------------------------------------
+InitBitZoom:
+	lea	BitZoom,a1
+	move.w	#1,d6
+IBitL3:	move.l	a1,a0
+	move.l	#$800,d1
+	divs.w	d6,d1
+	move.b	#0,d7
+IBitL2:	move.w	#$1000,d2
+	sub.w	d1,d2
+	asr.w	#1,d2
+	eor.l	d0,d0
+	move.w	#32-1,d5
+IBitL1:	move.w	d2,d3
+	lsr.w	#8,d3
+	btst	d3,d7
+	beq.b	IBitInitno
+	bset	d5,d0
+IBitInitno:
+	sub.w	d1,d2
+	bmi	IBitI1
+	dbf	d5,IBitL1
+IBitI1:	move.l	d0,(a0)
+	add.l	#256,a0
+	add.b	#1,d7
+	bne.b	IBitL2
+	add.l	#4,a1
+	add.w	#1,d6
+	cmp.w	#33,d6
+	bne 	IBitL3
+
+	rts
+;-------------------------------------------------
+ZoomJsrAddr:
+	dc.l 	0
+Zoom:
+	; a3 - from
+	; a4 - to
+	cmp.w	#122<<6,d5
+	ble.b	ZoomDraw
+	rts
+ZoomDraw:
+	movem.l	d0-d7/a0-a6,-(sp)
+	lea	BitZoom,a1
+	eor.l	d2,d2
+	move.l	a4,a2
+	move.l	a3,a0
+	lea	ZoomAddr,a5
+	lsr.w	#6,d5
+	lsl.w	#2,d5
+	add.w 	d5,a5
+	move.l	(a5),a5
+	move.l 	a5,ZoomJsrAddr
+	jsr	(a5)
+
+	IFGT (Planes-1)
+
+	add.l	#ScreenWidth/8*ScreenHeight,a4
+	add.l	#128/8*TextureSize,a3
+	move.l	a4,a2
+	move.l	a3,a0
+	move.l 	ZoomJsrAddr,a5
+	jsr	(a5)
+
+	ENDC
+	IFGT (Planes-2)
+	
+	add.l	#ScreenWidth/8*ScreenHeight,a4
+	add.l	#128/8*TextureSize,a3
+	move.l	a4,a2
+	move.l	a3,a0
+	move.l 	ZoomJsrAddr,a5
+	jsr	(a5)
+
+	ENDC
+	IFGT (Planes-3)
+	
+	add.l	#ScreenWidth/8*ScreenHeight,a4
+	add.l	#128/8*TextureSize,a3
+	move.l	a4,a2
+	move.l	a3,a0
+	move.l 	ZoomJsrAddr,a5
+	jsr	(a5)
+
+	ENDC
+	IFGT (Planes-4)
+	
+	add.l	#ScreenWidth/8*ScreenHeight,a4
+	add.l	#128/8*TextureSize,a3
+	move.l	a4,a2
+	move.l	a3,a0
+	move.l 	ZoomJsrAddr,a5
+	jsr	(a5)
+
+	ENDC
+	IFGT (Planes-5)
+	
+	add.l	#ScreenWidth/8*ScreenHeight,a4
+	add.l	#128/8*TextureSize,a3
+	move.l	a4,a2
+	move.l	a3,a0
+	move.l 	ZoomJsrAddr,a5
+	jsr	(a5)
+
+	ENDC
+	
+re:	movem.l	(sp)+,d0-d7/a0-a6
+	rts
+;-------------------------------------------------
+ZoomAddr:
+	dc.l Zoom16,Zoom17,Zoom18,Zoom19,Zoom20,Zoom21,Zoom22,Zoom23
+	dc.l Zoom24,Zoom25,Zoom26,Zoom27,Zoom28,Zoom29,Zoom30,Zoom31
+	dc.l Zoom32,Zoom33,Zoom34,Zoom35,Zoom36,Zoom37,Zoom38,Zoom39
+	dc.l Zoom40,Zoom41,Zoom42,Zoom43,Zoom44,Zoom45,Zoom46,Zoom47
+	dc.l Zoom48,Zoom49,Zoom50,Zoom51,Zoom52,Zoom53,Zoom54,Zoom55
+	dc.l Zoom56,Zoom57,Zoom58,Zoom59,Zoom60,Zoom61,Zoom62,Zoom63
+	dc.l Zoom64,Zoom65,Zoom66,Zoom67,Zoom68,Zoom69,Zoom70,Zoom71
+	dc.l Zoom72,Zoom73,Zoom74,Zoom75,Zoom76,Zoom77,Zoom78,Zoom79
+	dc.l Zoom80,Zoom81,Zoom82,Zoom83,Zoom84,Zoom85,Zoom86,Zoom87
+	dc.l Zoom88,Zoom89,Zoom90,Zoom91,Zoom92,Zoom93,Zoom94,Zoom95
+	dc.l Zoom96,Zoom97,Zoom98,Zoom99,Zoom100,Zoom101,Zoom102,Zoom103
+	dc.l Zoom104,Zoom105,Zoom106,Zoom107,Zoom108,Zoom109,Zoom110,Zoom111
+	dc.l Zoom112,Zoom113,Zoom114,Zoom115,Zoom116,Zoom117,Zoom118,Zoom119
+	dc.l Zoom120,Zoom121,Zoom122,Zoom123,Zoom124,Zoom125,Zoom126,Zoom127
+	dc.l Zoom128,Zoom129,Zoom130,Zoom131,Zoom132
+Zoom16:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d5,ScreenWidth/8*32*1(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=73,yr=72
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=74,yr=73
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=75,yr=74
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=76,yr=75
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=77,yr=76
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=78,yr=77
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+; yn=79,yr=78
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+; yn=80,yr=79
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=81,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=82,yr=81
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=83,yr=82
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=84,yr=83
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	lsr.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=85,yr=84
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=86,yr=85
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=87,yr=86
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=88,yr=87
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	lsr.l #7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom17:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d5,ScreenWidth/8*32*1(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=71,yr=70
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=72,yr=71
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=73,yr=72
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=75,yr=73
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=76,yr=75
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=77,yr=76
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=78,yr=77
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+; yn=80,yr=78
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=81,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=82,yr=81
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=83,yr=82
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=85,yr=83
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	lsr.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=86,yr=85
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=87,yr=86
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=88,yr=87
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=90,yr=88
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom18:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d5,ScreenWidth/8*32*1(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=69,yr=68
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=71,yr=69
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=72,yr=71
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=74,yr=72
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=75,yr=74
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=77,yr=75
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=78,yr=77
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+; yn=80,yr=78
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=81,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=83,yr=81
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=84,yr=83
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=86,yr=84
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=87,yr=86
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=89,yr=87
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=90,yr=89
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=92,yr=90
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	rol.l #6,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom19:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d5,ScreenWidth/8*32*1(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=67,yr=66
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=69,yr=67
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=71,yr=69
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=73,yr=71
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=74,yr=73
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=76,yr=74
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=78,yr=76
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=80,yr=78
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=81,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=83,yr=81
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=85,yr=83
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=87,yr=85
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=88,yr=87
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 0*4(a1,d2.l),d4
+	swap d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=90,yr=88
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=92,yr=90
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=94,yr=92
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	rol.l #4,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom20:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d5,ScreenWidth/8*32*1(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=66,yr=64
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=68,yr=66
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=70,yr=68
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=72,yr=70
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=74,yr=72
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=76,yr=74
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=78,yr=76
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=80,yr=78
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=82,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=84,yr=82
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=86,yr=84
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=88,yr=86
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=90,yr=88
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=92,yr=90
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=94,yr=92
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=96,yr=94
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	rol.l #2,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom21:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=64,yr=62
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	rol.l #2,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	eor.l d5,d5
+; yn=66,yr=64
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=68,yr=66
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=71,yr=68
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=73,yr=71
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=75,yr=73
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=77,yr=75
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=80,yr=77
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=82,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=84,yr=82
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=86,yr=84
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=89,yr=86
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=91,yr=89
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=93,yr=91
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=95,yr=93
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	rol.l #3,d4
+	or.l d4,d5
+; yn=98,yr=95
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom22:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=62,yr=60
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=65,yr=62
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=67,yr=65
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=70,yr=67
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=72,yr=70
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=75,yr=72
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=77,yr=75
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=80,yr=77
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=82,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=85,yr=82
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=87,yr=85
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=90,yr=87
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	lsr.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=92,yr=90
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=95,yr=92
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=97,yr=95
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=100,yr=97
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom23:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=60,yr=58
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=63,yr=60
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=66,yr=63
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=69,yr=66
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=71,yr=69
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=74,yr=71
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=77,yr=74
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=80,yr=77
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=82,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=85,yr=82
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=88,yr=85
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=91,yr=88
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=93,yr=91
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 1*4(a1,d2.l),d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=96,yr=93
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	rol.l #3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	eor.l d5,d5
+; yn=99,yr=96
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=102,yr=99
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom24:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=59,yr=56
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=62,yr=59
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=65,yr=62
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=68,yr=65
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=71,yr=68
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=74,yr=71
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=77,yr=74
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=80,yr=77
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=83,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=86,yr=83
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=89,yr=86
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=92,yr=89
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	rol.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=95,yr=92
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=98,yr=95
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=101,yr=98
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=104,yr=101
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom25:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=57,yr=54
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=60,yr=57
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=63,yr=60
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=67,yr=63
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=70,yr=67
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=73,yr=70
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=76,yr=73
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=80,yr=76
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=83,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=86,yr=83
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=89,yr=86
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=93,yr=89
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	rol.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=96,yr=93
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	rol.l #3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	eor.l d5,d5
+; yn=99,yr=96
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=102,yr=99
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=106,yr=102
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom26:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=55,yr=52
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=59,yr=55
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=62,yr=59
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=66,yr=62
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=69,yr=66
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=73,yr=69
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=76,yr=73
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=80,yr=76
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=83,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=87,yr=83
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=90,yr=87
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=94,yr=90
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	rol.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=97,yr=94
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=101,yr=97
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=104,yr=101
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=108,yr=104
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom27:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=53,yr=50
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=57,yr=53
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=61,yr=57
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=65,yr=61
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=68,yr=65
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=72,yr=68
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=76,yr=72
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=80,yr=76
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=83,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=87,yr=83
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=91,yr=87
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=95,yr=91
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	rol.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=98,yr=95
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 2*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=102,yr=98
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=106,yr=102
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=110,yr=106
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom28:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=52,yr=48
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=56,yr=52
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=60,yr=56
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=64,yr=60
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	rol.l #4,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=68,yr=64
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=72,yr=68
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=76,yr=72
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=80,yr=76
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=84,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=88,yr=84
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=92,yr=88
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=96,yr=92
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	rol.l #4,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=100,yr=96
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=104,yr=100
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=108,yr=104
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=112,yr=108
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom29:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=50,yr=46
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+; yn=54,yr=50
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=58,yr=54
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=63,yr=58
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	rol.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=67,yr=63
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=71,yr=67
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=75,yr=71
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=80,yr=75
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=84,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=88,yr=84
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=92,yr=88
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=97,yr=92
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=101,yr=97
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=105,yr=101
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=109,yr=105
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=114,yr=109
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom30:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=48,yr=44
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=53,yr=48
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=57,yr=53
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=62,yr=57
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	rol.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=66,yr=62
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=71,yr=66
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=75,yr=71
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=80,yr=75
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=84,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=89,yr=84
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=93,yr=89
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=98,yr=93
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=102,yr=98
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=107,yr=102
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=111,yr=107
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=116,yr=111
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom31:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=46,yr=42
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=51,yr=46
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+; yn=56,yr=51
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=61,yr=56
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=65,yr=61
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=70,yr=65
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=75,yr=70
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=80,yr=75
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=84,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=89,yr=84
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=94,yr=89
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=99,yr=94
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=103,yr=99
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 3*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=108,yr=103
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=113,yr=108
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=118,yr=113
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	lsr.l #1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom32:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=45,yr=40
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=50,yr=45
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+; yn=55,yr=50
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=60,yr=55
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	lsr.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=65,yr=60
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+; yn=70,yr=65
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=75,yr=70
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=80,yr=75
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=85,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=90,yr=85
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=95,yr=90
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=100,yr=95
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=105,yr=100
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=110,yr=105
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=115,yr=110
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+; yn=120,yr=115
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	lsr.l #3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom33:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=43,yr=38
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=48,yr=43
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=53,yr=48
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=59,yr=53
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=64,yr=59
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	rol.l #5,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	eor.l d5,d5
+; yn=69,yr=64
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=74,yr=69
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=80,yr=74
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=85,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=90,yr=85
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=95,yr=90
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=101,yr=95
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=106,yr=101
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=111,yr=106
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=116,yr=111
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+; yn=122,yr=116
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom34:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=41,yr=36
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=47,yr=41
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=52,yr=47
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+; yn=58,yr=52
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=63,yr=58
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=69,yr=63
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=74,yr=69
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=80,yr=74
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=85,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=91,yr=85
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=96,yr=91
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	rol.l #5,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	eor.l d5,d5
+; yn=102,yr=96
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=107,yr=102
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=113,yr=107
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=118,yr=113
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=124,yr=118
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom35:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=39,yr=34
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=45,yr=39
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=51,yr=45
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+; yn=57,yr=51
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	lsr.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=62,yr=57
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=68,yr=62
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=74,yr=68
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=80,yr=74
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=85,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=91,yr=85
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=97,yr=91
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=103,yr=97
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=108,yr=103
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 4*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=114,yr=108
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=120,yr=114
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=126,yr=120
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom36:
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=38,yr=32
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=44,yr=38
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=50,yr=44
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=56,yr=50
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=62,yr=56
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=68,yr=62
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=74,yr=68
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=80,yr=74
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=86,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=92,yr=86
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=98,yr=92
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+; yn=104,yr=98
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=110,yr=104
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=116,yr=110
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+; yn=122,yr=116
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=128,yr=122
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	rol.l #6,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom37:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=36,yr=30
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=42,yr=36
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=48,yr=42
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=55,yr=48
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=61,yr=55
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=67,yr=61
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=73,yr=67
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=80,yr=73
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=86,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=92,yr=86
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=98,yr=92
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+; yn=105,yr=98
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=111,yr=105
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=117,yr=111
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+; yn=123,yr=117
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=130,yr=123
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom38:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=34,yr=28
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+; yn=41,yr=34
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=47,yr=41
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=54,yr=47
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=60,yr=54
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=67,yr=60
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+; yn=73,yr=67
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=80,yr=73
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=86,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=93,yr=86
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=99,yr=93
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=106,yr=99
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=112,yr=106
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=119,yr=112
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=125,yr=119
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=132,yr=125
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom39:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=32,yr=26
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	rol.l #6,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+; yn=39,yr=32
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=46,yr=39
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=53,yr=46
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=59,yr=53
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=66,yr=59
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=73,yr=66
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=80,yr=73
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=86,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=93,yr=86
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=100,yr=93
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=107,yr=100
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=113,yr=107
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 5*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=120,yr=113
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=127,yr=120
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=134,yr=127
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom40:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=31,yr=24
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=38,yr=31
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=45,yr=38
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=52,yr=45
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=59,yr=52
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=66,yr=59
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=73,yr=66
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=80,yr=73
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=87,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=94,yr=87
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=101,yr=94
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=108,yr=101
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=115,yr=108
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=122,yr=115
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=129,yr=122
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+; yn=136,yr=129
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom41:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=29,yr=22
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=36,yr=29
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=43,yr=36
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=51,yr=43
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=58,yr=51
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=65,yr=58
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+; yn=72,yr=65
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=80,yr=72
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=87,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=94,yr=87
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=101,yr=94
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=109,yr=101
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=116,yr=109
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+; yn=123,yr=116
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=130,yr=123
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=138,yr=130
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom42:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=27,yr=20
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=35,yr=27
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=42,yr=35
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=50,yr=42
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=57,yr=50
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=65,yr=57
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+; yn=72,yr=65
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=80,yr=72
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=87,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=95,yr=87
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=102,yr=95
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=110,yr=102
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=117,yr=110
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+; yn=125,yr=117
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=132,yr=125
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=140,yr=132
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom43:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=25,yr=18
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=33,yr=25
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+; yn=41,yr=33
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=49,yr=41
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=56,yr=49
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=64,yr=56
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	eor.l d5,d5
+; yn=72,yr=64
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=80,yr=72
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=87,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=95,yr=87
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=103,yr=95
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=111,yr=103
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=118,yr=111
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 6*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+; yn=126,yr=118
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=134,yr=126
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=142,yr=134
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom44:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=24,yr=16
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=32,yr=24
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+; yn=40,yr=32
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=48,yr=40
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=56,yr=48
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=64,yr=56
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	eor.l d5,d5
+; yn=72,yr=64
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=80,yr=72
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=88,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=96,yr=88
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	eor.l d5,d5
+; yn=104,yr=96
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=112,yr=104
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=120,yr=112
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=128,yr=120
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+; yn=136,yr=128
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=144,yr=136
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom45:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=22,yr=14
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+; yn=30,yr=22
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=38,yr=30
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=47,yr=38
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=55,yr=47
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+; yn=63,yr=55
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=71,yr=63
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=80,yr=71
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=88,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=96,yr=88
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	eor.l d5,d5
+; yn=104,yr=96
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=113,yr=104
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=121,yr=113
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=129,yr=121
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+; yn=137,yr=129
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=146,yr=137
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom46:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=20,yr=12
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=29,yr=20
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=37,yr=29
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=46,yr=37
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=54,yr=46
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+; yn=63,yr=54
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=71,yr=63
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=80,yr=71
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=88,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=97,yr=88
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+; yn=105,yr=97
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=114,yr=105
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=122,yr=114
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=131,yr=122
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+; yn=139,yr=131
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=148,yr=139
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom47:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=18,yr=10
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=27,yr=18
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=36,yr=27
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=45,yr=36
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=53,yr=45
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+; yn=62,yr=53
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=71,yr=62
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=80,yr=71
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=88,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=97,yr=88
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+; yn=106,yr=97
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=115,yr=106
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=123,yr=115
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 7*4(a1,d2.l),d4
+	swap d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=132,yr=123
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=141,yr=132
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=150,yr=141
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom48:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=17,yr=8
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=26,yr=17
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=35,yr=26
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+; yn=44,yr=35
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=53,yr=44
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=62,yr=53
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=71,yr=62
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=80,yr=71
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=89,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=98,yr=89
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+; yn=107,yr=98
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=116,yr=107
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=125,yr=116
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=134,yr=125
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=143,yr=134
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=152,yr=143
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom49:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=15,yr=6
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=24,yr=15
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+; yn=33,yr=24
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+; yn=43,yr=33
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=52,yr=43
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=61,yr=52
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=70,yr=61
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=80,yr=70
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=89,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=98,yr=89
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+; yn=107,yr=98
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=117,yr=107
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=126,yr=117
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=135,yr=126
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=144,yr=135
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=154,yr=144
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom50:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=13,yr=4
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=23,yr=13
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+; yn=32,yr=23
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	lsr.l #7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+; yn=42,yr=32
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=51,yr=42
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=61,yr=51
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=70,yr=61
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=80,yr=70
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=89,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=99,yr=89
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+; yn=108,yr=99
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=118,yr=108
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=127,yr=118
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=137,yr=127
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=146,yr=137
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=156,yr=146
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom51:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=11,yr=2
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=21,yr=11
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=31,yr=21
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=41,yr=31
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=50,yr=41
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=60,yr=50
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=70,yr=60
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+; yn=80,yr=70
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=89,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=99,yr=89
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+; yn=109,yr=99
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=119,yr=109
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=128,yr=119
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 8*4(a1,d2.l),d4
+	swap d4
+	lsr.l #7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+; yn=138,yr=128
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=148,yr=138
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=158,yr=148
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom52:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=10,yr=0
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=20,yr=10
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=30,yr=20
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=40,yr=30
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=50,yr=40
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=60,yr=50
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=70,yr=60
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+; yn=80,yr=70
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=90,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=100,yr=90
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+; yn=110,yr=100
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=120,yr=110
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=130,yr=120
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+; yn=140,yr=130
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=150,yr=140
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=160,yr=150
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	lsr.l #6,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom53:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=8,yr=-2
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	lsl.l #2,d4
+	or.l d4,d5
+; yn=18,yr=8
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=28,yr=18
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=39,yr=28
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=49,yr=39
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=59,yr=49
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=69,yr=59
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=80,yr=69
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=90,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=100,yr=90
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+; yn=110,yr=100
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=121,yr=110
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=131,yr=121
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+; yn=141,yr=131
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=151,yr=141
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+; yn=162,yr=151
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom54:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=6,yr=-4
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	lsl.l #4,d4
+	or.l d4,d5
+; yn=17,yr=6
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=27,yr=17
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=38,yr=27
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=48,yr=38
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=59,yr=48
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=69,yr=59
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=80,yr=69
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=90,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=101,yr=90
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+; yn=111,yr=101
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=122,yr=111
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=132,yr=122
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+; yn=143,yr=132
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=153,yr=143
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+; yn=164,yr=153
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom55:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=4,yr=-6
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	lsl.l #6,d4
+	or.l d4,d5
+; yn=15,yr=4
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=26,yr=15
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+; yn=37,yr=26
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=47,yr=37
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=58,yr=47
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+; yn=69,yr=58
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+; yn=80,yr=69
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=90,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=101,yr=90
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+; yn=112,yr=101
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=123,yr=112
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=133,yr=123
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 9*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=144,yr=133
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=155,yr=144
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=166,yr=155
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom56:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=3,yr=-8
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsl.l #8,d4
+	or.l d4,d5
+; yn=14,yr=3
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=25,yr=14
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+; yn=36,yr=25
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=47,yr=36
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=58,yr=47
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+; yn=69,yr=58
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+; yn=80,yr=69
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=91,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=102,yr=91
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=113,yr=102
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=124,yr=113
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	lsr.l #1,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=135,yr=124
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+; yn=146,yr=135
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=157,yr=146
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=168,yr=157
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom57:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=1,yr=-10
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #2,d4
+	or.l d4,d5
+; yn=12,yr=1
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=23,yr=12
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=35,yr=23
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #1,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=46,yr=35
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=57,yr=46
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+; yn=68,yr=57
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+; yn=80,yr=68
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=91,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=102,yr=91
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=113,yr=102
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=125,yr=113
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	lsr.l #1,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=136,yr=125
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=147,yr=136
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=158,yr=147
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=170,yr=158
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom58:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-1,yr=-12
+	rol.l #8,d0
+; yn=11,yr=-1
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	lsl.l #1,d4
+	or.l d4,d5
+; yn=22,yr=11
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=34,yr=22
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #6,d4
+	and.l #$3ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #2,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=45,yr=34
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=57,yr=45
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+; yn=68,yr=57
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+; yn=80,yr=68
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=91,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=103,yr=91
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=114,yr=103
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=126,yr=114
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=137,yr=126
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=149,yr=137
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=160,yr=149
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	lsr.l #5,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom59:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-3,yr=-14
+	rol.l #8,d0
+; yn=9,yr=-3
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	lsl.l #3,d4
+	or.l d4,d5
+; yn=21,yr=9
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=33,yr=21
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #5,d4
+	and.l #$7ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #3,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=44,yr=33
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=56,yr=44
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=68,yr=56
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+; yn=80,yr=68
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=91,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=103,yr=91
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=115,yr=103
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=127,yr=115
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	lsr.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=138,yr=127
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 10*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=150,yr=138
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=162,yr=150
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #6,d4
+	and.l #$3ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom60:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-4,yr=-16
+	rol.l #8,d0
+; yn=8,yr=-4
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	lsl.l #4,d4
+	or.l d4,d5
+; yn=20,yr=8
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=32,yr=20
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=44,yr=32
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=56,yr=44
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=68,yr=56
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+; yn=80,yr=68
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=92,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=104,yr=92
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+; yn=116,yr=104
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=128,yr=116
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	lsr.l #4,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=140,yr=128
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=152,yr=140
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=164,yr=152
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom61:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-6,yr=-18
+	rol.l #8,d0
+; yn=6,yr=-6
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	lsl.l #6,d4
+	or.l d4,d5
+; yn=18,yr=6
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=31,yr=18
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=43,yr=31
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=55,yr=43
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=67,yr=55
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #1,d5
+; yn=80,yr=67
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=92,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=104,yr=92
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+; yn=116,yr=104
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=129,yr=116
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #4,d4
+	and.l #$fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=141,yr=129
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=153,yr=141
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+; yn=165,yr=153
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom62:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-8,yr=-20
+	rol.l #8,d0
+; yn=5,yr=-8
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	lsl.l #8,d4
+	or.l d4,d5
+; yn=17,yr=5
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=30,yr=17
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	lsr.l #1,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=42,yr=30
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=55,yr=42
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=67,yr=55
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #1,d5
+; yn=80,yr=67
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=92,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=105,yr=92
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+; yn=117,yr=105
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=130,yr=117
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #5,d4
+	and.l #$7ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #3,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=142,yr=130
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=155,yr=142
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+; yn=167,yr=155
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom63:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-10,yr=-22
+	rol.l #8,d0
+; yn=3,yr=-10
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #2,d4
+	or.l d4,d5
+; yn=16,yr=3
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=29,yr=16
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=41,yr=29
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=54,yr=41
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=67,yr=54
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #6,d4
+	and.l #$3ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #2,d5
+; yn=80,yr=67
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=92,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=105,yr=92
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+; yn=118,yr=105
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=131,yr=118
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #6,d4
+	and.l #$3ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #2,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=143,yr=131
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 11*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=156,yr=143
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+; yn=169,yr=156
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom64:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-11,yr=-24
+	rol.l #8,d0
+; yn=2,yr=-11
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #3,d4
+	or.l d4,d5
+; yn=15,yr=2
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=28,yr=15
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=41,yr=28
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+; yn=54,yr=41
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=67,yr=54
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #6,d4
+	and.l #$3ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #2,d5
+; yn=80,yr=67
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=93,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=106,yr=93
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=119,yr=106
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=132,yr=119
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #1,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=145,yr=132
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=158,yr=145
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=171,yr=158
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom65:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-13,yr=-26
+	rol.l #8,d0
+; yn=0,yr=-13
+	rol.l #8,d0
+; yn=13,yr=0
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=27,yr=13
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=40,yr=27
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=53,yr=40
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=66,yr=53
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #5,d4
+	and.l #$7ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #3,d5
+; yn=80,yr=66
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=93,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=106,yr=93
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=119,yr=106
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=133,yr=119
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #1,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=146,yr=133
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=159,yr=146
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=172,yr=159
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom66:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-15,yr=-28
+	rol.l #8,d0
+; yn=-1,yr=-15
+	rol.l #8,d0
+; yn=12,yr=-1
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	lsl.l #1,d4
+	or.l d4,d5
+; yn=26,yr=12
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=39,yr=26
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+; yn=53,yr=39
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=66,yr=53
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #5,d4
+	and.l #$7ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #3,d5
+; yn=80,yr=66
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=93,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=107,yr=93
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=120,yr=107
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=134,yr=120
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=147,yr=134
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=161,yr=147
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #3,d4
+	and.l #$1fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom67:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-17,yr=-30
+	rol.l #8,d0
+; yn=-3,yr=-17
+	rol.l #8,d0
+; yn=11,yr=-3
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	lsl.l #3,d4
+	or.l d4,d5
+; yn=25,yr=11
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=38,yr=25
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+; yn=52,yr=38
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=66,yr=52
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #4,d4
+	and.l #$fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #4,d5
+; yn=80,yr=66
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=93,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=107,yr=93
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=121,yr=107
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=135,yr=121
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=148,yr=135
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 12*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=162,yr=148
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #4,d4
+	and.l #$fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom68:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-18,yr=-32
+	rol.l #8,d0
+; yn=-4,yr=-18
+	rol.l #8,d0
+; yn=10,yr=-4
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	lsl.l #4,d4
+	or.l d4,d5
+; yn=24,yr=10
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=38,yr=24
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+; yn=52,yr=38
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=66,yr=52
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #4,d4
+	and.l #$fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #4,d5
+; yn=80,yr=66
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=94,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=108,yr=94
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=122,yr=108
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=136,yr=122
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=150,yr=136
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=164,yr=150
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #6,d4
+	and.l #$3ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom69:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-20,yr=-34
+	rol.l #8,d0
+; yn=-6,yr=-20
+	rol.l #8,d0
+; yn=8,yr=-6
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	lsl.l #6,d4
+	or.l d4,d5
+; yn=23,yr=8
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=37,yr=23
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #1,d5
+; yn=51,yr=37
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=65,yr=51
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #3,d4
+	and.l #$1fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #5,d5
+; yn=80,yr=65
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=94,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=108,yr=94
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=122,yr=108
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=137,yr=122
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=151,yr=137
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=165,yr=151
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom70:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-22,yr=-36
+	rol.l #8,d0
+; yn=-7,yr=-22
+	rol.l #8,d0
+; yn=7,yr=-7
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	lsl.l #7,d4
+	or.l d4,d5
+; yn=22,yr=7
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=36,yr=22
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #6,d4
+	and.l #$3ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #2,d5
+; yn=51,yr=36
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=65,yr=51
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #3,d4
+	and.l #$1fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #5,d5
+; yn=80,yr=65
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=94,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=109,yr=94
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=123,yr=109
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+; yn=138,yr=123
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=152,yr=138
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=167,yr=152
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom71:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-24,yr=-38
+	rol.l #8,d0
+; yn=-9,yr=-24
+	rol.l #8,d0
+; yn=6,yr=-9
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #1,d4
+	or.l d4,d5
+; yn=21,yr=6
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=35,yr=21
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #5,d4
+	and.l #$7ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #3,d5
+; yn=50,yr=35
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=65,yr=50
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #2,d4
+	and.l #$3fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #6,d5
+; yn=80,yr=65
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=94,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=109,yr=94
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=124,yr=109
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+; yn=139,yr=124
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=153,yr=139
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 13*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=168,yr=153
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom72:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-25,yr=-40
+	rol.l #8,d0
+; yn=-10,yr=-25
+	rol.l #8,d0
+; yn=5,yr=-10
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #2,d4
+	or.l d4,d5
+; yn=20,yr=5
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=35,yr=20
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #4,d4
+	and.l #$fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #4,d5
+; yn=50,yr=35
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=65,yr=50
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #2,d4
+	and.l #$3fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #6,d5
+; yn=80,yr=65
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=95,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=110,yr=95
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=125,yr=110
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+; yn=140,yr=125
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=155,yr=140
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=170,yr=155
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom73:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-27,yr=-42
+	rol.l #8,d0
+; yn=-12,yr=-27
+	rol.l #8,d0
+; yn=3,yr=-12
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #4,d4
+	or.l d4,d5
+; yn=19,yr=3
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=34,yr=19
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #3,d4
+	and.l #$1fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #5,d5
+; yn=49,yr=34
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=64,yr=49
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	swap d4
+	lsr.l #1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	eor.l d5,d5
+; yn=80,yr=64
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=95,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=110,yr=95
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=125,yr=110
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+; yn=141,yr=125
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=156,yr=141
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+; yn=171,yr=156
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom74:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-29,yr=-44
+	rol.l #8,d0
+; yn=-13,yr=-29
+	rol.l #8,d0
+; yn=2,yr=-13
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #5,d4
+	or.l d4,d5
+; yn=18,yr=2
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=33,yr=18
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #2,d4
+	and.l #$3fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #6,d5
+; yn=49,yr=33
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=64,yr=49
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	swap d4
+	lsr.l #1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	eor.l d5,d5
+; yn=80,yr=64
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=95,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=111,yr=95
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=126,yr=111
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+; yn=142,yr=126
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=157,yr=142
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+; yn=173,yr=157
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom75:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-31,yr=-46
+	rol.l #8,d0
+; yn=-15,yr=-31
+	rol.l #8,d0
+; yn=1,yr=-15
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #7,d4
+	or.l d4,d5
+; yn=17,yr=1
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=32,yr=17
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	swap d4
+	lsr.l #1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+; yn=48,yr=32
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=64,yr=48
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	eor.l d5,d5
+; yn=80,yr=64
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=95,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+; yn=111,yr=95
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=127,yr=111
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+; yn=143,yr=127
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=158,yr=143
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 14*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+; yn=174,yr=158
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom76:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-32,yr=-48
+	rol.l #8,d0
+; yn=-16,yr=-32
+	rol.l #8,d0
+; yn=0,yr=-16
+	rol.l #8,d0
+; yn=16,yr=0
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=32,yr=16
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+; yn=48,yr=32
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=64,yr=48
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	eor.l d5,d5
+; yn=80,yr=64
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=96,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	eor.l d5,d5
+; yn=112,yr=96
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=128,yr=112
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+; yn=144,yr=128
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=160,yr=144
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom77:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-34,yr=-50
+	rol.l #8,d0
+; yn=-18,yr=-34
+	rol.l #8,d0
+; yn=-2,yr=-18
+	rol.l #8,d0
+; yn=15,yr=-2
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	lsl.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=31,yr=15
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+; yn=47,yr=31
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=63,yr=47
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+; yn=80,yr=63
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=96,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	eor.l d5,d5
+; yn=112,yr=96
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=128,yr=112
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+; yn=145,yr=128
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=161,yr=145
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #1,d4
+	and.l #$7fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom78:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-36,yr=-52
+	rol.l #8,d0
+; yn=-19,yr=-36
+	rol.l #8,d0
+; yn=-3,yr=-19
+	rol.l #8,d0
+; yn=14,yr=-3
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	lsl.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=30,yr=14
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+; yn=47,yr=30
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=63,yr=47
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	swap d4
+	rol.l #1,d4
+	or.l d4,d5
+; yn=80,yr=63
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=96,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	eor.l d5,d5
+; yn=113,yr=96
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=129,yr=113
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #1,d4
+	and.l #$7fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #7,d5
+; yn=146,yr=129
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=162,yr=146
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #2,d4
+	and.l #$3fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom79:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-38,yr=-54
+	rol.l #8,d0
+; yn=-21,yr=-38
+	rol.l #8,d0
+; yn=-4,yr=-21
+	rol.l #8,d0
+; yn=13,yr=-4
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	lsl.l #4,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=29,yr=13
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+; yn=46,yr=29
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=63,yr=46
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+; yn=80,yr=63
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=96,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	swap d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	eor.l d5,d5
+; yn=113,yr=96
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=130,yr=113
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #1,d4
+	and.l #$7fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #7,d5
+; yn=147,yr=130
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=163,yr=147
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 15*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #3,d4
+	and.l #$1fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom80:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-39,yr=-56
+	rol.l #8,d0
+; yn=-22,yr=-39
+	rol.l #8,d0
+; yn=-5,yr=-22
+	rol.l #8,d0
+; yn=12,yr=-5
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	lsl.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=29,yr=12
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=46,yr=29
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=63,yr=46
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	swap d4
+	rol.l #2,d4
+	or.l d4,d5
+; yn=80,yr=63
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=97,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=114,yr=97
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=131,yr=114
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #2,d4
+	and.l #$3fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #6,d5
+; yn=148,yr=131
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=165,yr=148
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #4,d4
+	and.l #$fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom81:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-41,yr=-58
+	rol.l #8,d0
+; yn=-24,yr=-41
+	rol.l #8,d0
+; yn=-7,yr=-24
+	rol.l #8,d0
+; yn=11,yr=-7
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	lsl.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=28,yr=11
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=45,yr=28
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+; yn=62,yr=45
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+; yn=80,yr=62
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=97,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=114,yr=97
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=131,yr=114
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #2,d4
+	and.l #$3fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #6,d5
+; yn=149,yr=131
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=166,yr=149
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #5,d4
+	and.l #$7ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom82:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-43,yr=-60
+	rol.l #8,d0
+; yn=-25,yr=-43
+	rol.l #8,d0
+; yn=-8,yr=-25
+	rol.l #8,d0
+; yn=10,yr=-8
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	lsl.l #8,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=27,yr=10
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=45,yr=27
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=62,yr=45
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	swap d4
+	rol.l #3,d4
+	or.l d4,d5
+; yn=80,yr=62
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=97,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=115,yr=97
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=132,yr=115
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #3,d4
+	and.l #$1fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #5,d5
+; yn=150,yr=132
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=167,yr=150
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #6,d4
+	and.l #$3ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom83:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-45,yr=-62
+	rol.l #8,d0
+; yn=-27,yr=-45
+	rol.l #8,d0
+; yn=-9,yr=-27
+	rol.l #8,d0
+; yn=9,yr=-9
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #1,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=26,yr=9
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=44,yr=26
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+; yn=62,yr=44
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=80,yr=62
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=97,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=115,yr=97
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=133,yr=115
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #3,d4
+	and.l #$1fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #5,d5
+; yn=151,yr=133
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=168,yr=151
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 16*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom84:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-46,yr=-64
+	rol.l #8,d0
+; yn=-28,yr=-46
+	rol.l #8,d0
+; yn=-10,yr=-28
+	rol.l #8,d0
+; yn=8,yr=-10
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=26,yr=8
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=44,yr=26
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+; yn=62,yr=44
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+; yn=80,yr=62
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=98,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=116,yr=98
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=134,yr=116
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #4,d4
+	and.l #$fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #4,d5
+; yn=152,yr=134
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=170,yr=152
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom85:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-48,yr=-66
+	rol.l #8,d0
+; yn=-30,yr=-48
+	rol.l #8,d0
+; yn=-12,yr=-30
+	rol.l #8,d0
+; yn=7,yr=-12
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #4,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=25,yr=7
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=43,yr=25
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+; yn=61,yr=43
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=80,yr=61
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=98,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=116,yr=98
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=134,yr=116
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #4,d4
+	and.l #$fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #4,d5
+; yn=153,yr=134
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=171,yr=153
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom86:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-50,yr=-68
+	rol.l #8,d0
+; yn=-31,yr=-50
+	rol.l #8,d0
+; yn=-13,yr=-31
+	rol.l #8,d0
+; yn=6,yr=-13
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=24,yr=6
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=43,yr=24
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+; yn=61,yr=43
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+; yn=80,yr=61
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=98,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=117,yr=98
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=135,yr=117
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #5,d4
+	and.l #$7ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #3,d5
+; yn=154,yr=135
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=172,yr=154
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom87:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-52,yr=-70
+	rol.l #8,d0
+; yn=-33,yr=-52
+	rol.l #8,d0
+; yn=-14,yr=-33
+	rol.l #8,d0
+; yn=5,yr=-14
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=23,yr=5
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=42,yr=23
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #1,d5
+; yn=61,yr=42
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=80,yr=61
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=98,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=117,yr=98
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=136,yr=117
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #5,d4
+	and.l #$7ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #3,d5
+; yn=155,yr=136
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=173,yr=155
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 17*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom88:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-53,yr=-72
+	rol.l #8,d0
+; yn=-34,yr=-53
+	rol.l #8,d0
+; yn=-15,yr=-34
+	rol.l #8,d0
+; yn=4,yr=-15
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=23,yr=4
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=42,yr=23
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #1,d5
+; yn=61,yr=42
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+; yn=80,yr=61
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=99,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=118,yr=99
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=137,yr=118
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #6,d4
+	and.l #$3ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #2,d5
+; yn=156,yr=137
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=175,yr=156
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom89:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-55,yr=-74
+	rol.l #8,d0
+; yn=-36,yr=-55
+	rol.l #8,d0
+; yn=-17,yr=-36
+	rol.l #8,d0
+; yn=3,yr=-17
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #8,d4
+	lsl.l #1,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=22,yr=3
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=41,yr=22
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #6,d4
+	and.l #$3ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #2,d5
+; yn=60,yr=41
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=80,yr=60
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=99,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=118,yr=99
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=137,yr=118
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #6,d4
+	and.l #$3ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #2,d5
+; yn=157,yr=137
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=176,yr=157
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom90:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-57,yr=-76
+	rol.l #8,d0
+; yn=-37,yr=-57
+	rol.l #8,d0
+; yn=-18,yr=-37
+	rol.l #8,d0
+; yn=2,yr=-18
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #8,d4
+	lsl.l #2,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=21,yr=2
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=41,yr=21
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #5,d4
+	and.l #$7ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #3,d5
+; yn=60,yr=41
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	swap d4
+	rol.l #7,d4
+	or.l d4,d5
+; yn=80,yr=60
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=99,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=119,yr=99
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=138,yr=119
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #1,d5
+; yn=158,yr=138
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	swap d4
+	rol.l #6,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=177,yr=158
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom91:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-59,yr=-78
+	rol.l #8,d0
+; yn=-39,yr=-59
+	rol.l #8,d0
+; yn=-19,yr=-39
+	rol.l #8,d0
+; yn=1,yr=-19
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #8,d4
+	lsl.l #3,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=20,yr=1
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=40,yr=20
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #4,d4
+	and.l #$fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #4,d5
+; yn=60,yr=40
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=80,yr=60
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=99,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=119,yr=99
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=139,yr=119
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #1,d5
+; yn=159,yr=139
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	swap d4
+	rol.l #5,d4
+	or.l d4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=178,yr=159
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 18*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom92:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-60,yr=-80
+	rol.l #8,d0
+; yn=-40,yr=-60
+	rol.l #8,d0
+; yn=-20,yr=-40
+	rol.l #8,d0
+; yn=0,yr=-20
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=20,yr=0
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=40,yr=20
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #4,d4
+	and.l #$fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #4,d5
+; yn=60,yr=40
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+; yn=80,yr=60
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=100,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=120,yr=100
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=140,yr=120
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+; yn=160,yr=140
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	swap d4
+	rol.l #4,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom93:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-62,yr=-82
+	rol.l #8,d0
+; yn=-42,yr=-62
+	rol.l #8,d0
+; yn=-22,yr=-42
+	rol.l #8,d0
+; yn=-1,yr=-22
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=19,yr=-1
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	lsl.l #1,d4
+	or.l d4,d5
+; yn=39,yr=19
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #3,d4
+	and.l #$1fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #5,d5
+; yn=59,yr=39
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=80,yr=59
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=100,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=120,yr=100
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=140,yr=120
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+; yn=161,yr=140
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #4,d4
+	and.l #$fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom94:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-64,yr=-84
+	rol.l #8,d0
+; yn=-43,yr=-64
+	rol.l #8,d0
+; yn=-23,yr=-43
+	rol.l #8,d0
+; yn=-2,yr=-23
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=18,yr=-2
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	lsl.l #2,d4
+	or.l d4,d5
+; yn=39,yr=18
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #2,d4
+	and.l #$3fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #6,d5
+; yn=59,yr=39
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=80,yr=59
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=100,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=121,yr=100
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=141,yr=121
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+; yn=162,yr=141
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #3,d4
+	and.l #$7ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom95:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-66,yr=-86
+	rol.l #8,d0
+; yn=-45,yr=-66
+	rol.l #8,d0
+; yn=-24,yr=-45
+	rol.l #8,d0
+; yn=-3,yr=-24
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=17,yr=-3
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	lsl.l #3,d4
+	or.l d4,d5
+; yn=38,yr=17
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #1,d4
+	and.l #$7fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #7,d5
+; yn=59,yr=38
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=80,yr=59
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=100,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 19*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=121,yr=100
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=142,yr=121
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+; yn=163,yr=142
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #2,d4
+	and.l #$3ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom96:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-67,yr=-88
+	rol.l #8,d0
+; yn=-46,yr=-67
+	rol.l #8,d0
+; yn=-25,yr=-46
+	rol.l #8,d0
+; yn=-4,yr=-25
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=17,yr=-4
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	lsl.l #4,d4
+	or.l d4,d5
+; yn=38,yr=17
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #1,d4
+	and.l #$7fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #7,d5
+; yn=59,yr=38
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=80,yr=59
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=101,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=122,yr=101
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=143,yr=122
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+; yn=164,yr=143
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #1,d4
+	and.l #$1ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom97:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-69,yr=-90
+	rol.l #8,d0
+; yn=-48,yr=-69
+	rol.l #8,d0
+; yn=-27,yr=-48
+	rol.l #8,d0
+; yn=-5,yr=-27
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=16,yr=-5
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	lsl.l #5,d4
+	or.l d4,d5
+; yn=37,yr=16
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=58,yr=37
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=80,yr=58
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=101,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=122,yr=101
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=143,yr=122
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+; yn=165,yr=143
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #1,d4
+	and.l #$1ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom98:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-71,yr=-92
+	rol.l #8,d0
+; yn=-49,yr=-71
+	rol.l #8,d0
+; yn=-28,yr=-49
+	rol.l #8,d0
+; yn=-6,yr=-28
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=15,yr=-6
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	lsl.l #6,d4
+	or.l d4,d5
+; yn=37,yr=15
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #1,d4
+	and.l #$1ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #1,d5
+; yn=58,yr=37
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=80,yr=58
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=101,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=123,yr=101
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=144,yr=123
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=166,yr=144
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom99:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-73,yr=-94
+	rol.l #8,d0
+; yn=-51,yr=-73
+	rol.l #8,d0
+; yn=-29,yr=-51
+	rol.l #8,d0
+; yn=-7,yr=-29
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=14,yr=-7
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	lsl.l #7,d4
+	or.l d4,d5
+; yn=36,yr=14
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #2,d4
+	and.l #$3ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #2,d5
+; yn=58,yr=36
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=80,yr=58
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=101,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 20*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=123,yr=101
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=145,yr=123
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=167,yr=145
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #1,d4
+	and.l #$7fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom100:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-74,yr=-96
+	rol.l #8,d0
+; yn=-52,yr=-74
+	rol.l #8,d0
+; yn=-30,yr=-52
+	rol.l #8,d0
+; yn=-8,yr=-30
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=14,yr=-8
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	lsl.l #8,d4
+	or.l d4,d5
+; yn=36,yr=14
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #2,d4
+	and.l #$3ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #2,d5
+; yn=58,yr=36
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=80,yr=58
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=102,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=124,yr=102
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=146,yr=124
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+; yn=168,yr=146
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #2,d4
+	and.l #$3fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom101:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-76,yr=-98
+	rol.l #8,d0
+; yn=-54,yr=-76
+	rol.l #8,d0
+; yn=-32,yr=-54
+	rol.l #8,d0
+; yn=-9,yr=-32
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=13,yr=-9
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #1,d4
+	or.l d4,d5
+; yn=35,yr=13
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #3,d4
+	and.l #$7ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #3,d5
+; yn=57,yr=35
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=80,yr=57
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=102,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=124,yr=102
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=146,yr=124
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+; yn=169,yr=146
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #2,d4
+	and.l #$3fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom102:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-78,yr=-100
+	rol.l #8,d0
+; yn=-55,yr=-78
+	rol.l #8,d0
+; yn=-33,yr=-55
+	rol.l #8,d0
+; yn=-10,yr=-33
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=12,yr=-10
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #2,d4
+	or.l d4,d5
+; yn=35,yr=12
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #4,d4
+	and.l #$fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #4,d5
+; yn=57,yr=35
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=80,yr=57
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=102,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=125,yr=102
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=147,yr=125
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=170,yr=147
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #3,d4
+	and.l #$1fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom103:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-80,yr=-102
+	rol.l #8,d0
+; yn=-57,yr=-80
+	rol.l #8,d0
+; yn=-34,yr=-57
+	rol.l #8,d0
+; yn=-11,yr=-34
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=11,yr=-11
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #3,d4
+	or.l d4,d5
+; yn=34,yr=11
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #5,d4
+	and.l #$1fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #5,d5
+; yn=57,yr=34
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=80,yr=57
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=102,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 21*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=125,yr=102
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=148,yr=125
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=171,yr=148
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #4,d4
+	and.l #$fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom104:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-81,yr=-104
+	rol.l #8,d0
+; yn=-58,yr=-81
+	rol.l #8,d0
+; yn=-35,yr=-58
+	rol.l #8,d0
+; yn=-12,yr=-35
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=11,yr=-12
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #4,d4
+	or.l d4,d5
+; yn=34,yr=11
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #5,d4
+	and.l #$1fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #5,d5
+; yn=57,yr=34
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=80,yr=57
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=103,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=126,yr=103
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=149,yr=126
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=172,yr=149
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #5,d4
+	and.l #$7ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom105:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-83,yr=-106
+	rol.l #8,d0
+; yn=-60,yr=-83
+	rol.l #8,d0
+; yn=-37,yr=-60
+	rol.l #8,d0
+; yn=-13,yr=-37
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=10,yr=-13
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #5,d4
+	or.l d4,d5
+; yn=33,yr=10
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #6,d4
+	and.l #$3fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #6,d5
+; yn=56,yr=33
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=80,yr=56
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=103,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=126,yr=103
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=149,yr=126
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=173,yr=149
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #5,d4
+	and.l #$7ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom106:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-85,yr=-108
+	rol.l #8,d0
+; yn=-61,yr=-85
+	rol.l #8,d0
+; yn=-38,yr=-61
+	rol.l #8,d0
+; yn=-14,yr=-38
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=9,yr=-14
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #6,d4
+	or.l d4,d5
+; yn=33,yr=9
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #7,d4
+	and.l #$7fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #7,d5
+; yn=56,yr=33
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=80,yr=56
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=103,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=127,yr=103
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=150,yr=127
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=174,yr=150
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #6,d4
+	and.l #$3ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom107:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-87,yr=-110
+	rol.l #8,d0
+; yn=-63,yr=-87
+	rol.l #8,d0
+; yn=-39,yr=-63
+	rol.l #8,d0
+; yn=-15,yr=-39
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=8,yr=-15
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #7,d4
+	or.l d4,d5
+; yn=32,yr=8
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+; yn=56,yr=32
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=80,yr=56
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=103,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 22*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=127,yr=103
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=151,yr=127
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=175,yr=151
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom108:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-88,yr=-112
+	rol.l #8,d0
+; yn=-64,yr=-88
+	rol.l #8,d0
+; yn=-40,yr=-64
+	rol.l #8,d0
+; yn=-16,yr=-40
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=8,yr=-16
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #8,d4
+	or.l d4,d5
+; yn=32,yr=8
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	eor.l d5,d5
+; yn=56,yr=32
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=80,yr=56
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=104,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=128,yr=104
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+; yn=152,yr=128
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=176,yr=152
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom109:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-90,yr=-114
+	rol.l #8,d0
+; yn=-66,yr=-90
+	rol.l #8,d0
+; yn=-42,yr=-66
+	rol.l #8,d0
+; yn=-17,yr=-42
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=7,yr=-17
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #8,d4
+	lsl.l #1,d4
+	or.l d4,d5
+; yn=31,yr=7
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	lsr.l #7,d4
+	or.l d4,d5
+; yn=55,yr=31
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=80,yr=55
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #1,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=104,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=128,yr=104
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	swap d4
+	rol.l #8,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	eor.l d5,d5
+; yn=152,yr=128
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=177,yr=152
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom110:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-92,yr=-116
+	rol.l #8,d0
+; yn=-67,yr=-92
+	rol.l #8,d0
+; yn=-43,yr=-67
+	rol.l #8,d0
+; yn=-18,yr=-43
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=6,yr=-18
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #8,d4
+	lsl.l #2,d4
+	or.l d4,d5
+; yn=31,yr=6
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	lsr.l #6,d4
+	or.l d4,d5
+; yn=55,yr=31
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #1,d5
+; yn=80,yr=55
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #1,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=104,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=129,yr=104
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #8,d4
+	and.l #$ffffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=153,yr=129
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=178,yr=153
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom111:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-94,yr=-118
+	rol.l #8,d0
+; yn=-69,yr=-94
+	rol.l #8,d0
+; yn=-44,yr=-69
+	rol.l #8,d0
+; yn=-19,yr=-44
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=5,yr=-19
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #8,d4
+	lsl.l #3,d4
+	or.l d4,d5
+; yn=30,yr=5
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=55,yr=30
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=80,yr=55
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #1,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=104,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 23*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=129,yr=104
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #8,d4
+	and.l #$ffffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=154,yr=129
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=179,yr=154
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom112:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-95,yr=-120
+	rol.l #8,d0
+; yn=-70,yr=-95
+	rol.l #8,d0
+; yn=-45,yr=-70
+	rol.l #8,d0
+; yn=-20,yr=-45
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=5,yr=-20
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #8,d4
+	lsl.l #4,d4
+	or.l d4,d5
+; yn=30,yr=5
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=55,yr=30
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #2,d5
+; yn=80,yr=55
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #1,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=105,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=130,yr=105
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #7,d4
+	and.l #$7fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #7,d5
+; yn=155,yr=130
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=180,yr=155
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom113:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-97,yr=-122
+	rol.l #8,d0
+; yn=-72,yr=-97
+	rol.l #8,d0
+; yn=-47,yr=-72
+	rol.l #8,d0
+; yn=-21,yr=-47
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=4,yr=-21
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #8,d4
+	lsl.l #5,d4
+	or.l d4,d5
+; yn=29,yr=4
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=54,yr=29
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=80,yr=54
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #6,d4
+	and.l #$3ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #2,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=105,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=130,yr=105
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #7,d4
+	and.l #$7fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #7,d5
+; yn=155,yr=130
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=181,yr=155
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom114:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-99,yr=-124
+	rol.l #8,d0
+; yn=-73,yr=-99
+	rol.l #8,d0
+; yn=-48,yr=-73
+	rol.l #8,d0
+; yn=-22,yr=-48
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=3,yr=-22
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #8,d4
+	lsl.l #6,d4
+	or.l d4,d5
+; yn=29,yr=3
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=54,yr=29
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #3,d5
+; yn=80,yr=54
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #6,d4
+	and.l #$3ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #2,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=105,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=131,yr=105
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #7,d4
+	and.l #$7fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #7,d5
+; yn=156,yr=131
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=182,yr=156
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom115:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-101,yr=-126
+	rol.l #8,d0
+; yn=-75,yr=-101
+	rol.l #8,d0
+; yn=-49,yr=-75
+	rol.l #8,d0
+; yn=-23,yr=-49
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=2,yr=-23
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #8,d4
+	lsl.l #7,d4
+	or.l d4,d5
+; yn=28,yr=2
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=54,yr=28
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+; yn=80,yr=54
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #6,d4
+	and.l #$3ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #2,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=105,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 24*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=131,yr=105
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #7,d4
+	and.l #$7fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #7,d5
+; yn=157,yr=131
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	lsr.l #3,d4
+	or.l d4,d5
+; yn=183,yr=157
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #3,d4
+	and.l #$7,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom116:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-102,yr=-128
+	rol.l #8,d0
+; yn=-76,yr=-102
+	rol.l #8,d0
+; yn=-50,yr=-76
+	rol.l #8,d0
+; yn=-24,yr=-50
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=2,yr=-24
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #8,d4
+	lsl.l #8,d4
+	or.l d4,d5
+; yn=28,yr=2
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	lsr.l #2,d4
+	or.l d4,d5
+; yn=54,yr=28
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #4,d4
+	and.l #$f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #4,d5
+; yn=80,yr=54
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #6,d4
+	and.l #$3ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #2,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=106,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=132,yr=106
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #6,d4
+	and.l #$3fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #6,d5
+; yn=158,yr=132
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=184,yr=158
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom117:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-104,yr=-130
+	rol.l #8,d0
+; yn=-78,yr=-104
+	rol.l #8,d0
+; yn=-52,yr=-78
+	rol.l #8,d0
+; yn=-25,yr=-52
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=1,yr=-25
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #8,d4
+	lsl.l #8,d4
+	lsl.l #1,d4
+	or.l d4,d5
+; yn=27,yr=1
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	lsr.l #1,d4
+	or.l d4,d5
+; yn=53,yr=27
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=80,yr=53
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #5,d4
+	and.l #$7ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #3,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=106,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=132,yr=106
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #6,d4
+	and.l #$3fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #6,d5
+; yn=158,yr=132
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	lsr.l #4,d4
+	or.l d4,d5
+; yn=185,yr=158
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #2,d4
+	and.l #$3,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom118:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-106,yr=-132
+	rol.l #8,d0
+; yn=-79,yr=-106
+	rol.l #8,d0
+; yn=-53,yr=-79
+	rol.l #8,d0
+; yn=-26,yr=-53
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=0,yr=-26
+	rol.l #8,d0
+; yn=27,yr=0
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	or.l d4,d5
+; yn=53,yr=27
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #5,d4
+	and.l #$1f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #5,d5
+; yn=80,yr=53
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #5,d4
+	and.l #$7ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #3,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=106,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=133,yr=106
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #6,d4
+	and.l #$3fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #6,d5
+; yn=159,yr=133
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+; yn=186,yr=159
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #1,d4
+	and.l #$1,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom119:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-108,yr=-134
+	rol.l #8,d0
+; yn=-81,yr=-108
+	rol.l #8,d0
+; yn=-54,yr=-81
+	rol.l #8,d0
+; yn=-27,yr=-54
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-1,yr=-27
+	rol.l #8,d0
+; yn=26,yr=-1
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	lsl.l #1,d4
+	or.l d4,d5
+; yn=53,yr=26
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+; yn=80,yr=53
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #5,d4
+	and.l #$7ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #3,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=106,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 25*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=133,yr=106
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #6,d4
+	and.l #$3fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #6,d5
+; yn=160,yr=133
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	lsr.l #5,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom120:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-109,yr=-136
+	rol.l #8,d0
+; yn=-82,yr=-109
+	rol.l #8,d0
+; yn=-55,yr=-82
+	rol.l #8,d0
+; yn=-28,yr=-55
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-1,yr=-28
+	rol.l #8,d0
+; yn=26,yr=-1
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	lsl.l #1,d4
+	or.l d4,d5
+; yn=53,yr=26
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #6,d4
+	and.l #$3f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #6,d5
+; yn=80,yr=53
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #5,d4
+	and.l #$7ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #3,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=107,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=134,yr=107
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #5,d4
+	and.l #$1fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #5,d5
+; yn=161,yr=134
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	lsr.l #6,d4
+	and.l #$3ffffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom121:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-111,yr=-138
+	rol.l #8,d0
+; yn=-84,yr=-111
+	rol.l #8,d0
+; yn=-57,yr=-84
+	rol.l #8,d0
+; yn=-29,yr=-57
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-2,yr=-29
+	rol.l #8,d0
+; yn=25,yr=-2
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	lsl.l #2,d4
+	or.l d4,d5
+; yn=52,yr=25
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+; yn=80,yr=52
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #4,d4
+	and.l #$fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=107,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=134,yr=107
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #5,d4
+	and.l #$1fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #5,d5
+; yn=161,yr=134
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	lsr.l #6,d4
+	and.l #$3ffffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom122:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-113,yr=-140
+	rol.l #8,d0
+; yn=-85,yr=-113
+	rol.l #8,d0
+; yn=-58,yr=-85
+	rol.l #8,d0
+; yn=-30,yr=-58
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-3,yr=-30
+	rol.l #8,d0
+; yn=25,yr=-3
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	lsl.l #3,d4
+	or.l d4,d5
+; yn=52,yr=25
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #7,d4
+	and.l #$7f,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #7,d5
+; yn=80,yr=52
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #4,d4
+	and.l #$fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=107,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=135,yr=107
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #5,d4
+	and.l #$1fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #5,d5
+; yn=162,yr=135
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	lsr.l #7,d4
+	and.l #$1ffffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom123:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-115,yr=-142
+	rol.l #8,d0
+; yn=-87,yr=-115
+	rol.l #8,d0
+; yn=-59,yr=-87
+	rol.l #8,d0
+; yn=-31,yr=-59
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-4,yr=-31
+	rol.l #8,d0
+; yn=24,yr=-4
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	lsl.l #4,d4
+	or.l d4,d5
+; yn=52,yr=24
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+; yn=80,yr=52
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #4,d4
+	and.l #$fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=107,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 26*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=135,yr=107
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #5,d4
+	and.l #$1fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #5,d5
+; yn=163,yr=135
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	lsr.l #7,d4
+	and.l #$1ffffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom124:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-116,yr=-144
+	rol.l #8,d0
+; yn=-88,yr=-116
+	rol.l #8,d0
+; yn=-60,yr=-88
+	rol.l #8,d0
+; yn=-32,yr=-60
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-4,yr=-32
+	rol.l #8,d0
+; yn=24,yr=-4
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	lsl.l #4,d4
+	or.l d4,d5
+; yn=52,yr=24
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	rol.l #8,d4
+	and.l #$ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+; yn=80,yr=52
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #4,d4
+	and.l #$fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #4,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=108,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=136,yr=108
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #4,d4
+	and.l #$fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #4,d5
+; yn=164,yr=136
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #8,d4
+	and.l #$ffffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom125:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-118,yr=-146
+	rol.l #8,d0
+; yn=-90,yr=-118
+	rol.l #8,d0
+; yn=-62,yr=-90
+	rol.l #8,d0
+; yn=-33,yr=-62
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-5,yr=-33
+	rol.l #8,d0
+; yn=23,yr=-5
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	lsl.l #5,d4
+	or.l d4,d5
+; yn=51,yr=23
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #1,d5
+; yn=80,yr=51
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #3,d4
+	and.l #$1fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=108,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=136,yr=108
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #4,d4
+	and.l #$fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #4,d5
+; yn=164,yr=136
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #8,d4
+	and.l #$ffffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom126:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-120,yr=-148
+	rol.l #8,d0
+; yn=-91,yr=-120
+	rol.l #8,d0
+; yn=-63,yr=-91
+	rol.l #8,d0
+; yn=-34,yr=-63
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-6,yr=-34
+	rol.l #8,d0
+; yn=23,yr=-6
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	lsl.l #6,d4
+	or.l d4,d5
+; yn=51,yr=23
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #7,d4
+	and.l #$1ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #1,d5
+; yn=80,yr=51
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #3,d4
+	and.l #$1fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=108,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=137,yr=108
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #4,d4
+	and.l #$fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #4,d5
+; yn=165,yr=137
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #7,d4
+	and.l #$7fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom127:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-122,yr=-150
+	rol.l #8,d0
+; yn=-93,yr=-122
+	rol.l #8,d0
+; yn=-64,yr=-93
+	rol.l #8,d0
+; yn=-35,yr=-64
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-7,yr=-35
+	rol.l #8,d0
+; yn=22,yr=-7
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	lsl.l #7,d4
+	or.l d4,d5
+; yn=51,yr=22
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #6,d4
+	and.l #$3ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #2,d5
+; yn=80,yr=51
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #3,d4
+	and.l #$1fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=108,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 27*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=137,yr=108
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #4,d4
+	and.l #$fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #4,d5
+; yn=166,yr=137
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #7,d4
+	and.l #$7fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom128:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-123,yr=-152
+	rol.l #8,d0
+; yn=-94,yr=-123
+	rol.l #8,d0
+; yn=-65,yr=-94
+	rol.l #8,d0
+; yn=-36,yr=-65
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-7,yr=-36
+	rol.l #8,d0
+; yn=22,yr=-7
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	lsl.l #7,d4
+	or.l d4,d5
+; yn=51,yr=22
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #6,d4
+	and.l #$3ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #2,d5
+; yn=80,yr=51
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #3,d4
+	and.l #$1fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=109,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=138,yr=109
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #3,d4
+	and.l #$7ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #3,d5
+; yn=167,yr=138
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #6,d4
+	and.l #$3fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom129:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-125,yr=-154
+	rol.l #8,d0
+; yn=-96,yr=-125
+	rol.l #8,d0
+; yn=-67,yr=-96
+	rol.l #8,d0
+; yn=-37,yr=-67
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-8,yr=-37
+	rol.l #8,d0
+; yn=21,yr=-8
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	lsl.l #8,d4
+	or.l d4,d5
+; yn=50,yr=21
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #5,d4
+	and.l #$7ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #3,d5
+; yn=80,yr=50
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 29*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #2,d4
+	and.l #$3fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #6,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=109,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=138,yr=109
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #3,d4
+	and.l #$7ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #3,d5
+; yn=167,yr=138
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #6,d4
+	and.l #$3fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom130:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-127,yr=-156
+	rol.l #8,d0
+; yn=-97,yr=-127
+	rol.l #8,d0
+; yn=-68,yr=-97
+	rol.l #8,d0
+; yn=-38,yr=-68
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-9,yr=-38
+	rol.l #8,d0
+; yn=21,yr=-9
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 29*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #1,d4
+	or.l d4,d5
+; yn=50,yr=21
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #5,d4
+	and.l #$7ff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #3,d5
+; yn=80,yr=50
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 29*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #2,d4
+	and.l #$3fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #6,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=109,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=139,yr=109
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 29*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #3,d4
+	and.l #$7ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #3,d5
+; yn=168,yr=139
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #5,d4
+	and.l #$1fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom131:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-129,yr=-158
+	rol.l #8,d0
+; yn=-99,yr=-129
+	rol.l #8,d0
+; yn=-69,yr=-99
+	rol.l #8,d0
+; yn=-39,yr=-69
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-10,yr=-39
+	rol.l #8,d0
+; yn=20,yr=-10
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 29*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #2,d4
+	or.l d4,d5
+; yn=50,yr=20
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 29*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #4,d4
+	and.l #$fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #4,d5
+; yn=80,yr=50
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 29*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #2,d4
+	and.l #$3fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #6,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=109,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 28*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=139,yr=109
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 29*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #3,d4
+	and.l #$7ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #3,d5
+; yn=169,yr=139
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 29*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #5,d4
+	and.l #$1fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
+Zoom132:
+	eor.l d5,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-130,yr=-160
+	rol.l #8,d0
+; yn=-100,yr=-130
+	rol.l #8,d0
+; yn=-70,yr=-100
+	rol.l #8,d0
+; yn=-40,yr=-70
+	rol.l #8,d0
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=-10,yr=-40
+	rol.l #8,d0
+; yn=20,yr=-10
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 29*4(a1,d2.l),d4
+	lsl.l #8,d4
+	lsl.l #2,d4
+	or.l d4,d5
+; yn=50,yr=20
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 29*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #4,d4
+	and.l #$fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*0(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #4,d5
+; yn=80,yr=50
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 29*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	lsr.l #2,d4
+	and.l #$3fff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*1(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #6,d5
+	move.l (a0)+,d0
+	rol.l #8,d0
+; yn=110,yr=80
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 29*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	and.l #$ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*2(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+; yn=140,yr=110
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 29*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #2,d4
+	and.l #$3ffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*3(a2)
+	move.l d3,d5
+	lsl.l #8,d5
+	lsl.l #8,d5
+	lsl.l #2,d5
+; yn=170,yr=140
+	rol.l #8,d0
+	move.w d0,d2
+	eor.b d2,d2
+	move.l 29*4(a1,d2.l),d4
+	move.l d4,d3
+	swap d4
+	rol.l #4,d4
+	and.l #$fffff,d4
+	or.l d4,d5
+	move.l d5,ScreenWidth/8*32*4(a2)
+	rts
