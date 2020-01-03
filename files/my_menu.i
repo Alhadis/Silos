@@ -15114,10 +15114,10 @@ void main_menu(char* id,char menu)
 
 		f_mount(0, &fs);	
 		f_open(&fsrc,"st1616.bin", 0x00 | 0x01);		
-		Lcd_WriteChineseStringClarity(25+125/2-16,55+50/2-8,0xf800,0,"系统",0); 
-		Lcd_WriteChineseStringClarity(25+125+(320-125*2-25*2)+125/2-16,55+50/2-8,0xf800,0,"浏览",0);
+		Lcd_WriteChineseStringClarity(25+125/2-16,55+50/2-8,0xf800,0,"脧碌脥鲁",0); 
+		Lcd_WriteChineseStringClarity(25+125+(320-125*2-25*2)+125/2-16,55+50/2-8,0xf800,0,"盲炉脌脌",0);
 		Lcd_WriteChineseStringClarity(25+125/2-12,55+50+(240-50*2-55*2)+50/2-8,0xf800,0,"GPS",0);
-		Lcd_WriteChineseStringClarity(25+125+(320-125*2-25*2)+125/2-16,55+50+(240-50*2-55*2)+50/2-8,0xf800,0,"摄像",0);
+		Lcd_WriteChineseStringClarity(25+125+(320-125*2-25*2)+125/2-16,55+50+(240-50*2-55*2)+50/2-8,0xf800,0,"脡茫脧帽",0);
 
     }
 
@@ -15128,10 +15128,10 @@ void main_menu(char* id,char menu)
 		
 		f_mount(0, &fs);	
 		f_open(&fsrc,"st1616.bin", 0x00 | 0x01);
-		Lcd_WriteChineseStringClarity(25+125/2-16,55+50/2-8,0xf800,0,"撤防",0); 
-		Lcd_WriteChineseStringClarity(25+125+(320-125*2-25*2)+125/2-16,55+50/2-8,0xf800,0,"布防",0);
-		Lcd_WriteChineseStringClarity(25+125/2-16,55+50+(240-50*2-55*2)+50/2-8,0xf800,0,"节能",0);
-		Lcd_WriteChineseStringClarity(25+125+(320-125*2-25*2)+125/2-16,55+50+(240-50*2-55*2)+50/2-8,0xf800,0,"退出",0);
+		Lcd_WriteChineseStringClarity(25+125/2-16,55+50/2-8,0xf800,0,"鲁路路脌",0); 
+		Lcd_WriteChineseStringClarity(25+125+(320-125*2-25*2)+125/2-16,55+50/2-8,0xf800,0,"虏录路脌",0);
+		Lcd_WriteChineseStringClarity(25+125/2-16,55+50+(240-50*2-55*2)+50/2-8,0xf800,0,"陆脷脛脺",0);
+		Lcd_WriteChineseStringClarity(25+125+(320-125*2-25*2)+125/2-16,55+50+(240-50*2-55*2)+50/2-8,0xf800,0,"脥脣鲁枚",0);
 	}
 
     if(menu==3)
@@ -15141,11 +15141,11 @@ void main_menu(char* id,char menu)
 		
 		f_mount(0, &fs);	
 		f_open(&fsrc,"st1616.bin", 0x00 | 0x01);
-		Lcd_WriteChineseStringClarity(25+125/2-32,55+50/2-8,0xf800,0,"删除全部",0); 
-		Lcd_WriteChineseStringClarity(25+125+(320-125*2-25*2)+125/2-32,55+50/2-8,0xf800,0,"时间设置",0);
-		Lcd_WriteChineseStringClarity(25+125+(320-125*2-25*2)+125/2-16,55+50+(240-50*2-55*2)+50/2-8,0xf800,0,"退出",0);
-		Lcd_WriteChineseStringClarity(25+125/2-28,55+50+(240-50*2-55*2)+50/2-18,0xf800,0,"μC/GUI",0);
-		Lcd_WriteChineseStringClarity(25+125/2-24,55+50+(240-50*2-55*2)+50/2+ 2,0xf800,0,"练习场",0);
+		Lcd_WriteChineseStringClarity(25+125/2-32,55+50/2-8,0xf800,0,"脡戮鲁媒脠芦虏驴",0); 
+		Lcd_WriteChineseStringClarity(25+125+(320-125*2-25*2)+125/2-32,55+50/2-8,0xf800,0,"脢卤录盲脡猫脰脙",0);
+		Lcd_WriteChineseStringClarity(25+125+(320-125*2-25*2)+125/2-16,55+50+(240-50*2-55*2)+50/2-8,0xf800,0,"脥脣鲁枚",0);
+		Lcd_WriteChineseStringClarity(25+125/2-28,55+50+(240-50*2-55*2)+50/2-18,0xf800,0,"娄脤C/GUI",0);
+		Lcd_WriteChineseStringClarity(25+125/2-24,55+50+(240-50*2-55*2)+50/2+ 2,0xf800,0,"脕路脧掳鲁隆",0);
     }
 
   time_counter=0;
@@ -15860,5 +15860,3 @@ void Set_Time_Date(void)
    }
 		GUI_SetFont(&GUI_Font8x16);
 }
-
-

@@ -3,7 +3,7 @@ IMPLEMENTATION MODULE FileBase;
 
 (* V#0027 *)
 
-(* !!! die flush-funktionen f걊 v24, midi, printer, usw. m걌sen warten,
+(* !!! die flush-funktionen f체r v24, midi, printer, usw. m체ssen warten,
  * bis der ausgabepuffer geleert ist !
  *
  * 14.03.88: MOVE.L InOutErr,... --> MOVE.L #InOutErr,...
@@ -11,9 +11,9 @@ IMPLEMENTATION MODULE FileBase;
  *           'InOutBase'.
  * 28.01.89: chin meldet nie Fehler -> Text.Read (MIDI) geht jetzt?
  * 07.09.89: MIDI-Handle von 3 auf 4 korrigiert
- * 23.03.90: strout l꼋t Regs korrekt zur갷k (f갿rte bei nicht-vollen Strings
+ * 23.03.90: strout l채dt Regs korrekt zur체ck (f체hrte bei nicht-vollen Strings
  *           zu Bus-Errors)
- * 12.05.90: strout und dout pr갽en timeout bei Printer (handle = 0) und
+ * 12.05.90: strout und dout pr체fen timeout bei Printer (handle = 0) und
  *           liefern dann -1 als Error-Code
  *)
 
@@ -100,7 +100,7 @@ PROCEDURE dout ( hdl: LONGWORD; ad:ADDRESS; VAR l:LONGCARD ): INTEGER;
         TRAP    #13
         ADDQ.L  #6,A7
         TST.L   D0
-        OR.L    D5,D0           ; nur bei Printer den Return-Wert pr갽en
+        OR.L    D5,D0           ; nur bei Printer den Return-Wert pr체fen
         BEQ     error
         ADDQ.L  #1,(A6)
        st:
@@ -136,7 +136,7 @@ PROCEDURE strout ( hdl: LONGWORD; REF str: ARRAY OF CHAR ): INTEGER;
         ADDQ.L  #6,A7
         
         TST.L   D0
-        OR.L    D5,D0           ; nur bei Printer den Return-Wert pr갽en
+        OR.L    D5,D0           ; nur bei Printer den Return-Wert pr체fen
        st:
         DBEQ    D4,lo
         BNE     ok
@@ -164,7 +164,7 @@ PROCEDURE flush0 (a:LONGWORD): INTEGER;
 BEGIN
   CloseFile:= dummyClose;
   HandleError:= dummyHdlErr;
-  (* Wird automatisch gel봲cht:
+  (* Wird automatisch gel철scht:
     FOR c:= con TO ext3 DO
       UnitDriver [c].valid:= FALSE
     END
@@ -237,4 +237,4 @@ BEGIN
     rdChr:= chin
   END;
 END FileBase.
-
+

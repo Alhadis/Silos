@@ -2,8 +2,8 @@ IMPLEMENTATION MODULE GrafBase;
 (*$L-, R-, Y+*)
 
 
-(*  Definition der grundlegenden Typen fÅr die Grafikbibliotheken des
- *  Megamax Modula-2 Entwicklungspackets. Auûerdem Routinen zur Ver-
+(*  Definition der grundlegenden Typen f√ºr die Grafikbibliotheken des
+ *  Megamax Modula-2 Entwicklungspackets. Au‚Çßerdem Routinen zur Ver-
  *  arbeitung dieser Strukturen.
  *
  *  Autor: Manuel Chakravarty           Erstellt: 28.10.87
@@ -16,9 +16,9 @@ IMPLEMENTATION MODULE GrafBase;
  *  02.08.89    | 'FrameRects' korrigiert
  *  13.08.89    | 'LongPnt', 'LongRect' def.; 'LPnt', 'LRect' def. + impl.
  *  18.08.89    | 'Get...MemFormDef' benutzt jetzt Line-A (das Modul wird
- *                nicht importiert um Zyklen zu vermeiden). Auûerdem die
+ *                nicht importiert um Zyklen zu vermeiden). Au‚Çßerdem die
  *                'L...'-Funktionen
- *  01.02.90    | Angepaût auf Compilerversion 4.0 (verdrehte SET's)
+ *  01.02.90    | Angepa‚Çßt auf Compilerversion 4.0 (verdrehte SET's)
  *  10.12.93    | LFramePoints korrigiert
  *)
 
@@ -520,4 +520,4 @@ BEGIN
 END ColorNumber;
 
 
-END GrafBase.
+END GrafBase.

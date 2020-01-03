@@ -52,8 +52,8 @@ CALC_ATARISQRT:
 * >WARNING< for these equ's: when using a new 'sintbllen' you must
 * recalculate 'cos1' and 'sin1'!
 sintbllen:	equ	2048		* MUST BE A EXPONENTIAL VALUE OF 2!
-sin1:		equ	13176774	* sin(2ã/2048)*2^32
-cos1:		equ	4294947083	* cos(2ã/2048)*2^32
+sin1:		equ	13176774	* sin(2Ã£/2048)*2^32
+cos1:		equ	4294947083	* cos(2Ã£/2048)*2^32
 
 ******** MACROS ********
 
@@ -67,7 +67,7 @@ Do_SinModulo:	MACRO	angle
 * PRECONDITION: INIT_SINETABLE has been called!
 * INPUT: base: type: address-register or address or relative address
 *        inpreg: type: data-register or address-register (lower word)
-*                contains: angle (0=0ø, sintbllen=360ø)
+*                contains: angle (0=0Ã¸, sintbllen=360Ã¸)
 * OUTPUT: sinreg: type: data-register (long) or address-register
 *                 contains: sine value (signed: -32768 to 32767)
 *         cosreg: type: data-register (long) or address-register
@@ -80,7 +80,7 @@ Get_SinCos:	MACRO	base,inpreg,sinreg,cosreg
 * PRECONDITION: INIT_SINETABLE has been called!
 * INPUT: base: type: address-register or address or relative address
 *        inpreg: type: data-register or address-register (lower word)
-*                contains: angle (0=0ø, sintbllen=360ø)
+*                contains: angle (0=0Ã¸, sintbllen=360Ã¸)
 * OUTPUT: sinreg: type: data-register (long) or address-register
 *                 contains: sine value (signed: -32768 to 32767)
 Get_Sin:	MACRO	base,inpreg,sinreg
@@ -91,7 +91,7 @@ Get_Sin:	MACRO	base,inpreg,sinreg
 * PRECONDITION: INIT_SINETABLE has been called!
 * INPUT: base: type: address-register or address or relative address
 *        inpreg: type: data-register or address-register (lower word)
-*                contains: angle (0=0ø, sintbllen=360ø)
+*                contains: angle (0=0Ã¸, sintbllen=360Ã¸)
 * OUTPUT: cosreg: type: data-register (long) or address-register
 *                 contains: cosine value (signed: -32768 to 32767)
 Get_Cos:	MACRO	base,inpreg,sinreg,cosreg

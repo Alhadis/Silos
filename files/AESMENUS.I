@@ -9,7 +9,7 @@ IMPLEMENTATION MODULE AESMenus;
  *  Version   2.3     V#0022
  *)
  
-(*  05.11.87    | öbernahme von 'GEMBase'
+(*  05.11.87    | √úbernahme von 'GEMBase'
  *  ???????? TT | REF-Parm.
  *  02.04.90    | Anpassung auf public arrays
  *  22.05.93    | Anpassung MenuBar f. MultiTOS
@@ -36,7 +36,7 @@ BEGIN
                 BNE         noMulti
                 
                 (*
-                 * Bei MultiTOS Funktion nur ausfÅhren, wenn Menubar sichtbar ist.
+                 * Bei MultiTOS Funktion nur ausf√ºhren, wenn Menubar sichtbar ist.
                  *)
                 MOVE.L      pubs,A0
                 MOVE.W      #-1,pubArrays.aINTIN(A0)
@@ -57,7 +57,7 @@ BEGIN
     JSR         aes_if
     (*
       Result ignorieren, da unter MultiTOS evtl. Fehler gemeldet wird, wenn
-      noch eine fremde menubar aktiv (z.B. nach RÅckkehr von gestartetem
+      noch eine fremde menubar aktiv (z.B. nach R√ºckkehr von gestartetem
       Prg in der Shell):
                 JSR         testINTOUT0
      *)

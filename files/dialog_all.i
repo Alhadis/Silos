@@ -17833,7 +17833,7 @@ static const GUI_WIDGET_CREATE_INFO _aDialogCreate[] = {
 
  
 static const GUI_ConstString _apListBox[] = {
-  "English", "Deutsch", "Français", "Japanese", "Italiano", 0
+  "English", "Deutsch", "FranÃ§ais", "Japanese", "Italiano", 0
 };
 
 
@@ -17945,4 +17945,3 @@ void MainTask_Dialog_All(void) {
   WM_SetCreateFlags((1<<2));   
   GUI_ExecDialogBox(_aDialogCreate, (sizeof(_aDialogCreate) / sizeof(_aDialogCreate[0])), &_cbCallback, 0, 0, 0);
 }
-

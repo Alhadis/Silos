@@ -13,7 +13,7 @@ IMPORT InOut;
  *  Modul-Holder  : Manuel Chakravarty
  *  --------------------------------------------------------------------------
  *  Copyright February 89 by Manuel Chakravarty
- *  Vertriebsrechte fÅr ATARI ST unter MEGAMAX Modula-2
+ *  Vertriebsrechte f√ºr ATARI ST unter MEGAMAX Modula-2
  *                  liegen bei Application Systems Heidelberg
  *  --------------------------------------------------------------------------
  *  MCH : Manuel Chakravarty
@@ -125,7 +125,7 @@ VAR     mainGraphWdw    : graphWdw;
 (*  saveCurrHdl -- Rettet das aktuelle GEM-Hdl. in 'saveArea' und setzt
  *                 stattdessen das handle von 'EasyGraphics' ein. Tritt
  *                 beim Setzen ein Fehler auf, so wird ein Laufzeitfehler
- *                 ausgelîût.
+ *                 ausgel√∂‚Çßt.
  *)
 
 PROCEDURE saveCurrHdl (VAR saveArea : GemHandle);
@@ -156,7 +156,7 @@ ende
   (*$L=*)
 
 (*  restoreCurrHdl -- Setzt 'saveArea' als GEM-Hdl. ein. Falls dabei ein
- *                    Fehlere auftritt, wird ein Laufzeitfehler ausgelîût.
+ *                    Fehlere auftritt, wird ein Laufzeitfehler ausgel√∂‚Çßt.
  *)
         
 PROCEDURE restoreCurrHdl (saveArea : GemHandle);
@@ -549,4 +549,4 @@ BEGIN
   CatchProcessTerm (termCrr, termProc, wsp);
   
 END EasyGraphics.
-(* $FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFEBD6FA$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2Å$0000382CT.......T.......T.......T.......T.......T.......T.......T.......T.......T.......$000037C9$000037EE$00003815$0000382C$00002B1E$000007D3$000032C6$000032F4$000032DD$FFEA5C66$0000383D$000006DE$0000371B$00003735$00003759$00003774êÄÅ*)
+(* $FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFEBD6FA$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2$FFED31B2√º$0000382CT.......T.......T.......T.......T.......T.......T.......T.......T.......T.......$000037C9$000037EE$00003815$0000382C$00002B1E$000007D3$000032C6$000032F4$000032DD$FFEA5C66$0000383D$000006DE$0000371B$00003735$00003759$00003774√â√á√º*)

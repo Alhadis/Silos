@@ -6,7 +6,7 @@ IMPLEMENTATION MODULE VDIEscapes;
  *
  *      geschrieben von Manuel Chakravarty
  *
- *      Version 2.2     V#0038      Erstellt MÑrz-Oktober 1987
+ *      Version 2.2     V#0038      Erstellt M√§rz-Oktober 1987
  *)
 
 (*  ???????? TT  V2.1   | REF-Parm.
@@ -154,7 +154,7 @@ BEGIN
         MOVE.L  D4,-(A7)
         CLR.W   D4                      ; Kein Offset
         JSR     stringIntoINTIN
-        MOVE.W  -(A3),D0                ; RÅckgabewert: StringlÑnge
+        MOVE.W  -(A3),D0                ; R√ºckgabewert: Stringl√§nge
         
         MOVE.W  D0,-(A7)
         SUBQ.L  #2,A7
@@ -166,7 +166,7 @@ BEGIN
         BEQ     ende
         
         MOVE.L  our_cb,A0
-        MOVE.L  A0,(A3)+                ; our_cb^ fÅr vdi_call pushen
+        MOVE.L  A0,(A3)+                ; our_cb^ f√ºr vdi_call pushen
         MOVE.W  #ESCAPE,cb.V_CONTRL.opcode(A0)
         CLR.W   cb.V_CONTRL.sptsin(A0)
         MOVE.W  D0,cb.V_CONTRL.sintin(A0)
@@ -260,7 +260,7 @@ PROCEDURE RemoveCursor(handle:DeviceHandle);
     END;
   END RemoveCursor;
 
-(*      Folgende Routinen sind nur bei geladenem GDOS verfÅgbar.
+(*      Folgende Routinen sind nur bei geladenem GDOS verf√ºgbar.
  *)
  
 PROCEDURE FormAdvance (handle:DeviceHandle);
@@ -365,7 +365,7 @@ PROCEDURE WriteToMetafile (handle:DeviceHandle;
         BEQ     ende
 
         MOVE.L  our_cb,A0               ; Build up the ctrl-array
-        MOVE.L  A0, (A3)+               ; our_cb^ fÅr vdi_call pushen !MS
+        MOVE.L  A0, (A3)+               ; our_cb^ f√ºr vdi_call pushen !MS
         MOVE.W  #ESCAPE,cb.V_CONTRL.opcode(A0)
         MOVE.W  #V_WRITE_META,cb.V_CONTRL.subcmd(A0)
         MOVE.L  cb.CURDEVICE(A0),A1
@@ -395,7 +395,7 @@ PROCEDURE SetVDIFileName (handle:DeviceHandle; REF fname:ARRAY OF CHAR);
         MOVE.L  D4,-(A7)
         CLR.W   D4                      ; Kein Offset
         JSR     stringIntoINTIN
-        MOVE.W  -(A3),D0                ; RÅckgabewert: StringlÑnge
+        MOVE.W  -(A3),D0                ; R√ºckgabewert: Stringl√§nge
         
         MOVE.W  D0,-(A7)
         SUBQ.L  #2,A7
@@ -407,7 +407,7 @@ PROCEDURE SetVDIFileName (handle:DeviceHandle; REF fname:ARRAY OF CHAR);
         BEQ     ende
         
         MOVE.L  our_cb,A0
-        MOVE.L  A0,(A3)+                ; our_cb^ fÅr vdi_call pushen
+        MOVE.L  A0,(A3)+                ; our_cb^ f√ºr vdi_call pushen
         MOVE.W  #ESCAPE,cb.V_CONTRL.opcode(A0)
         CLR.W   cb.V_CONTRL.sptsin(A0)
         MOVE.W  D0,cb.V_CONTRL.sintin(A0)
@@ -446,4 +446,4 @@ END InitSystemFont;
          
 
 END VDIEscapes.
-(* $FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFEDE4C8$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770Ä$00000194T.......T.......T.......T.......T.......T.......T.......T.......T.......T.......$FFEDE4C8$FFEDE4C8$FFEDE4C8$00000161$0000016C$00000175$00000194$00000188$FFEDE4C8$FFEC5652$000023C1$000023DF$FFEC5652$000024B6$000024D4$00000033†ÄÉ*)
+(* $FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFEDE4C8$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770$FFF8D770√á$00000194T.......T.......T.......T.......T.......T.......T.......T.......T.......T.......$FFEDE4C8$FFEDE4C8$FFEDE4C8$00000161$0000016C$00000175$00000194$00000188$FFEDE4C8$FFEC5652$000023C1$000023DF$FFEC5652$000024B6$000024D4$00000033√°√á√¢*)

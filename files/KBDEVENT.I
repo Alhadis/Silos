@@ -1,45 +1,45 @@
 IMPLEMENTATION MODULE KbdEvents;
-(*$R-,S- StackÅberprÅfung muû ausgeschaltet sein !!*)
+(*$R-,S- Stack√ºberpr√ºfung mu‚Çß ausgeschaltet sein !!*)
 (*$Y+*)
 
 (*------------------------------------------------------------------------------
- * Version 2.6  (fÅr MEGAMAX MOS 2.2)
+ * Version 2.6  (f√ºr MEGAMAX MOS 2.2)
  *------------------------------------------------------------------------------
  * Copyright (c) 1989, 90, 91 by Michael Seyfried
  *------------------------------------------------------------------------------
  *                              Implementierungshinweise
  *
  * Die Routinen 'afterTrap2','Trap2Handler','IKBDHandler' und 'EtvTimerHandler'
- * muûten wegen besonderer Anforderungen in Assembler codiert werden. Ich habe
- * mich bemÅht, die Routinen so gut wie mîglich zu kommentieren.
+ * mu‚Çßten wegen besonderer Anforderungen in Assembler codiert werden. Ich habe
+ * mich bem√ºht, die Routinen so gut wie m√∂glich zu kommentieren.
  * Damit der Fehler beim AES behoben werden kann wird 'Trap2Handler' auf den
- * TRAP2-Vektor installiert. Diese Routine sorgt dann dafÅr, daû nach einem
- * Aufruf von 'evnt_keyboard' oder 'evnt_multi' vor der RÅckkehr zum Aufrufer
+ * TRAP2-Vektor installiert. Diese Routine sorgt dann daf√ºr, da‚Çß nach einem
+ * Aufruf von 'evnt_keyboard' oder 'evnt_multi' vor der R√ºckkehr zum Aufrufer
  * 'afterTrap2' aufgerufen wird.
- * 'OverflowHandler' verhindert ein TastaturÅberlauf Åber 'BufferKeyPtr' hinaus.
- * Dazu wird er Åber die Vektoren 'IKBD' und 'etv_timer' angesprungen.
+ * 'OverflowHandler' verhindert ein Tastatur√ºberlauf √ºber 'BufferKeyPtr' hinaus.
+ * Dazu wird er √ºber die Vektoren 'IKBD' und 'etv_timer' angesprungen.
  *------------------------------------------------------------------------------
  * 11.08.89   2.0   Fertigstellung der Version 2.0
- * 13.08.89   2.1   Falls ein Prozeû 'evnt_multi' ruft, wird nur dann
+ * 13.08.89   2.1   Falls ein Proze‚Çß 'evnt_multi' ruft, wird nur dann
  *                  'Trap2Handler' angesprungen, wenn auch auf ein Tastatur-
  *                  ereignis gewartet wird.
  * 14.08.89   2.1a  Bug in Trap2Handler behoben. 'evnt_multi' wurde nur
  *                  behandelt, wenn man auf ein MAUSEREIGNIS wartete.
  * 15.08.89   2.1b  Es werden nun alle Register gerettet, weil der Orginal-
  *                  dispatcher das auch macht.
- * 15.08.89   2.2   WriteToAppl gestrichen, weil unnîtig, wenn dieses Modul
+ * 15.08.89   2.2   WriteToAppl gestrichen, weil unn√∂tig, wenn dieses Modul
  *                  sich mit SysInitGem anmeldet und vor ExitGem die Vektoren
  *                  restauriert.
  * 19.08.89   2.2a  Die Vektoren werden nun nicht mehr mit den Prozeduren aus
- *                  dem Modul 'XBRA' verÑndert. Es ist nun ein lokales Modul
- *                  'xbra' vorhanden, das spezielle Prozeduren fÅr (Assembler-)
- *                  Routinen enthÑlt, die schon einen XBRA-Header haben.
+ *                  dem Modul 'XBRA' ver√§ndert. Es ist nun ein lokales Modul
+ *                  'xbra' vorhanden, das spezielle Prozeduren f√ºr (Assembler-)
+ *                  Routinen enth√§lt, die schon einen XBRA-Header haben.
  * 01.09.89   2.3   'LookAESKeys' und 'AESShift' wurden entfernt. Fehler bei der
  *                  Syncronisation behoben. Modul installiert sich nun nicht
  *                  mehr automatisch.
- * 17.09.89   2.4   Syncronisation korrigiert. Rechner 'hÑngt' nicht mehr bei
- *                  öberlauf des Puffers Åber BufferKeyPtr.
- * 02.05.90         Anpassung an Compiler 3.8, $Y+ vorn eingefÅgt
+ * 17.09.89   2.4   Syncronisation korrigiert. Rechner 'h√§ngt' nicht mehr bei
+ *                  √úberlauf des Puffers √ºber BufferKeyPtr.
+ * 02.05.90         Anpassung an Compiler 3.8, $Y+ vorn eingef√ºgt
  * 25.11.90   2.5   TT: InitApplication statt InitGem-Aufruf, TRAP #6 statt
  *                  RaiseError-Aufruf
  * 15.02.91   2.6   Fehler bei der Tastatursyncronisation behoben.
@@ -67,12 +67,12 @@ IMPORT GEMShare;
 
 CONST KbShiftBit        = 3;      (* wichtige Bits in Conterm               *)
       KbRepeatBit       = 1;      (*           "                            *)
-      HighTrap2PBList   = 25;     (* "BeschrÑnkung" auf 25 Prozesse         *)
-      XBRAID            = "KbEv"; (* öbereinstimmung mit den Prozeduren !!  *)
+      HighTrap2PBList   = 25;     (* "Beschr√§nkung" auf 25 Prozesse         *)
+      XBRAID            = "KbEv"; (* √úbereinstimmung mit den Prozeduren !!  *)
       TRAP2             = $088L;  (* Adresse des TRAP2-Vektors              *)
       IKBD              = $118L;  (* Adresse des IKBD-Vektors               *)
-      JMPInstr          = $4EF9;  (* Code fÅr JMP     $xxxxxxxx             *)
-      MOVEToStackInstr  = $2F3C;  (* Code fÅr MOVE.L  #$xxxxxxxx, -(SP)     *)
+      JMPInstr          = $4EF9;  (* Code f√ºr JMP     $xxxxxxxx             *)
+      MOVEToStackInstr  = $2F3C;  (* Code f√ºr MOVE.L  #$xxxxxxxx, -(SP)     *)
 
 TYPE  PtrAnyLongType  = POINTER TO AnyLongType;
 
@@ -91,20 +91,20 @@ TYPE  PtrAnyLongType  = POINTER TO AnyLongType;
 VAR   IoRecPtr: IORECPTR;           (* Zeiger auf IOREC-Struktur der Tastatur *)
       IbufPlusIbufsize: ADDRESS;    (* IoRec.ibuf + IoRec.ibufsize *)
       BufferKeyPtr: PtrAnyLongType; (* Ptr. auf akt. AES-Zeichen im Kbd-Buffer*)
-      BufferKeyValid: BOOLEAN;      (* TRUE, wenn BufferKeyPtr gÅltig *)
+      BufferKeyValid: BOOLEAN;      (* TRUE, wenn BufferKeyPtr g√ºltig *)
 
-      rCarrier: RemovalCarrier;     (* FÅr ordentliche Prozeûbeendingung *)
+      rCarrier: RemovalCarrier;     (* F√ºr ordentliche Proze‚Çßbeendingung *)
 
       (* Systemvariablen *)
       Conterm   [conterm]   : BBS;
 
-      (* Speicher fÅr alte und neue Werte *)
+      (* Speicher f√ºr alte und neue Werte *)
       oldConterm: BBS;
 
-      (* In dieser Liste werden fÅr jeden Prozeû, der 'evnt_timer' oder
+      (* In dieser Liste werden f√ºr jeden Proze‚Çß, der 'evnt_timer' oder
        * 'evnt_keyboard' gerufen hat, wichtige Daten zwischengespeichert.
-       * Die nicht belegten ListeneintrÑge werden Åber 'Trap2PBFree' und
-       * untereinander Åber 'AddrINTOUT' verkettet.
+       * Die nicht belegten Listeneintr√§ge werden √ºber 'Trap2PBFree' und
+       * untereinander √ºber 'AddrINTOUT' verkettet.
        *)
       Trap2PBList     : ARRAY [0..HighTrap2PBList] OF Trap2PB;
       Trap2PBFree     : PtrTrap2PB;     (* Zeiger auf unbenutzte Elemente *)
@@ -120,11 +120,11 @@ VAR   IoRecPtr: IORECPTR;           (* Zeiger auf IOREC-Struktur der Tastatur *)
 
 MODULE xbra;
 (*
- * Dieses Modul enthÑlt Prozeduren, mit deren Hilfe man (Assembler-) Routinen,
+ * Dieses Modul enth√§lt Prozeduren, mit deren Hilfe man (Assembler-) Routinen,
  * die bereits einen XBRA-Header enthalten, auf Vektoren installieren, bzw.
  * installierte Routinen entfernen kann.
- * Alle Prozeduren dÅrfen nur im Supervisor-Mode aufgerufen werden !!
- * Nach VorschlÑgen von Thomas Tempelmann.
+ * Alle Prozeduren d√ºrfen nur im Supervisor-Mode aufgerufen werden !!
+ * Nach Vorschl√§gen von Thomas Tempelmann.
  *)
 
 IMPORT ASSEMBLER, ADDRESS;
@@ -132,18 +132,18 @@ IMPORT ASSEMBLER, ADDRESS;
 EXPORT  ID, install, installed, remove;
 
 
-TYPE ID = ARRAY [0..3] OF CHAR;   (* Typ fÅr xb_id *)
+TYPE ID = ARRAY [0..3] OF CHAR;   (* Typ f√ºr xb_id *)
 
 
-(*$L- Parameter linking aus fÅr das ganze lokale Modul*)
+(*$L- Parameter linking aus f√ºr das ganze lokale Modul*)
 
   PROCEDURE install( xbraProc: PROC; vec: ADDRESS);
   (*
    * Eingabe: (Assembler-) Routine mit XBRA-Header und Vektor
    * Effekt:  Die Routine wird auf den angegebenen Vektor installiert. Dabei
-   *          wird der alte Vektor gemÑû XBRA-Standard in den XBRA-Header der
+   *          wird der alte Vektor gem√§‚Çß XBRA-Standard in den XBRA-Header der
    *          Prozedur xbraProc gerettet.
-   * Beachte: Diese Routine ÅberprÅft nicht, ob xbraProc bereits auf den Vektor
+   * Beachte: Diese Routine √ºberpr√ºft nicht, ob xbraProc bereits auf den Vektor
    *          installiert ist. Dazu dient die folgende Prozedur 'installed'.
    *)
     BEGIN
@@ -192,7 +192,7 @@ TYPE ID = ARRAY [0..3] OF CHAR;   (* Typ fÅr xb_id *)
    *          installierten Vektorenkette ausgeklinkt. Der alte Vektor wird
    *          restauriert.
    * Beachte: Diese Routine darf nur aufgerufen werden, wenn man sicher ist,
-   *          daû die Routine xbraProc auf dem angegebenen Vektor installiert
+   *          da‚Çß die Routine xbraProc auf dem angegebenen Vektor installiert
    *          war (ist), weil auf jeden Fall der alte Vektor (im XBRA-Header
    *          von xbraProc) restauriert wird. Dies wird deshalb so gehandhabt,
    *          da es immer noch viele Programme gibt, die Vektoren nicht nach
@@ -225,7 +225,7 @@ END xbra;
 
 PROCEDURE FlushKbd;
 (*
- * Effekt: Der AES-Puffer und Tastaturpuffer werden gelîscht.
+ * Effekt: Der AES-Puffer und Tastaturpuffer werden gel√∂scht.
  *)
   BEGIN
     pubs^.aINTIN[0]:= 33;          (* ev_mflags:= {keyboard, timer} *)
@@ -239,7 +239,7 @@ PROCEDURE FlushKbd;
 PROCEDURE SyncBuffer;
 (*
  * Effekt:  BufferKeyPtr und HighBufferKey werden mit dem AES-Puffer
- *          syncronisiert. Dazu wird der AES-Buffer gelîscht.
+ *          syncronisiert. Dazu wird der AES-Buffer gel√∂scht.
  *)
   BEGIN
     WITH IoRecPtr^ DO
@@ -251,50 +251,50 @@ PROCEDURE SyncBuffer;
 (*$L- Parameter linking aus*)
 PROCEDURE afterTrap2;
 (*
- * Diese Routine wird bei der RÅckkehr aus einer der Routinen 'evnt_keyboard'
+ * Diese Routine wird bei der R√ºckkehr aus einer der Routinen 'evnt_keyboard'
  * bzw. 'evnt_multi' aufgerufen. Sie setzt dann 'BufferKeyPtr' auf das richtige
  * Zeichen im Tastaturpuffer und kehrt zum Aufrufer, i.A. dem Anwenderprogramm,
- * zurÅck.
+ * zur√ºck.
  * Der letzte Punkt ist aber gar nicht so einfach, wie man glaubt. Denn auch
  * Accessorys rufen 'evnt_multi'. Es reicht also bei weitem nicht aus, die
- * RÅcksprungadresse in einer globalen Variablen zwischenzuspeichern. Auch die
- * Verwendung eines Stacks zum Ablegen dieser Adressen ist unmîglich, da beim
+ * R√ºcksprungadresse in einer globalen Variablen zwischenzuspeichern. Auch die
+ * Verwendung eines Stacks zum Ablegen dieser Adressen ist unm√∂glich, da beim
  * Pseudo-Multitasking die Reihenfolge der Aufrufe von evnt_multi nicht immer
- * mit der Reihenfolge der RÅcksprÅnge aus diesen Routinen Åbereinstimmt.
- * Zur Lîsung diese Problems wird von 'Trap2Handler' fÅr jeden Prozeû, der
+ * mit der Reihenfolge der R√ºckspr√ºnge aus diesen Routinen √ºbereinstimmt.
+ * Zur L√∂sung diese Problems wird von 'Trap2Handler' f√ºr jeden Proze‚Çß, der
  * 'evnt_keyboard' oder 'evnt_multi' aufruft, ein Parameterblock angelegt, in
- * dem einige Daten und die RÅcksprungadresse abgelegt werden. Auûerdem steht
+ * dem einige Daten und die R√ºcksprungadresse abgelegt werden. Au‚Çßerdem steht
  * in diesem Parameterblock eine JMP-Anweisung auf 'afterTrap2'. Vor dieser JMP-
  * Anweisung steht ein Befehl, der die Adresse dieses PB in Register A0
- * schreibt. 'Trap2Handler' sorgt dafÅr, daû bei der RÅckkehr aus einer AES-
- * Routine Åber diese Anweisungen 'afterTrap2' aufgerufen wird. Durch die
- * Adresse des PB in A0 erhÑlt diese Routine so alle Daten und die richtige
- * RÅcksprungadresse.
- * Vor dem RÅcksprung zum Aufrufer wird in 'int_out[ 4] der Tastaturzustand bei
+ * schreibt. 'Trap2Handler' sorgt daf√ºr, da‚Çß bei der R√ºckkehr aus einer AES-
+ * Routine √ºber diese Anweisungen 'afterTrap2' aufgerufen wird. Durch die
+ * Adresse des PB in A0 erh√§lt diese Routine so alle Daten und die richtige
+ * R√ºcksprungadresse.
+ * Vor dem R√ºcksprung zum Aufrufer wird in 'int_out[ 4] der Tastaturzustand bei
  * Tastendruck geschrieben. So liefert nun 'AESEvents.MultiEvent' den Status
- * der Sondertasten richtig zurÅck.
+ * der Sondertasten richtig zur√ºck.
  *
  * Es werden alle Register gerettet !
  *)
   BEGIN
     ASSEMBLER
                       ; Bei Eintritt steht auf dem Stack die Adresse des
-                      ; zugehîrigen Parameter Blocks
+                      ; zugeh√∂rigen Parameter Blocks
 
-                      ; Erstmal die benîtigten Register retten:
+                      ; Erstmal die ben√∂tigten Register retten:
                       MOVEM.L D0-D2/A0-A2, -(SP)
 
                       ; Parameter holen:
                       MOVE.L  24(SP), A0              ; Adresse des PB holen
                       MOVE.W  (A0), D0                ; AES-Fktnr. nach D0
                       MOVE.L  2(A0), A1               ; Adresse INTIN
-                      MOVE.L  6(A0), 24(SP)           ; RÅckadr. auf Stack
+                      MOVE.L  6(A0), 24(SP)           ; R√ºckadr. auf Stack
 
-                      ; PB in Free-Liste einfÅgen
-                      MOVE.L  Trap2PBFree, 2(A0)      ; Åber 'AddrINTOUT' verk.
+                      ; PB in Free-Liste einf√ºgen
+                      MOVE.L  Trap2PBFree, 2(A0)      ; √ºber 'AddrINTOUT' verk.
                       MOVE.L  A0, Trap2PBFree
 
-                      TST.W   BufferKeyValid          ; BufferKeyPtr gÅltig ?
+                      TST.W   BufferKeyValid          ; BufferKeyPtr g√ºltig ?
                       BEQ     return                  ; Nein->Nichts veranlassen
 
                       ; Falls vorhanden, Zeichen in D1 ermitteln
@@ -316,7 +316,7 @@ PROCEDURE afterTrap2;
                       EXT.L   D0
                       ADD.L   (A0), D0                ; D0 = ibuf + ibuftl
                       ADDQ.L  #4, D0                  ; INC( D0, 4)
-                      MOVE.L  IbufPlusIbufsize, A2    ; hîchster Wert+1 nach A2
+                      MOVE.L  IbufPlusIbufsize, A2    ; h√∂chster Wert+1 nach A2
                       CMP.L   A2, D0                  ; D0 >= A2 ?
                       BLT     lookBuffer              ; falls nein, ok
                       MOVE.L  (A0), D0                ; sonst korrigieren
@@ -324,7 +324,7 @@ PROCEDURE afterTrap2;
         lookBuffer:   MOVE.L  BufferKeyPtr, A0        ; Zeiger auf Puffer holen
 
         nextKey:      ; A0:= (A0 + 4) MOD A2
-                      ADDQ.L  #4, A0                  ; BufferKeyPtr erhîhen
+                      ADDQ.L  #4, A0                  ; BufferKeyPtr erh√∂hen
                       CMPA.L  A2, A0                  ; A0 >= A2 ?
                       BLT     getKey                  ; nein
                       MOVE.L  IoRecPtr, A0            ; Adr IoRec holen
@@ -342,8 +342,8 @@ PROCEDURE afterTrap2;
                       ROR.W   #8, D1                  ; wieder scan,ascii
                       BRA     nextKey                 ; nochmal
 
-                      ; Zeichen wegen PufferÅberlauf nicht mehr im Puffer
-        notFound:     CLR.W   BufferKeyValid          ;BufferKeyPtr nicht gÅltig
+                      ; Zeichen wegen Puffer√ºberlauf nicht mehr im Puffer
+        notFound:     CLR.W   BufferKeyValid          ;BufferKeyPtr nicht g√ºltig
                       BRA     return
 
                       ; Zeichen gefunden => Kbshift in int_out[ 4] schreiben
@@ -351,11 +351,11 @@ PROCEDURE afterTrap2;
                       LSR.W   #8, D2                  ; Kbshift in low-Byte
                       MOVE.W  D2, 8(A1)               ; nach int_out[ 4]
 
-        return:       ; Zum Aufrufer der AES-Routine (TRAP2) zurÅckkehren
+        return:       ; Zum Aufrufer der AES-Routine (TRAP2) zur√ºckkehren
                       MOVEM.L (SP)+, D0-D2/A0-A2      ; Regs restaurieren
 
-                      ; nun steht die RÅcksprungadresse auf dem Stack und
-                      ; RTS kehrt zurÅck.
+                      ; nun steht die R√ºcksprungadresse auf dem Stack und
+                      ; RTS kehrt zur√ºck.
     END
   END afterTrap2;
 (*$L=*)
@@ -364,17 +364,17 @@ PROCEDURE afterTrap2;
 PROCEDURE Trap2Handler;
 (*
  * Diese Routine ist auf den TRAP2-Vektor installiert und wird daher bei
- * jedem AES oder VDI-Aufruf angesprungen. ZunÑchst wird dann getestet,
+ * jedem AES oder VDI-Aufruf angesprungen. Zun√§chst wird dann getestet,
  * ob ein AES-Aufruf (D0 = 200) vorliegt. Ist dies der Fall, dann wird
  * nachgefragt, ob evnt_keyboard (AES 20) oder evnt_multi (AES 25) auf-
  * gerufen wurde. Falls nicht, wird nichts weiter veranlasst und die vorher-
- * gehende TRAP2-Routine wird ausgefÅhrt.
+ * gehende TRAP2-Routine wird ausgef√ºhrt.
  * Im anderen Fall wird ein Parameter Block angelegt, der die AES-Funktions-
- * nummer, die Adresse des int_in-Arrays und die RÅcksprungadresse enthÑlt.
+ * nummer, die Adresse des int_in-Arrays und die R√ºcksprungadresse enth√§lt.
  * Bei Modulinitialisierung wurden Anweisungen in diesen PB geschrieben, die
  * 'afterTrap2' mit der Adresse dieses PB als Parameter in A0 aufrufen.
- * Der Wert des PC auf dem SSP-Stack wird dann so verÑndert, daû nach RÅckkehr
- * aus dem AES Åber diese Anweisungen 'afterTrap2' aufgerufen wird.
+ * Der Wert des PC auf dem SSP-Stack wird dann so ver√§ndert, da‚Çß nach R√ºckkehr
+ * aus dem AES √ºber diese Anweisungen 'afterTrap2' aufgerufen wird.
  *
  * Es werden alle Register gerettet !
  *)
@@ -391,31 +391,31 @@ PROCEDURE Trap2Handler;
       entry:          CMPI.W  #200, D0            ; AES-Aufruf ?
                       BNE.W   callPreviousV
 
-                      ; AES-Aufruf => erstmal die benîtigten Register retten
+                      ; AES-Aufruf => erstmal die ben√∂tigten Register retten
                       MOVEM.L D2/A1-A3, -(SP)
                       EXG.L   D1, A0              ; AESPB nach A0
 
                       MOVE.L  (A0), A1            ; Adresse von control([0])
-                      MOVE.W  (A1), A2            ; Opcode fÅr AES nach A2
+                      MOVE.W  (A1), A2            ; Opcode f√ºr AES nach A2
                       CMPA.W  #20, A2             ; evnt_keyboard ?
                       BEQ     useAfterTrap2
                       CMPA.W  #25, A2             ; evnt_multi ?
                       BNE     restore
 
-                      ; falls evnt_multi, feststellen, ob Åberhaupt auf ein
+                      ; falls evnt_multi, feststellen, ob √ºberhaupt auf ein
                       ; Tastaturereignis gewartet wird.
                       MOVE.L  8(A0), A1           ; Adresse von int_in([0])
                       MOVE.W  (A1), D2            ; D2:= ev_mflags
                       BTST    #0, D2              ; keyboard IN ev_mflags ?
                       BEQ     restore             ; nein => alte Rotine
 
-                      ; falls BufferKeyPtr nicht gÅltig, Puffer syncronisieren
-      useAfterTrap2:  TST.W   BufferKeyValid      ; BufferKeyPtr gÅltig ?
+                      ; falls BufferKeyPtr nicht g√ºltig, Puffer syncronisieren
+      useAfterTrap2:  TST.W   BufferKeyValid      ; BufferKeyPtr g√ºltig ?
                       BNE     createPB            ; Ja -> weiter
 
-                      ; BufferKeyPtr ist nicht gÅltig => neu syncronisieren
+                      ; BufferKeyPtr ist nicht g√ºltig => neu syncronisieren
                       LEA     stack(PC), A3         ; A3-Stack anlegen
-                      MOVEM.L D0-D1/A0/A2, -(SP)    ; benîtigte Register retten
+                      MOVEM.L D0-D1/A0/A2, -(SP)    ; ben√∂tigte Register retten
                       JSR     SyncBuffer            ; Puffer leeren u. sync.
                       MOVEM.L (SP)+, D0-D1/A0/A2    ; Register restaurieren
                       MOVE.W  #TRUE, BufferKeyValid ; BufferKeyValid:= TRUE
@@ -426,7 +426,7 @@ PROCEDURE Trap2Handler;
                       MOVE.W  A2, (A1)+           ; AES-Nr. ablegen
                       MOVE.L  12(A0), (A1)+       ; Adr. INTOUT ablegen
                       MOVE.L  18(SP), (A1)+       ; Return-Adresse ablegen
-                      MOVE.L  A1, 18(SP)          ; n. ret. Åber PB afterTrap2
+                      MOVE.L  A1, 18(SP)          ; n. ret. √ºber PB afterTrap2
 
                       ; Register restaurieren
       restore:        MOVEM.L (SP)+, D2/A1-A3
@@ -447,8 +447,8 @@ PROCEDURE Trap2Handler;
 (*$L- Parameter linking aus*)
 PROCEDURE OverflowHandler;
 (*
- * Diese Routine Åberwacht, ob 'IoRec.ibuf' + 'IoRec.head' 'BufferKeyPtr'
- * "Åberholt".
+ * Diese Routine √ºberwacht, ob 'IoRec.ibuf' + 'IoRec.head' 'BufferKeyPtr'
+ * "√ºberholt".
  *
  * Es werden alle Register gerettet !!
  *)
@@ -457,11 +457,11 @@ PROCEDURE OverflowHandler;
                       ; Einsprungadresse
                       ; Alter Vektor steht bei Eintritt auf dem Stack
 
-                      ; Testen, ob Puffer Åbergelaufen war
+                      ; Testen, ob Puffer √ºbergelaufen war
                       TST.W   BufferKeyValid
                       BEQ     callPreviousV         ; JA->alte Routine
 
-                      MOVEM.L A0-A1/D0-D1, -(SP)    ; benîtigte Register retten
+                      MOVEM.L A0-A1/D0-D1, -(SP)    ; ben√∂tigte Register retten
 
                       ; D0:= ibuf + ((ibufhd + 4L) MOD ibufsize)
                       MOVE.L  IoRecPtr, A0          ; Adr. IoRec holen
@@ -476,7 +476,7 @@ PROCEDURE OverflowHandler;
 
                       ; hat head+4 den BufferKeyPtr erreicht ?
       compare1:       CMP.L   BufferKeyPtr, D0      ; D0 = BufferKeyPtr ?
-                      BEQ     BufferOverflow        ; JA->öberlauf
+                      BEQ     BufferOverflow        ; JA->√úberlauf
 
                       ; D0:= ibuf + ((ibufhd + 8L) MOD ibufsize)
                       ADDQ.L  #4, D0
@@ -488,12 +488,12 @@ PROCEDURE OverflowHandler;
       compare2:       CMP.L   BufferKeyPtr, D0      ; D0 = BufferKeyPtr?
                       BNE     restore               ; Nein->alte Routine
 
-      BufferOverflow: CLR.W   BufferKeyValid        ; BufferKeyPtr nicht gÅltig
+      BufferOverflow: CLR.W   BufferKeyValid        ; BufferKeyPtr nicht g√ºltig
 
                       ; alte Routine aufrufen
       restore:        MOVEM.L (SP)+, A0-A1/D0-D1    ; Register restaurieren
 
-                      ;nun wird Åber RTS der alte Vektor angesprungen !!!
+                      ;nun wird √ºber RTS der alte Vektor angesprungen !!!
       callPreviousV:  RTS
     END
   END OverflowHandler;
@@ -502,7 +502,7 @@ PROCEDURE OverflowHandler;
 (*$L- Parameter linking aus*)
 PROCEDURE IKBDHeader;
 (*
- * XBRA-Header fÅr IKBD-Routine
+ * XBRA-Header f√ºr IKBD-Routine
  *)
   BEGIN
     ASSEMBLER
@@ -521,7 +521,7 @@ PROCEDURE IKBDHeader;
 (*$L- Parameter linking aus*)
 PROCEDURE EtvTimerHeader;
 (*
- * XBRA-Header fÅr IKBD-Routine
+ * XBRA-Header f√ºr IKBD-Routine
  *)
   BEGIN
     ASSEMBLER
@@ -564,8 +564,8 @@ PROCEDURE DeInstallKbdEvents;
       EtvTimerVecInstalled:= FALSE;
     END; (* IF *)
 
-    (* Conterm zurÅcksetzen *)
-    Conterm:= oldConterm;               (* alten Wert zurÅckschreiben *)
+    (* Conterm zur√ºcksetzen *)
+    Conterm:= oldConterm;               (* alten Wert zur√ºckschreiben *)
 
     LeaveSupervisorMode( SupvHdl);                 (* wieder in Usermodus schalten *)
   END DeInstallKbdEvents;
@@ -594,9 +594,9 @@ PROCEDURE InstallKbdEvents;
       (* Conterm setzen *)
       INCL( Conterm, KbShiftBit);         (* Kbshift-Bit setzen *)
 
-      (* öberlauf des Tastaturpuffers Åber BufferKeyPtr verhindern *)
+      (* √úberlauf des Tastaturpuffers √ºber BufferKeyPtr verhindern *)
       IF NOT installed( XBRAID, IKBD) THEN
-        (* Dazu OverflowHandler Åber IKBD und... *)
+        (* Dazu OverflowHandler √ºber IKBD und... *)
         install( IKBDHeader, IKBD);
         IKBDVecInstalled:= TRUE;
       END;
@@ -611,7 +611,7 @@ PROCEDURE InstallKbdEvents;
 
 PROCEDURE Removal;
 (*
- * Diese Routine meldet das Modul beim GEM ab. Zuvor mÅssen die Register
+ * Diese Routine meldet das Modul beim GEM ab. Zuvor m√ºssen die Register
  * restauriert werden.
  *)
   BEGIN
@@ -633,8 +633,8 @@ PROCEDURE InitModule;
  *)
   PROCEDURE InitTrap2PBList;
   (*
-   * Initialisiert die PB-Liste. Dazu werden alle PB's Åber 'Trap2PBFree'
-   * verkettet. Auûerdem werden die richtigen Anweisungen zum Aufruf von
+   * Initialisiert die PB-Liste. Dazu werden alle PB's √ºber 'Trap2PBFree'
+   * verkettet. Au‚Çßerdem werden die richtigen Anweisungen zum Aufruf von
    * 'afterTrap2' in den PB eingetragen.
    *)
     VAR ListPtr: CARDINAL;
@@ -643,8 +643,8 @@ PROCEDURE InitModule;
       Trap2PBFree:= ADR( Trap2PBList);  (* Trap2PBFree zeigt auf erstes El. *)
       FOR ListPtr:= 0 TO HighTrap2PBList DO
         WITH Trap2PBList[ ListPtr] DO
-          (* Liste Åber AddrIntOut verketten *)
-          AESNo:= 0;                           (* Kennung fÅr freies Element *)
+          (* Liste √ºber AddrIntOut verketten *)
+          AESNo:= 0;                           (* Kennung f√ºr freies Element *)
           IF ListPtr < HighTrap2PBList THEN
             AddrINTOUT:= ADR( Trap2PBList[ ListPtr+1])
           ELSE
@@ -663,7 +663,7 @@ PROCEDURE InitModule;
       success: BOOLEAN;
 
   BEGIN
-    (* zunÑchst beim GEM anmelden *)
+    (* zun√§chst beim GEM anmelden *)
     SysInitApplication ( success);
     IF NOT success THEN
       ASSEMBLER
@@ -671,7 +671,7 @@ PROCEDURE InitModule;
         DC.W    OutOfMemory
       END;
     END;
-    (* GEM-Handle fÅr's abmelden merken *)
+    (* GEM-Handle f√ºr's abmelden merken *)
     GEMHandle:= CurrGemHandle();
 
     (* Zeiger auf IOREC-Struktur der Tastatur ermitteln *)
@@ -682,7 +682,7 @@ PROCEDURE InitModule;
       IbufPlusIbufsize:= ibuf + LONG (ibufsize);
     END;
 
-    (* Flags fÅr Vektoren initialisieren *)
+    (* Flags f√ºr Vektoren initialisieren *)
     TRAP2VecInstalled:= FALSE;
     IKBDVecInstalled:= FALSE;
     EtvTimerVecInstalled:= FALSE;
@@ -703,4 +703,4 @@ PROCEDURE InitModule;
 BEGIN
   (* Modul wird nun nicht mehr automatisch aktiv gesetzt !!! *)
   InitModule;
-END KbdEvents.
+END KbdEvents.

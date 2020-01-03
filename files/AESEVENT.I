@@ -8,10 +8,10 @@ IMPLEMENTATION MODULE AESEvents; (*$L-, Y+*)
  *  Version   2.2     V#0040
  *)
  
-(*  05.11.87    | öbernahme von 'GEMBase' und 'GEMExt'
+(*  05.11.87    | √úbernahme von 'GEMBase' und 'GEMExt'
  *  15.05.88    | Stack wird bei 'TimerEvent' und 'MessageEvent' richtig
  *                berichtigt.
- *  27.06.89    | Schînheitskorrekturen (Keine Def. oder Impl. Ñnderungen)
+ *  27.06.89    | Sch√∂nheitskorrekturen (Keine Def. oder Impl. √§nderungen)
  *  12.01.90 TT | ROL -> LSR teilw. ersetzt, weil bei Byte-Sets MSByte
  *                undefiniert ist
  *  11.02.90    | Anpassung auf Compilerversion 4.0 (angefangen)
@@ -59,9 +59,9 @@ again
         TST.W   keyboardPlugActive      ; watch-dog plug
         BEQ     ende
         CLR.B   keys(A6)
-        MOVE.L  ch(A6),(A3)+            ; 'ch' als VAR-Parm. Åbergeben
+        MOVE.L  ch(A6),(A3)+            ; 'ch' als VAR-Parm. √ºbergeben
         LEA     keys(A6),A1
-        MOVE.L  A1,(A3)+                ; 'keys' als VAR-Parm. Åbergeben
+        MOVE.L  A1,(A3)+                ; 'keys' als VAR-Parm. √ºbergeben
         MOVE.L  keyboardPlug,A0
         JSR     (A0)
         TST.W   -(A3)

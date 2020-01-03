@@ -259,7 +259,7 @@ enum TEikAppResourceFileStandardOffset
 *  Description : 
 *  Version     : 
 *
-*  Copyright © 2002-2005 Nokia. All rights reserved.
+*  Copyright ï¿½ 2002-2005 Nokia. All rights reserved.
 *  This material, including documentation and any related 
 *  computer programs, is protected by copyright controlled by 
 *  Nokia. All rights are reserved. Copying, including 
@@ -866,8 +866,8 @@ enum TAknEditorNumericKeymap
                                             // Available characters:
     EAknEditorStandardNumberModeKeymap,     // 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, *, +, p, w, #
     EAknEditorPlainNumberModeKeymap,        // 1, 2, 3, 4, 5, 6, 7, 8, 9, 0
-    EAknEditorCalculatorNumberModeKeymap,   // 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, +, –, *, /, <decimal separator>
-    EAknEditorConverterNumberModeKeymap,    // 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, +, –, E, <decimal separator>
+    EAknEditorCalculatorNumberModeKeymap,   // 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, +, ï¿½, *, /, <decimal separator>
+    EAknEditorConverterNumberModeKeymap,    // 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, +, ï¿½, E, <decimal separator>
     EAknEditorToFieldNumberModeKeymap,      // 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, +, ;
     EAknEditorFixedDiallingNumberModeKeymap,// 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, *, +, p, w, ?, #
     EAknEditorSATNumberModeKeymap,          // 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, *, +, #
@@ -4484,7 +4484,7 @@ STRUCT AVKON_TOOLBAR
 *     Resource structure definitions for Avkon 
 *  Version:
 *
-*  Copyright © 2002 Nokia Corporation.
+*  Copyright ï¿½ 2002 Nokia Corporation.
 *  This material, including documentation and any related 
 *  computer programs, is protected by copyright controlled by 
 *  Nokia Corporation. All rights are reserved. Copying, 
@@ -4506,7 +4506,7 @@ STRUCT AVKON_TOOLBAR
 *     Constants for Avkon that may need to be used in resource files
 *  Version:
 *
-*  Copyright © 2002 Nokia Corporation.
+*  Copyright ï¿½ 2002 Nokia Corporation.
 *  This material, including documentation and any related
 *  computer programs, is protected by copyright controlled by
 *  Nokia Corporation. All rights are reserved. Copying,
@@ -4536,7 +4536,7 @@ STRUCT AVKON_TOOLBAR
 *  Description : Avkon font categories correspond to the font "Category types" in the 
 *  Series60 layout tool
 *
-*  Copyright © 2002-2004 Nokia. All rights reserved.
+*  Copyright ï¿½ 2002-2004 Nokia. All rights reserved.
 *  This material, including documentation and any related 
 *  computer programs, is protected by copyright controlled by 
 *  Nokia. All rights are reserved. Copying, including 
@@ -4588,7 +4588,7 @@ enum TAknFontCategory
 *
 *  Description: Constants and offsets for Scalable and Encoded Font IDs
 *
-*  Copyright © 2002-2004 Nokia. All rights reserved.
+*  Copyright ï¿½ 2002-2004 Nokia. All rights reserved.
 *  This material, including documentation and any related 
 *  computer programs, is protected by copyright controlled by 
 *  Nokia. All rights are reserved. Copying, including 

@@ -30,12 +30,12 @@ TYPE
                      p: INTEGER;  (* rel. offset von block.data *)
                    END;
 
-        Head  = RECORD;           (* werden nur fÅr used-Bereiche benutzt *)
+        Head  = RECORD;           (* werden nur f√ºr used-Bereiche benutzt *)
                   hd: HeadLink;
                   root: INTEGER;  (* rel. Offset von Block.data (pos.Wert) *)
                   level: INTEGER;
-                  size: INTEGER;  (* used-Grîûe, kann ungerade sein!     *)
-                                  (* -- muû immer vor 'hd.data' stehen   *)
+                  size: INTEGER;  (* used-Gr√∂‚Çße, kann ungerade sein!     *)
+                                  (* -- mu‚Çß immer vor 'hd.data' stehen   *)
                                   (* damit 'fullBlk' funktioniert!       *)
                   data: BYTE      (* Beginn der Daten *)
                 END;
@@ -54,7 +54,7 @@ TYPE
 
         Block = RECORD
                   blk: Link;
-                  size: LONGINT;  (* Grîûe des verfÅgbaren Bereichs *)
+                  size: LONGINT;  (* Gr√∂‚Çße des verf√ºgbaren Bereichs *)
                                   (*  kann ungerade sein!           *)
                                   (* Bit 30: <full>                 *)
                   CASE : CARDINAL OF
@@ -155,11 +155,11 @@ PROCEDURE nextHd (bl: PtrBlock; hd: INTEGER): INTEGER;
 
 PROCEDURE
   findBlock (addr: ADDRESS; VAR full: BOOLEAN; VAR size: LONGINT): PtrBlock;
-  (* Sucht in den internen Datenstrukturen nach dem Block, der adr enthÑlt.
-   * Dabei ist es unerheblich, ob sdr zur internen Verwaltung gehîrt oder
+  (* Sucht in den internen Datenstrukturen nach dem Block, der adr enth√§lt.
+   * Dabei ist es unerheblich, ob sdr zur internen Verwaltung geh√∂rt oder
 nicht.
    * Wenn kein Block gefunden wurde, oder adr innerhalb RootPtr^ ist,
-   * wird NIL zurÅckgegeben.
+   * wird NIL zur√ºckgegeben.
    * full: Block ist nicht weiter unterteilt.
    *)
   VAR
@@ -208,7 +208,7 @@ BEGIN
   usedBeg:= bl^.hd.n;     (* Start of new used area *)
   LOOP
     IF usedBeg < 0 THEN
-      (* rest ist hîchstens frei *)
+      (* rest ist h√∂chstens frei *)
       (*RETURN*)
     ELSE
 
@@ -225,7 +225,7 @@ BEGIN
     END;
 
     IF usedBeg < 0 THEN
-      (* rest ist hîchstens frei *)
+      (* rest ist h√∂chstens frei *)
       hd := NIL; size := 0;
       RETURN
     END;
@@ -242,8 +242,8 @@ END findHead;
 
 
 PROCEDURE GetAllocInfo (addr: ADDRESS; VAR start: ADDRESS; VAR size: LONGCARD);
-  (* Wenn addr zu einem Speicherblock gehîrt, der mit Storage.ALLOCATE
-   * angefordert wurde, gibt start den Beginn und size die LÑnge dieses
+  (* Wenn addr zu einem Speicherblock geh√∂rt, der mit Storage.ALLOCATE
+   * angefordert wurde, gibt start den Beginn und size die L√§nge dieses
    * Speicherblocks an, sonst ist start=NIL und size=0.
    *)
 VAR
@@ -276,7 +276,7 @@ END GetAllocInfo;
 
 
 PROCEDURE AddrInStorage (addr: ADDRESS): BOOLEAN;
-  (* Gehîrt addr zu einem Speicherblock, der mit Storage.ALLOCATE angefordert
+  (* Geh√∂rt addr zu einem Speicherblock, der mit Storage.ALLOCATE angefordert
    * wurde?
    *)
   VAR
@@ -289,7 +289,7 @@ END AddrInStorage;
 
 
 PROCEDURE BlockInStorage (addr: ADDRESS; size: LONGCARD): BOOLEAN;
-  (* Paût addr in einen Speicherblock, der mit Storage.ALLOCATE angefordert
+  (* Pa‚Çßt addr in einen Speicherblock, der mit Storage.ALLOCATE angefordert
    * wurde?
    *)
   VAR
@@ -308,7 +308,7 @@ END BlockInStorage;
 
 
 PROCEDURE BlockExactInStorage (addr: ADDRESS; size: LONGCARD): BOOLEAN;
-  (* Paût addr exakt in einen Speicherblock, der mit Storage.ALLOCATE
+  (* Pa‚Çßt addr exakt in einen Speicherblock, der mit Storage.ALLOCATE
    * angefordert wurde?
    *)
 VAR
@@ -328,17 +328,17 @@ END BlockExactInStorage;
 
 PROCEDURE TestStorage (): StorageError;
   (* Unterzieht die interne Speicherverwaltung von Storage einem
-   * PlausibilitÑtstest.
-   * Wird storageOk zurÅckgegeben, ist (wahrscheinlich) alles in Ordnung.
+   * Plausibilit√§tstest.
+   * Wird storageOk zur√ºckgegeben, ist (wahrscheinlich) alles in Ordnung.
    *
-   * Wenn nicht, gibt es dafÅr 2 mîgliche Ursachen:
+   * Wenn nicht, gibt es daf√ºr 2 m√∂gliche Ursachen:
    * - Ein Fehler in Storage.
    *   In diesem Fall geben die Fehlermeldungen an, wo der Fehler zu suchen ist.
    * - Wahrscheinlicher: Ihr Programm oder ein parallel laufendes Programm
    *   hat wild in den Speicher geschrieben.
-   *   In diesem Fall zÑhlt nur, ob storageOk oder etwas anderes
-   *   zurÅckgegeben wurde.
-   *   Welcher Fehler zurÅckgegeben wird ist hier uninteressant.
+   *   In diesem Fall z√§hlt nur, ob storageOk oder etwas anderes
+   *   zur√ºckgegeben wurde.
+   *   Welcher Fehler zur√ºckgegeben wird ist hier uninteressant.
    *)
   VAR
     bl    : PtrBlock;
@@ -360,7 +360,7 @@ BEGIN
     blPrev := bl;
     bl:= ADDRESS (bl^.blk.next);
 
-    (* VorwÑrtsverkettung endet bei RootPtr *)
+    (* Vorw√§rtsverkettung endet bei RootPtr *)
     IF bl=NIL THEN RETURN storageNIL END;
 
     (* bl ungerade? *)
@@ -368,7 +368,7 @@ BEGIN
       RETURN storageOdd
     END;
 
-    (* RÅckwÑrtsverkettung testen: *)
+    (* R√ºckw√§rtsverkettung testen: *)
     IF PtrBlock(bl^.blk.prev)#blPrev THEN
       RETURN storagePrev1
     END;
@@ -377,7 +377,7 @@ BEGIN
     IF bl = RootPtr THEN RETURN storageOK END;
 
     IF fullStorBaseAccess AND (MemSize(bl)=0) THEN
-      (* Block scheint nicht Åber StorBase.ALLOCATE geholt worden zu sein *)
+      (* Block scheint nicht √ºber StorBase.ALLOCATE geholt worden zu sein *)
       RETURN storageNotAlloc
     END;
 
@@ -389,25 +389,25 @@ BEGIN
       hd := NIL;
       LOOP
         IF usedBeg < 0 THEN
-          (* rest ist hîchstens frei *)
+          (* rest ist h√∂chstens frei *)
           EXIT
         END;
 
         prevHd := hd;
         hd:= abs (bl, usedBeg);
 
-        (* RÅckwÑrtsverkettung testen: *)
+        (* R√ºckw√§rtsverkettung testen: *)
         IF (prevHd#NIL)
         AND (abs (bl, hd^.hd.p)#prevHd) THEN
           RETURN storagePrev2
         END;
 
-        (* Zeiger auf nÑchstes muû grîûer als Zeiger auf aktuelles sein: *)
+        (* Zeiger auf n√§chstes mu‚Çß gr√∂‚Çßer als Zeiger auf aktuelles sein: *)
         IF (hd^.hd.n>0) AND (hd^.hd.n<=usedBeg) THEN
           RETURN storageNext2
         END;
 
-        (* Aktueller Zeiger + Platz fÅr Daten muû < nÑchster Zeiger sein: *)
+        (* Aktueller Zeiger + Platz f√ºr Daten mu‚Çß < n√§chster Zeiger sein: *)
         IF (hd^.hd.n>0) AND (usedBeg+hd^.size>=hd^.hd.n) THEN
           RETURN storageSize2
         END;
@@ -426,4 +426,4 @@ END TestStorage;
 
 BEGIN
   More ($4EF3, ADR (RootPtr));
-END StorUtils.
+END StorUtils.

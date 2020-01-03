@@ -4,14 +4,14 @@ IMPLEMENTATION MODULE StorBase;
 (*-----------------------------------------------------------------------------
  * Copyright Januar 1987 Thomas Tempelmann, E.L.Kirchner Str.25, 29 Oldenburg
  *-----------------------------------------------------------------------------
- * Kurzbeschreibung : Zentrale Memoryverwaltung fÅr MOS
+ * Kurzbeschreibung : Zentrale Memoryverwaltung f√ºr MOS
  *-----------------------------------------------------------------------------
  * Systemversion : MOS 1.1
  * Textversion   : V#0203
  *-----------------------------------------------------------------------------
  * Datum    Vers  Autor  Bemerkung (Arbeitsbericht)
  *-----------------------------------------------------------------------------
- * 09.01.87  0.0  TT     Erste theoretisch lauffÑhige Komplettversion
+ * 09.01.87  0.0  TT     Erste theoretisch lauff√§hige Komplettversion
  * 04.02.87  1.0  TT     Erste Version unter MOS, Aufruf DeAllocAll bei Term.
  * 10.02.87  1.0  TT     Keine Imports mehr; @SetLevel impl.; alter Process-
  *                       Term-Vektor wird nach eigener Routine angesprungen.
@@ -19,46 +19,46 @@ IMPLEMENTATION MODULE StorBase;
  * 18.02.87  1.1  TT     MDSt-Verwaltung TOS-Kompatibel. Leider keine Freigabe
  *                       der MDSts mehr, da nicht erkennbar, wann ein MDst
  *                       vollkommen frei ist.
- * 21.02.87  1.2  TT     MDSt wird mîglichst am Speicherende alloziert.
+ * 21.02.87  1.2  TT     MDSt wird m√∂glichst am Speicherende alloziert.
  *                       SysLevel katalogisiert mit TOS-owner.
- * 22.02.87  1.2  TT     Åber 408-Vektor wird aller userMemory freigegeben,
- *                       ungerade LÑngen werden dabei begradigt (Bit 31 in
- *                       owner wird gelîscht).
+ * 22.02.87  1.2  TT     √ºber 408-Vektor wird aller userMemory freigegeben,
+ *                       ungerade L√§ngen werden dabei begradigt (Bit 31 in
+ *                       owner wird gel√∂scht).
  * 25.05.87  1.3  TT     TOS-Variablen aus 'TOSPatch' importiert.
  * 14.06.87  1.4  TT     Available-Funktion neu
  * 22.06.87  1.5  TT     Infinite loop in allocU1 verhindert (bei 'notFnd')
  * 01.07.87  1.6  TT     @SetLevel raus, stattdessen SetEnvelope-Verwendung
  * 09.09.87  1.7  TT     Keep, Extend neu; Regs bei DeAllocATE, MemSize gerettet
  * 25.10.87  1.8  TT     Keep jetzt KeepAll; Keep f. einzl. Blocks; MemSize
- *                       liefert auch ungerade LÑngen; DeAllocAll prÅft auch
- *                       Prozeû-ID.
- * 24.11.87  1.9  TT     Levels raus, jeder Level hat eigene Prozeûkennung.
+ *                       liefert auch ungerade L√§ngen; DeAllocAll pr√ºft auch
+ *                       Proze‚Çß-ID.
+ * 24.11.87  1.9  TT     Levels raus, jeder Level hat eigene Proze‚Çßkennung.
  * 07.01.88  1.10 TT     terminate ruft DeAllocAll nun korrekt auf
  * 24.01.88  1.11 TT     Bei Malloc wird oberes owner-Byte immer # 0 gesetzt
- * 27.01.88  1.12 TT     testMDSt reagiert bei 32 statt 10 freien EintrÑgen
+ * 27.01.88  1.12 TT     testMDSt reagiert bei 32 statt 10 freien Eintr√§gen
  * 02.06.88  1.13 TT     Enlarge-Funktion bei 'Resize0'; allocU1 setzte owner
  *                       nicht, wenn amout = ganzem Freibereich war.
- * 17.06.88  1.14 TT     MD-Stack-Vars werden nicht mehr benîtigt.
+ * 17.06.88  1.14 TT     MD-Stack-Vars werden nicht mehr ben√∂tigt.
  * 24.07.88  1.15 TT     MPBPtr wird generisch ermittelt.
  * 27.07.88       TT     LongStack wird wieder in getMD benutzt, damit
  *                       Accessories und AUTO-Prgs laufen.
- * 29.07.88       TT     GetMPBPtr korrigiert (Trace-Bit wurde nicht gelîscht)
+ * 29.07.88       TT     GetMPBPtr korrigiert (Trace-Bit wurde nicht gel√∂scht)
  * 18.08.88  1.16 TT     LongStack-Vars werden f. TOS 1.0/1.2 hier konstant
  *                       verwendet, ab TOS 1.3 werden die MD nicht mehr selbst
  *                       angelegt/freigegeben, dadurch kein autom. LongStack-
- *                       Erweitern mehr mîglich.
+ *                       Erweitern mehr m√∂glich.
  *                       D4 wird nun in ALLOCATE gerettet.
  * 23.08.88       TT     Enlarge f. TOS 1.4 korrig, TrailAvail neu
  * 24.08.88       TT     Register D5/D6 werden bei TrailAvail gerettet;
  *                       owner wird sicherheitshalber bei Enlarge mit vollem
  *                       folg. Freibereich neu gesetzt; In owner wird nicht
- *                       mehr eine eigene Prozeûkennung abgelegt.
+ *                       mehr eine eigene Proze‚Çßkennung abgelegt.
  * 01.10.88       TT     SysAlloc macht Speicher nun dauerhaft resident und
- *                       gibt ihn nicht mehr bei Prozeûende des Moduls frei.
+ *                       gibt ihn nicht mehr bei Proze‚Çßende des Moduls frei.
  * 23.10.88       TT     ProcessID aus MOSCtrl statt TOSPatch
  * 06.11.88       TT     testMDSt erweitert Pool nicht, wenn dieser noch
  *                       nicht benutzt wurde (wenn Liste leer) oder Stack
- *                       nocht groû genug ist.
+ *                       nocht gro‚Çß genug ist.
  * 11.02.89       TT     Modul in StorBase umbenannt
  * 05.07.89       TT     Wenn MPBPtr nicht gefunden wird, sind die Funktionen
  *                       ALLOCATE, DEALLOCATE, SysAlloc (wie ALLOCATE),
@@ -66,28 +66,28 @@ IMPLEMENTATION MODULE StorBase;
  *                       weiterhin normal benutzbar. TrailAvail liefert immer
  *                       Null.
  *                       Die Funktionen MemSize, Keep, KeepAll, Enlarge und
- *                       DEALLOCATE mit size # 0L (korrekte Grîûe geht nicht!)
- *                       lîsen bei Aufruf einen Laufzeitfehler (-14,
+ *                       DEALLOCATE mit size # 0L (korrekte Gr√∂‚Çße geht nicht!)
+ *                       l√∂sen bei Aufruf einen Laufzeitfehler (-14,
  *                       IllegalCall) aus.
  *                       Es ist die Aufgabe des neuen Storage-Moduls, diese
  *                       Konventionen einzuhalten!
  * 16.07.90       TT     Enlarge macht keinen Fehler mehr mit ungeraden Werten
- * 29.08.90       TT     DEALLOCATE meldet keinen Fehler mehr, wenn LÑnge # 0
+ * 29.08.90       TT     DEALLOCATE meldet keinen Fehler mehr, wenn L√§nge # 0
  *                       und kein MPB-Zugriff; Resize neu
- * 09.10.90       TT     AllAvail berÅcksichtigt TT-RAM
+ * 09.10.90       TT     AllAvail ber√ºcksichtigt TT-RAM
  * 28.03.91       TT     AllAvail belegt alle Bereiche > 1024, um auch ohne MPB-
  *                       Zugriff sinnvolle Ergebnisse zu liefern.
- * 25.04.91       TT     Neues Verfahren bei GetMPB, lÑuft nun mit Mega STE
+ * 25.04.91       TT     Neues Verfahren bei GetMPB, l√§uft nun mit Mega STE
  *                       und wahrscheinlich auch mit PAMs Net.
- * 03.05.91       TT     AllAvail Åbergibt Wert nicht mehr in D1, so daû GEMDOS
- *                       D1 ruhig zerstîren kann.
+ * 03.05.91       TT     AllAvail √ºbergibt Wert nicht mehr in D1, so da‚Çß GEMDOS
+ *                       D1 ruhig zerst√∂ren kann.
  * 18.06.91       TT     Enlarge liefert korrekten Ergebniswert.
  * 15.09.91       TT     GetMPBPtr findet offenbar auch auf dem TT den Ptr,
  *                       was aber keinen Sinn macht, da nicht alle Listen
- *                       oder so berÅcksichtigt werden. Damit da kein Scheiû
+ *                       oder so ber√ºcksichtigt werden. Damit da kein Schei‚Çß
  *                       passiert, wird bei TOS 3.x nie nach dem MPB gesucht.
  * 19.01.94       TT     kein GetMPBPtr bei MiNT/MagX
- * 04.04.94       TT     AllAvail vermeidet nun StackÅberlauf
+ * 04.04.94       TT     AllAvail vermeidet nun Stack√ºberlauf
  *----------------------------------------------------------------------------*)
 
 (*
@@ -96,13 +96,13 @@ IMPLEMENTATION MODULE StorBase;
  *
  * D6: MPBPtr; D7: =0 -> allocMDSt aktiv.
  *
- * In owner steht im oberen Byte nur noch die Kennung f. ungerade LÑngen.
- * Wenn ein Programm mit Ptermres endet, passiert es, daû die Speicherblocks,
- * die zu der Zeit eine ungerade LÑnge haben, nicht dem Prozeû zugehîrig
+ * In owner steht im oberen Byte nur noch die Kennung f. ungerade L√§ngen.
+ * Wenn ein Programm mit Ptermres endet, passiert es, da‚Çß die Speicherblocks,
+ * die zu der Zeit eine ungerade L√§nge haben, nicht dem Proze‚Çß zugeh√∂rig
  * erkannt werden und deshalb nicht resident gemacht werden. Zwar werden beim
- * Prozeûende durch 'DeAllocAll' alle owner bereinigt, aber leider wird der
+ * Proze‚Çßende durch 'DeAllocAll' alle owner bereinigt, aber leider wird der
  * Term-Vektor bei Ptermres erst nach Residentmachen des Speichers angesprungen,
- * sodaû 'DeAllocAll' zu spÑt zum Zuge kommt.
+ * soda‚Çß 'DeAllocAll' zu sp√§t zum Zuge kommt.
  * Mit diesem kleinen Fehler sollte sich leben lassen, vor Allem, da beim
  * Residentmachen durch 'InstallModule' dieses Problem nicht auftritt.
  *)
@@ -130,7 +130,7 @@ VAR     MDRoot    : ADDRESS;
 
 CONST
 
-  minMDs = 32; (* Soviel MDs mÅssen noch frei sein (s. testMDSt) *)
+  minMDs = 32; (* Soviel MDs m√ºssen noch frei sein (s. testMDSt) *)
 
   ElemSize = $480; (* (64 * mdSize2) Um soviel wird der OS-Pool erweitert *)
 
@@ -155,7 +155,7 @@ TYPE P_MD = POINTER TO MD;
           END;
      
 CONST mdSize0 = 16;
-      mdSize2 = 18;   (* Plus vorstehendes LÑngen-word (=1) *)
+      mdSize2 = 18;   (* Plus vorstehendes L√§ngen-word (=1) *)
 
       m_alloc = $48;
       m_free  = $49;
@@ -239,7 +239,7 @@ PROCEDURE GetMPBPtr;
         MOVE.L  A1,D2
         BEQ     error           ; nicht gefunden
         
-        ; *** nach mîglichen MPBs suchen ***
+        ; *** nach m√∂glichen MPBs suchen ***
         
         LEA     $800,A0
         MOVE.L  end_os,D1
@@ -269,7 +269,7 @@ PROCEDURE GetMPBPtr;
         ADDQ.L  #6,A7
         MOVE.L  (A7)+,D2        ; MD.next
         
-        ; *** nochmal die mîgl. MPBs prÅfen ***
+        ; *** nochmal die m√∂gl. MPBs pr√ºfen ***
         
     l3: MOVE.L  (A7)+,D0        ; ^MD
         BEQ     e3
@@ -342,8 +342,8 @@ PROCEDURE GetMPBPtr;
   
         rst_trc:
           MOVE.L  D0,$10          ; vektor #4 wiederherstellen
-          MOVE.L  sv_trc(PC),$24  ; vektor #9 (trace) rÅcksetzen
-          ANDI.W  #$3FFF,(A7)     ; Trace-Bit(s) lîschen
+          MOVE.L  sv_trc(PC),$24  ; vektor #9 (trace) r√ºcksetzen
+          ANDI.W  #$3FFF,(A7)     ; Trace-Bit(s) l√∂schen
           ADDQ.L  #2,2(A7)        ; PC hinter ILLEGAL-Instr
           RTE
   
@@ -379,7 +379,7 @@ PROCEDURE GetMPBPtr;
           MOVE.L  4+6+4(A7),MPBPtr ; auf Supervisor-Stack steht MPB-Pointer
         trc_err
           MOVE.L  (A7)+,A0
-          ANDI.W  #$7FFF,(A7)     ; Trace-Bit lîschen
+          ANDI.W  #$7FFF,(A7)     ; Trace-Bit l√∂schen
           RTE
       END
     END GetMPBPtr;
@@ -419,7 +419,7 @@ l0      TST.L   (A0)
         BRA     l0
         
 nxt     MOVE    #1,-2(A1)       ; MD.mylen
-        MOVE.L  A1,(A0)         ; Adr. des MD dem VorgÑnger in MD.next zuweisen
+        MOVE.L  A1,(A0)         ; Adr. des MD dem Vorg√§nger in MD.next zuweisen
         MOVE.L  A1,A0
         ADDA.L  D2,A1
 st0     SUB.L   D2,D5
@@ -440,7 +440,7 @@ PROCEDURE testMDSt;
     ASSEMBLER
         
         TST     D7
-        BEQ     ende            ; Rekursionen mîgen wir nicht
+        BEQ     ende            ; Rekursionen m√∂gen wir nicht
 
         MOVE.L  MDRoot,A0
         MOVE.L  (A0),D0
@@ -448,10 +448,10 @@ PROCEDURE testMDSt;
 
         MOVE.L  LStackFree,A0
         MOVE.W  (A0),D1
-        DIVU    #9,D1           ; D1: Anz. freier MD-PlÑtze
-        SUBI    #minMDs,D1      ; mind. benîtigte freie Anzahl
+        DIVU    #9,D1           ; D1: Anz. freier MD-Pl√§tze
+        SUBI    #minMDs,D1      ; mind. ben√∂tigte freie Anzahl
         BCC     ende            ; noch genug frei
-        NEG     D1              ; -> fehlende Anzahl in Liste prÅfen
+        NEG     D1              ; -> fehlende Anzahl in Liste pr√ºfen
         SUBA.L  A0,A0
 loop0   MOVE.L  0(A0,D0.L),D0
         DBEQ    D1,loop0
@@ -503,8 +503,8 @@ instack MOVEQ   #0,D0
         EXT.L   D0
         MOVE.L  D0,A1
         ADDA.L  LongStack,A1
-        ADDI.W  #9,(A0)        ; Stackpointer erhîhen
-        MOVE.W  #1,(A1)        ; die LÑnge des Elements im Element ablegen
+        ADDI.W  #9,(A0)        ; Stackpointer erh√∂hen
+        MOVE.W  #1,(A1)        ; die L√§nge des Elements im Element ablegen
         ADDQ.L  #2,A1
         MOVE.L  A1,D0
         
@@ -522,8 +522,8 @@ ASSEMBLER
         MOVE.L  (A0),A4                 ; (MD.next)  Adr. des vorigen MD
         MOVE.L  (A4),A1                 ; (MD.next)  Adr. des MD
         ; A1 auslinken
-        MOVE.L  MD.length(A1),D0        ; LÑnge des Folgenden
-        ADD.L   D0,MD.length(A4)        ; Auf LÑnge des MD aufaddieren
+        MOVE.L  MD.length(A1),D0        ; L√§nge des Folgenden
+        ADD.L   D0,MD.length(A4)        ; Auf L√§nge des MD aufaddieren
         MOVE.L  (A1),(A4)               ; Folgenden MD auslinken
         MOVE.L  D6,A0
         CMPA.L  MPB.boomer(A0),A1
@@ -543,8 +543,8 @@ END linkFree;
 PROCEDURE insertFree;
 BEGIN
 ASSEMBLER
-        ; TrÑgt einen ungelinkten MD in Freiliste ein
-        ; pMD wird in D0 Åbergeben
+        ; Tr√§gt einen ungelinkten MD in Freiliste ein
+        ; pMD wird in D0 √ºbergeben
         
         MOVE.L  A4,-(A7)
         MOVE.L  D0,A4
@@ -552,13 +552,13 @@ ASSEMBLER
         LEA     (A0),A2
         MOVE.L  (A0),A1         ; MPB.free
         
-        ; Wir suchen in Freelist die MDs, zw. die der neue MD paût.
+        ; Wir suchen in Freelist die MDs, zw. die der neue MD pa‚Çßt.
         BRA     cont2
 srch2   MOVE.L  MD.start(A4),D0 ; start des freizugebenden Bereichs
         CMP.L   MD.start(A1),D0 ; start aus Free-List
-        BLE     fnd2            ; Hier paût er hin
+        BLE     fnd2            ; Hier pa‚Çßt er hin
         MOVE.L  A2,D1
-        MOVE.L  A1,A2           ; VorgÑnger retten
+        MOVE.L  A1,A2           ; Vorg√§nger retten
         MOVE.L  (A2),A1         ; MD.next
 cont2   MOVE.L  A1,D0
         BNE     srch2
@@ -577,9 +577,9 @@ exists
         MOVE.L  A1,D0
         BEQ     noNext
         MOVE.L  MD.start(A4),D0         ; Start des neuen Freibereichs
-        ADD.L   MD.length(A4),D0        ; Plus LÑnge des neuen Freibereichs
+        ADD.L   MD.length(A4),D0        ; Plus L√§nge des neuen Freibereichs
         CMP.L   MD.start(A1),D0         ; = Beginn des folgenden Freibereichs ?
-        BNE     noNext                  ; Nî
+        BNE     noNext                  ; N√∂
         
         ; Die beiden Freibereiche verketten
         MOVE.L  A2,A0
@@ -592,10 +592,10 @@ noNext  SUBA.L  A1,A1
 cont1   ; Liegt vor dem freigewordenen Bereich noch ein freier ?
         CMP.L   A2,D6
         BEQ     ende                    ; kein voriger Bereich
-        MOVE.L  MD.start(A2),D0         ; Start des Bereichs des VorgÑngers
-        ADD.L   MD.length(A2),D0        ; Plus LÑnge des VorgÑngerbereichs
+        MOVE.L  MD.start(A2),D0         ; Start des Bereichs des Vorg√§ngers
+        ADD.L   MD.length(A2),D0        ; Plus L√§nge des Vorg√§ngerbereichs
         CMP.L   MD.start(A4),D0         ; = Beginn des neuen Freibereichs ?
-        BNE     ende                    ; Nî
+        BNE     ende                    ; N√∂
         
         ; Die beiden Freibereiche verketten
         MOVE.L  D1,A0
@@ -614,7 +614,7 @@ ASSEMBLER
         ;MOVE    SR,-(A7)
         ;ORI     #$700,SR
         
-        ; Neuer MDSt nîtig ?
+        ; Neuer MDSt n√∂tig ?
         MOVEM.L D4/D5,-(A7)
         JSR     testMDSt
         MOVEM.L (A7)+,D4/D5
@@ -659,52 +659,52 @@ endeOK2 MOVE.B  D0,MD.owner(A1)
 ende2   MOVEQ   #0,D0
         BRA.W   ende
 
-enlarg  ; amount vergrîûern
-        SUB.L   D4,D1           ; neuer, vergrîûerter, User-amount
+enlarg  ; amount vergr√∂‚Çßern
+        SUB.L   D4,D1           ; neuer, vergr√∂‚Çßerter, User-amount
         ANDI    #$7F,D0
         BTST    #0,D1
         BEQ     even4
         ADDQ.L  #1,D1
         ORI     #$80,D0
-even4   CMP.L   MD.length(A1),D1        ; Bleibt bisherige Wort-LÑnge gleich ?
+even4   CMP.L   MD.length(A1),D1        ; Bleibt bisherige Wort-L√§nge gleich ?
         BEQ     endeOK2                 ; dann fertig
         MOVE.W  D0,-(A7)
         MOVE.L  MD.start(A1),D2
-        ADD.L   MD.length(A1),D2        ; hier muû ein Freibereich stehen
-        ; erstmal prÅfen, ob noch genÅgend Platz dahinter frei ist
+        ADD.L   MD.length(A1),D2        ; hier mu‚Çß ein Freibereich stehen
+        ; erstmal pr√ºfen, ob noch gen√ºgend Platz dahinter frei ist
         MOVE.L  D6,A0
         LEA     MPB.free(A0),A2
         MOVE.L  (A2),A0
         BRA     cont2
 srch2   CMP.L   MD.start(A0),D2 ; start aus Free-List
         BEQ     fnd2            ; gefunden
-        MOVE.L  A0,A2           ; VorgÑnger retten
+        MOVE.L  A0,A2           ; Vorg√§nger retten
         MOVE.L  (A2),A0         ; MD.next
 cont2   MOVE.L  A0,D0
         BNE     srch2
         MOVE.W  (A7)+,D0
         BRA.W   ende2           ; war wohl nix
 fnd2    MOVE.W  (A7)+,D0
-        MOVE.L  MD.length(A0),D4 ; free-LÑnge
+        MOVE.L  MD.length(A0),D4 ; free-L√§nge
         MOVE.L  D4,D2
-        ADD.L   MD.length(A1),D4 ; used-LÑnge
-        SUB.L   D1,D4           ; ist Gesamtbereich > neue LÑnge ?
+        ADD.L   MD.length(A1),D4 ; used-L√§nge
+        SUB.L   D1,D4           ; ist Gesamtbereich > neue L√§nge ?
         BCS     ende2           ;   nein -> Ende
-        BEQ     remfmd          ;   sogar gleich, dann free-MD lîschen
-        MOVE.B  D0,MD.owner(A1) ; Byte-LÑnge setzen
-        ; Used vergrîûern, Free verkleinern
-        MOVE.L  D1,MD.length(A1) ; neue Used-Grîûe
-        MOVE.L  D4,MD.length(A0) ; neue Free-Grîûe
-        SUB.L   D4,D2            ; Diff zw. alter und neuer Used-LÑnge
+        BEQ     remfmd          ;   sogar gleich, dann free-MD l√∂schen
+        MOVE.B  D0,MD.owner(A1) ; Byte-L√§nge setzen
+        ; Used vergr√∂‚Çßern, Free verkleinern
+        MOVE.L  D1,MD.length(A1) ; neue Used-Gr√∂‚Çße
+        MOVE.L  D4,MD.length(A0) ; neue Free-Gr√∂‚Çße
+        SUB.L   D4,D2            ; Diff zw. alter und neuer Used-L√§nge
         ADD.L   D2,MD.start(A0)  ; neuer Free-Start
         BRA     endeOK
 remfmd  ; Freibereich wird ganz belegt -> Free-MD auslinken
-        MOVE.B  D0,MD.owner(A1) ; Byte-LÑnge setzen
+        MOVE.B  D0,MD.owner(A1) ; Byte-L√§nge setzen
         MOVE.L  (A0),(A2)       ; Free-MD auslinken
         MOVE.L  D6,A1
         CMPA.L  MPB.boomer(A1),A0 ; zeigt boomer auf ausgelinkten MD ?
         BNE     @FC8801
-        MOVE.L  A2,MPB.boomer(A1) ; dann auf VorgÑnger
+        MOVE.L  A2,MPB.boomer(A1) ; dann auf Vorg√§nger
 @FC8801 ; MD aus TOS-Stack austragen
         MOVE.L  MDRoot,A1
         MOVE.L  (A1),(A0)       ; MD in MDStack einlinken
@@ -718,7 +718,7 @@ shrink  ; newSize in D1, ^used-MD in A1
         ADDQ.L  #1,D1
         ORI     #$80,D0
 even2   MOVE.B  D0,MD.owner(A1)
-        CMP.L   MD.length(A1),D1        ; Bleibt bisherige LÑnge gleich ?
+        CMP.L   MD.length(A1),D1        ; Bleibt bisherige L√§nge gleich ?
         BEQ     endeOK                  ; dann bleibt's beim Alten
         MOVEM.L D1/A1,-(A7)
         MOVEQ   #0,D4
@@ -728,15 +728,15 @@ even2   MOVE.B  D0,MD.owner(A1)
         BEQ     ende                    ; Macht nix.
         MOVE.L  D0,A2                   ; Adr. des neuen MD
         MOVE.L  MD.start(A1),D0         ; Start des belegten Bereichs
-        ADD.L   D1,D0                   ; Plus neue Grîûe
+        ADD.L   D1,D0                   ; Plus neue Gr√∂‚Çße
         MOVE.L  D0,MD.start(A2)         ; Ergibt Start des neuen Freibereichs
-        MOVE.L  MD.length(A1),D0        ; Bisherige Used-LÑnge
-        SUB.L   D1,D0                   ; Minus neue Grîûe
-        MOVE.L  D0,MD.length(A2)        ; Ergibt neue FreilÑnge
+        MOVE.L  MD.length(A1),D0        ; Bisherige Used-L√§nge
+        SUB.L   D1,D0                   ; Minus neue Gr√∂‚Çße
+        MOVE.L  D0,MD.length(A2)        ; Ergibt neue Freil√§nge
         BNE     qw1
         BREAK
       qw1:
-        MOVE.L  D1,MD.length(A1)        ; Belegt-LÑnge korrigieren
+        MOVE.L  D1,MD.length(A1)        ; Belegt-L√§nge korrigieren
         BNE     qw2
         BREAK
       qw2:
@@ -788,15 +788,15 @@ even    SUB.L   D4,D1           ; neuer User-amount
         BEQ     even2
         ADDQ.L  #1,D1
         ORI     #$80,D0
-even2   CMP.L   MD.length(A0),D1        ; Bleibt bisherige LÑnge gleich ?
+even2   CMP.L   MD.length(A0),D1        ; Bleibt bisherige L√§nge gleich ?
         BEQ     endeSet                 ; dann bleibt's beim Alten
 
         TST.L   D4
         BMI     enlarg
 
-        ; Mshrink ausfÅhren
+        ; Mshrink ausf√ºhren
         MOVE.B  D0,MD.owner(A0)
-        MOVE.L  D1,-(A7)        ; neue LÑnge
+        MOVE.L  D1,-(A7)        ; neue L√§nge
         MOVE.L  D5,-(A7)        ; start
         CLR     -(A7)
         MOVE    #m_shrink,-(A7)
@@ -814,12 +814,12 @@ all     MOVE.L  D5,-(A7)
         BEQ.W   endeT
         BRA.W   endeF
 
-enlarg  ; anschlieûenden Free-MD ermitteln
-        MOVE.L  D1,D4                   ; neue gerundete LÑnge
-        SUB.L   MD.length(A0),D4        ; D4: neue gerundete LÑngendiff. (pos.)
+enlarg  ; anschlie‚Çßenden Free-MD ermitteln
+        MOVE.L  D1,D4                   ; neue gerundete L√§nge
+        SUB.L   MD.length(A0),D4        ; D4: neue gerundete L√§ngendiff. (pos.)
         MOVE    D0,-(A7)
         MOVE.L  MD.start(A0),D2
-        ADD.L   MD.length(A0),D2        ; hier muû ein Freibereich stehen
+        ADD.L   MD.length(A0),D2        ; hier mu‚Çß ein Freibereich stehen
         MOVE.L  D6,A2
         MOVE.L  MPB.free(A2),A2
         BRA     cont2
@@ -831,21 +831,21 @@ cont2   MOVE.L  A2,D0
         MOVE    (A7)+,D0
         BRA     endeF           ; dahinter nix mehr frei
 fnd2    MOVE    (A7)+,D0
-        MOVE.L  MD.length(A2),D2 ; free-LÑnge
-        ADD.L   MD.length(A0),D2 ; plus used-LÑnge ergibt gesamte verfÅgb. LÑnge
-        SUB.L   D1,D2           ; minus neue benîtigte LÑnge ist Rest-FreilÑnge
+        MOVE.L  MD.length(A2),D2 ; free-L√§nge
+        ADD.L   MD.length(A0),D2 ; plus used-L√§nge ergibt gesamte verf√ºgb. L√§nge
+        SUB.L   D1,D2           ; minus neue ben√∂tigte L√§nge ist Rest-Freil√§nge
         BCS     endeF           ; reicht nicht aus
         BEQ     replace         ; da wird's schwierig...
-        MOVE.L  D2,MD.length(A2) ; free-LÑnge korrigieren
+        MOVE.L  D2,MD.length(A2) ; free-L√§nge korrigieren
         ADD.L   D4,MD.start(A2)  ; free-Start korrigieren
-        MOVE.L  D1,MD.length(A0) ; used-LÑnge korrigieren
+        MOVE.L  D1,MD.length(A0) ; used-L√§nge korrigieren
 
 endeSet MOVE.B  D0,MD.owner(A0)
         BRA     endeT
 
-replace ; der Frei-Bereich muû entfernt werden.
+replace ; der Frei-Bereich mu‚Çß entfernt werden.
         ; dazu wird der Used-Bereich freigegeben und dann wieder in einen
-        ; used-Bereich zurÅckverwandelt
+        ; used-Bereich zur√ºckverwandelt
         MOVE.L  D5,-(A7)
         MOVE    #m_free,-(A7)
         TRAP    #1              ; Mfree (p)
@@ -853,11 +853,11 @@ replace ; der Frei-Bereich muû entfernt werden.
 
         ; MD in Freibereich wiederfinden
         MOVE.L  D6,A0
-      s MOVE.L  A0,A1           ; VorgÑnger retten
+      s MOVE.L  A0,A1           ; Vorg√§nger retten
         MOVE.L  (A0),A0
         CMP.L   MD.start(A0),D5
         BNE     s
-        ; MD aushÑngen und in Used-List einhÑngen
+        ; MD aush√§ngen und in Used-List einh√§ngen
         MOVE.L  (A0),(A1)
         MOVE.L  D6,A2
         CMPA.L  MPB.boomer(A2),A0
@@ -894,7 +894,7 @@ ASSEMBLER
         TST.B   oldStorage
         BEQ     newsto
 
-        ; VerÑndern der Grîûe
+        ; Ver√§ndern der Gr√∂‚Çße
         MOVEQ   #1,D7
         MOVE.L  D3,D5
         MOVE.L  #Resize1,-(A7)
@@ -902,7 +902,7 @@ ASSEMBLER
         ADDQ.L  #4,A7
         BRA     ende
 
-newsto  ; VerÑndern der Grîûe
+newsto  ; Ver√§ndern der Gr√∂‚Çße
         PEA     Resize2
         JSR     CallSuper
         ADDQ.L  #4,A7
@@ -939,7 +939,7 @@ BEGIN
 ASSEMBLER
         SUBQ.L  #4,A3
         MOVE.L  MPBPtr,D0
-        BEQ     ende            ; Wenn kein MPBPtr, ist dies unnîtig
+        BEQ     ende            ; Wenn kein MPBPtr, ist dies unn√∂tig
         MOVE.L  #freeAll,-(A7)
         JSR     CallSuper
         ADDQ.L  #4,A7
@@ -953,7 +953,7 @@ PROCEDURE allocU1; (* D6:MPBPtr, D5:amount, D4:owner *)
 BEGIN
 ASSEMBLER
         ; A1: zeigt auf aktuellen Free-MD
-        ; A2: zeigt auf VorgÑnger
+        ; A2: zeigt auf Vorg√§nger
         
         MOVE.L  D4,-(A7)
         
@@ -968,7 +968,7 @@ ASSEMBLER
         BEQ.L   ende                    ; keine Freiliste !?
         
         MOVE.L  (A2),A1                 ; ^ Root Freiliste
-        CLR.L   D4                      ; hîchste Adr.
+        CLR.L   D4                      ; h√∂chste Adr.
         
 srch1   MOVE.L  A1,D0                   ; Ende der Freiliste ?
         BNE     srch2
@@ -978,10 +978,10 @@ srch1   MOVE.L  A1,D0                   ; Ende der Freiliste ?
 srch2   MOVE.L  MD.length(A1),D0
         CMP.L   D5,D0
         BEQ     isEqu
-        BHI     isHi            ; Der Bereich ist grîûer
+        BHI     isHi            ; Der Bereich ist gr√∂‚Çßer
         BRA.L   notFnd          ; Der Freibereich ist zu klein
 
-extrem  ; mîglichst hohe Adr. suchen
+extrem  ; m√∂glichst hohe Adr. suchen
         CMP.L   MD.start(A1),D4
         BCC.L   notFnd
         MOVE.L  MD.start(A1),D4
@@ -989,7 +989,7 @@ extrem  ; mîglichst hohe Adr. suchen
         MOVE.L  A3,A4
         BRA.W   notFnd
 
-isEqu   ; Der freie Bereich paût genau.
+isEqu   ; Der freie Bereich pa‚Çßt genau.
         TST     D7
         BEQ     extrem
 isEqu0  MOVE.L  (A1),(A2)       ; MD aus Free-Liste auslinken
@@ -1012,9 +1012,9 @@ isHi0   MOVE.L  (A7),D4
         
         MOVE.L  MD.start(A1),D0         ; Used-start auf alten Freibereich
         ADD.L   MD.length(A1),D0        ; Used-start auf Ende des Bereichs
-        SUB.L   D5,D0                   ; Minus BereichslÑnge
+        SUB.L   D5,D0                   ; Minus Bereichsl√§nge
         MOVE.L  D0,MD.start(A0)         ; Als Used-Start
-        SUB.L   D5,MD.length(A1)        ; Frei-LÑnge um belegten Bereich verkl.
+        SUB.L   D5,MD.length(A1)        ; Frei-L√§nge um belegten Bereich verkl.
         BNE     qw1
         BREAK
       qw1:
@@ -1026,8 +1026,8 @@ isHi0   MOVE.L  (A7),D4
         BRA     found
         
 takeLow MOVE.L  MD.start(A1),MD.start(A0) ; Used-start auf alten Freibereich
-        ADD.L   D5,MD.start(A1)         ; Frei-Beginn um bel. Bereich erhîhen
-        SUB.L   D5,MD.length(A1)        ; Frei-LÑnge um belegten Bereich verkl.
+        ADD.L   D5,MD.start(A1)         ; Frei-Beginn um bel. Bereich erh√∂hen
+        SUB.L   D5,MD.length(A1)        ; Frei-L√§nge um belegten Bereich verkl.
         BNE     qw3
         BREAK
       qw3:
@@ -1079,7 +1079,7 @@ srchEnd TST     D7
         MOVE.L  MD.length(A1),D0
         CMP.L   D5,D0
         BEQ     isEqu0
-        BHI     isHi0           ; Der Bereich ist grîûer
+        BHI     isHi0           ; Der Bereich ist gr√∂‚Çßer
         
 ende0   CLR.L   D0              ; keinen Platz gefunden
 ende    ADDQ.L  #4,A7
@@ -1127,7 +1127,7 @@ ende    MOVE.L  D0,(A3)+
         BRA     ende0
 
 newsto  ; Malloc ohne LongStack-Zugriffe
-        ; Dazu erst den Speicher Åber GEMDOS anfordern und dann
+        ; Dazu erst den Speicher √ºber GEMDOS anfordern und dann
         ; den Owner und evtl. Markierung f. ungeraden Amount setzen
         MOVE.L  D5,-(A7)
         MOVE    #m_alloc,-(A7)
@@ -1221,9 +1221,9 @@ ASSEMBLER
         JSR     findMD
         BEQ.S   endeClr
 
-        ; anschlieûenden Free-MD ermitteln
+        ; anschlie‚Çßenden Free-MD ermitteln
         MOVE.L  MD.start(A0),D2
-        ADD.L   MD.length(A0),D2        ; hier muû ein Freibereich stehen
+        ADD.L   MD.length(A0),D2        ; hier mu‚Çß ein Freibereich stehen
         MOVE.L  D6,A2
         MOVE.L  MPB.free(A2),A2
         BRA.S   cont2
@@ -1233,7 +1233,7 @@ srch2   CMP.L   MD.start(A2),D2 ; start aus Free-List
 cont2   MOVE.L  A2,D0
         BNE     srch2
         BRA.S   endeClr         ; dahinter nix mehr frei
-fnd2    MOVE.L  MD.length(A2),D0 ; free-LÑnge
+fnd2    MOVE.L  MD.length(A2),D0 ; free-L√§nge
         BRA.S   ende
 
 endeClr MOVEQ   #0,D0
@@ -1287,7 +1287,7 @@ err     SUBQ.L  #4,A3
         ORI     #$700,SR
         MOVE.L  D6,-(A7)
         MOVE.L  MPBPtr,D6
-        JSR     findMD          ; zerstîrt D5
+        JSR     findMD          ; zerst√∂rt D5
         BEQ.S   e
         MOVE.L  MD.length(A0),D0
         TST.B   MD.owner(A0)
@@ -1321,15 +1321,15 @@ norm    ; IN: D2: 1 -> AllAvail bestimmen
         RTS
         
 all     MOVE.L  D3,-(A7)
-        MOVEQ   #0,D3           ; zÑhlt Gesamtmenge
-        CLR.L   -(A7)           ; Endmarke fÅr gestackte Alloc-Adressen
+        MOVEQ   #0,D3           ; z√§hlt Gesamtmenge
+        CLR.L   -(A7)           ; Endmarke f√ºr gestackte Alloc-Adressen
 luup    MOVEQ   #-1,D0
         MOVE.L  D0,-(A7)
         MOVE    #$48,-(A7)      ; malloc (-1L)
         TRAP    #1
         ADDQ.L  #6,A7
         ADD.L   D0,D3
-        CMPI.L  #1024,D0        ; Bereiche < 1024 nicht berÅcksichtigen
+        CMPI.L  #1024,D0        ; Bereiche < 1024 nicht ber√ºcksichtigen
         BCS     ende
         MOVE.L  D0,-(A7)
         MOVE    #$48,-(A7)      ; malloc ()
@@ -1338,7 +1338,7 @@ luup    MOVEQ   #-1,D0
         MOVE.L  D0,-(A7)        ; Adr des Bereichs merken
         MOVE.L  A3,A0
         ADDA.W  #512,A0
-        CMPA.L  A7,A0           ; Aufhîren bei drohendem StackÅberlauf
+        CMPA.L  A7,A0           ; Aufh√∂ren bei drohendem Stack√ºberlauf
         BCS     luup
 ende    TST.L   (A7)
         BEQ     ende2
@@ -1458,7 +1458,7 @@ cont0   MOVE.L  (A0),A0         ; MD.next
         BNE     srch0
         BRA     ende
 found   MOVE.B  MD.owner(A0),D0
-        CLR.L   MD.owner(A0)    ; Prozeû-ID lîschen
+        CLR.L   MD.owner(A0)    ; Proze‚Çß-ID l√∂schen
         MOVE.B  D0,MD.owner(A0)
 ende    MOVE    (A7)+,SR
     END
@@ -1496,7 +1496,7 @@ srch0   MOVE.L  MD.owner(A0),D0
         CMP.L   D0,D3
         BNE     cont0
         MOVE.B  MD.owner(A0),D0
-        CLR.L   MD.owner(A0)    ; Prozeû-ID lîschen
+        CLR.L   MD.owner(A0)    ; Proze‚Çß-ID l√∂schen
         MOVE.B  D0,MD.owner(A0)
 cont0   MOVE.L  (A0),A0         ; MD.next
         MOVE.L  A0,D0
@@ -1547,7 +1547,7 @@ PROCEDURE Resize ( VAR addr: ADDRESS; newSize: LONGCARD; VAR ok: BOOLEAN);
         MOVE.W  -(A3),(A0)
         RTS
       noFull
-        MOVE.L  -(A3),-(A7)     ; neue LÑnge
+        MOVE.L  -(A3),-(A7)     ; neue L√§nge
         MOVE.L  -(A3),A0
         MOVE.L  (A0),-(A7)      ; start
         CLR     -(A7)
@@ -1631,7 +1631,7 @@ BEGIN (* main *)
   ASSEMBLER
         SF      oldStorage
         (* diese Methode ist nicht so gut, um mxalloc()-Vorhandensein zu
-           prÅfen. Besser: mxalloc aufrufen und prÅfen, ob neg. Returncode
+           pr√ºfen. Besser: mxalloc aufrufen und pr√ºfen, ob neg. Returncode
            ("ill.opcode") geliefert wird.
         MOVE    #$30,-(A7)      ; Sversion
         TRAP    #1
@@ -1709,4 +1709,4 @@ BEGIN (* main *)
   wsp.length:= SIZE (stack);
   CatchProcessTerm (thdl,terminate,wsp);
   SetEnvelope (ehdl,chgLevel,wsp)
-END StorBase.
+END StorBase.

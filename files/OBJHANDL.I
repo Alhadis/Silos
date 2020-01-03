@@ -8,40 +8,40 @@ IMPLEMENTATION MODULE ObjHandler;
  *      Version 2.1     V#0233          Created 30.06.1987               *)
  
 (* 30.6 - 11.08 | 'CreateObjTree', Vorversion von 'VanishObjTree', Fkt zum
- *                anwÑhlen der einzelnen Objekte und setzen bzw. erfragen
+ *                anw√§hlen der einzelnen Objekte und setzen bzw. erfragen
  *                des mom. Treeptrs., erste Version von 'ObjTreeError', als
  *                Nachfragefkt. und die Fkt zum Setzen und erfragen der
- *                einzelnen Objektparameter, bis  auf den 'ApplBlock' fÅr
+ *                einzelnen Objektparameter, bis  auf den 'ApplBlock' f√ºr
  *                Obj. vom Typ 'progDef'.
- * 12.8         | BerÅcksichtigung der Besonderheiten von 'button', 'string
- *                und 'title' Objekten. D.h. Ñndern von 'CreateSpec..' und
- *                von 'AssignTextStrings' und 'GetTextStrings', auûerdem
+ * 12.8         | Ber√ºcksichtigung der Besonderheiten von 'button', 'string
+ *                und 'title' Objekten. D.h. √§ndern von 'CreateSpec..' und
+ *                von 'AssignTextStrings' und 'GetTextStrings', au‚Çßerdem
  *                Verbot der Benutzung aller Operationen die eine 'TedInfo'
- *                verlangen fÅr diese Objekttypen. EinfÅhrung von 'noChange
- *                bei 'SetPtrChoice' mit entspr. énderungen bei 'setString'
- * 14.8         | Erste Def. fÅr ApplBlock Behandlung
+ *                verlangen f√ºr diese Objekttypen. Einf√ºhrung von 'noChange
+ *                bei 'SetPtrChoice' mit entspr. √Ñnderungen bei 'setString'
+ * 14.8         | Erste Def. f√ºr ApplBlock Behandlung
  * 18.8-19.8    | 'ApplBlock' Routinen implementieren und testen.
- * 24.8         | ComplexColor und BorderThick-Routinen fÅr 'fText' und
+ * 24.8         | ComplexColor und BorderThick-Routinen f√ºr 'fText' und
  *                'text' erlaubt.
- * 25.8         | 'OStateSet' als RÅckgabeparam. von 'ProgDefProc's impl.
- * 1.9          | V 0.3 -- NamensÑnderungen und Anpassung an GEMLibrary
+ * 25.8         | 'OStateSet' als R√ºckgabeparam. von 'ProgDefProc's impl.
+ * 1.9          | V 0.3 -- Namens√§nderungen und Anpassung an GEMLibrary
  *                         V 0.7
  * 25.10+26.10  | 'Cur' -> 'Curr' + 'obj' in jede Routine + Sys-Anmeldung +
- *                'DeleteTree' vollstÑndig
+ *                'DeleteTree' vollst√§ndig
  * 18.12        | 'BorderThickness' liefert neg. Werte nun richtig
  * 22.01.88  TT | 'setObjFlags': A3-Behandlung korrgiert
  * 17.05.88     | 'LeftSister' korrigiert
- * 08.12.88     | 'GetTextStrings' funktioniert jetzt auch fÅr Objekte, deren
+ * 08.12.88     | 'GetTextStrings' funktioniert jetzt auch f√ºr Objekte, deren
  *                spec. ein Zeiger auf einen String ist.
  * 02.08.89     | 'CreateSpecification': A3-Behandlung im Fehlerfall korrigiert
- * 11.08.89     | 'AssignTextStrings': A3-Behandlung fÅr 'textOnly' korrigiert
+ * 11.08.89     | 'AssignTextStrings': A3-Behandlung f√ºr 'textOnly' korrigiert
  * ???????? TT  | REF-Parm.
  * 15.02.90     | Anpassung an Compilerversion 4.0
  * 06.10.90     | Keine Verdrehung in SETs mehr
  * ??.11.90     | Irgendeine Korrektur f. UserDef-Objs
  * 17.04.91 TT  | MakeProgDefProc: "MOVE from SR" entfernt;
  *                CreateSpecification: Bei 'spec # 0' wurde indirectFlg verkehrt
- *                ausgewertet, was immer zu Busfehlern fÅhrte.
+ *                ausgewertet, was immer zu Busfehlern f√ºhrte.
  * 04.09.91 !MS | Modul kommt nun mit erweiterten Objekttypen zurecht.
  *)
  
@@ -79,7 +79,7 @@ VAR     sizeOfObject                    :CARDINAL;     (* TSIZE(Object) *)
         voidC           : CARDINAL;
         
         
-                (* Operationen auf ObjektbÑume *)
+                (* Operationen auf Objektb√§ume *)
                 
 FORWARD setObjFlags(flags:OFlagSet);
 FORWARD objectFlags():OFlagSet;
@@ -94,24 +94,24 @@ PROCEDURE calcLastObject():CARDINAL;
 BEGIN
   ASSEMBLER
         MOVE.W  sizeOfObject,D0         ; TSIZE(Object) -> D0
-        CLR.W   D1                      ; IndexzÑhler
+        CLR.W   D1                      ; Indexz√§hler
         MOVE.L  currentObjTree,A0
         LEA     Object.flags(A0),A0     ; Addr. der Flags des Elements
         SUBA.W  D0,A0                   ; Wegen Schleifenaufbau
 loop
-        ADDA.W  D0,A0                   ; NÑchstes Element
+        ADDA.W  D0,A0                   ; N√§chstes Element
         ADDQ.W  #1,D1
         MOVE.W  (A0),D2                 ; Flags -> D2
         BTST    #lastObjFlg,D2
         BEQ     loop                    ; again, if (NOT 'lastObject' IN flags)
         SUBQ.W  #1,D1                   ; Index berichtigen
-        MOVE.W  D1,(A3)+                ; und zurÅckgeben
+        MOVE.W  D1,(A3)+                ; und zur√ºckgeben
   END;
 END calcLastObject;
 
 (*  validTree -- liefert TRUE, falls KEINE Operation auf den mom. Baum aus- *
- *               gefÅhrt werden darf(z.B.: 'currentObjTree=NIL',etc.).      *
- *               Muû nicht von allen Operationen ausgerufen werden(z.B.:    *
+ *               gef√ºhrt werden darf(z.B.: 'currentObjTree=NIL',etc.).      *
+ *               Mu‚Çß nicht von allen Operationen ausgerufen werden(z.B.:    *
  *               nicht von 'CreateObjTree').                                *)
 
 PROCEDURE validTree():BOOLEAN;
@@ -228,7 +228,7 @@ ende
   END;
 END deAllocA0;
     
-(*  delObjSpec -- Lîscht die Objectspezifikation des mom. Objektes *)
+(*  delObjSpec -- L√∂scht die Objectspezifikation des mom. Objektes *)
    
 PROCEDURE delObjSpec;
 
@@ -242,7 +242,7 @@ BEGIN
         MOVE.W  -(A3), D1
         ;ROR.W   #8, D1
         MOVE.W  -(A3),D0        ; Object.Type -> D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         
         MOVE.L  currentObjAddr,A0
         LEA     Object.spec(A0),A0
@@ -652,7 +652,7 @@ BEGIN
         MOVE.W  -(A3),Object.next(A0)   ; speichere 'next'
         BRA     ende
 err
-        SUBQ.L  #6,A3                   ; Param. vom Stack schmeiûen
+        SUBQ.L  #6,A3                   ; Param. vom Stack schmei‚Çßen
 ende
         SUBQ.L  #2,A3
   END;
@@ -839,7 +839,7 @@ BEGIN
         BNE.W   ende
         JSR     objectType      ; hole Type in D3
         MOVE.W  -(A3),D3
-        ANDI.W  #$00FF, D3      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D3      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #titleObj,D3
         BHI.W   err
         JSR     objectFlags     ; hole Flags des mom. Obj. -> D0
@@ -849,7 +849,7 @@ BEGIN
         BNE.W   setIt           ; springe, falls 'spec' einen Wert hat
         BTST    #indirectFlg,D0
         BNE     crtIndirect     ; springe, falls 'indirectFlg' gesetzt
-        MOVE.L  currentObjAddr,A0       ; fÅlle direkt in mom. 'Object.spec'
+        MOVE.L  currentObjAddr,A0       ; f√ºlle direkt in mom. 'Object.spec'
         LEA     Object.spec(A0),A0
         BRA     fillSpec
 crtIndirect
@@ -935,7 +935,7 @@ noMore                          ; nichts mehr zu allocieren
         BRA     ende
 setIt                           ;       Setze 'Object.spec' entspr. A1
         BTST    #indirectFlg,D0
-        BEQ     noSetIndirect   ; springe, falls 'indirectFlg' gelîscht
+        BEQ     noSetIndirect   ; springe, falls 'indirectFlg' gel√∂scht
         MOVE.L  (A4),A4         ; 'spec' dereferenzieren
 noSetIndirect
         MOVE.L  currentObjAddr,A1
@@ -965,7 +965,7 @@ BEGIN
         BNE     err
         JSR     objectType
         MOVE.W  -(A3),D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #boxCharObj,D0
         BNE     raiseErr        ; Objecttyp#boxCharObj => Fehler
         JSR     calcSpecAddr    ; Liefert Addr. ObjSpec in A0
@@ -993,7 +993,7 @@ BEGIN
         BNE     err
         JSR     objectType
         MOVE.W  -(A3),D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #boxCharObj,D0
         BNE     raiseErr        ; Objecttyp#boxCharObj => Fehler
         JSR     calcSpecAddr    ; Liefert Addr. von ObjSpec in A0
@@ -1026,7 +1026,7 @@ BEGIN
         JSR     objectType
         JSR     calcSpecAddr            ; liefert Addr. der ObjSpec in A0
         MOVE.W  -(A3),D0                ; Ergebnis von objectType
-        ANDI.W  #$00FF, D0              ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0              ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #boxObj,D0
         BEQ     setBox
         CMP.W   #iBoxObj,D0
@@ -1070,7 +1070,7 @@ BEGIN
         JSR     objectType
         JSR     calcSpecAddr            ; liefert Addr. der ObjSpec in A0
         MOVE.W  -(A3),D0                ; Ergebnis von objectType
-        ANDI.W  #$00FF, D0              ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0              ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #boxObj,D0
         BEQ     setBox
         CMP.W   #iBoxObj,D0
@@ -1116,8 +1116,8 @@ BEGIN
         AND.W   #1,D1           ;  aaaa - Randfarbe
         LSL.W   #3,D1           ;  bbbb - Textfarbe
         MOVE.W  -(A3),D2        ;  c    - Schreibmodus
-        AND.W   #7,D2           ;  ddd  - FÅlldichte
-        OR.W    D2,D1           ;  eeee - FÅllfarbe
+        AND.W   #7,D2           ;  ddd  - F√ºlldichte
+        OR.W    D2,D1           ;  eeee - F√ºllfarbe
         LSL.W   #4,D1
         MOVE.W  -(A3),D2
         AND.W   #$F,D2
@@ -1144,7 +1144,7 @@ BEGIN
         JSR     objectType
         JSR     calcSpecAddr
         MOVE.W  -(A3),D0        ; Object.type -> D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #boxObj,D0
         BEQ     setBox
         CMP.W   #iBoxObj,D0
@@ -1190,7 +1190,7 @@ BEGIN
         JSR     objectType
         JSR     calcSpecAddr            ; liefert Addr. der ObjSpec in A0
         MOVE.W  -(A3),D0                ; Ergebnis von objectType
-        ANDI.W  #$00FF, D0              ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0              ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #boxObj,D0
         BEQ     setBox
         CMP.W   #iBoxObj,D0
@@ -1259,7 +1259,7 @@ BEGIN
         BNE     err
         JSR     objectType
         MOVE.W  -(A3),D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #iconObj,D0
         BNE     raiseErr
         JSR     calcSpecAddr    ; Ergebnis in A0
@@ -1294,7 +1294,7 @@ BEGIN
         BNE     err
         JSR     objectType
         MOVE.W  -(A3),D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #iconObj,D0
         BNE     raiseErr
         JSR     calcSpecAddr    ; Ergebnis in A0
@@ -1334,7 +1334,7 @@ BEGIN
         BNE     err
         JSR     objectType
         MOVE.W  -(A3),D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #imageObj,D0
         BNE     raiseErr
         JSR     calcSpecAddr    ; Ergebnis in A0
@@ -1366,7 +1366,7 @@ BEGIN
         BNE     err
         JSR     objectType
         MOVE.W  -(A3),D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #imageObj,D0
         BNE     raiseErr
         JSR     calcSpecAddr    ; Ergebnis in A0
@@ -1400,7 +1400,7 @@ BEGIN
         JSR     objectType
         JSR     calcSpecAddr    ; Ergebnis in A0
         MOVE.W  -(A3),D0        ; 'Object.type' -> D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #textObj,D0
         BEQ     typeOk
         CMP.W   #boxTextObj,D0
@@ -1447,7 +1447,7 @@ BEGIN
         JSR     objectType
         JSR     calcSpecAddr    ; Ergebnis in A0
         MOVE.W  -(A3),D0        ; 'Object.type' -> D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #textObj,D0
         BEQ     typeOk
         CMP.W   #boxTextObj,D0
@@ -1497,7 +1497,7 @@ BEGIN
         BNE     err
         JSR     objectType
         MOVE.W  -(A3),D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #iconObj,D0
         BNE     raiseErr
         JSR     calcSpecAddr
@@ -1532,7 +1532,7 @@ BEGIN
         BNE     err
         JSR     objectType
         MOVE.W  -(A3),D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #iconObj,D0
         BNE     raiseErr
         JSR     calcSpecAddr
@@ -1570,7 +1570,7 @@ BEGIN
         BNE     err
         JSR     objectType
         MOVE.W  -(A3),D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #imageObj,D0
         BNE     raiseErr
         JSR     calcSpecAddr
@@ -1602,7 +1602,7 @@ BEGIN
         BNE     err
         JSR     objectType
         MOVE.W  -(A3),D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #imageObj,D0
         BNE     raiseErr
         JSR     calcSpecAddr
@@ -1625,15 +1625,15 @@ END GetImageForm;
 
 (*  setString -- geg.: Ein Wahlparameter 'choice', ein String 'str' und *
  *                     ein Zeiger auf einen String 'dest', 'minLen' ist *
- *                     die MindestlÑnge des zu alloc. Str. bei 'create' *
+ *                     die Mindestl√§nge des zu alloc. Str. bei 'create' *
  *               ges.: Falls 'choice=create' wird 'dest' allociert und  *
  *                     zwar mit 'length(str)+1' Elementen, danach oder  *
  *                     wenn 'choice=setOnly' wird 'str' in 'dest^' ko-  *
- *                     piert, wobei eine #0 angehÑngt wird. Ist 'choice=*
+ *                     piert, wobei eine #0 angeh√§ngt wird. Ist 'choice=*
  *                     reCreate', dann wird die alte Var. dealloc. und  *
  *                     danach bei 'create' weitergemacht. Ist 'choice=  *
- *                     noChange', so wird Åberhaupt nichts verÑndert.   *
- *                     ZurÅckgegeben wird die Anzahl der kopierten Zei- *
+ *                     noChange', so wird √ºberhaupt nichts ver√§ndert.   *
+ *                     Zur√ºckgegeben wird die Anzahl der kopierten Zei- *
  *                     chen+1                                           *)
 
 PROCEDURE setString(choice:SetPtrChoice;REF str:ARRAY OF CHAR;
@@ -1651,7 +1651,7 @@ BEGIN
         MOVE.W  -(A3),D0        ; 'choice' -> D0
         CMP.W   #noChange,D0
         BNE     changeIt
-        MOVE.W  D3,D1           ; noChange => Gib 'minLen' zurÅck und term.
+        MOVE.W  D3,D1           ; noChange => Gib 'minLen' zur√ºck und term.
         BRA.W   cont3
 changeIt
         CMP.W   #setOnly,D0
@@ -1660,7 +1660,7 @@ changeIt
         BNE     noDeAlloc
         MOVE.L  A2,(A3)+        ; reCreate => mache weiter mit Dealloc.
         CLR.L   (A3)+
-        MOVEM.L D1/D3/A1-A2,-(A7)  ; mom. Version von DEALLOCATE? zerstîrt D3
+        MOVEM.L D1/D3/A1-A2,-(A7)  ; mom. Version von DEALLOCATE? zerst√∂rt D3
         JSR     DEALLOCATE      ; DEALLOCATE(dest,0)
         MOVEM.L (A7)+,D1/D3/A1-A2
 noDeAlloc
@@ -1669,7 +1669,7 @@ noDeAlloc
 loop
         TST.B   (A0)+
         DBEQ    D0,loop
-        MOVE.L  D1,D2           ; lîsche auch high word
+        MOVE.L  D1,D2           ; l√∂sche auch high word
         SUB.W   D0,D2
         ADDQ.W  #1,D2           ; length(str)+1 -> D2
         CMP.W   D3,D2
@@ -1679,7 +1679,7 @@ cont
         MOVE.W  D2,D3           ; merke dir wieviel Bytes alloc. wurden
         MOVE.L  A2,(A3)+
         MOVE.L  D2,(A3)+
-        MOVEM.L D1/D3/A1-A2,-(A7)  ; mom. Version von ALLOCATE zerstîrt D3
+        MOVEM.L D1/D3/A1-A2,-(A7)  ; mom. Version von ALLOCATE zerst√∂rt D3
         
         TST.W   sysTree
         BNE     allocSys1
@@ -1699,7 +1699,7 @@ loop2
         MOVE.B  (A1)+,(A2)+
         DBEQ    D0,loop2
         BEQ     cont2
-        CLR.B   (A2)+           ; #0 anhÑngen
+        CLR.B   (A2)+           ; #0 anh√§ngen
         SUBQ.W  #1,D0
 cont2
         SUB.W   D0,D1
@@ -1711,7 +1711,7 @@ err
         MOVE.W  #TRUE,objTreeError
         CLR.W   D1
 cont3
-        MOVE.W  D1,(A3)+        ; Gib length(str)+1, aber min. 'minLen' zurÅck
+        MOVE.W  D1,(A3)+        ; Gib length(str)+1, aber min. 'minLen' zur√ºck
         
         MOVE.W  (A7)+,D3
   END;
@@ -1737,7 +1737,7 @@ BEGIN
         JSR     objectType
         JSR     calcSpecAddr    ; Ergebnis in A0
         MOVE.W  -(A3),D0        ; 'Object.type' -> D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #textObj,D0
         BEQ     typeOk
         CMP.W   #boxTextObj,D0
@@ -1755,14 +1755,14 @@ BEGIN
         MOVE.W  #TRUE,objTreeError
         BRA     err
 onlyText
-        TST.W   -(A3)           ; Teste, daû 'choiceValid=noChange'
+        TST.W   -(A3)           ; Teste, da‚Çß 'choiceValid=noChange'
         TST.L   -(A3)
         MOVE.W  -(A3),D0
         CMP.W   #noChange,D0
         BEQ     skipValid
         MOVE.W  #TRUE,objTreeError
 skipValid
-        TST.W   -(A3)           ; Teste, daû 'choiceTmplt=noChange'
+        TST.W   -(A3)           ; Teste, da‚Çß 'choiceTmplt=noChange'
         TST.L   -(A3)
         MOVE.W  -(A3),D0
         CMP.W   #noChange,D0
@@ -1783,7 +1783,7 @@ typeOk
         MOVE.W  -(A3),D0
         BEQ     noChg
         LEA     TEdInfo.textLen(A4),A0
-        MOVE.W  D0,(A0)  ; 'TEdInfo.textLen':=RÅckgabewert von 'setString'
+        MOVE.W  D0,(A0)  ; 'TEdInfo.textLen':=R√ºckgabewert von 'setString'
 noChg
         CLR.W   (A3)+
         LEA     TEdInfo.tmpltPtr(A4),A0
@@ -1792,7 +1792,7 @@ noChg
         MOVE.W  -(A3),D0
         BEQ     noChg2
         LEA     TEdInfo.tmpltLen(A4),A0
-        MOVE.W  D0,(A0)  ; 'TEdInfo.tmpltLen':=RÅckgabewert von 'setString'
+        MOVE.W  D0,(A0)  ; 'TEdInfo.tmpltLen':=R√ºckgabewert von 'setString'
 noChg2
         CLR.W   (A3)+
         LEA     TEdInfo.textPtr(A4),A0
@@ -1824,7 +1824,7 @@ BEGIN
         JSR     objectType
         JSR     calcSpecAddr    ; Ergebnis in A0
         MOVE.W  -(A3),D0        ; 'Object.type' -> D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #textObj,D0
         BEQ     typeOk
         CMP.W   #boxTextObj,D0
@@ -1841,7 +1841,7 @@ typeOk
         MOVE.L  A1,TEdInfo.textPtr(A0)
         ;CMP.W   TEdInfo.textLen(A0),D0
         ;BCC     ende            ; jump, if HIGH(str)>=TEdInfo.textLen
-        ;MOVE.W  D0,TEdInfo.textLen(A0)  ; textLen darf hîchstens HIGH(str) sein
+        ;MOVE.W  D0,TEdInfo.textLen(A0)  ; textLen darf h√∂chstens HIGH(str) sein
         BRA     ende
 err
         SUBQ.L  #4,A3
@@ -1869,7 +1869,7 @@ BEGIN
         JSR     objectType
         JSR     calcSpecAddr    ; Ergebnis in A0
         MOVE.W  -(A3),D0        ; 'Object.type' -> D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #textObj,D0
         BEQ     typeOk
         CMP.W   #boxTextObj,D0
@@ -1887,7 +1887,7 @@ BEGIN
         MOVE.W  #TRUE,objTreeError
         BRA     err
 onlyText
-        SUBA.L  #12,A3          ; 'valid' und 'tmplt' vom A3-Stack schmeiûen
+        SUBA.L  #12,A3          ; 'valid' und 'tmplt' vom A3-Stack schmei‚Çßen
         MOVE.L  (A0),A0         ; get spec. (ptr. to str.)
         MOVE.L  A0,-(A7)        ; 'textS' verarbeiten
         CLR.W   D0
@@ -1907,7 +1907,7 @@ loop2
         DBEQ    D1,loop2
         BEQ     cont            ; letztes Zeichen 0C, so springe
         TST.B   (A0)+
-        BEQ     cont            ; WÑre nÑchstes Zeichen 0C gewesen, so springe
+        BEQ     cont            ; W√§re n√§chstes Zeichen 0C gewesen, so springe
         TRAP    #noErrorTrap
         DC.W    StringOverflow  ; Zielstring ist zu kurz !!
 cont
@@ -1936,7 +1936,7 @@ BEGIN
         JSR     objectType
         JSR     calcSpecAddr    ; Ergebnis in A0
         MOVE.W  -(A3),D0        ; 'Object.type' -> D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #textObj,D0
         BEQ     typeOk
         CMP.W   #boxTextObj,D0
@@ -1973,7 +1973,7 @@ BEGIN
         JSR     objectType
         JSR     calcSpecAddr    ; Ergebnis in A0
         MOVE.W  -(A3),D0        ; 'Object.type' -> D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #textObj,D0
         BEQ     typeOk
         CMP.W   #boxTextObj,D0
@@ -2014,7 +2014,7 @@ BEGIN
         JSR     objectType
         JSR     calcSpecAddr
         MOVE.W  -(A3),D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #imageObj,D0
         BEQ     typeOk
         MOVE.W  #TRUE,objTreeError
@@ -2045,7 +2045,7 @@ BEGIN
         JSR     objectType
         JSR     calcSpecAddr
         MOVE.W  -(A3),D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #imageObj,D0
         BEQ     typeOk
         MOVE.W  #TRUE,objTreeError
@@ -2077,7 +2077,7 @@ BEGIN
         JSR     objectType
         JSR     calcSpecAddr
         MOVE.W  -(A3),D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #iconObj,D0
         BEQ     typeOk
         MOVE.W  #TRUE,objTreeError
@@ -2120,7 +2120,7 @@ BEGIN
         JSR     objectType
         JSR     calcSpecAddr
         MOVE.W  -(A3),D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #iconObj,D0
         BEQ     typeOk
         MOVE.W  #TRUE,objTreeError
@@ -2154,7 +2154,7 @@ ende
 END GetIconLook;
 
 
-CONST   carrierCodeLen          =8;  (* LÑnge von 'carrierCode' in Worten *)
+CONST   carrierCodeLen          =8;  (* L√§nge von 'carrierCode' in Worten *)
 
 TYPE    carrierData             =RECORD
                                    proc         :ProgDefProc;
@@ -2173,10 +2173,10 @@ VAR     regA0,regUSP,regSSP    :LONGWORD;
                                  
 (*  progDefHandler -- Proc. die bei jedem Neuzeichnen eines 'progDefObj'-Obj. *
  *                    vom GEM aufgerufen wird, der Aufruf erfolgt indirekt *
- *                    Åber den zur 'progDefProc' gehîrenden Carrier.       *
- *                    Die Routine erwartet auf dem A7-Stack die RÅcksprung-*
+ *                    √ºber den zur 'progDefProc' geh√∂renden Carrier.       *
+ *                    Die Routine erwartet auf dem A7-Stack die R√ºcksprung-*
  *                    addr. zum GEM und in A0 einen Zeiger auf das Data-   *
- *                    segment des zustÑndigen 'progDefCarrier''s.          *)
+ *                    segment des zust√§ndigen 'progDefCarrier''s.          *)
                                  
 PROCEDURE progDefHandler;
 
@@ -2186,7 +2186,7 @@ BEGIN
         MOVE.L  USP,A1
         MOVE.L  A1,regUSP
         MOVE.L  A7, regSSP
-        ;MOVE.L  (A7)+,D0        ; C-mÑûige ParameterÅbergabe
+        ;MOVE.L  (A7)+,D0        ; C-m√§‚Çßige Parameter√ºbergabe
         ;MOVE.L  (A7)+,A1        ; Hole Zeiger auf ParamBlock in A1
         ;MOVE.L  D0,-(A7)
         MOVE.L  4(A7),A1        ; Hole Zeiger auf ParamBlock in A1
@@ -2199,16 +2199,16 @@ BEGIN
         MOVE.W  (A1)+,(A3)+     ; Objektindex und
         MOVEQ   #5,D0
 loop
-        MOVE.L  (A1)+,(A3)+     ; 6 Parameterlangwîrter kopieren
+        MOVE.L  (A1)+,(A3)+     ; 6 Parameterlangw√∂rter kopieren
         DBF     D0,loop
         ANDI.W  #-1-$2000,SR    ; Wechsle in den Usermode
         MOVE.L  carrierData.proc(A0),A0
         JSR     (A0)            ; Zeichenprocedure aufrufen
-        LEA     regsRmd,A0      ; RÅckgabewert der Proc C-mÑûig in D0
-        CLR.L   (A0)            ; zurÅckgeben
+        LEA     regsRmd,A0      ; R√ºckgabewert der Proc C-m√§‚Çßig in D0
+        CLR.L   (A0)            ; zur√ºckgeben
         MOVE.W  -(A3),2(A0)
         
-        ; ZurÅck in Supervisormode
+        ; Zur√ºck in Supervisormode
         CLR.L   -(A7)
         MOVE    #$20,-(A7)
         TRAP    #1
@@ -2271,7 +2271,7 @@ BEGIN
         JSR     objectType
         JSR     calcSpecAddr
         MOVE.W  -(A3),D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #progDefObj,D0
         BEQ     typeOk
         MOVE.W  #TRUE,objTreeError
@@ -2303,7 +2303,7 @@ BEGIN
         JSR     objectType
         JSR     calcSpecAddr
         MOVE.W  -(A3),D0
-        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unberÅcksichtigt
+        ANDI.W  #$00FF, D0      ; !MS high-byte bleibt unber√ºcksichtigt
         CMP.W   #progDefObj,D0
         BEQ     typeOk
         MOVE.W  #TRUE,objTreeError
@@ -2313,7 +2313,7 @@ typeOk
         MOVE.L  -(A3),A1
         MOVE.L  ApplBlock.parm(A0),(A1)
         MOVE.L  -(A3),A1
-        MOVE.L  ApplBlock.code(A0),A0   ; hole zugehîrige Carrieraddresse
+        MOVE.L  ApplBlock.code(A0),A0   ; hole zugeh√∂rige Carrieraddresse
         MOVE.L  progDefCarrier.data.proc(A0),(A1)
         BRA     ende
 err
@@ -2325,7 +2325,7 @@ END GetProgDefSpec;
 
 
 BEGIN
-  sizeOfObject:=SHORT(TSIZE(Object));  (* FÅr Assembler-Routinen *)
+  sizeOfObject:=SHORT(TSIZE(Object));  (* F√ºr Assembler-Routinen *)
   sizeOfTed:=TSIZE(TEdInfo);
   sizeOfIcon:=TSIZE(IconBlock);
   sizeOfBit:=TSIZE(BitBlock);

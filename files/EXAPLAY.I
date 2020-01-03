@@ -24,7 +24,7 @@ ExaPlay.init:
 ExaPlay.play
 	bsr.s	ExaPlay.bin+ExaPlay.INIT_MODULE	;initialise le module
 						;dans a3 = fin du module (apres precalcule de celui ci)
-	tst.w	d0				;-1 header non trouv‚	;-2 mauvaise version
+	tst.w	d0				;-1 header non trouvÃ©	;-2 mauvaise version
 	bmi.s	.end
 
 	bsr.s	ExaPlay.bin+ExaPlay.INIT_INT
@@ -69,4 +69,4 @@ Dsp.loadProgram:
 
 ExaPlay.initialized:
 	DC.W	0
-
+

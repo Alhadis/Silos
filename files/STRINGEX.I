@@ -1,12 +1,12 @@
-Gruppe: Pers”nliche
+Gruppe: PersÃ¶nliche
 ID  : P22205@K2
 Wg. : Case-Insensitive Funktionen
 Von : Dirk Steins @ K2 (Fr, 14.01.94 19:27)
 An  : Thomas Tempelmann @ M
  
-Hi Thomas, hier sind zwei Case-Insensitive Funktionen fr Strings:
+Hi Thomas, hier sind zwei Case-Insensitive Funktionen fÃ¼r Strings:
 
-(* Fr Case-Insensitive Stringvergleiche *)
+(* FÃ¼r Case-Insensitive Stringvergleiche *)
 PROCEDURE StrIequal (REF s1, s2 : ARRAY OF CHAR): BOOLEAN;
 BEGIN
   ASSEMBLER
@@ -35,14 +35,14 @@ l       MOVE.B  (A0)+,D2
         BEQ.S   equ0
         BRA.S   ne
 
-equ1    ; str0 zu Ende, str1 prfen
+equ1    ; str0 zu Ende, str1 prÃ¼fen
         TST.B   (A1)+
         BEQ     equ0
 
 ne      CLR     D0
         RTS
 
-e       ; str0 zu Ende, str1 prfen
+e       ; str0 zu Ende, str1 prÃ¼fen
         TST.W   D1
         BEQ.S   equ0
         TST.B   (A1)+
@@ -59,14 +59,14 @@ equ0    MOVE    #1,D0
         DC.B 'P','Q','R','S','T','U','V','W','X','Y','Z','[','\',']','^','_'
         DC.B '`','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O'
         DC.B 'P','Q','R','S','T','U','V','W','X','Y','Z','{','|','}','~',''
-        DC.B '€','š','','A','','¶','','€','E','E','E','I','I','I','',''
-        DC.B '','’','’','O','™','O','U','U','˜','™','š','›','œ','','','Ÿ'
-        DC.B 'A','I','O','U','¥','¥','¦','§','¨','©','ª','«','¬','­','®','¯'
-        DC.B '·','¸','²','²','µ','µ','¶','·','¸','¹','º','»','¼','½','¾','¿'
-        DC.B 'Á','Á','Â','Ã','Ä','Å','Æ','Ç','È','É','Ê','Ë','Ì','Í','Î','Ï'
-        DC.B 'Ğ','Ñ','Ò','Ó','Ô','Õ','Ö','×','Ø','Ù','Ú','Û','Ü','İ','Ş','ß'
-        DC.B 'à','','â','ã','ä','å','æ','ç','è','é','ê','ë','ì','í','î','ï'
-        DC.B 'ğ','ñ','ò','ó','ô','õ','ö','÷','ø','ù','ú','û','ü','ı','ş','ÿ'
+        DC.B 'Ã‡','Ãœ','Ã‰','A','Ã„','â•¢','Ã…','Ã‡','E','E','E','I','I','I','Ã„','Ã…'
+        DC.B 'Ã‰','Ã†','Ã†','O','Ã–','O','U','U','Ã¿','Ã–','Ãœ','Â¢','Â£','Â¥','â‚§','Æ’'
+        DC.B 'A','I','O','U','Ã‘','Ã‘','Âª','Âº','Â¿','âŒ','Â¬','Â½','Â¼','Â¡','Â«','Â»'
+        DC.B 'â•–','â••','â–“','â–“','â•¡','â•¡','â•¢','â•–','â••','â•£','â•‘','â•—','â•','â•œ','â•›','â”'
+        DC.B 'â”´','â”´','â”¬','â”œ','â”€','â”¼','â•','â•Ÿ','â•š','â•”','â•©','â•¦','â• ','â•','â•¬','â•§'
+        DC.B 'â•¨','â•¤','â•¥','â•™','â•˜','â•’','â•“','â•«','â•ª','â”˜','â”Œ','â–ˆ','â–„','â–Œ','â–','â–€'
+        DC.B 'Î±','â‚§','Î“','Ï€','Î£','Ïƒ','Âµ','Ï„','Î¦','Î˜','Î©','Î´','âˆ','Ï†','Îµ','âˆ©'
+        DC.B 'â‰¡','Â±','â‰¥','â‰¤','âŒ ','âŒ¡','Ã·','â‰ˆ','Â°','âˆ™','Â·','âˆš','â¿','Â²','â– ','Â '
   END
 END StrIequal;
 
@@ -98,7 +98,7 @@ l       MOVE.B  (A0)+,D2
         BEQ.S   equ0
         BRA.S   hi
 
-equ1    ; str0 zu Ende, str1 prfen
+equ1    ; str0 zu Ende, str1 prÃ¼fen
         TST.B   (A1)+
         BEQ.S   equ0
         BRA.S   low
@@ -112,7 +112,7 @@ ne      MOVE.B  0(A2,D2.W),D1
         BHI.S   hi
         BRA.S   low
 
-e       ; str0 zu Ende, str1 prfen
+e       ; str0 zu Ende, str1 prÃ¼fen
         TST.W   D1
         BEQ.S   equ0
         TST.B   (A1)+
@@ -147,14 +147,14 @@ tab     DC.B    $00,$01,$02,$03,$04,$05,$06,$07,$08,$09,$0A,$0B,$0C,$0D,$0E,$0F
   END StrICompare;
 
 Die Funktion StrICompare macht einen Case-insensitiven Compare, und StrIequal
-macht halt einen Case-Insensitiven Vergleich. Die Rckgabewerte sind im Moment
-die von der MagicLib, aber das anzupassen ist ja Kinderkram. Auerdem geht die
-Ergebnisrckgabe im Moment ber D0, das mut Du dann noch an A3 anpassen.
+macht halt einen Case-Insensitiven Vergleich. Die RÃ¼ckgabewerte sind im Moment
+die von der MagicLib, aber das anzupassen ist ja Kinderkram. Auâ‚§erdem geht die
+ErgebnisrÃ¼ckgabe im Moment Ã¼ber D0, das muâ‚§t Du dann noch an A3 anpassen.
 
 Wenn Du Dich wunderst, warum da D1 geswapt wird: Das wird doppelt verwendet,
-zweimal fr Worte. Ich hatte eigentlich mal D3 dafr verwendet (und natrlich
+zweimal fÃ¼r Worte. Ich hatte eigentlich mal D3 dafÃ¼r verwendet (und natÃ¼rlich
 auch gesichert und restauriert), aber damit hat mir irgendwas ab und zu D3
-zerst”rt und damit die Vergleiche zunichte gemacht! Ich habe keine Ahnung,
+zerstÃ¶rt und damit die Vergleiche zunichte gemacht! Ich habe keine Ahnung,
 woran das lag, aber so funktioniert es wenigstens!
 
- Gru, Dirk
+ Gruâ‚§, Dirk

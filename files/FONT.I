@@ -352,7 +352,7 @@ Font.charTable:
 	DC.W	90,263,2			; '|'
 	DC.W	90,269,7			; '}'
 	DC.W	50,0,4				; '~' not present
-	DC.W	50,0,4				; '' not present
+	DC.W	50,0,4				; '' not present
 
 ;= bbs section =============================================================
 

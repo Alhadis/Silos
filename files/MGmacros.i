@@ -16,7 +16,7 @@
 ***	The playroutines are copyrighted by Mahoney & Kaktus, but	***
 ***	they have been slightly modified by the authors of this file.	***
 ***									***
-***	© Copyright 1992/1993 Maverick & Great J***
+***	Â© Copyright 1992/1993 Maverick & Great J***
 ***	All Rights Reserved						***
 ***									***
 ***									***
@@ -243,7 +243,7 @@ Stakki:		ds.b	BSS_STACK_SIZE
 Bss_Stack:
 		ENDM
 
-; 1024:llä kerrotut sini- & cosinitaulukot by Great J
+; 1024:llÃ¤ kerrotut sini- & cosinitaulukot by Great J
 
 SinCosTable: MACRO
 SinTable:
@@ -316,11 +316,11 @@ CosTable:
 
 NoisetrackerV2_0: MACRO
 
-;­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­
-;­   NoisetrackerV2.0 Normal replay   ­
-;­     Uses registers d0-d3/a0-a5     ­
-;­ Mahoney & Kaktus - (C) E.A.S. 1990 ­
-;­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­
+;Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­
+;Â­   NoisetrackerV2.0 Normal replay   Â­
+;Â­     Uses registers d0-d3/a0-a5     Â­
+;Â­ Mahoney & Kaktus - (C) E.A.S. 1990 Â­
+;Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­
 mt_init:movem.l	d0-d2/a0-a2,-(a7)
 	lea	mt_data,a0
 	lea	$3b8(a0),a1
@@ -818,11 +818,11 @@ mt_voice4:	blk.w	13,0
 
 NoisetrackerV2_0_V: MACRO
 
-;­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­
-;­   NoisetrackerV2.0 Normal replay   ­
-;­     Uses registers d0-d3/a0-a5     ­
-;­ Mahoney & Kaktus - (C) E.A.S. 1990 ­
-;­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­
+;Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­
+;Â­   NoisetrackerV2.0 Normal replay   Â­
+;Â­     Uses registers d0-d3/a0-a5     Â­
+;Â­ Mahoney & Kaktus - (C) E.A.S. 1990 Â­
+;Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­Â­
 mt_init:movem.l	d0-d2/a0-a2,-(a7)
 	lea	mt_data,a0
 	lea	$3b8(a0),a1
@@ -1319,4 +1319,3 @@ mt_voice3:	blk.w	13,0
 mt_voice4:	blk.w	13,0
 		dc.w	8
 	ENDM
-

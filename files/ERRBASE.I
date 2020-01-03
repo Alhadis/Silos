@@ -1,27 +1,27 @@
 IMPLEMENTATION MODULE ErrBase; (* V#119 *)
 (*$X+,Y+,S-,R-*)
-(* kein N+ einfÅgen! Runtime muû vor ErrBase importiert und init. werden,
+(* kein N+ einfÔøΩgen! Runtime muÔøΩ vor ErrBase importiert und init. werden,
  * damit Runtime u.U. in MOSConfig "CaughtExceptions" f.die FPU-Exc
  * erweitern kann! *)
 
 (*
   01.12.88 TT  SysInstalExc verw.
-  16.01.90 TT  CHK fÅhrt zu 'OutOfRange'
+  16.01.90 TT  CHK fÔøΩhrt zu 'OutOfRange'
   23.02.90 TT  Install/Remove exportiert, um Exc-Handler bei Accessories
-               von Auûen zu installieren;
-               Wenn kein Handler installiert, wird SystemError bemÅht
+               von AuÔøΩen zu installieren;
+               Wenn kein Handler installiert, wird SystemError bemÔøΩht
   01.03.90 TT  Bei nicht installiertem Error-Handler wird kein normaler
-               Pterm sondern die entspr. Exception ausgelîst.
+               Pterm sondern die entspr. Exception ausgelÔøΩst.
   01.05.90 TT  'ExcInstalled' wird bei 'RemoveExc' wieder auf FALSE gesetzt
   03.07.90 TT  'raising'-Abfrage entfernt: RaiseError sollte wieder gehen
   29.07.90 TT  Korrektur in catchUser: RaiseError geht endlich wieder
   25.11.90 TT  Wenn Handler nicht installiert, wird nur 'ExcInstalled' auf
-               FALSE gesetzt -> Aufrufer muû die Var prÅfen;
+               FALSE gesetzt -> Aufrufer muÔøΩ die Var prÔøΩfen;
                Die FPU-Exceptions werden nun erkannt und die entspr. Laufzeit-
-               fehlernummern an den Err-Handler Åbergeben, zudem wird das
+               fehlernummern an den Err-Handler ÔøΩbergeben, zudem wird das
                Bit 27 im BIU der FPU immer gesetzt, damit die FPU ggf. bei
                "continue" weiterlaufen kann; $S-.
-  18.12.90 TT  FPU-Operand-Error fÅhrt zu 'OutOfRange'
+  18.12.90 TT  FPU-Operand-Error fÔøΩhrt zu 'OutOfRange'
   08.04.91 TT  Alle CaughtExceptions werden nun in MOSConfig gesetzt.
 *)
 
@@ -121,7 +121,7 @@ PROCEDURE catch (VAR info: ExcDesc): BOOLEAN;
       no:= MOSGlobals.Exception
     END;
     ASSEMBLER
-        ; bei FPU-Exceptions (48-54) diese bei der FPU bestÑtigen
+        ; bei FPU-Exceptions (48-54) diese bei der FPU bestÔøΩtigen
         MOVE.L  info(A6),A0
         MOVE.W  ExcDesc.excNo(A0),D0
         CMPI    #48,D0
@@ -249,5 +249,3 @@ BEGIN
   wsp.bottom:= ADR (stk);
   wsp.length:= SIZE (stk);
 END ErrBase.
-
-(* $00001455$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$00001122$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$FFFA73DA$000018B6Ä$0000057CT.......T.......T.......T.......T.......T.......T.......T.......T.......T.......$00000110$0000057E$0000053B$FFE489D2$00000AE4$FFE489D2$0000196B$0000197A$00000539$00000541$0000057C$0000054B$0000057C$0000006F$00000BC7$00000BEF∏ÄÅ*)

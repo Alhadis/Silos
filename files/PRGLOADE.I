@@ -7,8 +7,8 @@ IMPLEMENTATION MODULE PrgLoader;
  * Dieses Modul kann nur Programme im GEMDOS-Format resident laden
  * und starten, jedoch keine einzelnen Megamax-Module.
  *
- * In der Ausgabe 4/91 der Zeitschrift TOS finden Sie die ausfÅhrliche
- * Beschreibung dieses nÅtzlichen Programms.
+ * In der Ausgabe 4/91 der Zeitschrift TOS finden Sie die ausf√ºhrliche
+ * Beschreibung dieses n√ºtzlichen Programms.
  *
  * Hinweis/Copyright:
  * ------------------
@@ -20,19 +20,19 @@ IMPLEMENTATION MODULE PrgLoader;
  *
  *   Mit Erwerb der Zeitschrift "TOS" steht es Ihnen frei, das Programm
  *   zu nutzen. Das Programm ist also keine Freeware oder PD!
- *   Sie dÅrfen das Programm verÑndern, jedoch nicht selbst "verbesserte"
+ *   Sie d√ºrfen das Programm ver√§ndern, jedoch nicht selbst "verbesserte"
  *   Versionen dieses Programms verbreiten. Dies obliegt allein dem Urheber
  *   Thomas Tempelmann.
  *
- *   Ich hoffe, Sie beachten diese Hinweise. Ich wÑre schwer enttÑuscht,
- *   wenn plîtzlich eine Version 2.1, die nicht von mir stammt, auf
- *   dem PD- oder Raubkopiermarkt erscheint. Dann kînnte dies der letzte
+ *   Ich hoffe, Sie beachten diese Hinweise. Ich w√§re schwer entt√§uscht,
+ *   wenn pl√∂tzlich eine Version 2.1, die nicht von mir stammt, auf
+ *   dem PD- oder Raubkopiermarkt erscheint. Dann k√∂nnte dies der letzte
  *   Beitrag von mir gewesen sein. Fairness und Vertrauen sind wichtig
- *   fÅr das Weiterleben dieser Form der Softwareverîffentlichung!
+ *   f√ºr das Weiterleben dieser Form der Softwarever√∂ffentlichung!
  *
- *   FÅr Fragen, WÅnsche, Verbesserungen und Verîffentlichungen wenden
+ *   F√ºr Fragen, W√ºnsche, Verbesserungen und Ver√∂ffentlichungen wenden
  *   Sie sich bitte an den Autor:
- *      Thomas Tempelmann, Nordendstr. 64, D-8000 MÅnchen 40.
+ *      Thomas Tempelmann, Nordendstr. 64, D-8000 M√ºnchen 40.
  *
  * ------------------------------------------------------------------------
  *)
@@ -54,12 +54,12 @@ IMPORT XBRA;
 
 CONST   MaxPrgToLoad = 10;  (* Anzahl maximal ladbarer Programme *)
 
-        Kennung = "PLdr";   (* XBRA-Kennung fÅr GEMDOS-Handler *)
+        Kennung = "PLdr";   (* XBRA-Kennung f√ºr GEMDOS-Handler *)
 
 
 TYPE    LoadRange  = [1..MaxPrgToLoad];
 
-        PrgEntry = RECORD  (* Beschreibung fÅr ein geladenes Programm *)
+        PrgEntry = RECORD  (* Beschreibung f√ºr ein geladenes Programm *)
                      used: BOOLEAN;
                      name: NameStr;
                      path: PathStr;
@@ -100,7 +100,7 @@ PROCEDURE prgUnload (bp: PtrBP);
 
 PROCEDURE prgLoad (REF name: ARRAY OF CHAR; VAR result: LONGINT);
   (*
-   * LÑdt ein Programm mit der GEMDOS-Funktion "Pexec"
+   * L√§dt ein Programm mit der GEMDOS-Funktion "Pexec"
    *)
   VAR nullstring: CHAR; fullname: FileStr; ok: BOOLEAN;
   BEGIN
@@ -126,7 +126,7 @@ PROCEDURE getLoaderResult (execRes: INTEGER; VAR myRes: LoaderResults);
 
 PROCEDURE envLength (env: ADDRESS): LONGCARD;
   (*
-   * Liefert die LÑnge eines Environment-Strings
+   * Liefert die L√§nge eines Environment-Strings
    *)
   VAR (*$Reg*) p: POINTER TO CHAR;
   BEGIN
@@ -142,7 +142,7 @@ PROCEDURE envLength (env: ADDRESS): LONGCARD;
 
 PROCEDURE CodeSize (bp: PtrBP): LONGCARD;
   (*
-   * Liefert LÑnge des statisch belegten Bereichs ohne den Heap-Bonus
+   * Liefert L√§nge des statisch belegten Bereichs ohne den Heap-Bonus
    *)
   BEGIN
     WITH bp^ DO
@@ -158,7 +158,7 @@ PROCEDURE prgPrepare (bp: PtrBP; heapSize: LONGCARD): BOOLEAN;
   BEGIN
     (* belegten Speicher (TPA) berechnen: *)
     bpsize:= LONGCARD (bp^.p_hitpa) - LONGCARD (bp);
-    (* benîtigten Speicher berechnen: *)
+    (* ben√∂tigten Speicher berechnen: *)
     newlen:= CodeSize (bp) + heapSize;
     (* Haben wir genug Platz im TPA erhalten? *)
     IF newlen > bpsize THEN
@@ -166,7 +166,7 @@ PROCEDURE prgPrepare (bp: PtrBP; heapSize: LONGCARD): BOOLEAN;
       prgUnload (bp);
       RETURN FALSE
     END;
-    (* TPA auf benîtigten Bereich verkleinern *)
+    (* TPA auf ben√∂tigten Bereich verkleinern *)
     Mshrink (bp, newlen);
     bp^.p_hitpa:= ADDRESS (bp) + newlen;
     RETURN TRUE
@@ -174,25 +174,25 @@ PROCEDURE prgPrepare (bp: PtrBP; heapSize: LONGCARD): BOOLEAN;
 
 PROCEDURE removeGemdosHdler;
   (*
-   * TrÑgt den hiesigen GEMDOS-Handler (hdlGemdos) aus.
+   * Tr√§gt den hiesigen GEMDOS-Handler (hdlGemdos) aus.
    *)
-  (*$S-  hier ist kein Stack-Check nîtig *)
+  (*$S-  hier ist kein Stack-Check n√∂tig *)
   VAR at: ADDRESS;
   BEGIN
     IF XBRA.Installed (Kennung, $84, at) THEN
       XBRA.Remove (at);
     END;
   END removeGemdosHdler;
-  (*$S=  vorige Einstellung zurÅck *)
+  (*$S=  vorige Einstellung zur√ºck *)
 
 VAR Stack: ARRAY [1..600] OF WORD;
 
 PROCEDURE hdlGemdos;
 (*
- * Diese Funktion hÑngt im GEMDOS-TRAP-Handler und wartet darauf, daû
- * das Åber 'CallProgram' gestartete Programm die 'Mshrink'-Funktion
- * aufruft. Dann wird daraus die benîtigte Heap-Grîûe ermittelt und
- * diese Funktion wieder ausgehÑngt.
+ * Diese Funktion h√§ngt im GEMDOS-TRAP-Handler und wartet darauf, da‚Çß
+ * das √ºber 'CallProgram' gestartete Programm die 'Mshrink'-Funktion
+ * aufruft. Dann wird daraus die ben√∂tigte Heap-Gr√∂‚Çße ermittelt und
+ * diese Funktion wieder ausgeh√§ngt.
  *)
   (*$L-*)
   BEGIN
@@ -202,7 +202,7 @@ PROCEDURE hdlGemdos;
         MOVE.L  USP,A0
         CMPI.W  #$4A,(A0)       ; Mshrink - Funktion ?
         BEQ.B   hdlMshrinkUser
-dos     ; normale GEMDOS-Funktion ausfÅhren
+dos     ; normale GEMDOS-Funktion ausf√ºhren
         MOVE.L  GemdosEntry,A0
         MOVE.L  -4(A0),A0
         JMP     (A0)
@@ -214,16 +214,16 @@ hdlMshrinkUser
         MOVE.L  4(A0),A1        ; Argument 'addr' von Mshrink (addr, newamount)
         CMPA.L  CurrentBasePage,A1 ; ist es die TPA des gesuchten Programms?
         BNE     dos
-        MOVE.L  8(A0),D0        ; 'newamount'-Parm von Mshrink: neue TPA-Grîûe
+        MOVE.L  8(A0),D0        ; 'newamount'-Parm von Mshrink: neue TPA-Gr√∂‚Çße
         MOVE.L  D0,D1
         ADD.L   A1,D0
-        CMP.L   4(A1),D0        ; newamout > p_hitpa (alte TPA-Grîûe)?
+        CMP.L   4(A1),D0        ; newamout > p_hitpa (alte TPA-Gr√∂‚Çße)?
         BHI     noNewHi         ;  dann ist zu wenig Speicher da
         MOVE.L  D0,4(A1)        ; p_hitpa in Base Page neu setzen
 noNewHi TST.L   UsedHeapSize
-        BPL     ignore          ; Heap-Grîûe wurde bereits ermittelt
-        SUB.L   TPAOffset,D1    ; Subtr. die Grîûe des stat. Bereichs ohne Heap
-        MOVE.L  D1,UsedHeapSize ; Das ist die gesuchte Heap-Grîûe
+        BPL     ignore          ; Heap-Gr√∂‚Çße wurde bereits ermittelt
+        SUB.L   TPAOffset,D1    ; Subtr. die Gr√∂‚Çße des stat. Bereichs ohne Heap
+        MOVE.L  D1,UsedHeapSize ; Das ist die gesuchte Heap-Gr√∂‚Çße
         MOVE.L  CurrentField,A0
         MOVE.L  D1,PrgEntry.neededHeapSize(A0)
         CMP.L   PrgEntry.currentHeapSize(A0),D1
@@ -238,7 +238,7 @@ ignore  ; Diese Routine kann nun aus dem GEMDOS-TRAP entfernt werden
         JSR     removeGemdosHdler
         MOVE.L  (A7)+,A7
         MOVE.L  (A7)+,A3
-        BRA     dos     ; Nun lassen wir endlich Mshrink ausfÅhren
+        BRA     dos     ; Nun lassen wir endlich Mshrink ausf√ºhren
     END
   END hdlGemdos;
   (*$L=*)
@@ -248,8 +248,8 @@ PROCEDURE prgExec (bp: PtrBP; filename: ADDRESS; REF arg: ArgStr;
                    env: ADDRESS; multi, isMM2: BOOLEAN; VAR exitcode: LONGINT);
   (*
    * Startet geladenes Programm.
-   * 'multi': TRUE heiût, daû geladenes Prg nicht nur einmal gestartet
-   *   werden kann und deshalb DATA-Bereich usw. gerettet werden mÅssen.
+   * 'multi': TRUE hei‚Çßt, da‚Çß geladenes Prg nicht nur einmal gestartet
+   *   werden kann und deshalb DATA-Bereich usw. gerettet werden m√ºssen.
    *)
 
   TYPE ptrLInt = POINTER TO LONGINT;
@@ -260,7 +260,7 @@ PROCEDURE prgExec (bp: PtrBP; filename: ADDRESS; REF arg: ArgStr;
   BEGIN
     IF multi THEN
       (* Base Page- und DATA-Bereich retten *)
-      dl:= bp^.p_dlen + 128; (* LÑnge des zu rettenden Data/Basepage-Bereichs *)
+      dl:= bp^.p_dlen + 128; (* L√§nge des zu rettenden Data/Basepage-Bereichs *)
       ALLOCATE (data, dl);
       IF data = NIL THEN
         (* kein Speicherplatz mehr frei *)
@@ -271,7 +271,7 @@ PROCEDURE prgExec (bp: PtrBP; filename: ADDRESS; REF arg: ArgStr;
       Block.Copy (bp^.p_dbase, bp^.p_dlen, data+128);
       IF isMM2 THEN p3:= ADDRESS(bp)+(256+56); stackSize:= p3^ END;
 
-      (* BSS lîschen *)
+      (* BSS l√∂schen *)
       Block.Clear (bp^.p_bbase, bp^.p_hitpa - bp^.p_bbase);
     END;
     
@@ -279,7 +279,7 @@ PROCEDURE prgExec (bp: PtrBP; filename: ADDRESS; REF arg: ArgStr;
     Block.Copy (CADR (arg), 128, ADR (bp^.cmdline));
     
     IF multi THEN
-      (* Pfade v. Parent Åbernehmen *)
+      (* Pfade v. Parent √ºbernehmen *)
       Block.Copy (ProcessID^+$37, 1, ADDRESS(bp)+$37);
       Block.Copy (ProcessID^+$40, 16, ADDRESS(bp)+$40);
     END;
@@ -288,7 +288,7 @@ PROCEDURE prgExec (bp: PtrBP; filename: ADDRESS; REF arg: ArgStr;
     bp^.p_dta:= ADR (bp^.cmdline);
     
     (* Environment kopieren, da Pexec dies wie so vieles *
-     * beim Nur-Starten fÑlschlicherweise nicht tut.    *)
+     * beim Nur-Starten f√§lschlicherweise nicht tut.    *)
     oldEnv:= bp^.p_env;
     IF multi & (env # 0) THEN
       el:= envLength (env);
@@ -303,17 +303,17 @@ PROCEDURE prgExec (bp: PtrBP; filename: ADDRESS; REF arg: ArgStr;
         bp^.p_env:= envcopy;
       END;
       
-      (* 'hdlGemdos' in TRAP #1 einhÑngen *)
+      (* 'hdlGemdos' in TRAP #1 einh√§ngen *)
       XBRA.Create (carrier, Kennung, CAST (ADDRESS, hdlGemdos), GemdosEntry);
       XBRA.Install (GemdosEntry, $84);
       
-      (* Prozeû starten *)
+      (* Proze‚Çß starten *)
       TPAOffset:= CodeSize (bp);
       CurrentBasePage:= bp;
       GEMDOS.Pexec (4, filename, bp, env, exitcode);
       CurrentBasePage:= NIL;
       
-      (* 'hdlGemdos' wieder aushÑngen *)
+      (* 'hdlGemdos' wieder aush√§ngen *)
       removeGemdosHdler;
       
       IF multi & (env # 0) THEN
@@ -323,7 +323,7 @@ PROCEDURE prgExec (bp: PtrBP; filename: ADDRESS; REF arg: ArgStr;
     bp^.p_env:= oldEnv;
 
     IF multi THEN
-      (* geretteten Base Page- und DATA-Bereich zurÅckkopieren *)
+      (* geretteten Base Page- und DATA-Bereich zur√ºckkopieren *)
       hitpa:= bp^.p_hitpa;
       Block.Copy (data, 128, bp);
       bp^.p_hitpa:= hitpa;
@@ -338,8 +338,8 @@ PROCEDURE isLoaded (REF nameWOpath: ARRAY OF CHAR;
                     VAR index: LoadRange): BOOLEAN;
   (*
    * Liefert TRUE, wenn "nameWOpath" geladen ist.
-   * Der Åbergebene Name darf keinen Pfad enthalten.
-   * 'index' enthÑlt den Feldindex in "Loaded", wenn Prg. geladen ist,
+   * Der √ºbergebene Name darf keinen Pfad enthalten.
+   * 'index' enth√§lt den Feldindex in "Loaded", wenn Prg. geladen ist,
    * ansonsten liefert es den Index auf ein unbenutztes Feld in "Loaded".
    *)
 
@@ -372,7 +372,7 @@ PROCEDURE LoadProgram (    filename: ARRAY OF CHAR;
                            heapSize: LONGCARD;
                        VAR result  : LoaderResults);
 (*
- * LÑdt ein Programm mit der angegeben Heap-Grîûe.
+ * L√§dt ein Programm mit der angegeben Heap-Gr√∂‚Çße.
  * Ergebnis in 'result'.
  *)
 
@@ -452,15 +452,15 @@ PROCEDURE UnLoadProgram (    filename: ARRAY OF CHAR;
 
 PROCEDURE Arg (REF in: ARRAY OF CHAR): ArgStr;
   (*
-   * Erzeugt die GEMDOS-Cmdline fÅr Pexec() aus einem Modula-String.
+   * Erzeugt die GEMDOS-Cmdline f√ºr Pexec() aus einem Modula-String.
    *)
   VAR l: CARDINAL; out: ArgStr;
   BEGIN
     l:= LENGTH (in);
     IF l > 125 THEN l:= 125 END;
-    Block.Clear (ADR (out), SIZE (out));    (* Cmdline zuerst lîschen *)
+    Block.Clear (ADR (out), SIZE (out));    (* Cmdline zuerst l√∂schen *)
     Block.Copy (CADR (in), l, ADR (out)+1); (* Arg. eintragen *)
-    BPoke (ADR (out), l);                   (* LÑnge in 1.Byte eintragen *)
+    BPoke (ADR (out), l);                   (* L√§nge in 1.Byte eintragen *)
     RETURN out
   END Arg;
 
@@ -470,7 +470,7 @@ PROCEDURE CallProgram (    filename   : ARRAY OF CHAR;
                            environment: ADDRESS;
                        VAR exitCode   : LONGINT);
 (*
- * Startet Programm, auch ungeladen. 'args' enthÑlt die Command Line als
+ * Startet Programm, auch ungeladen. 'args' enth√§lt die Command Line als
  * normalen Modula-String.
  * Ergebnis in 'exitCode'.
  *)
@@ -494,7 +494,7 @@ PROCEDURE CallProgram (    filename   : ARRAY OF CHAR;
       END
     ELSE
       (* Programm laden & starten, und zwar getrennt, um 'HeapSize'
-       * ermitteln zu kînnen. *)
+       * ermitteln zu k√∂nnen. *)
       prgLoad (filename, exitCode);
       IF exitCode < 0 THEN (* Fehler beim Laden aufgetreten *) RETURN END;
       bp:= ADDRESS (exitCode); (* Base Page merken *)
@@ -534,4 +534,4 @@ PROCEDURE QueryLoaded (call: QueryPrgProc);
 
 BEGIN
   IF UseStackFrame () THEN StackFrameOffs:= 2 ELSE StackFrameOffs:= 0 END;
-END PrgLoader.
+END PrgLoader.

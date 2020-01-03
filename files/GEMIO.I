@@ -7,16 +7,16 @@ IMPLEMENTATION MODULE GEMIO;
  * Leitet alle Ein- und Ausgaben von 'InOut' und der Unit 'CON:' auf
  * ein Window von 'TextWindows'.
  *
- * Durch Setzen von 'ConfirmClose' auf TRUE wird erreicht, daž
+ * Durch Setzen von 'ConfirmClose' auf TRUE wird erreicht, daâ‚§
  * beim Ende des damit gelinkten Programms auf eine Taste gewartet
  * wird, bevor der Fensterinhalt verschwindet.
  *
- * Die Gr”že des "StdIO"-Fenster, das von 'InOut' erzeugt wird, kann frei
- * gew„hlt werden, indem die Konstanten 'StdX' und 'StdY' (s.u.) ver„ndert
+ * Die GrÃ¶â‚§e des "StdIO"-Fenster, das von 'InOut' erzeugt wird, kann frei
+ * gewÃ¤hlt werden, indem die Konstanten 'StdX' und 'StdY' (s.u.) verÃ¤ndert
  * werden. Dann ist dies Modul zu compilieren und ggf. auch die Shell neu
  * zu linken.
  *
- * N„heres siehe Definitions-Text
+ * NÃ¤heres siehe Definitions-Text
  *)
 
 
@@ -254,7 +254,7 @@ PROCEDURE OpenError ( VAR msg: ARRAY OF CHAR; VAR retry: BOOLEAN );
   VAR txt: ARRAY [0..89] OF CHAR;
       but: CARDINAL;
   BEGIN
-    Concat ('[0][Fehler beim ™ffnen:|',msg,txt,ok);
+    Concat ('[0][Fehler beim Ã–ffnen:|',msg,txt,ok);
     Append ('|Nochmalige Eingabe ?][ Ja |Nein]',txt,ok);
     FormAlert (1,txt,but);
     retry:= but=1
@@ -411,7 +411,7 @@ BEGIN
 
   (*** Einrichten der Unit 'CON:' als Window ***)
   WITH FileBase.UnitDriver [FileBase.con] DO
-    (* šbernahme der Standard-Einstellungen (FileBase):
+    (* Ãœbernahme der Standard-Einstellungen (FileBase):
       valid:= TRUE;
       name:= 'CON:';
       input:= TRUE;
@@ -425,4 +425,4 @@ BEGIN
     wrStr:= conStrOut;
     rdChr:= conCIn;
   END;
-END GEMIO.
+END GEMIO.

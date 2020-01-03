@@ -17,7 +17,7 @@ PROCEDURE WriteString (REF str: ARRAY OF CHAR);
         MOVE.L  -(A3),A4
         CLR.W   -(A7)
         MOVE.L  #$00030002,-(A7)
-      l MOVE.W  #$0003,(A7)     ; muž wegen eines Fehlers in TOS 1.4 (8.8.88)
+      l MOVE.W  #$0003,(A7)     ; muâ‚§ wegen eines Fehlers in TOS 1.4 (8.8.88)
                                 ; immer wieder gesetzt werden
         MOVE.B  (A4)+,5(A7)
         BEQ     e
@@ -36,7 +36,7 @@ PROCEDURE WriteVisible (REF str: ARRAY OF CHAR);
         MOVE.L  -(A3),A4
         CLR.W   -(A7)
         MOVE.L  #$00030005,-(A7)
-      l MOVE.W  #$0003,(A7)     ; muž wegen eines Fehlers in TOS 1.4 (8.8.88)
+      l MOVE.W  #$0003,(A7)     ; muâ‚§ wegen eines Fehlers in TOS 1.4 (8.8.88)
                                 ; immer wieder gesetzt werden
         MOVE.B  (A4)+,5(A7)
         BEQ     e
@@ -112,5 +112,3 @@ BEGIN
   InitKeyboard;
   InitDisplay;
 END TermBase.
-
-(* $FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$00000036$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B$FFFC3D6B€$00000028T.......T.......T.......T.......T.......T.......T.......T.......T.......T.......$FFEE7ABD$FFEE7ABD$FFEE7ABD$000005B9$000008EF$000000C2$000002D2$00000055$00000034$00000028$000000A5$0000009A$000008A3$00000670$00000908$FFEE7ABD¨€€*)

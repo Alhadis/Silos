@@ -15762,8 +15762,8 @@ struct
 
 					
 					 
-					if(GPS.N_S[0]=='N')	Lcd_WriteChineseStringClarity(0,16+16*5+2,0xFFE0,0,"北",1);		
-					else if(GPS.N_S[0]=='S') Lcd_WriteChineseStringClarity(0,16+16*5+2,0xFFE0,0,"南",1);
+					if(GPS.N_S[0]=='N')	Lcd_WriteChineseStringClarity(0,16+16*5+2,0xFFE0,0,"卤卤",1);		
+					else if(GPS.N_S[0]=='S') Lcd_WriteChineseStringClarity(0,16+16*5+2,0xFFE0,0,"脛脧",1);
 
 					gh[0]=GPS.Latitude[0];
 					gh[1]=GPS.Latitude[1];
@@ -15778,8 +15778,8 @@ struct
 					Lcd_WriteChineseStringClarity(40+8+24+8,16+16*5+2,0xFFE0,0,gh,1);
 					Lcd_WriteChineseStringClarity(40+8+24+24+8,16+16*5+2,0xFFE0,0,&(GPS.Latitude[5]),1);
 		
-					if(GPS.E_W[0]=='E')	Lcd_WriteChineseStringClarity(0,32+16*5+4,0xFFE0,0,"东",1);		
-					else if(GPS.E_W[0]=='W') Lcd_WriteChineseStringClarity(0,32+16*5+4,0xFFE0,0,"西",1);
+					if(GPS.E_W[0]=='E')	Lcd_WriteChineseStringClarity(0,32+16*5+4,0xFFE0,0,"露芦",1);		
+					else if(GPS.E_W[0]=='W') Lcd_WriteChineseStringClarity(0,32+16*5+4,0xFFE0,0,"脦梅",1);
 
 					gh[0]=GPS.Longitude[0];
 					gh[1]=GPS.Longitude[1];
@@ -15795,10 +15795,10 @@ struct
 					Lcd_WriteChineseStringClarity(40+8*5,32+16*5+4,0xFFE0,0,gh,1);
 					Lcd_WriteChineseStringClarity(40+8*5+24,32+16*5+4,0xFFE0,0,&(GPS.Longitude[6]),1);
 
-					if(GPS.GPS_State[0]=='0')     Lcd_WriteChineseStringClarity(16*4,48+16*5+6,0xFFE0,0,"未定位    ",1);
-					else if(GPS.GPS_State[0]=='1')Lcd_WriteChineseStringClarity(16*4,48+16*5+6,0xFFE0,0,"非差分定位",1);
-					else if(GPS.GPS_State[0]=='2')Lcd_WriteChineseStringClarity(16*4,48+16*5+6,0xFFE0,0,"差分定位  ",1);
-					else if(GPS.GPS_State[0]=='6')Lcd_WriteChineseStringClarity(16*4,48+16*5+6,0xFFE0,0,"正在估算  ",1);
+					if(GPS.GPS_State[0]=='0')     Lcd_WriteChineseStringClarity(16*4,48+16*5+6,0xFFE0,0,"脦麓露篓脦禄    ",1);
+					else if(GPS.GPS_State[0]=='1')Lcd_WriteChineseStringClarity(16*4,48+16*5+6,0xFFE0,0,"路脟虏卯路脰露篓脦禄",1);
+					else if(GPS.GPS_State[0]=='2')Lcd_WriteChineseStringClarity(16*4,48+16*5+6,0xFFE0,0,"虏卯路脰露篓脦禄  ",1);
+					else if(GPS.GPS_State[0]=='6')Lcd_WriteChineseStringClarity(16*4,48+16*5+6,0xFFE0,0,"脮媒脭脷鹿脌脣茫  ",1);
 		
 					Lcd_WriteChineseStringClarity(16*8+8,64+16*5+8,0xFFE0,0,GPS.star_num,1);
 					Lcd_WriteChineseStringClarity(16*6+8,80+16*5+10,0xFFE0,0,GPS.HDOP,1);
@@ -16033,11 +16033,11 @@ void GPS_button(unsigned char i)
 			break;
 		default : break;
 	}
-	Lcd_WriteChineseStringClarity(16*16,16*6 ,a,0,">>信  息",0);
-	Lcd_WriteChineseStringClarity(16*16,16*8 ,b,0,">>纯文本",0);
-	Lcd_WriteChineseStringClarity(16*16,16*10,c,0,">>柱状图",0);
-	Lcd_WriteChineseStringClarity(16*16,16*12,d,0,">>方位图",0);
-	Lcd_WriteChineseStringClarity(16*16,16*14,0xFFE0,0,">>退  出",0);
+	Lcd_WriteChineseStringClarity(16*16,16*6 ,a,0,">>脨脜  脧垄",0);
+	Lcd_WriteChineseStringClarity(16*16,16*8 ,b,0,">>麓驴脦脛卤戮",0);
+	Lcd_WriteChineseStringClarity(16*16,16*10,c,0,">>脰霉脳麓脥录",0);
+	Lcd_WriteChineseStringClarity(16*16,16*12,d,0,">>路陆脦禄脥录",0);
+	Lcd_WriteChineseStringClarity(16*16,16*14,0xFFE0,0,">>脥脣  鲁枚",0);
 }
 
 void GPS_inf(void)
@@ -16046,15 +16046,15 @@ void GPS_inf(void)
 	f_mount(0, &fs);
 	f_open(&fsrc,"st1616.bin", 0x00 | 0x01);
 	Lcd_WriteChineseStringClarity(8*16,16*2,0xFFE0,0,"Tiky GPS",1);
-	Lcd_WriteChineseStringClarity(0,0+16*5,0xFFE0,0,"时间    :  :      日期  20  /  / ",1);
-	Lcd_WriteChineseStringClarity(0,16+16*5+2,0xFFE0,0,"北纬:",1);
-	Lcd_WriteChineseStringClarity(0,32+16*5+4,0xFFE0,0,"东经:",1);
-	Lcd_WriteChineseStringClarity(0,48+16*5+6,0xFFE0,0,"GPS状态:",1);
-	Lcd_WriteChineseStringClarity(0,64+16*5+8,0xFFE0,0,"正在使用卫星数量:",1);
-	Lcd_WriteChineseStringClarity(0,80+16*5+10,0xFFE0,0,"水平精度因子:",1);
-	Lcd_WriteChineseStringClarity(0, 96+16*5+12,0xFFE0,0,"海拔高度:      米",1);
-	Lcd_WriteChineseStringClarity(0,112+16*5+14,0xFFE0,0,"航行速率:      节",1);
-	Lcd_WriteChineseStringClarity(0,128+16*5+16,0xFFE0,0,"地面航向:      度",1);
+	Lcd_WriteChineseStringClarity(0,0+16*5,0xFFE0,0,"脢卤录盲    :  :      脠脮脝脷  20  /  / ",1);
+	Lcd_WriteChineseStringClarity(0,16+16*5+2,0xFFE0,0,"卤卤脦鲁:",1);
+	Lcd_WriteChineseStringClarity(0,32+16*5+4,0xFFE0,0,"露芦戮颅:",1);
+	Lcd_WriteChineseStringClarity(0,48+16*5+6,0xFFE0,0,"GPS脳麓脤卢:",1);
+	Lcd_WriteChineseStringClarity(0,64+16*5+8,0xFFE0,0,"脮媒脭脷脢鹿脫脙脦脌脨脟脢媒脕驴:",1);
+	Lcd_WriteChineseStringClarity(0,80+16*5+10,0xFFE0,0,"脣庐脝陆戮芦露脠脪貌脳脫:",1);
+	Lcd_WriteChineseStringClarity(0, 96+16*5+12,0xFFE0,0,"潞拢掳脦赂脽露脠:      脙脳",1);
+	Lcd_WriteChineseStringClarity(0,112+16*5+14,0xFFE0,0,"潞陆脨脨脣脵脗脢:      陆脷",1);
+	Lcd_WriteChineseStringClarity(0,128+16*5+16,0xFFE0,0,"碌脴脙忙潞陆脧貌:      露脠",1);
 	GPS_button(1); 
 	GUI_SetFont(&GUI_Font8x16);
 	GUI_Context . LCD . aColorIndex16[1]=0xFFE0;

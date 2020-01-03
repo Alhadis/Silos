@@ -1,4 +1,4 @@
-; tony dee © 1992
+; tony dee Â© 1992
 ; 
 ; basical macros for MS3 language
 ; F  U  T  U  R  E

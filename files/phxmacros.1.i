@@ -5,7 +5,7 @@
 *****************************************************************
 *
 *	$VER: PhxMacros 1.6 (2.10.97)
-*	(C) 1996-97 Richard Körber -- All rights reserved
+*	(C) 1996-97 Richard KÃ¶rber -- All rights reserved
 *
 *	Requires PhxAss V4.33 or higher!
 *

@@ -1,4 +1,3 @@
-
 IMPLEMENTATION MODULE RandomGen;        (*$ c- *)
 (*$R-,S-,Y+*)
 
@@ -7,17 +6,17 @@ IMPLEMENTATION MODULE RandomGen;        (*$ c- *)
 
    jm 15.6.87
    
-   tt 25.9.88: RandomCard (x,MaxCard) ergibt keinen öberlauf mehr.
+   tt 25.9.88: RandomCard (x,MaxCard) ergibt keinen ÔøΩberlauf mehr.
    tt 14.3.90: RandomCard berechnet nun direkt aus Rnd() mit Int-Arithm.
-               statt Åber Random() mit Reals.
-   tt 20.5.91: Rnd() zerstîrt nicht mehr D3
+               statt ÔøΩber Random() mit Reals.
+   tt 20.5.91: Rnd() zerstÔøΩrt nicht mehr D3
 *)
 
 FROM SYSTEM IMPORT ASSEMBLER, CompilerVersion;
 
 CONST  a = 1664525;     (* Knuth S.102 Zeile 26 *)
-       c = 117;         (* teilerfremd mit 2^32 fÅr max. Periode 2^32 *)
-  maxRnd = 4294967296.; (* 2^32 fÅr Normierung auf [0..1) *)
+       c = 117;         (* teilerfremd mit 2^32 fÔøΩr max. Periode 2^32 *)
+  maxRnd = 4294967296.; (* 2^32 fÔøΩr Normierung auf [0..1) *)
 
 VAR    x: LONGCARD;     (* letzte erzeugte Zufallszahl *)
 
@@ -46,7 +45,7 @@ PROCEDURE Rnd (): LONGCARD;
     ASSEMBLER
       
       ; berechne a * x: drei Teilprodukte bilden
-      ; (x.high * a.high brauchen wir nicht, fÑllt dem MOD zum Opfer)
+      ; (x.high * a.high brauchen wir nicht, fÔøΩllt dem MOD zum Opfer)
       
       move.l    x,d0    ;x.low
       move.l    d0,d1   ;x.low
@@ -105,5 +104,3 @@ PROCEDURE RandomCard (min, max: CARDINAL): CARDINAL;
 BEGIN
   Randomize (0L)
 END RandomGen.
-
-(* $FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$00000341$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082$FFF8B082Ä$00000636T.......T.......T.......T.......T.......T.......T.......T.......T.......T.......$00000581$00000646$00000636$0000063E$00000357$FFEDF490$0000040B$FFEDF490$000003C8$0000037A$00000101$000001A4$00000184$FFF16614$000001A2$00000593êÄÄ*)

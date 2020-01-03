@@ -317,7 +317,7 @@ Kill_System
 
 	move.w potinp(a5),-(sp)			sauve les directions des ports
 	move.w #$ff00,potgo(a5)			et les configure comme ils
-	move.b ciaapra,-(sp)			devraient l'être
+	move.b ciaapra,-(sp)			devraient l'Ãªtre
 	move.b ciaaddra,-(sp)
 	move.b #$3,ciaaddra
 
@@ -331,12 +331,12 @@ Kill_System
 	clr.l (a0)+
 	dbf d0,.clear_spr
 
-	movem.l a5/a6,-(sp)			saute à la routine passée comme
-	move.l #\1,$80.w			paramètre à la macro KILL_SYSTEM
+	movem.l a5/a6,-(sp)			saute Ã  la routine passÃ©e comme
+	move.l #\1,$80.w			paramÃ¨tre Ã  la macro KILL_SYSTEM
 	trap #0
 	movem.l (sp)+,a5/a6
 
-	move.l (sp)+,$78.w			remet tout comme c'était avant
+	move.l (sp)+,$78.w			remet tout comme c'Ã©tait avant
 	move.l (sp)+,$6c.w
 	move.l (sp)+,$80.w
 
@@ -363,7 +363,7 @@ Kill_System
 
 .GfxName
 	dc.b "graphics.library",0
-	dc.b " -- ©1993 Sync of Dreamdealers -- "
+	dc.b " -- Â©1993 Sync of Dreamdealers -- "
 	even
 	endm
 
@@ -428,4 +428,3 @@ RESTORE_680x0	macro
 ;	jsr _LVO\1(a6)
 ;	ENC
 ;	endm
-

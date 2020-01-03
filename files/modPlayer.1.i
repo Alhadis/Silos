@@ -13,7 +13,7 @@ plr_part_init_hi    equ      plr_part_init +1
 ; following code is apart from one slight modification a copy of the original
 ; vectrex rom music play routine
 ;
-; support for a §silence value: note $3f
+; support for a Â§silence value: note $3f
 ; also for a ADSR and TWANG table for each channel!
 
 

@@ -1,7 +1,7 @@
 IMPLEMENTATION MODULE RealCtrl;
 (*$N+,Y+,L-*)
 
-(* fÅr spÑter...
+(* f√ºr sp√§ter...
 PROCEDURE Long (sr: REAL; format: RealFormat): AnyReal;
 PROCEDURE Short (longReal: AnyReal): REAL;
   (*
@@ -98,11 +98,11 @@ PROCEDURE Conv (in: AnyReal; out: RealFormat): LONGREAL;
         MOVE.L  D1,D0
         SWAP    D0
         ANDI    #$07FF,D0
-        ; D0 enthÑlt Exponenten + Bias 1023
+        ; D0 enth√§lt Exponenten + Bias 1023
         BEQ     denorm
         
         SUBI    #1023,D0        ; Bias vom Exp abziehen
-        ; Bit 47 v. MM2-Real setzen und dafÅr Exp um Eins erhîhen
+        ; Bit 47 v. MM2-Real setzen und daf√ºr Exp um Eins erh√∂hen
         LSR.W   #1,D1
         ROXR.L  #1,D2
         BSET    #15,D1
@@ -122,7 +122,7 @@ PROCEDURE Conv (in: AnyReal; out: RealFormat): LONGREAL;
         RTS
         
       denorm
-        ; prÅfen, ob Wert Null ist
+        ; pr√ºfen, ob Wert Null ist
         TST.W   D1
         BNE     notNull2
         TST.L   D2
@@ -135,7 +135,7 @@ PROCEDURE Conv (in: AnyReal; out: RealFormat): LONGREAL;
         
       notNull2
         BPL     notNull
-        ; wenn D1 negativ, dann ist Zahl fÅr MM2-Format bereits normalisiert
+        ; wenn D1 negativ, dann ist Zahl f√ºr MM2-Format bereits normalisiert
         SUBI    #1023,D0        ; Bias vom Exp abziehen
         BRA     final
         
@@ -151,7 +151,7 @@ PROCEDURE Conv (in: AnyReal; out: RealFormat): LONGREAL;
         
       toIEEE
         ; *** MM2 (A0) to IEEE (A0) ***
-        ; liefert Infinity, wenn MM2-Wert zu groû ist
+        ; liefert Infinity, wenn MM2-Wert zu gro‚Çß ist
         MOVE.W  (A0),D0         ; Exp laden
         BEQ     isNull
         ASR     #3,D0
@@ -160,13 +160,13 @@ PROCEDURE Conv (in: AnyReal; out: RealFormat): LONGREAL;
         MOVE.L  4(A0),D2
         
         ; Bias addieren
-        ; (incl. dem angepaûten Exp-Offset fÅr's entfernte 0.5-Bit)
+        ; (incl. dem angepa‚Çßten Exp-Offset f√ºr's entfernte 0.5-Bit)
         ADDI    #1023-1,D0
         
         CMPI    #2048,D0
-        BGE     overflow        ; wenn Exp grîûer als 1024 war, dann Overflow
+        BGE     overflow        ; wenn Exp gr√∂‚Çßer als 1024 war, dann Overflow
         BCS     norm2           ; wenn Exp zw. -1023 und 1024 lag, dann ok
-        CMPI    #-51,D0         ; kînnen wir Zahl denormalisieren?
+        CMPI    #-51,D0         ; k√∂nnen wir Zahl denormalisieren?
         BLT     isNull          ; wenn Exp zu klein, dann Null liefern
         
         ; denormalisieren
@@ -178,7 +178,7 @@ PROCEDURE Conv (in: AnyReal; out: RealFormat): LONGREAL;
         BRA     denorm2
         
       norm2
-        ; 0.5-Wert Bit rausschieben (Exp bereits angepaût)
+        ; 0.5-Wert Bit rausschieben (Exp bereits angepa‚Çßt)
         LSL.L   #1,D2
         ROXL.W  #1,D1
         
@@ -225,4 +225,4 @@ BEGIN
         MOVE    D0,D1
     ok: MOVE.W  D1,UsedFormat
   END;
-END RealCtrl.
+END RealCtrl.

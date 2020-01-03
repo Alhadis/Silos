@@ -72,12 +72,12 @@ PROCEDURE Abort (no: INTEGER);
         BGE     ret1
         CMPI    #-95,D0
         BGT     ok
-        MOVEQ   #-93,D0         ; f걊 no < -94
+        MOVEQ   #-93,D0         ; f체r no < -94
         BRA     ok
       ret1
-        SUBI.W  #62,D0          ; f걊 no zw. -1..-32 -> TOS-Error #32 - #63
+        SUBI.W  #62,D0          ; f체r no zw. -1..-32 -> TOS-Error #32 - #63
      ok ; -63 ergibt "TOS-Error #32"
-        ; -31 w꼛e demnach "TOS-Error #0"
+        ; -31 w채re demnach "TOS-Error #0"
         ; angezeigt werden alle Werte von -33 bis -94
         MOVE    D0,(A3)+
         JMP     TermProcess
@@ -93,7 +93,7 @@ PROCEDURE AbortWithMsg (msg: ADDRESS);
         ADDQ.L  #6,A7
         MOVE.L  -(A3),-(A7)
         BEQ     noText
-        (* F걊 ARRAY OF CHAR-Par:
+        (* F체r ARRAY OF CHAR-Par:
           MOVE    D0,D1
           ADDQ    #3,D1
           BCLR    #0,D1
@@ -130,4 +130,4 @@ PROCEDURE OutOfMemory;
     END
   END OutOfMemory;
 
-END SystemError.
+END SystemError.

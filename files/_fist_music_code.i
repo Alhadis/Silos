@@ -21,9 +21,9 @@ lyd_phaser          rs.l    1
 lyd_chorus          rs.l    1
 lyd_notelengde      rs.l    1
 lyd_playlistptr     rs.l    1
-lyd_type            rs.b    1  ; obs.. lyd_type1 og lyd_type2 må ikke flyttes
+lyd_type            rs.b    1  ; obs.. lyd_type1 og lyd_type2 mÃ¥ ikke flyttes
 lyd_type2           rs.b    1
-					rs.w    1  ; dummy word for å spare en shift lenger nedi her
+					rs.w    1  ; dummy word for Ã¥ spare en shift lenger nedi her
 lyd_play            rs.w    1
 lyd_vari            rs.l    1
 audiobase           rs.l    1
@@ -118,7 +118,7 @@ sound_engine
 		lsl.l   d5,d7
 		;LLL PPPPP000 00000000
 		move.w  d7,d6 ; d6=16x0 PPPPP000 00000000
-		; hvis ting går på ræva, så husk på at du gambler på at øverste
+		; hvis ting gÃ¥r pÃ¥ rÃ¦va, sÃ¥ husk pÃ¥ at du gambler pÃ¥ at Ã¸verste
 		; wordet i d6 er 0x0000
 		add.l   d6,a3 ; legger til to ganger pga wordsize
 		add.l   d6,a3

@@ -6,7 +6,7 @@ IMPLEMENTATION MODULE XBRA;
   24.10.90 Thomas Tempelmann: $H+
   04.11.90 Thomas Tempelmann: $S-
   10.02.91 Thomas Tempelmann: Neben dem Null-Ptr wird nun auch ein Ptr auf sich
-                              selbst als Listenende gewertet, da das proTOS fÅr
+                              selbst als Listenende gewertet, da das proTOS f√ºr
                               den hyperCACHE 030 solche XBRA-Listen anlegt.
 *)
 
@@ -23,9 +23,9 @@ IMPORT XBIOS;
 *)
 
 CONST
-  JmpInstr = 4EF9H; (* Code fÅr 'JMP <adr>.L' *)
+  JmpInstr = 4EF9H; (* Code f√ºr 'JMP <adr>.L' *)
 
-(* fÅr nicht-Megamax-Systeme:
+(* f√ºr nicht-Megamax-Systeme:
   MODULE SysUtil1;
   
    (*
@@ -35,15 +35,15 @@ CONST
     * Die in diesem Modul verwendeten Funktionen
     *   SuperPeek, SuperLPeek und SuperLPoke
     * dienen dazu, Daten im Supervisor-Mode zuzuweisen. Sie sind folgender-
-    * maûen definiert:
+    * ma‚Çßen definiert:
     *   PROCEDURE SuperPeek  ( addr: ADDRESS; VAR data: ARRAY OF BYTE );
     *     liest ab der Adresse 'addr' die Anzahl von 'HIGH (data)+1' Bytes.
     *   PROCEDURE SuperLPeek ( addr: ADDRESS ): LONGCARD;
     *     liefert 4 Bytes ab Adresse 'addr'.
     *   PROCEDURE SuperLPoke ( addr: ADDRESS; data: LONGCARD );
     *     weist 4 Bytes ab Adresse 'addr' zu.
-    * Diese Funktionen mÅssen auch korrekt ablaufen, wenn bereits bei ihrem
-    * Aufruf der Supervisor-Mode aktiv ist. Sie kînnen wahlweise durch Verwen-
+    * Diese Funktionen m√ºssen auch korrekt ablaufen, wenn bereits bei ihrem
+    * Aufruf der Supervisor-Mode aktiv ist. Sie k√∂nnen wahlweise durch Verwen-
     * dung der Funktion 'XBIOS.SuperExec' ('sup_exec()') oder mit 'GEMDOS.Super'
     * ('super()') implementiert werden.
     *)
@@ -70,7 +70,7 @@ CONST
         from:= addr;
         to:= ADR (data);
         bytes:= HIGH (data)+1;
-        SuperExec ( ADDRESS (set) ) (* 'set' im Supervisor-Mode ausfÅhren *)
+        SuperExec ( ADDRESS (set) ) (* 'set' im Supervisor-Mode ausf√ºhren *)
       END SuperPeek;
   
     PROCEDURE SuperLPeek ( addr: ADDRESS ): LONGCARD;
@@ -79,7 +79,7 @@ CONST
         from:= addr;
         to:= ADR (data);
         bytes:= 4;
-        SuperExec ( ADDRESS (set) ); (* 'set' im Supervisor-Mode ausfÅhren *)
+        SuperExec ( ADDRESS (set) ); (* 'set' im Supervisor-Mode ausf√ºhren *)
         RETURN data
       END SuperLPeek;
   
@@ -88,7 +88,7 @@ CONST
         from:= ADR (data);
         to:= addr;
         bytes:= 4;
-        SuperExec ( ADDRESS (set) ) (* 'set' im Supervisor-Mode ausfÅhren *)
+        SuperExec ( ADDRESS (set) ) (* 'set' im Supervisor-Mode ausf√ºhren *)
       END SuperLPoke;
   
     END SysUtil1; (* lokales Modul *)
@@ -99,7 +99,7 @@ CONST Magic = 'XBRA';
       entryOffs = 12L; (* Differenz zw. 'Carrier.magic' und 'Carrier.entry' *)
 
  (*
-  * Hilfsfunktionen, die ggf. optimiert werden kînnen
+  * Hilfsfunktionen, die ggf. optimiert werden k√∂nnen
   * -------------------------------------------------
   *)
 
@@ -129,7 +129,7 @@ PROCEDURE Create (VAR use: Carrier; nam: ID; call: ADDRESS;
       name:= nam;
       magic:= Magic;
       prev:= NIL;
-      entry.jmpInstr:= JmpInstr; (* Code fÅr 'JMP <adr>.L' *)
+      entry.jmpInstr:= JmpInstr; (* Code f√ºr 'JMP <adr>.L' *)
       entry.operand:= call;
       entr:= ADR (entry)
     END
@@ -139,7 +139,7 @@ PROCEDURE Installed (name: ID; vector: ADDRESS; VAR at: ADDRESS): BOOLEAN;
   VAR lastentry, entry: ADDRESS; c: Carrier;
   BEGIN
     lastentry:= 0;
-    at:= vector; (* Vorwahl fÅr RETURN FALSE *)
+    at:= vector; (* Vorwahl f√ºr RETURN FALSE *)
     LOOP
       entry:= SuperLPeek (vector);
       IF (entry = 0) OR (entry = lastentry) THEN RETURN FALSE END;
@@ -151,7 +151,7 @@ PROCEDURE Installed (name: ID; vector: ADDRESS; VAR at: ADDRESS): BOOLEAN;
           at:= vector;
           RETURN TRUE
         ELSE
-          (* VorgÑnger prÅfen *)
+          (* Vorg√§nger pr√ºfen *)
           vector:= entry - 4L;
           lastentry:= entry
         END
@@ -206,7 +206,7 @@ PROCEDURE Query (vector: ADDRESS; with: QueryProc);
         EXIT
       END;
       IF NOT with (vector, c.name) THEN RETURN END;
-      (* VorgÑnger ist dran *)
+      (* Vorg√§nger ist dran *)
       vector:= entry - 4L;
       lastentry:= entry
     END;
@@ -251,4 +251,4 @@ PROCEDURE PreviousEntry (entry0: ADDRESS): ADDRESS;
     RETURN NIL
   END PreviousEntry;
 
-END XBRA.
+END XBRA.

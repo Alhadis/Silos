@@ -110,18 +110,18 @@ struct ThrusterControlDef : public MoverDef
 
 struct WeaponData
 {
-	float timeShootDelay;	// задержка между выстрелами
-	float timeShootDuration;// длительность выстрела, для лучевых оружий
-	float timeReload;		// время перезарядки оружия
-	float muzzleOffset;		// откуда создаётся снаряд
+	float timeShootDelay;	// Г§Г Г¤ГҐГ°Г¦ГЄГ  Г¬ГҐГ¦Г¤Гі ГўГ»Г±ГІГ°ГҐГ«Г Г¬ГЁ
+	float timeShootDuration;// Г¤Г«ГЁГІГҐГ«ГјГ­Г®Г±ГІГј ГўГ»Г±ГІГ°ГҐГ«Г , Г¤Г«Гї Г«ГіГ·ГҐГўГ»Гµ Г®Г°ГіГ¦ГЁГ©
+	float timeReload;		// ГўГ°ГҐГ¬Гї ГЇГҐГ°ГҐГ§Г Г°ГїГ¤ГЄГЁ Г®Г°ГіГ¦ГЁГї
+	float muzzleOffset;		// Г®ГІГЄГіГ¤Г  Г±Г®Г§Г¤Г ВёГІГ±Гї Г±Г­Г Г°ГїГ¤
 	int maxAmmo;			
 	float maxRange;			// max range
 	float spread;			// projectile spread, degrees
 	int barrels;			
 	float barrelDistance;	// distance between barrels
 	int animations;			// number of animations	
-	int burstSize;			// количество снарядов в одном залпе
-	float burstDelay;		// задержка между выстрелами в залпе
+	int burstSize;			// ГЄГ®Г«ГЁГ·ГҐГ±ГІГўГ® Г±Г­Г Г°ГїГ¤Г®Гў Гў Г®Г¤Г­Г®Г¬ Г§Г Г«ГЇГҐ
+	float burstDelay;		// Г§Г Г¤ГҐГ°Г¦ГЄГ  Г¬ГҐГ¦Г¤Гі ГўГ»Г±ГІГ°ГҐГ«Г Г¬ГЁ Гў Г§Г Г«ГЇГҐ
 };
 
 struct WeaponDef: public DeviceDef
@@ -135,7 +135,7 @@ struct WeaponDef: public DeviceDef
 struct Weapon: public Device
 {	
 	WeaponData weaponData;
-	float time;				// текущий счётчик	
+	float time;				// ГІГҐГЄГіГ№ГЁГ© Г±Г·ВёГІГ·ГЁГЄ	
 	int ammo;
 	bool fire;			
 	FxEffect * fxShoot;		

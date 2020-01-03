@@ -216,14 +216,14 @@ _Quit:	move.l	d0,d2	;save the returncode
 ;------ these are for you
 ALLOCCHIP	macro           ; \1 + \2
         move.l  \1,d1		;banknummer
-        move.l  \2,d0		;größe
+        move.l  \2,d0		;grÃ¶ÃŸe
         wcall	AllocChip
 
         endm
 
 ALLOC	macro			; \1 + \2
         move.l  \1,d1		;banknummer
-        move.l  \2,d0		;größe
+        move.l  \2,d0		;grÃ¶ÃŸe
         wcall	Alloc
         endm
                 
@@ -267,13 +267,13 @@ ALLOCANYCHIP	macro
 
 SYSALLOCCHIP	macro           ; \1 + \2
         move.l  \1,d1		;banknummer
-        move.l  \2,d0		;größe
+        move.l  \2,d0		;grÃ¶ÃŸe
         wcall	SYSAllocChip
         endm
 
 SYSALLOC	macro		; \1 + \2
         move.l  \1,d1		;banknummer
-        move.l  \2,d0		;größe
+        move.l  \2,d0		;grÃ¶ÃŸe
         wcall	SYSAlloc
         endm
                 
@@ -747,7 +747,7 @@ pullns	macro
 call	macro			; LVOs werden gebraucht!!!
 	ifeq    NARG-2		; 2 Parameter ?
 		move.l \2base(pc),a6	; Dann angegebene Library
-	endc			; Sonst nichts ändern
+	endc			; Sonst nichts Ã¤ndern
 	jsr     _LVO\1(a6)
 	endm
 
@@ -761,7 +761,7 @@ openlib Macro
         endif
         move.l  4.w,a6          ; Execbase-> A6
         jsr     -552(a6)        ; Openlib -> Ergebnis in D0
-        move.l  d0,a6           ; Geöffnete Library gleich benutzen...
+        move.l  d0,a6           ; GeÃ¶ffnete Library gleich benutzen...
 	lea	\1base,a1
         move.l  a6,(a1)
         EndM
@@ -802,4 +802,3 @@ WINUAEBREAKPOINT	Macro
 	endm
 
 	endc	;of WOS_MACROS_I
-

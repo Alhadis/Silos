@@ -46,7 +46,7 @@ laaa
 	move.l	a1,d1			;kamen wir von WB ?
 	beq.s	maaa			;nein,dann fertig !
 	move.l	d0,d2			;Returncode retten
-	jsr	WBSReplyMsg(a6)		;WB_MSG zurück !
+	jsr	WBSReplyMsg(a6)		;WB_MSG zurÃ¼ck !
 	move.l	d2,d0			;Returncode wieder nach d0
 maaa
 	rts				;und fertig !

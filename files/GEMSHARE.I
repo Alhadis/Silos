@@ -6,19 +6,19 @@ IMPLEMENTATION MODULE GEMShare;
  *                                    Definitionen und Routinen.
  *                                    (INTERNES MODUL)
  *
- *      Autor: Manuel Chakravarty       Erstellt: MÑrz-Dezember 1987
+ *      Autor: Manuel Chakravarty       Erstellt: M√§rz-Dezember 1987
  *
  *      MS: Michael Seyfried
  *
  *      Version 2.1     V#0191
  *)
  
-(*  28.12.87    | Switching der Prozeûkennung bei Accsessories
+(*  28.12.87    | Switching der Proze‚Çßkennung bei Accsessories
  *  02.01.88    | Die Vektorexchangeroutine benutzen nun das 'DeviceHandle'
- *                und nicht die VDI-GerÑtekennung
- *  22.01.88 TT | vdi_if lÑdt handle runter bei opcode = open_v_work
+ *                und nicht die VDI-Ger√§tekennung
+ *  22.01.88 TT | vdi_if l√§dt handle runter bei opcode = open_v_work
  *  07.02.88    | Process-switching bei 'aes_call' funktioniert nun korrekt
- *  04.05.88    | VorlÑufige Version ohne Process-switching (fÅr Dietmar
+ *  04.05.88    | Vorl√§ufige Version ohne Process-switching (f√ºr Dietmar
  *              | Rabich)
  *  02.06.88    | 'removeTimerVec' korrigiert
  *  08.04.89    | process switching ganz raus.
@@ -28,18 +28,18 @@ IMPLEMENTATION MODULE GEMShare;
  *  03.08.89    | LINK in 'selectFile'
  *  ???????? TT | REF-Parm.
  *  02.04.90    | Aufteilung in public und private Datenstrukturen
- *  13.06.90 TT | echantSuperMode gelîscht
+ *  13.06.90 TT | echantSuperMode gel√∂scht
  *  05.10.90    | 'shellRead' def. + impl.
  *  25.11.90 TT | Um Rekursion in GEMError zu verhindern, wird "error" schon
- *                VOR Aufruf des Error-Handlers gelîscht; 'errNum' wird in
+ *                VOR Aufruf des Error-Handlers gel√∂scht; 'errNum' wird in
  *                setINT0attribut & gemErrorOccured auf Null gesetzt, damit
  *                zumindest ein definierter Wert darin enthalten ist.
  *                'ptrToErrHdler' neu - wird bei Auftreten eines Fehlers
- *                indirekt Åber die GemEnv-Var. "ErrHdlProc" aufgerufen.
- *                öberhaupt: 'testINTOUT0' signalisiert nur einen Fehler,
- *                wenn 'errnum' Null ist. Wozu dann Åberhaupt eine Var dafÅr?
+ *                indirekt √ºber die GemEnv-Var. "ErrHdlProc" aufgerufen.
+ *                √úberhaupt: 'testINTOUT0' signalisiert nur einen Fehler,
+ *                wenn 'errnum' Null ist. Wozu dann √ºberhaupt eine Var daf√ºr?
  *  04.12.90 TT | stringIntoCFormat: SUB D1,D0 nun als Long-Operation!
- *  25.02.91 TT | unloadFonts aus VDIControls Åbertragen
+ *  25.02.91 TT | unloadFonts aus VDIControls √ºbertragen
  *  20.05.91 MS | unloadFonts korrigiert
  *  21.08.91 TT | 'signalGemError' macht RTS statt Runtime-Error, wenn
  *                'ptrToErrHdler' = NIL ist.
@@ -87,11 +87,11 @@ PROCEDURE stringIntoINTIN(REF str:ARRAY OF CHAR):CARDINAL;
         MOVE.L  pubs,A0
         LEA     pubArrays.vINTIN(A0),A0  ; ADR(INTIN[0]) -> A0
         LSL.W   #1,D4                   ; 1 Element verbraucht 2 Byte
-        ADDA.W  D4,A0                   ; Offset hinzuzÑhlen
+        ADDA.W  D4,A0                   ; Offset hinzuz√§hlen
         MOVE.W  -(A3),D0
         MOVE.L  -(A3),A1                ; ADR(str) -> A1
         CMP.W   D1,D0                   ; Wenn String zu lang, benutze nur
-        BLS     cont                    ; den Teil, der noch ins Array paût
+        BLS     cont                    ; den Teil, der noch ins Array pa‚Çßt
         MOVE.W  D1,D0
 cont
         MOVE.W  D0,D2                   ; Store num. of max. chars to copy
@@ -101,7 +101,7 @@ loop                                    ; Kopiere bis 0C oder max. Arrayindex
         MOVE.W  D1,(A0)+
         DBEQ    D0,loop
         SUB.W   D0,D2                   ; Anzahl kopierter Zeichen ermitteln
-        MOVE.W  D2,(A3)+                ; und zurÅckgeben
+        MOVE.W  D2,(A3)+                ; und zur√ºckgeben
     END;
   END stringIntoINTIN;
 
@@ -119,7 +119,7 @@ PROCEDURE stringIntoCFormat (REF str: ARRAY OF CHAR);
 
   BEGIN
     ASSEMBLER
-        MOVE.L  (A7)+,A2        ; Rette RÅckkehraddr.
+        MOVE.L  (A7)+,A2        ; Rette R√ºckkehraddr.
         MOVEQ   #0,D1
         MOVE.W  -(A3),D1        ; HIGH(str) -> D1
         MOVE.L  A7,D0           ; Berechne neuen Top of Stack
@@ -140,8 +140,8 @@ cont2
 loop
         MOVE.B  (A1)+,(A0)+
         DBEQ    D1,loop         ; kopiere bis zum Stringende
-        CLR.B   (A0)+           ; und hÑnge #0 als Endezeichen an
-        MOVE.L  A2,-(A7)        ; RÅckkehraddr. fÅr RTS auf den Stack
+        CLR.B   (A0)+           ; und h√§nge #0 als Endezeichen an
+        MOVE.L  A2,-(A7)        ; R√ºckkehraddr. f√ºr RTS auf den Stack
     END;
   END stringIntoCFormat;
 
@@ -155,7 +155,7 @@ PROCEDURE setDevice(handle:p_device;VAR success:BOOLEAN);
         JSR     testErrorCheck;
         MOVE.L  -(A3),A2
         MOVE.L  -(A3),D0
-        AND.W   #-2,D0                  ; Addr. muû gerade sein
+        AND.W   #-2,D0                  ; Addr. mu‚Çß gerade sein
         MOVE.L  D0,A0
         CMPA.L  #NIL,A0
         BNE     cont
@@ -183,11 +183,11 @@ ende
  
 PROCEDURE signalGemError;
 (*
- * Hier wird "error" auf TRUE gesetzt, so daû der User den Fehler
+ * Hier wird "error" auf TRUE gesetzt, so da‚Çß der User den Fehler
  * dann abfragen kann.
  * Falls aber mittels des Util-Moduls "GemErrLocator" der unmittelbare
- * Error-Handler installiert ist, wird sofort darÅber der Fehler
- * angezeigt, so daû ein Scanning auf den Verursacher mîglich ist.
+ * Error-Handler installiert ist, wird sofort dar√ºber der Fehler
+ * angezeigt, so da‚Çß ein Scanning auf den Verursacher m√∂glich ist.
  *)
   BEGIN
     ASSEMBLER
@@ -207,7 +207,7 @@ ende
 
 PROCEDURE testINTOUT0;
 (*
- * Aufzurufen nach einem AES-Call. INTOUT[0] wird geprÅft. Wenn Fehler
+ * Aufzurufen nach einem AES-Call. INTOUT[0] wird gepr√ºft. Wenn Fehler
  * angezeigt, wird 'error'-Flag gesetzt.
  *)
   BEGIN
@@ -617,7 +617,7 @@ PROCEDURE ctrl_cnts2;
     END
   END ctrl_cnts2;
   
-  (* Control Array Parameter fÅr die Generalized Drawing Primitives (GDP) *)
+  (* Control Array Parameter f√ºr die Generalized Drawing Primitives (GDP) *)
   
 PROCEDURE ctrl_cnts3;
 
@@ -637,7 +637,7 @@ PROCEDURE ctrl_cnts3;
     END;
   END ctrl_cnts3;
 
-    (* Control Array Parameter fÅr die VDI-Escape-Funktionen *)
+    (* Control Array Parameter f√ºr die VDI-Escape-Funktionen *)
   
 PROCEDURE ctrl_cnts4;
 
@@ -711,7 +711,7 @@ PROCEDURE vdi_if (handle:p_device;Opcode,Subcmd:CARDINAL);
         
         MOVE.L      D0,-(A7)
         SUBQ.L      #2,A7                           ; reserv. 1 Wort auf dem Stack
-        MOVE.L      A7,(A3)+                        ; und Åbergib es als VAR-Parm.
+        MOVE.L      A7,(A3)+                        ; und √ºbergib es als VAR-Parm.
         JSR         setDevice
         MOVE.W      (A7)+,D1
         MOVE.L      (A7)+,D0
@@ -721,9 +721,9 @@ PROCEDURE vdi_if (handle:p_device;Opcode,Subcmd:CARDINAL);
         MOVE.L      our_cb,A0
         MOVE.L      cb.CURDEVICE(A0),A1             ; VDI device handle setzen
         MOVE.W      device.handle(A1),cb.V_CONTRL.handle(A0)
-        CMP.W       #GRAF_STANDARD,D0               ; Sonderbehandlung fÅr GRAF_S.
+        CMP.W       #GRAF_STANDARD,D0               ; Sonderbehandlung f√ºr GRAF_S.
         BEQ         gsCmd
-        CMP.W       #ESCAPE,D0                      ; Sonderbehandlung fÅr ESCAPE
+        CMP.W       #ESCAPE,D0                      ; Sonderbehandlung f√ºr ESCAPE
         BEQ         escCmd
         LEA         ctrl_cnts2,A1   ; kein graf_standard Befehl
         BRA         cont2
@@ -830,7 +830,7 @@ loop1
 loop2
         MOVE.B  (A4)+,(A1)+
         DBF     D0,loop2
-        MOVE.L  (A7),A7             ; Strings wieder vom Stack lîschen
+        MOVE.L  (A7),A7             ; Strings wieder vom Stack l√∂schen
         MOVE.L  (A7),A7
         ADDA.W  #12,A7
         
@@ -894,7 +894,7 @@ PROCEDURE shellRead (VAR cmd, tail: ARRAY OF CHAR);
         MOVE.L  A7,A0
         MOVE    -(A3),D1
         MOVE.L  -(A3),A1
-        MOVE.B  (A0)+,D2        ; LÑnge von TAIL
+        MOVE.B  (A0)+,D2        ; L√§nge von TAIL
       lup2:
         SUBQ.B  #1,D2
         BCS     endtail
@@ -942,7 +942,7 @@ PROCEDURE grafMouse(form:WORD(* ~ AESGraphics.MouseForm*);
                     mFormDefPtr:PtrMouseFormDef);
                     
                     
-(* !!!!!!!!! Muû 'AESGraphics.MouseForm' entsprechen !!!!!!!!!! *)
+(* !!!!!!!!! Mu‚Çß 'AESGraphics.MouseForm' entsprechen !!!!!!!!!! *)
 
 TYPE    MouseForm       = (arrow, textCursor, bee, pointHand, flatHand,
                            thinCross, thickCross, outlineCross, userCursor,
@@ -1121,7 +1121,7 @@ PROCEDURE closeWindow(handle:CARDINAL);
         MOVE.W  -(A3),D0
         
         CMP.W   #31,D0
-        BHI     noSuper                 ; springe, falls 'handle' zu groû
+        BHI     noSuper                 ; springe, falls 'handle' zu gro‚Çß
         MOVE.L  cb.SUPERVISION.openWinds(A0),D1
         BCLR    D0,D1                   ; delete handle out of OpenWind-list
         MOVE.L  D1,cb.SUPERVISION.openWinds(A0)
@@ -1143,7 +1143,7 @@ PROCEDURE deleteWindow(handle:CARDINAL);
         MOVE.W  -(A3),D0
         
         CMP.W   #31,D0
-        BHI     noSuper                 ; springe, falls 'handle' zu groû
+        BHI     noSuper                 ; springe, falls 'handle' zu gro‚Çß
         MOVE.L  cb.SUPERVISION.createWinds(A0),D1
         BCLR    D0,D1                   ; delete handle out of CreateWind-list
         MOVE.L  D1,cb.SUPERVISION.createWinds(A0)
@@ -1346,7 +1346,7 @@ BEGIN
   errorProcPtr := NIL;    (*  Keine Fehlerroutine angemeldet  *)
   ptrToErrHdler := NIL;
   
-                (*  'Plugs' zurÅcksetzen  *)
+                (*  'Plugs' zur√ºcksetzen  *)
   
   keyboardPlugActive := FALSE;
   buttonPlugActive := FALSE;
@@ -1355,4 +1355,4 @@ BEGIN
   messagePlugActive := FALSE;
   timerPlugActive := FALSE;
   
-END GEMShare.
+END GEMShare.

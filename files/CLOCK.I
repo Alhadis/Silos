@@ -4,7 +4,7 @@ IMPLEMENTATION MODULE Clock; (* V#005 *)
 FROM SYSTEM IMPORT ASSEMBLER;
 
 (*
-  06.08.89  TT  쉇ernahme der DateUtil-Funktionen (V2.00) von Markus Kilbinger
+  06.08.89  TT  횥bernahme der DateUtil-Funktionen (V2.00) von Markus Kilbinger
   10.11.90  TT  $L+ bei DateUtil-Funktionen - sollten nun laufen
 *)
 
@@ -184,14 +184,14 @@ PROCEDURE GetDateAndTime ( VAR d:Date; VAR t: Time );
 
 
 CONST
-    SYear       =       4;   (* MOD f걊 Schaltjahr.        *)
-    Century     =     100;   (* MOD f걊 Jahrhundert.       *)
-    SCentury    =     400;   (* MOD f걊 Schaltjahrhundert. *)
-    DaysPerWeek =       7;   (* MOD f걊 Wochentag.         *)
-    WeekdayOff  =       5;   (* Offset f걊 Wochentag.      *)
+    SYear       =       4;   (* MOD f체r Schaltjahr.        *)
+    Century     =     100;   (* MOD f체r Jahrhundert.       *)
+    SCentury    =     400;   (* MOD f체r Schaltjahrhundert. *)
+    DaysPerWeek =       7;   (* MOD f체r Wochentag.         *)
+    WeekdayOff  =       5;   (* Offset f체r Wochentag.      *)
     January     =       1;   (* Nr. vom Januar.            *)
     February    =       2;   (* Nr. vom Februar.           *)
-    March       =       3;   (* Nr. vom M꼛z.              *)
+    March       =       3;   (* Nr. vom M채rz.              *)
     December    =      12;   (* Nr. vom Dezember.          *)
     DaysPerYear =    365L;   (* Tage pro Jahr.             *)
     Dividend    =    400L;   (* kgV von 4, 100, 400.       *)
@@ -201,7 +201,7 @@ VAR off : ARRAY [January..December] OF INTEGER;   (* Offsets der Monate. *)
 
 
 PROCEDURE IsSYear (y : CARDINAL) : BOOLEAN;
-(* Testet, ob 'y' ein Schaltjahr ist unter Ber갷ksichtigung des
+(* Testet, ob 'y' ein Schaltjahr ist unter Ber체cksichtigung des
    gregorianischen Kalenders: Jahre, die mit zwei Nullen enden, sind nur
    dann ein Schaltjahr, wenn sie durch 400 teilbar sind. *)
   (*$L-*)
@@ -271,7 +271,7 @@ PROCEDURE YearFac (y : CARDINAL) : LONGINT;
   
   
 PROCEDURE Factor (d : Date) : LONGINT;
-(* Berechnet die Anzahl der Tage zu einem fiktiven Datum f걊 Tag-Differenz. *)
+(* Berechnet die Anzahl der Tage zu einem fiktiven Datum f체r Tag-Differenz. *)
   VAR f : LONGINT;
   BEGIN
     WITH d DO
@@ -360,4 +360,4 @@ BEGIN
         MOVE.W  #304,(A0)+   (* + 31 *)
         MOVE.W  #334,(A0)    (* + 30 *)
   END;
-END Clock.
+END Clock.

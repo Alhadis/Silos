@@ -23,7 +23,7 @@
  * 
 ***/
 
-/* License from SGI's OpenGL® Sample Implementation */
+/* License from SGI's OpenGLÂ® Sample Implementation */
 
 /*
 # License Applicability. Except to the extent portions of this file are

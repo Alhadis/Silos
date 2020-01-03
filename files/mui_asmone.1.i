@@ -5,7 +5,7 @@
 **
 ** Main Header File
 **
-*** Assembler modifications 26-Aug-93 by Henri Veisterä.
+*** Assembler modifications 26-Aug-93 by Henri VeisterÃ¤.
 ** 
 *** Updated for MUI V2.2 25-Aug-94 by Paul Hickman.
 **
@@ -198,7 +198,7 @@ MUIKEY_COUNT 		EQU 22 * counter *
 ;PSD_INITIAL_TITLE	dc.b	"MUI Public Screen",0
 ;PSD_ID_MPUB		dc.l	'MPUB'
 
-;PSD_NAME_FRONTMOST	dc.b	"«Frontmost»",0
+;PSD_NAME_FRONTMOST	dc.b	"Â«FrontmostÂ»",0
 
 ;PSD_FILENAME_SAVE	dc.b	"envarc:mui/PublicScreens.iff",0
 ;PSD_FILENAME_USE	dc.b	"env:mui/PublicScreens.iff",0

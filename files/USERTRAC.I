@@ -55,9 +55,9 @@ PROCEDURE callSub;
   (*$L-*)
   BEGIN
     ASSEMBLER
-        ; Routine im User-Mode ausfÅhren.
+        ; Routine im User-Mode ausf√ºhren.
         ; Dazu eigenen Stack verwenden.
-        ; Alter USP muû gerettet werden
+        ; Alter USP mu‚Çß gerettet werden
         
         MOVE.L  USP,A1
         MOVE.L  A1,-(A7)        ; alten Daten-Stack retten
@@ -69,7 +69,7 @@ PROCEDURE callSub;
         ANDI    #$CFFF,SR       ; User Mode aktivieren
         JSR     (A0)            ; Funktion aufrufen
         
-        ; zurÅck in den Supervisor-Mode
+        ; zur√ºck in den Supervisor-Mode
         CLR.L   -(A7)
         MOVE    #$20,-(A7)
         TRAP    #1
@@ -80,7 +80,7 @@ PROCEDURE callSub;
         RTS
         
       stackLo:
-        DS      2000            ; 2000 Byte fÅr Stack reservieren
+        DS      2000            ; 2000 Byte f√ºr Stack reservieren
       stackHi:
     END
   END callSub;
@@ -91,7 +91,7 @@ PROCEDURE trap5entry;
   (*$L-*)
   BEGIN
     ASSEMBLER
-        ; Wort nach TRAP 5 - Instr. prÅfen
+        ; Wort nach TRAP 5 - Instr. pr√ºfen
         MOVE.L  A0,-(A7)
         MOVE.W  D0,-(A7)
         MOVE.L  8(SP),A0        ; PC laden
@@ -118,7 +118,7 @@ PROCEDURE trap5entry;
         MOVE.L  Stop,A0
         JSR     callSub   ; Stop-Routine aufrufen
         TST.W   -(A3)     ; Ergebnis von Funktion (BOOLEAN) abholen
-        BEQ     ende      ; Programm fortfÅhren
+        BEQ     ende      ; Programm fortf√ºhren
 
         ; Programm stoppen
         LEA     scan,A0
@@ -146,7 +146,7 @@ PROCEDURE trap5entry;
         RTE
         
      sizeTable:
-        ; Tabelle mit Grîûen der Werte auf dem A3-Stack
+        ; Tabelle mit Gr√∂‚Çßen der Werte auf dem A3-Stack
         DC.B    0,4,8,2,4,0,0,0,4,2,0,0,0,0,0,0,0,0,0,0,4,2,4,4,2,4,4,6,0,0
         DC.B    4,0,0,2,2,2,0,0,2,2,4,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
         DC.B    0,0,0,0
@@ -190,4 +190,4 @@ BEGIN
   Stop:= dummy;
   CallSupervisor (init, NIL, wsp);
   CatchProcessTerm (hdl,terminate,wsp); (* wsp.bottom ist NIL *)
-END UserTrace.
+END UserTrace.

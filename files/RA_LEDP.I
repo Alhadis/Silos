@@ -35,16 +35,16 @@ LEDP_VARLEN	=	$20
 ;----------------------------------------------------------------------------
 ;LEDP_WATCH is a substructure inside the main LEDP cookie structure
 ;
-	struct	LEDP_WATCH	;FÅr Programmierer zu Debugging-Zwecken
-	void_p	LEDW_pointer	;00;  Zeiger auf zu Åberwachendes Byte
-	char check		;04;  Default fÅr zu ÅberprÅfendes Byte
+	struct	LEDP_WATCH	;F√ºr Programmierer zu Debugging-Zwecken
+	void_p	LEDW_pointer	;00;  Zeiger auf zu √ºberwachendes Byte
+	char check		;04;  Default f√ºr zu √ºberpr√ºfendes Byte
 	char last		;05;  letzter Wert des Bytes
-	char andmask		;06;  Und-Maske zum ZurÅcksetzen
-	char ormask		;07;  Oder-Maske zum ZurÅcksetzen
-	char restime		;08;  Zeit zum ZurÅcksetzen
-	char counter		;09;  ZÑhler dafÅr
-	char bit0		;10;  Zeichen fÅr 0-Bit
-	char bit1		;11;  Zeichen fÅr 1-Bit
+	char andmask		;06;  Und-Maske zum Zur√ºcksetzen
+	char ormask		;07;  Oder-Maske zum Zur√ºcksetzen
+	char restime		;08;  Zeit zum Zur√ºcksetzen
+	char counter		;09;  Z√§hler daf√ºr
+	char bit0		;10;  Zeichen f√ºr 0-Bit
+	char bit1		;11;  Zeichen f√ºr 1-Bit
 	char bytelft		;12;  Zeichen links vom Byte
 	char bytergt		;13;  Zeichen rechts vom Byte
 	d_end	LEDP_WATCH	;14;
@@ -55,7 +55,7 @@ LEDP_VARLEN	=	$20
 	long	lp_magic	;00; XBRA-Kennung des LED-Panels
 	word	lp_version	;04; Hi-Byte: Version, Lo-Byte: Unterversion
 	long	lp_verdate	;06;
-	word	lp_varlen	;10; LÑnge der zu speichernden Variablen ab Header
+	word	lp_varlen	;10; L√§nge der zu speichernden Variablen ab Header
 	word	lp_light	;12;
 	d_alias	lp_headsize	;14;
 	d_alias	lp_active	;14; word  $0000 => turn_off  $8001 => turn_on
@@ -94,29 +94,29 @@ LEDP_VARLEN	=	$20
 ;	Here are some more remarks by the LEDPANEL author:
 ;
 ;	dtverb: Die "two in one"-Funktion zum Einblenden des
-;		Datums anstelle der Zeit wird aktiviert durch Lîschen
+;		Datums anstelle der Zeit wird aktiviert durch L√∂schen
 ;		des "date"-Flags und Setzen des "year"-Flags
-;	watch: FÅr Programmierer zu Debugging-Zwecken,
-;			hiermit kann ein Byte Åberwacht werden
-;		pointer: Zeiger auf das Byte, man muû natÅrlich	global
-;			(im Supervisor-Modus) darauf zugreifen kînnen
+;	watch: F√ºr Programmierer zu Debugging-Zwecken,
+;			hiermit kann ein Byte √ºberwacht werden
+;		pointer: Zeiger auf das Byte, man mu‚Çß nat√ºrlich	global
+;			(im Supervisor-Modus) darauf zugreifen k√∂nnen
 ;		check: Unbenutzt, man kann den obigen Zeiger darauf
 ;			zeigen lassen (Zugriff garantiert erlaubt)
-;		andmask: Nachdem ein ZÑhler abgelaufen ist, wird
-;			eine Und-Operation mit dieser Maske durchgefÅhrt,
-;		ormask: zusÑtzlich auch noch eine Oder-Operation
-;		restime: Startwert fÅr den ZÑhler in VBLs (falls 0,
-;			dann wird das Byte nie verÑndert)
-;		bit0/bit1: Zeichen fÅr 0-Bit und 1-Bit
-;		bytelft/bytergt: Zeichen fÅr Umrahmung des Bytes
+;		andmask: Nachdem ein Z√§hler abgelaufen ist, wird
+;			eine Und-Operation mit dieser Maske durchgef√ºhrt,
+;		ormask: zus√§tzlich auch noch eine Oder-Operation
+;		restime: Startwert f√ºr den Z√§hler in VBLs (falls 0,
+;			dann wird das Byte nie ver√§ndert)
+;		bit0/bit1: Zeichen f√ºr 0-Bit und 1-Bit
+;		bytelft/bytergt: Zeichen f√ºr Umrahmung des Bytes
 ;	chrsize: wird ab Version 3.0 vom CPX-Modul gesetzt
 ;	
-;	Vorgehensweise beim VerÑndern von Parametern:
+;	Vorgehensweise beim Ver√§ndern von Parametern:
 ;
-;	1. Header ÅberprÅfen (magic, version)
+;	1. Header √ºberpr√ºfen (magic, version)
 ;	2. LED-Panel abschalten (active=0)
-;	3. énderungen an der Konfiguration vornehmen
-;	4. Grafik-Rechteck (lstrect) lîschen
+;	3. √Ñnderungen an der Konfiguration vornehmen
+;	4. Grafik-Rechteck (lstrect) l√∂schen
 ;	5. LED-Panel einschalten und auffrischen (active=0x8001)
 ;----------------------------------------------------------------------------
 ;	Macro definitions
@@ -154,4 +154,4 @@ set_LEDP_act	MACRO	areg
 	endc	;LEDPANEL_defined
 ;----------------------------------------------------------------------------
 ;End of file:	LEDPANEL.I
-;----------------------------------------------------------------------------
+;----------------------------------------------------------------------------

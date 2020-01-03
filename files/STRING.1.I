@@ -145,7 +145,7 @@ strcmp_bcl
 	sub.b	(a0)+,d0
 	bne.s	strcmp_stop1	; different = stop
 	tst.b	-1(a0)
-	bne.s	strcmp_bcl	; si deux egaux … zero : stop ok
+	bne.s	strcmp_bcl	; si deux egaux Ã  zero : stop ok
 strcmp_stop0
 	moveq	#0,d0
 	movem.l	(sp)+,a0-a1

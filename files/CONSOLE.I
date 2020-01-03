@@ -5,7 +5,7 @@ IMPLEMENTATION MODULE Console;
 FROM SYSTEM IMPORT ASSEMBLER;
 
 (*
- * Ausgaben Åber GEMDOS.Write mit Handle = 1, Eingaben mit Handle = 0
+ * Ausgaben √ºber GEMDOS.Write mit Handle = 1, Eingaben mit Handle = 0
  * Negative Handles lassen sich offenbar nicht umleiten!
  *)
 
@@ -81,7 +81,7 @@ PROCEDURE ReadLine (VAR str: ARRAY OF CHAR);
         ; Das ist der Fall, wenn der String voll ist.
         ; In diesem Fall wird dann auf Return noch gewartet.
         ; Jede andere Taste wird mit einem Bing (CHR (7)), und zwar IMMER
-        ; an die Console ohne Umleitung, bestÑtigt
+        ; an die Console ohne Umleitung, best√§tigt
         CMP.L   D1,D0
         BCS     ok
         
@@ -145,7 +145,7 @@ PROCEDURE KeyPressed (): BOOLEAN;
     END
   END KeyPressed;
 
-VAR c: CHAR; (* muû global sein wg. $L- *)
+VAR c: CHAR; (* mu‚Çß global sein wg. $L- *)
 
 PROCEDURE FlushKbd;
   BEGIN
@@ -154,4 +154,4 @@ PROCEDURE FlushKbd;
     END;
   END FlushKbd;
 
-END Console.
+END Console.

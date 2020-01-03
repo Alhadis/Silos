@@ -1,12 +1,12 @@
 (*######################################################################
                                                                         
   MAGIC         Modula's  All purpose  GEM  Interface  Cadre
-                ÿ         ÿ            ÿ    ÿ          ÿ
+                Â          Â             Â     Â           Â 
 ########################################################################
 
   BIOS          Basic Input Output System       Interface for Modula-2
 
-                Implementation fr Megamax-Modula-2
+                Implementation fÃ¼r Megamax-Modula-2
 
 ########################################################################
   V1.0  (C) by Peter Hellinger
@@ -183,4 +183,4 @@ BEGIN
 END Kbshift;
 
 END MagicBIOS.
-
+

@@ -122,10 +122,10 @@
 *	 on some Amiga it is really necessary to do a double write to INTREQ
 
 ********************************
-*        Player 6.1A ®         *
+*        Player 6.1A Â®         *
 *      All in one-version      *
 *        Version 610.6         *
-*   © 1992-95 Jarno Paananen   *
+*   Â© 1992-95 Jarno Paananen   *
 *     All rights reserved      *
 * Fixed by:  NoName, Platon42, *
 *  Tolkien and The Dark Coder  *
@@ -1076,7 +1076,7 @@ P61_rem3:
 	rts
 
 ;WHY not just cond-add mulu to where the finalvolume is set??
-;"Jag blir så matt." (c) The Big A/Phenomena.
+;"Jag blir sÃ¥ matt." (c) The Big A/Phenomena.
 
 	ifne p61fade
 P61_mfade:
@@ -1259,7 +1259,7 @@ P61_emptyloop578E:
 ; Call P61_SetPosition to jump to a specific position in the song
 ; If called AFTER P61_Music, what's written below will be true but happen one 
 ; frame later.
-;­ OPTIONALLY Starts from the beginning if out of limits. ­
+;Â­ OPTIONALLY Starts from the beginning if out of limits. Â­
 
 * Input:	D0.b=songposition. A6=your custombase ("$dff000")
 * Uses:		D0-D1/A0-A1/A3

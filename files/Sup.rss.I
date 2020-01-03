@@ -259,7 +259,7 @@ enum TEikAppResourceFileStandardOffset
 *  Description : 
 *  Version     : 
 *
-*  Copyright © 2002-2005 Nokia. All rights reserved.
+*  Copyright Â© 2002-2005 Nokia. All rights reserved.
 *  This material, including documentation and any related 
 *  computer programs, is protected by copyright controlled by 
 *  Nokia. All rights are reserved. Copying, including 
@@ -866,8 +866,8 @@ enum TAknEditorNumericKeymap
                                             // Available characters:
     EAknEditorStandardNumberModeKeymap,     // 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, *, +, p, w, #
     EAknEditorPlainNumberModeKeymap,        // 1, 2, 3, 4, 5, 6, 7, 8, 9, 0
-    EAknEditorCalculatorNumberModeKeymap,   // 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, +, –, *, /, <decimal separator>
-    EAknEditorConverterNumberModeKeymap,    // 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, +, –, E, <decimal separator>
+    EAknEditorCalculatorNumberModeKeymap,   // 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, +, â€“, *, /, <decimal separator>
+    EAknEditorConverterNumberModeKeymap,    // 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, +, â€“, E, <decimal separator>
     EAknEditorToFieldNumberModeKeymap,      // 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, +, ;
     EAknEditorFixedDiallingNumberModeKeymap,// 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, *, +, p, w, ?, #
     EAknEditorSATNumberModeKeymap,          // 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, *, +, #
@@ -4484,7 +4484,7 @@ STRUCT AVKON_TOOLBAR
 *     Resource structure definitions for Avkon 
 *  Version:
 *
-*  Copyright © 2002 Nokia Corporation.
+*  Copyright Â© 2002 Nokia Corporation.
 *  This material, including documentation and any related 
 *  computer programs, is protected by copyright controlled by 
 *  Nokia Corporation. All rights are reserved. Copying, 
@@ -4506,7 +4506,7 @@ STRUCT AVKON_TOOLBAR
 *     Constants for Avkon that may need to be used in resource files
 *  Version:
 *
-*  Copyright © 2002 Nokia Corporation.
+*  Copyright Â© 2002 Nokia Corporation.
 *  This material, including documentation and any related
 *  computer programs, is protected by copyright controlled by
 *  Nokia Corporation. All rights are reserved. Copying,
@@ -4536,7 +4536,7 @@ STRUCT AVKON_TOOLBAR
 *  Description : Avkon font categories correspond to the font "Category types" in the 
 *  Series60 layout tool
 *
-*  Copyright © 2002-2004 Nokia. All rights reserved.
+*  Copyright Â© 2002-2004 Nokia. All rights reserved.
 *  This material, including documentation and any related 
 *  computer programs, is protected by copyright controlled by 
 *  Nokia. All rights are reserved. Copying, including 
@@ -4588,7 +4588,7 @@ enum TAknFontCategory
 *
 *  Description: Constants and offsets for Scalable and Encoded Font IDs
 *
-*  Copyright © 2002-2004 Nokia. All rights reserved.
+*  Copyright Â© 2002-2004 Nokia. All rights reserved.
 *  This material, including documentation and any related 
 *  computer programs, is protected by copyright controlled by 
 *  Nokia. All rights are reserved. Copying, including 
@@ -8114,7 +8114,7 @@ rls_string qtn_sup_upload_large_image "Image '%S' is rather large for using in m
 rls_string qtn_about_dialog_title "About"
 
 //d:About dialog text
-rls_string qtn_about_dialog_text "Snap-up Version 1.0.0\n\nAuthor: Next2Friends\n\nSupport: contact@next2friends.com\n\n(c) Next2Friends, 2008.\n\nSnap Up, or SUP, stands for Snap and Upload. It is a simple way to snap and upload photos to your Next2Friends profile. Want to create a live photo gallery from an event for your friends to view? Or maybe you want to save space on your mobile device’s hard drive. Either way, Next2Friends allows you to just snap photos and upload them to your profile for later viewing and editing."
+rls_string qtn_about_dialog_text "Snap-up Version 1.0.0\n\nAuthor: Next2Friends\n\nSupport: contact@next2friends.com\n\n(c) Next2Friends, 2008.\n\nSnap Up, or SUP, stands for Snap and Upload. It is a simple way to snap and upload photos to your Next2Friends profile. Want to create a live photo gallery from an event for your friends to view? Or maybe you want to save space on your mobile deviceâ€™s hard drive. Either way, Next2Friends allows you to just snap photos and upload them to your profile for later viewing and editing."
 
 //d:Privacy Statement file name
 rls_string qtn_privacy_statement_filename "PrivacyStatement.txt"

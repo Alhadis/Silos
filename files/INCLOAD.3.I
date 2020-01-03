@@ -50,7 +50,7 @@ Fcreate	MACRO
 	addq	#8,sp
 	ENDM
 	
-; Fread handle,dest,len  (ret: D0.l Tats꼊hliche L꼗ge)
+; Fread handle,dest,len  (ret: D0.l Tats채chliche L채nge)
 Fread	MACRO
 	pea	\2
 	move.l	\3,-(sp)
@@ -60,7 +60,7 @@ Fread	MACRO
 	lea	$c(sp),sp
 	ENDM
 
-; Fwrite handle,source,len  (ret: d0.l Tats꼊hliche Anzahl geschriebener Bytes)
+; Fwrite handle,source,len  (ret: d0.l Tats채chliche Anzahl geschriebener Bytes)
 Fwrite	MACRO
 	pea	\2
 	move.l	\3,-(sp)
@@ -158,7 +158,7 @@ Pexec	MACRO
 	lea	$10(sp),sp
 	ENDM
 
-; _LOAD fname^,dest,len  (ret: d0.l Tats꼊hliche L꼗ge, neg.l:Fehler)
+; _LOAD fname^,dest,len  (ret: d0.l Tats채chliche L채nge, neg.l:Fehler)
 _LOAD	MACRO
 .l0\@:	tst.b	disk_in_use
 	bne.s	.l0\@
@@ -201,10 +201,10 @@ mfree:	move.l	d0,-(sp)
 	addq	#6,sp
 	rts
 
-; -> d0.l  L꼗ge
+; -> d0.l  L채nge
 ;    a0.l  Fname^
 ;    a1.l  Dest
-; <- d0.l  Tats꼊hliche L꼗ge oder Fehler (negativ LONG!)
+; <- d0.l  Tats채chliche L채nge oder Fehler (negativ LONG!)
 load:	move.l	d0,d6
 	Fopen	(a0)
 	move.w	d0,d7
@@ -218,10 +218,10 @@ load:	move.l	d0,d6
 	move.l	d6,d0	
 .e:	rts
 
-; -> d0.l  L꼗ge
+; -> d0.l  L채nge
 ;    a0.l  Fname^
 ;    a1.l  Dest
-; <- d0.l  Tats꼊hliche L꼗ge oder Fehler (negativ LONG!)
+; <- d0.l  Tats채chliche L채nge oder Fehler (negativ LONG!)
 save:	move.l	d0,d6
 	Fcreate	(a0)
 	move.w	d0,d7
@@ -1111,4 +1111,4 @@ dir_tbl:
 dataname_txt:
 	DS.B	128
 linkfilehandle:
-	DS.W	1
+	DS.W	1

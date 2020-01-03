@@ -11,7 +11,7 @@ FROM StrConv  IMPORT CardToStr;
  *
  *      geschrieben von Manuel Chakravarty
  *
- *      Version 2.2     V#0395      Erstellt MÑrz-Oktober 1987
+ *      Version 2.2     V#0395      Erstellt M√§rz-Oktober 1987
  *)
 
 
@@ -24,9 +24,9 @@ FROM StrConv  IMPORT CardToStr;
  *               'OpenDevice'
  *     27.06.89: Benutzt 'ResCtrl'.
  *     02.08.89: 'SuspendedProcess' raus
- *     11.08.89: Verschiebung wÑhrend dem Kopieren der GerÑteparameterliste
+ *     11.08.89: Verschiebung w√§hrend dem Kopieren der Ger√§teparameterliste
  *               korrigiert.
- *     20.08.89: 'GDOSAvailable' + 'GEMVersion' def. + impl. auûerdem
+ *     20.08.89: 'GDOSAvailable' + 'GEMVersion' def. + impl. au‚Çßerdem
  *               Selektorgeschichte auf den 'SelectFileExtended' umgestellt.
  * TT  07.09.89: Kein extended FSel bei GEM V2;
  * TT  ????????: REF-Parm.
@@ -38,20 +38,20 @@ FROM StrConv  IMPORT CardToStr;
  *               selbstst. ein! Bisher wurde das immer von SelectFile hier
  *               erledigt, egal, welche Routine angemeldet war - Mist?!
  * TT  21.11.90: GDOSAvailable drin und getestet; Nur noch ein globales
- *               appl_init und appl_exit pro Prozeû;
+ *               appl_init und appl_exit pro Proze‚Çß;
  *               Damit ModLoad auch nach Aufruf von "termProc" noch InitGem u.
- *               ExitGem tÑtigen kann, wird "modId" zu Beginn auf 2 statt 1
- *               gesetzt. So ist "modID"=1 nach "termProc", sodaû die OWNER_ID
- *               bei einem InitGem nicht Null ist (denn dan wÅrde ExitGem nix
+ *               ExitGem t√§tigen kann, wird "modId" zu Beginn auf 2 statt 1
+ *               gesetzt. So ist "modID"=1 nach "termProc", soda‚Çß die OWNER_ID
+ *               bei einem InitGem nicht Null ist (denn dan w√ºrde ExitGem nix
  *               freigeben).
  *               'ErrorProc' ist nicht mehr HALT sondern ein neuer TRAP#6-Code;
- *               outOfMemory: LINK A5 statt A6; GEMAvailable angepaût;
+ *               outOfMemory: LINK A5 statt A6; GEMAvailable angepa‚Çßt;
  *               envelopeProc/ExitGem: 'error' wird immer auf FALSE gesetzt,
  *               damit dort nicht noch Fehler gemeldet werden.
- * TT  10.12.90: InitGem/Dev: ShellRead wird nur einmal pro Prozeû gemacht.
+ * TT  10.12.90: InitGem/Dev: ShellRead wird nur einmal pro Proze‚Çß gemacht.
  * TT  12.12.90: InitDev: Bei TT-TOS wird auch extended-fileSelector verwendet;
- *               Envelopes: PathEnv.SelectFile wird vom Vater-Prozeû Åbernommen
- * TT  25.02.91: CloseDevice macht "unloadFonts", wenn nîtig.
+ *               Envelopes: PathEnv.SelectFile wird vom Vater-Proze‚Çß √ºbernommen
+ * TT  25.02.91: CloseDevice macht "unloadFonts", wenn n√∂tig.
  * TT  17.04.91: PathEnv.SelectFile wird sowohl bei InitGem als auch bei
  *               InitApplication gesetzt.
  * TT  10.07.93: Kein automatische Error-Meldung mehr bei GemErrors, damit
@@ -79,7 +79,7 @@ FROM    GEMGlobals      IMPORT TEffectSet;
 
 IMPORT  GEMShare;
 
-(* fÅr Tests:
+(* f√ºr Tests:
   FROM SysTypes IMPORT ScanDesc;
   FROM SysCtrl IMPORT GetScanAddr;
   FROM GEMScan IMPORT InitChain, InputScan;
@@ -99,15 +99,15 @@ CONST   TestVersion     = FALSE; (*  Debugging?  *)
 TYPE    GemHandle       = p_cb;
 
 
-VAR     noInits         : CARDINAL;  (*  ZÑhlt die Anzahl der '(Sys)InitGem's *)
-        modID           : INTEGER;   (*  ZÑhlt die Ebenen angemeldeter Module
+VAR     noInits         : CARDINAL;  (*  Z√§hlt die Anzahl der '(Sys)InitGem's *)
+        modID           : INTEGER;   (*  Z√§hlt die Ebenen angemeldeter Module
                                       *  (=0: SysEbene; >0: Mod.init.)
                                       *)
         gemStatus       : (unkown, available);
         
         voidI           : INTEGER;
 
-        didShRead: ARRAY [-1..15] OF BOOLEAN; (* 'shellRead' durchgefÅhrt? *)
+        didShRead: ARRAY [-1..15] OF BOOLEAN; (* 'shellRead' durchgef√ºhrt? *)
         appIsInit: ARRAY [-1..15] OF BOOLEAN; (* appIsInit[modID] zeigt an,
                                                * ob schon appl_init() auf-
                                                * gerugen wurde. *)
@@ -221,7 +221,7 @@ PROCEDURE v_opnwk (    device,
           
   (*$L+*)
   BEGIN
-    IF HIGH(param)<56 THEN        (* Nicht genug Platz fÅr die Parameter *)
+    IF HIGH(param)<56 THEN        (* Nicht genug Platz f√ºr die Parameter *)
       ASSEMBLER
           TRAP    #noErrorTrap
           DC.W    GeneralErr-$2000      ; !TT 22.01.88
@@ -278,7 +278,7 @@ PROCEDURE v_opnvwk (    handle          : CARDINAL;
           
   (*$L+*)
   BEGIN
-    IF HIGH(param)<56 THEN        (* Nicht genug Platz fÅr die Parameter *)
+    IF HIGH(param)<56 THEN        (* Nicht genug Platz f√ºr die Parameter *)
       ASSEMBLER
           TRAP    #noErrorTrap
           DC.W    GeneralErr-$2000      ; !TT 22.01.88
@@ -356,7 +356,7 @@ PROCEDURE extendedInquire (handle: DeviceHandle; VAR param: ARRAY OF INTEGER);
   
   (*$L+*)
   BEGIN
-    IF HIGH(param)<56 THEN        (* Nicht genug Platz fÅr die Parameter *)
+    IF HIGH(param)<56 THEN        (* Nicht genug Platz f√ºr die Parameter *)
       ASSEMBLER
           TRAP    #noErrorTrap
           DC.W    GeneralErr-$2000      ; !TT 22.01.88
@@ -628,7 +628,7 @@ loop2
       current^.params.colorRibbon:=(parameters[13]=0);
       current^.params.maxMarker:=parameters[14];
       IF intinMax <= parameters[15] THEN
-        current^.params.maxStrLen:=intinMax (* Unser Array ist eben nicht grîûer*)
+        current^.params.maxStrLen:=intinMax (* Unser Array ist eben nicht gr√∂‚Çßer*)
       ELSE
         current^.params.maxStrLen:=parameters[15]
       END;
@@ -786,7 +786,7 @@ PROCEDURE initGem (VAR success: BOOLEAN;
       RETURN
     END;
     
-    (*  Falls nîtig fordere die public arrays an.
+    (*  Falls n√∂tig fordere die public arrays an.
      *)
     IF virgin THEN
     
@@ -822,7 +822,7 @@ PROCEDURE initGem (VAR success: BOOLEAN;
       
       A_CONTRL.saddrout := 0;
       
-      (*  AES-/VDI-Paramterblîcke mit Array-Adresse init.
+      (*  AES-/VDI-Paramterbl√∂cke mit Array-Adresse init.
        *)
       AESPB.contrl  := ADR (A_CONTRL);
       AESPB.global  := ADR (GLOBAL);
@@ -858,7 +858,7 @@ PROCEDURE initGem (VAR success: BOOLEAN;
         GLOBAL:= root_cb^.GLOBAL
       END;
       
-      (*  GerÑteliste := leere Liste
+      (*  Ger√§teliste := leere Liste
        *)
       DEVICES := NoDevice;
       CURDEVICE:=NoDevice;
@@ -883,7 +883,7 @@ PROCEDURE initGem (VAR success: BOOLEAN;
                                    *  Listenordnung: historisch
                                    *)
     our_cb^.MAGIC := cbMagic;
-    INC (noInits);                (* Anzahl der Level-Init's erhîhen *)
+    INC (noInits);                (* Anzahl der Level-Init's erh√∂hen *)
     
     success := TRUE;              (* Neuer Level erfolgreich angemeldet! *)
   END initGem;
@@ -942,7 +942,7 @@ PROCEDURE initDev (    sysKoor: CARDINAL;
     IF success THEN
       WITH our_cb^ DO
         
-        (* StandardgerÑt (Screen) anmelden *)
+        (* Standardger√§t (Screen) anmelden *)
         GrafHandle (charH, charW, cellH, cellW, wrkStation);
         OpenDevice (screen, sysKoor, wrkStation, handle);
         IF handle = NoDevice THEN
@@ -965,8 +965,8 @@ PROCEDURE initDev (    sysKoor: CARDINAL;
 
       (* PathEnv-Vars / File-Selektor-Box init. *)
       IF NOT didShRead[modID] THEN
-        (* nur beim 1. Mal, da spÑter evtl. durch rsrc_load bei alten TOS-
-         * Versionen der Shell-Puffer Åberschrieben wird! *)
+        (* nur beim 1. Mal, da sp√§ter evtl. durch rsrc_load bei alten TOS-
+         * Versionen der Shell-Puffer √ºberschrieben wird! *)
         shellRead (name, args);
         FileNames.SplitPath (name, PathEnv.HomePath, name);
         IF PathEnv.HomePath [0] = 0C THEN
@@ -1013,36 +1013,36 @@ PROCEDURE closeDelWinds;
   BEGIN
     (*$? doSupervision:
     ASSEMBLER
-                                ; Schlieûe Fenster
+                                ; Schlie‚Çße Fenster
         MOVE.L  our_cb,A0
         CLR.W   D0              ; Beginne bei Handle #0
         MOVE.L  cb.SUPERVISION.openWinds(A0),D1
 loop1
-        BCLR    D0,D1           ; Lîsche Handle-Bit
+        BCLR    D0,D1           ; L√∂sche Handle-Bit
         BEQ     cont1           ; Springe, falls Handle nicht eingetrag.
         MOVE.W  D0,(A3)+
         MOVEM.L D0/D1/A0,-(A7)
         JSR     closeWindow     ; closeWindow(D0)
         MOVEM.L (A7)+,D0/D1/A0
 cont1
-        ADDQ.W  #1,D0           ; nÑchstes Handle
+        ADDQ.W  #1,D0           ; n√§chstes Handle
         TST.L   D1
-        BNE     loop1           ; nochmal, falls ein Handle Åbrig
+        BNE     loop1           ; nochmal, falls ein Handle √ºbrig
         
-                                ; Lîsche Fenster
+                                ; L√∂sche Fenster
         CLR.W   D0              ; Beginne bei Handle #0
         MOVE.L  cb.SUPERVISION.createWinds(A0),D1
 loop2
-        BCLR    D0,D1           ; Lîsche Handle-Bit
+        BCLR    D0,D1           ; L√∂sche Handle-Bit
         BEQ     cont2           ; Springe, falls Handle nicht eingetrag.
         MOVE.W  D0,(A3)+
         MOVEM.L D0/D1/A0,-(A7)
         JSR     deleteWindow    ; deleteWindow(D0)
         MOVEM.L (A7)+,D0/D1/A0
 cont2
-        ADDQ.W  #1,D0           ; nÑchstes Handle
+        ADDQ.W  #1,D0           ; n√§chstes Handle
         TST.L   D1
-        BNE     loop2           ; nochmal, falls ein Handle Åbrig
+        BNE     loop2           ; nochmal, falls ein Handle √ºbrig
     END;
     *)
   END closeDelWinds;
@@ -1082,14 +1082,14 @@ ende
 
 
 (*  mouseInput0 -- Ist 'start = TRUE', so werden alle mouse-hides des
- *                 aktuellen 'cb' rÅckgÑnig gemacht. Ist 'start = FALSE'
- *                 werden die mouse hides wieder durchgefÅhrt. Also
+ *                 aktuellen 'cb' r√ºckg√§nig gemacht. Ist 'start = FALSE'
+ *                 werden die mouse hides wieder durchgef√ºhrt. Also
  *                 der alte Status wiederhergestellt.
  *)
 
 PROCEDURE mouseInput0 (start:BOOLEAN);
 
-  CONST   mouseOff        = 9;    (* Ordinalzahl des Modula-AufzÑhlungs- *)
+  CONST   mouseOff        = 9;    (* Ordinalzahl des Modula-Aufz√§hlungs- *)
           mouseOn         = 10;   (* typen 'MouseForm'                   *)
   
   (*$L-*)
@@ -1161,8 +1161,8 @@ loop3Start
   END mouseInput0;
   (*$L=*)
 
-(*  mouseInput -- Wie 'mouseInput0', nur fÅr alle mouse hides, die von
- *                dieser GEM-Bibliothek durchgefÅhrt wurden (alle 'cb's)
+(*  mouseInput -- Wie 'mouseInput0', nur f√ºr alle mouse hides, die von
+ *                dieser GEM-Bibliothek durchgef√ºhrt wurden (alle 'cb's)
  *)
 
 PROCEDURE mouseInput (start:BOOLEAN);
@@ -1233,17 +1233,17 @@ PROCEDURE exitGem (VAR handle: GemHandle; remove: BOOLEAN);
       IF our_cb^.OWNER_ID # 0 THEN
       
       (*
-        RemoveSelector;     (* Alte File-Selektor-Box wieder einhÑngen *)
+        RemoveSelector;     (* Alte File-Selektor-Box wieder einh√§ngen *)
        *)
         mouseInput (TRUE);  (* Alten Mausstatus wiederherstellen *)
 
-                              (* VDI zurÅcksetzen *)
+                              (* VDI zur√ºcksetzen *)
 
 (*
 $? TestVersion:
   WriteString ("reset VDI...");
  *)
-         (*  'showCursor'-Aufrufe sind schon ausgefÅhrt worden
+         (*  'showCursor'-Aufrufe sind schon ausgef√ºhrt worden
           *)
          (*$? doSupervision:
          WITH our_cb^.SUPERVISION DO    (* Melde alle GEM-IR-Vektoren ab *)
@@ -1272,7 +1272,7 @@ $? TestVersion:
           CloseDevice (our_cb^.DEVICES);
         END;
 
-                      (* AES zurÅcksetzen und eventuell Obj. abmelden *)
+                      (* AES zur√ºcksetzen und eventuell Obj. abmelden *)
 
 (*
 $? TestVersion:
@@ -1282,7 +1282,7 @@ $? TestVersion:
         WITH our_cb^.SUPERVISION DO
           FOR i := 1 TO noUpWind DO updateWindow (FALSE) END;
           FOR i := 1 TO noMouseCtrl DO updateWindow (ORD (FALSE) + 2) END;
-          closeDelWinds; (* Schlieûe und lîsche alle Fenster dieser Modulebene*)
+          closeDelWinds; (* Schlie‚Çße und l√∂sche alle Fenster dieser Modulebene*)
         END;
         *)
         
@@ -1641,7 +1641,7 @@ PROCEDURE envelopeProc (start, child: BOOLEAN; VAR id: INTEGER);
         didShRead[modID]:= FALSE;
         (*
          * Damit ein Prg "EasyGEM1.SelectFile" benutzen kann, ohne selbst
-         * ein GemInit machen zu mÅssen, muû hier die Routine neu zuge-
+         * ein GemInit machen zu m√ºssen, mu‚Çß hier die Routine neu zuge-
          * wiesen werden, da EasyGEM1 nur dann selbst ein GemInit macht,
          * wenn GemActive () FALSE liefert.
          *)
@@ -1757,10 +1757,10 @@ BEGIN
   selector := selectFileTOSDependent;
   *)
   
-  (*  Anmeldung der ModulÅberwachung
+  (*  Anmeldung der Modul√ºberwachung
    *)
   noInits := 0;
-  modID := 2;                     (* ZÑhle Module levels *)
+  modID := 2;                     (* Z√§hle Module levels *)
   SetEnvelope (envlpHandle, envelopeProc, wsp);
   CatchProcessTerm (termHandle, termProc, wsp);
   CatchRemoval (removalHandle, removalProc, wsp);
@@ -1773,4 +1773,4 @@ BEGIN
   gemStatus := unkown;
   
 END GEMEnv.
-
+

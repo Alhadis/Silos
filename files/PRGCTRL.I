@@ -3,7 +3,7 @@ IMPLEMENTATION MODULE PrgCtrl; (* V#053 *)
 
 (*
   23.10.88: GetBasePageAddr holt sich BP-Ptr aus ProcessID des TOS und
-              nicht mehr Åber GetPDB.
+              nicht mehr √ºber GetPDB.
   15.01.89: Accessory nach 23.10.88 wieder korrekt.
   23.01.89: Accessory kommt auch mit residenten Prgs klar.
   17.01.94: TermProcess ruft nun Pterm aus MOSCtrl auf.
@@ -144,8 +144,8 @@ PROCEDURE ProcessLinked (): BOOLEAN;
 PROCEDURE Accessory (): BOOLEAN;
   BEGIN
     ASSEMBLER
-        ; nicht BaseProcess prÅfen, damit ein unter dem Acc gestartetes
-        ; Modul auch FALSE erhÑlt
+        ; nicht BaseProcess pr√ºfen, damit ein unter dem Acc gestartetes
+        ; Modul auch FALSE erh√§lt
         MOVE.L  ActMOSProcess,A0
         MOVE.L  A0,D0
         BEQ     nope
@@ -183,4 +183,4 @@ PROCEDURE SetNewExitCode ( i: INTEGER );
     END
   END SetNewExitCode;
 
-END PrgCtrl.
+END PrgCtrl.

@@ -3,7 +3,7 @@ IMPLEMENTATION MODULE XBIOS;
 (*$Y+*)
 
 (*
-TT 20.07.90: ConfigurePrinter: MOVE.W statt MOVE.L, SET mÅûte nun stimmen
+TT 20.07.90: ConfigurePrinter: MOVE.W statt MOVE.L, SET m√º‚Çßte nun stimmen
 TT 21.08.90: BlitMode & FlopRate neu
 TT 08.04.91: SetKeyTable funktioniert nun
 TT 20.10.91: $M- entfernt.
@@ -207,7 +207,7 @@ PROCEDURE ConfigureRS232 (baud: SerialSpeed; handshake: FlowFlavor;
 PROCEDURE SetKeyTable (VAR unshift, shift, caps: KeyTransPtr): KeyTablePtr;
   BEGIN
     ASSEMBLER
-        ; oops - hier hÑtte es kein VAR-Parm sein sollen!
+        ; oops - hier h√§tte es kein VAR-Parm sein sollen!
         MOVE.L  -(A3),A0
         MOVE.L  (A0),-(A7)
         MOVE.L  -(A3),A0
@@ -670,4 +670,4 @@ PROCEDURE EsetSmear (switch: INTEGER): INTEGER;
     END
   END EsetSmear;
 
-END XBIOS.
+END XBIOS.

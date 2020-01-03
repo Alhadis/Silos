@@ -115,7 +115,7 @@ vmus	macro
 
 hmus	macro
 	btst	#10,$dff016
-	endm			; Z = 1 -> Høyre musknapp nede
+	endm			; Z = 1 -> HÃ¸yre musknapp nede
 
 true	equ	1
 false	equ	0

@@ -335,7 +335,7 @@ Kill_System
 	FAIL Missing parameters !!!
 	ENDC
 	bra.s .Skip
-	dc.b "$VER: ©1995 Sync of DreamDealers"
+	dc.b "$VER: Â©1995 Sync of DreamDealers"
 .GfxName
 	dc.b "graphics.library",0
 ;.VillageName
@@ -364,11 +364,11 @@ Kill_System
 	rts
 
 .from_CLI
-;	move.l a3,a1				baisse notre priorité...
+;	move.l a3,a1				baisse notre prioritÃ©...
 ;	moveq #-128,d0
 ;	CALL SetTaskPri
 ;
-;	lea .VillageName(pc),a1			ouvre la village.library si présente
+;	lea .VillageName(pc),a1			ouvre la village.library si prÃ©sente
 ;	moveq #0,d0
 ;	CALL (_ExecBase).w,OpenLibrary
 ;	move.l d0,-(sp)
@@ -391,14 +391,14 @@ Kill_System
 .Gfx
 	move.l d0,a6
 
-	IFNE NARG=2				ya un 2ème parametre ?
-	IFNE \2					c'est egal à 0 ?
+	IFNE NARG=2				ya un 2Ã¨me parametre ?
+	IFNE \2					c'est egal Ã  0 ?
 	move.l #\2-1,d7				non => execute le DELAY
 .delay	CALL WaitTof
 	dbf d7,.delay
 	ENDC
 	ELSEIF
-	moveq #2*50-1,d7			pas de 2ème parametre => 2 sec
+	moveq #2*50-1,d7			pas de 2Ã¨me parametre => 2 sec
 .delay	CALL WaitTof				d'attente
 	dbf d7,.delay
 	ENDC
@@ -417,7 +417,7 @@ Kill_System
 	or.w #$8000,(sp)
 
 	move.w potinp(a5),-(sp)			configure les ports comme ils
-	move.w #$ff00,potgo(a5)			devraient l'être
+	move.w #$ff00,potgo(a5)			devraient l'Ãªtre
 	move.b ciaapra,-(sp)
 	move.b ciaaddra,-(sp)
 	move.b #$3,ciaaddra
@@ -432,8 +432,8 @@ Kill_System
 .clear	clr.l (a0)+
 	dbf d0,.clear
 
-	movem.l a5/a6,-(sp)			saute à la routine passée comme
-	lea \1(pc),a0				paramètre de KILL_SYSTEM
+	movem.l a5/a6,-(sp)			saute Ã  la routine passÃ©e comme
+	lea \1(pc),a0				paramÃ¨tre de KILL_SYSTEM
 	move.l a0,$80.w
 	trap #0					passage en mode superviseur
 
@@ -442,10 +442,10 @@ Kill_System
 	move.w #$7fff,dmacon(a5)
 	move.l #$7fff7fff,intena(a5)
 
-	CALL WaitBlit				libère le blitter
+	CALL WaitBlit				libÃ¨re le blitter
 	CALL DisownBlitter
 
-	move.l (sp)+,$80.w			remet tout comme c'était avant
+	move.l (sp)+,$80.w			remet tout comme c'Ã©tait avant
 	move.l (sp)+,$78.w
 	move.l (sp)+,$6c.w
 	move.l (sp)+,$68.w

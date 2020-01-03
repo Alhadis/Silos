@@ -41,8 +41,8 @@ BEGIN
         
         ; die restlichen f..-Funktionen brauchen nicht
         ; init. zu werden, da sie nicht angesprungen wer-
-        ; den kînnen, solange nicht InOutFile 'consIn/Out'
+        ; den k√∂nnen, solange nicht InOutFile 'consIn/Out'
         ; auf FALSE setzt, und dann sind auch die f..-Vars
         ; initialisiert.
   END
-END InOutBase.
+END InOutBase.

@@ -9,13 +9,13 @@ IMPLEMENTATION MODULE VDIInputs;
  *  Version   2.2     V#0039
  *)
  
-(*  04.11.87    | 쉇ernahme aus 'GEMBase' und 'GEMExt'
+(*  04.11.87    | 횥bernahme aus 'GEMBase' und 'GEMExt'
  *  27.12.87    | Vector-Handler arbeiten im Usermode
  *                'setInputMode' arbeitet lokal zum aktuellen device
  *  14.6.88     | 'GetMouseState' behandelt das 'MButtonSet' mit .B
  *  01.02.90    | Anpassung auf Compiler V4.0 (verdrehte SET's)
  *  02.04.90    | Anpassung auf public arrays
- *  25.02.91 TT | "error"-Setzung 갶er occured-Funktion
+ *  25.02.91 TT | "error"-Setzung 체ber occured-Funktion
  *  15.09.91 MS | KeyboardState korrigiert
  *  14.07.93 TT | ButChg/MouseMove/Timer-IR-Routinen korrigiert (SSP wird nun
  *                ebenfalls gerettet/restauriert).
@@ -37,8 +37,8 @@ FROM    GEMEnv          IMPORT DeviceHandle;
 (*$I GEMOPS.ICL *)
  
  
-(*  setInputMode -- Legt das logische Eingabeger꼝 und dessen Eingabe-  *
- *                  modus fest. Der Aufruf wird nur ausgef갿rt, wenn    *
+(*  setInputMode -- Legt das logische Eingabeger채t und dessen Eingabe-  *
+ *                  modus fest. Der Aufruf wird nur ausgef체hrt, wenn    *
  *                  die zu setzende Einstellung sich von der momentanen *
  *                  Einstellung unterscheidet. !! 'GemError' beachten!! *)
 
@@ -66,7 +66,7 @@ cont2
         CMP.W   (A0),D0                 ; handle^.curInpMode [dev] = mode
         BEQ     cont                    ; branch if equal
         
-        MOVE.W  D0,-(A7)                ; F걊 sp꼝eren Test
+        MOVE.W  D0,-(A7)                ; F체r sp채teren Test
         MOVE.L  A0,-(A7)
         
         MOVE.L  pubs,A0
@@ -448,11 +448,11 @@ VAR     timerSArea,butChgSArea,msMoveSArea,curChgSArea  : regSaveArea;
         butsTemp                                        : MButtonSet;
         
 (*  timerIRHandler -- Wird vom GEM bei jedem Timerinterrupt angesprungen, *
- *                    falls sich eine Userroutine 갶er 'SetTimerVector'   *
+ *                    falls sich eine Userroutine 체ber 'SetTimerVector'   *
  *                    angemeldet hat. Bei jedem Aufruf springt 'timerIR-  *
  *                    Handler' die Elemente der TimerVecList der Reihen-  *
  *                    folge entsprechend, beim Listenanfang beginnend an, *
- *                    bis eine Procedur FALSE als R갷kgabe liefert ,oder  *
+ *                    bis eine Procedur FALSE als R체ckgabe liefert ,oder  *
  *                    das Listenende erreicht ist.                        *)
 
 PROCEDURE timerIRHandler;
@@ -478,11 +478,11 @@ loop
         JSR     (A0)
         MOVE.L  (A7)+,A0                ; Listenzeiger wieder herstellen
         TST.W   -(A3)
-        BEQ     ready                   ; R갷kgabe von FALSE => fertig!
-        MOVE.L  vecListElem.next(A0),A0 ; n꼊hstes Listenelem.
+        BEQ     ready                   ; R체ckgabe von FALSE => fertig!
+        MOVE.L  vecListElem.next(A0),A0 ; n채chstes Listenelem.
         BRA     loop
 callOld                                 ; A3 und A7 enthalten noch letzten wsp!
-        ; Zur갷k in Supervisormode
+        ; Zur체ck in Supervisormode
         CLR.L   -(A7)
         MOVE    #$20,-(A7)
         TRAP    #1
@@ -497,7 +497,7 @@ callOld                                 ; A3 und A7 enthalten noch letzten wsp!
         MOVE.L  orgTimerVec,-(A7)       ; Sprungaddresse auf den Stack
         RTS
 ready                                   ; A3 und A7 enthalten noch letzten wsp!
-        ; Zur갷k in Supervisormode
+        ; Zur체ck in Supervisormode
         CLR.L   -(A7)
         MOVE    #$20,-(A7)
         TRAP    #1
@@ -526,7 +526,7 @@ BEGIN
         MOVE.L  A1,-(A0)                ; rette USP
         ANDI    #-1-$2000,SR            ; Usermode
         MOVE.L  butChgVecList,A0
-        MOVE.B  D0,butsTemp             ; speichere Buttonzustand(f걊 VAR)
+        MOVE.B  D0,butsTemp             ; speichere Buttonzustand(f체r VAR)
 loop
         CMPA.L  #NIL,A0
         BEQ     callOld                 ; if list end, then call orig. Vec.
@@ -535,15 +535,15 @@ loop
         ADDA.L  vecListElem.wsp.length(A0),A7
         MOVEM.L D0/A0-A1,-(A7)          ; Listenzeiger und alten Stack retten
         MOVE.L  vecListElem.newVec(A0),A0
-        MOVE.L  #butsTemp,(A3)+         ; 쉇ergib 'VAR MButtonSet'
+        MOVE.L  #butsTemp,(A3)+         ; 횥bergib 'VAR MButtonSet'
         JSR     (A0)
         MOVEM.L (A7)+,D0/A0-A1          ; Listenzeiger wieder herstellen
         TST.W   -(A3)
-        BEQ     ready                   ; R갷kgabe von FALSE => fertig!
-        MOVE.L  vecListElem.next(A0),A0 ; n꼊hstes Listenelem.
+        BEQ     ready                   ; R체ckgabe von FALSE => fertig!
+        MOVE.L  vecListElem.next(A0),A0 ; n채chstes Listenelem.
         BRA     loop
 callOld                                 ; A3 und A7 enthalten noch letzten wsp!
-        ; Zur갷k in Supervisormode
+        ; Zur체ck in Supervisormode
         CLR.L   -(A7)
         MOVE    #$20,-(A7)
         TRAP    #1
@@ -559,7 +559,7 @@ callOld                                 ; A3 und A7 enthalten noch letzten wsp!
         MOVE.L  orgButChgVec,-(A7)      ; Sprungaddresse auf den Stack
         RTS
 ready                                   ; A3 und A7 enthalten noch letzten wsp!
-        ; Zur갷k in Supervisormode
+        ; Zur체ck in Supervisormode
         CLR.L   -(A7)
         MOVE    #$20,-(A7)
         TRAP    #1
@@ -589,7 +589,7 @@ BEGIN
         MOVE.L  A1,-(A0)                ; rette USP
         ANDI    #-1-$2000,SR            ; Usermode
         MOVE.L  msMoveVecList,A0
-        LEA     locTemp,A1              ; tempor꼛er x/y-Speicher(f걊 VAR)
+        LEA     locTemp,A1              ; tempor채rer x/y-Speicher(f체r VAR)
         MOVE.W  D0,(A1)+
         MOVE.W  D1,(A1)
 loop
@@ -600,15 +600,15 @@ loop
         ADDA.L  vecListElem.wsp.length(A0),A7
         MOVEM.L A0/A1,-(A7)             ; Listenzeiger und alten Stack retten
         MOVE.L  vecListElem.newVec(A0),A0
-        MOVE.L  #locTemp,(A3)+          ; 쉇ergib 'VAR Point'
+        MOVE.L  #locTemp,(A3)+          ; 횥bergib 'VAR Point'
         JSR     (A0)
         MOVEM.L (A7)+,A0/A1             ; Listenzeiger wieder herstellen
         TST.W   -(A3)
-        BEQ     ready                   ; R갷kgabe von FALSE => fertig!
-        MOVE.L  vecListElem.next(A0),A0 ; n꼊hstes Listenelem.
+        BEQ     ready                   ; R체ckgabe von FALSE => fertig!
+        MOVE.L  vecListElem.next(A0),A0 ; n채chstes Listenelem.
         BRA     loop
 callOld                                 ; A3 und A7 enthalten noch letzten wsp!
-        ; Zur갷k in Supervisormode
+        ; Zur체ck in Supervisormode
         CLR.L   -(A7)
         MOVE    #$20,-(A7)
         TRAP    #1
@@ -626,7 +626,7 @@ callOld                                 ; A3 und A7 enthalten noch letzten wsp!
         MOVE.L  orgMsMoveVec,-(A7)      ; Sprungaddresse auf den Stack
         RTS
 ready                                   ; A3 und A7 enthalten noch letzten wsp!
-        ; Zur갷k in Supervisormode
+        ; Zur체ck in Supervisormode
         CLR.L   -(A7)
         MOVE    #$20,-(A7)
         TRAP    #1
@@ -658,7 +658,7 @@ BEGIN
         MOVE.L  A1,-(A0)                ; rette USP
         ANDI    #-1-$2000,SR            ; Usermode
         MOVE.L  curChgVecList,A0
-        LEA     locTemp2,A1             ; tempor꼛er x/y-Speicher(f걊 VAR)
+        LEA     locTemp2,A1             ; tempor채rer x/y-Speicher(f체r VAR)
         MOVE.W  D0,(A1)+
         MOVE.W  D1,(A1)
 loop
@@ -669,15 +669,15 @@ loop
         ADDA.L  vecListElem.wsp.length(A0),A7
         MOVEM.L A0/A1,-(A7)             ; Listenzeiger und alten Stack retten
         MOVE.L  vecListElem.newVec(A0),A0
-        MOVE.L  #locTemp2,(A3)+         ; 쉇ergib 'VAR Point'
+        MOVE.L  #locTemp2,(A3)+         ; 횥bergib 'VAR Point'
         JSR     (A0)
         MOVEM.L (A7)+,A0/A1             ; Listenzeiger wieder herstellen
         TST.W   -(A3)
-        BEQ     ready                   ; R갷kgabe von FALSE => fertig!
-        MOVE.L  vecListElem.next(A0),A0 ; n꼊hstes Listenelem.
+        BEQ     ready                   ; R체ckgabe von FALSE => fertig!
+        MOVE.L  vecListElem.next(A0),A0 ; n채chstes Listenelem.
         BRA     loop
 callOld                                 ; A3 und A7 enthalten noch letzten wsp!
-        ; Zur갷k in Supervisormode
+        ; Zur체ck in Supervisormode
         CLR.L   -(A7)
         MOVE    #$20,-(A7)
         TRAP    #1
@@ -688,14 +688,14 @@ callOld                                 ; A3 und A7 enthalten noch letzten wsp!
         MOVE.L  (A0)+,A1
         MOVE.L  A1,USP                  ; stelle USP wieder her
         MOVEM.L (A0)+,D0-D7/A1-A7       ; Stelle Regs wieder her
-        LEA     locTemp2,A0             ; ge꼗derte location 갶ergeben
+        LEA     locTemp2,A0             ; ge채nderte location 체bergeben
         MOVE.W  (A0)+,D0
         MOVE.W  (A0),D1
         MOVE.L  curChgSArea,A0
         MOVE.L  orgCurChgVec,-(A7)      ; Sprungaddresse auf den Stack
         RTS
 ready                                   ; A3 und A7 enthalten noch letzten wsp!
-        ; Zur갷k in Supervisormode
+        ; Zur체ck in Supervisormode
         CLR.L   -(A7)
         MOVE    #$20,-(A7)
         TRAP    #1
@@ -706,7 +706,7 @@ ready                                   ; A3 und A7 enthalten noch letzten wsp!
         MOVE.L  (A0)+,A1
         MOVE.L  A1,USP                  ; stelle USP wieder her
         MOVEM.L (A0)+,D0-D7/A1-A7       ; Stelle Regs wieder her
-        LEA     locTemp2,A0             ; ge꼗derte location 갶ergeben
+        LEA     locTemp2,A0             ; ge채nderte location 체bergeben
         MOVE.W  (A0)+,D0
         MOVE.W  (A0),D1
         MOVE.L  curChgSArea,A0
@@ -747,7 +747,7 @@ anotherVec                ; Userroutine einketten
         MOVE.L  D2,vecListElem.newVec(A1)       ; save 'newVector'
         MOVE.L  timerVecList,vecListElem.next(A1) ; einketten
         MOVE.L  A1,timerVecList
-        MOVE.W  deltaT,(A0)                     ; Zeitabstand 갶ergeben
+        MOVE.W  deltaT,(A0)                     ; Zeitabstand 체bergeben
   END;
 END InstallTimerProc;
 

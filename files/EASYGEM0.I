@@ -11,7 +11,7 @@ IMPLEMENTATION MODULE EasyGEM0;
  *  Modul-Holder  : Manuel Chakravarty
  *  --------------------------------------------------------------------------
  *  Copyright July 1988 by Manuel Chakravarty
- *  Vertriebsrechte fÅr ATARI ST unter MEGAMAX Modula-2
+ *  Vertriebsrechte fÔøΩr ATARI ST unter MEGAMAX Modula-2
  *                  liegen bei Application Systems Heidelberg
  *  --------------------------------------------------------------------------
  *  MCH : Manuel Chakravarty
@@ -32,15 +32,15 @@ IMPLEMENTATION MODULE EasyGEM0;
  *  17.08.89 MCH    0.06     'WrapAlert' def. + impl.
  *  10.09.89 TT     1.1      WrapAlert: stdWidth=29, Verbesserungen
  *  01.12.89 TT     1.2      'TreeAddress', 'TextStringAddress' def. + impl.
- *  01.02.91 TT              FormAlert: Null-Terminierung raus, da unnîtig.
- *  26.03.91 TT              PreprareBox: AbsObjectSpace berÅcksichtigt.
+ *  01.02.91 TT              FormAlert: Null-Terminierung raus, da unnÔøΩtig.
+ *  26.03.91 TT              PreprareBox: AbsObjectSpace berÔøΩcksichtigt.
  *  05.07.91 TT              DoSimpleBox: Nach FormDo wird Bit 15 v. ExitBut
- *                           gelîscht.
+ *                           gelÔøΩscht.
  *  --------------------------------------------------------------------------
  *  Modul-Beschreibung:
  *
  *  Dieses Modul stellt eine Reihe von oft gebrauchten GEM-Funktionen zur
- *  VerfÅgung, die auf den verschiedenen AES-Funktionen und den Routinen
+ *  VerfÔøΩgung, die auf den verschiedenen AES-Funktionen und den Routinen
  *  des Moduls 'ObjHandler' aufbauen.
  *  --------------------------------------------------------------------------
  *)
@@ -184,14 +184,14 @@ PROCEDURE WrapAlert (VAR s: ARRAY OF CHAR; width: CARDINAL);
     UNTIL trennIdx=len
   END WrapAlert;
 
-(* wird bei FormAlert gar nicht benîtigt:
+(* wird bei FormAlert gar nicht benÔøΩtigt:
 
         PROCEDURE stringIntoCFormat (REF str: ARRAY OF CHAR);
         
           (*$L-*)
           BEGIN
             ASSEMBLER
-                MOVE.L  (A7)+,A2        ; Rette RÅckkehraddr.
+                MOVE.L  (A7)+,A2        ; Rette RÔøΩckkehraddr.
                 MOVE.W  -(A3),D1        ; HIGH(str) -> D1
                 MOVE.L  A7,D0           ; Berechne neuen Top of Stack
                 SUB.W   D1,D0
@@ -213,8 +213,8 @@ PROCEDURE WrapAlert (VAR s: ARRAY OF CHAR; width: CARDINAL);
         loop
                 MOVE.B  (A1)+,(A0)+
                 DBEQ    D1,loop         ; kopiere bis zum Stringende
-                CLR.B   (A0)+           ; und hÑnge #0 als Endezeichen an
-                MOVE.L  A2,-(A7)        ; RÅckkehraddr. fÅr RTS auf den Stack
+                CLR.B   (A0)+           ; und hÔøΩnge #0 als Endezeichen an
+                MOVE.L  A2,-(A7)        ; RÔøΩckkehraddr. fÔøΩr RTS auf den Stack
             END;
           END stringIntoCFormat;
           (*$L=*)
@@ -279,7 +279,7 @@ PROCEDURE FormAlert (    defBut: CARDINAL;
         
         ;  calc. input parms
         ;
-(* das ist gar nicht nîtig:
+(* das ist gar nicht nÔøΩtig:
         MOVE.L  str(A6), (A3)+
         MOVE.W  str+4(A6), (A3)+
         JSR     stringIntoCFormat   ; schiebe string mit #0 auf den A7-Stack
@@ -310,7 +310,7 @@ PROCEDURE FormAlert (    defBut: CARDINAL;
         
         ;  restore and calc. output parm.
         ;
-        ;nicht mehr nîtig: MOVE.L  (A7), A7    ; String wieder vom Stack entfernen
+        ;nicht mehr nÔøΩtig: MOVE.L  (A7), A7    ; String wieder vom Stack entfernen
         MOVE.L  retBut(A6), A1
         MOVE.W  INTOUT(A6), (A1)
     END;
@@ -324,7 +324,7 @@ PROCEDURE TextStringAddress (idx: CARDINAL): PtrMaxStr;
   
 
 
-                (*  Routinen fÅr den Umgang mit ObjektbÑumen  *)
+                (*  Routinen fÔøΩr den Umgang mit ObjektbÔøΩumen  *)
                 (*  ========================================  *)
                 
 PROCEDURE TreeAddress (idx: CARDINAL): PtrObjTree;
@@ -674,7 +674,7 @@ PROCEDURE SetGetBoxEnum (    tree : PtrObjTree;
   
 
 
-                (*  Routinen fÅr das Desktop- und Wdw-Managment  *)
+                (*  Routinen fÔøΩr das Desktop- und Wdw-Managment  *)
                 (*  ===========================================  *)
                 
 PROCEDURE ForceDeskRedraw;
@@ -715,5 +715,4 @@ PROCEDURE DrawObjInWdw (tree  : PtrObjTree; obj: CARDINAL;
   END DrawObjInWdw;
 
 
-END EasyGEM0.
-(* $FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$00003E53$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$000013AA$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0$FFF6B3E0Ä$0000086CT.......T.......T.......T.......T.......T.......T.......T.......T.......T.......$0000417A$00004162$00004170$0000418D$00004181$00004219$000008C6$0000086C$00000806$0000086C$000008C3$00000858$0000086C$FFEDE5B0$0000417A$0000418D¥ÄÅ*)
+END EasyGEM0.

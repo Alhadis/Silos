@@ -630,7 +630,7 @@ enum {
   globalenumcharC = '\x43', // C
   globalenumcharD = 0x44, // D
   globalenumcharE = 69,  // E
-  globalenumcharAE1 = 'Æ', // AE (latin1 encoded)
+  globalenumcharAE1 = 'Ã†', // AE (latin1 encoded)
   globalenumcharAE2 = '\306', // AE (latin1 encoded)
   globalenumcharAE3 = '\xC6' // AE (latin1 encoded)
 };
@@ -643,7 +643,7 @@ enum EnumChar {
   enumcharC = '\x43', // C
   enumcharD = 0x44, // D
   enumcharE = 69, // E
-  enumcharAE1 = 'Æ', // AE (latin1 encoded)
+  enumcharAE1 = 'Ã†', // AE (latin1 encoded)
   enumcharAE2 = '\306', // AE (latin1 encoded)
   enumcharAE3 = '\xC6' // AE (latin1 encoded)
 };
@@ -657,7 +657,7 @@ struct EnumCharStruct {
     enumcharC = '\x43', // C
     enumcharD = 0x44, // D
     enumcharE = 69, // E
-    enumcharAE1 = 'Æ', // AE (latin1 encoded)
+    enumcharAE1 = 'Ã†', // AE (latin1 encoded)
     enumcharAE2 = '\306', // AE (latin1 encoded)
     enumcharAE3 = '\xC6' // AE (latin1 encoded)
   };
@@ -680,7 +680,7 @@ enum {
   x_globalenumcharC = '\x43', // C
   x_globalenumcharD = 0x44, // D
   x_globalenumcharE = 69,  // E
-  x_globalenumcharAE1 = 'Æ', // AE (latin1 encoded)
+  x_globalenumcharAE1 = 'Ã†', // AE (latin1 encoded)
   x_globalenumcharAE2 = '\306', // AE (latin1 encoded)
   x_globalenumcharAE3 = '\xC6' // AE (latin1 encoded)
 };
@@ -693,7 +693,7 @@ enum X_EnumChar {
   x_enumcharC = '\x43', // C
   x_enumcharD = 0x44, // D
   x_enumcharE = 69, // E
-  x_enumcharAE1 = 'Æ', // AE (latin1 encoded)
+  x_enumcharAE1 = 'Ã†', // AE (latin1 encoded)
   x_enumcharAE2 = '\306', // AE (latin1 encoded)
   x_enumcharAE3 = '\xC6' // AE (latin1 encoded)
 };
@@ -707,7 +707,7 @@ struct X_EnumCharStruct {
     enumcharC = '\x43', // C
     enumcharD = 0x44, // D
     enumcharE = 69, // E
-    enumcharAE1 = 'Æ', // AE (latin1 encoded)
+    enumcharAE1 = 'Ã†', // AE (latin1 encoded)
     enumcharAE2 = '\306', // AE (latin1 encoded)
     enumcharAE3 = '\xC6' // AE (latin1 encoded)
   };

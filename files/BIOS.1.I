@@ -2,9 +2,9 @@ IMPLEMENTATION MODULE BIOS;
 (*$Z-,Y+,S-,N+,R-,L-*)
 
 (*
-   TT 21.07.89  BConOut lîscht High-Byte der auszugebenden Zeichen, weil
+   TT 21.07.89  BConOut l√∂scht High-Byte der auszugebenden Zeichen, weil
                 sonst abscheinend Busfehler bei ESC-Sequenzen auftreten
-                kînnen.
+                k√∂nnen.
    TT 20.07.90  DriveMap: SETs verkehrt
 *)
 
@@ -162,4 +162,4 @@ PROCEDURE GetKBShift (): KBShifts;
     END
   END GetKBShift;
 
-END BIOS.
+END BIOS.

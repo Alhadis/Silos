@@ -9,7 +9,7 @@ IMPLEMENTATION MODULE AESWindows;
  *  Version   2.2     V#0029
  *)
  
-(*  05.11.87    | öbernahme von 'GEMBase' und 'GEMExt'
+(*  05.11.87    | √úbernahme von 'GEMBase' und 'GEMExt'
  *  20.11.87    | Def. + Impl. von 'ResetWindows'
  *  15.02.90    | Anpassung an Compilerversion 4.0
  *  02.04.90    | Anpassung an public arrays
@@ -75,8 +75,8 @@ BEGIN
     MOVE.L      cb.SUPERVISION.openWinds(A2),D1
     MOVE.L      D1,-(A7)                ; alte Liste auf den Stack
     CMP.W       #31,D0
-    BHI         noSuper                 ; springe, falls 'handle' zu groû
-    BSET        D0,D1                   ; fÅge neues handle ein
+    BHI         noSuper                 ; springe, falls 'handle' zu gro‚Çß
+    BSET        D0,D1                   ; f√ºge neues handle ein
     MOVE.L      D1,cb.SUPERVISION.openWinds(A2)
 noSuper
 
@@ -120,7 +120,7 @@ BEGIN
     MOVE.L      pubs,A1
     LEA         pubArrays.aINTIN+$4(A1),A1
     MOVE.W      -(A3),D0
-    ADDQ.W      #4,D0           ; passe AufzÑhl.typ an wi_gfield an
+    ADDQ.W      #4,D0           ; passe Aufz√§hl.typ an wi_gfield an
     MOVE.W      D0,-(A1)
     MOVE.W      -(A3),-(A1)
     MOVE.W      #WIND_GET,(A3)+
@@ -140,7 +140,7 @@ BEGIN
     MOVE.L      pubs,A1
     LEA         pubArrays.aINTIN+$4(A1),A1
     MOVE.W      -(A3),D0
-    ADDQ.W      #8,D0           ; erste Korrektur fÅr wi_gfield
+    ADDQ.W      #8,D0           ; erste Korrektur f√ºr wi_gfield
     CMP.W       #$A,D0
     BLT         cont
     ADDQ.W      #5,D0           ; und eventuell eine zweite
@@ -173,7 +173,7 @@ PROCEDURE WindowRectList(handle:CARDINAL;typ:RListMode):Rectangle;
                        
 BEGIN
   ASSEMBLER
-    ADDQ.W      #7,-2(A3) ; korrigiere AufzÑhl.typ fÅr wi_gfield
+    ADDQ.W      #7,-2(A3) ; korrigiere Aufz√§hl.typ f√ºr wi_gfield
     JSR         WindowSize
   END;
 END WindowRectList;
@@ -207,7 +207,7 @@ BEGIN
     LEA         pubArrays.aINTIN+8(A0),A0
     MOVE.L      -(A3),-(A0)
     MOVE.W      -(A3),D0
-    ADDQ.W      #2,D0           ; AufzÑhl.typ auf wi_sfield korrigieren
+    ADDQ.W      #2,D0           ; Aufz√§hl.typ auf wi_sfield korrigieren
     MOVE.W      D0,-(A0)
     MOVE.W      -(A3),-(A0)
     MOVE.W      #WIND_SET,(A3)+
@@ -240,7 +240,7 @@ BEGIN
     LEA         pubArrays.aINTIN+$6(A1),A1
     MOVE.W      -(A3),-(A1)
     MOVE.W      -(A3),D0
-    ADDQ.W      #8,D0           ; erste Korrektur fÅr wi_gfield
+    ADDQ.W      #8,D0           ; erste Korrektur f√ºr wi_gfield
     CMP.W       #$A,D0
     BLT         cont
     ADDQ.W      #5,D0           ; und eventuell eine zweite
@@ -347,4 +347,4 @@ PROCEDURE ResetWindows ();
   END ResetWindows;
   
 
-END AESWindows.
+END AESWindows.

@@ -2708,7 +2708,7 @@ LUTMODE_COLOR	EQU	2
 
 *---------	SKELL 9/11/92
 	LONG	TB_MasterClock	;->MasterClock server
-	LONG	TB_MasterTime	;# frames since startup of switcher
+	LONG	TB_MasterTime	;# frames since startupÂ of switcher
 	LONG	TB_MasterTimer	;used for frame count downs during sequencing
 *---------
 

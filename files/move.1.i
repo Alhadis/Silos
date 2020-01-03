@@ -6,7 +6,7 @@ inline BOOL ILazyMove(
   BRETT  *pnb,		/* Zeiger auf Brett, auf dem gesetzt wird	*/
   PARTEI col,		/* Partei am Zug				*/
   SFPOS	 Pos0,		/* Position des zu setzenden Steins		*/
-  DELTA  *pd		/* Änderungen an *pnb				*/
+  DELTA  *pd		/* Ã„nderungen an *pnb				*/
 )
 {
   register POSDATEN *pda;
@@ -252,4 +252,3 @@ inline void ILazyUndo(BRETT *pnb, DELTA *pd)
   pgedreht = pd->uneu;
   while ((pos=*pgedreht++) >= 0) { umg[pos] = 0; }
 }
-

@@ -17,7 +17,7 @@ PROCEDURE cookiePtr (): ADDRESS;
   END cookiePtr;
   
 PROCEDURE findCookie (cookie: LONGWORD);
-  (* RÅckgabe des Ptrs auf den Cookie+4 in A0,wenn D0 # 0 *)
+  (* R√ºckgabe des Ptrs auf den Cookie+4 in A0,wenn D0 # 0 *)
   BEGIN
     ASSEMBLER
         JSR     cookiePtr
@@ -98,4 +98,4 @@ PROCEDURE QueryCookies (with: CookieProc);
     END
   END QueryCookies;
 
-END CookieJar.
+END CookieJar.

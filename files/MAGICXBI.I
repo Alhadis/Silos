@@ -1,12 +1,12 @@
 (*######################################################################
                                                                         
   MAGIC         Modula's  All purpose  GEM  Interface  Cadre
-                ÿ         ÿ            ÿ    ÿ          ÿ
+                Â          Â             Â     Â           Â 
 ########################################################################
 
   XBIOS  Extended Basic Input Output System     Interface for Modula-2
 
-                Implementation fr Megamax-Modula-2
+                Implementation fÃ¼r Megamax-Modula-2
 
 ########################################################################
   V1.01  18.06.90  Peter Hellinger      Bugs gefixed
@@ -555,4 +555,4 @@ END Blitmode;
 
 
 END MagicXBIOS.
-
+

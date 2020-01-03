@@ -2,7 +2,7 @@
 ; PowerPC assembler command set                  ;
 ; for use with m68k macro assemblera             ;
 ;                                                ;
-; performed by Tomasz Wiszkowski [error/bla²]    ;
+; performed by Tomasz Wiszkowski [error/blaÂ²]    ;
 ;,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,;
 
 ;/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\;
@@ -10,7 +10,7 @@
 ;/\ to be recognized as a ppc related stuff    /\;
 ;\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/;
 
-;¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯;
+;Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯Â¯;
 ; of You're using a golded, set the folding      ;
 ; sentences to ";;" and ";*-*" to fold this file ;
 ;________________________________________________;
@@ -1361,4 +1361,3 @@ _xoris: macro
     dc.l    (27<<(31-5))+(\1<<(31-15))+(\2<<(31-10))+\3
     endm
 ;*-*
-

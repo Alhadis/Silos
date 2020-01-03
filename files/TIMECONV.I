@@ -6,20 +6,20 @@ FROM SYSTEM IMPORT ASSEMBLER;
 (*
   05.02.89: Frz. Monatsnamen gehen jetzt.
   09.08.89: Optmierungen: FastStrings verwendet; TimeToText & Chr in Asm.
-  03.09.89: #U f. user-defined Monatsnamen; TextToDate lÑût nun auch
-            nicht-dtsche Umlaute zu und es kînnen Monate von -9999 bis
+  03.09.89: #U f. user-defined Monatsnamen; TextToDate l√§‚Çßt nun auch
+            nicht-dtsche Umlaute zu und es k√∂nnen Monate von -9999 bis
             +9999 eingegeben werden - allerdings werden 80 bis 99 nach
             1980 bis 1999 gewandelt!
   30.06.90: TimeToText und TextToTime funktionieren jetzt immer korrekt,
             d.h. TextToTime kann auch mit 100250 (10 Uhr 2min 50sec)
             aufgerufen werden und TimeToText wertet jetzt die Maske
-            aus! énderungen durch Dirk Steins (DS). Gekennzeichnte mit %%.
-  05.07.90: énderungen von Dirk Steins korrigiert, TextTo-Funktionen setzen
+            aus! √Ñnderungen durch Dirk Steins (DS). Gekennzeichnte mit %%.
+  05.07.90: √Ñnderungen von Dirk Steins korrigiert, TextTo-Funktionen setzen
             valid nun auf FALSE, wenn nach der Zeit-/Datumsangabe der String
             nicht endet.
-  10.11.90: TextToDate prÅft nun auch den 31. bei den Monaten sowie Schaltjahre
+  10.11.90: TextToDate pr√ºft nun auch den 31. bei den Monaten sowie Schaltjahre
             (von D.Steins)
-  14.02.91: DateToText/Repl zerstîrt nicht mehr D3-D6
+  14.02.91: DateToText/Repl zerst√∂rt nicht mehr D3-D6
   14.01.94: DateToText/TimeToText korrigiert (D.Steins)
 *)
 
@@ -42,7 +42,7 @@ FROM MOSGlobals IMPORT StringOverflow;
 FROM MOSConfig IMPORT NameOfMonth, StdDateExp, StdDateMask, StdTimeMask;
 
 
-CONST langHigh = 2; (* hîchster Sprachindex f. 'mon' *)
+CONST langHigh = 2; (* h√∂chster Sprachindex f. 'mon' *)
       monHigh = 9;
 
 TYPE MonStr= ARRAY [0..monHigh] OF CHAR;
@@ -69,19 +69,19 @@ l2      ADDQ    #1,D2
         CMP     D1,D2           ; haben wir start-index erreicht ?
         BEQ     ok
         CMP     D5,D2
-        BHI     ende             ; Stringende Åberschritten
+        BHI     ende             ; Stringende √ºberschritten
         TST.B   0(A1,D2.W)
         BEQ     ende
         BRA     l2              ; Nein, noch nicht kopieren
         
 l       ADDQ    #1,D2
         CMP     D5,D2
-        BHI     ende             ; Stringende Åberschritten
+        BHI     ende             ; Stringende √ºberschritten
         MOVE.B  0(A1,D2.W),D3
         BEQ     ende
         CMP     D1,D2           ; haben wir start-index erreicht ?
         BCS     l               ; Nein, noch nicht kopieren
-        CMP     D6,D4           ; paût Zeichen noch in String ?
+        CMP     D6,D4           ; pa‚Çßt Zeichen noch in String ?
         BHI     ende
         MOVE.B  D3,0(A2,D4.W)   ; Zeichen kopieren
         ADDQ    #1,D4
@@ -154,7 +154,7 @@ PROCEDURE TimeToText ( s: Time; REF mask: ARRAY OF CHAR; VAR d: ARRAY OF CHAR );
 *)
     (* %% Komplett neue PROCEDURE TimeToText. Wertet jetzt 'mask' komplett
      * aus. Jeder Wert wird nur einmal in das Ergebnis gesetzt.
-     * Es wird kein Test auf ungÅltige Werte in 's' vorgenommen, sollten
+     * Es wird kein Test auf ung√ºltige Werte in 's' vorgenommen, sollten
      * aber auch nicht drin sein.
      *)
     VAR english : BOOLEAN;
@@ -309,7 +309,7 @@ PROCEDURE mon (lang: INTEGER; month: CARDINAL): MonStr;
       ger:
         ACZ     'Januar'
         ACZ     'Februar'
-        ACZ     'MÑrz'
+        ACZ     'M√§rz'
         ACZ     'April'
         ACZ     'Mai'
         ACZ     'Juni'
@@ -322,17 +322,17 @@ PROCEDURE mon (lang: INTEGER; month: CARDINAL): MonStr;
         
       frz:
         ACZ     'Janvier'
-        ACZ     'FÇvrier'
+        ACZ     'F√©vrier'
         ACZ     'Mars'
         ACZ     'Avril'
         ACZ     'Mai'
         ACZ     'Juin'
         ACZ     'Juillet'
-        ACZ     'Aoñt'
+        ACZ     'Ao√ªt'
         ACZ     'Septembre'
         ACZ     'Octobre'
         ACZ     'Novembre'
-        ACZ     'DÇcembre'
+        ACZ     'D√©cembre'
         
       eng:
         ACZ     'January'
@@ -381,17 +381,17 @@ PROCEDURE DateToText ( s: Date; REF m0: ARRAY OF CHAR; VAR d: ARRAY OF CHAR );
         s2:= CardToStr (v,0);
         l:= Length (s2);
         IF l >= n THEN
-          (* Feld wird vollst. gefÅllt; die Zahl rechtsbÅndig kopieren: *)
+          (* Feld wird vollst. gef√ºllt; die Zahl rechtsb√ºndig kopieren: *)
           ps:= ADR (d)+LONG(p);
           Repl (s2,l-n,n,ps^)
         ELSE
           IF mask[p] >= 'a' THEN
-            (* Feld ist zu groû; kÅrzen: *)
+            (* Feld ist zu gro‚Çß; k√ºrzen: *)
             Del (p,n-l);
             ps:= ADR (d)+LONG(p);
             Repl (s2,0,l,ps^);
           ELSE
-            (* Feld ist zu groû; mit Nullen fÅllen: *)
+            (* Feld ist zu gro‚Çß; mit Nullen f√ºllen: *)
             WHILE l # n DO
               d[p]:='0';
               INC (p);
@@ -417,10 +417,10 @@ PROCEDURE DateToText ( s: Date; REF m0: ARRAY OF CHAR; VAR d: ARRAY OF CHAR );
         s2:= mon(v,s.month);
         l:= Length (s2);
         IF l >= n THEN
-          (* Feld wird vollst. gefÅllt; den String linksbÅndig kopieren: *)
+          (* Feld wird vollst. gef√ºllt; den String linksb√ºndig kopieren: *)
           l:=n;
         ELSE
-          (* Feld ist zu groû; kÅrzen: *)
+          (* Feld ist zu gro‚Çß; k√ºrzen: *)
           Del (p,n-l)
         END;
         ps:= ADR (d)+LONG(p);
@@ -486,12 +486,12 @@ PROCEDURE TextToTime ( s: ARRAY OF CHAR; VAR d: Time; VAR valid: BOOLEAN );
   BEGIN
     p:=0;
     valid:=TRUE;
-    (* fÅhrende Blanks Åberspringen *)
+    (* f√ºhrende Blanks √ºberspringen *)
     WHILE s[p]=' ' DO INC (p) END;
     get (s,p,valid,TRUE,2,0,23,d.hour);
     get (s,p,valid,FALSE,2,0,59,d.minute);
     get (s,p,valid,FALSE,2,0,59,d.second);
-    (* prÅfen: Nach der Zeitangabe muû der String zu Ende sein *)
+    (* pr√ºfen: Nach der Zeitangabe mu‚Çß der String zu Ende sein *)
     IF p < Length (s) THEN valid:= FALSE END
   END TextToTime;
 
@@ -550,7 +550,7 @@ PROCEDURE TextToDate ( s: ARRAY OF CHAR; exp: CARDINAL; VAR d: Date; VAR valid: 
     valid:=TRUE;
     Upper (s);
     p:=0;
-    (* fÅhrende Blanks Åberspringen *)
+    (* f√ºhrende Blanks √ºberspringen *)
     WHILE s[p]=' ' DO INC (p) END;
     CASE exp OF
       1: getd; getm; gety|
@@ -558,11 +558,11 @@ PROCEDURE TextToDate ( s: ARRAY OF CHAR; exp: CARDINAL; VAR d: Date; VAR valid: 
       3: gety; getm; getd|
       4: gety; getd; getm|
     END;
-    (* Numerisch gÅltig, jetzt logische PrÅfung
-     (Jedes 4. Jahr, auûer es ist ein Jahrhundert und nicht ein Jahrvierhundert)
+    (* Numerisch g√ºltig, jetzt logische Pr√ºfung
+     (Jedes 4. Jahr, au‚Çßer es ist ein Jahrhundert und nicht ein Jahrvierhundert)
     *)
     IF valid THEN
-      (* prÅfen: Nach der Zeitangabe muû der String zu Ende sein *)
+      (* pr√ºfen: Nach der Zeitangabe mu‚Çß der String zu Ende sein *)
       WITH d DO
         IF p < Length (s) THEN
           valid:= FALSE
@@ -581,4 +581,4 @@ PROCEDURE TextToDate ( s: ARRAY OF CHAR; exp: CARDINAL; VAR d: Date; VAR valid: 
     END;
   END TextToDate;
 
-END TimeConvert.
+END TimeConvert.

@@ -377,10 +377,10 @@ AHIST_BW		EQU 1<<30		; Private
 ; are supported by AHI_LoadSound().
 AHIST_M8S		EQU 0			; Mono, 8 bit signed (BYTE)
 AHIST_M16S		EQU 1			; Mono, 16 bit signed (WORD)
-AHIST_S8S		EQU 2			; Stereo, 8 bit signed (2×BYTE)
-AHIST_S16S		EQU 3			; Stereo, 16 bit signed (2×WORD)
+AHIST_S8S		EQU 2			; Stereo, 8 bit signed (2Ã—BYTE)
+AHIST_S16S		EQU 3			; Stereo, 16 bit signed (2Ã—WORD)
 AHIST_M32S		EQU 8			; Mono, 32 bit signed (LONG)
-AHIST_S32S		EQU 10			; Stereo, 32 bit signed (2×LONG)
+AHIST_S32S		EQU 10			; Stereo, 32 bit signed (2Ã—LONG)
 
 AHIST_M8U		EQU 4			; OBSOLETE!
 

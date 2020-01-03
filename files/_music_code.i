@@ -21,9 +21,9 @@ lyd_phaser          rs.l    1
 lyd_chorus          rs.l    1
 lyd_notelengde      rs.l    1
 lyd_playlistptr     rs.l    1
-lyd_type            rs.b    1  ; obs.. lyd_type1 og lyd_type2 må ikke flyttes
+lyd_type            rs.b    1  ; obs.. lyd_type1 og lyd_type2 mÃ¥ ikke flyttes
 lyd_type2           rs.b    1
-					rs.w    1  ; dummy word for å spare en shift lenger nedi her
+					rs.w    1  ; dummy word for Ã¥ spare en shift lenger nedi her
 lyd_play            rs.w    1
 audiobase           rs.l    1
 lyd_chn1ptr         rs.l    1
@@ -73,7 +73,7 @@ calc_waveforms
 		move.w    d7,d1
 		muls.w    d1,d1           ;d1=X^2
 
-		muls.w    #-4,d1    ; -4x²
+		muls.w    #-4,d1    ; -4xÂ²
 		move.w    d7,d3
 		muls.w    #724,d3   ; + 724x
 		add.l     d3,d1     ; sine
@@ -390,5 +390,3 @@ sound_engine
 
 ;		section chip,bss_c
 ;lyd_chipdata    ds.b    10*65536
-
-

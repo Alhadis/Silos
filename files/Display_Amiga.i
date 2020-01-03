@@ -33,7 +33,7 @@
   3     V   U   H   B   8   G   Y   7
   4     N   O   K   M   0   J   I   9
   5     ,   @   :   .   -   L   P   +
-  6     /   ^   =  SHR HOM  ;   *   £
+  6     /   ^   =  SHR HOM  ;   *   Â£
   7    R/S  Q   C= SPC  2  CTL  <-  1
 */
 
@@ -487,7 +487,7 @@ void C64Display::PollKeyboard(UBYTE *key_matrix, UBYTE *rev_matrix, UBYTE *joyst
 					case 0: {	// About Frodo
 						TheC64->Pause();
 						char str[256];
-						sprintf(str, "%s by Christian Bauer\n<cbauer@iphcip1.physik.uni-mainz.de>\n© Copyright 1994-1997\nFreely distributable", VERSION_STRING);
+						sprintf(str, "%s by Christian Bauer\n<cbauer@iphcip1.physik.uni-mainz.de>\nÂ© Copyright 1994-1997\nFreely distributable", VERSION_STRING);
 						ShowRequester(str, "OK");
 						TheC64->Resume();
 						break;

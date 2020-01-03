@@ -7,15 +7,15 @@ IMPLEMENTATION MODULE AESMisc;
  *                                                                      *
  *  Version   2.2     V#0051                                            *)
  
-(*  05.11.87    | öbernahme von 'GEMBase' und 'GEMExt'
+(*  05.11.87    | √úbernahme von 'GEMBase' und 'GEMExt'
  *  14.01.88    | Erweiterung um 'ShellGet' und 'ShellPut'
  *  26.07.88    | 'getNoElements' liefert jetzt 'HIGH (..) + 1', statt
  *              | 'HIGH (..)'
  *  20.08.89    | 'SelectFileExteded' def. + impl.
- *  08.09.89 TT | 'ShellFind' korrigiert; kein öberlauf bei ShellRead;
- *                ShellRead/Write konvertieren LÑngenbyte bei TAIL (cmdline);
+ *  08.09.89 TT | 'ShellFind' korrigiert; kein √úberlauf bei ShellRead;
+ *                ShellRead/Write konvertieren L√§ngenbyte bei TAIL (cmdline);
  *                ShellWrite hat nicht mehr den 3. Parameter f. Wahl, ob
- *                Prg als Sub-Prozeû oder nach Prg-Ende gestartet werden soll.
+ *                Prg als Sub-Proze‚Çß oder nach Prg-Ende gestartet werden soll.
  *  ???????? TT | REF-Parm.
  *  02.04.90    | Anpassung auf public arrays
  *  17.01.94 TT | FindApplication korrigiert (jetzt Null-Byte hinter Namen).
@@ -29,12 +29,12 @@ IMPORT  GEMShare;
 (*$I GEMOPS.ICL *)
 
 
-(*  getNoElements -- geg.: 'high'=HIGH(...) und 'userNo' Angabe Åber Anzahl  *
+(*  getNoElements -- geg.: 'high'=HIGH(...) und 'userNo' Angabe √ºber Anzahl  *
  *                         zu benutzender Elemente.                          *
  *                   ges.: 'D0=userNo', falls '(userNo<high) und (userNo#0)' *
  *                         'D0=high + 1'  , sonst.                           *
  *                                                                           *
- *       !!!!  Nur von Assemblerroutinen zu benÅtzen  !!!!                   *)
+ *       !!!!  Nur von Assemblerroutinen zu ben√ºtzen  !!!!                   *)
                 
 PROCEDURE getNoElements(high,userNo:CARDINAL);
 
@@ -92,7 +92,7 @@ PROCEDURE FindApplication(REF fname:ARRAY OF CHAR;
 
 BEGIN
   ASSEMBLER
-    CLR.W       -(A7)           ; Bytes hinter Namen lîschen
+    CLR.W       -(A7)           ; Bytes hinter Namen l√∂schen
     SUBQ.L      #8,A7           ; reserviere weitere 8 Byte auf dem A7
     MOVE.L      A7,A2
     MOVE.L      -(A3),-(A7)
@@ -104,20 +104,20 @@ BEGIN
 cont4
     MOVE.L      -(A3),A0
     MOVE.L      A2,A1           ; ADR(stackBuffer) -> A1
-    MOVE.W      D0,D1           ; D0(Anzahl der Zeichen) -> D1 (ZÑhler)
+    MOVE.W      D0,D1           ; D0(Anzahl der Zeichen) -> D1 (Z√§hler)
 loop
     MOVE.B      (A0)+,(A1)+
-    DBEQ        D1,loop         ; Zeichen -> stackBuffer, bis #0 oder ZÑhlerende
+    DBEQ        D1,loop         ; Zeichen -> stackBuffer, bis #0 oder Z√§hlerende
     BNE         cont2           ; Letztes Zeichen #0, dann Zeichen ignorieren
     SUBQ.L      #1,A1
 cont2
     ADDQ.W      #7,D1
-    SUB.W       D0,D1           ; (7- Anzahl Åbertragener Zeichen) -> D1
+    SUB.W       D0,D1           ; (7- Anzahl √ºbertragener Zeichen) -> D1
     BMI         cont3
-    MOVEQ       #' ',D0         ; FÅllzeichen ist <Space>
+    MOVEQ       #' ',D0         ; F√ºllzeichen ist <Space>
 loop2
     MOVE.B      D0,(A1)+
-    DBF         D1,loop2        ; Auf acht Zeichen auffÅllen
+    DBF         D1,loop2        ; Auf acht Zeichen auff√ºllen
 cont3
     MOVE.L      pubs,A0       ; Auruf von 'APPL_FIND' mit ADDRESS(stackBuffer)
     MOVE.L      A2,pubArrays.ADDRIN(A0)
@@ -245,7 +245,7 @@ BEGIN
   ASSEMBLER
         MOVE.L  pubs,A0
 
-        ; TAIL muû LÑngenbyte am Anfang bekommen
+        ; TAIL mu‚Çß L√§ngenbyte am Anfang bekommen
         SUBA.W  #$100,A7
         MOVE.L  A7,pubArrays.ADDRIN+4(A0)
         MOVE    -(A3),D2
@@ -344,10 +344,10 @@ BEGIN
         MOVE.L  D2,pubArrays.ADDRIN+4(A0)
         MOVE.W  #SHEL_ENVRN,(A3)+
         JSR     aes_if
-        MOVE.L  (A7),A7         ; String vom Stack schmeiûen
+        MOVE.L  (A7),A7         ; String vom Stack schmei‚Çßen
         JSR     testINTOUT0
   END;
 END ShellEnvironment;
 
 
-END AESMisc.
+END AESMisc.

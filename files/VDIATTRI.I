@@ -9,11 +9,11 @@ IMPLEMENTATION MODULE VDIAttributes;
  *  Version   2.2     V#0032
  *)
  
-(*  04.11.87    | šbernahme aus 'GEMBase' und 'GEMExt'
+(*  04.11.87    | Ãœbernahme aus 'GEMBase' und 'GEMExt'
  *  01.02.90    | Anpassung auf Compilerversion 4.0 (SET's verdreht)
  *  13.02.90    | 'SetAbsTHeight' setzt 'errNum' korrekt
  *  02.04.90    | Anpassung auf public arrays
- *  25.02.91 TT | "error"-Setzung ber occured-Funktion
+ *  25.02.91 TT | "error"-Setzung Ã¼ber occured-Funktion
  *  09.04.91 TT | SetAbsTHeight/SetPtsTHeight: Return-Parms vertauscht
  *  01.08.91 TT | DefUserFill geht nun (enthielt gleich zwei Fehler).
  *  22.05.93 TT | SetAbsTHeight/SetPtsTHeight: keine GemError-Abfrage mehr
@@ -326,7 +326,7 @@ BEGIN
         MOVE.L  A7,(A3)+
         JSR     setDevice       ; (handle, VAR success)
         TST.W   (A7)+
-        MOVE.L  (A7)+,A2        ; ver„ndert CCR nicht!
+        MOVE.L  (A7)+,A2        ; verÃ¤ndert CCR nicht!
         BEQ     ende
         
         MOVE.L  our_cb,A0               ; Build up the ctrl-array
@@ -341,7 +341,7 @@ BEGIN
         MOVE.L  pubs, A0
         LEA     pubArrays.vINTIN(A0),A0
         LSR.W   #1,D0                   ; pattern.planes*8 -> D0
-        SUBQ.W  #1,D0                   ; pattern.planes*8-1 -> D0 als Z„hler
+        SUBQ.W  #1,D0                   ; pattern.planes*8-1 -> D0 als ZÃ¤hler
 loop                                    ; new pattern -> vINTIN-Array
         MOVE.L  (A2)+,(A0)+
         DBF     D0,loop
@@ -393,4 +393,4 @@ END SetFillPerimeter;
 END VDIAttributes.
 
 
-(* $FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$00000413$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944€$0000029AT.......T.......T.......T.......T.......T.......T.......T.......T.......T.......$00001BCD$00001CE9$00001E9B$00000018$00002224$00000257$0000025F$0000029B$00001B39$00001BAA$FFEDDDBE$00001BB0$00001BBA$00001BEE$00000018$00002224 €ƒ*)
+(* $FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$00000413$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944$FFF8B944Ã‡$0000029AT.......T.......T.......T.......T.......T.......T.......T.......T.......T.......$00001BCD$00001CE9$00001E9B$00000018$00002224$00000257$0000025F$0000029B$00001B39$00001BAA$FFEDDDBE$00001BB0$00001BBA$00001BEE$00000018$00002224Ã¡Ã‡Ã¢*)
