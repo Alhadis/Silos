@@ -1,0 +1,2 @@
+global = true
+std = "none"

@@ -1,0 +1,2 @@
+globals = {"args"}
+ignore = {"deps"}

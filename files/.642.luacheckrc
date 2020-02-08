@@ -1,0 +1,18 @@
+read_globals = {
+	"require",
+	"ipairs",
+	"pairs",
+	"setmetatable",
+	"rawget",
+	"assert",
+	"math",
+	"tostring",
+	"io",
+	"string",
+	"select",
+	"type",
+	"table",
+	"os",
+	"print",
+	"debug",
+};

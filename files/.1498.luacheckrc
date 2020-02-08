@@ -1,0 +1,4 @@
+global = false
+globals = {
+  'love'
+}
