@@ -1,0 +1,94 @@
+%import common.SIGNED_INT
+%import common.ESCAPED_STRING
+%import common.CNAME
+%import common.WS
+%import common.NEWLINE
+
+%ignore WS
+%ignore COMMENT
+
+COMMENT: "//" /[^\n]/*
+
+ident: CNAME
+
+type_pure: "u8" -> u8
+         | "u16" -> u16
+         | "u32" -> u32
+         | "u64" -> u64
+         | "uptr" -> uptr
+         | "i8" -> i8
+         | "i16" -> i16
+         | "i32" -> i32
+         | "i64" -> i64
+         | "iptr" -> iptr
+         | "f32" -> f32
+         | "f64" -> f64
+         | "bool" -> bool
+         | "str" -> str
+
+!type: type_pure "*"* -> type_builtin
+     | ident "*"* -> type_userdef
+
+op_bin: "+" -> add
+      | "-" -> subtract
+      | "*" -> multiply
+      | "/" -> divide
+      | "==" -> equal
+      | "!=" -> not_equal
+      | "<" -> less_than
+      | ">" -> greater_than
+      | "+=" -> add_eq
+      | "-=" -> subtract_eq
+      | "*=" -> multiply_eq
+      | "/=" -> divide_eq
+
+?value: SIGNED_INT -> number
+      | ESCAPED_STRING -> string
+      | "true" -> true
+      | "false" -> false
+      | "null" -> null
+      | ident
+      | "(" value ")" // TODO: fix this later
+
+argument_list: "(" [expression ("," expression)*] ")"
+
+expression_range: value ".." value
+
+expression: "&" expression -> expression_ref
+          | "*" expression -> expression_deref
+          | ident argument_list -> expression_function_call
+          | expression op_bin expression -> expression_op_bin
+          | expression_range
+          | expression "." ident -> expression_dot
+          | value -> expression_value
+
+variable_statement: "var" ident "=" expression NEWLINE -> statement_variable_define_auto
+                  | "var" ident type "=" expression NEWLINE -> statement_variable_define
+                  | "var" ident type NEWLINE -> statement_variable_declare
+                  | expression "=" expression NEWLINE -> statement_variable_assign
+
+?statement: expression NEWLINE // TODO: fix this
+          | "return" expression NEWLINE -> statement_return // TODO: and this
+          | "if" expression block ("elif" expression block)* ["else" block] -> statement_if
+          | "for" ident "in" expression_range block -> statement_for // TODO: allow other loop types
+          | "while" expression block -> statement_while
+          | "loop" block -> statement_loop
+          | variable_statement
+
+block: "{" statement* "}"
+
+parameter_list_item: ident type
+parameter_list: "(" [parameter_list_item ("," parameter_list_item)*] ")"
+
+?function: "fn" ident parameter_list type block -> function_typed
+         | "fn" ident parameter_list block -> function_void
+
+struct_property: ident type NEWLINE
+
+struct_block: "{" struct_property* function* "}"
+
+struct: "struct" ident struct_block
+
+include: "include" ESCAPED_STRING
+
+program: include* (variable_statement | function | struct)*

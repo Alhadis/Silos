@@ -1,0 +1,55 @@
+?start: program
+?aexp: NUMBER
+    | NAME
+    | NAME "[" aexp "]" -> read
+    | aexp "+" aexp -> add
+    | aexp "-" aexp -> sub
+    | "-" aexp -> neg
+    | aexp "*" aexp -> mult
+    | aexp "/" aexp -> div
+    | aexp "%" aexp -> mod
+    | "(" aexp ")"
+?comp: aexp "=" aexp -> eq
+    | aexp "!=" aexp -> neq
+    | aexp "<=" aexp -> leq
+    | aexp ">=" aexp -> geq
+    | aexp "<" aexp -> lt
+    | aexp ">" aexp -> gt
+?bexp: comp
+    | "!" bexp -> bnot
+    | bexp "||" bexp -> bor
+    | bexp "&&" bexp -> band
+    | "(" bexp ")" -> bparen
+?assign: NAME ":=" aexp ";"
+    | parassign
+    | write
+?parassign: NAME "," NAME ":=" aexp "," aexp ";"
+?write: NAME "[" aexp "] :=" aexp ";"
+?ifstmt: "if" bexp "then" block "else" block "end"
+    | "if" bexp "then" block "end"
+?inv: "inv" assn -> inv
+?whilestmt: "while" bexp inv* "do" block "end"
+?stmt: assign
+    | ifstmt
+    | whilestmt
+?assume: "assume" block
+?assert: "assert" block
+?havoc: "havoc" block
+?block: stmt*
+?pre: "pre" assn -> pre
+?post: "post" assn -> post
+?program: "program" NAME pre* post* "is" block "end"
+?assn: comp
+    | "!" assn -> bnot
+    | assn "||" assn -> bor
+    | assn "&&" assn -> band
+    | assn "==>" assn -> implies
+    | "forall" NAME* "," assn -> forall
+    | "exists" NAME* "," assn -> exists
+    | "(" assn ")" -> bparen
+    | "true" -> const_true
+    | "false" -> const_false
+%import common.CNAME -> NAME
+%import common.NUMBER
+%import common.WS
+%ignore WS

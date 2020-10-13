@@ -1,0 +1,141 @@
+start: line*
+?line: statement ";"
+?statement: declaration | assignment | expression_stmt | exit_stmt | include_stmt
+
+// Statement types
+
+declaration: type declared ("," declared)*
+declared: symbol struct? initial_assign?
+initial_assign: initial_setter expression_add_sub
+type: synchrony mutability (let | expression_atomic)
+let: "let"
+synchrony: async?
+async: "async"
+mutability: var?
+var: "var"
+
+assignment: symbol setter expression
+
+?initial_setter: "=" -> equals
+               | "->" -> computes
+
+setter: initial_setter
+      | "+=" -> plus_equals
+      | "-=" -> minus_equals
+      | "*=" -> times_equals
+      | "/=" -> div_equals
+      | "%=" -> mod_equals
+
+expression_stmt: expression
+
+exit_stmt: exiter expression
+exiter: "return" -> return
+      | "yield" -> yield
+      | "throw" -> throw
+
+include_stmt: "include" inclusions "from" expression_atomic
+inclusions: "*" -> all
+          | symbol ("," symbol)*
+
+// Control blocks
+
+?expression: expression_exploded
+           | ifstatement
+           | forloop
+           | whileloop
+
+forloop: "for" "(" type symbol "in" expression_prefixing ")" expression
+whileloop: "while" expression_prefixing expression
+ifstatement: condition expression_exploded (":" | "else") expression
+condition: "if" expression_prefixing | expression_prefixing "?"
+
+// Binary operations
+
+?expression_exploded: expression_compare
+                    | exploded
+
+exploded: expression_compare ("," expression_compare)+ ","?
+
+?expression_compare: (expression_compare comparer)? expression_add_sub
+
+comparer: "==" -> equal_to
+        | "!=" -> not_equal_to
+        | "<" -> lt
+        | ">" -> gt
+        | "<=" -> lteq
+        | ">=" -> gteq
+        | "<:" -> subtype
+        | ":>" -> supertype
+        | "is" -> is
+
+?expression_add_sub: (expression_add_sub add_sub)? expression_mult_div
+
+add_sub: "+" -> plus
+       | "-" -> minus
+       | "%" -> mod
+       | "&" -> and
+       | "|" -> or
+
+?expression_mult_div: (expression_mult_div mult_div)? expression_exp
+
+mult_div: "*" -> times
+        | "/" -> div
+
+?expression_exp: expression_prefixing (exp expression_exp)?
+
+exp: "^" -> exp
+
+// Unary operations
+
+?expression_prefixing: expression_suffixing
+                    | "~" expression_prefixing -> explode
+                    | "!" expression_prefixing -> not
+
+?expression_suffixing: expression_atomic
+                    | expression_suffixing "(" (arg ("," arg)*)? ")" -> fcall
+                    | expression_suffixing "." symbol -> attribute
+
+arg: (symbol "=")? expression_add_sub
+
+// Atomic expressions
+
+expression_atomic: symbol
+                 | string
+                 | int
+                 | decimal
+                 | bool
+                 | "null" -> null
+                 | list
+                 | set
+                 | map
+                 | object
+                 | struct
+                 | codeblock
+                 | "(" expression ")"
+
+// One-token expressions
+
+symbol: /[_A-Za-z][_A-Za-z0-9]*/
+string: "\"" character* "\""
+character: /./
+int: /(0|-?[1-9][0-9]*)/
+decimal: /-?(0|[1-9][0-9]*)\.[0-9]*/
+bool: "true" -> true | "false" -> false
+
+// Sequences etc.
+
+list: "[" exploded? "]"
+set: "{" exploded? "}"
+map: "{" (kv_pair ("," kv_pair)*)? "}"
+kv_pair: expression_add_sub ":" expression_add_sub
+object: "(" (object_pair ("," object_pair)*)? ")"
+object_pair: symbol ":" expression_add_sub
+struct: "(" argdef ("," argdef)* ")"
+argdef: type symbol ("?" expression)?
+
+// Blocks
+
+codeblock: "{" line (line* expression?)? "}"
+
+%import common.WS
+%ignore WS

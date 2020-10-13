@@ -1,0 +1,108 @@
+random: /[a-zA-Z_]\w*/
+
+_expr: date
+     | time
+     | date "at" time
+     | random _expr
+     | _expr random
+
+date: days
+    | date_regex
+    | little_endian
+    | middle_endian
+    | other
+    | relative -> relative
+    | quantity -> quantity
+
+day_month: /[0-9]{1,2}/
+year: /[0-9]{4}/
+
+date_regex: day_month sep day_month sep year
+
+little_endian: day_month ord_ind "of" months year
+             | day_month months year
+             | days day_month ord_ind months
+             | days day_month months
+             | day_month ord_ind "of" months "in" year
+             | day_month ord_ind "of" months year
+             | day_month months "," year
+
+middle_endian: months day_month ord_ind
+             | months year
+             | months day_month year
+             | months
+             | months "," day_month ord_ind year
+             | days months day_month year
+
+other: months day_month ord_ind year
+     | days "," months day_month "," year
+     | "on" days "the" other
+     | on_clause
+
+on_clause: "on" (little_endian | middle_endian)
+         | "on" days "the"? day_month ord_ind ["of"? months year]
+
+ord_ind: "th"
+       | "rd"
+       | "nd"
+       | "st"
+
+sep: "/"
+   | "-"
+
+days: "Monday" -> mon
+    | "Tuesday" -> tue
+    | "Wednesday" -> wed
+    | "Thursday" -> thu
+    | "Friday" -> fri
+    | "Saturday" -> sat
+    | "Sunday" -> sun
+
+months: ("January" | "Jan") -> jan
+      | ("February" | "Feb") -> feb
+      | ("March" | "Mar") -> mar
+      | ("April" | "Apr") -> apr
+      | "May" -> may
+      | ("June" | "Jun") -> jun
+      | ("July" | "Jul") -> jul
+      | ("August" | "Aug") -> aug
+      | ("September" | "Sep") -> sep
+      | ("October" | "Oct") -> oct
+      | ("November" | "Nov") -> nov
+      | ("December" | "Dec") -> dec
+
+relative: "yesterday" -> yesterday
+        | "today" -> today
+        | "tomorrow" -> tomorrow
+
+quantity: "in" quantity -> in_clause
+        | /[2-9]+/ "days" -> few_days
+        | ("a" | "1") "second" -> one_second
+        | /[2-9]+/ "seconds" -> few_seconds
+        | ("a" | "1") "minute" -> one_minute
+        | /[2-9]+/ "minutes" -> few_minutes
+        | ("an" | "1") "hour" -> one_hour
+        | /[2-9]+/ "hours" -> few_hours
+        | ("a" | "1") "week" -> one_week
+        | /[2-9]+/ "week" -> few_weeks
+        | ("a" | "1") "month" -> one_month 
+        | /[2-9]+/ "months" -> few_months
+        | ("a" | "1") "year" -> one_year
+        | /[2-9]+/ "years" -> few_years
+
+time: time_types timezone?
+
+time_types: meridiem
+          | military
+
+meridiem: /(1[0-2]|[1-9])/ ":" /[0-5][0-9]/ meridiems
+
+military: /([0-1][0-9]|2[0-3])/ ":" /[0-5][0-9]/
+        | /([0-1][0-9]|2[0-3])[0-5][0-9]/
+
+meridiems: "AM" -> ante_meridiem
+        | "PM" -> post_meridiem
+
+timezone: /[A-Z]{3,4}/
+
+%ignore " "

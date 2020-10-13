@@ -1,0 +1,190 @@
+// The following grammar attempts to describe EBNF as specified by ISO/IEC 14977.
+// It is adopted from ISO/IEC 14977 itself, section 8.1, which _DEFINEs EBNF
+// using its own syntax. The syntax of lark grammar files lacks some of the features
+// of EBNF, and so changes must be made to some rules to accommodate. This grammar
+// recognises EBNF grammars using only the standard representations for terminal
+// characters.
+
+// =====================================================================
+//            Part 1: defining the roles of characters in EBNF
+// =====================================================================
+
+%import common.LETTER
+%import common.DIGIT
+%ignore NEWLINE
+%ignore " "
+
+// See Part 4 for structure of EBNF rules
+start: syntax
+
+_CONCAT: ","
+_DEFINE: "="
+_DEF_SEP: "|"
+_START_COMMENT: "(*"
+_END_COMMENT: "*)"
+_START_GROUP: "("
+_END_GROUP: ")"
+_START_OPTION: "["
+_END_OPTION: "]"
+_START_REPEAT: "{"
+_END_REPEAT: "}"
+_EXCEPT: "-"
+_FIRST_QUOTE: "'"
+_REPETITION: "*"
+_SECOND_QUOTE: "\""
+_SPECIAL_SEQ: "?"
+_TERMINATOR: ";"
+
+_OTHER_CHARACTER: ":" | "+" | "_" | "%" | "@"
+    | "&" | "#" | "$" | "<" | ">" | "\\" | "^" | "`" | "~"
+
+// ISO 6429 not openly available
+// horizontal tabulation character =
+//  ? ISO 6429 character Horizontal Tabulation ? ;
+HTAB: /\t/
+
+// new line =
+//  { ? ISO 6429 character Carriage Return ? },
+//  ? ISO 6429 character Line Feed ?,
+//  { ? ISO 6429 character Carriage Return ? } ;
+CR : /\r/
+LF : /\n/
+NEWLINE: CR* LF CR*
+
+SPACE: " "
+
+// vertical tabulation character =
+//  ? ISO 6429 character Vertical Tabulation ? ;
+// -Not implemented
+
+// form feed =
+//  ? ISO 6429 character Form Feed ? ;
+// -Not implemented
+
+
+// =====================================================================
+//       Part 2: The removal of unnecessary non-printing characters
+//          from a syntax.
+// =====================================================================
+
+terminal_no_quotes: LETTER
+    | DIGIT
+    | _CONCAT
+    | _DEFINE
+    | _DEF_SEP
+    | _START_COMMENT | _END_COMMENT
+    | _START_GROUP | _END_GROUP
+    | _START_OPTION | _END_OPTION
+    | _START_REPEAT | _END_REPEAT
+    | _EXCEPT
+    | _REPETITION
+    | _SPECIAL_SEQ
+    | _TERMINATOR
+    | _OTHER_CHARACTER
+
+terminal_character: terminal_no_quotes
+    | _FIRST_QUOTE | _SECOND_QUOTE
+
+// Long-winded definitions coming up because we don't have access to the _EXCEPTion
+// operator.
+gap_free_symbol: (terminal_no_quotes | _FIRST_QUOTE)
+    | (terminal_no_quotes | _SECOND_QUOTE)
+    | terminal_string
+
+terminal_string: _FIRST_QUOTE first_terminal+ _FIRST_QUOTE
+    | _SECOND_QUOTE second_terminal+ _SECOND_QUOTE
+
+first_terminal: terminal_no_quotes | _SECOND_QUOTE
+second_terminal: terminal_no_quotes | _FIRST_QUOTE
+
+gap_separator: SPACE | HTAB | NEWLINE
+
+// =====================================================================
+//       Part 3: The removal of bracketed-textual-comments from
+//          gap-free-symbols that form a syntax.
+// =====================================================================
+commentless: _CONCAT
+    | _DEFINE
+    | _DEF_SEP
+    | _START_GROUP | _END_GROUP
+    | _START_OPTION | _END_OPTION
+    | _START_REPEAT | _END_REPEAT
+    | _EXCEPT
+    | _REPETITION
+    | _TERMINATOR
+    | meta_id | INTEGER | terminal_string
+    | special_sequence
+
+INTEGER: DIGIT+
+
+// Form for non-terminals
+meta_id: META_ID_NAME
+META_ID_NAME: LETTER (LETTER | DIGIT | " ")*
+
+// Form for special sequences
+special_sequence: _SPECIAL_SEQ _SPECIAL_SEQ_CHAR* _SPECIAL_SEQ
+_SPECIAL_SEQ_CHAR: LETTER
+    | DIGIT
+    | _CONCAT
+    | _DEFINE
+    | _DEF_SEP
+    | _START_COMMENT | _END_COMMENT
+    | _START_GROUP | _END_GROUP
+    | _START_OPTION | _END_OPTION
+    | _START_REPEAT | _END_REPEAT
+    | _EXCEPT
+    | _REPETITION
+    | _TERMINATOR
+    | _OTHER_CHARACTER
+    | _FIRST_QUOTE | _SECOND_QUOTE
+
+// Amended: comment_symbol is not defined in terms of commentless due
+// to the ambiguity it introduces. For the purpose of a comment, we don't
+// particularly care about whether a particular word is a meta-id; we can
+// work it out by parsing the word itself.
+bracketed_textual_comment: _START_COMMENT comment_symbol* _END_COMMENT
+comment_symbol: bracketed_textual_comment | _OTHER_CHARACTER
+    | _CONCAT
+    | _DEFINE
+    | _DEF_SEP
+    | _START_GROUP | _END_GROUP
+    | _START_OPTION | _END_OPTION
+    | _START_REPEAT | _END_REPEAT
+    | _EXCEPT
+    | _REPETITION
+    | _TERMINATOR
+    | LETTER | DIGIT
+
+// =====================================================================
+//       Part 4: The final part of this syntax defines the abstract
+//          syntax of EBNF, i.e. the structure in terms of the
+//          commentless symbols.
+// =====================================================================
+syntax: bracketed_textual_comment* syntax_rule+ bracketed_textual_comment*
+syntax_rule: meta_id _DEFINE definitions_list _TERMINATOR
+
+definitions_list: single_definition (_DEF_SEP single_definition)*
+single_definition: syntactic_term (_CONCAT syntactic_term)*
+syntactic_term: syntactic_factor (_EXCEPT syntactic_exception)?
+
+// exceptions are defined using a special sequence:
+//      a syntactic-factor that could be replaced by a syntactic-factor
+//      containing no meta-identifiers.
+// So be optimistic and assume that the designer knows what they're doing -
+// this means nonsensical exceptions can be written in some cases.
+syntactic_exception: syntactic_factor
+
+syntactic_factor: (INTEGER _REPETITION)? syntactic_primary
+
+syntactic_primary: optional_sequence
+    | repeated_sequence
+    | grouped_sequence
+    | meta_id | terminal_string
+    | special_sequence | empty_sequence
+
+optional_sequence: _START_OPTION definitions_list _END_OPTION
+repeated_sequence: _START_REPEAT definitions_list _END_REPEAT
+grouped_sequence:  _START_GROUP definitions_list _END_GROUP
+empty_sequence:
+
+

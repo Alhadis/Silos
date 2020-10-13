@@ -1,0 +1,54 @@
+start: _into high_level_identifier (("," high_level_identifier)+ eof? | BULK eof? | eof_one_var?)
+_into: "$" "into"i | "into_py"i  // i = case-insensitive, underscore = remove from parse tree
+BULK: "bulk"i
+eof.0: /.+/  // увы, /.*/ (zero-width regex) не поддерживается. EOF = продолжение запроса после директивы препроцессору
+eof_one_var.0: /\s*(?!bulk).+/i  // начинается не с bulk, так как иначе будет двусмысленность - будет пересечение c другим случаем
+high_level_identifier.5: identifier  // является целью парсинга и потому в трансформере обрабатывается иначе, чем простой identifier, который может использоваться и в index. Теоретически, данная проблема могла быть решена иначе.
+
+
+
+// далее общая часть двух грамматик. Увы, пока невозможно объединять две грамматики, как при наследовании классов. Ну или я не нашёл способа. В будущих версиях планируется некая grammar composition, возможно это как раз добавление такой фичи.
+
+// по сути это основная часть данной грамматики, остальное нужно лишь для math и string_op в index, с более простым (закомментированным) index остальное не нужно было бы
+identifier.5: CNAME (index | inner_name)*
+inner_name.5: "." CNAME
+index.5: "[" (math | string_op) "]"
+// index: "[" (INT | string | identifier) "]"
+string.5: STRING | LONG_STRING
+STRING: /[ubf]?r?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
+LONG_STRING: /[ubf]?r?(""".*?(?<!\\)(\\\\)*?"""|'''.*?(?<!\\)(\\\\)*?''')/is
+// конец основной части, остальное нужно лишь для math и string_op в index
+
+
+expression.5: math | string_op | logical_op | comparison_op
+
+math.5: product | math "+" product -> sum | math "-" product -> subtraction
+product.5: math_atom | product "*" math_atom -> multiplication | product "/" math_atom -> division
+math_atom.5: atom | NUMBER | "-" math_atom -> negative_number
+
+string_op.5: string_atom | string_op "+" string_atom -> concatenation
+string_atom.5: atom | string
+
+logical_op.5: and_op | logical_op "or" and_op -> disjunction
+and_op.5: logical_atom | and_op "and" logical_atom -> conjunction
+logical_atom.5: atom | "True" -> true | "False" -> false | "None" -> none | "not" logical_atom -> negation
+
+!comparison_op.5: comparison_atom | comparison_op (">" | ">=" | "==" | "<=" | "<" | "!=") comparison_atom -> comparison
+comparison_atom.5: math | string_op
+
+atom.5: identifier | func
+
+func.5: func_name "(" parameters ")"
+func_name.5: (identifier ".")? CNAME
+parameters.5: | args | kwargs | args "," kwargs     //  no parameters | only args | only kwargs | args and kwargs
+args.5: arg ("," arg)*
+arg.5: expression -> normal_arg | "*" expression -> args_unpacking
+kwargs.5: kwarg ("," kwarg)*
+kwarg.5: CNAME "=" expression -> normal_kwarg | "**" expression -> kwargs_unpacking
+
+
+%import common.CNAME // valid variable name, i.e. ("_" | LETTER) ("_" | LETTER | DIGIT)*
+%import common.NUMBER
+%import common.WS  // whitespace
+
+%ignore WS

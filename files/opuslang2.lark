@@ -1,0 +1,94 @@
+?start: _NL* branch+
+//start: test
+branch: branch_def branch_body
+
+branch_def: "open"            -> opening
+    | bid_def ("-" bid_def)* -> continuation
+
+branch_body: "{" _NL* bid+ _NL* "}" _NL*
+bid: bid_def bid_body
+
+bid_def: bid_level
+
+//bid_level: /[1-7]/ suit
+bid_level: NUMBER suit
+
+bid_body: "{" _NL* test* "}" _NL*
+
+test: condition ("," condition)*  _NL*                     -> unprioritized
+    | condition ("," condition)* ";" "[" NUMBER "]"  _NL*  -> prioritized
+
+?condition: range -> point_range
+    | logic_expr
+    | count_expr
+
+range: NUMBER "-" NUMBER  -> range
+    | NUMBER "-"          -> or_fewer
+    | NUMBER "+"          -> or_more
+    | NUMBER "="          -> exact
+
+count_expr: range suit_expr
+
+
+?suit_expr: trump_suit
+    | trump_suit "&" trump_suit  -> and_suit
+    | trump_suit "|" trump_suit  -> or_suit
+
+
+?logic_atom: "(" logic_expr ")"
+
+?logic_expr: logic_atom
+    | logic_expr logic_binary logic_expr   -> binary
+    | logic_unary logic_atom               -> unary
+    | num_atom cmp_op num_atom             -> cmp
+
+?logic_binary: "and"                        -> and_op
+    | "or"                                 -> or_op
+
+logic_unary: "not"                         -> not
+
+// old style point expressions not supported yet
+// potential arithmetic goes here
+?num_atom: NUMBER
+    | variable
+    | suit_expr
+
+!?cmp_op: ">"
+    | ">="
+    | "=="
+    | "!="
+    | "<"
+    | "<="
+
+variable: "$" NAME
+
+trump_suit: CLUBS | DIAMONDS | HEARTS | SPADES
+suit: CLUBS | DIAMONDS | HEARTS | SPADES | NOTRUMP
+
+// name terminals to prevent confusing error messages
+CLUB_SIGN:     "♣"
+DIAMOND_SIGN: "♦"
+HEART_SIGN:   "♥"
+SPADE_SIGN:   "♠"
+
+LESSEQTHAN: "<="
+MOREEQTHAN: ">="
+EQUALS: "=="
+NOTEQUALS: "!="
+
+
+CLUBS: "♣" | "C"
+DIAMONDS: "♦" | "D"
+HEARTS: "♥" | "H"
+SPADES: "♠" | "S"
+NOTRUMP: "NT"
+
+%import common.CNAME  -> NAME
+%import common.SIGNED_INT -> NUMBER
+%import common.WS_INLINE
+%ignore WS_INLINE
+%import common.WS
+%ignore WS
+
+COMMENT: /\s*#[^\n]*/
+_NL: ( /\r?\n[\t ]*/ | COMMENT )+

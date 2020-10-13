@@ -1,0 +1,192 @@
+?start: _NL* _value
+// TODO: fix optional types to be None in transformer when there aren't any (maybe_placeholders?)
+_value : _uon_mapping | _uon_seq | schema
+_uon_mapping: yaml_mapping | (json_mapping _NL*)
+_uon_seq: yaml_seq | (json_seq _NL*)
+
+// yaml structure 
+// TODO: check yaml structures have to have at least one element
+yaml_seq: [SEQUENCE_TYPE] seq_item+
+yaml_mapping :  [MAPPING_TYPE]  pair+
+_yaml_collection: yaml_mapping | yaml_seq
+pair: pair_key ":" _yaml_value
+seq_item : "-" _yaml_value
+_yaml_collection_nested: _NL [_INDENT _yaml_collection _DEDENT]
+yaml_user_type: _custom_type _NL _INDENT yaml_mapping _DEDENT
+_yaml_value: _scalar _NL+ | _yaml_collection_nested | yaml_user_type | null _NL+
+
+// json structure
+json_mapping : [MAPPING_TYPE] "{" [json_pair ("," json_pair)*] "}"
+json_pair: pair_key ":" _json_value
+json_seq : [SEQUENCE_TYPE] "[" [_json_value ("," _json_value)*] "]"
+_json_collection: json_mapping | json_seq
+json_user_type: _custom_type json_mapping
+_json_value: _scalar | (_json_collection _NL*) | json_user_type | null
+
+
+_scalar : quantity_scalar | string_scalar | boolean_scalar | url
+// TODO: fix null, true/false values in transformer 
+// TODO: (include null among scalar values and watch out for eventual ambiguities empty against null)
+// numeric scalar is a numtype followed by a number or another numtype 
+// This allows for chaining of numtypes for type coercion
+quantity_scalar: _numeric_scalar [quantity]
+_numeric_scalar: coercible_numeric_scalar | number
+coercible_numeric_scalar : _number_type (coercible_numeric_scalar | number)
+
+string_scalar: [STR_TYPE] string_value
+boolean_scalar: [BOOL_TYPE] _boolean
+url: [URL_TYPE] URL
+
+pair_key : unescaped_string [presentation_properties]
+
+presentation_properties : "(" [_presentation_property ("," _presentation_property)*] ")"
+_presentation_property : optional | description
+description: "description" ":" _string
+optional : "optional" ":" _boolean
+
+// Units and Quantities
+quantity: length | mass | time | temperature
+
+length: METERS -> meters | KILOMETERS -> kilometers
+METERS: "m"
+KILOMETERS: "km"
+
+mass: GRAMS -> grams | KILOGRAMS -> kilograms
+GRAMS: "g"
+KILOGRAMS: "kg"
+
+time: SECOND -> second | MINUTE -> minute
+SECOND: "s"
+MINUTE: "min"
+
+temperature: CELSIUS -> celsius | KELVIN -> kelvin
+CELSIUS: "C"
+KELVIN: "K"
+
+
+// TODO: handle optional parameter attributes
+schema: _custom_type ":" "!schema" [schema_presentations] "{" [attributes] "}" _NL*
+attributes: attribute ("," attribute)*
+attribute: pair_key ":" _validation_properties
+
+schema_presentations: "(" [_schema_presentation ("," _schema_presentation)*] ")"
+_schema_presentation: schema_name | schema_uuid | description
+schema_name: "name" ":" _string
+schema_uuid: "uuid" ":" url
+
+// Validation properties
+_validation_properties: string_validation 
+                      | number_validation 
+                      | boolean_validation
+                      | url_validation
+
+// TODO: keep properties optional as string properties below?
+// numeric validation
+number_validation: number_validation_type [number_properties]
+number_properties: "(" [_number_property ("," _number_property)*] ")"
+_number_property: number_max | number_min | _quantity_validation
+number_max: "max" ":" number
+number_min: "min" ":" number
+number_validation_type: FLOAT_TYPE -> float_type 
+                      | INT_TYPE -> int_type
+                      | UINT_TYPE -> uint_type
+_quantity_validation: "quantity" ":" quantity_validation_helper
+quantity_validation_helper: "length" -> length_validation
+                            | "mass" -> mass_validation
+                            | "temperature" -> temperature_validation
+                            | "time" -> time_validation
+
+// string validation
+// TODO: string regex validation
+string_validation: STR_TYPE [string_properties]
+string_properties: "(" [_string_property ("," _string_property)*] ")"
+_string_property: string_max | string_min
+string_max: "max" ":" decimal
+string_min: "min" ":" decimal
+
+url_validation: URL_TYPE
+
+// boolean validation
+boolean_validation: BOOL_TYPE
+
+// User defined types
+_custom_type: "!!" _string
+
+_boolean: (true | false)
+true : "true" | "True"
+false : "false" | "False"
+null: "null" | "none" | "None"
+// TODO: import escaped string perhaps
+// Don't need to add number at the start of escaped_string because they will be interpreted 
+// as strings anyways since quotes mark the beginning of a string.
+string_value: _string
+_string: escaped_string | unescaped_string | multiline_string
+escaped_string : "\"" _escaped_string_helper? "\"" | "'" _escaped_string_helper? "'"
+_escaped_string_helper: WORD (WORD | PUNCTUATION)*
+unescaped_string : _unescaped_string_helper
+_unescaped_string_helper :  WORD (WORD | UNESCAPED_PUNCTUATION)*
+multiline_string: "(" (unescaped_string | escaped_string) ")"
+
+number : decimal | signed_decimal | float_number
+decimal : DECIMAL
+float_number: FLOAT_NUMBER
+signed_decimal: (PLUS|MINUS) DECIMAL
+
+// TODO: Fix strings that may begin with "!!" if none of the types below matched 
+// TODO: (maybe use a punctuation rule to complement the string rule)
+// https://www.regextester.com/95226
+
+// Collections types
+collection_type : MAPPING_TYPE | SEQUENCE_TYPE
+MAPPING_TYPE: "!mapping"
+SEQUENCE_TYPE: "!seq"
+
+// Scalar types (Only those eligible for type coercion, so booleans are not included)
+scalar_type : STR_TYPE | _number_type | BOOL_TYPE | URL_TYPE
+_number_type: FLOAT_128_TYPE | FLOAT_64_TYPE | FLOAT_32_TYPE
+               | INT_128_TYPE | INT_64_TYPE | INT_32_TYPE
+               | UINT_128_TYPE | UINT_64_TYPE | UINT_32_TYPE
+               | FLOAT_TYPE | INT_TYPE | UINT_TYPE
+
+STR_TYPE: "!str"
+BOOL_TYPE: "!bool"
+URL_TYPE: "!url"
+
+FLOAT_TYPE: "!float"
+FLOAT_128_TYPE: "!float128"
+FLOAT_64_TYPE: "!float64"
+FLOAT_32_TYPE: "!float32"
+
+INT_TYPE: "!int"
+INT_128_TYPE: "!int128"
+INT_64_TYPE: "!int64"
+INT_32_TYPE: "!int32"
+
+UINT_TYPE: "!uint"
+UINT_128_TYPE: "!uint128"
+UINT_64_TYPE: "!uint64"
+UINT_32_TYPE: "!uint32"
+
+DECIMAL : /0|[1-9]\d*/i
+FLOAT_NUMBER: /((\d+\.\d*|\.\d+)(e[-+]?\d+)?|\d+(e[-+]?\d+))/i
+
+//MULTILINE_STRING: /"""/i
+//multine_line_string: MULTILINE_STRING WORD+ MULTILINE_STRING
+
+PLUS: "+"
+MINUS: "-"
+
+// TODO: folded style strings?
+// Word with all possible characters except the following negated set
+WORD:  /[^:#,()\[\]{}!?\n\"\'\s]+/
+PUNCTUATION: /[:#,()\[\]{}!?\"\']/
+UNESCAPED_PUNCTUATION: /[#?!\"\'()\[\]]/
+COMMENT: /#[^\n]*/
+// TODO: Find a better regex for URLs
+URL: /(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})/
+
+%import common.WS_INLINE
+%declare _INDENT _DEDENT
+%ignore COMMENT
+%ignore WS_INLINE
+_NL: /(\r?\n[\t ]*)+/

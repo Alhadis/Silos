@@ -1,0 +1,58 @@
+dnjs            : statement* [value _NEWLINE]
+
+?statement      : import_
+                | export
+                | export_default
+                | assignment
+
+?unambigious    : string
+                | SIGNED_NUMBER -> number
+                | "true"        -> true
+                | "false"       -> false
+                | "null"        -> null
+                | list
+                | template
+                | ternary_eq
+                | function_call
+                | "(" value ")"
+                | var
+                | dot
+
+?value          : unambigious
+                | dict
+                | function
+
+var             : CNAME
+dot             : unambigious "." var
+rest_var        : "..." value
+pair            : (string | CNAME) ":" value
+?dict_item      : pair  | rest_var
+?list_item      : value | rest_var
+dict            : "{" [dict_item ("," dict_item)*] [","] "}"
+list            : "[" [list_item ("," list_item)*] [","] "]"
+ternary_eq      : value "===" value "?" value ":" value
+dict_destruct   : "{" [var ("," var)*] [","] "}"
+list_destruct   : "[" [var ("," var)*] [","] "]"
+template_string : /(?:`|}).*?(?:`|\${)/ms
+template        : template_string (value template_string)*
+
+import_         : "import" (var | dict_destruct) "from" string _NEWLINE
+export          : "export" assignment
+export_default  : "export" "default" value _NEWLINE
+assignment      : "const" var "=" value _NEWLINE
+function        : "(" [(var | list_destruct) ("," var)*] [","] ")" "=>" unambigious
+function_call   : unambigious "(" [value ("," value)*] [","] ")"
+
+string          : ESCAPED_STRING
+_NEWLINE        : NEWLINE
+COMMENT         : "//" /.*/
+
+%import common.LETTER
+%import common.DIGIT
+%import common.ESCAPED_STRING
+%import common.SIGNED_NUMBER
+%import common.WS
+%import common.NEWLINE
+%import common.CNAME
+%ignore WS
+%ignore COMMENT

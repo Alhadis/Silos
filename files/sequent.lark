@@ -1,0 +1,118 @@
+entry: (top | _NL)*
+
+// --- Top-level ----------------------
+
+?top: function
+  | object
+  | needs
+  | bind
+  | case
+  | expr _NL
+
+// Functions can be bodyless.
+function: "fn" NAME pattern ("->" (expr _NL | block) | _NL)
+
+bind: NAME "=" expr _NL
+
+needs: "needs" (NAME | OBJECT) _NL
+
+case: "case" expr case_block ["else" block]
+variant: expr "=>" (expr _NL | block)
+case_block: _NL _INDENT variant+ _DEDENT
+
+// Object's fields can be set only in the object's block.
+object: "obj" OBJECT NAME* ["(" pattern ")"] ("->" (object_block | expr _NL) | _NL)
+set_field: "." NAME "=" expr _NL
+object_block: _NL _INDENT (top | set_field)+ _DEDENT
+
+block: _NL _INDENT top+ _DEDENT
+
+// --- Patterns -----------------------
+
+?pattern: value_pattern
+  | [CONSUME] item_pattern ("," item_pattern)+ -> p_list_items
+
+?item_pattern: value_pattern
+  | "+" value_pattern -> p_one_or_more
+  | "*" value_pattern -> p_zero_or_more
+  | "*" -> p_discard_many
+
+?value_pattern: p_guard
+  | NAME -> p_req
+  | (NUM ".." NUM | STR ".." STR) -> p_in_range
+  | REGEX -> p_regex
+  | OBJECT -> p_instanceof
+  | "(" OBJECT (NAME | "#{" value_pattern "}")+ ")" -> p_unpack
+  | data -> p_compare
+  | "_" -> p_discard
+  | NAME ":" value_pattern -> p_remember_whole
+  | ("(" pattern ")" | NAME) "=" expr -> p_remember_whole_expr
+  | "(" pattern ")"
+
+!p_guard: NAME ("is""not"|"not"("of"|"in")|"in"|"of"|"is"|"<"|"<="|">"|">=") add [("and"|"or") expr] 
+
+// --- Expressions --------------------
+
+!?expr: not
+  | expr ("and"|"or") not -> infix
+!?not: equ
+  | "not" not -> prefix
+!?equ: add
+  | add (("<"|">"|"<="|">=") add)+ -> cmpfix
+  | equ ("is""not"|"not"("of"|"in")|"in"|"of"|"is") add -> infix
+!?add: mul
+  | add ("+"|"-") mul -> infix
+!?mul: pow
+  | mul ("*"|"/"|"mod") pow -> infix
+!?pow: unary
+  | unary "^" pow -> infix
+!?unary: instance
+  | ("+"|"-") unary -> prefix
+?instance: call
+  | OBJECT index* -> instance
+?call: call? index
+
+// Range and index share the same precedence level.
+// Is this the right way, though?
+!?index: atom
+  | index (":" | "..") atom -> infix
+
+// --- Data types ---------------------
+
+?atom: data
+  | NAME -> req
+  | atom "." NAME -> field
+  | "_" -> contextual
+  | "(" expr ")"
+
+// TODO: list (vector) comprehension.
+
+?data: NUM -> num
+  | STR -> str
+  | "[" atom* "]" -> vec
+
+// --- Tokens -------------------------
+
+CONSUME.2: "consume"
+
+NAME: /[a-z][a-zA-Z0-9\-_]*(?<!\-)[?!]?/
+OBJECT: /[A-Z][a-zA-Z0-9\-_]*(?<!\-)/
+
+STR: /"([^\n"\\]|\\[nrtv"'\\])*"/
+REGEX: /`([^`\\]|\\(`|.))*`/
+
+NUM: HEX | OCT | BIN | FLOAT | DEC
+DEC: /[1-9][0-9]*|0/
+FLOAT: /[0-9]*\.[0-9]+/
+HEX.2: /0x[0-9A-Fa-f]+/
+OCT.2: /0o[0-7]+/
+BIN.2: /0b[01]+/
+
+_NL: (/\r?\n[\t ]*/ | COMMENT)+
+COMMENT: /\\[^\n]*/
+
+%import common.WS_INLINE
+%ignore WS_INLINE
+%ignore COMMENT
+
+%declare _INDENT _DEDENT

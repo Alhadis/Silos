@@ -1,0 +1,113 @@
+
+import org.w3c.event.*;
+import org.w3c.event.PopStateEvent;
+import org.w3c.html.*;
+import org.w3c.dom.Node;
+
+public class history implements Page{   
+	<%
+	<html>
+		<head> 
+			<meta httpEquiv="Content-Type" content="text/html; charset=utf-8" />
+		</head> 
+
+		<body>
+			<section id="wrapper" onclick=function{  boolean name=false; return name; }>    
+				<article>
+					<p id="status">HTML5 History API not supported</p>
+					<p>
+						最后一次触发的事件: <em><span id="lastevent">(none)</span></em>
+					</p>
+					<p>点击下面的链接进行测试，点击后页面的URL发生变化，但重新刷新后依旧停留于此页面。</p>
+					<p>可以使用浏览器原生的前进、后退按钮</p>
+					<ul id="examples">
+						<li><a href="/history/first">first</a></li>
+						<li><a href="/history/second">second</a></li>
+						<li><a href="/history/third">third</a></li>
+						<li><a href="/history/fourth">fourth</a></li>
+					</ul>
+					<div id="output"></div>
+				</article>
+			</section>
+		</body> 
+		<{
+			String name; 
+		}>
+	</html>
+	%>
+	
+	Array<Data> datas;
+	history(){
+		datas = new Array<Data>();
+		datas.push(new Data("张三","北京"));
+		datas.push(new Data("李四","上海"));
+		datas.push(new Data("王五","重庆"));
+		datas.push(new Data("小六","南京"));
+	}
+	 
+	Callback1  fn = 	() -> {
+		return (Object el, String type, EventHandler fn) ->{
+			if (el != null && ((Node)el).nodeName != null || el === window) {
+				((HTMLElement)el).addEventListener(type, fn, false);
+			} else if (el != null && el["length"] != null) {
+				for (int i = 0; i < (int)el["length"]; i++) {
+					addEvent(el[" " + i], type, fn);
+				}
+			}
+		};
+	}; 
+ 	
+	Handler1 addEvent = fn();
+
+	GetElementById $ = (String s) -> {
+		return document.getElementById(s);
+	};
+	HTMLElement state = $("status"),  
+	lastevent = $("lastevent"), 
+	urlhistory = $("urlhistory"), 
+	examples = $("examples"), 
+	output = $("output");
+	String template = "&lt;p&gt;URL: &lt;strong&gt;{url}&lt;/strong&gt;, name: &lt;strong&gt;{name}&lt;/strong&gt;, location: &lt;strong&gt;{location}&lt;/strong&gt;&lt;/p&gt;";
+	
+	void  reportEvent(Event event) {
+		lastevent.innerHTML = event.type;
+	}
+	void  reportData(Data data) {
+		output.innerHTML = template;
+	}
+	{
+		addEvent(examples, "click", (Event event) ->{
+			String title;
+			event.preventDefault();
+			if (event.target.nodeName == "A") {
+				title = event.target.innerHTML;
+				data[title].url = event.target.getAttribute("href"); // slightly hacky (the setting), using getAttribute to keep it short
+				history.pushState(data[title], title, event.target.href);
+				reportData(data[title]);
+			}
+		});
+		
+		PopupStateHandler handler = (PopStateEvent event) ->{
+			Data data = (Data) event.state;
+			reportEvent(event);
+			reportData((Data) event.state );
+		};
+		
+		window.addEventListener("popstate",  handler, false);  
+	}
+	
+	class Data{
+		
+		String name;
+		String location;
+		
+		Data(String name, String location){
+			this.name = name;
+			this.location  = location;
+		}
+	}
+}
+
+function Handler1 Callback1(); 
+function HTMLElement GetElementById(String id);
+function void Handler1(Object el, String type, EventHandler fn);  

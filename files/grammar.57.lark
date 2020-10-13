@@ -1,0 +1,125 @@
+//
+// Grammar for the Gallium programming language.
+// Written by Dhillon Wilkinson and Fabian Klemm (c) 2019.
+//
+
+?start								: lines
+
+?lines								: line*
+block									: "{" lines "}"
+
+?line									: func_def
+											| func_call
+											| struct
+											| for_loop
+											| while_loop
+											| if_statement
+											| var_declare
+											| let_declare
+											| var_assign
+
+// Variable declarations
+var_declare						: "var" name ":" type ["=" value] ";"
+let_declare						: "let" name ":" type ["=" value] ";"
+
+var_assign						: dotted_name "=" value ";"
+
+// If, else if and else statements
+if_statement					: "if" "(" expression ")" block elif_statement* else_statement*
+elif_statement				: "elif" "(" expression ")" block
+else_statement				: "else" block
+
+// For and while loops
+for_loop							: "for" "(" var_declare ";" expression ";" expression ")" block
+while_loop						: "while" "(" expression ")" block
+
+// Structs
+struct_member					: name ":" type ";"
+struct								: "struct" name "{" struct_member* "}"
+
+// Function definition
+func_def							: "func" name "(" [func_args] ")" [":" type] block
+func_args							: func_args ("," func_arg)*
+											| func_arg
+func_arg							: name ":" type	["=" value]
+
+// Function call
+func_call							: name "(" [func_call_args] ")" ";"
+func_call_args				: func_call_args ("," func_call_arg)*
+func_call_arg					: value													-> func_call_arg_pos
+											| name "=" value								-> func_call_arg_kw
+
+name									: /[a-zA-Z]+[a-zA-Z_0-9]*/
+?dotted_name					: dotted_name "." name
+											| name
+
+type									: name ["<" value ">"]
+
+// Expressions
+?e_entry							: logical
+
+expression						: e_entry
+											| "(" expression ")"
+
+?logical							: comp
+											| logical "&&" comp							-> l_and
+											| logical "||" comp							-> l_or
+
+?comp									: bitwise
+											| comp "<" bitwise							-> c_l
+											| comp ">" bitwise							-> c_g
+											| comp "<=" bitwise							-> c_le
+											| comp ">=" bitwise							-> c_ge
+											| comp "==" bitwise							-> c_eq
+											| comp "!=" bitwise							-> c_neq
+
+?bitwise							: sum
+											| bitwise "&" sum								-> b_and
+											| bitwise "|" sum								-> b_or
+											| bitwise "^" sum								-> b_xor
+											| bitwise "<<" sum							-> b_lshift
+											| bitwise ">>" sum							-> b_rshift
+
+?sum									: product
+											| sum "+" product								-> add
+											| sum "-" product								-> sub
+
+?product							: power
+											| product "*" power							-> mul
+											| product "/" power							-> div
+											| product "%" power							-> mod
+
+?power								: item
+											| power "**" item								-> pow
+
+?item									: value
+											| "(" e_entry ")"
+											| "-" item											-> neg
+											| "+" item											-> pos
+											| "!" item											-> l_not
+											| "~" item											-> b_not
+
+
+?value								: func_call
+											| bool
+											| FLOAT
+											| INTEGER
+											| INT_HEX
+											| INT_BIN
+											| ESCAPED_STRING
+											| dotted_name
+
+// Types
+bool									: "true" | "false"
+FLOAT									: /([0-9]*\.[0-9]+)[0-9]+f/
+INTEGER								: /[0-9]+/
+INT_HEX								: /0x[0-9a-fA-F]+/
+INT_BIN								: /0b[0-9a-fA-F]+/
+
+MULTILINE_COMMENT			: /\/\*(\*(?!\/)|[^*])*\*\//
+
+%ignore MULTILINE_COMMENT
+%import common.ESCAPED_STRING
+
+%import common.WS
+%ignore WS

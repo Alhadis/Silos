@@ -1,0 +1,175 @@
+// ! Gramática de Ruby
+// ? Una gramática simple de Ruby que contiene:
+// * Comentarios simples o múltiples
+// * Asignaciones de cadenas, boleanos, números y nulos
+// * Declaración y Ejecición de Funciones
+// * Estructuras de control: if, while, for
+// @author: flynn1411
+// @version: 0.6 (Agregadas los operadores de assignación)
+// @date: 04/08/2020
+
+
+//Comienzo de gramática
+?start: statement+
+
+//Definición de una instrucción
+?statement: assignmentstatement
+    | outputstatement
+    | ifstatement
+    | functioncall endofline
+    | function
+    | whileloop
+    | forloop
+
+//Definición de un if
+?ifstatement: "if" expression "then"? endofline sentenceblock+ "end" endofline
+
+//Definición de una función
+?function: "def" identifier "?"? "("? parameters ")"? endofline sentenceblock+ "end" endofline
+
+//Llamado de una función
+?functioncall: identifier "?"? "(" parameters ")"
+
+//Estructura de in ciclo While
+?whileloop: "while" expression "do"? endofline sentenceblock+ "end" endofline
+
+//Definición de ciclo for
+?forloop: "for" identifier ("," identifier)* "in" expression "do"? endofline sentenceblock+ "end" endofline
+
+//Bloque de código de sentencias, difiere de sentencias normales al no poder crear funciones
+//dentro de funciones, ifs, whiles y fors.
+?sentenceblock: "return" expression endofline
+    | expression endofline
+    | assignmentstatement
+    | outputstatement
+    | ifstatement
+    | whileloop
+    | forloop
+
+//Asignación de variable
+?assignmentstatement: identifier assingop expression endofline
+
+//Instrucción de impresión a consola
+?outputstatement:  outputkeyword "("? expression ")"? endofline
+
+//Definición de parámetros
+?parameters: expression ("," expression)?
+
+//Definición de una expresión
+?expression: arithmeticexpression
+    | booleanexpression
+    | null
+    | stringmethods
+
+//Métodos que pueden ser utilizados en cadenas de texto
+?stringmethods: string ".capitalize"
+    | string ".upcase" 
+    | string ".downcase"
+    | string ".length"
+    | string ".reverse"
+    | string ".empty?"
+    | string ".swapcase"
+    | string ".split" ( "(" string ")" )?
+    | string ".chomp"
+    | string ".chop"
+    | string ".strip"
+    | string ".clear"
+    | string ".to_i"
+    | string ".index" "(" string  ("," string )? ")"
+    | string ".count" "(" string ")"
+    | string ".gsub" "(" string "," string ")"
+    | string ".concat" string
+    | string ".insert" "(" number "," string ")"
+
+//Definición de expresión booleana
+?booleanexpression: booleanatom
+    | expression logicalop expression
+    | arithmeticexpression compareop arithmeticexpression
+    | ("not" | "!") expression
+
+//Definición de suma y resta
+?arithmeticexpression: term
+    | term addsub term
+
+//Definicion de términos, se usa para darle precedencia a
+//la multiplicación, división y agrupación
+?term: arithmeticatom
+    | arithmeticatom multdiv arithmeticatom
+
+//Atómos de operaciones aritméticas, se incluyen llamados a 
+//funciones ya que puede o no pueden retornar valores
+?arithmeticatom: identifier
+    | number
+    | string
+    | "(" arithmeticexpression ")"
+    | functioncall
+    | stringmethods
+    | string "%" "[" expression ( "," expression )* "]"
+    | arithmeticexpression ".." arithmeticexpression
+    | arithmeticexpression "..." arithmeticexpression
+
+// **TERMINALES**
+
+//Palabras claves para imprimir en pantalla
+?outputkeyword: "puts"
+    | "print"
+
+//Identificador de variable
+?identifier: /[a-zA-z][a-zA-Z0-9_]*/
+
+//Literal de número (flotantes y enteros)
+?number: /\d+(\.\d+)?/
+
+//Literal de Cadena
+?string: /"[^"]*"/
+    | /'[^']*'/
+
+//Operadores de Asignación
+?assingop: "="
+    | "+="
+    | "-="
+    | "*="
+    | "/="
+    | "%="
+    | "**="
+
+//Operadores de suma o resta
+?addsub: "+"
+    | "-"
+
+//Operadores de multiplicación o división y modulo
+?multdiv: "*"
+    | "/"
+    | "%"
+    | "**"
+
+//Operadores de comparación
+?compareop: "<"
+    | "<="
+    | ">"
+    | ">="
+
+//Operadores de lógica
+?logicalop: "=="
+    | "!="
+    | "and"
+    | "or"
+    | "||"
+    | "&&"
+
+//Literal de boleano
+?booleanatom: /true/
+    |  /false/
+
+//Literal de nulo
+?null: /nil/
+
+//Fín de línea
+?endofline: "\n"+
+    | ";"
+
+//Ignorar este tipo de comentarios
+%ignore /[\t\f\v\r ]/
+    | "#" /[^\n]*/ "\n"+
+    | "/comment" /[\w\W]*/ "uncomment/" "\n"+
+    | "=begin" /[\w\W]*/ "=end" "\n"+

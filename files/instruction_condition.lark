@@ -1,0 +1,29 @@
+?condition: or_condition
+or_condition: and_condition ("or" and_condition)*
+and_condition: atom_condition ("and" atom_condition)*
+?atom_condition: "(" or_condition ")"
+                | subject equality_op object -> equality_condition
+                | subject "in" number_array -> in_condition
+                | subject "in_range" number "-" number -> in_range_condition
+?subject: field_object
+        | function_object
+?object: field_object
+        | number -> immediate_object
+        | function_object
+field_object: id ("[" number "]")?
+function_object: id "(" field_object ")"
+number_array: "[" number ("," number)* "]"
+id: ID
+?number: DECIMAL_NUMBER -> decimal_number
+        | HEX_NUMBER -> hex_number
+        | BINARY_NUMBER -> binary_number
+equality_op: EQUALITY_OP
+
+ID: /[A-Za-z]\w*/
+DECIMAL_NUMBER: /\d+/
+HEX_NUMBER: /0x[\dA-Fa-f]+/
+BINARY_NUMBER: /0b[01]+/
+EQUALITY_OP: "==" | "!=" | ">=" | ">" | "<=" | "<"
+
+%import common.WS
+%ignore WS

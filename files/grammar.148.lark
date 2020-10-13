@@ -1,0 +1,105 @@
+start: (_NEWLINE | statement)*
+
+%ignore /[\t \f]+/              // ignore whitespace
+%ignore /\\[\t \f]*\r?\n/       // ignore whatever
+%declare _INDENT _DEDENT
+_NEWLINE: ( /\r?\n[\t ]*/ )+
+
+// operator precendence
+
+?sign_comp: atom
+
+pow: pow_comp "hoch" sign_comp
+square: sign_comp "im" "quadrat"
+?pow_comp: sign_comp
+         | pow
+         | square
+
+add: calc_comp "+" pow_comp
+sub: calc_comp "-" pow_comp
+mul: calc_comp "*" pow_comp
+div: calc_comp "/" pow_comp
+mod: calc_comp "modulo" pow_comp
+?calc_comp: pow_comp
+         | add
+         | sub
+         | mul
+         | div
+         | mod
+
+cmp: compare_comp "das" "ist" calc_comp 
+lt: compare_comp "<" calc_comp
+?compare_comp: calc_comp
+            | cmp
+            | lt
+
+not: "not" compare_comp
+?not_comp: compare_comp
+         | not
+
+and: and_comp "und" not_comp
+?and_comp: not_comp
+         | and
+
+or: or_comp "oder" and_comp
+?or_comp: and_comp
+        | or
+
+// values
+
+STRING: /".*?(?<!\\)"/
+IDENT: /[a-zA-Z_][\w\?!]*/
+NUMBER: /\d+/
+CONSTANT: "uzbl"
+
+value: NUMBER | STRING | CONSTANT | IDENT | construct
+
+access: IDENT ("." (IDENT | NUMBER))+
+!objty: "menge" | "liste"
+construct_args: value+
+construct: objty ("mit" construct_args)?
+
+index: value "bei" value
+slice_start: value "von" value
+slice_end: (value | slice_start) "bis" value
+slice: slice_start | slice_end
+
+call_args: (value | access | "(" expression ")" )+
+call: IDENT call_args+
+expression: or_comp
+wexpression: IDENT | access | index | slice
+?atom: value 
+     | access
+     | index 
+     | slice 
+     | "(" expression ")" 
+     | call
+
+// language constructs
+
+lhassign: wexpression "ist" expression
+rhassign: expression "also" wexpression
+assign: lhassign | rhassign
+break: "patrick!"
+import: "use" IDENT
+return: atom "und" "fertig"
+nop: "oettinger"
+debug: "hä"
+
+// block statements
+
+block: _NEWLINE _INDENT statement+ _DEDENT
+
+marker_main: "action" "please"
+declare_args: IDENT+
+declare: "und" "zwar" IDENT ("mit" declare_args)? marker_main? block
+loop_while: "solange" expression
+loop_until: "bis" expression
+loop: "das" "holen" "wir" "nach" (loop_while | loop_until)? block
+else_branch: "ach" "kris." block
+elif_branch: "kris??" expression block
+if_branch: "kris?" expression block elif_branch* else_branch?
+
+?simple_statement: import | break | debug | return | assign | expression | nop
+?block_statement: declare | if_branch | loop
+?statement: (simple_statement (_NEWLINE | _DEDENT)) | block_statement

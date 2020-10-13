@@ -1,0 +1,55 @@
+?start: value+
+
+?value: object
+      | array
+      | string
+      | abytes
+      | bbytes
+      | integer
+      | floating
+      | false
+      | true
+      | null
+      | nan
+      | inf
+      | minus_inf
+
+object : "{" [ ","? key_value ("," key_value)* ","? ] "}"
+key_value   : string ":" value
+
+array  : "[" [ ","? value ("," value)* ","? ] "]"
+
+string : STRING_SINGLE | STRING_DOUBLE
+STRING_DOUBLE : "\"" _STRING_ESC_INNER "\""
+STRING_SINGLE : "'" _STRING_ESC_INNER "'"
+
+abytes : ABYTES_SINGLE | ABYTES_DOUBLE
+ABYTES_SINGLE : "a'" /.*?'/
+ABYTES_DOUBLE : "a\"" /.*?\"/
+
+bbytes : BBYTES_SINGLE | BBYTES_DOUBLE
+BBYTES_SINGLE : "b'" /(?P<KSON_TAG>.*?)'.*?'(?P=KSON_TAG)'/
+BBYTES_DOUBLE : "b\"" /(?P<KSON_TAG2>.*?)".*?\"(?P=KSON_TAG2)"/
+
+integer: SIGNED_INT
+floating: SIGNED_FLOAT
+
+false: "false"
+true: "true"
+null: "null"
+
+nan : "nan" | "NaN"
+inf : "inf" | "Infinity"
+minus_inf : "-inf" | "-Infinity"
+
+COMMENT: /#[^\n]*/
+_NEWLINE: ( /\r?\n[\t ]*/ | COMMENT )+
+
+WS: /[ \t\f]/+
+%ignore WS
+%ignore _NEWLINE
+
+%import common._STRING_ESC_INNER
+%import common._STRING_INNER
+%import common.SIGNED_INT
+%import common.SIGNED_FLOAT

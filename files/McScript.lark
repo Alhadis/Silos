@@ -1,0 +1,146 @@
+start: (statement? "\n")* statement?
+
+statement: expression
+         | declaration
+         | multi_declaration
+         | variable_update
+         | index_setter
+         | operation_ip
+         | function_definition
+         | control_while
+         | control_do_while
+         | control_for
+         | control_enum
+         | control_struct
+         | context_manipulator
+         | COMMENT -> comment
+
+block: "{" "\n"* (statement "\n"*)* statement? "}"
+
+function_parameter: IDENTIFIER ":" IDENTIFIER
+// ToDo: Prevent this syntax: fun foo(self param1)
+parameter_list: "(" [ /self/ ","? "\n"? ] (function_parameter "," "\n"?)* function_parameter? "\n"? ")"
+function_definition: /\bfun\b/ IDENTIFIER parameter_list [ "->" IDENTIFIER ] block
+
+function_call: accessor "(" "\n"* (expression "," "\n"? )* expression? "\n"? ")"
+
+variable_declaration: IDENTIFIER ":" IDENTIFIER
+
+declaration: _KEYWORD_LET accessor "=" expression
+multi_declaration: _KEYWORD_LET "(" accessor ( "," accessor )+ ")" "=" expression
+variable_update: accessor "=" expression
+
+index_setter: accessor "[" expression "]" "=" expression
+operation_ip: accessor (PLUS_IP | MINUS_IP | TIMES_IP | DIVIDE_IP | MODULO_IP) expression
+
+
+expression: boolean_or
+?boolean_or: boolean_and (OR boolean_and)*
+?boolean_and: boolean_not (AND boolean_not)*
+?boolean_not: NOT? _expression
+
+_expression: comparison
+          | term
+
+// terms like (6 + 8) * -9
+term: sum
+?sum: product ((PLUS | MINUS) product)*
+?product: value ((TIMES | DIVIDE | MODULO) value)*
+value: INTEGER
+     | DECIMAL
+     | STRING
+     | SELECTOR
+     | (/\b(true|false)\b/) -> boolean_constant
+     | tuple
+     | unary_operation
+     | "(" expression ")"
+     | accessor
+     | array_accessor
+     | function_call
+     | control_if
+
+accessor: IDENTIFIER ("." IDENTIFIER)*
+array_accessor: accessor "[" expression "]"
+
+unary_operation: MINUS value
+
+tuple: "(" ( expression "," "\n"? )+ expression? ")"
+
+comparison: term (VERIFY_EQUAL | VERIFY_NOT_EQUAL | VERIFY_GREATER | VERIFY_GREATER_OR_EQUAL | VERIFY_LESS | VERIFY_LESS_OR_EQUAL) term
+
+// control flow
+control_if: _KEYWORD_IF expression block [_KEYWORD_ELSE block]
+// hack to enable recursive context changes. ToDo: fix this
+control_while: _KEYWORD_WHILE expression [ context_modifier ] block
+control_do_while: _KEYWORD_DO [ context_modifier ] block _KEYWORD_WHILE expression
+
+control_for: /\bfor\b/ IDENTIFIER /\bin\b/ expression block
+
+control_enum: /\benum\b/ IDENTIFIER enum_block
+enum_block: "{" "\n"* ( enum_property "," "\n"* )* enum_property ","? "\n"* "}"
+enum_property: IDENTIFIER | (IDENTIFIER "=" INTEGER)
+
+control_struct: _KEYWORD_STRUCT IDENTIFIER struct_block
+struct_block: "{" "\n"? ( struct_member "\n"*)* "}"
+struct_member: ( variable_declaration "\n" ) | function_definition | COMMENT
+
+context_manipulator: _KEYWORD_RUN ( context_modifier)+ block
+context_modifier: _CONTEXT_FOR expression -> context_for
+                | _CONTEXT_AT expression -> context_at
+                | _CONTEXT_ABSOLUTE expression "," expression "," expression -> context_absolute
+                | _CONTEXT_RELATIVE expression "," expression "," expression -> context_relative
+                | _CONTEXT_LOCAL expression "," expression "," expression -> context_local
+                | _CONTEXT_ANCHORED expression -> context_anchor
+                | _KEYWORD_ALIGNED expression -> context_aligned
+
+
+INTEGER: /[0-9]+/
+DECIMAL: /[0-9]*\.[0-9]+/
+STRING: /".*?"/ | /'.*?'/
+SELECTOR: /@[parse](\[\w+=!?.+\])?/
+PLUS: "+"
+MINUS: "-"
+TIMES: "*"
+DIVIDE: "/"
+MODULO: "%"
+PLUS_IP: "+="
+MINUS_IP: "-="
+TIMES_IP: "*="
+DIVIDE_IP: "/="
+MODULO_IP: "%="
+AND: /\band\b/
+OR: /\bor\b/
+NOT: /\bnot\b/
+
+INCR_ONE: "++"
+DECR_ONE: "--"
+
+VERIFY_EQUAL: "=="
+VERIFY_NOT_EQUAL: "!="
+VERIFY_GREATER: ">"
+VERIFY_GREATER_OR_EQUAL: ">="
+VERIFY_LESS: "<"
+VERIFY_LESS_OR_EQUAL: "<="
+
+IDENTIFIER.0: /[a-z_][a-z_0-9]*/i
+
+_CONTEXT_AT: /\bat /
+_CONTEXT_FOR: /\bfor /
+_CONTEXT_ABSOLUTE: /\babsolute\b/
+_CONTEXT_RELATIVE: /\brelative\b/
+_CONTEXT_LOCAL: /\blocal\b/
+_CONTEXT_ANCHORED: /\banchored\b/
+_KEYWORD_ALIGNED: /\baligned\b/
+
+_KEYWORD_LET: /\blet\b/
+_KEYWORD_RUN: /\brun\b/
+_KEYWORD_STATIC: /\bstatic\b/
+_KEYWORD_STRUCT: /\bstruct\b/
+_KEYWORD_IF: /\bif/
+_KEYWORD_ELSE: /\belse\b/
+_KEYWORD_WHILE: /\bwhile\b/
+_KEYWORD_DO: /\bdo\b/
+
+_STATEMENT_SEPARATOR: /\n|;\n?/
+COMMENT: "#" /[^\n]/*
+%ignore " " | "\t"

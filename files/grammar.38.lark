@@ -1,0 +1,94 @@
+// A program is made of optional directives (defining the structure of the CPU) and of
+// assembly instructions
+start: directives instructions
+
+// -------------- INSTRUCTION RULES ---------------
+instructions: instruction+
+?instruction: control_flow_instruction
+            | alu_instruction
+            | fp_alu_instruction
+            | mem_instruction
+            | halt_instruction
+            | label_declaration
+            | const_declaration
+
+// Control flow instructions
+?control_flow_instruction: jump_instruction | branch_instruction
+branch_instruction: branch_op operand1 "," operand2 "," label
+!branch_op: "BEQ"i | "BNE"i | "BLE"i | "BLT"i | "BGE"i | "BGT"i
+jump_instruction: "JMP"i label
+
+// Integer, logic and floating point instructions
+// TODO: add NOT instruction
+alu_instruction: alu_op dst_register "," operand1 "," operand2
+!alu_op:  "ADD"i | "SUB"i
+        | "OR"i | "AND"i
+        | "ORL"i | "ANDL"i
+
+fp_alu_instruction: fp_alu_op fp_dst_register "," fp_operand1 "," fp_operand2
+!fp_alu_op:  "FADD"i | "FSUB"i
+
+// Memory instructions
+?mem_instruction: load_instruction | store_instruction
+load_instruction: "LD"i dst_register "," "[" address_spec "]"
+store_instruction: "ST"i src_register "," "[" address_spec "]"
+?address_spec: immediate_address | reg_immediate_address
+immediate_address: immediate
+reg_immediate_address: register "+" immediate | immediate "+" register
+
+// Other stuff
+halt_instruction: "HLT"i
+
+label_declaration: LABEL ":"
+label: LABEL
+
+const_declaration: ".const" CONSTNAME IMMEDIATE
+CONSTNAME: /![a-z_][0-9a-z_]*/i
+
+operand1: GPREGISTER | IMMEDIATE | CONSTNAME
+operand2: GPREGISTER | IMMEDIATE | CONSTNAME
+operand:  GPREGISTER | FPREGISTER | IMMEDIATE | CONSTNAME
+
+dst_register: GPREGISTER
+src_register: GPREGISTER
+register: GPREGISTER | FPREGISTER
+immediate: IMMEDIATE | CONSTNAME
+
+fp_dst_register: FPREGISTER
+fp_operand1: FPREGISTER | IMMEDIATE | CONSTNAME
+fp_operand2: FPREGISTER | IMMEDIATE | CONSTNAME
+
+LABEL: /[a-z_][0-9a-z_]*/i
+GPREGISTER: /R[0-9]+/i
+FPREGISTER: /F[0-9]+/i
+IMMEDIATE: /-?[0-9]+/
+
+
+// -------------- DIRECTIVES ---------------
+// TODO: remove rs latency directives
+directives: directive*
+!?directive: ".mem_rs" NUMBER
+           | ".mem_fu" NUMBER
+           | ".memfu_execution_latency" NUMBER
+           | ".alu_rs" NUMBER
+           | ".alu_fu" NUMBER
+           | ".alufu_execution_latency" NUMBER
+           | ".fpalu_rs" NUMBER
+           | ".fpalu_fu" NUMBER
+           | ".fpalufu_execution_latency" NUMBER
+           | ".mem_size" NUMBER
+           | ".gp_registers" NUMBER
+           | ".fp_registers" NUMBER
+           | ".cdb_width" NUMBER
+           | ".fetch_latency" NUMBER
+           | ".alurs_execution_latency" NUMBER
+           | ".fpalurs_latency" NUMBER
+           | ".memrs_execution_latency" NUMBER
+
+COMMENT: /[;#][^\n]*/
+
+%import common.WS
+%import common.NUMBER
+
+%ignore COMMENT
+%ignore WS

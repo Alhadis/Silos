@@ -1,0 +1,82 @@
+start: toplevel* 
+?toplevel: decoders | options | datasource | memmap | annotate
+
+decoders: "decoders" "{" decent* "}"
+decent: decsrc "->" decdst
+decsrc: NAME
+decdst: NAME
+
+options: "options" properties
+
+datasource: "datasource" properties
+
+memmap: "memmap" mmbody
+mmbody: "{" mmentry+ "}"
+mmentry: range mmdecoder ["<" mmdataaddr] properties?
+mmdecoder: NAME
+mmdataaddr: mmfromaddr | mmfromreset
+?mmfromaddr: number
+mmfromreset: "*"
+
+annotate: "annotate" "{" atoplevel* "}"
+?atoplevel: label | comment | directive
+
+label:  range ["(" lflags+ ")"] lname
+lname: NAME
+!lflags: "i"
+
+directive: daddress "[" dcommand "]" doperand
+daddress: number
+!dcommand: ["<" | ">"] ["r"]
+?doperand: doaddress | dosymbol
+doaddress: number
+dosymbol: NAME
+
+comment: caddress cpos? ctext
+caddress: number
+!cpos: "^" | "v" | ">"
+ctext: anystring
+?anystring: quoted | tquoted
+
+name: NAME
+?string: quoted
+quoted: QUOTED
+tquoted: TQUOTED
+
+properties: "{" propentry* "}"
+propentry: NAME "=" propval
+?propval: variant | list
+?variant : boolean | number | string
+boolean: TRUE | FALSE
+
+?number: hexnum | decimal
+hexnum: HEXNUM
+decimal: DECIMAL
+
+list: variant ("," variant)+
+
+range: number ["-" number]
+
+
+BLOCKCOMMENT: /\/\*.*?\*\//s
+LINECOMMENT: "//"/.*/
+
+NAME: /[a-zA-Z_][0-9a-zA-Z\-_]*/
+
+TRUE: "True"
+FALSE: "False"
+
+DECIMAL: /[0-9]+/
+HEXNUM: /\$[0-9a-fA-F]+/
+
+TSQUOTED: /'''.*?'''/s
+TDQUOTED: /""".*?"""/s
+TQUOTED: TSQUOTED | TDQUOTED
+SQUOTED: /'.*?'/
+DQUOTED: /".*?"/
+QUOTED: SQUOTED | DQUOTED
+
+%import common.WS
+%ignore WS
+%ignore LINECOMMENT
+%ignore BLOCKCOMMENT

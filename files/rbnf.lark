@@ -1,0 +1,58 @@
+
+
+%import common.NEWLINE
+%import common.WORD
+%import common.LCASE_LETTER
+%import common.UCASE_LETTER
+%ignore " "
+%ignore NEWLINE
+
+LCASE_WORD: LCASE_LETTER+
+UCASE_WORD: UCASE_LETTER+
+CAPITAL_WORD: UCASE_LETTER WORD
+
+
+start: syntax
+
+// =====================================================================
+//            Part 1: defining the roles of characters in RBNF
+// =====================================================================
+_DEF_SYM:      "::="
+_ALT_SYM:      "|"
+_START_SYM:    "<"
+_END_SYM:      ">"
+_START_OPTION: "["
+_END_OPTION:   "]"
+_START_GROUP:  "("
+_END_GROUP:    ")"
+_REPEAT:        "..."
+_TERMINATOR:   NEWLINE
+
+// =====================================================================
+//        Part 2: defining which characters can appear in features
+// =====================================================================
+object: _START_SYM OBJECT_STR _END_SYM
+OBJECT_STR: UCASE_WORD ("_" UCASE_WORD)*
+construct: _START_SYM CONSTRUCT_STR _END_SYM
+CONSTRUCT_STR: (LCASE_WORD | UCASE_WORD) (("-" | " ") (LCASE_WORD | UCASE_WORD))*
+message: _START_SYM MESSAGE_STR _END_SYM
+MESSAGE_STR: CAPITAL_WORD (" " WORD)*
+
+// =====================================================================
+//       Part 3: Defining the abstract syntax of RBNF
+// =====================================================================
+syntax: rule+
+rule: rulename _DEF_SYM elements
+
+rulename: message | construct
+
+elements: alternation
+alternation: concatenation (_ALT_SYM concatenation)*
+concatenation: element (element)*
+element: rulename | group | option
+    | repetition | object
+option: _START_OPTION alternation _END_OPTION
+group: _START_GROUP alternation _END_GROUP
+repetition: element _REPEAT
+
+

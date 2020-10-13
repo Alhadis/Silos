@@ -1,0 +1,38 @@
+start: (instruction | _NEWLINE)+
+ 
+instruction : func_stmt
+            | var_stmt
+            | expr
+ 
+func_stmt:  "let" VAR ":" _NEWLINE _INDENT (func_map | _NEWLINE)+ _DEDENT
+func_map:   parameters "=>" (expr | code_block)
+
+parameters: VAR (", " VAR)*
+
+var_stmt:   "let" VAR ":" expr
+
+
+expr: atom_expr (op atom_expr)*
+
+?atom_expr: atom_expr "(" expr ")"      -> funccall
+          | atom
+
+?atom: VAR
+     | NUMBER
+
+
+op: "+" | "-" | "*" | "/"
+
+code_block: _NEWLINE _INDENT (instruction | _NEWLINE)+ _DEDENT
+ 
+
+VAR: LETTER+ | NUMBER
+_NEWLINE: ( /\r?\n[\t ]*/ )+
+
+ 
+%import common.LETTER
+%import common.INT -> NUMBER
+%import common.WS
+
+%ignore WS
+%declare _INDENT _DEDENT

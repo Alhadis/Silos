@@ -1,0 +1,65 @@
+start: item item*
+
+item: component
+    | custom_property
+    | custom_assumption
+    | interaction
+
+custom_property: "property" STRING "{" STRING "}"
+
+custom_assumption: "assumption" STRING "{" STRING "}"
+
+component: "Component" COMPONENTNAME "<" STATENAME ">" "{" transition (transition)* "}"
+transition: STATENAME "->" STATENAME "->" STATENAME
+
+COMPONENTNAME: COMPNAME
+STATENAME: COMPNAME
+
+COMPNAME: /[a-zA-Z][a-zA-Z0-9]*/
+
+interaction: "Formula" "{" clause (";" clause)* ";"? "}"
+
+clause: clause_body              -> local_clause
+      | clause_body (broadcast)+ -> mixed_clause
+      | (broadcast)+             -> broadcasting_clause
+
+clause_body: conjunctive_guard "." predicate_conjunction -> guarded_clause_body
+           | predicate_conjunction                       -> unguarded_clause_body
+
+broadcast: "broadcasting" "{" variable ":" broadcast_body "}"
+
+broadcast_body: generell_guard "." predicate_disjunction -> guarded_broadcast
+              | predicate_disjunction                    -> unguarded_broadcast
+
+generell_guard: conjunctive_guard ("|" conjunctive_guard)*
+
+conjunctive_guard: restriction ("&" restriction)*
+
+restriction: term COMPARISONSYMBOL term -> comparison
+           | "last(" term ")"           -> last
+
+COMPARISONSYMBOL: "~=" | "=" | "<" | "<=" | ">" | ">="
+
+predicate_conjunction: predicate ("&" predicate)*
+predicate_disjunction: predicate ("|" predicate)*
+
+predicate: NAME "(" term ")"
+
+?term: succ
+     | variable
+     | constant
+
+variable: NAME
+
+succ:  "succ(" term ")"
+constant: INT
+
+NAME: /(?!(succ|last))[a-zA-Z][a-zA-Z0-9]*/
+COMMENT: "#" /.*/ NEWLINE
+
+%import common.INT
+%import common.ESCAPED_STRING -> STRING
+%import common.WS
+%import common.NEWLINE
+%ignore WS
+%ignore COMMENT

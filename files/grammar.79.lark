@@ -1,0 +1,41 @@
+start: complex (ATTR_SEP global_attr)*
+complex: component (PLUS_SEP component)*
+component: coefficient? subunit
+coefficient: INT STAR_SEP
+subunit: NAME
+global_attr: crosslink
+crosslink: "x-link" FIELD_SEP "[" WS* (onto_crosslink | inline_crosslink) WS* "]"
+
+onto_crosslink: onto_crosslink_attr (ATTR_SEP onto_crosslink_attr)*
+onto_crosslink_attr: onto_crosslink_type | onto_crosslink_monomer
+onto_crosslink_type: "type" FIELD_SEP NAME
+onto_crosslink_monomer: onto_crosslink_monomer_type FIELD_SEP subunit subunit_idx? "-" monomer_position
+onto_crosslink_monomer_type: /(l|r)/
+
+inline_crosslink: inline_crosslink_attr (ATTR_SEP inline_crosslink_attr)*
+inline_crosslink_attr: inline_crosslink_atom | inline_crosslink_order | inline_crosslink_stereo | inline_crosslink_comments
+inline_crosslink_atom: inline_crosslink_atom_type FIELD_SEP subunit subunit_idx? "-" monomer_position atom_element atom_position atom_component_type? atom_charge?
+inline_crosslink_atom_type: /(l|r)/ "-" /(bond|displaced)/ "-atom"
+inline_crosslink_order: "order" field_sep QUOTE_DELIMITER /(single|double|triple|aromatic)/ QUOTE_DELIMITER
+inline_crosslink_stereo: "stereo" field_sep QUOTE_DELIMITER /(wedge|hash|up|down)/ QUOTE_DELIMITER
+inline_crosslink_comments: "comments" FIELD_SEP ESCAPED_STRING
+
+monomer_position: /[0-9]+/
+subunit_idx: /\([0-9]+\)/
+atom_element: /[A-Z][a-z]?/
+atom_position: /[0-9]+/
+atom_charge: /[\+\-][0-9]+/
+atom_component_type: /[mb]/
+
+?field_sep: WS? ":" WS?
+
+NAME: /(?!(^|\b)(\d+(\.\d*)?(\b|$))|(\.\d+$)|(0[x][0-9a-f]+(\b|$))|([0-9]+e[0-9]+(\b|$)))[a-z0-9_]+/
+PLUS_SEP: WS* "+" WS*
+STAR_SEP: WS* "*" WS*
+ATTR_SEP: WS* "|" WS*
+FIELD_SEP: WS* ":" WS*
+QUOTE_DELIMITER: "\""
+
+WS: /[ \t\f\r\n]+/
+INT: /[0-9]+/
+ESCAPED_STRING: /"(?:[^"\\]|\\.)*"/

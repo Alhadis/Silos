@@ -1,0 +1,88 @@
+%import common (INT, WS)
+%ignore COMMENT
+%ignore WS
+
+IDENTIFIER: /\b(?!(function|class|namespace|run|on|class|true|false)\b)[a-z][a-z0-9_]*/
+
+BOOLEAN: ("true" | "false")
+
+STRING: "\"" /(\\"|[^"\n])*/ "\"" | "'" /(\\"|\\\\|[^'])*/ "'"
+
+COMMENT: /\/\/.*/
+
+start: namespace (class_declaration | function_declaration | variable_declaration)*
+
+namespace: "namespace " namespace_ref ";"
+
+arguments_declaration: (argument_declaration ("," argument_declaration)*)?
+
+argument_declaration: type_ref variable_ref
+
+arguments: (expression ("," expression)*)?
+
+events: ("on " event ("," event)*)?
+
+event: namespace_ref ":" function_ref
+
+function_declaration: "function " function_ref "(" arguments_declaration ")" events block
+
+variable_declaration: type_ref variable_ref ("=" expression)? ";"
+
+class_declaration: "class " type_ref (" extends " type_ref)? "{" classbody "}"
+
+classbody: variable_declaration* function_declaration*
+
+block: "{" statement* "}"
+
+?statement: expression ";" -> expression_statement
+    | "return " expression ";" -> return_statement
+    | variable_declaration
+    | block
+
+?expression: assignment
+
+?assignment: or_operation | variable_ref "=" assignment
+
+?or_operation: and_operation | or_operation "||" and_operation
+
+?and_operation: equality_operation | and_operation "&&" equality_operation
+
+?equality_operation: relational_operation
+    | equality_operation "==" relational_operation
+    | equality_operation "!=" relational_operation -> unequality_operation
+
+?relational_operation: addition_operation
+    | relational_operation "<" addition_operation -> less_then_operation
+    | relational_operation "<=" addition_operation -> less_then_equals_operation
+    | relational_operation ">" addition_operation -> greater_then_operation
+    | relational_operation ">=" addition_operation -> greater_then_equals_operation
+
+?addition_operation: multiplication_operation | addition_operation "+" multiplication_operation
+    | addition_operation "-" multiplication_operation -> subtraction_operation
+
+?multiplication_operation: base_term | multiplication_operation "*" base_term
+    | multiplication_operation "/" base_term -> division_operation
+    | multiplication_operation "%" base_term -> modulo_operation
+
+?base_term: atom
+    | "+" base_term -> unary_plus_operation
+    | "-" base_term -> unary_minus_operation
+    | "!" base_term -> unary_not_operation
+    | "(" expression ")"
+    | call
+
+?atom: variable_ref | constant | run_expression
+
+call : function_ref "(" arguments? ")"
+
+run_expression: "run " STRING
+
+constant: INT | BOOLEAN
+
+type_ref: IDENTIFIER
+
+variable_ref: IDENTIFIER
+
+function_ref: IDENTIFIER
+
+namespace_ref: IDENTIFIER

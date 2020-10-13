@@ -1,0 +1,304 @@
+start: [body] [python]
+
+?body: statement (";" statement)* ";"?
+
+python: "@python" PYTHON_STATEMENTS
+
+?statement: voice_assignment
+          | import 
+          | for_loop_statement 
+          | while_loop_statement 
+          | return_statement 
+          | assignment
+          | expression
+
+assignment: expression ASSIGNMENT_OP expression                         -> assignment
+          | expression ("," expression)+ ","?  ASSIGNMENT_OP expression  -> multi_assignment
+
+voice_assignment: VOICE_IDENTIFIER "=" voice_assignment_body
+
+voice_assignment_body: VOICE_CALL expression _RPAR  -> voice_assignment_inherit
+                     | expression                   -> voice_assignment_base
+
+import: "import" IDENTIFIER  -> import_global
+      | "import" STRING      -> import_local
+
+for_variables: VARIABLE_NAME ( _arguments_sep VARIABLE_NAME )*
+
+for_loop_head: _FOR _LPAR for_variables "in" expression_atom ".." expression_atom _RPAR -> for_loop_head_range
+             | _FOR for_variables "in" expression_atom ".." expression_atom             -> for_loop_head_range
+             | _FOR _LPAR for_variables "in" expression _RPAR                           -> for_loop_head
+             | _FOR for_variables "in" logic_op_expr                                    -> for_loop_head
+
+for_loop_statement: for_loop_head if_body
+
+while_loop_statement: _WHILE logic_op_expr if_body
+
+if_statement: _IF logic_op_expr if_body _ELSE logic_op_expr    -> if_statement_else
+        //     | _IF logic_op_expr if_body _ELSE if_statement     -> if_statement_else
+            | _IF logic_op_expr if_body                        -> if_statement
+
+if_body: "then"? logic_op_expr
+//        | block
+
+return_statement: _RETURN expression?
+
+?expression: sequence_expr
+           | sequence_expr ("|" sequence_expr)+ -> parallel
+
+?sequence_expr: logic_op_expr
+              | logic_op_expr logic_op_expr+ -> sequence
+
+?logic_op_expr: comparison_op_expr
+             | logic_op_expr "and" comparison_op_expr -> and_logic_op
+             | logic_op_expr "or" comparison_op_expr -> or_logic_op
+
+?comparison_op_expr: sum_op_expr
+                  | comparison_op_expr ">=" sum_op_expr -> gte_comparison_op
+                  | comparison_op_expr ">"  sum_op_expr -> gt_comparison_op
+                  | comparison_op_expr _EQ sum_op_expr -> eq_comparison_op
+                  | comparison_op_expr "!=" sum_op_expr -> neq_comparison_op
+                  | comparison_op_expr "<=" sum_op_expr -> lte_comparison_op
+                  | comparison_op_expr "<"  sum_op_expr -> lt_comparison_op
+                  | comparison_op_expr _ISNOT sum_op_expr -> isnot_comparison_op
+                  | comparison_op_expr _IS    sum_op_expr -> is_comparison_op
+                  | comparison_op_expr _IN    sum_op_expr -> in_comparison_op
+                  | comparison_op_expr _NOTIN sum_op_expr -> notin_comparison_op
+
+?sum_op_expr: mult_op_expr 
+            | sum_op_expr "+" mult_op_expr -> sum_op
+            | sum_op_expr "-" mult_op_expr -> sub_op
+
+?mult_op_expr: unary_op_expr
+             | mult_op_expr "**" unary_op_expr -> pow_op
+             | mult_op_expr "*"  unary_op_expr -> mult_op
+             | mult_op_expr "/"  unary_op_expr -> div_op
+
+?unary_op_expr: expression_atom
+              | "not" expression_atom -> negation
+
+?expression_atom: expression_atom "::" accessor  -> accessor
+                | if_statement
+                | function_declaration 
+                | string_literal 
+                | number_literal 
+                | bool_literal 
+                | none_literal 
+                | variable 
+                | function 
+                | keyboard_declaration 
+                | python_expression 
+                | array_literal 
+                | object_literal 
+                | group 
+                | block 
+                | chord 
+                | note 
+                | rest 
+                | modifier 
+                | voice_modifier
+
+accessor: FUNCTION_CALL function_call               -> method_call
+        | IDENTIFIER                                -> property_accessor
+        | _LSQR expression _RSQR                        -> index_accessor
+        | _LSQR expression _INDEX_CALL function_call  -> index_call
+
+python_expression: "@py" _LBRAK PYTHON_EXPR _RBRAK
+
+// Function Calls
+function: FUNCTION_CALL function_call
+
+function_call: [function_parameters] _RPAR                        -> function_call
+             | [function_parameters] _GROUP_CALL function_call    -> function_call_chain
+
+function_parameters: parameter (_parameters_sep parameter)*
+
+?parameter: named_parameter | positional_parameter
+
+named_parameter: NAMED_IDENTIFIER expression
+
+positional_parameter: expression
+
+_parameters_sep: "," | ";"
+// END Function Calls
+
+
+// BEGIN Keyboard
+keyboard_declaration: "@keyboard" keyboard_flags (_LPAR expression _RPAR)? _LBRAK [keyboard_body] _RBRAK
+
+keyboard_flags: ALPHANUMERIC*
+
+keyboard_body: keyboard_body_statement ( ";" keyboard_body_statement )* ";"?
+
+?keyboard_body_statement: keyboard_for
+                        | keyboard_while
+                        | keyboard_if
+                        | keyboard_block
+                        | keyboard_shortcut
+
+keyboard_for: for_loop_head _LBRAK [keyboard_body] _RBRAK
+
+keyboard_while: _WHILE _LPAR expression _RPAR _LBRAK [keyboard_body] _RBRAK
+
+keyboard_if: _IF _LPAR expression _RPAR _LBRAK [keyboard_body] _RBRAK "else" _LBRAK [keyboard_body] _RBRAK
+           | _IF _LPAR expression _RPAR _LBRAK [keyboard_body] _RBRAK "else" keyboard_if
+           | _IF _LPAR expression _RPAR _LBRAK [keyboard_body] _RBRAK
+
+keyboard_block: _LBRAK body? _RBRAK
+
+keyboard_shortcut: keyboard_shortcut_key [keyboard_arguments] ":" expression
+
+keyboard_shortcut_key: ALPHANUMERIC ("+" ALPHANUMERIC)* ALPHANUMERIC*  -> keyboard_shortcut_key_static
+                     | STRING ALPHANUMERIC*                            -> keyboard_shortcut_key_string
+                     | _LSQR expression _RSQR ALPHANUMERIC*            -> keyboard_shortcut_key_dynamic
+
+keyboard_arguments: _LPAR ( VARIABLE_NAME ( _arguments_sep VARIABLE_NAME )* )? _RPAR
+
+keyboard_arguments_separator: "," | ";"
+// END Keyboard
+
+// Function Declaration
+function_declaration: _FUN [IDENTIFIER] _LPAR [arguments] _RPAR [using] _LBRAK [body] _RBRAK      -> function_statements
+                    | _FUN [IDENTIFIER] _LPAR [arguments] _RPAR [using] _ARROW expression         -> function_expression
+
+using: _USING VARIABLE_NAME ("," VARIABLE_NAME)*
+
+arguments: argument ( _arguments_sep argument )*
+
+argument: [argument_prefix] VARIABLE_NAME "=" expression -> argument_default
+        | [argument_prefix] VARIABLE_NAME                -> argument
+
+!argument_prefix: "expr" | "ref" | "in"
+
+_arguments_sep: "," | ";"
+// END Function Declaration
+
+block: _LBRAK body? _RBRAK
+     | _LBRAK body? _BLOCK_CALL function_call  -> block_call
+
+group: _LPAR expression _RPAR
+     | _LPAR expression _GROUP_CALL function_call  -> group_call
+
+// Literals
+string_literal: STRING
+number_literal: INTEGER -> integer_literal
+              | FLOAT   -> float_literal
+
+!bool_literal: _TRUE | _FALSE
+none_literal: _NONE
+
+array_literal: "@[" _RSQR
+            | "@[" expression ( _array_sep expression )* _RSQR
+
+_array_sep: "," | ";"
+
+object_literal: "@{" _RBRAK
+              | "@{" object_item ( _object_sep object_item )* _RBRAK
+
+object_item: object_key "=" expression
+
+object_key: IDENTIFIER
+          | FLOAT 
+          | INTEGER
+          | STRING
+
+_object_sep: "," | ";"
+// END Literals
+
+// Music
+chord: _LSQR chord_note_pitch CHORD_SUFFIX _RSQR note_value?  -> chord_shortcut
+     | _LSQR chord_note_pitch+ _RSQR note_value?              -> chord_manual
+
+chord_note_pitch: NOTE_ACCIDENTAL? NODE_PITCH_RAW             -> note_pitch
+
+CHORD_SUFFIX: "m3" | "M3"
+            | "m7b5" | "m7" | "M7" | "dom7" | "7" | "dim7" | "mM7"
+            | "5"
+            | "M" | "m" | "aug" | "dim" | "+"
+
+rest: "R"i note_value?
+
+note: note_pitch note_value?
+
+note_value: "/" INTEGER          -> note_value_frac
+          | INTEGER "/" INTEGER  -> note_value_frac
+          | INTEGER              -> note_value_int
+
+note_pitch: NOTE_ACCIDENTAL? NODE_PITCH_RAW
+
+NOTE_ACCIDENTAL: "^^" | "^" | "__" | "_"
+
+NODE_PITCH_RAW.-1: /[cdefgab]/ "'"*
+              | /[CDEFGAB]/ ","*
+
+modifier: "T"i INTEGER              -> tempo_mod
+        | "V"i INTEGER              -> velocity_mod
+        | "I"i INTEGER              -> instrument_mod
+        | "L"i note_value           -> length_mod
+        | "S"i INTEGER "/" INTEGER  -> signature_mod
+        | "S"i INTEGER              -> signature_mod
+        | "O"i INTEGER              -> octave_mod
+
+voice_modifier: VOICE_IDENTIFIER sequence_expr
+VOICE_CALL: VOICE_IDENTIFIER "("
+VOICE_IDENTIFIER: ":" IDENTIFIER
+// END Music
+
+variable: VARIABLE_CALL function_call -> variable_call
+        | VARIABLE_NAME -> variable_name
+
+FUNCTION_CALL.3: IDENTIFIER "("
+VARIABLE_CALL.3: VARIABLE_NAME "("
+_GROUP_CALL.2: ")("
+_BLOCK_CALL.2: "}("
+_INDEX_CALL.2: "]("
+
+NAMED_IDENTIFIER.2: IDENTIFIER WS* "="
+VARIABLE_NAME: "$" IDENTIFIER
+IDENTIFIER.2: /[a-zA-Z_][a-zA-Z0-9_\\]*/
+ALPHANUMERIC.2: /[a-zA-Z0-9_]+/
+
+_FUN.4: "fun"
+_USING.4: "using"
+_WHILE.4: "while"
+_FOR.4: "for"
+_IF.4: "if"
+_ELSE.4: "else"
+_RETURN.4: "return"
+_IN.4: "in"
+_NOTIN.4: "notin"
+_NOT.4: "not"
+_AND.4: "and"
+_OR.4: "or"
+_ISNOT.4: "isnot"
+_IS.4: "is"
+_TRUE.4: "true"
+_FALSE.4: "false"
+_NONE.4: "none"
+
+_LPAR: "("
+_RPAR: ")"
+
+_LBRAK: "{"
+_RBRAK: "}"
+
+_LSQR: "["
+_RSQR: "]"
+
+_EQ.2: "=="
+_ARROW.3: "=>"
+
+// Common
+FLOAT.2: /[0-9]+\.[0-9]+/
+INTEGER: /0|[\-\+]?[1-9]\d*/i
+STRING: /("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/is
+COMMENT: /#[^\n]*/
+PYTHON_STATEMENTS.-1: /.+/s
+PYTHON_EXPR.-1: /[^}]+/
+WS: /[ \t\r\n]/
+ASSIGNMENT_OP: ("**" | "+" | "-" | "/" | "*" | "&" | "|")? "="
+
+
+%import common.WORD   // imports from terminal library
+%ignore WS           // Disregard spaces in text
+%ignore COMMENT

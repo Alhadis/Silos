@@ -1,0 +1,45 @@
+?start: sum
+    | NAME "~" sum -> tilde
+    | NAME "=" sum -> var_def
+
+?sum: product
+    | sum "+" product -> add
+    | sum "-" product -> sub
+
+?product:power
+    | product "*" power -> mul
+    | product "/" power -> div
+
+?power:atom_f
+    | power "^" atom_f -> pow
+
+?atom_f:atom
+    | "P(" NAME "=" sum ")" -> prob_eq
+    | "P(" NAME ">" sum ")" -> prob_gt
+    | "P(" NAME ">=" sum ")" -> prob_gt_eq
+    | "P(" NAME "<" sum ")" -> prob_lt
+    | "P(" NAME "<=" sum ")" -> prob_lt_eq
+
+?atom: NAME "(" paramaters? ")" -> func_call
+    | "[" paramaters? "]" -> gen_arr
+    | NUMBER -> number
+    | "-" atom -> neg
+    | "(" sum ")"
+    | /("([^"]|"")*")+/ -> string
+    | "True" -> bool_t
+    | "False" -> bool_f
+    | NAME -> get_var
+
+
+
+paramaters: (paramvalue ("," paramvalue)* ("," kwargs)* | kwargs ("," kwargs)* )
+
+kwargs: NAME "=" (atom | sum)
+
+paramvalue:atom | sum
+
+%import common.NUMBER
+%import common.WS_INLINE
+%import common.CNAME -> NAME
+
+%ignore WS_INLINE

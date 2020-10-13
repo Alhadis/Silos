@@ -1,0 +1,81 @@
+?start: (_NEWLINE | line)*
+
+?line: definition
+
+?definition: global_define
+        |    bracketfull_define
+        |    bracketless_define
+        |    values
+
+global_define: GLOBAL_NAME POSS_SYMB prim_value _NEWLINE
+
+bracketfull_define: name POSS_SYMB _NEWLINE* "{" (_NEWLINE* definition+ _NEWLINE*)* _NEWLINE* "}" _NEWLINE? -> define
+
+// The 0 or 1 should take care of multiple on same line.
+bracketless_define: name POSS_SYMB _NEWLINE* values _NEWLINE? -> define
+//    |   name "=" values definition+
+// That last one was because sometimes you can find stuff like "id = story.5 days = 30"
+// I'm pretty sure removing the _NEWLINE from the end of bracketless_define though should allow it
+// to be taken care of by bracketfull_define and start though
+
+// Values that can appear on the left hand side of non-global definitions
+?name:  LOGIC_WORDS
+    |   MAGIC_VALUES
+    |   DOT_STR
+    |   VAR_STR
+    |   STRING
+    |   NUMBER
+
+?values: MAGIC_VALUES
+    |   DOT_STR
+    |   VAR_STR
+    |   GLOBAL_NAME
+    |   STRING
+    |   NUMBER
+
+// Numbers, quoted strings. Possible values of global.
+?prim_value: STRING
+        |   NUMBER
+
+// For the "package name" type values seen in ID's and such.
+// Shouldn't count ones inside of quotation marks.
+DOT_STR: /([A-Za-z_]+[A-Za-z0-9_\-]*[\.\:\@])([A-Za-z_0-9\-]+[\.\:\@]?)+/
+//DOT_STR: /([A-Za-z0-9_\-]+[\.\:\@])([A-Za-z_0-9\-]+[\.\:\@]?)+/
+
+// For strings that are not escaped by quotation marks
+VAR_STR: /[A-Za-z_]+[A-Za-z0-9_\-]*/
+// VAR_STR: /[A-Za-z0-9_\-]+/
+
+// Includes the @ sign at the beginning
+GLOBAL_NAME: /\@[A-Za-z]+[A-Za-z0-9]*/
+
+MAGIC_VALUES:   "FROM"
+        |       "ROOT"
+        |       "yes"
+        |       "no"
+
+LOGIC_WORDS:    "OR"
+        |       "AND"
+        |       "NOT"
+        |       "XOR"
+
+POSS_SYMB:  ">="
+        |   "<="
+        |   "="
+        |   ">"
+        |   "<"
+
+COMMENT: /[\t ]*#+[^\n]*/
+_BLANK_LINE: /[\t ]+\n/
+_NEWLINE: ( NL | COMMENT | _BLANK_LINE )+
+
+STRING: _STRING
+// Do not match .9 as a number, it isn't used in stellaris and will match non deterministically match the .2 in galcom.2a.desc
+// TODO: Can match -3.-382
+NUMBER: /-*[0-9]+(\.-*[0-9]+)*/ 
+
+%import common.ESCAPED_STRING   -> _STRING
+%import common.SIGNED_NUMBER    -> _NUMBER
+%import common.NEWLINE -> NL
+%import common.WS
+%ignore WS

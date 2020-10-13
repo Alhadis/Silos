@@ -1,0 +1,63 @@
+
+// show x^2
+// evaluate x^2 : x=2
+// graph x^2 : x=[-1,1]
+
+?bot_command: SHOW expression                                         -> cmd_show
+    | EVALUATE expression (":" assignment_list) ?                     -> cmd_evaluate
+    | GRAPH expression ":" assignment_or_range_list                   -> cmd_graph
+    | LATEX expression                                                -> cmd_latex
+    | SIMPLIFY expression (":" assignment_list) ?                     -> cmd_simplify
+
+?assignment_list: assignment ( "," assignment ) *
+
+?assignment_or_range_list: assignment_or_range ( "," assignment_or_range ) *
+
+?assignment_or_range: assignment | range
+
+range: VARIABLE "=" "[" expression "," expression "]"
+
+assignment: VARIABLE "=" expression
+
+SHOW: "$show"
+EVALUATE: "$evaluate"
+GRAPH: "$graph"
+LATEX: "$latex"
+SIMPLIFY: "$simplify"
+
+variable_assignment: VARIABLE "=" expression
+variable_range: VARIABLE "=" "[" expression "," expression "]"
+
+?expression: sum
+
+?sum: sum "+" product                  -> add
+    | sum "-" product                  -> sub
+    | product
+
+?product: product "/" atom_product     -> div
+    | product "*" atom_product         -> mul
+    | atom_product
+
+// A succession of atoms, multiplied together.
+?atom_product: atom
+    | atom ( "." ? atom ) +            -> mul
+    | "-" atom_product                 -> neg
+
+?atom: NUMBER                          -> number
+    | VARIABLE                         -> variable
+    | atom "^" negatable_atom          -> exp
+    | CONSTANT                         -> constant
+    | FUNCTION "(" expression ")"      -> function
+    | "(" expression ")"
+
+?negatable_atom: atom
+    | "-" negatable_atom               -> neg
+
+
+VARIABLE: "a".."d" | "f".."z"
+FUNCTION: "sinh" | "cosh" | "tanh" | "sin" | "cos" | "tan" | "ln" | "abs"
+CONSTANT: "pi" | "e"
+
+%import common.NUMBER
+%import common.WS_INLINE
+%ignore WS_INLINE

@@ -1,0 +1,124 @@
+start: preamble content postamble postscriptum
+versionnumber: SIGNED_NUMBER
+inputtag: SIGNED_NUMBER
+FILENAME: /[^\n\r]+/
+texmagnification: SIGNED_NUMBER
+points: SIGNED_NUMBER
+lineno: SIGNED_NUMBER
+column: SIGNED_NUMBER
+inputline: "Input:" inputtag ":" FILENAME NEWLINE
+outputline: "Output:" FILENAME NEWLINE
+
+preamble: "SyncTeX Version:" versionnumber NEWLINE inputline+ outputline? "Magnification:" texmagnification NEWLINE "Unit:" points NEWLINE "X Offset:" points NEWLINE "Y Offset:" points NEWLINE
+
+byteoffsetrecord: ("!" SIGNED_NUMBER NEWLINE)?
+
+contentrecord: form|sheet|inputline
+
+content: "Content:" NEWLINE byteoffsetrecord contentrecord*
+//                 "Content:" <NEWLINE>
+//                 (<Form(k)>|<Input Line>)*
+//                 <sheet(1)>
+//                 (<Form(k)>|<Input Line>)*
+//                 <sheet(2)>
+//                 (<Form(k)>|<Input Line>)*
+//                 <sheet(N)>
+//                 (<Form(k)>|<Input Line>)*
+
+
+sheet: byteoffsetrecord "{" SIGNED_NUMBER NEWLINE (vboxsection|hboxsection) byteoffsetrecord "}" SIGNED_NUMBER NEWLINE
+
+//                 <byte offset record>
+//                "}" <the integer n> <end of record>
+formtag: SIGNED_NUMBER
+form: byteoffsetrecord "<" formtag NEWLINE (vboxsection|hboxsection) byteoffsetrecord ">" NEWLINE
+
+//<Form> ::= <byte offset record>
+//                 "<" <form tag> <end of record>
+//                 <vbox section>|<hbox section>
+//                 <byte offset record>
+//                 ">" <end of record>
+//<form tag> ::= <integer>
+
+boxcontent: vboxsection|hboxsection |voidvboxrecord |voidhboxrecord |currentrecord |gluerecord |kernrecord |mathrecord |formrefrecord | form | rrecord
+//<box content> ::= <vbox section>
+//                 |<hbox section>
+//                 |<void vbox record>
+//                 |<void hbox record>
+//                 |<current record>
+//                 |<glue record>
+//                 |<kern record>
+//                 |<math record>
+//                 |<form ref record>
+//                 |<Form>
+//
+vboxsection: "[" link ":" point ":" size NEWLINE boxcontent* "]" NEWLINE
+//<vbox section> ::= "[" <link> ":" <point> ":" <size> <end of record>
+//                 <box content>*
+//                 "]" <end of record>
+//
+hboxsection: "(" link ":" point ":" size NEWLINE boxcontent* ")" NEWLINE
+//<hbox section> ::= ( <link> ":" <point> ":" <size> <end of record>
+//                 <box content>*
+//                 ")" <end of record>
+//
+voidvboxrecord : "v" link ":" point ":" size NEWLINE
+//<void vbox record> ::= "v" <link> ":" <point> ":" <size> <end of record>
+voidhboxrecord : "h" link ":" point ":" size NEWLINE
+//<void hbox record> ::= "h" <link> ":" <point> ":" <size> <end of record>
+//
+link: inputtag "," lineno ("," column)?
+//<link> ::= <tag> "," <line>( "," <column>)?
+//
+point: fullpoint | compressedpoint
+//<point> ::= <full point>|<compressed point>
+//
+fullpoint: SIGNED_NUMBER "," SIGNED_NUMBER
+//<full point> ::= <integer> "," <integer>
+compressedpoint: SIGNED_NUMBER ",="
+//<compressed point> ::= <integer> ",="
+//
+//<line> ::= <integer>
+//
+//<column> ::= <integer>
+//
+size: width "," height "," depth
+//<size> ::= <Width> "," <Height> "," <Depth>
+width: SIGNED_NUMBER
+//<Width> ::= <integer>
+//
+height: SIGNED_NUMBER
+//<Height> ::= <integer>
+//
+depth: SIGNED_NUMBER
+//<Depth> ::= <integer>
+//
+currentrecord: "x" link ":" point NEWLINE
+//<current record> ::= "x" <link> ":" <point> <end of record>
+kernrecord: "k" link ":" point ":" width NEWLINE
+//<kern record> ::= "k" <link> ":" <point> ":" <Width> <end of record>
+gluerecord: "g" link ":" point NEWLINE
+//<glue record> ::= "g" <link> ":" <point> <end of record>
+mathrecord: "$" link ":" point NEWLINE
+// TODO: WTF is this?!
+rrecord: "r" link ":" point ":" size NEWLINE
+//<math record> ::= "$" <link> ":" <point> <end of record>
+formrefrecord: "f" formtag ":" point NEWLINE
+//<form ref record> ::= "f" <form tag> ":" <point> <end of record>
+//
+postamble: byteoffsetrecord "Postamble:" NEWLINE "Count:" SIGNED_NUMBER NEWLINE
+//<Postamble>::= <byte offset record>
+//                 "Count:" <Number of records> <NEWLINE>
+//
+postscriptum: byteoffsetrecord "Post scriptum:" NEWLINE psfields*
+psfields: WORD ":" WORD
+//<Post Scriptum>::= <byte offset record>
+//                 "Post Scriptum:" <NEWLINE>
+//                 "Magnification:" <number> <NEWLINE> (Set additional magnification)
+//                 "X Offset:" <dimension> <NEWLINE> (Set horizontal offset)
+//                 "Y Offset:" <dimension> <NEWLINE> (Set vertical offset)
+//
+%import common.SIGNED_NUMBER
+%import common.ESCAPED_STRING
+%import common.NEWLINE
+%import common.WORD

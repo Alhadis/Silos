@@ -1,0 +1,149 @@
+ 
+SCANNER expr_scan PARSER expr_pars
+IMPORT {
+}
+
+EXPORT {
+}
+
+GLOBAL {
+
+#@ line 19 "css.pars"
+
+ # include <stdio.h>
+ # include "Tree.h"
+
+
+#@ line 17 "expr_pars.lrk"
+typedef struct { tTree tree; } zz_expr_l;
+typedef struct { tTree tree; } zz_expr;
+
+typedef union {
+expr_scan_tScanAttribute Scan;
+zz_expr_l expr_l;
+zz_expr expr;
+} tParsAttribute;
+}
+
+LOCAL {
+}
+
+BEGIN {
+}
+
+CLOSE {
+}
+
+TOKEN
+
+int_const = 1
+float_const = 2
+'(' = 3
+')' = 4
+'+' = 5
+'-' = 6
+'*' = 7
+'/' = 8
+'^' = 9
+'?' = 10
+':' = 11
+'>' = 12
+'<' = 13
+'=' = 14
+'&' = 15
+'|' = 16
+'!' = 17
+',' = 18
+
+OPER
+
+LEFT  '?'
+LEFT  '|'
+LEFT  '&'
+LEFT  '!'
+NONE  '<' '>' '='
+LEFT  '+' '-'
+LEFT  '*' '/'
+RIGHT '^'
+LEFT  UNARY
+
+RULE
+
+root : expr_l {
+#@ line 36 "css.pars"
+{  TreeRoot = ReverseTree ($1.expr_l.tree);; }} .
+
+#@ line 41 "css.pars"
+expr_l : {
+$$.expr_l.tree = mno_exprs();} .
+
+
+expr_l : expr {
+$$.expr_l.tree = mexprs (mno_exprs(), $1.expr.tree);} .
+
+expr_l : exprs ',' expr {
+#@ line 50 "css.pars"
+$$.expr_l.tree = mexprs ($1.expr_l.tree, $3.expr.tree);} .
+
+#@ line 45 "css.pars"
+exprs : expr {
+$$.expr_l.tree = mexprs (mno_exprs(), $1.expr.tree);} .
+
+exprs : exprs ',' expr {
+#@ line 50 "css.pars"
+$$.expr_l.tree = mexprs ($1.expr_l.tree, $3.expr.tree);} .
+
+#@ line 62 "css.pars"
+expr : int_const {
+$$.expr.tree = mint_const ($1.Scan.Position, $1.Scan.int_const.Value);} .
+
+expr : float_const {
+$$.expr.tree = 0; } .
+
+expr : '(' expr ')' {
+#@ line 104 "expr_pars.lrk"
+$$.expr.tree = $2.expr.tree;
+} .
+
+#@ line 70 "css.pars"
+expr : expr '+' expr {
+$$.expr.tree = mbinary_expr ($2.Scan.Position, '+', $1.expr.tree, $3.expr.tree);} .
+
+expr : expr '-' expr {
+$$.expr.tree = 0; } .
+
+expr : expr '*' expr {
+$$.expr.tree = 0; } .
+
+expr : expr '/' expr {
+$$.expr.tree = 0; } .
+
+expr : expr '^' expr {
+$$.expr.tree = 0; } .
+
+expr : expr '?' expr ':' expr {
+$$.expr.tree = 0; } .
+
+expr : '+' expr PREC UNARY {
+$$.expr.tree = 0; } .
+
+expr : '-' expr PREC UNARY {
+$$.expr.tree = 0; } .
+
+expr : expr '>' expr {
+$$.expr.tree = 0; } .
+
+expr : expr '<' expr {
+$$.expr.tree = 0; } .
+
+expr : expr '=' expr {
+$$.expr.tree = 0; } .
+
+expr : expr '&' expr {
+$$.expr.tree = 0; } .
+
+expr : expr '|' expr {
+$$.expr.tree = 0; } .
+
+expr : '!' expr {
+$$.expr.tree = 0; } .

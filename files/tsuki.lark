@@ -1,0 +1,78 @@
+// Grammar for Tsuki
+start                    : block+
+block                    : statement*
+
+value                    : table
+                         | array
+                         | identifier
+                         | string
+                         | number
+
+statement                : if_statement
+                         | var_assign 
+                         | func_call
+                         | expr
+
+// Data types
+identifier               : WORD -> identifier
+number                   : SIGNED_NUMBER
+string                   : ESCAPED_STRING
+array                    : "[" [value ("," value)*] "]"
+table                    : "{" [table_entry ("," table_entry)*] "}"
+table_entry              : string "->" value
+
+// Variables
+var_assign               : identifier "=" value
+
+// If statements
+if_statement             : "if" expr "then" block* else_statement? "end"
+else_statement           : "else" "then" block*
+
+// Loops
+iterables                : array
+                         | table
+
+for_loop                 : "for" identifier ":" iterables "do" block* "end"
+
+// Expressions
+expr                     : logical
+
+?logical                 : comparison
+                         | logical "and" comparison  -> logical_and
+                         | logical "or"  comparison  -> logical_or
+
+?comparison              : sum
+                         | comparison "<"  sum    -> comp_l
+                         | comparison ">"  sum    -> comp_g
+                         | comparison "<=" sum    -> comp_le
+                         | comparison ">=" sum    -> comp_ge
+                         | comparison "==" sum    -> comp_eq
+                         | comparison "~=" sum    -> comp_neq
+
+
+?sum                     : product
+                         | sum "+" product        -> add
+                         | sum "-" product        -> sub
+
+?product                 : item
+                         | product "*" item       -> mul
+                         | product "/" item       -> div
+
+?item                    : value
+                         | "-" item               -> neg
+                         | "not" item             -> logical_not
+
+
+// Function calls
+func_param               : value
+func_call                : identifier "(" [func_param ("," func_param)*] ")"
+
+COMMENT: "--" /[^\n]/*
+
+%import common.SIGNED_NUMBER
+%import common.ESCAPED_STRING
+%import common.WORD
+%import common.WS
+
+%ignore COMMENT
+%ignore WS

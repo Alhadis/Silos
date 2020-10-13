@@ -1,0 +1,116 @@
+//
+// BASIC RULES
+//
+?value  : tagged
+        | object     -> object_hook
+        | array      -> array_hook
+        | atom
+        | embedded_syntax
+        | "true"     -> true
+        | "false"    -> false
+        | "null"     -> null
+        | "inf"      -> inf
+        | "-inf"     -> neg_inf
+        | "nan"      -> nan
+
+
+//
+// COMPOSITE TYPES
+//
+array   : "[" value* "]"
+        | "#." value         -> array_single
+        | array "#." value   -> array_append
+
+?tagged : "(" tag attr* opt_value ")" -> tag_inner
+        | tag attrs? value            -> tag_outer
+
+attrs     : "(" attr* ")"
+attr      : key "=" value
+opt_value : value?
+
+?tag    : NAME
+        | NAME_ESCAPED      -> name_escaped
+
+object  : "{" pair* "}"
+        | "#." pair          -> object_single
+        | object "#." pair   -> object_append
+
+pair    : key ":" value
+
+?key    : NAME      -> name
+        | STRING    -> string
+
+
+//
+// ATOMIC TYPES AND TOKENS
+//
+?atom       : HEX            -> hex
+            | OCT            -> oct
+            | BIN            -> bin
+            | FLOAT          -> float
+            | INT            -> int
+            | DATETIME       -> datetime
+            | DATE           -> date
+            | TIME           -> time
+            | DATETIME_TZ    -> datetime_tz
+            | TIME_TZ        -> time_tz
+            | SYMBOL         -> symbol
+            | QUOTED_SYMBOL  -> quoted_symbol
+            | BYTE_STRING    -> byte_string
+            | STRING         -> string
+
+
+//
+// SYNTAX EMBEDDING
+//
+embedded_syntax : "$(" embedded_data* ")"
+embedded_data   : "\)"
+                | "\("
+                | EMBEDDED
+                | STRING
+                | BYTE_STRING
+                | "(" embedded_data* ")"
+
+
+//
+// TERMINALS
+//
+
+// Those are lenient definitions of string literals. The correct and strict
+// grammar is declared on string.lark and byte_string.lark
+// We use those generic definitions to catch malformed strings and provide
+// better error reporting
+STRING        : /\"[^\\\"]*(\\.[^\\\"]*)*\"/
+BYTE_STRING   : /`[^\\`]*(\\.[^\\`]*)*`/
+
+// Numbers
+DIGITS        : /[0-9]+/
+EXP           : /[Ee][+-]?/ DIGITS
+INT.0         : /-?(0|[1-9][0-9]*)/
+FLOAT         : INT "." DIGITS EXP?
+              | INT EXP
+HEX           : /-?0x[0-9a-fA-F]+/
+OCT           : /-?0o[0-7]+/
+BIN           : /-?0b[01]+/
+
+// Dates
+DATETIME.3    : DATE /[_T]/ TIME
+DATETIME_TZ.4 : DATETIME TZ
+DATE.1        : /[0-9]+-[0-9]+-[0-9]+/
+TIME.1        : /[0-9]+:[0-9]+(:[0-9]+(\.[0-9]+)?)?/
+TIME_TZ.2     : TIME TZ
+TZ            : /(?:[+-][0-9]+(:[0-9]+)?|Z)/
+
+// Other
+NAME          : /(?![0-9#]|[-+][0-9])[^\x00-\x1F\x7F-\x9F\\ [\](){}"`;:,$=]+/
+NAME_ESCAPED  : "\\" STRING
+SYMBOL        : "$" NAME
+QUOTED_SYMBOL : "$" STRING
+EMBEDDED.0    : /[^"`()]+/
+
+// Whitespace
+WS            : /[\s,\n]+/
+COMMENT       : /;[^\n]*/
+
+%ignore COMMENT
+%ignore WS

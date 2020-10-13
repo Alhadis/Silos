@@ -1,0 +1,87 @@
+start			: (stage_def|sprite_def|var_decl|list_decl)*	-> _start
+stage_def		: "stage" ":" _stage_content				-> _stage_def
+_stage_content	: _NEWLINE _INDENT (proc_def|costume_list)+ _DEDENT
+sprite_def		: "sprite" ident ":" _sprite_content		-> _sprite_def
+_sprite_content	: _NEWLINE _INDENT (proc_def|var_decl|list_decl|costume_list)+ _DEDENT
+costume_list	: "costumes" "{" [string ("," string)* [","]] "}"	-> _costume_list
+?proc_def		: proc_def_norm
+				| proc_def_warp
+proc_def_norm	: "def" ident "(" param_list ")" ":" suite	-> _proc_def_norm
+proc_def_warp	: "warp" proc_def_norm						-> _proc_def_warp
+param_list		: [ident ("," ident)*]						-> _param_list
+func_call		: ident "(" arg_list ")"					-> _func_call
+procedures_call	: ident "(" arg_list ")"					-> _procedures_call
+member_func_call: ident "." ident "(" arg_list ")"			-> _member_func_call
+member_proc_call: ident "." ident "(" arg_list ")"			-> _member_proc_call
+arg_list		: [expr ("," expr)*]						-> _arg_list
+?stmt			: simple_stmt
+				| compound_stmt
+?simple_stmt	: small_stmt (";" small_stmt)* [";"] _NEWLINE
+?small_stmt		: procedures_call
+				| var_assignment
+				| member_proc_call
+?compound_stmt	: if_stmt
+				| until_loop
+				| while_loop
+				| repeat_loop
+				| forever_loop
+var_decl		:  ident ":" "var" _NEWLINE					-> _var_decl
+list_decl		:  ident ":" "list" _NEWLINE				-> _list_decl
+list_index		: ident "[" expr "]"                        -> _list_index
+if_stmt			: "if" expr ":" suite ("elif" expr ":" suite)* ["else" ":" suite]	-> _if_stmt
+until_loop		: "until" expr ":" suite					-> _until_loop
+while_loop		: "while" expr ":" suite					-> _while_loop
+repeat_loop		: "repeat" expr ":" suite					-> _repeat_loop
+forever_loop	: "forever" ":" suite						-> _forever_loop
+var_assignment	: ident "=" expr							-> _var_eq
+				| ident "+=" expr							-> _var_peq
+				| ident "-=" expr							-> _var_meq
+				| ident "*=" expr							-> _var_teq
+				| ident "/=" expr							-> _var_deq
+?expr			: logical_or
+?logical_or		: logical_or "or" logical_and				-> _logical_or
+				| logical_and
+?logical_and	: logical_and "and" comparision				-> _logical_and
+				| comparision
+?comparision	: comparision ">" addition					-> _greater_than
+				| comparision "<" addition					-> _less_than
+				| comparision "==" addition					-> _equal_to
+				| addition
+?addition		: addition "+" multiplication				-> _addition
+				| addition "-" multiplication				-> _subtraction
+				| multiplication
+?multiplication	: multiplication "*" logical_not			-> _multiplication
+				| multiplication "/" logical_not			-> _division
+				| multiplication "%" logical_not			-> _modulo
+				| logical_not
+?logical_not	: "not" logical_not							-> _logical_not
+				| atom
+?atom			: NUMBER									-> _number
+				| string
+				| ident
+				| func_call
+				| member_func_call
+                | list_index
+				| "(" expr ")"
+				| "-" expr									-> _negate
+				| TRUE										-> _true
+				| FALSE										-> _false
+suite			: simple_stmt
+				| _NEWLINE _INDENT stmt+ _DEDENT			-> _stmts
+
+TRUE			: "True"
+FALSE			: "False"
+ident			: CNAME										-> _ident
+string			: ESCAPED_STRING							-> _string
+COMMENT			: /#[^\n]*/
+_NEWLINE		: ( /\r?\n[\t ]*/ | COMMENT)+
+
+%import common.NUMBER
+%import common.CNAME
+%import common.ESCAPED_STRING
+
+%ignore /[\t \f]+/
+%ignore /\\[\t \f]*\r?\n/
+%ignore COMMENT
+
+%declare _INDENT _DEDENT

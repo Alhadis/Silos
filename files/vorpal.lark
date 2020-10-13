@@ -1,0 +1,122 @@
+// Adapted from: https://docs.python.org/3/reference/grammar.html
+// Adapted by: Erez Shinan
+// Modified for Vorpal by: pyxiis
+
+start: (_NEWLINE | stmt)*
+
+decorator: "@" NAME [ "(" [arguments] ")" ] _NEWLINE
+decorators: decorator+
+decorated: decorators (expr_stmt)
+
+funcdef: "def" NAME "(" parameters? ")" ["->" test] ":" suite
+
+parameters: paramvalue ("," paramvalue)*
+
+?paramvalue: NAME ["=" test]
+
+?stmt: simple_stmt | compound_stmt
+?simple_stmt: small_stmt (";" small_stmt)* [";"] _NEWLINE
+?small_stmt: (expr_stmt | pass_stmt | flow_stmt | global_stmt | nonlocal_stmt)
+?expr_stmt: testlist_star_expr (augassign (testlist)
+         | ("=" (testlist_star_expr))*)
+?testlist_star_expr: (test|star_expr) ("," (test|star_expr))* [","]
+!augassign: ("+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "**=" | "//=")
+// For normal and annotated assignments, additional restrictions enforced by the interpreter
+pass_stmt: "pass"
+?flow_stmt: break_stmt | continue_stmt | return_stmt
+break_stmt: "break"
+continue_stmt: "continue"
+return_stmt: "return" [testlist]
+// note below: the ("." | "...") is necessary because "..." is tokenized as ELLIPSIS
+!dots: "."+
+global_stmt: "global" NAME ("," NAME)*
+nonlocal_stmt: "nonlocal" NAME ("," NAME)*
+
+compound_stmt: if_stmt | while_stmt | for_stmt | funcdef | classdef | decorated
+if_stmt: "if" test ":" suite ("elif" test ":" suite)* ["else" ":" suite]
+while_stmt: "while" test ":" suite ["else" ":" suite]
+for_stmt: "for" exprlist "in" testlist ":" suite
+suite: simple_stmt | _NEWLINE _INDENT stmt+ _DEDENT
+
+?test: or_test ("if" or_test "else" test)?
+?or_test: and_test ("or" and_test)*
+?and_test: not_test ("and" not_test)*
+?not_test: "not" not_test -> not
+         | comparison
+?comparison: expr (_comp_op expr)*
+star_expr: "*" expr
+?expr: xor_expr ("|" xor_expr)*
+?xor_expr: and_expr ("^" and_expr)*
+?and_expr: shift_expr ("&" shift_expr)*
+?shift_expr: arith_expr (_shift_op arith_expr)*
+?arith_expr: term (_add_op term)*
+?term: factor (_mul_op factor)*
+?factor: _factor_op factor | power
+
+!_factor_op: "+"|"-"|"~"
+!_add_op: "+"|"-"
+!_shift_op: "<<"|">>"
+!_mul_op: "*"|"/"|"%"|"//"
+// <> isn't actually a valid comparison operator in Python. It's here for the
+// sake of a __future__ import described in PEP 401 (which really works :-)
+!_comp_op: "<"|">"|"=="|">="|"<="|"!="|"in"|"not" "in"|"is"|"is" "not"
+
+?power: atom_expr ("**" factor)?
+
+?atom_expr: atom_expr "(" [arguments] ")"      -> funccall
+          | atom_expr "[" subscriptlist "]"  -> getitem
+          | atom_expr "." NAME               -> getattr
+          | atom
+
+?atom: "(" [testlist_comp] ")" -> tuple
+     | "[" [testlist_comp] "]"  -> list
+     | "{" [dictorsetmaker] "}" -> dict
+     | NAME -> var
+     | number | string+
+     | "(" test ")"
+     | "..." -> ellipsis
+     | "nil"     -> const_none
+     | "true"    -> const_true
+     | "false"   -> const_false
+
+?testlist_comp: (test|star_expr) [("," (test|star_expr))+ [","] | ","]
+subscriptlist: subscript ("," subscript)* [","]
+subscript: test | [test] ":" [test] [sliceop]
+sliceop: ":" [test]
+exprlist: (expr|star_expr) ("," (expr|star_expr))* [","]
+testlist: test ("," test)* [","]
+dictorsetmaker: ( ((test ":" test | "**" expr) (("," (test ":" test | "**" expr))* [","])) | ((test | star_expr) (("," (test | star_expr))* [","])) )
+
+classdef: "class" NAME ["(" [arguments] ")"] ":" suite
+
+arguments: argvalue ("," argvalue)*
+
+?argvalue: test ("=" test)?
+
+
+
+// not used in grammar, but may appear in "node" passed from Parser to Compiler
+encoding_decl: NAME
+
+number: DEC_NUMBER | HEX_NUMBER | BIN_NUMBER | OCT_NUMBER | FLOAT_NUMBER | IMAG_NUMBER
+string: STRING
+// Tokens
+
+NAME: /[a-zA-Z_]\w*/
+COMMENT: /#[^\n]*/
+_NEWLINE: ( /\r?\n[\t ]*/ | COMMENT )+
+
+
+STRING : /[ubf]?r?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
+
+DEC_NUMBER: /0|[1-9]\d*/i
+HEX_NUMBER.2: /0x[\da-f]*/i
+OCT_NUMBER.2: /0o[0-7]*/i
+BIN_NUMBER.2 : /0b[0-1]*/i
+FLOAT_NUMBER.2: /((\d+\.\d*|\.\d+)(e[-+]?\d+)?|\d+(e[-+]?\d+))/i
+IMAG_NUMBER.2: /\d+j/i | FLOAT_NUMBER "j"i
+
+%ignore /[\t \f]+/  // WS
+%ignore /\\[\t \f]*\r?\n/   // LINE_CONT
+%ignore COMMENT
+%declare _INDENT _DEDENT

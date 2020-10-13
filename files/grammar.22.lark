@@ -1,0 +1,56 @@
+start: _INSIGNIFICANT_WS* statement+ _INSIGNIFICANT_WS*
+
+statement: pair
+    | list_item
+    | command _INSIGNIFICANT_WS*
+    | comment
+
+pair.9: _INSIGNIFICANT_INLINE_WS* KEY _INSIGNIFICANT_INLINE_WS* ":" _INSIGNIFICANT_INLINE_WS* value
+
+list_item: STAR WS_INLINE* value
+
+value: VALUE WS*
+
+command.9: start_block
+    | end_block
+    | start_array
+    | end_array
+    | skip
+    | end_skip
+    | ignore
+    | end_multiline
+
+start_block: "{" _INSIGNIFICANT_INLINE_WS* KEY _INSIGNIFICANT_INLINE_WS* "}"
+end_block: "{" _INSIGNIFICANT_INLINE_WS* "}"
+
+start_array: "[" _INSIGNIFICANT_INLINE_WS* ARRAYKEY _INSIGNIFICANT_INLINE_WS* "]"
+end_array: "[" _INSIGNIFICANT_INLINE_WS* "]"
+
+skip: ":skip"i
+end_skip: ":endskip"i
+
+ignore: ":ignore"i
+
+end_multiline: END_MULTILINE
+
+comment.1: NO_COLON WS*
+    | NOT_KEYA WS*
+    | NOT_KEYB WS*
+    | 
+
+ARRAYKEY.9: /[a-zA-Z0-9_\-\.+]+/
+KEY.9: /[a-zA-Z0-9_\-\.]+/
+STAR: "*"
+_INSIGNIFICANT_WS.10: WS
+_INSIGNIFICANT_INLINE_WS.10: WS_INLINE
+VALUE.9: (/\S+/ WS_INLINE*)+
+FREEFORM: "+"
+END_MULTILINE: ":end"i
+NO_COLON.1: (/[^{\s:*\[][^\s:]*/)+
+NOT_KEYA.1: /.*[^a-zA-Z0-9_\-\. \t\n]+.*:.*///debugging
+
+NOT_KEYB.1: /.*[ \t]+[^\s]+:.*///debugging
+START_COLON.1: _INSIGNIFICANT_INLINE_WS* ":" VALUE
+
+%import common.WS_INLINE
+%import common.WS

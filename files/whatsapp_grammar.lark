@@ -1,0 +1,47 @@
+person:  /.{1,25}/
+main_person: person
+persons: person ((", " person)* " and " person)?
+target_persons: persons
+datetime: /\d{1,2}\/\d{1,2}\/\d{1,2}, \d{1,2}:\d{1,2}( AM| PM)?/ " - "
+message: /.+?(?=^\d{1,2}\/\d{1,2}\/\d{1,2}, \d{1,2}:\d{1,2}( AM| PM)? - |\Z)/sm  // Contributes to the complexity way toooooo MUCH
+//message: /.+/
+
+start: (group_chat | two_person_chat)?
+
+group_chat: group_chat_info? group_chat_created? group_chat_line*
+two_person_chat: two_person_chat_info? two_person_chat_line*
+
+group_chat_info: (datetime info) |
+two_person_chat_info: datetime info
+!info: "Messages to this group are now secured with end-to-end encryption. Tap for more info."
+      | "Messages to this chat and calls are now secured with end-to-end encryption. Tap for more info."
+
+group_chat_created.3: datetime person " created group " group_name
+group_name: "\"" /.{1,25}/ "\""
+group_chat_line: datetime group_chat_operation
+group_chat_operation: add_person | remove_person | left_group | joined_group | change_group_settings
+                      | change_group_icon | already_added | change_subject | change_description
+                      | change_number | share_media | share_contact| send_message  | delete_message
+                      | change_security_code
+
+two_person_chat_line: datetime two_person_chat_operation
+?two_person_chat_operation: share_media share_contact send_message delete_message
+
+add_person: person " added " persons
+remove_person: person " removed " persons
+left_group: person " left"
+joined_group: person " joined using this group's invite link"
+change_group_settings: person " changed this group's settings to allow only admins to edit this group's info"
+change_group_icon: person " changed this group's icon"
+already_added: persons " was added"
+change_subject: person " changed the subject from " group_name " to " group_name
+change_description: person " changed the group description"
+change_number: person " changed to " person
+send_message.1: person ": " message
+share_media.2: person ": <Media omitted>"
+share_contact.2: person ": " person ".vcf (file attached)"
+delete_message.2: person ": " /(This message was deleted)|(You deleted this message)/
+change_security_code: person "'s security code changed. Tap for more info."
+
+%import common.WS
+%ignore WS

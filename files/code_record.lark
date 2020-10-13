@@ -1,0 +1,84 @@
+// A precedence climbing grammar is used for expressions
+// The top level has one full line of code per rule
+
+root: empty_line* [pseudo] (statement | verbatim | empty_line)+
+
+empty_line: [WS] [COMMENT] LF
+LF: /\r?\n/
+
+pseudo: [WS] PSEUDO_STATEMENT ")" [WS] [COMMENT] LF
+PSEUDO_STATEMENT: /[(][^)]*/
+
+verbatim: [WS] VERBATIM_STATEMENT [LF]
+VERBATIM_STATEMENT: /"[^\n]*/
+
+statement: [WS] (assignment | logical_if | block_if | exit | call | return) [WS] [COMMENT] [LF]
+
+exit: "EXIT"i ([WS] | WS ("1" | "2") | WS ("1" | "2") WS INTEGER)
+call: "CALL"i WS NAME [WS] "(" [WS] _atom [WS] ("," [WS] _atom [WS])* ")"
+return: "RETURN"i
+assignment: variable [WS] "=" [WS] expression
+
+block_if: block_if_start block_if_elseif* block_if_else? block_if_end
+block_if_start: [WS] "IF"i [WS] "(" logical_expression ")" [WS] "THEN"i [WS] NEWLINE ([WS] statement [WS] NEWLINE)*
+block_if_else: [WS] "ELSE"i [WS] NEWLINE ([WS] statement NEWLINE)*
+block_if_elseif: [WS] "ELSE"i [WS] "IF"i [WS] "(" logical_expression ")" [WS] "THEN"i [WS] NEWLINE ([WS] statement [WS] NEWLINE)*
+block_if_end: [WS] ("END IF"i | "ENDIF"i) [WS]
+
+logical_if: "IF"i [WS] "(" logical_expression ")" [WS] (assignment | exit | call)
+?logical_expression: _or_term (or_op _or_term)*
+_or_term: _and_term (and_op _and_term)*
+_and_term: (not_op)? not_term
+not_term: _eq_term (eq_op _eq_term)? -> logical_expression
+_eq_term: _rel_term (rel_op _rel_term)?
+_rel_term: expression
+
+or_op: (".OR."i) -> logical_operator
+and_op: (".AND."i) -> logical_operator
+eq_op: ("==" | ".EQ."i) -> logical_operator
+      | ("/=" | ".NE."i) -> logical_operator
+rel_op: (".LT."i | "<" | ".LE."i | "<=" | ".GT."i | ">" | ".GE."i | ">=") -> logical_operator
+not_op: ".NOT."i -> logical_operator
+
+?expression: term (add_op [WS] term)*
+?term: _factor (mul_op _factor)* -> expression
+_factor: [UNARY_OP] (_atom | power)
+?power: _atom ("**" _factor)?
+
+UNARY_OP: "+" | "-"
+add_op: "+" -> operator
+      | "-" -> operator
+mul_op: "*" -> operator
+      | "/" -> operator
+
+
+_atom: [WS] (func | func2 | symbol | number | "(" expression ")") [WS]
+
+func: intrinsic_func "(" expression ")"
+func2: "MOD"i "(" expression "," expression ")"
+
+intrinsic_func: "LOG"i | "LOG10"i | "EXP"i | "DEXP"i | "SQRT"i | "SIN"i | "COS"i | "ABS"i | "TAN"i | "ASIN"i | "ACOS"i | "ATAN"i | "INT"i | "GAMLN"i | "PHI"i
+
+variable: vector | NAME
+
+symbol: parameter | vector | NAME
+vector: ("A"i | "A_0"i | "A_INITIAL"i | "DADT"i) subscript
+parameter: (THETA | ETA | EPS | OMEGA | SIGMA) subscript
+         | (OMEGA | SIGMA) double_subscript
+
+subscript: [WS] "(" [WS] INTEGER [WS] ")"
+double_subscript: [WS] "(" [WS] INTEGER [WS] "," [WS] INTEGER [WS] ")"
+
+number: INTEGER | FLOAT
+
+NAME: /[A-Za-z_]\w*/
+
+INTEGER: /[-+]?\d+/
+FLOAT: /[-+]?((\d+\.\d*|\.\d+)([ed][-+]?\d+)?|\d+([ed][-+]?\d+))/i
+THETA: "THETA"i
+ETA: "ETA"i
+EPS: "EPS"i | "ERR"i
+OMEGA: "OMEGA"i
+SIGMA: "SIGMA"i
+
+%import .definitions (COMMENT, NEWLINE, WS, WS_ALL)

@@ -1,0 +1,50 @@
+// There are multiple statement that we need to parse. Hence using "+"
+start: statement+
+
+// This general statement structure can be used to parse the whole text at once or in chunks
+statement : ("b'" | custom_newline )? (key_value_expr | custom_comment | "END") (custom_newline | "'")+
+
+// We need a parse tree with a key value pair structure
+key_value_expr : key "=" value
+
+// Add comments to the parse tree as well
+custom_comment : COMMENT
+custom_newline : CUSTOM_NEWLINE
+
+// Add key to parse tree
+key : KEY
+
+// Add value to parse tree
+// value can be a single string with unit or Tuple of Value
+value : (VALUE UNIT? | VALUES)
+
+// Defining structure of key
+KEY : "^"? (CNAME | ":")+
+
+// Defining structure of single value string
+VALUE : "\""? (CNAME | "-" | DIGIT+)+ (CNAME | " " | "-" | "/" | ":" | "." |DIGIT)* ")"* "\""?
+
+// Defining structure of Tuples of value with unit
+VALUES : "(" (VALUE UNIT? | "," | CUSTOM_BREAKLINE1 | CUSTOM_BREAKLINE2)+ ")"
+
+// Defining structure of unit string
+UNIT : "<" CNAME (CNAME | "/")* ">"
+
+// Defining structure of comment
+COMMENT : "/***" /[^\\r\\n]+/ "***/"
+
+// Defining structure of newlines
+// We need this because converting form binary to string
+// changes "\r\n" --> "\\r\\n" !!
+CUSTOM_NEWLINE : "\\r\\n"
+
+// These are hacks to make parser work for few edge cases
+// probably remove this later with more robust solution!!
+CUSTOM_BREAKLINE1 : CUSTOM_NEWLINE WS+ VALUE UNIT?
+CUSTOM_BREAKLINE2 : VALUE CUSTOM_NEWLINE WS+ UNIT
+
+%import common.DIGIT
+%import common.LETTER
+%import common.CNAME
+%import common.WS
+%ignore WS

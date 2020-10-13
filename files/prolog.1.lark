@@ -1,0 +1,42 @@
+program: (clause | _COMMENT)+
+
+?clause: assertion | rule
+assertion: predicate "."
+rule: predicate ":-" disjunction "."
+request: "?-" disjunction "."
+
+?disjunction: conjunction (";" conjunction)*
+?conjunction: term ("," term)*
+?term: sum_
+	| sum_ main_op sum_
+?sum_: product
+	| sum_ sum_op product
+?product: exponent
+	| product product_op exponent
+?exponent: sign
+	| sign exponent_op exponent
+?sign: "(" disjunction ")"
+	| predicate
+	| list_
+	| variable
+	| number
+
+!main_op: "=" | "\=" | "<" | "=<" | ">" | ">=" | "==" | "\==" | "=:=" | "=\=" | "is"
+!sum_op: "+" | "-"
+!product_op: "*" | "/" | "div" | "mod"
+!exponent_op: "**"
+!predicate_op: "!"
+?op : main_op | sum_op | product_op | exponent_op | predicate_op
+
+predicate: (atom | op) [ "(" [ term_list ] ")" ]
+list_: "[" [ term_list [ "|" (list_ | variable) ] ] "]"
+term_list: term ("," term)*
+
+variable: /[A-Z_]\w*/
+atom: /[a-z]\w*/
+number: /[+-]?[1-9]\d*|0/
+_COMMENT: "%" /[^\n$]*[\n$]/
+
+%import common.WS
+
+%ignore WS

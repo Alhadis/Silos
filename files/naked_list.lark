@@ -1,0 +1,36 @@
+start: _NL* naked_list+
+
+naked_list: _expr+     _NL+ [_INDENT _naked_expr+ _DEDENT]
+          | _expr+ ":" _NL+ [_INDENT  naked_list+ _DEDENT]
+
+_naked_expr: _expr+     _NL+ [_INDENT _naked_expr+ _DEDENT]
+           | _expr+ ":" _NL+ [_INDENT  naked_list+ _DEDENT]
+
+_expr: _atom
+    | list
+
+list: _LPAR _expr* _RPAR
+
+_atom: SYMBOL
+     | NUMBER
+     | ESCAPED_STRING
+
+SYMBOL: /[^(){}[\] \r\n":;]+/
+
+%import common.WS_INLINE
+%import common.ESCAPED_STRING
+%import common.NUMBER
+// %import common.CNAME -> NAME
+
+_LPAR: "("
+_RPAR: ")"
+
+%declare _INDENT _DEDENT
+
+COMMENT: /;[^\n]*/
+
+%ignore WS_INLINE
+%ignore COMMENT
+
+_NL: ( /(\r?\n[\t ]*)+/ | COMMENT)+
+

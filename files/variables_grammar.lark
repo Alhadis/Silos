@@ -1,0 +1,45 @@
+start: "$" expression eof?
+eof.0: /.+/
+
+
+// далее общая часть двух грамматик. Увы, пока невозможно объединять две грамматики, как при наследовании классов. Ну или я не нашёл способа. В будущих версиях планируется некая grammar composition, возможно это как раз добавление такой фичи.
+
+expression.5: math | string_op | logical_op | comparison_op
+
+math.5: product | math "+" product -> sum | math "-" product -> subtraction
+product.5: math_atom | product "*" math_atom -> multiplication | product "/" math_atom -> division
+math_atom.5: atom | NUMBER | "-" math_atom -> negative_number
+
+string_op.5: string_atom | string_op "+" string_atom -> concatenation
+string_atom.5: atom | string
+
+logical_op.5: and_op | logical_op "or" and_op -> disjunction
+and_op.5: logical_atom | and_op "and" logical_atom -> conjunction
+logical_atom.5: atom | "True" -> true | "False" -> false | "None" -> none | "not" logical_atom -> negation
+
+!comparison_op.1: comparison_atom | comparison_op (">" | ">=" | "==" | "<=" | "<" | "!=") comparison_atom -> comparison  // если указать операторы в виде отдельного терминала COMP_OPERATOR, то более одной операции сравнения в строке не может быть, вторая уже считается eof почему-то
+comparison_atom.1: math | string_op
+
+atom.5: identifier | func
+
+identifier.5: CNAME (index | inner_name)*
+inner_name.5: "." CNAME
+index.5: "[" (math | string_op) "]"
+string.5: STRING | LONG_STRING
+STRING: /[ubf]?r?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
+LONG_STRING: /[ubf]?r?(""".*?(?<!\\)(\\\\)*?"""|'''.*?(?<!\\)(\\\\)*?''')/is
+
+func.5: func_name "(" parameters ")"
+func_name.5: (identifier ".")? CNAME
+parameters.5: | args | kwargs | args "," kwargs     //  no parameters | only args | only kwargs | args and kwargs
+args.5: arg ("," arg)*
+arg.5: expression -> normal_arg | "*" expression -> args_unpacking
+kwargs.5: kwarg ("," kwarg)*
+kwarg.5: CNAME "=" expression -> normal_kwarg | "**" expression -> kwargs_unpacking
+
+
+%import common.CNAME // valid variable name, i.e. ("_" | LETTER) ("_" | LETTER | DIGIT)*
+%import common.NUMBER  // NUMBER: FLOAT | INT
+%import common.WS  // whitespace
+
+%ignore WS

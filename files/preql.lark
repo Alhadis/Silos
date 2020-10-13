@@ -1,0 +1,190 @@
+stmts: _NL? stmt+   -> as_list
+?stmt: table_def
+     | struct_def
+     | func_def
+     | set_value
+     | insert_rows
+     | print
+     | assert_
+     | if_stmt
+     | for_stmt
+     | return_stmt
+     | import_stmt
+     | throw
+     | try_catch
+     | expr _NL
+
+_ml_seperated{item}: (item _ml_sep)* item _ml_sep?
+_ml_sep: "," | "," _NL | _NL
+_separated{item, sep}: (item sep)* item
+
+pql_dict: "{" _ml_sep? ml_list{named_expr} _ml_sep? "}"
+key_value: name ":" expr
+
+pql_list: "[" _NL? _ml_seperated{expr}? "]"
+expr_list: "[" _NL? _ml_seperated{expr} "]" -> as_list
+proj_exprs: _ml_seperated{named_expr} -> as_list
+
+ml_list{item}: _ml_seperated{item} -> as_list   // multi-line list
+
+table_def: "table" name "{" _ml_sep? _table_contents _ml_sep? "}" _NL
+         | [CONST] "table" name "=" expr _NL -> table_def_by_expr
+
+CONST: "const"
+
+func_defs: func_def* -> as_list
+
+table_cols: _ml_seperated{col_def}? ellipsis? -> as_list
+_table_contents: table_cols func_defs
+
+col_def: name ":" coltype ["->" expr] ["=" expr]
+?coltype: type
+        | m2m
+type: name [typemod]
+m2m: "[" type "]"
+
+struct_def: "struct" name "{" _ml_sep? ml_list{member_def} "}" _NL
+member_def: name ":" type -> as_list
+
+
+typemod: PK | NULLABLE
+
+func_def: "func" name func_params ("=" expr _NL | codeblock _NL)
+try_catch: "try" codeblock _NL? "catch" "(" expr ")" codeblock _NL
+if_stmt: "if" "(" expr ")" codeblock (_NL? "else" (codeblock _NL|if_stmt) | _NL)
+for_stmt: "for" "(" name "in" expr ")" codeblock _NL
+codeblock: _NL? "{" _NL? stmt* "}"
+return_stmt: "return" expr _NL
+import_stmt: "import" NAME _NL
+throw: "throw" expr _NL
+print: "print" expr _NL
+assert_: "assert" expr _NL
+func_params: "(" _separated{param, ","}? ("," param_variadic)? ")" -> as_list
+           | "(" param_variadic ")" -> as_list
+param: name [":" expr] ["=" expr]   // TODO type? default value?
+param_variadic: "..." name
+insert_rows: atom "+=" expr _NL
+set_value: atom "=" expr _NL
+
+selection: molecule expr_list
+slice: molecule range
+range:  "[" ([molecule] ".." molecule | molecule ".." [molecule]) "]"
+
+projection: molecule "{" _NL? proj_exprs _NL? "}"
+          | molecule "{" _NL? proj_exprs _NL? "=>" _NL? proj_exprs _NL? "}" -> projection_grouped
+          | molecule "{" _NL? "=>" _NL? proj_exprs "}" -> projection_grouped_nokeys
+          | molecule "{" proj_exprs _NL? "=>" _NL? "}" -> projection_grouped_novalues
+
+
+order: molecule "order" "{" _NL? ml_list{expr} _NL? "}"
+update: molecule "update" "{" _NL? proj_exprs _NL? "}"
+delete: molecule "delete" expr_list
+
+
+?expr: or_test //contains | like
+
+// like: molecule "~" molecule
+
+!comp_op: "<"|">"|"=="|">="|"<="|"<>"|"!="| "in" | NOT_IN //|"is"|"is" "not"
+NOT_IN: "!in"
+
+?or_test: and_test ("or" and_test)*
+?and_test: not_test ("and" not_test)*
+?not_test: "not" not_test -> not_test
+         | compare
+?compare: (compare comp_op)? like
+?like: (like "~")? add_expr
+?add_expr: (add_expr add_op)? term
+?term: (term mul_op)? power
+?factor: ("+" | "-")* molecule
+?power: molecule ("**" factor)?
+
+!add_op: "+"|"-" | "&" | "|"
+!mul_op: "*"|"/"|"%"|"/~"
+
+?molecule: atom
+     | func_call
+     | pql_list
+     | pql_dict
+     | range
+     | selection
+     | projection
+     | slice
+     | order
+     | update
+     | delete
+     | "(" _NL? expr _NL? ")"
+     | "-" molecule -> neg
+     | "^" molecule -> desc
+     | new
+     | one
+
+?atom: var
+     | getattr
+     | const
+
+one: "one" [NULLABLE] molecule
+
+new: "new" name func_args
+     | _NEW_ARRAY name func_args -> new_rows
+//    | _GET_OR_NEW name func_args -> get_or_new
+
+_GET_OR_NEW.10: "new?"
+_NEW_ARRAY.10: "new[]"
+
+func_call: molecule func_args
+func_args: "(" _separated{named_expr, ","}? ("," inline_struct)? ")" -> as_list
+         | "(" inline_struct ")" -> as_list
+
+inline_struct: "..." expr
+
+named_expr: [name ":"] expr
+
+?const: SIGNED_INT -> int
+      | SIGNED_FLOAT -> float
+      | STRING -> string
+      | LONG_STRING -> long_string
+      | "null" -> null
+      | "false" -> false
+      | "true" -> true
+      | marker
+      | ellipsis
+     //  | range
+
+
+marker: MARKER
+ellipsis: "..." exclude*
+?exclude: "!" (name | marker)
+
+getattr: [molecule] "." (name | marker)
+name: NAME
+var: name
+
+PK: "pk"
+NULLABLE: "?"
+COMMENT: /#[^\n]*/ | /\/\/[^\n]*/
+_NL: ( /\r?\n[\t ]*/ | COMMENT )+
+
+DECIMAL: INT "." INT
+       | INT "." /(?![.])/
+       | "." INT
+
+_EXP: ("e"|"E") SIGNED_INT
+FLOAT: INT _EXP
+     | DECIMAL _EXP?
+SIGNED_FLOAT: ["+"|"-"] FLOAT
+SIGNED_INT: ["+"|"-"] INT
+
+
+LONG_STRING: /""".*?(?<!\\)(\\\\)*?"""/s
+
+%import common.CNAME -> NAME
+
+%import common.WS_INLINE
+%import common.INT
+%import common.ESCAPED_STRING -> STRING
+%ignore WS_INLINE
+%ignore /\\[\t \f]*\r?\n/   // LINE_CONT
+%ignore COMMENT
+
+%declare MARKER

@@ -1,0 +1,206 @@
+////////////////////
+// PARSER
+////////////////////
+
+start               : all_instructions? (NEWLINE+ all_instructions)* NEWLINE*
+
+all_instructions    : gate_definition
+                    | circuit_definition
+                    | instr
+
+instr               : gate
+                    | measure
+                    | label_definition
+                    | halt
+                    | jump
+                    | jump_when
+                    | jump_unless
+                    | reset_state
+                    | wait
+                    | classical_unary
+                    | classical_binary
+                    | nop
+                    | include
+                    | pragma
+
+// C. Static and Parametric Gates
+
+gate                : name (LPAREN param (COMMA param)* RPAREN)? qubit+
+
+name                : IDENTIFIER
+qubit               : INT
+
+param               : expression
+
+// D. Gate Definitions
+
+gate_definition     : DEFGATE name (LPAREN variable (COMMA variable)* RPAREN)? COLON NEWLINE matrix
+
+variable            : PERCENTAGE IDENTIFIER
+
+matrix              : (matrix_row NEWLINE)* matrix_row
+matrix_row          : TAB expression (COMMA expression)*
+
+// E. Circuits
+
+circuit_definition  : DEFCIRCUIT name (LPAREN variable (COMMA variable)* RPAREN)? qubit_variable* COLON NEWLINE circuit
+
+qubit_variable      : IDENTIFIER
+
+circuit_qubit       : qubit | qubit_variable
+circuit_gate        : name (LPAREN param (COMMA param)* RPAREN)? circuit_qubit+
+circuit_instruction : circuit_gate | instr
+circuit             : (TAB circuit_instruction NEWLINE)* TAB circuit_instruction
+
+// F. Measurement
+
+measure             : MEASURE qubit addr?
+addr                : LBRACKET classical_bit RBRACKET
+classical_bit       : INT+
+
+// G. Program control
+
+label_definition    : LABEL label
+label               : AT IDENTIFIER
+halt                : HALT
+jump                : JUMP label
+jump_when           : JUMPWHEN label addr
+jump_unless         : JUMPUNLESS label addr
+
+// H. Zeroing the Quantum State
+
+reset_state         : RESET
+
+// I. Classical/Quantum Synchronization
+
+wait                : WAIT
+
+// J. Classical Instructions
+
+classical_unary     : (TRUE | FALSE | NOT) addr
+classical_binary    : (AND | OR | MOVE | EXCHANGE) addr addr
+
+// K. The No-Operation Instruction
+
+nop                 : NOP
+
+// L. File Inclusion
+
+include             : INCLUDE STRING
+
+// M. Pragma Support
+
+pragma              : PRAGMA IDENTIFIER pragma_name* STRING?
+pragma_name         : IDENTIFIER | INT
+
+// Expressions (in order of precedence)
+
+expression          : LPAREN expression RPAREN
+                    | sign expression
+                    | expression POWER expression // TODO: right associativity
+                    | expression (TIMES | DIVIDE) expression
+                    | expression (PLUS | MINUS) expression
+                    | function LPAREN expression RPAREN
+                    | segment
+                    | number
+                    | variable
+
+segment             : LBRACKET INT MINUS INT RBRACKET
+function            : SIN | COS | SQRT | EXP | CIS
+sign                : PLUS | MINUS
+
+// Numbers
+// We suffix -N onto these names so they don't conflict with already defined Python types
+
+number              : real | imaginary | I | PI
+imaginary           : real I
+real                : FLOAT | INT
+
+////////////////////
+// LEXER
+////////////////////
+
+// Keywords
+
+DEFGATE             : "DEFGATE"
+DEFCIRCUIT          : "DEFCIRCUIT"
+MEASURE             : "MEASURE"
+
+LABEL               : "LABEL"
+HALT                : "HALT"
+JUMP                : "JUMP"
+JUMPWHEN            : "JUMP-WHEN"
+JUMPUNLESS          : "JUMP-UNLESS"
+
+RESET               : "RESET"
+WAIT                : "WAIT"
+NOP                 : "NOP"
+INCLUDE             : "INCLUDE"
+PRAGMA              : "PRAGMA"
+
+FALSE               : "FALSE"
+TRUE                : "TRUE"
+NOT                 : "NOT"
+AND                 : "AND"
+OR                  : "OR"
+MOVE                : "MOVE"
+EXCHANGE            : "EXCHANGE"
+
+PI                  : "pi"
+I                   : "i"
+
+SIN                 : "sin"
+COS                 : "cos"
+SQRT                : "sqrt"
+EXP                 : "exp"
+CIS                 : "cis"
+
+// Operators
+
+PLUS                : "+"
+MINUS               : "-"
+TIMES               : "*"
+DIVIDE              : "/"
+POWER               : "^"
+
+// Identifiers
+
+IDENTIFIER          : /[A-Za-z_][A-Za-z0-9-_]*/
+
+// Numbers
+
+INT                 : /[0-9]+/
+FLOAT.2             : /[0-9]+ ("." [0-9]+)? ([eE][+-]? [0-9]+)?/
+
+// String
+
+STRING              : "\"" /[^\n\r]*/ "\""
+
+// Punctuation
+
+PERIOD              : "."
+COMMA               : ","
+LPAREN              : "("
+RPAREN              : ")"
+LBRACKET            : "["
+RBRACKET            : "]"
+COLON               : ":"
+PERCENTAGE          : "%"
+AT                  : "@"
+QUOTE               : "\""
+UNDERSCORE          : "_"
+
+// Whitespace
+
+TAB                 : "    "
+NEWLINE             : /\n+/
+
+// Skips
+
+COMMENT             : "#" /[^\n]*/
+%ignore COMMENT
+SPACE               : " "
+%ignore SPACE
+
+// Error
+// INVALID             : .

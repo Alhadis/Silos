@@ -1,0 +1,71 @@
+%import common.SIGNED_NUMBER
+%import common.ESCAPED_STRING
+%import common.WORD
+%import common.NEWLINE
+%import common.WS
+
+%ignore WS
+
+BOOL_TRUE: "true"
+BOOL_FALSE: "false"
+
+ASSIGN_OP: "="
+
+ADD_OP: "+"
+SUB_OP: "-"
+MUL_OP: "*"
+DEVISION_OP: "/"
+
+LESS_THAN_OP: "<"
+LESS_OR_EQ_OP: "<="
+EQ_OP: "=="
+NOT_EQ: "!="
+GREATER_THAN_OP: ">"
+GREATER_OR_EQ_OP: ">="
+
+LOGIC_AND_OP: "&&"
+LOGIC_OR_OP: "||"
+LOGIC_NOT_OP: "!"
+TERN_IF_OP: "?"
+TERN_ELSE_OP: ":"
+
+start: obj
+  obj: literal | expr | alias
+    literal: primitive | non_primitive
+      primitive: bool_literal | num_literal | str_literal
+        bool_literal: BOOL_TRUE | BOOL_FALSE
+        num_literal: SIGNED_NUMBER
+        str_literal: ESCAPED_STRING
+
+      non_primitive: list_literal | func_literal
+        list_literal: "[" obj ("," obj)* "]"
+
+        func_literal: "(" func_opt_args ")" "->" func_body
+          func_opt_args: (func_arg ("," func_arg)*)?
+            func_arg: alias ":" typeref ("=" obj)?
+              typeref: "bool" | "num" | "str" | "func" | "list" | alias
+
+          func_body: obj
+
+
+    expr: call_expr | block_expr | eval_expr
+      call_expr: alias "(" opt_call_params ")"
+        opt_call_params: (obj ("," obj)*)?
+
+      block_expr: "{" obj (NEWLINE obj)* "}"
+
+      eval_expr: assign_expr | logic_expr | math_expr
+        assign_expr: alias ASSIGN_OP obj
+
+        logic_expr: comparison_expr | bool_expr
+          comparison_expr: obj (LESS_THAN_OP | LESS_OR_EQ_OP | EQ_OP | NOT_EQ | GREATER_OR_EQ_OP | GREATER_THAN_OP) obj
+          bool_expr: LOGIC_NOT_OP obj | obj (LOGIC_AND_OP | LOGIC_OR_OP)
+
+        math_expr: (mul_expr | devide_expr) | (add_expr | sub_expr)
+          mul_expr: obj MUL_OP obj
+          devide_expr: obj DEVISION_OP obj
+          add_expr:obj ADD_OP obj
+          sub_expr: obj SUB_OP obj
+
+
+    alias: WORD

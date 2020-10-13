@@ -1,0 +1,40 @@
+start: "spec:" _NEWLINE _INDENT _docs (_stmt | domain_stmt)* _DEDENT
+
+domain_stmt: ("domain" arguments ":" | BLANK_DOMAIN_STMT) (inline_test | multiline_test)
+BLANK_DOMAIN_STMT: /domain\s*:/
+inline_test: _fun_call
+multiline_test: _NEWLINE _INDENT _docs _stmt* _fun_call _DEDENT
+
+_stmt: (mock_stmt | import_stmt) _NEWLINE
+
+mock_stmt: "mock" _mock_path "as" python_expr
+_mock_path: mock_current_module | mock_path_absolute
+mock_current_module: "." dotted_name
+mock_path_absolute: dotted_name
+
+_fun_call: results_stmt | result_by_function_stmt | throws_stmt
+results_stmt: "results" [testlist] [_NEWLINE]
+result_by_function_stmt: "result" [testlist] [_NEWLINE]
+throws_stmt: "throws" python_expr [_NEWLINE]
+python_expr: test
+
+_docs: [title] [description]
+?title: "title:" _inline_or_multiline_text
+?description: "description:" _inline_or_multiline_text
+_inline_or_multiline_text: _one_line_text | multiline_text
+multiline_text: _NEWLINE* _INDENT _one_line_text+ _DEDENT
+_one_line_text: RAW_TEXT _NEWLINE*
+RAW_TEXT.0: /.+/
+
+%import .python.arguments
+%import .python.dotted_name
+%import .python.import_stmt
+%import .python.test
+%import .python.testlist
+%import .python.COMMENT
+%import .python._INDENT
+%import .python._DEDENT
+%import .python._NEWLINE
+%import common.WS_INLINE
+%ignore WS_INLINE
+%ignore COMMENT

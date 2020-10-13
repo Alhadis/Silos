@@ -1,0 +1,77 @@
+start: [(_LF* statement)*] _LF*
+?statement: proof | axiom | include
+include: "include" ESCAPED_STRING
+
+proof: "prove" [identifier] "." sequent{wff,wff} _LF+ (line+) "qed"
+sequent{left,right}: [left ("," left)*] _TURNSTILE right
+axiom: "axiom" identifier "." [slots{variable}] sequent{patternl,patternr}
+?patternl: patternr
+         | "[" ["{" variable "}"] [patternl] "..."? patternr "]" -> box
+?patternr: wff
+         | UR_UCASE_LETTER "[" variable "/" variable "]" -> substitution  // todo arbitrary terms?
+slots{arg}: "{" arg+ "}"
+_TURNSTILE . 3: "|-"|"⊢"
+
+?line: deduction | block
+deduction: wff [tag] ":" justification _LF+
+block: block_kw [variable] [tag] _LF+ [line+] "end" _LF+
+block_kw: "assume" -> assume | "var" -> var
+justification: ("pr" | "premise") -> premise_just
+             | ("as" | "assumption") -> assumption_just
+             | ("copy" ref) -> copy_just
+             | (identifier [slots{term}] [ref*])
+
+?wff: wff1 _IMPLIES wff -> _implies
+    | wff1
+?wff1: wff2 _OR wff2   -> _or
+     | wff2 _AND wff2  -> _and
+     | wff2
+?wff2: _NOT wff2       -> _not
+     | _FORALL variable wff2 -> _forall
+     | _EXISTS variable wff2 -> _exists
+     | _FALSUM         -> _falsum
+     | term _EQUALS term -> _equals
+     | predicate
+     | "(" wff ")"
+_NOT . 2: "~"|"!"|"¬"
+_AND . 2: "^"|"&"|"∧"
+_OR . 2:  "v"|"|"|"∨"
+_IMPLIES . 2: "->"|">"|"→"|"⇒"
+_FALSUM . 2: "#"|"⊥"
+_FORALL . 2: "∀"|"A"
+_EXISTS . 2: "∃"|"E"
+_EQUALS . 2: "="
+
+predicate: /[BCDF-Z]\(/ (term ("," term)*) ")"  // avoid shift/reduce error from whitespace ignore
+         | /[BCDF-Z][a-uw-z]+/  // cool forallx short notation
+         | UR_UCASE_LETTER -> atom
+term: /[a-uw-z]\(/ (term ("," term)*) ")" [protect] // avoid shift/reduce error from whitespace ignore
+    | variable [protect] -> term_variable
+variable: UR_LCASE_LETTER INT?
+protect: "*"
+
+tag: "@" identifier
+ref: "[" lineref "]" -> blockref
+   | lineref
+?lineref: INT
+     | ".." -> last
+     | "..." -> lastlast
+     | tag
+symbol: _NOT     -> not_char
+      | _AND     -> and_char
+      | _OR      -> or_char
+      | _IMPLIES -> implies_char
+      | _FALSUM  -> falsum_char
+      | _FORALL  -> forall_char
+      | _EXISTS  -> exists_char
+      | _EQUALS  -> equals_char
+identifier: symbol? NAME
+
+NAME: ("_" | LETTER) ("_" | LETTER | DIGIT)*
+COMMENT: /\/\/.*/
+UR_LCASE_LETTER: "a".."u" | "w".."z" // no v
+UR_UCASE_LETTER:  "B".."D" | "F".."Z" // no A, E
+%import common (LETTER, DIGIT, UCASE_LETTER, INT, SIGNED_INT, ESCAPED_STRING, WS_INLINE)
+%import common.NEWLINE -> _LF
+%ignore WS_INLINE
+%ignore COMMENT

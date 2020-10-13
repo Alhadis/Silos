@@ -1,0 +1,390 @@
+// Basic tokens.
+//
+// Instead of using continuos priority numbers, I decided to use big jumps of
+// several priority numbers.  This allows easier accommodation of tokens.
+//
+// We group tokens logically; not by priority.
+//
+// Highest priority are those operators of composed of several maybe colliding
+// chars.  For instance we need that '<from ...' is always tried to match the
+// date-related tokens instead of the operator '<' followed by identifier
+// 'from'.
+
+// NB: Comment has to have higher priority than OPERATOR, so that the initial
+// -- is not confused with an operator.
+//
+// Notice that comments require a NL at the end but don't consume it, so _NL
+// is likely to be issued after a comment.
+COMMENT.11 : /(\r?\n[\r?\n\s]*|^)--[-]*[^\n]*(?=\r?\n|$)/
+%ignore COMMENT
+
+
+// Even though *application* is an important syntactical concept in our
+// language, simple juxtaposition of terms is enough to express it.  So we can
+// ignore non-breaking spaces (padding).
+PADDING : " "+
+%ignore PADDING
+
+_NL : /(\r?\n\s*)+\s*/
+
+
+// A program is just a collection of at least one definition.
+program : _NL* definition (_NL+ definition)*  _NL*
+?definition : _local_definition
+            | datatype_definition
+            | typeclass
+            | instance
+
+// *** Type language ***
+//
+// The type language allows to express type-related "expressions".  The
+// 'type_expr' non-terminal is the starting point of the type expressions
+// sub-language.
+?type_expr : type_schema? type_expr_no_schema
+_type_expr : type_function_expr | type_term
+
+type_schema : KEYWORD_FORALL LOWER_IDENTIFIER LOWER_IDENTIFIER* "."
+type_function_expr : type_term (ARROW _NL? _type_function_expr)+
+_type_function_expr : type_term (ARROW _NL? _type_function_expr)*
+
+?type_term : type_app_expression | type_factor
+type_app_expression : (type_variable|type_cons) type_factor+
+
+type_variable : LOWER_IDENTIFIER
+type_cons : UPPER_IDENTIFIER
+
+?type_factor : type_variable
+             | type_cons
+             | type_factor_tuple
+             | type_factor_list
+             | _type_factor_enclosed_type_expr
+             | type_factor_record
+
+_type_factor_enclosed_type_expr : _LPAREN _NL? type_expr_no_constraints _NL?  _RPAREN
+?type_expr_no_constraints : type_schema? _type_expr
+?type_expr_no_schema : type_constraints? _type_expr
+
+type_factor_tuple : _LPAREN type_expr _comma _RPAREN
+                  | _LPAREN type_expr (_comma type_expr)+ _comma? _RPAREN
+type_factor_list : _LBRACKET type_expr _RBRACKET
+type_factor_record : _LBRACE _NL? record_type_item (_comma _NL? record_type_item)* _NL? _RBRACE
+
+record_type_item : LOWER_IDENTIFIER COLON type_expr
+
+type_constraints : _type_constraints_list FATARROW
+                 | type_constraint FATARROW
+
+type_constraint : UPPER_IDENTIFIER type_variable
+_type_constraints_list : type_constraint (_comma type_constraint)+
+
+
+// *** Data types (ADTs) ***
+
+datatype_definition : KEYWORD_DATA _datatype_lhs EQ _datatype_rhs _END
+_datatype_lhs : UPPER_IDENTIFIER cons_params?
+_datatype_rhs : _NL? data_cons (_NL? PIPE data_cons)* _datatype_deriving?
+_datatype_deriving : _NL? KEYWORD_DERIVING _LPAREN _derivations_list _RPAREN
+                   | _NL? KEYWORD_DERIVING UPPER_IDENTIFIER
+
+cons_params : LOWER_IDENTIFIER+
+
+data_cons : cons_arg OPERATOR cons_arg+
+          | UPPER_IDENTIFIER cons_arg*
+
+cons_arg : type_variable | type_cons | _cons_arg_factor
+_cons_arg_factor : _LPAREN _type_expr _RPAREN
+                 | _LBRACKET _type_expr _RBRACKET
+
+_derivations_list : UPPER_IDENTIFIER (_comma UPPER_IDENTIFIER)*
+
+
+// *** Type classes ***
+
+// NB: We need the _END right after the WHERE because the indentation is given
+// by the CLASS keyword.
+typeclass : _normally_indented_typeclass | _funny_typeclass
+_normally_indented_typeclass : KEYWORD_CLASS _typeclass_def KEYWORD_WHERE _END _NL local_definitions _END
+_typeclass_def : simple_type_constraint
+               | _simple_type_constraints FATARROW simple_type_constraint
+
+// This *funny* type class is to allow the rather odd-looking:
+//
+//    class X where
+//              local_definitions...
+//
+// where the local definitions are in the indentation scope of the 'where'
+// instead of the 'class'.
+ _funny_typeclass : KEYWORD_CLASS _typeclass_def KEYWORD_WHERE _NL local_definitions _END _END
+
+
+simple_type_constraint : UPPER_IDENTIFIER type_variable
+_simple_type_constraints : simple_type_constraint (_comma simple_type_constraint)*
+
+// Instances
+instance : _normally_indented_instance | _funny_instance
+_normally_indented_instance : KEYWORD_INSTANCE _instance_def KEYWORD_WHERE _END _NL local_definitions _END
+_instance_def : type_constraints? _type_expr
+
+_funny_instance : KEYWORD_INSTANCE _instance_def KEYWORD_WHERE _NL local_definitions _END _END
+
+// *** Basic expressions ***
+//
+// The number of each of the expr_termN below correlates to the precedence of
+// the operator, level 9 is the one with highest precedence.  The application
+// of terms is NOT an explicit operator.  No level share the right or left
+// associativity.
+//
+// To avoid large one-child branches in the tree only the alternatives with
+// several children are not "_anonymous".
+
+?expr : _expr
+_expr : expr_term0
+
+?expr_term0 : expr infixl_operator_0 expr_term0
+            | expr_term1
+infixl_operator_0 : TICK_OPERATOR
+
+
+// The list cons operator (COLON) has less precedence than other operators,
+// but higher than the `tick` operator.
+?expr_term1 : expr_term2 infixr_operator_2 expr_term1
+            | expr_term2
+
+// This level of custom operators.  We need to include '->' and '@' because
+// they are tokens used elsewhere, but allow them as operators.
+?expr_term2 : expr_term2 infixl_operator_2 expr_term6
+            | expr_term6
+
+infixr_operator_2 : COLON
+infixl_operator_2 : OPERATOR
+                  | ARROW
+                  | ATSYM
+                  | FATARROW
+
+// This level marks the start of the standard arithmetic operators.  + and -
+// have less precedence than others.
+?expr_term6 : expr_term6 infixl_operator_6 expr_term7
+            | expr_term7
+infixl_operator_6 : PLUS
+                  | MINUS
+
+?expr_term7 : expr_term7 infixl_operator_7 expr_term9
+            | expr_term9
+infixl_operator_7 : STAR
+                  | SLASH
+                  | DOUBLESLASH
+                  | PERCENT
+
+// The composition operator has the highest of precedence: 'a . f >>= g' is
+// the same as '(a . f) >>= g'.
+//
+// Also since 'application' is not a factor we must include it explicitly
+?expr_term9 : _expr_factor infixr_operator_9 expr_term9
+            | _expr_factor
+            | application infixr_operator_9 expr_term9
+            | application
+
+infixr_operator_9 : DOT_OPERATOR
+
+_expr_factor : literal
+            | identifier
+            | _enclosed_expr
+            | simple_list_expr
+            | simple_tuple_expr
+            | enclosed_operator
+            | lambda_expr
+            | letexpr
+            | where_expr
+            | record_value
+
+// NB: Since I can't express the right associativity of application, I just
+// create a *chain* of factors which can't be applications themselves.
+expr_factor : _expr_factor
+            | application
+application : _expr_factor _expr_factor+
+
+lambda_expr : BACKSLASH patterns ARROW _expr
+
+
+// Enclosed expressions leave no trace in the tree other than a possibly
+// *nested* application:
+//
+//  'a (b c)':
+//
+//   application
+//    identifier   a
+//    application
+//      identifier f
+//      identifier h
+//
+// This is ok.  Also this means that "a (f)" returns the same tree "a f" does.
+_enclosed_expr : _LPAREN _expr _RPAREN
+
+
+simple_list_expr : _LBRACKET _items? _RBRACKET
+simple_tuple_expr : _LPAREN _expr _comma _items? _RPAREN
+_items : _expr (_comma _expr)* _comma?
+
+?literal : number | concrete_number | string
+        | char | date | datetime
+        | date_interval | datetime_interval
+
+number : BASE10_INTEGER | BASE16_INTEGER | BASE8_INTEGER | BASE2_INTEGER | FLOAT
+concrete_number : number ANNOTATION string
+                | number ANNOTATION char
+                | number ANNOTATION identifier
+string : STRING
+char : CHAR
+date : DATE
+datetime : DATETIME
+date_interval : DATE_INTERVAL
+datetime_interval : DATETIME_INTERVAL
+
+enclosed_operator : _LPAREN _st_operator _RPAREN
+_st_operator : infixl_operator_2
+             | infixr_operator_2
+             | infixl_operator_6
+             | infixl_operator_7
+             | infixr_operator_9
+             | COMMA
+
+record_value : _LBRACE _NL? _record_value_item (_comma _NL? _record_value_item)* _NL? _RBRACE
+_record_value_item : LOWER_IDENTIFIER COLON _expr
+
+// Let and where expressions
+letexpr : KEYWORD_LET local_definitions _NL? KEYWORD_IN _expr
+
+// The _END terminal is a virtual token issued by the LexerHelper to account
+// for indentation changes.
+%declare _END
+where_expr : _expr KEYWORD_WHERE _NL? _equations _END
+
+
+local_definitions : _local_definition (_NL _local_definition)*
+_local_definition : nametype_decl | equation
+
+_equations : equation (_NL equation)*
+equation : name patterns? EQ _expr
+nametype_decl : name DOUBLECOLON type_expr
+name : LOWER_IDENTIFIER | UNDER_IDENTIFIER | enclosed_operator
+
+
+// ** Patterns **
+
+patterns : _pattern+
+_pattern : _pattern_name? pattern
+_pattern_name : LOWER_IDENTIFIER ATSYM
+_annon_pattern : identifier
+               | literal
+               | list_pattern
+               | list_cons_pattern
+               | tuple_pattern
+               | cons_pattern
+               | _LPAREN _annon_pattern _RPAREN
+
+pattern : _annon_pattern
+
+list_pattern : _LBRACKET _pattern_items? _RBRACKET
+_pattern_items : pattern (_comma pattern)* _comma?
+tuple_pattern : _LPAREN pattern _comma _pattern_items? _RPAREN
+
+cons_pattern : identifier patterns?
+list_cons_pattern : _annon_pattern (COLON _annon_pattern)+
+
+
+
+// *** Keywords ***
+KEYWORD_LET.130 : /\blet\b/
+KEYWORD_IN.130 : /\bin\b/
+KEYWORD_WHERE.130 : /\bwhere\b/
+KEYWORD_CLASS.130 : /\bclass\b/
+KEYWORD_INSTANCE.130 : /\binstance\b/
+KEYWORD_DATA.130 : /\bdata\b/
+KEYWORD_FORALL.130 : /\bforall\b/
+KEYWORD_DERIVING.130 : /\bderiving\b/
+KEYWORD_CASE.130 : /\bcase\b/
+
+
+// *** Operators ***
+
+TICK_OPERATOR : /`[A-Za-z]\w*`/
+DOT_OPERATOR : "."
+PLUS : "+"
+MINUS : "-"
+STAR : "*"
+SLASH : "/"
+BACKSLASH : "\\"
+PERCENT : "%"
+EQ : "="
+PIPE : "|"
+ATSYM : "@"
+COLON : ":"
+_comma : ","
+COMMA: ","
+
+
+// Avoid capturing operators formed by several symbols as several instances of
+// the operators above.
+DOUBLESLASH.20 : "//"
+ARROW.20 : "->"
+DOUBLECOLON.20 : "::"
+FATARROW.20 : "=>"
+ANNOTATION.20 : /(?<=[0-9a-fA-F_])@(?=[\'"A-Za-z])/
+OPERATOR.10 : /[\/\.\-\+\*<>\$%\^&!@\#=\\\|,:]+/
+
+
+// ** Values **
+
+// The numbers.  Since we have operators that start with '-' we must check for
+// this before operators and comments.
+
+BASE2_INTEGER.150 : /-?0[bB][01][01_]*/
+BASE8_INTEGER.150 : /-?0[oO][0-7][0-7_]*/
+BASE16_INTEGER.150 : /-?0[xX][0-9a-fA-F][0-9a-fA-F_]*/
+BASE10_INTEGER.150 : /-?[0-9][0-9_]*/
+
+FLOAT.190 : /-?([0-9_]*\.[0-9]+([eE][-+]\d+)?|[0-9][0-9_]*[eE](-|\+?)\d+)/
+
+// Dates, datetimes and intervals.
+
+DATETIME.150 : /<\d{4,}-\d\d-\d\d[ T]\d\d:\d\d(:\d\d)?(\.\d+)?>/
+DATE.150 : /<\d{4,}-\d\d-\d\d>/
+DATETIME_INTERVAL.150 : /<from[ \t]+\d{4,}-\d\d-\d\d[ T]\d\d:\d\d(:\d\d)?(\.\d+)?[ \t]+to[ \t]+\d{4,}-\d\d-\d\d[ T]\d\d:\d\d(:\d\d)?(\.\d+)?>/
+DATE_INTERVAL.150 : /<from[ \t]+\d{4,}-\d\d-\d\d[ \t]+to[ \t]+\d{4,}-\d\d-\d\d>/
+
+
+// Strings and chars
+_STRING_INNER: /.*?/
+_STRING_ESC_INNER: _STRING_INNER /(?<!\\)(\\\\)*?/
+
+STRING.100 : "\"" _STRING_ESC_INNER "\""
+
+_CHAR_INNER : "\\" /[nrt]/
+            | "\\'" | "\\\\"
+            | /./
+            | "\\" /[xuXU]\d+/
+CHAR.100 : "'" _CHAR_INNER "'"
+
+
+// Identifiers and grouping structures
+LOWER_IDENTIFIER.80 : /[a-z][\w_]*/
+UPPER_IDENTIFIER.80 : /[A-Z][\w_]*/
+UNDER_IDENTIFIER.80 : /_[\w_]*/
+
+identifier : UPPER_IDENTIFIER | LOWER_IDENTIFIER | UNDER_IDENTIFIER
+
+
+_LPAREN : "("
+_RPAREN : ")"
+
+_LBRACKET : "["
+_RBRACKET : "]"
+
+_LBRACE : "{"
+_RBRACE : "}"
+
+// Local Variables:
+// mode: bnf
+// comment-start: "//"
+// indent-tabs-mode: nil
+// End:

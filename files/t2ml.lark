@@ -1,0 +1,48 @@
+// Entry point
+?start: element
+?element: (tag | string)*
+
+////////////////////////////////////////////////////////////////////////////////
+// TERMINALS
+////////////////////////////////////////////////////////////////////////////////
+
+WHITESPACE: /[ \t\n\f\r]+/
+
+// A string can't contain tags - can they be escaped, though?
+STRING: /[^<>]+/ //
+
+//! A string used for command designations which are like a normal string except :
+COMMANDSTRING: /[^<>\/:]+/
+
+// Symbol used to open the tag
+TAG: "<"
+
+// Symbol to denote the end of the tag's affect
+CLOSETAG: "<" "/"
+
+// Differentiate components of a command like font:univers:50
+COMMANDCOMPONENT: COMMANDSTRING
+COMMANDCOMPONENTS: COMMANDCOMPONENT (":" COMMANDCOMPONENT)*
+
+NAMESPACEITEM: ("_"|LETTER|"-") ("_"|LETTER|"-")*
+NAMESPACENAME: NAMESPACEITEM (WHITESPACE NAMESPACEITEM)*
+
+////////////////////////////////////////////////////////////////////////////////
+// Rules
+////////////////////////////////////////////////////////////////////////////////
+
+commandcomponents: COMMANDCOMPONENT (":" COMMANDCOMPONENT)*
+
+tag: TAG commandcomponents ">" element* (CLOSETAG commandcomponents ">")?
+
+// Recurse until we're done processing elements
+string: STRING
+
+////////////////////////////////////////////////////////////////////////////////
+// From lark's common.lark; imports do not seem to work correctly when
+// packaged.
+////////////////////////////////////////////////////////////////////////////////
+
+LCASE_LETTER: "a".."z"
+UCASE_LETTER: "A".."Z"
+LETTER: UCASE_LETTER | LCASE_LETTER

@@ -1,0 +1,109 @@
+start: instruction+
+
+
+// ******
+// Parser
+// ******
+
+
+?instruction: ( create_stmt
+            | set_stmt
+            | repeat_stmt
+            | show_stmt
+            | modify_stmt
+            | if_stmt
+            | ask_stmt
+            | break_stmt
+            | function ) _NEWLINE*
+
+
+create_stmt: "crea" object objname
+set_stmt: "porta" objname PREPOSITION? paramvalue
+repeat_stmt: "ripeti" PREPOSITION? ( repeat_times "volte" | "sempre" ) block
+show_stmt: "mostra" object objname
+modify_stmt: "cambia" objname PREPOSITION? modify_value
+if_stmt: "se" test "allora" block ["altrimenti" block]?
+ask_stmt: "chiedi" ask_text
+break_stmt: "esci"
+
+repeat_times: integer
+modify_value: num
+ask_text: strquot
+
+function: _funcname params _NEWLINE
+_funcname: name ( _funcname | ":" )
+params: ( paramname paramvalue )+
+paramname: name
+paramvalue: name | num | str | strquot
+
+block: _NEWLINE* "(" _NEWLINE* instruction* ")" _NEWLINE*
+test: "("? comparison ")"?
+
+
+object: CNAME
+?name: ( CNAME | PREPOSITION )
+?integer: INT
+?num: SIGNED_NUMBER
+?str: STRING_INNER
+?strquot: ESCAPED_STRING
+objname: CNAME+
+
+
+// Math and logic
+
+?or_test: and_test ("or" and_test)*
+?and_test: not_test ("and" not_test)*
+?not_test: "not" not_test -> not
+         | comparison
+?comparison: expr (_comp_op expr)*
+
+// NOTE: equality operator is a single "="
+
+!_comp_op: "<"|">"|"="|">="|"<="|"<>"|"!="|"in"|"not" "in"|"is"|"is" "not"
+
+?expr: arith_expr (_shift_op arith_expr)*
+?arith_expr: term (_add_op term)*
+?term: factor (_mul_op factor)*
+?factor: _factor_op factor | power
+?power: atom_expr ["**" factor]
+?atom_expr: name
+          | num
+
+!_factor_op: "+"|"-"|"~"
+!_add_op: "+"|"-"
+!_shift_op: "<<"|">>"
+!_mul_op: "*"|"@"|"/"|"%"|"//"
+
+
+
+// *****
+// Lexer
+// *****
+
+
+//OBJECT.3: ( "variabile" )
+ARTICLE.3: ( " il " | " lo " | " la " | " i " | " gli " | " le " | " un " | " uno " | " una " )
+PREPOSITION.3: ( " di " | " a " | " da " | " in " | " con " | " su " | " per " | " tra " | " fra " )
+PUNCTUATION.3: ( "." | "," | ";" )
+CNAME: ("_"|LETTER) ("_"|LETTER|DIGIT)*
+_NEWLINE: (CR? LF)+
+// WORD.2: LETTER+
+
+
+// Ignore
+
+%ignore ARTICLE
+%ignore PUNCTUATION
+%ignore WS_INLINE
+
+
+%import common.LETTER
+%import common.DIGIT
+%import common.INT
+%import common.SIGNED_NUMBER
+%import common.STRING_INNER
+%import common.ESCAPED_STRING
+%import common.WS_INLINE
+%import common.CR
+%import common.LF
+

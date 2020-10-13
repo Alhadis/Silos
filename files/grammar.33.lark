@@ -1,0 +1,77 @@
+%import common.ESCAPED_STRING
+%import common.SIGNED_NUMBER -> SIGNED_NUMBER
+
+indent.1: "    "
+_id: /[\w_]+/
+!interpolation: "#" _id
+_text: /.+/
+
+dialog_characters_name: /[^\]&]+/ -> name
+dialog_characters: "[" dialog_characters_name " "+ "&" " "+ dialog_characters_name "]"
+dialog_line: "-" " "+ _text -> line
+
+_char_text: _text
+_char_name: "[" /[^\]]+/ "]"
+char_line.2: _char_name " "* _char_text
+
+if: "=?" " "+ /.+/
+else: "=!"
+elif: "=!" " "+ /.+/
+
+_choices: /.+/ ((";" | ",") " "* /.+/)*
+input_hint: "?" " "* _text
+input_fallback_and_continue: ">?." " "*
+input: ">>" " "* _choices?
+input_fallback: ">?" " "*
+play_sound: "/" " "* _id
+input_required: ">*" " "* _choices
+
+load_file: "->" " "* _text
+
+_stat_change_name: _id
+_stat_change_target: _id
+_stat_change_value: (/\d+/ "%"?) | interpolation
+stat_change_operation: "reset" -> reset
+                     | "+" _stat_change_value -> add
+                     | "-" _stat_change_value -> subtract
+                     | "=" _stat_change_value -> set
+                     | "*" _stat_change_value -> multiply
+stat_change: "@" [_stat_change_target ":"] " "* _stat_change_name " "+  stat_change_operation
+
+_chapter_title: /[^-]+/
+_act_title: /[^=]+/
+_CHAPTER_DECORATION: "-" ~ 2..10
+_ACT_DECORATION: "=" ~ 2..10
+
+new_chapter: _CHAPTER_DECORATION " "* _chapter_title " "* _CHAPTER_DECORATION
+new_act: _ACT_DECORATION " "* _act_title " "* _ACT_DECORATION
+
+execute_code: "{" " "* /[^}]+/ " "* "}"
+
+// text_line: indent* _text
+narrator_line.-1: " "* _text
+
+comment: "//" /.+/
+
+_directive: comment
+          | execute_code
+          | char_line
+          | input_hint
+          | input
+          | input_fallback
+          | input_fallback_and_continue
+          | input_required
+          | load_file
+          | stat_change
+          | new_act
+          | new_chapter
+          | play_sound
+          | dialog_characters
+          | dialog_line
+          | if
+          | else
+          | narrator_line
+
+line: indent* _directive
+_emptyline: indent*
+dialog: ((line | _emptyline) /\r?\n/)+

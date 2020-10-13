@@ -1,0 +1,56 @@
+
+start: funcdef*
+
+funcdef: funcname params "->" funcret funcreqs body
+funcname: CNAME -> name
+funcret: CNAME -> ret
+params: "(" [CNAME ("," CNAME)*] ")"
+funcreqs: funcreq* -> reqs
+?funcreq: "require" cond -> require | "ensure" cond -> ensure
+
+var: CNAME
+body: _block
+_block: "{" stmt* "}"
+
+?stmt: "var" [CNAME ("," CNAME)*] ";" -> decl
+     | var "<-" value ";" -> assign
+     | "ensure" cond ";" -> ensure
+     | "assert" cond ";" -> assert
+     | "return" ";" -> return
+     | "if" cond body ifelifs ifelse -> if
+     | "while" cond whilereqs body -> while
+     | value ";" -> discard
+
+whilereqs: whilereq* -> reqs
+?whilereq: "ensure" cond -> ensure | "decrease" value -> decrease
+
+ifelifs: ifelif* -> elifs
+ifelif: "elif" cond body -> elif
+ifelse: ["else" body] -> else
+
+cond: bexpr
+value: iexpr
+
+?iexpr: iexpr2
+?iexpr2: iexpr1 | iexpr2 /\+|-/ iexpr1 -> ibinop
+?iexpr1: iexpr0 | /\+|-/ iexpr1 -> iunop
+?iexpr0: INT -> ilit
+       | CNAME -> ivar
+       | CNAME "(" [iexpr ("," iexpr)*] ")" -> icall
+       | "(" iexpr ")"
+
+?bexpr: bexpr4
+?bexpr4: bexpr3 | bexpr3 /->/ bexpr4 -> bbinop
+?bexpr3: bexpr2 | bexpr2 /<->/ bexpr2 -> bbinop
+?bexpr2: bexpr1 | bexpr1 /\\\// bexpr2 -> bbinop
+?bexpr1: bexpr0 | bexpr0 /\/\\/ bexpr1 -> bbinop
+?bexpr0: /true/ -> blit
+       | /false/ -> blit
+       | iexpr (/=|<>|<=|<|>=|>/ iexpr)+ -> bicomp
+       | "(" bexpr ")"
+       | /~/ bexpr0 -> bunop
+
+%import common.INT
+%import common.CNAME
+%import common.WS
+%ignore WS

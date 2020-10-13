@@ -1,0 +1,47 @@
+structs: struct*
+struct: struct_key struct_type (":" DERIVED_CLASS*)? "{" _member* "}" NAME? ";"
+
+struct_key: "class"  -> key_class
+          | "struct" -> key_struct
+
+struct_type: TYPE
+
+DERIVED_CLASS: ACCESS_MODIFIER? VIRTUAL? NAME
+
+_member: field
+      | method
+      | ppif
+      | struct
+      | ";"
+
+field: STATIC? CONST? TYPE POINTER* NAME ("[" INT? "]")? ("=" INITIALIZER_VALUE)? ";"
+
+method: VIRTUAL? (TYPE | DESTRUCTOR)? NAME "(" PARAMETERS? ")" OVERRIDE? "{" METHOD_BODY? "}" ";"?
+      | VIRTUAL? (TYPE | DESTRUCTOR)? NAME "(" PARAMETERS? ")" OVERRIDE? ";"
+      | VIRTUAL  (TYPE | DESTRUCTOR)? NAME "(" PARAMETERS? ")" "=" "0" ";"
+
+ppif: "#if" "n"? "def" /[^#endif]/* _member* /[^#endif]/* "#endif"
+
+PARAMETERS: PARAMETER ("," PARAMETER)*
+PARAMETER: TYPE NAME?
+
+METHOD_BODY: /[^}]*}/
+
+NAME: ALPHANUMWORD
+POINTER: "*"
+DESTRUCTOR: "~"
+STATIC: "static"
+CONST: "const"
+TYPE: (ALPHANUMWORD "::")* ALPHANUMWORD
+INITIALIZER_VALUE: /[^;]+/
+VIRTUAL: "virtual"
+OVERRIDE: "override"
+ACCESS_MODIFIER: "public"
+               | "protected"
+               | "private"
+
+ALPHANUMWORD: /[A-Za-z0-9_]+/
+
+%import common.WS
+%import common.INT
+%ignore WS

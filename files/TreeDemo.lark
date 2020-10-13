@@ -1,0 +1,175 @@
+﻿package tree;
+
+import org.w3c.html.*; 
+import org.w3c.dom.*;
+import org.w3c.*;
+import org.w3c.event.*;
+import org.w3c.event.EventHandler;
+import org.w3c.event.KeyboardEvent;
+import org.w3c.event.MouseEvent;
+import org.w3c.event.MouseEventHandler;
+
+import java.util.*;
+public class TreeDemo  implements INotifyPropertyChanged{ 
+	<html>
+		<head>
+		<meta httpEquiv="Content-Type" content="text/html;charset=utf-8" />
+			<script > 
+				   
+			</script> 
+			 
+			<style type="text/css"> 
+				.item:hover {
+				  animation: 1s rainbow infinite;
+				}
+			 
+				@keyframes rainbow {
+				  0% { background-color: yellow; }
+				  100% { background: blue; }
+				} 
+				
+				.child {
+					padding-left: 10px;
+					border:thin solod red;  
+					font-size: 12px; 
+				}
+				span:hover{
+					color: rgba(255, 255, 255, 1);
+					background-color: rgba(142, 213, 87, 0.6);
+					border:1px solid rgba(0,0,0,0.9)
+		    	}
+			</style>      
+		</head>  
+		<body >  
+		
+		<div className = "child" dataContext = {DataPath mode="Relative" property = "root"}>
+			<span x:name = "item" className="node"> <img src="images/expand.gif" className="trrItemNode" onclick = "nodeClick" /> 
+				<span onclick = "select" className="treeItemTitle"> <Text data={Binding property="name" mode = "OneWay"} /> </span> </span> 
+			<div x:name = "children" className = "children" itemsConfig ={ItemsConfig path = "children" itemTemplate = "ChildTemplate"}>
+	
+			</div>
+		</div>  
+		</body> 
+	</html>  
+	
+	private Object listeners= new Object();
+	    
+	public TreeDemo(){ 
+		
+		for(int i=0; i<10; i++){
+			Person p = new Person("孩子" + i, i);
+			this.root.children.add(p);
+			for(int j=0;j<3;j++){
+				if(j==2){
+					p.children.add(sample = new Person("孙子"+ i +"_" +j, j));
+				}
+				p.children.add(new Person("孙子"+ i +"_" +j, j));
+			}
+		}
+ 	}
+	
+	EventHandler select = (Event event)->{
+		if(((HTMLElement)event.target).className == "treeItemTitle" && ((HTMLElement)event.target).style.backgroundColor == "blue"){
+			((HTMLElement)event.target).style.removeProperty("background-color");
+		} else {
+			((HTMLElement)event.target).style.backgroundColor = "blue";
+		}
+	};
+	
+	private MouseEventHandler nodeClick = (MouseEvent event)->{
+		if(children.style.display == "none"){
+			children.style.display = "block";
+		} else {
+			children.style.display = "none";
+		}
+	}; 
+	
+	private Person sample;
+	
+	private Person _person  = new Person("Smith", 98);
+	public Person person{
+		&{
+			return this._person;
+		}
+	}
+	
+	private Person _root = new Person("root",10);
+	private Person root {
+		&{
+			return this._root;
+		}
+	}
+	
+	public ObservableCollection<Person> _childs = new ObservableCollection<Person>();
+	public ObservableCollection<Person> child {
+		&{
+			return this._childs;
+		}
+		+{
+			ObservableCollection<Person> oldValue = this._childs;
+			this._childs = value;
+			if(oldValue != value){
+				notify(this, new PropertyChangeEvent("child"));
+			}
+		}
+	}
+	
+	public EventHandler addChild = (Event event)->{
+		child.add(new Person("child1", 3));
+		root.children.add(new Person("新增树节点!", 10));
+		sample.children.add(new Person("KJKKKKKK", 10));
+	};
+	
+	public EventHandler replaceChilds =  (Event event)->{
+		ObservableCollection<Person> c1 = new ObservableCollection<Person>();
+		c1.add(new Person("child11", 22));
+		c1.add(new Person("child1", 3));
+		child = c1;
+	};
+	 
+	public EventHandler deleteChild =  (Event event)->{
+		if(child.size > 0){ 
+			child.removeAt(0);
+		}
+	};
+	
+	protected void notify(Object source, PropertyChangeEvent event){
+		PropertyChange[] handlers = (PropertyChange[])listeners[event.propertyName];
+		if(handlers != undefined){
+			handlers.forEach((PropertyChange value, int index, Array<PropertyChange> array)->{
+				value(source, event);
+			});
+		}
+	}    
+	
+	public EventHandler returnNav = (Event event)->{     
+		KeyboardEvent keyEvt = (KeyboardEvent) event;
+		if(keyEvt != undefined && keyEvt.target != undefined){ 
+			HTMLElement srcEle=(HTMLElement) keyEvt.target; 
+			if(keyEvt.keyCode == 13) {
+				keyEvt.keyCode=keyEvt.charCode= 9; 
+			}
+		} 
+	};
+
+	public void addPropertyChangeListener(String propName, PropertyChange handler) {
+		PropertyChange[] handlers = (PropertyChange[])listeners[propName];
+		if(handlers == undefined){
+			handlers = new Array<PropertyChange>();
+			listeners[propName] = handlers;
+		}
+		handlers.push(handler);
+	}
+
+	public void removePropertyChangeListener(String propName, PropertyChange handler) {
+		PropertyChange[] handlers = (PropertyChange[])listeners[propName];
+		if(handlers != undefined){
+			handlers.forEach((PropertyChange value, int index, Array<PropertyChange> array)->{
+				if(value === handler){
+					handlers.splice(index, 1);
+				}
+			});
+		}
+	}
+}
+ 

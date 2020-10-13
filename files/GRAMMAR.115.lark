@@ -1,0 +1,112 @@
+%import common.CNAME
+%import common.ESCAPED_STRING
+%import common.FLOAT
+%import common.NUMBER
+
+COMMENT : /\/\/.+?\n/
+
+%ignore COMMENT
+
+%import common.WS
+
+%ignore WS
+
+WORD : ("a" .. "z" | "A" .. "Z" | "α" .. "ω" | "Α" .. "Ω" | "_")+ | "∫" | "∂"  // TODO: something legit here
+word : WORD
+str : ESCAPED_STRING
+
+// Definitions of base atoms
+atom_variable : word
+atom_expression : "$" word
+atom_constant : "@" word
+atom_set : "#" word
+
+raw_expression : str | ("0" ("x" | "b") ?) ? NUMBER | FLOAT
+
+// Compound Expressions
+// TODO: allow expressions?
+set_expression : ((word | ("#" "(" set_expression ")") | atom_set) ("<" ((set_expression | expression) ",")* (set_expression | expression)? ">")? ("^" NUMBER)? ("->" set_expression)? ("|" set_expression)? ("x" set_expression)?)
+
+set_declaration : set_body | metaset_body
+
+set_body : "set" word inheritance? "{" asterix_set_body "}"
+
+// *set_body = (meta)set body
+asterix_set_body : properties ";" phrase*
+
+properties : word "|" (has ",")* has?
+
+has : is_made_in | has_property | has_operator | is_true
+
+is_true : expression "is" expression
+
+is_made_in : word "is" "made" "in" set_mapping_specifier // x is made in (#a x #b -> Tuple<#a, #b>)
+
+has_property : word "has" "property" word "in" set_expression // x has property a in #a
+
+has_operator : word "has" "operator" operator "in" set_mapping_specifier // x has operator + in (Tuple<#a, #b> ^ 2 -> Tuple<#a, #b>)
+
+show_phrase : "show" operator "in" set_mapping_specifier "[" (word ",")* word? "]" "=" block
+// show + in (Tuple<#a, #b>^2 -> Tuple<#a, #b>) [x, y] = make Tuple<#a, #b> [x.a + y.a, x.b + y.b]
+
+make_phrase : "make" word set_mapping_specifier "[" (word ",")* word? "]" function_with_locals_body
+
+inheritance : "<=" set_expression
+
+metaset_body : "metaset" word "<" ((atom_set | atom_expression) ",")* (atom_set | atom_expression)? ">" "in" "(" (set_expression ",")* set_expression? ")" inheritance? "{" asterix_set_body "}"
+
+function_declaration : ((("declare" word) | "λ") ":" set_mapping_specifier "[" args "]" "->" function_body)
+
+args : (word ",")* word?
+
+set_mapping_specifier : ("(" set_expression "->" set_expression ")")
+
+function_body : expression // | ("{" phrase* "}")
+block : expression | ("{" phrase* "}")
+
+function_with_locals_body : expression | ("{" (phrase | (local_set ";"))* "}")
+
+local_set : local_var "=" expression
+
+local_var : word "->" atom_expression
+
+typedef : "typedef" set_expression "is" set_expression
+
+function_call : (word "(" (expression ",")* expression? ")")
+
+let_statement : "let" (exp_set_statement | typed_let)
+
+exp_set_statement : (atom_expression "=" expression)
+
+typed_let : "typed" atom_expression "in" set_expression "=" expression
+
+arithmetic : expression operator expression
+
+!operator : "+" | "-" | "*" | "/" | "^" | "<" | "<=" | ">" | ">=" | "==" | "!=" | ".." // TODO: instanceof
+
+?unary_op.2 : "-" expression
+
+find_statement : ("find" expression "=" expression ("where" (constant_set ",")* constant_set? )? "for" (atom_variable ",")* atom_variable)
+
+constant_set : atom_variable "=" expression
+
+if_block : if elif* else?
+
+if : "if" "[" expression "]" block
+
+elif : "elif" "[" expression "]" block
+
+else : "else" block
+
+make_expression : "make" set_expression "[" (expression ",")* expression? "]"
+
+// Expression time!
+expression : (atom_expression | atom_variable | atom_constant | make_expression | unary_op | show_phrase | local_var | make_phrase | set_declaration | if_block | function_declaration | typedef | function_call | let_statement | exp_set_statement | find_statement | arithmetic | raw_expression | "(" expression ")")
+
+// Compound Phrases
+
+// Finally, phrase
+phrase : (expression) ";"
+
+// Start
+start : phrase*

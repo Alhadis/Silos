@@ -1,0 +1,31 @@
+?start : command_list? tag
+
+?value : function
+       | SIGNED_NUMBER   ->  number
+       | ESCAPED_STRING  ->  string
+       | identifier      ->  constant
+
+?item : value | tag
+
+start_tag : /html/i with_stmt? "{" item* "}"
+tag : identifier with_stmt? "{" item* "}"
+with_stmt : /with/i "(" [assignment ("," assignment)*] ")" 
+assignment : identifier "=" value
+
+command_list : (define | metadata | import_stmt)+
+
+import_stmt : /%import/i identifier
+define : /%define/i store_const value
+store_const : identifier
+metadata : /%meta(data)?/i object 
+function   :  "@" identifier "(" [value ("," value)*]? ")"
+object     :  "{" [pair ("," pair)*]? "}"
+pair       :  identifier ":" value
+identifier :  /[a-zA-Z_][a-zA-Z0-9_]*/
+COMMENT    :  /#.*/
+
+%import common.ESCAPED_STRING
+%import common.SIGNED_NUMBER 
+%import common.WS
+%ignore WS
+%ignore COMMENT

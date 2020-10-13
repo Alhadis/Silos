@@ -1,0 +1,84 @@
+// The following grammar attempts to describe ABNF as specified by RFC 5234.
+// RFC 5234 actually gives a definition of itself, using its own syntax, and
+// this grammar aims to be as faithful as possible to this specification,
+// but naturally has some minor deviations. Most significantly, this grammar
+// employs the use of the NEWLINE rule in Lark's common rules file rather
+// than CRLF as outlined by RFC 5511, as it seems the values provided don't work
+// (at least with PyCharm's editor).
+
+// The ABNF definition (RFC 5234 p.10) enforces "relatively strict" formatting
+// for rules. This grammar keeps this strict formatting for rules.
+
+// NB: this grammar can parse the ABNF grammar from which it was translated.
+
+%import common.NEWLINE
+
+start: syntax
+syntax: rulelist
+
+// =====================================================================
+//                          Part 0: Core Rules
+// =====================================================================
+ALPHA:  /[\u0041-\u005A]/ | /[\u0061-\u007A]/
+BIT:    "0" | "1"
+
+// Any ASCII char except NUL
+CHAR:   /[\u0001-\u007F]/
+
+CR:     /[\u000D]/
+LF:     /[\u000A]/
+// Standard newline
+CRLF:   CR LF
+
+// Control characters
+CTL:    /[\u0000-\u001F/ | /[\u007F]/
+DIGIT:  /[\u0030-\u0039]/
+DQUOTE: /[\u0022]/
+HEXDIG: DIGIT | "A" | "B" | "C" | "D" | "E" | "F"
+HTAB:   /\t/
+LWSP:   (WSP | CRLF WSP)*
+OCTET:  /[\u0000-\u00FF]/
+SP:     /[\u0020]/
+VCHAR:  /[\u0021-\u007E]/
+WSP:    SP | HTAB
+
+
+// =====================================================================
+//        Part 1: defining which characters can appear in features
+// =====================================================================
+prose_val: "<" (/[\u0020-\u003D]/ | /[\u003F-\u007E]/)+ ">"
+char_val: DQUOTE (/[\u0020-\u0021]/ | /[\u0023-\u007E]/)+ DQUOTE
+
+num_val: "%" (hex_val | dec_val | bin_val)
+bin_val: "b" BIT+ ( ("." BIT+)+ | ("-" BIT+) )?
+dec_val: "d" DIGIT+ ( ("." DIGIT+)+ | ("-" DIGIT+) )?
+hex_val: "x" HEXDIG+ ( ("." HEXDIG+)+ | ("-" HEXDIG+) )?
+
+// Spacing and commenting
+c_wsp: WSP | (c_nl WSP)
+c_nl:  comment | NEWLINE
+comment: ";" (WSP | VCHAR)* NEWLINE
+
+// =====================================================================
+//       Part 2: Defining the abstract syntax of ABNF
+// =====================================================================
+rulelist: (rule | c_wsp* c_nl)+
+rule: rulename defined_as elements c_nl
+rulename: ALPHA (ALPHA | DIGIT | "-")*
+defined_as: c_wsp* ("=" | "=/") c_wsp*
+
+elements: alternation c_wsp*
+alternation: concatenation (c_wsp* "/" c_wsp* concatenation)*
+concatenation: repetition (c_wsp+ repetition)*
+
+repetition: repeat? element
+repeat: DIGIT+ | DIGIT* "*" DIGIT*
+
+element: rulename | group | option
+    | char_val | num_val | prose_val
+
+group: "(" c_wsp* alternation c_wsp* ")"
+option: "[" c_wsp* alternation c_wsp* "]"
+
+
+

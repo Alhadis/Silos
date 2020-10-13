@@ -1,0 +1,81 @@
+?start: _NL+ stmt+ 
+
+?stmt: bid_stmt | branch
+
+branch: test ":" body
+body: bid_stmt                                -> single_bid
+    | _NL _INDENT bid_stmt* branch* _DEDENT   -> branched_bid
+    | _NL _INDENT bid_stmt* end_stmt _DEDENT  -> ended_bid
+
+
+?test: expr cmp_op expr        -> cmp_test
+    | test logic_op test       -> logic_test
+    | expr
+    | "(" test ")"
+    | expr "in" expr           -> in_test
+    | "else"                   -> else_clause
+
+?expr: product 
+    | expr "+" product      -> add
+    | expr "-" product      -> sub
+
+?atom: _number              -> num
+    | "(" expr ")"
+    | suit                  -> suit_cards
+    | suit "points"         -> suit_points
+    | "$" NAME              -> var
+    | "-" atom              -> neg
+    | "not" test            -> logic_neg
+    | CARD_LIST             -> card_list
+
+?product: atom
+    | product "*" atom      -> mul
+    | product "/" atom      -> div
+
+
+!cmp_op: (">" | ">=" | "==" | "!=" | "<=" | "<")
+
+// Name terminals to avoid confusing error messages
+LESSEQTHAN: "<="
+MOREEQTHAN: ">="
+EQUALS: "=="
+NOTEQUALS: "!="
+
+!logic_op: "or" | "and"
+
+bid_stmt: "bid" _bid_num suit _NL+
+    | "pass" _NL+
+
+end_stmt: "end" [end_label] _NL
+
+end_label: _ANY_BUT_NL
+_ANY_BUT_NL: /[^\n]+/
+
+// Name terminals to avoid confusing error messages
+CARD_LIST: /[AKQJT98765432]+/
+
+CLUB_SIGN:     "♣"
+DIAMOND_SIGN: "♦"
+HEART_SIGN:   "♥"
+SPADE_SIGN:   "♠"
+
+!suit: ("♣" | "C")
+    | ("♦" | "D")
+    | ("♥" | "H")
+    | ("♠" | "S")
+    | "NT"
+    | "@"
+
+!_bid_num: _BID_NUM
+!_number: NUMBER
+
+COMMENT: /#[^\n]*/
+
+%import common.CNAME -> NAME
+%import common.NUMBER
+%import common.WS_INLINE
+%declare _INDENT _DEDENT
+%ignore WS_INLINE
+
+_BID_NUM: /[1-7]/
+_NL: ( /\r?\n[\t ]*/ | COMMENT )+

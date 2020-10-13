@@ -1,0 +1,220 @@
+//////////////////////////////
+//
+// Schema manager parser language
+// still in alpha state
+//
+/////////////////////////////
+
+///////////////////
+//
+// Rules
+//
+//////////////////
+
+?start: model_def (_NEWLINE | stmt)*
+
+//TODO: garantee the order or things:
+// model doc -> import statements than the rest
+model_def: _NEWLINE* model_doc? import_stmt*
+
+////////////////////////////////////////////////////////////
+// document string for the model
+////////////////////////////////////////////////////////////
+model_doc: long_doc _NEWLINE
+
+////////////////////////////////////////////////////////////
+//import statements
+////////////////////////////////////////////////////////////
+import_stmt: (import_name | import_from) _NEWLINE
+import_name: "import" dotted_as_names
+// note below: the ("." | "...") is necessary because "..." is tokenized as ELLIPSIS
+import_from: "from" (dots? dotted_name | dots) "import" ("*" | "(" import_as_names ")" | import_as_names)
+!dots: "."+
+import_as_name: NAME ["as" NAME]
+dotted_as_name: dotted_name ["as" NAME]
+import_as_names: import_as_name ("," import_as_name)* [","]
+dotted_as_names: dotted_as_name ("," dotted_as_name)*
+dotted_name: DOTTED_NAME
+
+
+
+////////////////////////////////////////////////////////////
+// data type definitions
+////////////////////////////////////////////////////////////
+precision_x: INT
+precision_y: INT
+_value: INLINE_STRING | BOOL | NAME | INT | DECIMAL
+min_value: _value
+max_value: _value
+default_value: _value
+// no explanation why need to redefine dotted_name, but it was the only way to
+// make it work
+type_name: DOTTED_NAME
+is_optional: "?"
+
+?data_type: type
+			| map_type
+			| lst_set_type
+
+type: type_name is_optional? ["(" [precision_x ","] precision_y ")"] _type_properties
+_type_properties: ("min" "=" min_value | "max" "=" max_value | "default" "=" default_value)*
+
+map_type: type_name is_optional? "(" type "," type ")"
+lst_set_type: type_name is_optional? "(" type ")"
+
+
+union_type: "[" data_type ("," data_type)+ "]"
+
+
+// documentatin string styles
+long_doc:  MULTILINE_STRING
+short_doc: INLINE_STRING
+
+//element_doc:  ":" _NEWLINE _INDENT long_doc _DEDENT | short_doc _NEWLINE
+_element_long_doc: ":" _NEWLINE (_INDENT long_doc _NEWLINE _DEDENT | long_doc _NEWLINE)
+
+
+
+////////////////////////////////////////////////////////////
+// define a type
+////////////////////////////////////////////////////////////
+user_type_name: NAME
+?user_type_type: data_type | union_type
+// _element_long_doc replaces the _NEWLINE - this is important to keep the rule
+// balanced
+user_type_def: "type" user_type_name user_type_type short_doc? (_element_long_doc | _NEWLINE)
+
+////////////////////////////////////////////////////////////
+// define enumerators
+////////////////////////////////////////////////////////////
+enum_def: "enum" enum_name short_doc? ":" _NEWLINE _enum_body
+enum_name: NAME
+_enum_body: _INDENT [long_doc _NEWLINE] symbol+ _DEDENT
+symbol:  symbol_name short_doc? _NEWLINE
+symbol_name: (NAME | INT)
+
+////////////////////////////////////////////////////////////
+// define records
+////////////////////////////////////////////////////////////
+record_def: "record" record_name parent_records? short_doc? ":" _NEWLINE _record_body
+record_name: NAME
+parent_records: "(" dotted_name ("," dotted_name)* ")"
+_record_body: _INDENT [long_doc _NEWLINE] _attrs _DEDENT
+
+anom_record: "record" short_doc? ":" _NEWLINE _record_body
+anom_enum: "enum" short_doc? ":" _NEWLINE _enum_body
+
+_attrs: (pk_attr | fk_attr | list_attr | include_attr | discriminator_attr | attr )+
+_attr_end: short_doc? (_element_long_doc? | _NEWLINE)
+
+pk_attr: "*" attr_name type _attr_end
+
+attr: attr_name _attr_type
+
+_attr_type: (data_type | union_type) _attr_end
+				| anom_record
+				| anom_enum
+
+fk_attr: attr_name type? fk_id _attr_end
+fk_id: "!" DOTTED_NAME
+
+list_attr: attr_name multiplicity type _attr_end
+
+include_attr: "$" include_record_name filtered_attrs? short_doc? (_element_long_doc | _NEWLINE)
+filtered_attrs: "(" type_name ("," type_name)* ")"
+include_record_name: DOTTED_NAME
+
+discriminator_attr: "%" attr_name ["=" discriminator_value] short_doc? (_element_long_doc | _NEWLINE)
+discriminator_value: INLINE_STRING
+
+attr_name: NAME
+lower_bound: INT
+upper_bound: INT
+multiplicity: "*" ["(" [lower_bound ","] upper_bound ")"]
+
+////////////////////////////////////////////////////////////
+// Constant definitions
+////////////////////////////////////////////////////////////
+constant_value: _value | MULTILINE_STRING
+constant_name: DOTTED_NAME
+constant_def: "const" constant_name "=" [_NEWLINE] constant_value
+
+////////////////////////////////////////////////////////////
+// decorators
+////////////////////////////////////////////////////////////
+decorator: "@"dotted_name [ "(" [arguments] ")" ] _NEWLINE
+decorators: decorator+
+decorated: decorators (record_def)
+
+arguments: argument ("," argument)*
+arg_name: NAME
+arg_value: _value
+argument: [arg_name "="] arg_value
+
+
+// ?stmt: ( enum_def 
+// 		| user_type_def 
+// 		| decorated
+// 		| record_def
+// 		| constant_def)
+
+?stmt: (user_type_def
+		| enum_def
+		| constant_def
+		| record_def)
+
+
+///////////////////
+//
+// Tokens
+//
+//////////////////
+
+
+//
+// Numbers
+//
+
+DIGIT: "0".."9"
+INT: DIGIT+
+DECIMAL: INT "." INT? | "." INT
+
+BOOL.3: "True"i | "False"i
+
+SIGNED_DECIMAL.2: ("+" | "-") DECIMAL
+SIGNED_INT.1: ("+" | "-") INT
+
+//
+// Strings
+//
+
+INLINE_STRING : /[ubf]?r?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
+MULTILINE_STRING: /[ubf]?r?(""".*?(?<!\\)(\\\\)*?"""|'''.*?(?<!\\)(\\\\)*?''')/is
+
+//MULTILINE_STRING: /"""([^"\\]*(\\.[^"\\]*)*)"""/
+//INLINE_STRING: /"([^"\\]*(\\.[^"\\]*)*)"/
+
+//
+// Names (Variables)
+//
+
+LCASE_LETTER: "a".."z"
+UCASE_LETTER: "A".."Z"
+
+LETTER: UCASE_LETTER | LCASE_LETTER
+
+NAME: ("_" | LETTER ) ("_" | LETTER | DIGIT)*
+DOTTED_NAME: NAME ("." NAME)*
+
+//
+// Whitespace
+//
+_WS_INLINE: (" "|/\t/)+
+COMMENT: /#[^\n]*/
+_NEWLINE: ( /\r?\n[\t ]*/ | COMMENT )+
+
+%ignore /[\t \f]+/  // WS
+%ignore /\\[\t \f]*\r?\n/   // LINE_CONT
+%ignore COMMENT
+%declare _INDENT _DEDENT
+

@@ -1,0 +1,84 @@
+package blob;
+
+import org.w3c.event.Event;
+import org.w3c.event.EventHandler;
+import org.w3c.event.MouseEvent;
+import org.w3c.event.MouseEventHandler;
+import org.w3c.file.File;
+import org.w3c.html.HTMLInputElement;
+
+public class upload implements Page{
+	<%
+	<html > 
+	    <head>
+	    	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	        <title>Upload Demo</title>
+	    </head>
+	    <body>
+	    <form id="form1" enctype="multipart/form-data" method="post" action="UploadServlet">
+		    <div class="row">
+		          <label for="fileToUpload">Select a File to Upload</label>
+		          <input type="file" name="fileToUpload" id="fileToUpload" onchange="fileSelected" />
+	        </div>
+		    <div id="fileName"></div>
+		    <div id="fileSize"></div>
+		    <div id="fileType"></div>
+		    <div class="row">
+		    <input type="button" onclick="uploadFile" value="Upload" />
+		        </div>
+		    <div id="progressNumber"></div>
+	    </form>
+
+	    </body>
+	 </html>
+	%>
+	EventHandler fileSelected = (Event event)-> {
+        File file = ((HTMLInputElement)document.getElementById("fileToUpload")).files[0];
+        if (file != null) {
+          String fileSize = "0";
+          if (file.size > 1024 * 1024)
+            fileSize = ((Integer)(Math.round(file.size * 100 / (1024 * 1024)) / 100)).toString() + "MB";
+          else
+            fileSize = ((Integer)(Math.round(file.size * 100 / 1024) / 100)).toString() + "KB";
+
+          document.getElementById("fileName").innerHTML = "Name: " + file.name;
+          document.getElementById("fileSize").innerHTML = "Size: " + fileSize;
+          document.getElementById("fileType").innerHTML = "Type: " + file.type;
+        }
+    };
+    
+    XMLHttpRequestEventHandler uploadProgress = (ProgressEvent evt)-> {
+        if (evt.lengthComputable) {
+          Float percentComplete = (float) Math.round(evt.loaded * 100 / evt.total);
+          document.getElementById("progressNumber").innerHTML = percentComplete.toString() + "%";
+        }
+        else {
+          document.getElementById("progressNumber").innerHTML = "unable to compute";
+        }
+    };
+
+    EventHandler uploadComplete = (Event evt)-> {
+        /* This event is raised when the server send back a response */
+        alert(((XMLHttpRequest)evt.target).responseText);
+    };
+
+    EventHandler uploadFailed = (Event evt)-> {
+        alert("There was an error attempting to upload the file.");
+    };
+
+    EventHandler uploadCanceled = (Event evt)-> {
+        alert("The upload has been canceled by the user or the browser dropped the connection.");
+    };
+
+	MouseEventHandler uploadFile = (MouseEvent event)->  {
+		FormData fd = new FormData();
+        fd.append("file", ((HTMLInputElement)document.getElementById("fileToUpload")).files[0], null);
+        XMLHttpRequest xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener("progress", uploadProgress, false);
+        xhr.addEventListener("load", uploadComplete, false);
+        xhr.addEventListener("error", uploadFailed, false);
+        xhr.addEventListener("abort", uploadCanceled, false);
+        xhr.open("POST", "/UploadServlet");
+        xhr.send(fd);
+    };
+}

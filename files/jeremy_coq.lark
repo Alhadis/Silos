@@ -1,0 +1,106 @@
+%import common.NEWLINE
+%import common.WS
+%import common.WORD
+%import common.LETTER
+%import common.DIGIT
+%import .jeremy_coq_tactics (INTRO, INTROS, EXACT, REWRITE, RESTART, EXISTS, DISCRIMINATE, LEFT, RIGHT, REFLEXIVITY, DESTRUCT, SPLIT)
+
+PROOF_KEYWORD: "Proof." 
+COMMENTS: /\(\*.+?\*\)/
+QED: "Qed."
+ABORT: "Abort."
+SENTENCE: /[^\.]+?\./ 
+IDENT: (LETTER | DIGIT | "_" | "'")+
+AS: "as"
+EQN: "eqn"
+
+%ignore NEWLINE
+%ignore WS
+%ignore COMMENTS
+
+start: document
+document: (sentence | proof)*
+sentence: SENTENCE
+proof: PROOF_KEYWORD tactic_invocation* (QED | ABORT) // allow non-tactic_invocation sentences in proofs (currently sentence is too powerful). Technically, allow tactic invocations outside of proofs. 
+term: IDENT 
+    | "(" term ")"
+// or num, etc https://coq.inria.fr/distrib/current/refman/language/gallina-specification-language.html#grammar-token-term
+?tactic_invocation: ["-" | "+" | ">"] tactic_application "."
+?tactic_application: (INTRO | INTROS | EXACT | REWRITE | RESTART | EXISTS | DISCRIMINATE | LEFT | RIGHT | REFLEXIVITY | SPLIT ) intropattern_list
+    | destruct 
+destruct: DESTRUCT term [AS or_and_intropattern] [EQN ":" naming_intropattern]
+    | DESTRUCT pattern
+pattern: "_" 
+    | pattern AS IDENT
+    | "(" pattern  ("|" pattern)* ")"
+ // https://coq.inria.fr/distrib/current/refman/language/gallina-specification-language.html#grammar-token-pattern
+intropattern_list: intropattern*
+intropattern: naming_intropattern 
+    | "_"  
+    | or_and_intropattern 
+    | rewriting_intropattern
+?naming_intropattern: term 
+!or_and_intropattern: "[" intropattern_list ("|" intropattern_list)* "]" 
+    // | "(" intropattern ("," intropattern)*  ")"
+    | "(" intropattern ("&" intropattern)*  ")"
+rewriting_intropattern: "<-"
+    | "->"
+
+    // %ignore WS
+// sentence ::= assertion proof 
+//             | Definition ... . 
+//             | Inductive ... . 
+//             | Fixpoint ... . 
+//             | ... .
+// assertion ::=  assertion_keyword ident ... .
+// assertion_keyword ::=  Theorem 
+//                     | Lemma 
+//                     | Remark 
+//                     | Fact 
+//                     | Corollary 
+//                     | Proposition 
+//                     | Definition 
+//                     | Example
+// ident ::= string
+// string := char | char string
+// char :== a..z ∣ A..Z ∣ 0...9 | _
+// proof ::= Proof . tactic_invocations Qed . 
+//         | Proof . tactic_invocations Defined . 
+//         | Proof . tactic_invocations Admitted .
+//         | Proof . tactic_invocations Abort .
+// tactic_invocations ::= tactic_invocation | tactic_invocation tactic_invocations
+// tactic_invocation ::= [- | + | >] tactic .
+// tactic ::= intro ident 
+//         | intros intro_pattern_list 
+//         | clear
+//         | exact rule_application 
+//         | apply j 
+//         | split 
+//         | left 
+//         | right 
+//         | rewrite_expr
+//         | Compute ...
+//         | Check ...
+//         | reflexivity 
+// rewrite_expr ::= rewrite -> rule in ...
+//                 | rewrite -> term args
+//                 | rewrite <- term args
+
+// Lemma truism :
+//   forall P : nat -> Prop,
+//     (exists n : nat,
+//         P n) ->
+//     exists n : nat,
+//       P n.
+// Proof.
+//   intros P H_P.
+//   destruct H_P as [n H_Pn].
+//   exists n.
+//   exact H_Pn.
+
+//   Restart.
+
+//   intros P [n H_Pn].
+//   exists n.
+//   exact H_Pn.
+// Qed.

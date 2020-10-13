@@ -1,0 +1,32 @@
+?start: data
+
+data: settings_table? test_case_table?
+
+?settings_table : SETTINGS_TABLE_HEADER setting+
+setting : SETTING_NAME _setting_value+ (_NL _CONTINUATION _setting_value+)* _NL?
+_setting_value: _SEPARATOR VALUE
+
+SETTING_NAME.1 : "Library"i | "Resource"i
+SETTINGS_TABLE_HEADER : /\*+ settings \*+/ _NL
+
+test_case_table: TEST_CASE_TABLE_HEADER test_case+
+test_case: test_case_name keyword+
+test_case_name: VALUE _NL
+keyword: _INDENTATION (keyword_with_assign | plain_kw)
+keyword_with_assign: ASSIGNMENT keyword_name arguments? _NL?
+plain_kw: keyword_name arguments? _NL?
+keyword_name: VALUE
+arguments: (_SEPARATOR VALUE)+
+
+TEST_CASE_TABLE_HEADER : /\*+ test cases \*+/ _NL
+
+ASSIGNMENT: /${.+}( ?=)?/
+_CONTINUATION : "..."
+_INDENTATION  : /^\s{2,}/m
+_SEPARATOR    : /(?!^)\s{2,}/m
+VALUE: /(\S+ )*\S+/
+_NL: NEWLINE
+
+%import common.WS
+%import common.NEWLINE
+%declare _INDENT _DEDENT

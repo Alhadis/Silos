@@ -1,0 +1,233 @@
+single_input: _NEWLINE | simple_stmt | compound_stmt _NEWLINE
+file_input: (_NEWLINE | stmt)*
+eval_input: rekkyo_rs_expr _NEWLINE*
+
+
+
+// statements
+?stmt: simple_stmt | compound_stmt
+?simple_stmt: small_stmt (";" small_stmt)* [";"] _NEWLINE
+?small_stmt: (normal_stmt | flow_stmt | import_stmt)
+
+
+
+// import statements
+import_stmt: import_name | import_from
+import_name: "import" dotted_as_names
+import_from: "from" (dots? dotted_name | dots) "import" ("*" | "(" import_as_names ")" | import_as_names)
+!dots: "."+
+import_as_name: symbol ["as" symbol]
+dotted_as_name: dotted_name ["as" symbol]
+import_as_names: import_as_name ("," import_as_name)* [","]
+dotted_as_names: dotted_as_name ("," dotted_as_name)*
+dotted_name: symbol ("." symbol)*
+
+
+
+// compund statements
+compound_stmt: if_stmt | while_stmt | for_stmt | funcdef | classdef
+if_stmt: "if" rs_expr ":" suite ("elif" rs_expr ":" suite)* ["else" ":" suite]
+while_stmt: "while" rs_expr ":" suite ["else" ":" suite]
+for_stmt: "for" symbol "in" rs_expr ":" suite ["else" ":" suite]
+funcdef: ("proc"|"def") symbol parameters [":" rekkyo_type] "=" suite
+classdef: "class" symbol ":" suite
+
+suite: simple_stmt | _NEWLINE _INDENT stmt+ _DEDENT
+
+
+
+// control statements
+?flow_stmt: pass_stmt | break_stmt | continue_stmt | return_stmt
+pass_stmt: "pass"
+break_stmt: "break"
+continue_stmt: "continue"
+return_stmt: "return" [rekkyo_rs_expr]
+
+
+
+// normal statements
+?normal_stmt: declare_with_type_stmt
+            | declare_with_value_stmt
+            | declare_with_type_and_value_stmt
+            | assign_stmt
+            | discard_stmt
+
+declare_with_type_stmt: "var" rekkyo_ls_expr ":" type
+declare_with_value_stmt: "var" rekkyo_ls_expr "=" rekkyo_rs_expr
+declare_with_type_and_value_stmt: "var" rekkyo_ls_expr ":" type "=" rekkyo_rs_expr
+assign_stmt: rekkyo_ls_expr "=" rekkyo_rs_expr
+discard_stmt: "discard" rs_expr
+
+
+
+// left-side expressions
+rekkyo_ls_expr: ls_expr ("," ls_expr)* ","?
+
+?ls_expr: ls_atom_expr
+
+?ls_atom_expr: ls_atom_expr arguments      -> setcall
+             | ls_atom_expr "." symbol     -> setattr
+             | ls_atom_expr pointer        -> setpoint
+             | ls_matized_expr
+
+?ls_matized_expr: matizer ls_atom_expr_before_matize         -> left_setmat
+                | ls_atom_expr_before_matize matizer         -> right_setmat
+                | matizer ls_atom_expr_before_matize matizer -> both_setmat
+                | ls_atom_expr_before_matize
+
+?ls_atom_expr_before_matize: ls_atom_expr_before_matize arguments     -> setcall
+                           | ls_atom_expr_before_matize "mo." symbol  -> setattr
+                           | ls_atom_expr_before_matize pointer       -> setpoint
+                           | ls_atom
+
+?ls_atom: settuple
+        | symbol
+
+settuple: "(" "," ")"
+        | "(" ls_atom_expr "," ")"
+        | "(" ls_atom_expr ("," ls_atom_expr)+ ","? ")"
+
+
+
+// right-side expressions
+rekkyo_rs_expr: rs_expr ("," rs_expr)* ","?
+?rs_expr: ternary_expr
+
+?ternary_expr: or_expr ("if" or_expr "else" ternary_expr)?
+?or_expr: xor_expr ("or" xor_expr)*
+?xor_expr: and_expr ("xor" and_expr)*
+?and_expr: not_expr ("and" not_expr)*
+?not_expr: "not" not_expr -> not
+         | comparison_expr
+?comparison_expr: addsub_expr (_comp_op addsub_expr)*
+?addsub_expr: muldiv_expr (_addsub_op muldiv_expr)*
+?muldiv_expr: prefix_expr (_muldiv_op prefix_expr)*
+?prefix_expr: _prefix_op prefix_expr
+            | power_expr
+?power_expr: atom_expr ("^" prefix_expr)?
+
+!_prefix_op: "+"|"-"|"~"
+!_muldiv_op: "*"|"@"|"/"|"%"|"//"
+!_addsub_op: "+"|"-"
+!_comp_op: "<"|">"|"=="|">="|"<="|"<>"|"!="|"in"|"notin"|"is"|"isnot"
+
+
+
+?atom_expr: atom_expr arguments  -> getcall
+          | atom_expr "." symbol -> getattr
+          | atom_expr pointer    -> getpoint
+          | atom_expr replacer   -> replace
+          | matized_expr
+
+?matized_expr: matizer atom_expr_before_matize         -> left_getmat
+             | atom_expr_before_matize matizer         -> right_getmat
+             | matizer atom_expr_before_matize matizer -> both_getmat
+             | atom_expr_before_matize
+
+?atom_expr_before_matize: atom_expr_before_matize arguments     -> getcall
+                        | atom_expr_before_matize "." symbol    -> getattr
+                        | atom_expr_before_matize pointer       -> getpoint
+                        | atom_expr_before_matize replacer      -> replace
+                        | atom
+
+?atom: number
+     | symbol
+     | type_designed_func
+     | label_designed_func
+     | gettuple
+     | string+
+     | "(" rs_expr ")"
+     | "None"    -> const_none
+     | "True"    -> const_true
+     | "False"   -> const_false
+
+gettuple: "(" "," ")"
+        | "(" ternary_expr "," ")"
+        | "(" ternary_expr ("," ternary_expr)+ ","? ")"
+
+
+
+// callers
+parameters: "(" [param_unit ("," param_unit)* [","]] ")"
+?param_unit: rekkyo_symbol ":" type ["=" rs_expr]
+rekkyo_symbol: symbol ( "," symbol)*
+
+arguments: "(" [arg_unit ("," arg_unit)* [","]] ")"
+?arg_unit: named_arg_unit | unnamed_arg_unit
+named_arg_unit: symbol "=" rs_expr
+unnamed_arg_unit: rs_expr
+
+pointer: "[" [pointer_unit ("," pointer_unit)* [","]] "]"
+?pointer_unit: label "=" rs_expr
+
+replacer: "(" replacer_unit ("," replacer_unit)* [","] ")"
+?replacer_unit: labels "->" labels
+
+matizer: "{" [matizer_unit ("," matizer_unit)* [","]] "}"
+?matizer_unit: label
+
+rekkyo_type: type ( "," type)*
+
+
+
+// omajinai
+encoding_decl: NAME
+
+
+
+// elements
+type_designed_func: _type_designed_func_op "[" type_design_arg "]"
+!_type_designed_func_op: "newSeq"
+
+label_designed_func: _label_designed_func_op "[" label_design_arg "]"
+!_label_designed_func_op: "newTensor" | "newDensor" | "newDiagonalTensor"
+
+
+
+?type: simple_type | type_designed_type | label_designed_type
+
+simple_type: NAME
+
+type_designed_type: _type_designed_type_op "[" type_design_arg "]"
+!_type_designed_type_op: "Seq"
+
+label_designed_type: _label_designed_type_op "[" label_design_arg "]"
+!_label_designed_type_op: "Tensor" | "Densor" | "DiagonalTensor"
+
+
+
+type_design_arg: type ("," type)* ","?
+label_design_arg: ( | "," | ( NAME "," )* NAME ","? )
+
+
+
+labels: NAME
+      | "(" "," ")"
+      | "(" NAME "," ")"
+      | "(" NAME ("," NAME)+ ","? ")"
+
+label: NAME
+symbol: NAME
+
+?number: dec_number | float_number | complex_number
+dec_number: DEC_NUMBER
+float_number: FLOAT_NUMBER
+complex_number: COMPLEX_NUMBER
+string: STRING | LONG_STRING
+
+NAME: /[a-zA-Z_]\w*/
+COMMENT: /#[^\n]*/
+_NEWLINE: ( /\r?\n[\t ]*/ | COMMENT )+
+
+STRING : /[ubf]?r?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
+LONG_STRING: /[ubf]?r?(""".*?(?<!\\)(\\\\)*?"""|'''.*?(?<!\\)(\\\\)*?''')/is
+
+DEC_NUMBER: /0|[1-9]\d*/i
+FLOAT_NUMBER.2: /((\d+\.\d*|\.\d+)(e[-+]?\d+)?|\d+(e[-+]?\d+))/i
+COMPLEX_NUMBER.2: /\d+j/i | FLOAT_NUMBER "j"i
+
+
+%ignore /[\t \f]+/  // WS
+%ignore /\\[\t \f]*\r?\n/   // LINE_CONT
+%ignore COMMENT
+%declare _INDENT _DEDENT

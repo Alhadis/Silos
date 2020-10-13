@@ -1,0 +1,295 @@
+package table;
+
+import java.util.ObservableCollection;
+
+import org.w3c.event.Event;
+import org.w3c.event.EventHandler;
+import org.w3c.html.body;
+import org.w3c.html.button;
+import org.w3c.html.head;
+import org.w3c.html.html;
+import org.w3c.html.input;
+import org.w3c.html.meta;
+import org.w3c.html.table;
+import org.w3c.html.tbody;
+import org.w3c.html.td;
+import org.w3c.html.*;
+import org.w3c.*;
+
+public class TableDemo implements INotifyPropertyChanged{
+	<html >
+		<head>
+		    <meta httpEquiv="Content-Type" content="text/html; charset=utf-8" />
+		    <title>CSS3/Lark Clock demo</title>
+		    <style>
+		    	tr:hover{
+				    color:yellow;
+					background:blue;
+		    	}
+		    </style>
+		</head>
+	
+		<body id=function(){}> 
+			<table >
+				<thead className="tabs" >
+					<td onclick="orderBy">
+						<input x:name = "select" type="checkbox" checked = {Binding property = "allSelected" mode="TwoWay" updateSourceTrigger="PropertyChanged"} />
+					</td>
+					<td>
+						序号
+					</td> 
+					<td>
+						姓名
+					</td> 
+					<td>
+						地址
+					</td> 
+					<td>
+						年龄
+					</td> 
+			    </thead>
+				<tbody className="tabs" itemsConfig = {ItemsConfig path = "persons" itemTemplate="TableRow"}>
+			    </tbody>
+			</table>
+			<button onclick="addChild">
+			add
+			</button>
+			<button onclick = "deleteChild">
+			delete
+			</button>
+			
+			<button onclick = "nextPage">
+			delete
+			</button>
+		</body>
+	</html>
+	
+	public TableDemo() {
+		_persons.add(new Person("1", "张三", "山东高密", 65));
+		_persons.add(new Person("2", "张三1", "山东高密1", 65));
+		_persons.add(new Person("3", "张三2", "山东高密2", 65));
+		_persons.add(new Person("4", "张三3", "山东高密2", 65));
+		
+		this.addPropertyChangeListener("allSelected", this::onSelectedAll);
+	}
+	
+	private ObservableCollection<Person> _persons = new ObservableCollection<Person>();
+	public ObservableCollection<Person> persons {
+		&{
+			return this._persons;
+		}
+		+{
+			this._persons = value;
+		}
+	}
+	
+	public EventHandler addChild = (Event event)->{
+		persons.add(new Person("child1", "新增张三", "山东高密新增", 35));
+//		root.children.add(new Person("新增树节点!", 10));
+//		sample.children.add(new Person("KJKKKKKK", 10));
+	};
+	
+//	public EventHandler replaceChilds =  (Event event)->{
+//		ObservableCollection<Person> c1 = new ObservableCollection<Person>();
+//		c1.add(new Person("child11", 22));
+//		c1.add(new Person("child1", 3));
+//		child = c1;
+//	};
+	 
+	public EventHandler deleteChild =  (Event event)->{
+		if(persons.size > 0){ 
+			persons.removeAt(0);
+		}
+	};
+	
+	public EventHandler nextPage =  (Event event)->{
+		ObservableCollection<Person> nextPage = new ObservableCollection<Person>();
+		nextPage.add(new Person("11" + Math.random(), "张三1" + Math.random(), "山东高密", 65));
+		nextPage.add(new Person("21" + Math.random(), "张三11" + Math.random(), "山东高密1", 65));
+		nextPage.add(new Person("31" + Math.random(), "张三21" + Math.random(), "山东高密2", 65));
+		nextPage.add(new Person("41" + Math.random(), "张三31" + Math.random(), "山东高密2", 65)); 
+		
+		if(persons != null){ 
+			persons.clear(); 
+		}
+		persons.addAll(nextPage);
+	};
+	
+	public EventHandler orderBy =  (Event event)->{
+
+	};
+	
+	public EventHandler selectAll = (Event event) ->{
+		if(persons != null){
+			boolean flag = this.select.checked;
+			for(Person person : persons){
+				person.selected  = flag;
+			}
+		}
+	};
+	
+	private boolean _allSelected;
+	public boolean allSelected {
+		&{
+			return this._allSelected;
+		}
+		+{
+			if(this._allSelected === value){
+				return;
+			}
+			this._allSelected = value;
+			propertyChanged("allSelected");
+		}
+	}
+	
+	private Object _listeners = new Object();
+	protected void propertyChanged(String propName){
+		PropertyChangeEvent event = new PropertyChangeEvent(propName);
+		PropertyChange[] listeners = (PropertyChange[])_listeners[propName];
+		if(listeners == null){
+			return;
+		}
+		listeners.forEach((PropertyChange h, int index, Array<PropertyChange> array)->{
+			h(this, event);
+		});
+	}
+	public void addPropertyChangeListener(String propName, PropertyChange handler){
+		PropertyChange[] listeners = (PropertyChange[])_listeners[propName];
+		if(listeners == null){
+			listeners = new Array<PropertyChange>();
+			_listeners[propName] = listeners;
+		}
+		listeners.push(handler);
+	}
+	
+	public void removePropertyChangeListener(String propName, PropertyChange handler){
+		PropertyChange[] listeners = (PropertyChange[])_listeners[propName];
+		if(listeners == null){
+			return;
+		}
+		listeners.forEach((PropertyChange h, int index, Array<PropertyChange> array)->{
+			if(handler === h){
+				listeners.splice(index, 1);
+			}
+		});
+	}
+	
+	void onSelectedAll(Object source, PropertyChangeEvent evt){
+		if(persons != null){
+			boolean flag = (boolean) source[evt.propertyName];
+			for(Person person : persons){
+				person.selected  = flag;
+			}
+		}
+	}
+}
+
+class Person implements INotifyPropertyChanged{
+	public Person(String _ordinal, String _name, String _address, int _age){
+		this._ordinal = _ordinal;
+		this._name = _name;
+		this._address = _address;
+		this._age = _age;
+	}
+	private String _ordinal;
+	public String ordinal {
+		&{
+			return this._ordinal;
+		}
+		+{
+			if(this._ordinal === value){
+				return;
+			}
+			this._ordinal = value;
+			propertyChanged("ordinal");
+		}
+	}
+	
+	private String _name;
+	public String name {
+		&{
+			return this._name;
+		}
+		+{
+			if(this._name === value){
+				return;
+			}
+			this._name = value;
+			propertyChanged("name");
+		}
+	}
+	
+	private String _address;
+	public String address {
+		&{
+			return this._address;
+		}
+		+{
+			if(this._address === value){
+				return;
+			}
+			this._address = value;
+			propertyChanged("address");
+		}
+	}
+	
+	private int _age;
+	public int age {
+		&{
+			return this._age;
+		}
+		+{
+			if(this._age === value){
+				return;
+			}
+			this._age = value;
+			propertyChanged("age");
+		}
+	}
+	
+	private boolean _selected;
+	public boolean selected {
+		&{
+			return this._selected;
+		}
+		+{
+			if(this._selected === value){
+				return;
+			}
+			this._selected = value;
+			propertyChanged("selected");
+		}
+	}
+	
+	private Object _listeners = new Object();
+	protected void propertyChanged(String propName){
+		PropertyChangeEvent event = new PropertyChangeEvent(propName);
+		PropertyChange[] listeners = (PropertyChange[])_listeners[propName];
+		if(listeners == null){
+			return;
+		}
+		listeners.forEach((PropertyChange h, int index, Array<PropertyChange> array)->{
+			h(this, event);
+		});
+	}
+	public void addPropertyChangeListener(String propName, PropertyChange handler){
+		PropertyChange[] listeners = (PropertyChange[])_listeners[propName];
+		if(listeners == null){
+			listeners = new Array<PropertyChange>();
+			_listeners[propName] = listeners;
+		}
+		listeners.push(handler);
+	}
+	
+	public void removePropertyChangeListener(String propName, PropertyChange handler){
+		PropertyChange[] listeners = (PropertyChange[])_listeners[propName];
+		if(listeners == null){
+			return;
+		}
+		listeners.forEach((PropertyChange h, int index, Array<PropertyChange> array)->{
+			if(handler === h){
+				listeners.splice(index, 1);
+			}
+		});
+	}
+}

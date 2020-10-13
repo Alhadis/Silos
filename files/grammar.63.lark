@@ -1,0 +1,154 @@
+start: (cpp_line_info | function_definition | forward_declaration | gl_decl_var)*
+
+?forward_declaration: function_declaration ";"
+
+function_definition: function_declaration function_body
+
+function_declaration: attributes type IDENTIFIER "(" arg_declarations ")"
+
+gl_decl_var: attributes type IDENTIFIER ";"
+    | attributes type IDENTIFIER "[" expression "]" ";" -> gl_decl_array
+
+attributes: attribute*
+
+?attribute: "import" -> attr_import
+    | "export" -> attr_export
+    | "traitor" -> attr_always_recursion
+
+
+arg_declarations: (arg_declaration ("," arg_declaration)*)?
+
+arg_declaration: type IDENTIFIER
+
+function_body: "{" (statement | cpp_line_info)* "}"
+
+?statement: assignment ";"
+    | declaration ";"
+    | block
+    | conditional
+    | while_loop
+    | "break" ";" -> break_statement
+    | "continue" ";" -> continue_statement
+    | function_call ";"
+    | "return" ";" -> empty_return_statement
+    | "return" expression ";" -> return_statement
+    | "return" function_call ";" -> return_fc_statement
+
+conditional: "if" "(" expression ")" statement ("else" statement)?
+
+while_loop: "while" "(" expression ")" statement
+
+?block: "{" statement* "}"
+
+declaration: type _declarator_list
+
+_declarator_list: declarator ("," declarator)*
+
+declarator: IDENTIFIER -> decl_var
+    | IDENTIFIER "=" expression -> def_var
+    | IDENTIFIER "[" expression "]" -> decl_array
+
+?type: INT_TYPE -> int_type
+    | type "*" -> ptr
+
+assignment: lvalue "=" expression
+    | lvalue "=" function_call -> assignment_function
+    | lvalue COMPOUND_OPERATOR expression -> compound_assignment
+
+function_call: IDENTIFIER "(" _arguments? ")"
+
+_arguments: expression ("," expression)*
+
+?expression: lor
+
+?lor: land
+    | lor "||" land -> lor
+
+?land: bor
+    | land "&&" bor -> land
+
+?bor: bxor
+    | bor "|" bxor -> bor
+
+?bxor: band
+    | bxor "^" band -> bxor
+
+?band: eq
+    | band "&" eq -> band
+
+?eq: cmp
+    | eq "==" cmp -> eq
+    | eq "!=" cmp -> ne
+
+?cmp: shift
+    | cmp ">" shift -> gt
+    | cmp "<" shift -> lt
+    | cmp ">=" shift -> ge
+    | cmp "<=" shift -> le
+
+?shift: sum
+    | shift ">>" sum -> shr
+    | shift "<<" sum -> shl
+
+?sum: product
+    | sum "+" product -> add
+    | sum "-" product -> sub
+
+?product: neg
+    | product "*" neg -> mul
+    | product "/" neg -> div
+    | product "%" neg -> mod
+
+?neg: value
+    | "-" neg -> neg
+    | "!" neg -> lnot
+    | "~" neg -> bnot
+
+?value: lvalue
+    | "&" value -> addr
+    | "(" type ")" value -> type_cast
+    | "(" expression ")"
+
+?lvalue: subscript
+    | "*" value -> deref
+
+?subscript: number
+    | literal
+    | var
+    | var "[" expression "]" -> subscript
+
+var: IDENTIFIER
+
+number: DEC_NUMBER -> n10
+    | HEX_NUMBER -> n16
+    | OCT_NUMBER -> n8
+    | BIN_NUMBER -> n2
+    | CHAR_LITERAL -> char
+
+?literal: ESCAPED_STRING -> string_literal
+    | "{" expression ("," expression)* "}" -> array_literal
+
+cpp_line_info: "#" DEC_NUMBER ESCAPED_STRING (DEC_NUMBER)*
+
+IDENTIFIER: /[a-z_]\w*/i
+
+DEC_NUMBER: /[+-]?[1-9]\d*([su](8|16)?)?/i
+HEX_NUMBER: /0x[0-9a-f]+([su](8|16)?)?/i
+OCT_NUMBER: /0[0-7]*([su](8|16)?)?/i
+BIN_NUMBER: /0b[01]+([su](8|16)?)?/i
+
+INT_TYPE.2: /[us](8|16)/
+
+COMPOUND_OPERATOR: "+=" | "-=" | "*=" | "/=" | "%=" | ">>=" | "<<=" | "&=" | "|=" | "^=" | "&&=" | "||="
+
+CHAR_LITERAL: /'(\\[^\\']|[^\\']|\\\\)'/
+
+COMMENT: "/*" /(.|\n|\r)*/"*/"
+    | "//" /[^\n]*/ NEWLINE
+
+%import common.WS
+%import common.ESCAPED_STRING
+%import common.NEWLINE
+%ignore WS
+%ignore COMMENT
+%ignore NEWLINE

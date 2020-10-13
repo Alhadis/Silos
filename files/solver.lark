@@ -1,0 +1,31 @@
+%import common.WORD
+%import common.NUMBER
+%import common.WS_INLINE
+
+%ignore WS_INLINE
+
+?start: "@SOLVE" side "=" side			-> get_lhs_rhs
+
+?side: expr
+	| "$" var							-> build_term_var
+	| "$" func "(" VAR_X ")"			-> build_terms_from_func_expr
+
+?expr: unary
+	| expr "+" unary					-> add
+	| expr "-" unary					-> sub
+	
+?unary: atom
+	| "-" atom							-> neg
+
+?atom: thing
+	| NUMBER							-> build_term_c_0
+	| NUMBER ["*"] thing				-> mul_number_thing
+
+?thing: VAR_X ["^" degree]				-> build_term_deg
+
+?degree: NUMBER							-> parse_degree
+
+?var: WORD								-> parse_var
+?func: WORD								-> parse_func
+
+VAR_X: "X" | "x"

@@ -1,0 +1,117 @@
+// ! Gramática para el lenguaje de programación Bash
+// * Esta gramática permite el reconocimiento de instrucciones
+// ? Reconocimiento de comentarios simples y de múltiples lineas.
+// ? Reconocimento de Asignaciones.
+// ? Reconocimineto de declaración y ejecución de funciones.
+// ? Reconocimiento de estructuras para el control de flujo.
+// ? Reconocimiento de generación de mensajes de salida.
+// @author its_anaehm
+// @date 04/08/2020
+// @version 0.1
+
+
+//El axioma inicial
+?start: exp+
+
+//Definición de una estructura de control de flujo
+?flowcontrol: "if" "[ " finalexpresion " ]" ";" "then" sentence "fi"
+    | "if" "[ " finalexpresion " ]" ";" "then" sentence "else" sentence "fi"
+    | "while" "[ " finalexpresion " ]" ";" "do" sentence "done"
+    | "for" var "in" "$" var ":" "do" sentence "done"
+    | "for" "((" var "=" number ";" expresionnumeric ";" var "++ " "))" "do" sentence "done"
+
+?function: "function" identifier "()" "{" sentence "}" 
+    | var "()" "{" sentence "}" 
+
+?sentence: exp
+    | arithmeticoperation
+    | operation
+    | flowcontrol
+    | comments
+
+?comments: "#" stringcomment
+    | ": '" stringcomment "'"
+
+//Definición de una expresion alfanumérica
+?expresionalfanumeric: alfanumeric
+    | "$"? expresionalfanumeric "-z" var 
+    | "$"? expresionalfanumeric "-n" var 
+    | "$"? expresionalfanumeric "<" var 
+    | "$"? expresionalfanumeric ">" var 
+    | "$"? expresionalfanumeric "!=" var 
+    | "$"? expresionalfanumeric "=" var
+
+//Definición de una función numérica
+?expresionnumeric: number
+    | "$"? expresionnumeric "-lt" var
+    | "$"? expresionnumeric "-le" var
+    | "$"? expresionnumeric "-ge" var
+    | "$"? expresionnumeric "-gt" var
+    | "$"? expresionnumeric "-ne" var
+    | "$"? expresionnumeric "==" var
+    | "$"? expresionnumeric "<=" var
+    | "$"? expresionnumeric ">=" var
+    | "$"? expresionnumeric "!=" var
+    | "$"? expresionnumeric "<" var
+    | "$"? expresionnumeric ">" var
+
+
+//Definición de una expresión
+?finalexpresion: expresionnumeric
+    | expresionalfanumeric
+
+//Definición de una expresión
+?exp: var "=" string
+    | "let"? var "=" number
+    | var "=" arithmeticoperation
+    | "echo" " " exp 
+    | "echo" "$" identifier 
+    | "echo" " " string
+    | "echo" " " string "$" identifier
+    | var "=" "$" identifier
+
+//Definición de una operación aritmética
+?arithmeticoperation: operation 
+    | arithmeticoperation "+" operation 
+    | arithmeticoperation "-" operation
+
+//Definición de operaciones aritmeticas 2
+?operation: term
+    | operation "*" term 
+    | operation "/" term 
+
+?term: atom
+
+//Definición de un átomo de operación aritmética
+?atom: "$"? var
+    | "$"? number
+    | "$"? string
+    | "$"? bool
+    | "$"? nulo
+
+?alfanumeric: "$"? number
+    | "$"? string
+    | "$"? var
+
+?var: identifier
+
+//Definición del identificador
+?identifier: /[a-zA-z]\w*/
+
+//Definición de una cadena
+?string: /"\"".*"\""/
+
+?stringcomment: /.*/
+
+//Definición de un número
+?number: /\d+(\.\d+)?/
+
+//Definición de un booleano
+?bool: "$"? /true/
+    | "$"? /false/
+
+//Definición de un elemento nulo
+?nulo: "$"? /null/
+
+//Ignorar espacios, saltos de línea y tabulados
+%ignore /\s+/

@@ -1,0 +1,72 @@
+start: expression
+
+expression: "(" expression ")"
+          | call
+          | IDENTIFIER
+          | lambda
+          | let
+          | list
+          | operation_add
+          | operation_join
+          | operation_or
+          | set
+          | STRING_INLINE
+          | STRING_MULTILINE
+          | with
+
+// Expressions
+
+call: "(" IDENTIFIER expression+ ")"
+
+def: IDENTIFIER "=" expression ";"
+
+let: KEYWORD_LET def+ KEYWORD_IN expression
+
+with: KEYWORD_WITH IDENTIFIER ";" expression
+
+lambda: (IDENTIFIER | lambda_args_set) ":" expression
+lambda_args_set: "{" [lambda_args_set_elem ("," lambda_args_set_elem)*] "}"
+lambda_args_set_elem: IDENTIFIER | ELIPSIS
+
+list: "[" expression* "]"
+
+set: KEYWORD_REC? "{" (def | set_inherit)* "}"
+set_inherit: KEYWORD_INHERIT IDENTIFIER+ ";"
+
+// Operations
+OP_ADD: "+"
+operation_add: expression OP_ADD expression
+OP_JOIN: "//"
+operation_join: operation_join_arg OP_JOIN operation_join_arg
+operation_join_arg: call
+                  | set
+OP_OR: "or"
+operation_or: expression OP_OR expression
+
+// Terminals
+
+ELIPSIS: "..."
+IDENTIFIER_NAME: /[a-zA-Z0-9_-]+/
+IDENTIFIER: IDENTIFIER_NAME ("." IDENTIFIER_NAME)*
+STRING_INLINE: /".*?(?<!\\)(\\\\)*?"/
+STRING_MULTILINE: /''[^']*?''/
+
+KEYWORD_IN: "in"
+KEYWORD_INHERIT: "inherit"
+KEYWORD_LET: "let"
+KEYWORD_OR: "or"
+KEYWORD_REC: "rec"
+KEYWORD_WITH: "with"
+
+CR : /\r/
+LF : /\n/
+WS : /[ \t\f]/
+EOL: (CR? LF)
+
+COMMENT1: "#" /[^\n]*/ EOL
+COMMENT2: "/*" /.*?/ "*/"
+
+%ignore WS
+%ignore COMMENT1
+%ignore COMMENT2
+%ignore EOL

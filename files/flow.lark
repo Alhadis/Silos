@@ -1,0 +1,36 @@
+%import common.SIGNED_FLOAT
+%import common.SIGNED_NUMBER
+%import common.WS
+%import common.WS_INLINE
+
+%ignore WS
+%ignore WS_INLINE
+
+ident: /[a-zA-Z]+/
+label: "'" ident
+
+args: expr? WS_INLINE? ("," WS_INLINE? args)*
+call: ident WS_INLINE? "(" WS_INLINE? args? WS_INLINE? ")"
+
+expr: (call | ident | SIGNED_NUMBER | SIGNED_FLOAT)
+assign: "let" WS_INLINE? ident WS_INLINE? "=" WS_INLINE? (block | expr) ";"
+
+if: "if" WS_INLINE? expr WS_INLINE? block else?
+else: "else" WS_INLINE? (block | if)
+
+comment: "//" (/[^\n]+/)?
+
+?block_item: assign
+    | if
+    | expr
+    | comment
+
+block: "{" WS_INLINE? (WS_INLINE? block_item WS_INLINE?)* WS_INLINE?"}"
+
+returns: WS_INLINE? "->" WS_INLINE? ident
+params: ident? WS_INLINE? ("," WS_INLINE? params)*
+func: label WS_INLINE? ("(" WS_INLINE? params? WS_INLINE? ")")? returns? block
+
+?item: func
+
+start: WS? (comment | item comment?)+ WS?

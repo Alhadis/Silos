@@ -1,0 +1,231 @@
+//////////////////////////////
+//
+// Schema manager parser language
+// still in alpha state
+//
+/////////////////////////////
+
+///////////////////
+//
+// Rules
+//
+//////////////////
+
+?start: (_NEWLINE | stmt)*
+
+///////////////////
+//
+// specific for the schema manager parser
+//
+//////////////////
+
+// primitive types
+int_type: "Int"i
+long_type: "Long"i
+bool_type: "Bool"i
+float_type: "Float"i
+double_type: "Double"i
+string_type: "String"i
+decimal_type: "Decimal"i
+date_type: "Date"i
+time_type: "Time"i
+timetz_type: "Timetz"i
+timestamp_type: "timestamp"i
+timestamptz_type: "timestamptz"i
+blob_type: "Blob"i
+text_type: "Text"i
+uuid_type: "UUID"i
+
+// optional primitive types
+opt_int_type: "Int?"i
+opt_long_type: "Long?"i
+opt_bool_type:  "Bool?"i
+opt_float_type:  "Float?"i
+opt_double_type:  "Double?"i
+opt_string_type: "String?"i
+opt_decimal_type: "Decimal?"i
+opt_date_type:  "Date?"i
+opt_time_type: "Time?"i
+opt_timetz_type: "Timetz?"i
+opt_timestamp_type: "timestamp?"i
+opt_timestamptz_type: "timestamptz?"i
+opt_blob_type: "Blob?"i
+opt_text_type: "Text?"i
+opt_uuid_type: "UUID?"i
+
+// string type size is mandatory
+_sized_string_type: (string_type | opt_string_type) "(" INT ")"
+_sized_decimal_type: (decimal_type | opt_decimal_type) "(" INT ["," INT ]")"
+
+primitive_type : ( int_type
+	| long_type
+	| bool_type
+	| float_type
+	| double_type
+	| decimal_type // decimal size is optional
+	| date_type
+	| time_type
+	| timetz_type
+	| timestamp_type
+	| timestamptz_type
+	| blob_type
+	| text_type
+	| uuid_type)
+
+opt_primitive_type : ( opt_int_type
+	| opt_long_type
+	| opt_bool_type
+	| opt_float_type
+	| opt_double_type
+	| opt_decimal_type
+	| opt_date_type
+	| opt_time_type
+	| opt_timetz_type
+	| opt_timestamp_type
+	| opt_timestamptz_type
+	| opt_blob_type
+	| opt_text_type
+	| opt_uuid_type)
+
+unspecified_type: NAME
+opt_unspecified_type: OPT_NAME
+?generic_type: (unspecified_type | opt_unspecified_type)
+
+?simple_type: ( opt_primitive_type | primitive_type | _sized_string_type | _sized_decimal_type)
+?data_type: (simple_type | generic_type)
+map_type: "map"i "(" (primitive_type | string_type) "," data_type ")"
+
+// documentatin string styles
+multiline_doc:  MULTILINE_STRING _NEWLINE
+inline_doc: INLINE_STRING
+
+?element_doc:  ":" _NEWLINE _INDENT multiline_doc _DEDENT | inline_doc _NEWLINE
+
+////////////////////////////////////////////////////////////
+// document string for the module
+////////////////////////////////////////////////////////////
+module_doc: multiline_doc
+
+////////////////////////////////////////////////////////////
+// define a type
+////////////////////////////////////////////////////////////
+typedef: "type" NAME simple_type (element_doc | _NEWLINE)
+
+////////////////////////////////////////////////////////////
+// define enumerators
+////////////////////////////////////////////////////////////
+symbol:  NAME [inline_doc] _NEWLINE
+symbols: _NEWLINE _INDENT [multiline_doc] symbol+ _DEDENT
+enumdef: "enum" NAME ":" symbols
+
+////////////////////////////////////////////////////////////
+//define records and attributes
+////////////////////////////////////////////////////////////
+pk_attribute_name: "*" _WS_INLINE* attribute_name
+attribute_name: NAME
+
+attribute_nested_type: attribute_name (recorddef | enumdef)
+
+// !include will insert the attributes of the other record at this position
+attribute_include: "!include" NAME (element_doc | _NEWLINE)
+attribute: (attribute_name | pk_attribute_name) (element_doc | _NEWLINE)
+
+// the ! sign will insert the pk of the other entity at this attribute
+attribute_ofk: (attribute_name | pk_attribute_name) "!" ["(" INT ")"] generic_type (element_doc | _NEWLINE)
+
+// the * sign indicates a list/array of elements - usualy for child or value
+// objects
+attribute_mfk: (attribute_name | pk_attribute_name) "*" ["(" INT ")"] data_type (element_doc | _NEWLINE)
+
+// union or variant of types are a list of types
+attribute_union: attribute_name "[" data_type [ "," data_type ] "]" (element_doc | _NEWLINE)
+
+// map type
+attribute_map_type: attribute_name map_type (element_doc | _NEWLINE)
+
+// a primary key attribute. Must always be a simple type
+pk_attribute_simple_type: pk_attribute_name data_type (element_doc | _NEWLINE)
+
+// simple type attribute
+attribute_simple_type: attribute_name simple_type ( element_doc  | _NEWLINE)
+
+// generig type attribute
+attribute_generic_type: attribute_name generic_type ( element_doc  | _NEWLINE)
+
+attributes: (attribute_nested_type
+			| attribute_generic_type
+			| attribute_simple_type
+			| attribute_map_type
+			| pk_attribute_simple_type
+			| attribute_union
+			| attribute_include
+			| attribute_mfk
+			| attribute_ofk)+
+_recordbody: _NEWLINE _INDENT [multiline_doc] attributes _DEDENT
+recorddef: "record" NAME ":" _recordbody
+
+////////////////////////////////////////////////////////////
+//import statements
+////////////////////////////////////////////////////////////
+import_stmt: import_name | import_from
+import_name: "import" dotted_as_names
+// note below: the ("." | "...") is necessary because "..." is tokenized as ELLIPSIS
+import_from: "from" (dots? dotted_name | dots) "import" ("*" | "(" import_as_names ")" | import_as_names)
+!dots: "."+
+import_as_name: NAME ["as" NAME]
+dotted_as_name: dotted_name ["as" NAME]
+import_as_names: import_as_name ("," import_as_name)* [","]
+dotted_as_names: dotted_as_name ("," dotted_as_name)*
+dotted_name: NAME ("." NAME)*
+
+?stmt: (module_doc | import_stmt | enumdef | typedef | recorddef)
+
+
+///////////////////
+//
+// Tokens
+//
+//////////////////
+
+
+//
+// Numbers
+//
+
+DIGIT: "0".."9"
+INT: DIGIT+
+
+//
+// Strings
+//
+
+//INLINE_STRING : /[ubf]?r?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
+//MULTILINE_STRING: /[ubf]?r?(""".*?(?<!\\)(\\\\)*?"""|'''.*?(?<!\\)(\\\\)*?''')/is
+
+MULTILINE_STRING: /"""([^"\\]*(\\.[^"\\]*)*)"""/
+INLINE_STRING: /"([^"\\]*(\\.[^"\\]*)*)"/
+
+//
+// Names (Variables)
+//
+
+LCASE_LETTER: "a".."z"
+UCASE_LETTER: "A".."Z"
+
+LETTER: UCASE_LETTER | LCASE_LETTER
+
+NAME: ("_" | LETTER | DIGIT) ("_" | LETTER | DIGIT)*
+OPT_NAME: NAME "?"
+
+//
+// Whitespace
+//
+_WS_INLINE: (" "|/\t/)+
+COMMENT: /#[^\n]*/
+_NEWLINE: ( /\r?\n[\t ]*/ | COMMENT )+
+
+%ignore /[\t \f]+/  // WS
+%ignore /\\[\t \f]*\r?\n/   // LINE_CONT
+%ignore COMMENT
+%declare _INDENT _DEDENT
+

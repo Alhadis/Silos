@@ -1,0 +1,66 @@
+// rdd grammar
+start : SC actions*
+    actions : DOT RANGE LP rangeparams* RP
+            | DOT TEXTFILE LP URI RP
+            | DOT MAP LP func RP -> map
+            | DOT FILTER LP func RP
+            | DOT REDUCE LP func RP 
+            | DOT REDUCEBYKEY LP func RP
+            | DOT SORTBY LP func RP
+            | DOT COLLECT LP RP
+
+    rangeparams : NUMBER (COMMA NUMBER)?
+
+
+    func : ID ARROW expression -> ce
+    expression : simpleexpression
+               | LB complexexpression RB
+    simpleexpression : pureexpression -> pe
+                     | LP tupleexpression RP -> te
+    tupleexpression : pureexpression COMMA pureexpression 
+                    | tupleexpression COMMA pureexpression
+    complexexpression : simpleexpression
+                      | assignmentexpressions SEMICOLON simpleexpression
+    assignmentexpressions : assignmentexpression 
+                          | assignmentexpressions SEMICOLON assignmentexpression
+    assignmentexpression : VAL ID EQUAL pureexpression -> ae
+    pureexpression : NUMBER
+                   | ID
+                   | ID DOT ID
+                   | LP pureexpression RP
+                   | pureexpression OP pureexpression
+                   | IF LP comparisonexpression RP pureexpression ELSE pureexpression
+    comparisonexpression : pureexpression COMP pureexpression
+
+    SC : "sc"
+    VAL : "val"
+    IF : "if"
+    ELSE : "else"
+    EQUAL : "="
+    DOT : /[.]/
+    OP : /[ ]*["+"\-*""%"][ ]*/
+    COMP : ( /[ ]*[=][=][ ]*/ | /[ ]*[>][ ]*/ | /[ ]*[<][ ]*/ | /[ ]*[!][=][ ]*/ | /[ ]*[>][=][ ]*/ | /[ ]*[<][=][ ]*/ )
+    COMMA : /[,]/
+    SEMICOLON : /[;]/
+    ARROW : /[ ]*[=][>][ ]*/
+    LB : /[ ]*[{][ ]*/
+    RB : /[ ]*[}][ ]*/
+    LP : /[ ]*["("][ ]*/
+    RP : /[ ]*[")"][ ]*/
+    RANGE : "range"
+    TEXTFILE : "textFile"
+    MAP : "map"
+    FILTER : "filter"
+    REDUCE : "reduce"
+    REDUCEBYKEY : "reduceByKey"
+    SORTBY : "sortBy"
+    COLLECT : "collect"
+
+    URI : ( /["\""]/ | /["'"]/ ) /[\\\a-zA-Z.:\/]*/ ( /["\""]/ | /["'"]/ )
+    //FUNC : "<func>"
+
+    %import common.CNAME -> ID
+    %import common.SIGNED_NUMBER -> NUMBER
+    %import common.WS
+    %ignore WS
+

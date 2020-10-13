@@ -1,0 +1,89 @@
+type        : INT
+            | LIST "<" type ">"
+
+decl        : ID ":" type 
+decls       : decl 
+            | decls "," decl 
+
+exp         : NUMBER 
+            | ID 
+            | INSTANCE "." ID 
+            | basicfunctions 
+            | exp "[" exp "]" 
+            | exp OPERATION exp 
+            | "[]"
+
+bool        : exp BOOLOPERATION exp 
+            | FORALL rangeiter ":" "(" bool ")" 
+            | EXISTS rangeiter ":" "(" bool ")"
+            | bool AND bool
+            | bool OR bool
+            | NOT bool
+            | "(" bool ")"
+            | BOOL
+
+codeblock   : code codeblock
+            | code
+
+code        : exp "=" exp ";"
+            | basicfunctions
+            | IF bool "then" codeblock (ELSE codeblock)? "endif"
+            | WHILE bool "do" codeblock "end"
+            | FOREACH rangeiter ":" codeblock "end" 
+            | RETURN ID ";"
+
+basicfunctions  : SIZE "(" exp ")" 
+                | APPEND "(" exp "," exp ")"
+
+instance            : "#instance:" decls ";" codeblock
+validstate          : "#valid-state:" decl ";" bool
+initialstate        : "#initial-state:" (decls ";")? codeblock
+finalstate          : "#final-state:" decl ";" bool
+transition          : "#transition:" decls ";" codeblock
+validtransition     : "#valid-transition:" decls ";" bool
+strategy            : "#strategy:" RANDOM ";" rangeiters
+                    | "#strategy:" IMPROVEDRANDOM ";" rangeiters
+                    | "#strategy:" BACKTRACKING ";" rangeiters
+                    | "#strategy:" HILLCLIMBING ";" rangeiters ";" decl ";" codeblock
+
+specification       : instance? initialstate validstate finalstate transition validtransition strategy?
+
+rangeiters  : rangeiter
+            | rangeiter "," rangeiters
+rangeiter   : ID "<-" range 
+range       : "[" exp "," exp "]"
+
+
+ID          : /[A-Za-z][A-Za-z0-9]*/
+NUMBER      : /(-?[1-9][0-9]*)|0/
+BOOL        : /True|False/
+
+INSTANCE    : "instance"
+
+OPERATION       : /\*|\/|%|\+|-/
+BOOLOPERATION   : /==|!=|<=|<|>=|>/
+AND             : /&&/
+OR              : /\|\|/
+NOT             : /!/
+
+FORALL          : /forall/
+EXISTS          : /exists/
+
+INT         : "int"
+LIST        : "list"
+RETURN      : "return"
+IF          : "if"
+ELSE        : "else"
+WHILE       : "while"
+FOREACH     : "foreach"
+
+SIZE        : "len"
+APPEND      : "append"
+
+RANDOM          : "random"
+IMPROVEDRANDOM  : "improvedRandom"
+BACKTRACKING    : "backtracking"
+HILLCLIMBING    : "hill-climbing"
+
+%import common.WS
+%ignore WS

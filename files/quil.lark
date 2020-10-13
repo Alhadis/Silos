@@ -1,0 +1,118 @@
+start                : all_instructions? (NEWLINE+ all_instructions)* NEWLINE*
+
+all_instructions     : gate_definition
+                     | circuit_definition
+                     | instruction
+
+gate_definition      : "DEFGATE" name ["(" variable ("," variable)* ")"] ":" NEWLINE matrix
+matrix               : matrix_row (NEWLINE matrix_row)*
+matrix_row           : expression ("," expression)*
+
+circuit_definition   : "DEFCIRCUIT" name ["(" variable ("," variable)* ")"] qubit_variable* ":" NEWLINE circuit
+qubit_variable       : IDENTIFIER
+variable             : "%" IDENTIFIER
+
+qubit                : INT
+param                : expression
+circuit_qubit        : qubit
+                     | qubit_variable
+circuit_gate         : name ["(" param ("," param)* ")"] circuit_qubit+
+circuit_instruction  : circuit_gate
+                     | instruction
+circuit              : (circuit_instruction NEWLINE)* circuit_instruction
+
+instruction          : gate
+                     | measure
+                     | label_definition
+                     | halt
+                     | jump
+                     | jump_when
+                     | jump_unless
+                     | reset
+                     | wait
+                     | classical_unary
+                     | classical_binary
+                     | nop
+                     | include
+                     | pragma
+
+gate                 : name ["(" parameter ("," parameter)* ")"] qubit_identifier+
+
+measure              : "MEASURE" qubit_identifier classical_address
+
+classical_address    : "[" classical_bit "]"
+
+label_definition     : "LABEL" label
+label                : "@" IDENTIFIER
+halt                 : "HALT"
+jump                 : "JUMP" label
+jump_when            : "JUMP-WHEN" label classical_address
+jump_unless          : "JUMP-UNLESS" label classical_address
+reset                : "RESET"
+wait                 : "WAIT"
+classical_unary      : (TRUE | FALSE | NOT) classical_address
+classical_binary     : (AND | OR | MOVE | EXCHANGE) classical_address classical_address
+nop                  : "NOP"
+include              : "INCLUDE" QUOTED_STRING
+pragma               : "PRAGMA" IDENTIFIER pragma_name* QUOTED_STRING?
+pragma_name          : IDENTIFIER | INT
+
+parameter            : expression
+
+expression           : "(" expression ")"
+                     | sign expression
+                     | expression POWER expression // TODO: right associativity
+                     | expression (TIMES | DIVIDE) expression
+                     | expression (PLUS | MINUS) expression
+                     | function "(" expression ")"
+                     | segment
+                     | number
+                     | variable
+
+segment              : "[" INT MINUS INT "]"
+number               : real | imaginary | I | PI
+imaginary            : real I
+real                 : FLOAT | INT
+function             : SIN | COS | SQRT | EXP | CIS
+
+
+name                 : IDENTIFIER
+qubit_identifier     : INT
+classical_bit        : INT
+sign                 : PLUS | MINUS
+
+NEWLINE              : /\r?\n/
+IDENTIFIER           : /[A-Za-z_][A-Za-z0-9-_]*/
+INT                  : /[0-9]+/
+FLOAT                : /[0-9]+/ ("." /[0-9]+/ | /[eE][+-]? [0-9]+/ | "." /[0-9]+/ /[eE][+-]? [0-9]+/)
+
+QUOTED_STRING        : "\"" /[^\n\"]*/ "\""
+
+FALSE                : "FALSE"
+TRUE                 : "TRUE"
+NOT                  : "NOT"
+AND                  : "AND"
+OR                   : "OR"
+MOVE                 : "MOVE"
+EXCHANGE             : "EXCHANGE"
+PI                   : "pi"
+I                    : "i"
+TAB                  : "\t" | "    "
+
+SIN                  : "sin"
+COS                  : "cos"
+SQRT                 : "sqrt"
+EXP                  : "exp"
+CIS                  : "cis"
+
+PLUS                 : "+"
+MINUS                : "-"
+TIMES                : "*"
+DIVIDE               : "/"
+POWER                : "^"
+
+
+COMMENT             : "#" /[^\n]*/
+%ignore COMMENT
+SPACE               : " "
+%ignore SPACE

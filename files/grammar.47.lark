@@ -1,0 +1,153 @@
+exec: _element*
+eval: _element
+
+_element: _inlinable
+        | _declaration
+
+_inlinable: _expression
+          | _sentence
+
+_expression: _DO block_expr
+           | block_stmt
+           | biary_expr
+           | unary_expr
+           | invoke_expr
+           | _literal
+           | ident
+
+_sentence: assign_stmt
+         | declare_var
+         | function_stmt
+
+_declaration: class_stmt
+            | interface_stmt
+            | import_stmt
+
+block_stmt: ident invoke_params? block_expr
+
+block_expr: _LBRACE _inlinable* _RBRACE
+
+biary_expr: _expression ident _expression
+
+unary_expr: ident _expression
+
+_empty_parens: "(" ")"
+
+invoke_expr: ident invoke_params
+
+invoke_params: "(" _expression ("," _expression)* ")"
+             | _empty_parens
+
+ident: PURE_IDENT ("." PURE_IDENT)*
+
+declare_var: let ident PUBLIC? _COLON type
+
+assign_stmt: let? ident PUBLIC? [_COLON type] "=" _expression
+
+let: _LET -> immutable
+   | _MUTABLE _LET -> mutable
+
+type: ident ["<" ident ("," ident)* ">"]
+
+class_stmt: _CLASS PURE_IDENT PUBLIC? generic? extend? implement? _LBRACE _in_class_dec* _RBRACE
+
+_in_class_dec: _sentence
+             | _declaration
+
+extend: _EXTENDS type
+
+implement: _IMPLEMENTS type ("," type)*
+
+generic: "<" [generic_dec ("," generic_dec)*] ">"
+
+generic_dec: inout? PURE_IDENT _COLON generic_rule*
+
+generic_rule: rule_new | extend | implement
+
+rule_new: "new" _empty_parens
+
+?inout: IN | OUT
+
+interface_stmt: _INTERFACE PURE_IDENT PUBLIC? generic? implement? _LBRACE function_signature* _RBRACE
+
+function_stmt: function_signature block_expr
+             | function_signature "=" _expression
+
+function_signature: _FUN generic? function_name PUBLIC? "(" [param ("," param)*] ")" [_COLON type]
+
+function_name: ident
+             | "`" ident "`"
+
+param: PURE_IDENT _COLON type ["=" _expression]
+     | PURE_IDENT [_COLON type] "=" _expression
+
+_literal: integer_lit
+       | decimal_lit
+       | string_lit
+       | CHAR
+       | table_lit
+       | array_lit
+       | function_lit
+
+integer_lit: BIN
+           | DEC
+           | HEX
+
+decimal_lit: DECIMAL | exponential
+
+exponential: DECIMAL /e/i sign? DECIMAL
+
+sign: "+" -> plus
+    | "-" -> minus
+
+string_lit: STRING_LITERAL
+
+table_lit: _HBRACE [table_elem ("," table_elem)*] _RBRACE
+
+table_elem: table_elem_id _COLON _expression
+
+table_elem_id: PURE_IDENT | string_lit
+
+array_lit: "[" [_expression ("," _expression)*] "]"
+
+function_lit: function_lit_head "->" _expression
+            | function_lit_head "->" block_expr
+
+function_lit_head: "(" [param ("," param)*] ")"
+
+import_stmt: _FROM (ident [_AS PURE_IDENT]) ("," ident [_AS PURE_IDENT])* _IMPORT ident
+           | _IMPORT ident [_AS PURE_IDENT]
+
+_COLON.3: ":"
+_HBRACE.3: "#{"
+_LBRACE.2: "{"
+_RBRACE.2: "}"
+_INTERFACE.2: "interface"
+_CLASS.2: "class"
+_IMPLEMENTS.2: "implements"
+_EXTENDS.2: "extends"
+_FROM.2: "from"
+_IMPORT.2: "import"
+_AS.2: "as"
+_DO.2: "do"
+_LET.2: "let"
+_FUN.2: "fun"
+PUBLIC.2: "*"
+_MUTABLE.2: "mutable"
+IN.2: "in"
+OUT.2: "out"
+
+CHAR: /'(?:[^'\n\r]|\\['a-tA-T]|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\U[0-9a-fA-F]{8})'/
+STRING_LITERAL: /"(?:[^"\n\r\\]|\\["a-tA-T]|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\U[0-9a-fA-F]{8}|\\)*"/
+DECIMAL: /[0-9]+\.[0-9]*|[0-9]*\.[0-9]+/
+BIN: /0b[01]+/
+DEC: /[0-9][0-9_]*/
+HEX: /0x[0-9a-fA-F]+/
+PURE_IDENT.1: /[^\n\r\t\v{(<\[\]>)}"' 　0-9:\\][^\n\r\t\v{(<\[\]>)}"' 　:\\]*/
+SPACES: /[\n\r\t\v 　]+/
+LINE_COMMENT.2: /\/\/.*$/
+BLOCK_COMMENT.2: /\/\*(?:[^*]|\*(?!\/))*\*\//
+
+%ignore SPACES
+%ignore LINE_COMMENT
+%ignore BLOCK_COMMENT

@@ -1,0 +1,85 @@
+%ignore /[ \t\f]+/
+
+program: _nl? _part*
+
+_part: _line _nl?
+
+_nl: newline+
+
+_line: label | stmt
+
+newline: "\n"
+        | "\r\n"
+        | "\r"
+
+INT_LITERAL: /\d+/
+NUMERIC_LITERAL: /0x[\da-fA-F]+/ | INT_LITERAL
+STRING_LITERAL: /"[^"]*"/
+
+ID: /[a-z_][a-z0-9]*/i
+
+COMMENT: /#/i /[^\n]/i*
+
+label: _LABEL_KW NUMERIC_LITERAL
+
+?stmt: goto_stmt
+     | if_stmt
+     | ENDIF_KW
+     | opcode
+     | COMMENT
+     | END_KW
+
+if_stmt: _IF_KW expr _THEN_KW
+
+opcode: ID "(" arguments ")"
+
+arguments: expr ("," expr)*
+             |
+
+?expr: expr_or
+
+?expr_or: expr_and
+        | expr_or _OR_KW expr_and
+
+?expr_and: compare_expr
+         | expr_and _AND_KW compare_expr
+
+?compare_expr: addsub_expr
+             | compare_expr "<" addsub_expr   -> expr_lt
+             | compare_expr ">" addsub_expr   -> expr_gt
+             | compare_expr "<=" addsub_expr  -> expr_le
+             | compare_expr ">=" addsub_expr  -> expr_ge
+             | compare_expr "==" addsub_expr   -> expr_eq
+
+?addsub_expr: muldiv_expr
+            | addsub_expr "+" muldiv_expr  -> expr_add
+            | addsub_expr "-" muldiv_expr  -> expr_sub
+            | addsub_expr ">>" muldiv_expr  -> expr_shr
+            | addsub_expr "<<" muldiv_expr  -> expr_shl
+            | addsub_expr "&" muldiv_expr  -> expr_and
+            | addsub_expr "|" muldiv_expr  -> expr_or
+
+?muldiv_expr: unary_expr
+            | muldiv_expr "*" unary_expr  -> expr_mul
+
+?unary_expr: value
+           | opcode
+           | variable
+           | "-" expr      -> expr_neg
+           | "(" expr ")"
+
+value: NUMERIC_LITERAL
+     | STRING_LITERAL
+
+variable: "$" ID
+
+goto_stmt: _GOTO_KW _LABEL_KW NUMERIC_LITERAL
+
+_GOTO_KW: "goto"i
+_LABEL_KW: "@label_"i
+_IF_KW: "if"i
+_THEN_KW: "then"i
+ENDIF_KW: "endif"i
+_OR_KW: "or"i
+_AND_KW: "and"i
+END_KW: "end"i

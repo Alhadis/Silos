@@ -1,0 +1,272 @@
+// Entry point
+?start: globalcontext*
+
+//==============================================================================
+// Terminals.
+//==============================================================================
+
+// Normal assigment op
+ASSIGNMENT: "="
+
+// Comparison ops - ordering is important here for correct tokenization
+COMPARISON: ">=" | "<=" | "!=" | "!$=" | "==" | "$=" | ">" | "<"
+
+// Arithmetic ops
+ARITHMETIC: "+" | "*" | "-" | "/"
+
+// Logical Ops
+LOGICAL: "||" | "&&"
+
+// Bitwise ops
+BITWISE: "^" | "&" | "|"
+
+// PREFIX ops
+PREFIX: "~" | "!"
+
+// POSTFIX ops
+POSTFIX: "++" | "--"
+
+// Cumulative ops
+CUMULATIVE: "+=" | "-="
+
+// Torque Specific ops
+TORQUEOP: "@" | "SPC" | "TAB" | "NL"
+
+PARENTHESESEXPLICIT: "("
+
+BOOLEANTRUE: "true"
+BOOLEANFALSE: "false"
+
+// Keywords that should be differentiated
+RETURN: "return"
+IF: "if"
+BREAK: "break"
+PACKAGE: "package"
+FORLOOP: "for"
+ARRAY: "["
+SWITCHSTRING: "switch$"
+SWITCH: "switch"
+SWITCHCASE: "case"
+WHILELOOP: "while"
+DEFAULTCASE: "default"
+NEWOBJECT: "new"
+FIELDASSIGNMENT: NAME
+ELSE: "else"
+ELSEIF: "else if"
+DATABLOCK: "datablock"
+
+// Exclude dollar sign from the terminal intentionally
+GLOBALREF: NAME ("::" NAME)*
+
+// Exclude percent sign from the terminal intentionally
+LOCALREF: NAME
+
+NAMEDREF: NAME
+
+FIELDREF: "."
+
+// Torque script (as of T2 anyway) only supports inline comments
+COMMENT: /\/\/.*/
+
+FUNCTIONCALL: NAME ("::" NAME)*
+FUNCTIONFIELDCALL: (FIELDREF NAME)+
+FUNCTIONDECLARATION: NAME ("::" NAME)*
+
+//==============================================================================
+// Rules.
+//==============================================================================
+
+globalcontext: COMMENT
+                    | package
+                    | datablock
+                    | switchstring
+                    | switch
+                    | globalassignment
+                    | localassignment
+                    | localref ";"
+                    | globalref ";"
+                    | namedref ";"
+                    | rvaluepostfixouter
+                    | newobject
+                    | functioncallouter
+                    | newobjectouter
+                    | whileloop
+                    | forloop
+                    | if
+                    | functiondeclaration
+
+packagecontext: COMMENT
+                    | switchstring
+                    | switch
+                    | globalassignment
+                    | localassignment
+                    | functioncallouter
+                    | whileloop
+                    | forloop
+                    | if
+                    | functiondeclaration
+
+// Like the global context but functions cannot be declared inside ie. for loops, other functions, etc
+codeblock: COMMENT
+                | globalassignment
+                | localassignment
+                | namedassignment
+                | globalref ";"
+                | localref ";"
+                | namedref ";"
+                | rvaluepostfixouter
+                | functioncallouter
+                | newobjectouter
+                | switchstring
+                | switch
+                | whileloop
+                | forloop
+                | break
+                | return
+                | if
+
+newobjectouter: newobject ";"
+rvaluepostfixouter: rvaluepostfix ";"
+functioncallouter: functioncall ";"
+
+// Global & local assignments are allowed anywhere
+globalassignment: globalref (ASSIGNMENT | CUMULATIVE) rvalue ";"
+localassignment: localref (ASSIGNMENT | CUMULATIVE) rvalue ";"
+namedassignment: namedref (ASSIGNMENT | CUMULATIVE) rvalue ";"
+
+// General purpose rule for handling local & globals
+// These may be referenced as arrays in any configuration like: %localArr[%i] = 50;
+
+array: ARRAY rvalue ("," ARRAY)* "]"
+localref: "%" LOCALREF array? (FIELDREF (functioncall | (NAME array?)))*
+globalref: "$" GLOBALREF array? (FIELDREF (functioncall | (NAME array?)))*
+
+namedref: NAMEDREF (FIELDREF (functioncall | (NAME array?)))*
+
+rvaluepostfix: (localref | globalref) POSTFIX
+rvalueprefix: PREFIX (localref | globalref | functioncall)
+
+expression: rvalue (TORQUEOP | LOGICAL | ARITHMETIC | COMPARISON | BITWISE | ASSIGNMENT) rvalue
+
+datablock: DATABLOCK NAME "(" NAME? ")" (":" NAME)? COMMENT? "{" fieldassignment* "}" ";"
+
+rvalueinternal: PREFIX? (namedref
+                | rvaluepostfix
+                | rvalueprefix
+                | BOOLEANTRUE
+                | BOOLEANFALSE
+                | NUMBER
+                | ESCAPED_STRING
+                | TAGGED_STRING
+                | newobject
+                | functioncall
+                | localref
+                | globalref
+                | namedref
+                | expression) POSTFIX?
+
+rvalue: (PARENTHESESEXPLICIT rvalueinternal ")") | rvalueinternal
+
+//
+
+callparameterlist: [rvalue]
+callparameters: rvalue ("," rvalue)*
+
+functioncall: FUNCTIONCALL "(" callparameters* ")" (FIELDREF (functioncall | NAME))?
+
+functiondeclarationparameters: "%" LOCALREF ("," "%" LOCALREF)*
+functiondeclaration: "function" FUNCTIONDECLARATION "(" functiondeclarationparameters* ")" "{" codeblock* "}"
+
+return: RETURN rvalue* ";"
+if: ifbrace | ifnobrace
+ifnobrace: IF "(" rvalue ")" codeblock elseif* else?
+ifbrace: IF "(" rvalue ")" COMMENT? "{" codeblock* "}" elseif* else?
+package: PACKAGE NAME COMMENT? "{" packagecontext* "};"
+break: BREAK ";"
+fieldassignment: FIELDASSIGNMENT (ARRAY rvalue ("," ARRAY)* "]")? "=" rvalue ";" COMMENT?
+
+newobject: NEWOBJECT (NAME | ("(" rvalue? ")")) "(" rvalue? ")" ("{" (fieldassignment | newobject ";")* "}")?
+
+////////////////////////////////////////////////////////////////////////////////
+// For Loops
+// These take the form of:
+// for (startExpression; comparisonExpression; incrementExpression) { }
+// Ie.
+// for (%iteration = 0; %iteration < %object.getCount(); %object++) { }
+////////////////////////////////////////////////////////////////////////////////
+forloop: forloopbrace | forloopnobrace
+forloopbrace: FORLOOP "(" rvalue ";" rvalue ";" rvalue ")" COMMENT? "{" codeblock* "}"
+forloopnobrace: FORLOOP "(" rvalue ";" rvalue ";" rvalue ")" COMMENT? codeblock
+
+////////////////////////////////////////////////////////////////////////////////
+// Switch Case
+// These take the form of:
+// switch$(%value)
+// switch(%value)
+//
+// And body always follows:
+// {
+//    case "stringCase":
+//        ...
+//        break;
+//    default:
+//        ...
+//        break;
+////////////////////////////////////////////////////////////////////////////////
+switchcases: ((SWITCHCASE rvalue ("or" rvalue)*) | DEFAULTCASE) ":" COMMENT? codeblock+
+switchstring: SWITCHSTRING "(" rvalue ")" COMMENT? "{" switchcases+ "}"
+switch: SWITCH "(" rvalue ")" COMMENT? "{" switchcases+ "}"
+
+////////////////////////////////////////////////////////////////////////////////
+// While Loop
+// These take the form of:
+// while (%expression) { }
+////////////////////////////////////////////////////////////////////////////////
+whileloop: whileloopbrace | whileloopnobrace
+whileloopbrace: WHILELOOP "(" rvalue ")" COMMENT? "{" codeblock* "}"
+whileloopnobrace: WHILELOOP "(" rvalue ")" COMMENT? codeblock
+
+////////////////////////////////////////////////////////////////////////////////
+// else
+// These take the form of (only after an if):
+// else { }
+////////////////////////////////////////////////////////////////////////////////
+else: elsebrace | elsenobrace
+elsebrace: ELSE COMMENT? "{" codeblock* "}"
+elsenobrace: ELSE COMMENT? codeblock
+
+////////////////////////////////////////////////////////////////////////////////
+// else if
+// These take the form of (only after an if):
+// else if (%expression) { }
+////////////////////////////////////////////////////////////////////////////////
+elseif: elseifbrace | elseifnobrace
+elseifbrace: ELSEIF "(" rvalue ")" COMMENT? "{" codeblock* "}" else?
+elseifnobrace: ELSEIF "(" rvalue ")" COMMENT? codeblock else?
+
+//==============================================================================
+// From lark's common.lark; imports do not seem to work correctly when
+// packaged.
+//==============================================================================
+
+LCASE_LETTER: "a".."z"
+UCASE_LETTER: "A".."Z"
+LETTER: UCASE_LETTER | LCASE_LETTER
+DIGIT: "0".."9"
+NAME: ("_"|LETTER) ("_"|LETTER|DIGIT)*
+
+INT: DIGIT+
+NUMBER: ("+"|"-")? (FLOAT | INT)
+DECIMAL: INT "." INT? | "." INT
+_EXP: ("e"|"E") SIGNED_INT
+FLOAT: INT _EXP | DECIMAL _EXP?
+SIGNED_NUMBER: ["+"|"-"] NUMBER
+SIGNED_INT: ["+"|"-"] INT
+
+_STRING_INNER: /.*?/
+_STRING_ESC_INNER: _STRING_INNER /(?<!\\)(\\\\)*?/
+ESCAPED_STRING : "\"" _STRING_ESC_INNER "\""
+TAGGED_STRING : "'" _STRING_ESC_INNER "'"
+
+// Ignore Whitespace
+%ignore /[ \t\n\f\r]+/

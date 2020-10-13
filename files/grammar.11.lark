@@ -1,0 +1,51 @@
+// A simple grammar for tex.py expressions
+
+JSONPATH: /\$\.[@.\[\]().*,:-?()0-9a-zA-Z-_]*[\]*0-9a-zA-Z@]/
+BOOLEAN: /(True)|(False)/
+COMPARISON_OP: /[<>]=?/
+EQ_OP: /[!=]=/
+BOOLEAN_OP: /(\&\&)|(\|\|)/
+ARITH_OP: /[\-+*\/]/
+
+jsonpath: JSONPATH
+boolean: BOOLEAN
+number: SIGNED_NUMBER
+string: ESCAPED_STRING
+comparison_op: COMPARISON_OP
+boolean_op:    BOOLEAN_OP
+arith_op:      ARITH_OP
+eq_op:         EQ_OP
+literal: /[a-zA-Z][a-zA-Z0-9]*/
+
+?map_expr: literal "{" [expr ("," expr)*] "}"
+?reduce_expr: literal "(" [expr ("," expr)*] ")"
+?function_expr: map_expr | reduce_expr
+
+?apply_expr: expr "|>" expr
+
+?arith_expr: [arith_expr arith_op] arith_atom
+?arith_atom: number
+            | jsonpath
+            | function_expr
+
+?boolean_expr: [boolean_expr boolean_op] boolean_atom
+?boolean_atom: boolean
+              | jsonpath
+              | function_expr
+              | arith_expr comparison_op arith_expr
+              | expr eq_op expr
+
+?conditional_expr: boolean_expr "=>" expr
+                 | boolean_expr "?" expr ":" expr 
+
+?expr: arith_expr
+    | conditional_expr
+    | boolean_expr
+    | function_expr
+    | apply_expr
+    | string
+
+%import common.SIGNED_NUMBER
+%import common.ESCAPED_STRING
+%import common.WS
+%ignore WS

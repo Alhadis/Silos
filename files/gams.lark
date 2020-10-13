@@ -1,0 +1,322 @@
+start: statement+
+
+?statement: [macro_conditional] (symbol_definition 
+			| macro
+			| execute
+			| display
+			| assignment_definition 
+			| equation_definition 
+			| model_definition 
+			| solve_definition )
+
+
+// Macros
+macro_conditional: "$if" negate? macro_condition
+macro_condition: "set" string -> env_test
+				| expression
+
+macro: macro_include  _NL
+	| "$" macro_set _NL
+	| "$" macro_words~1..5 [" "]~0..5 _NL
+
+macro_include: "$include" filename
+macro_set: _M_SET WORD WORD
+macro_words: _M_EMPTY	
+			| _M_LISTING
+			| _M_DELIM
+
+execute: execute_unload _END
+
+execute_unload: _EXECUTE_UNLOAD _QUOTE filename _QUOTE symbol+
+
+negate: "not"
+filename: (string | compiler_variable | "/")+ ["." extension]
+quoted_string: /['"]/ string /['"]/
+compiler_variable: "%" string "%"
+extension: string
+			
+
+_EXECUTE_UNLOAD: "execute_unload"
+
+_M_EMPTY:	"onempty" | "offempty"
+_M_LISTING: "onlisting" | "offlisting"
+_M_DELIM: "ondelim" | "offdelim"
+_M_SET: "set"
+
+
+
+// display
+
+display: _DISPLAY symbol_name+ _END
+_DISPLAY: "Display" | "display"
+
+// model_definition
+model_definition: _MODEL string "/" symbol_name+ "/" _END
+
+// solve_defintion
+solve_definition: _SOLVE string ( "using" model_types sense symbol_name | sense symbol_name "using" model_types) _END
+sense: "minimizing" -> sense_min
+	| "maximizing" 	-> sense_max
+
+
+
+// assignment
+
+assignment_definition: symbol [conditional]  "=" expression _END
+
+?expression: symbol
+			| number
+			| compiler_variable
+			| quoted_string // This is for compiler expressions
+			| operator_indexed "(" (index_list | "(" index_list ")") [conditional] "," expression ")"
+			| expression operator_expression expression 
+			| expression operator_logical expression
+			| expression operator_relation expression
+			| "(" expression ")"
+			| expression conditional
+			| negate expression
+
+conditional: "$" expression
+number: NUMBER
+
+// Equation definition
+
+equation_definition: symbol[conditional] ".." lhs equation_types rhs _END
+lhs: expression
+rhs: expression
+
+// Symbol Definitions
+
+symbol_definition: _SET 		definition+ 		_END -> set_list
+				| _PARAMETER 	definition+ 		_END -> parameter_list
+				| _SCALAR 		definition+ 		_END -> scalar_list
+				| _VARIABLE 	definition+ 		_END -> variable_list
+				| _EQUATION 	definition+ 		_END -> equation_list
+				| _TABLE 		table_definition 	_END -> table
+				| _ALIAS 		"(" index_list ")" 	_END -> alias_list
+
+// Definitions are seperated by newline or commas, ignore the comma if it exists
+definition: symbol [description] [data] [","]
+table_definition: symbol [description] [table_data]
+
+data			: _SLASH [data_element ((","|_NL) data_element)*] _SLASH
+table_data 		: (symbol_id | value | macro )+
+?data_element	: symbol_id
+				| symbol_range
+				| symbol_id value -> data_value
+				| macro
+value 			: NUMBER
+
+description		: FLEX_ESCAPED_STRING
+
+// Symbol
+symbol 			: symbol_name[suffix][symbol_index]
+symbol_range    : identifier "*" identifier
+symbol_id 		: identifier 
+				| symbol_id "." identifier
+symbol_element  : _QUOTE identifier _QUOTE
+				| _QUOTE compiler_variable _QUOTE
+?symbol_index	: "(" index_list ")"
+index_list		: index_item ("," index_item )*
+?index_item		: symbol_name 
+				| symbol_element 
+				| compiler_variable
+				| symbol_name "+" NUMBER -> lead
+				| symbol_name "-" NUMBER -> lag
+				| symbol_name "++" NUMBER -> circular_lead
+				| symbol_name "--" NUMBER -> circular_lag
+symbol_name		: identifier
+?identifier 	: WORD_IDENTIFIER
+sep				: "," | _NL
+suffix			:  _SUFFIX
+
+_SUFFIX : ".modelstat"
+		| ".maxobj"
+		| ".solvestat"
+		| ".objval"
+		| ".resusd"
+		| ".objest"
+		| ".gap"
+		| ".up"  
+		| ".lo" 
+		| ".l" 
+		| ".m" 
+
+// Keywords
+_SET: "sets" | "Sets" | "Set" | "SET" | "set"
+_PARAMETER: "Parameter" | "PARAMETER" | "parameter"
+_TABLE: "Table" | "table"
+_VARIABLE: "Variables" | "Positive variables"  | "Positive Variables"
+_EQUATION: "Equations" | "equations" 
+_MODEL: "Model" | "model"
+_SOLVE: "Solve" | "solve"
+_SCALAR: "scalar" | "Scalar"
+_ALIAS: ("alias" | "Alias")
+
+// Punctuation
+
+_END: ";"
+_LPAR: "("
+_RPAR: ")"
+_SLASH: "/"
+_QUOTE: "'" | "\""
+_SINGLEQUOTE: "'"
+_DOUBLEQUOTE: "\""
+
+
+// Imports / MISC
+%import common.WS
+%import common.NUMBER
+%import common.NEWLINE -> _NL
+
+
+string: WORD 
+
+NAME           	: /[^\W\d][\w]*/
+
+// This allows some more characters that can be used in a symbol name
+WORD_IDENTIFIER : /[a-zA-Z][\w-]*/
+WORD			: /[\w-]+/
+FLEX_ESCAPED_STRING : /['"].*?(?<!\\)['"]/
+
+// Ignores/Comments
+COMMENT : /\*[^\n]+/
+COMMENT_BLOCK: "$ontext" /(\S|\s)*?/ "$offtext"
+%ignore COMMENT_BLOCK
+%ignore WS
+%ignore COMMENT
+
+// Model Types
+model_types: "LP" | "lp" 			-> 	model_lp
+			| "NLP" | "nlp" 		-> 	model_nlp
+			| "QCP" | "qlp" 		-> 	model_qcp
+			| "DNLP" | "dnlp" 		-> 	model_dnlp
+			| "MIP" | "mip"			-> 	model_mip
+			| "RMIP" | "rmip" 		-> 	model_rmip
+			| "RMINLP" | "rminlp" 	-> 	model_rminlp
+			| "MINLP" | "minlp"		-> 	model_minlp
+			| "MIQCP" | "miqcp"		-> 	model_miqcp
+			| "RMIQCP" | "rmiqcp"	-> 	model_rmiqcp
+			| "MCP" | "mcp"			-> 	model_mcp
+			| "CNS" | "cns"			-> 	model_cns
+			| "MPEC" | "mpec"		-> 	model_mpec
+			| "RMPEC" | "rmpec"		-> 	model_rmpec
+			| "EMP" | "emp"		 	-> 	model_emp
+			| "MPSGE" | "mpsge" 	-> 	model_mpsge
+
+// Equations
+equation_types: "=e=" -> eqn_equality
+				| "=g=" -> eqn_greater_than
+				| "=l=" -> eqn_less_than
+				| "=n=" -> eqn_no_relationship
+				| "=x=" -> eqn_external_program
+				| "=c=" -> eqn_conic_constraint
+				| "=b=" -> eqn_boolean_equation
+
+
+operator_indexed: "sum"		-> summation
+				| "prod"	-> product
+				| "smin"	-> set_minimum
+				| "smax" 	-> set_maximum
+
+operator_expression: "**" 	-> exponentiation
+					| "*"	-> multiplication
+					| "/"	-> division
+					| "+"	-> addition
+					| "-"   -> substraction
+
+operator_logical: "not" 	-> bool_not
+				| "and" 	-> bool_and
+				| "or"		-> bool_or
+				| "xor"		-> bool_or
+
+operator_relation: ( "=" | "eq" )		-> rel_eq
+				| ( ">" | "gt" )		-> rel_gt
+				| ( "<" | "lt" )		-> rel_lt
+				| ( ">=" | "ge" )		-> rel_ge
+				| ( "<=" | "le" )		-> rel_le
+				| ( "<>" | "ne" )		-> rel_ne
+				| ( "==" )				-> rel_eq_macro
+
+math_functions:  "abs" -> fn_abs
+		| "arccos" 		-> fn_arccos
+		| "arcsin" 		-> fn_arcsin
+		| "arctan" 		-> fn_arctan
+		| "arctan2" 	-> fn_arctan2
+		| "beta" 		-> fn_beta
+		| "betaReg" 	-> fn_beta_reg
+		| "binomial" 	-> fn_binomial
+		| "ceil" 		-> fn_ceil
+		| "centropy" 	-> fn_centropy
+		| "cos" 		-> fn_cos
+		| "cosh" 		-> fn_cosh
+		| "cvPower" 	-> fn_cv_power
+		| "div" 		-> fn_div
+		| "div0" 		-> fn_div0
+		| "eDist" 		-> fn_e_dist
+		| "entropy" 	-> fn_entropy
+		| "errorf" 		-> fn_errorf
+		| "execSeed" 	-> fn_exec_seed
+		| "exp" 		-> fn_exp
+		| "fact" 		-> fn_fact
+		| "floor" 		-> fn_floor
+		| "frac" 		-> fn_frac
+		| "gamma" 		-> fn_gamma
+		| "gammaReg" 	-> fn_gamma_reg
+		| "log" 		-> fn_log
+		| "logBeta" 	-> fn_log_beta
+		| "logGamma" 	-> fn_log_gamma
+		| "log10" 		-> fn_log10
+		| "log2" 		-> fn_log2
+		| "max" 		-> fn_max
+		| "min" 		-> fn_min
+		| "mod" 		-> fn_mod
+		| "ncpCM" 		-> fn_ncp_cm
+		| "ncpF" 		-> fn_ncp_f
+		| "ncpVUpow" 	-> fn_ncp_vu_pow
+		| "ncpVUsin" 	-> fn_ncp_vu_sin
+		| "normal" 		-> fn_normal
+		| "pi" 			-> fn_pi
+		| "poly" 		-> fn_poly
+		| "power" 		-> fn_power
+		| "randBinomial" -> fn_rand_binomial
+		| "randLinear" 	-> fn_rand_linear
+		| "randTriangle" -> fn_rand_triangle
+		| "round" 		-> fn_round
+		| "rPower" 		-> fn_r_power
+		| "sigmoid" 	-> fn_sigmoid
+		| "sign" 		-> fn_sign
+		| "signPower" 	-> fn_sign_power
+		| "sin" 		-> fn_sin
+		| "sinh" 		-> fn_sinh
+		| "slexp" 		-> fn_slexp
+		| "sllog10" 	-> fn_sllog10
+		| "slrec" 		-> fn_slrec
+		| "sqexp" 		-> fn_sqexp
+		| "sqlog10" 	-> fn_sqlog10
+		| "sqr" 		-> fn_sqr
+		| "sqrec" 		-> fn_sqrec
+		| "sqrt" 		-> fn_sqrt
+		| "tan" 		-> fn_tan
+		| "tanh" 		-> fn_tanh
+		| "trunc" 		-> fn_trunc
+		| "uniform" 	-> fn_uniform
+		| "uniformInt" 	-> fn_uniform_int
+		| "vcPower" 	-> fn_vc_power
+
+string_functions: "card" 	-> fn_card
+				| "ord" 	-> fn_ord
+
+time_functions: "gday"		-> fn_gday
+			| "gdow"		-> fn_gdow
+			| "ghour"		-> fn_ghour
+			| "gleap"		-> fn_gleap
+			| "gmillisec"	-> fn_gmillisec
+			| "gminute"		-> fn_gminute
+			| "gmonth"		-> fn_gmonth
+			| "gsecond"		-> fn_gsecond
+			| "gyear"		-> fn_gyear
+			| "jdate"		-> fn_jdate
+			| "jnow"		-> fn_jnow
+			| "jstart"		-> fn_jstart
+			| "jtime"		-> fn_jtime

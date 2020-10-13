@@ -1,0 +1,169 @@
+?start: dbc_file
+
+dbc_file : version new_symbols bit_timing nodes value_tables messages message_transmitters environment_variables environment_variables_data comments attribute_definitions attribute_defaults attribute_values value_descriptions signal_groups
+
+// Version and New Symbol Specification
+
+version : ["VERSION" "\"" candb_version_string* "\""]
+
+candb_version_string : c_identifier
+
+//?new_symbols : [ "_NS" ":" ["CM_"] ["BA_DEF_"] ["BA_"] ["VAL_"] ["CAT_DEF_"] ["CAT_"] ["FILTER"] ["BA_DEF_DEF_"] ["EV_DATA_"] ["ENVVAR_DATA_"] ["SGTYPE_"] ["SGTYPE_VAL_"] ["BA_DEF_SGTYPE_"] ["BA_SGTYPE_"] ["SIG_TYPE_REF_"] ["VAL_TABLE_"] ["SIG_GROUP_"] ["SIG_VALTYPE_"] ["SIGTYPE_VALTYPE_"] ["BO_TX_BU_"] ["BA_DEF_REL_"] ["BA_REL_"] ["BA_DEF_DEF_REL_"] ["BU_SG_REL_"] ["BU_EV_REL_"] ["BU_BO_REL_"] ]
+?new_symbols : [ "NS_" ":" dontcare*]
+?dontcare: /..*/
+//  Bit Timing Definition
+
+?bit_timing : "BS_:" [ baudrate ":" btr1 "," btr2 ]
+
+?baudrate : unsigned_integer
+
+?btr1 : unsigned_integer
+
+?btr2 : unsigned_integer
+
+// Node Definitions
+
+nodes : "BU_:" node_name*
+
+?node_name : c_identifier
+
+// Value Table Definitions
+
+value_tables : value_table*
+
+value_table : "VAL_TABLE_" value_table_name value_description* ";"
+
+value_table_name : c_identifier
+
+value_description : double char_string_ap
+
+// Message Definitions
+messages : message*
+
+message : "BO_" message_id message_name ":" message_size transmitter signal*
+
+?message_id : unsigned_integer
+
+?message_name : c_identifier
+
+?message_size : unsigned_integer
+
+!?transmitter : node_name | "Vector__XXX" // Vector__XXX means no sender
+
+// Signal Definitions
+
+signal : "SG_" signal_name multiplexer_indicator ":" start_bit "|" signal_size "@" byte_order value_type "(" factor "," offset ")" "[" minimum "|" maximum "]" unit receiver ("," receiver)*
+
+?signal_name : c_identifier
+
+!multiplexer_indicator : | "M" | SWITCHED
+
+SWITCHED.2: /m\d/
+
+switch_value : unsigned_integer
+
+?start_bit : unsigned_integer
+
+?signal_size : unsigned_integer
+
+!?byte_order : "0" | "1" //  0=little endian, 1=big endian
+
+!?value_type : "+" | "-"  //  +=unsigned, -=signed
+
+?factor : double
+?offset : double
+?minimum : double
+?maximum : double
+
+?unit : char_string_ap
+receiver : node_name | "Vector__XXX"
+
+signal_extended_value_type_list : "SIG_VALTYPE_" message_id signal_name signal_extended_value_type ";"
+signal_extended_value_type : "0" | "1" | "2" | "3" // 0=signed or unsigned integer, 1=32-bit IEEE-float, 2=64-bit IEEE-double
+
+// Definition of Message Transmitters
+
+message_transmitters : message_transmitter*
+message_transmitter : "BO_TX_BU_" message_id ":" transmitter* ";"
+
+// Signal Value Descriptions (Value Encodings)
+
+value_descriptions :  (value_descriptions_for_signal | value_descriptions_for_env_var)*
+
+value_descriptions_for_signal : "VAL_" message_id signal_name value_description* ";"
+
+//  Environment Variable Definitions
+environment_variables : environment_variable*
+environment_variable : "EV_" env_var_name ":" env_var_type "[" minimum "|" maximum "]" /"/ unit /"/ initial_value ev_id access_type access_node ("," access_node)* ";"
+env_var_name : c_identifier 
+env_var_type : "0" | "1" | "2" // 0=integer, 1=float, 2=string
+initial_value : double
+ev_id : unsigned_integer // obsolete 
+access_type : "DUMMY_NODE_VECTOR0" | "DUMMY_NODE_VECTOR1" | "DUMMY_NODE_VECTOR2" | "DUMMY_NODE_VECTOR3"// 0=unrestricted, 1=read, 2=write, 3=readWrite
+access_node : node_name | "VECTOR_XXX"
+
+environment_variables_data : environment_variable_data*
+environment_variable_data : "ENVVAR_DATA_" env_var_name ":" data_size ";"
+data_size : unsigned_integer
+
+value_descriptions_for_env_var : "VAL_" env_var_name  value_description* ";"
+
+// Signal Type and Signal Group Definitions
+
+signal_types : signal_type*
+signal_type : "SGTYPE_" signal_type_name ":" signal_size "@" byte_order value_type "(" factor "," offset ")" "[" minimum "|" maximum "]" unit default_value "," value_table_name ";"
+signal_type_name : c_identifier
+default_value : double
+signal_type_refs : signal_type_ref*
+signal_type_ref : "SGTYPE_" message_id signal_name ":" signal_type_name ";"
+
+signal_groups : signal_group*
+signal_group : "SIG_GROUP_" message_id signal_group_name repetitions ":" signal_name* ";"
+signal_group_name : c_identifier
+repetitions : double
+
+// Comment Definitions
+comments : comment*
+!comment : "CM_" (char_string_ap | "BU_" node_name char_string_ap | "BO_" message_id char_string_ap | "SG_" message_id signal_name char_string_ap | "EV_" env_var_name char_string_ap) ";"
+
+// Attribute Definitions
+
+attribute_definitions : attribute_definition*
+attribute_definition : "BA_DEF_" (object_type)? attribute_name attribute_value_type ";"
+object_type : "BU_" | "BO_" | "SG_" | "EV_"
+attribute_name : c_identifier_ap
+!attribute_value_type : "INT" signed_integer signed_integer
+ | "HEX" signed_integer signed_integer
+ | "FLOAT" double double
+ | "STRING"
+ | "ENUM" [char_string ("," char_string)*]
+attribute_defaults : attribute_default*
+attribute_default : "BA_DEF_DEF_" attribute_name attribute_value ";"
+attribute_value : unsigned_integer | signed_integer | double | char_string_ap
+
+attribute_values : attribute_value_for_object*
+attribute_value_for_object : "BA_" attribute_name (attribute_value  | "BU_" node_name attribute_value  | "BO_" message_id attribute_value  | "SG_" message_id signal_name attribute_value  | "EV_" env_var_name attribute_value) ";"
+
+
+
+?string : WORD
+?c_identifier : CNAME
+?c_identifier_ap : "\"" CNAME "\""
+?char_string : CHAR_STRING_0
+CHAR_STRING_0.0: /[\w ,;.:]+/
+?char_string_ap : "\"" char_string? "\""
+
+?signed_integer : SIGNED_INT
+?unsigned_integer : INT
+?double : SIGNED_NUMBER
+
+%import common.ESCAPED_STRING
+%import common.WORD
+%import common.CNAME
+%import common.NUMBER
+%import common.SIGNED_NUMBER
+%import common.SIGNED_INT
+%import common.INT
+%import common.FLOAT
+%import common.WS
+%ignore WS

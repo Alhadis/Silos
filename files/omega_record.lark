@@ -1,0 +1,80 @@
+// $OMEGA  [DIAGONAL(n)|BLOCK(n)|BLOCK(n) SAME(m)|BLOCK SAME(m)]
+//         [BLOCK(n)VALUES(diag,odiag)]
+//         [VARIANCE|STANDARD]  [COVARIANCE|CORRELATON] [CHOLESKY]
+//         [[value1]  [value2]  [value3] ... [FIXED]]
+//         [(value)xn]
+//
+// 4 legal forms
+//   1. $OMEGA   [DIAGONAL(n)] [ v11 v22 v33 ... vnn ]
+//   2. $OMEGA BLOCK(n) [ v11 v21 v22 v31 v32 v33 ... vn1 vn2 ... vnn ]
+//   3. $OMEGA BLOCK(n) SAME(m)
+//   4. $OMEGA BLOCK(n) VALUES(diag,odiag)
+
+// Samples from nmhelp:
+//   %input | BLOCK(3)  6. .005 .3 .0002 .006 .4|
+//   %input | .04 .12|
+//   %input | BLOCK(2) .04 .002 .12|
+//   %input | BLOCK(2) SAME(3)|
+//   %input | BLOCK(6) VALUES(0.1,0.01)|
+//
+// All these inputs have the same meaning:
+//   %input | BLOCK(2) ; or $OMEGA VARIANCE COVARIANCE BLOCK(2)\n0.64\n-0.24 0.58|
+//   %input | STANDARD BLOCK(2)\n0.8\n-0.24 0.762|
+//   %input | STANDARD CORRELATION BLOCK(2)\n0.8\n-0.394 0.762|
+//   %input | VARIANCE CORRELATION BLOCK(2)\n0.64\n-0.394 0.58|
+//   %input | CHOLESKY BLOCK(2)\n0.8\n-0.3 0.7|
+
+root : NEWLINE
+     | [WS] [diagonal] ([_ws] diag_item)+ [_ws]           // form 1
+     | [_opt] block [_opt] (_item)+ [_ws]      // form 2
+     | [_opt] block [_opt] same ([_ws] comment)* [_ws]    // form 3
+     | [_opt] bare_block [_opt] same ([_ws] comment)* [_ws]    // form 3 w/o n
+     | [_opt] block [_opt] values (_opt | [_ws] comment)* [_ws]  // form 4
+
+diag_item: init [_diag_options]
+         | "(" [WS] _diag_options [WS] init [WS] ")" [n]
+         | "(" [WS] init [WS] _diag_options [WS] ")" [n]
+         | "(" [WS] _diag_options [WS] init [WS] _diag_options [WS] ")" [n]
+_diag_options: (_ws (FIX | SD | VAR))*
+
+// repeat of init or comment (form 1 & 2)
+_item : [_ws] omega | [_ws] comment
+
+// can be tied to WHOLE record or ONE INIT
+_opt     : (_ws (FIX | VAR | SD | CORR | COV | CHOLESKY))* [_ws]  // note ws injection as 1st child
+FIX      : "FIXED" | "FIXE" | "FIX"
+VAR      : "VARIANCE" | "VARIANC" | "VARIAN" | "VARIA" | "VARI" | "VAR" | "VA" | "V"
+SD       : "STANDARD" | "STANDAR" | "STANDA" | "STAND" | "STAN" | "STA" | "ST" | "SD" | "S"
+CORR     : "CORRELATION" | "CORRELATIO" | "CORRELATI" | "CORRELAT" | "CORRELA" | "CORREL" | "CORRE" | "CORR" | "COR"
+COV      : "COVARIANCE" | "COVARIANC" | "COVARIAN" | "COVARIA" | "COVARI" | "COVAR" | "COVA" | "COV"
+CHOLESKY : "CHOLESKY" | "CHOLESK" | "CHOLES" | "CHOLE" | "CHOL" | "CHO"
+
+// parentheses sizes (optional for SAME and BLOCK with SAME)
+block       : ("BLOCK" | "BLOC" | "BLO") [_ws] _lpar size _rpar
+bare_block  : ("BLOCK" | "BLOC" | "BLO")
+same        : "SAME" [_lpar size _rpar]
+diagonal    : ("DIAGONAL" | "DIAGONA" | "DIAGON" | "DIAGO" | "DIAG" | "DIA") [_ws] _lpar [WS] size [WS] _rpar [_ws]
+values      : "VALUES" _lpar diag sep odiag _rpar
+
+size  : INT
+diag  : NUMERIC
+odiag : NUMERIC
+
+// separator and clustering of init values
+sep : WS | [WS] "," [WS]
+_lpar : "(" [WS]
+_rpar : [WS] ")"
+
+// omega init value
+omega : init _opt*
+      | _lpar init _opt* _rpar [n]
+      | _lpar _opt* init _rpar [n]
+
+init  : NUMERIC
+n     : "x" INT
+
+// common misc rules
+_ws: [WS] [NEWLINE]
+comment: COMMENT
+
+%import .definitions (COMMENT, INT, NEWLINE, NUMERIC, WS, WS_ALL)

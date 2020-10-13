@@ -1,0 +1,147 @@
+// SECTION lark entry point
+//start: (funcdef | classdef | assign_stmt | NEWLINE)*
+start: (funcdef | classdef | stmt | NEWLINE)*
+
+// SECTION Token defs (exclude indent and dedent)
+
+//symbols
+//"(" : "("
+//")" : ")"
+LBRACK : "["
+RBRACK : "]"
+LBRACE : "{"
+RBRACE : "}"
+
+//"."    : "."
+//":"  : ":"
+//"=" : "="
+//","  : ","
+
+// x = <1,2,3>; g = x@1
+
+binop: bitws_binop | arith_binop | compr_binop | logcl_binop
+logcl_binop : "is" "not" -> isnot   | "is" -> is    | "not" "in" -> notin
+            | "in" -> in            | "and" -> and  | "or" -> or
+            | "xor" -> xor
+
+compr_binop : "!=" -> noteq     | "==" -> eq    | ">=" -> grtreq
+            | "<=" -> lesseq    | ">" -> gr     | "<" -> ls
+
+arith_binop : "//" -> floordiv  | "**" -> pow   | "+" -> add
+            | "-" -> sub        | "*" -> mul    | "/" -> div
+            | "%" -> mod
+
+bitws_binop : "&" -> bwand      | "|" -> bwor   | "^" -> bwxor
+            | "<<" -> bwlshift  | ">>" -> bwrshift
+
+uniop       : "not" -> not | "-" -> negate | bwuniop
+bwuniop     : "~" -> bwnot
+
+
+
+// SECTION grammar def
+
+funcdef: "def" name "(" typelist ")" ("returns" typename)? stmt_block
+classdef: "class" TYPENAME ("contains" "(" typelist ")")? func_block
+
+typelist:  (typename name (comma typename name)*)?  comma?
+//arglist: (name (comma name)*)? comma?
+paramlist: (expr (comma expr)*)? comma?
+comma: "," (COMMENT? NEWLINE)?
+
+//stmts: stmt | stmts stmt
+stmt: pass_stmt     | del_stmt      | continue_stmt | break_stmt
+    | if_stmt       | while_stmt    | count_stmt    | for_stmt
+    | return_stmt                   | assign_stmt   | expr_stmt
+
+pass_stmt: PASS NEWLINE
+continue_stmt: "continue" NEWLINE
+break_stmt: "break" NEWLINE
+expr_stmt: expr NEWLINE
+
+if_stmt : "if" expr stmt_block ("elif" expr stmt_block)* ("else" stmt_block)//? //require else for all ifs (test)
+
+del_stmt : "del" name (comma name)* NEWLINE
+
+while_stmt : "while" expr stmt_block
+
+for_stmt   : "for" "each" name "in" expr stmt_block
+
+count_stmt   : "count" (to_pair|from_pair|by_pair)* stmt_block
+to_pair   : "to" expr
+from_pair : "from" expr
+by_pair   : "by" expr
+
+assign_stmt : name "=" expr NEWLINE
+return_stmt : "return" expr NEWLINE | "return" NEWLINE
+
+
+
+
+
+stmt_block : ":" NEWLINE INDENT stmt+ DEDENT | ":" stmt
+func_block : ":" NEWLINE INDENT (funcdef | pass_stmt)+ DEDENT | ":" pass_stmt
+
+
+expr           : literal | funccall_expr | methodcall_expr | attrget_expr | name | binop_expr | uniop_expr
+funccall_expr  : name "(" paramlist ")"
+methodcall_expr: expr "." name "(" paramlist ")"
+attrget_expr   : expr "." name
+uniop_expr     : uniop expr
+binop_expr     : expr binop expr
+
+typename : builtintype | TYPENAME
+name     : VARNAME
+
+literal : number | string | bool | none | arraylitrl | dictlitrl
+
+// SECTION postlex declares and ignores
+number: integer | float
+integer: HEX_NUMBER | BIN_NUMBER | OCT_NUMBER | QUAD_NUMBER | DEC_NUMBER
+float: FLOAT_NUMBER
+string: STRING | LONG_STRING
+//string: single_string | double_string //| ling_single_string | long_double_string
+bool: TRUE | FALSE
+pass: PASS
+none: NONE
+arraylitrl: "<" expr ("," expr)* ","? ">"
+dictlitrl: "{" expr ":" expr ("," expr ":" expr)* ","? "}"
+//list: "[" expr ("," expr)* ","? "]"
+
+// Tokens
+builtintype : "int" -> int | "bool" -> bool | "str" -> str
+            | "float" -> float | "nonetype" -> nonetype
+            | "<" typename ">" -> arrtype
+            | "{" typename ":" typename "}" -> dicttype
+TYPENAME    : /_*[A-Z][a-zA-Z_0-9]*/
+VARNAME     : /[a-z_][a-zA-Z_0-9]*/
+
+COMMENT : /###[^#]*###/ | /#[^\n]*/
+NEWLINE : ( /\r?\n[\t ]*/ | COMMENT )+
+// mine NEWLINE: /[\r\n]+[\t ]*/
+
+TRUE: "True"
+FALSE: "False"
+NONE: "None"
+PASS: "pass"
+
+//ADD \() string literals
+//single_string: "\'" ("\\(" expr ")"| _STRINGINNNER) "\'"
+//double_string: "\""  "\""
+//_STRINGINNNER
+STRING      : /("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
+LONG_STRING : /(""".*?(?<!\\)(\\\\)*?"""|'''.*?(?<!\\)(\\\\)*?''')/is
+
+DEC_NUMBER  : /[0-9]\d*/i
+HEX_NUMBER  : /0x[\da-f]*/i
+OCT_NUMBER  : /0o[0-7]*/i
+QUAD_NUMBER : /0q[0-3]*/i
+BIN_NUMBER  : /0b[0-1]*/i
+FLOAT_NUMBER: /((\d+\.\d*|\.\d+)(e[-+]?\d+)?|\d+(e[-+]?\d+))/i
+//IMAG_NUMBER: /\d+j/i | FLOAT_NUMBER "j"i
+
+%ignore /[\t \f]+/  // WS
+//%ignore /\\[\t \f]*\r?\n/   // LINE_CONT
+%ignore COMMENT
+
+%declare INDENT DEDENT

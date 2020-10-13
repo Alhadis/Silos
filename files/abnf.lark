@@ -1,0 +1,139 @@
+// The following grammar is amended from the ABNF specification RFC 5234.
+// abnf_faithful.lark attempts to follow the specification as closely
+// as possible, but in doing so creates a fairly cumbersome parse tree.
+// This grammar attempts to recognise the same (meta-)language (ABNF),
+// while constructing a more manageable parse tree.
+// Additionally, this grammar will abstract away from the concrete syntax
+// of ABNF and, like EBNF's specification, will allow for alternate
+// representations of features. This is achieved through the use of Lark's
+// terminals facility.
+// The given ABNF definition enforces "relatively strict" formatting
+// for rules. This grammar slackens the formatting requirements using Lark
+// directives (primarily, ignore whitespace). For example, this grammar
+// can parse A = "yes"   1*3   [%x100] ;comma, whereas abnf_faithful.lark
+// can't.
+
+// Through these amendments to the grammar, we can generate a parse tree
+// that's much easier to use with grammar.py.
+
+%import common.NEWLINE
+%ignore " "
+%ignore NEWLINE
+
+start: syntax
+
+// =====================================================================
+//                          Part 0: Core Rules
+// =====================================================================
+ALPHA:  /[\u0041-\u005A]/ | /[\u0061-\u007A]/
+BIT:    "0" | "1"
+
+// Any ASCII char except NUL
+CHAR:   /[\u0001-\u007F]/
+
+CR:     /[\u000D]/
+LF:     /[\u000A]/
+// Standard newline
+CRLF:   CR LF
+
+// Control characters
+CTL:    /[\u0000-\u001F]/ | /[\u007F]/
+DIGIT:  /[\u0030-\u0039]/
+_DQUOTE: "\""
+HEXDIG: DIGIT | "A" | "B" | "C" | "D" | "E" | "F"
+HTAB:   /[\u0009]/
+LWSP:   (WSP | CRLF WSP)*
+OCTET:  /[\u0000-\u00FF]/
+SP:     " "
+VCHAR:  /[\u0021-\u007E]/
+WSP:    SP | HTAB
+
+
+// =====================================================================
+//            Part 1: defining the roles of characters in ABNF
+// =====================================================================
+_DEF_SYM:      "="
+_INCDEF_SYM:   "=/"
+_ALT_SYM:      "/"
+_START_PROSE:  "<"
+_END_PROSE:    ">"
+_HEX_SYMBOL:   "x"
+_BIN_SYMBOL:   "b"
+_DEC_SYMBOL:   "d"
+_NUM_SYMBOL:   "%"
+_NUM_CONCAT:   "."
+_NUM_RANGE:    "-"
+_START_OPTION: "["
+_END_OPTION:   "]"
+_START_GROUP:  "("
+_END_GROUP:    ")"
+_COMMENT_SYM:  ";"
+REPEAT:       "*"
+_TERMINATOR:   NEWLINE
+
+HEX_NUM: HEXDIG+
+DEC_NUM: DIGIT+
+BIN_NUM: BIT+
+
+// =====================================================================
+//        Part 2: defining which characters can appear in features
+// =====================================================================
+prose_val: _START_PROSE PROSE_STR _END_PROSE
+PROSE_STR: (/[\u0020-\u003D]/ | /[\u003F-\u007E]/)+
+char_val: _DQUOTE CHAR_STR _DQUOTE
+CHAR_STR: (/[\u0020-\u0021]/ | /[\u0023-\u007E]/)+
+
+num_val: _NUM_SYMBOL (hex_val | dec_val | bin_val)
+
+hex_val: _HEX_SYMBOL (hex_single | hex_concat | hex_range)?
+hex_single: HEX_NUM
+hex_concat: HEX_NUM (_NUM_CONCAT HEX_NUM)+
+hex_range: HEX_NUM _NUM_RANGE HEX_NUM
+
+dec_val: _DEC_SYMBOL DEC_NUM ( (_NUM_CONCAT DEC_NUM)+ | (_NUM_RANGE DEC_NUM) )?
+dec_single: DEC_NUM
+dec_concat: DEC_NUM (_NUM_CONCAT DEC_NUM)+
+dec_range: DEC_NUM _NUM_RANGE DEC_NUM
+
+bin_val: _BIN_SYMBOL BIN_NUM ( (_NUM_CONCAT BIN_NUM)+ | (_NUM_RANGE BIN_NUM) )?
+bin_single: BIN_NUM
+bin_concat: BIN_NUM (_NUM_CONCAT BIN_NUM)+
+bin_range: BIN_NUM _NUM_RANGE BIN_NUM
+
+// =====================================================================
+//       Part 3: Defining the abstract syntax of ABNF
+// =====================================================================
+syntax: (rule | inc_rule | c_nl)+
+rule: rulename (_DEF_SYM c_nl*) elements c_nl
+inc_rule: rulename (_INCDEF_SYM c_nl*) elements c_nl
+
+// Commenting/formatting
+c_nl: comment | NEWLINE
+COMMENT_STR: (" " | VCHAR)+
+comment: _COMMENT_SYM COMMENT_STR NEWLINE
+
+// LHS of rules
+RULE_STR: ALPHA (ALPHA | DIGIT | "-")*
+rulename: RULE_STR
+
+// Definition symbols
+inc_defined_as: _INCDEF_SYM c_nl*
+defined_as: _DEF_SYM c_nl*
+
+// RHS of rules
+elements: alternation c_nl*
+alternation: concatenation (_ALT_SYM concatenation)*
+concatenation: repetition (" "+ repetition)*
+element: rulename | group | option
+    | char_val | num_val | prose_val
+
+// Repetition
+repetition: repeat? element
+repeat: specific | variable
+specific: DEC_NUM
+variable: DEC_NUM? REPEAT DEC_NUM?
+
+// Brackets
+option: _START_OPTION alternation _END_OPTION
+group: _START_GROUP alternation _END_GROUP
+

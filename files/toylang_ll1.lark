@@ -1,0 +1,115 @@
+
+    ///////////////////////////////////////////
+    // *** Toylang Grammar ***
+    //
+    // A program is a series of functions.
+    // The first function matching is called first
+    // Grammar is hopefully ll(1), suitable for a
+    // Top-Down parser.
+    //
+    ///////////////////////////////////////////
+
+
+    start: (_NEWLINE|function)*
+
+    function: identifier "(" [fn_arglist] ")" ":" _NEWLINE? function_body
+
+    function_body: (statement _NEWLINE)* return_statement "." _NEWLINE?
+
+    return_statement: expr
+
+
+    statement: "print" "(" expr ["," arglist] ")" -> print_action
+                | expr
+
+
+    ///////////////////////////////////////////
+    // Arithmetic Expressions
+    ///////////////////////////////////////////
+
+    expr: term expr_rhs
+
+
+    expr_rhs: "<-" expr -> lhs_assignment
+              | [expr_]
+
+
+    expr_:    "+" term [expr_]  -> arith_add
+            | "-" term [expr_]  -> arith_sub
+
+
+    term: factor [term_]
+
+    term_:    "*" factor [term_] -> arith_mul
+            | "/" factor [term_] -> arith_div
+            | "%" factor [term_] -> arith_mod
+
+
+    ///////////////////////////////////////////
+    //Boolean Expression
+    ///////////////////////////////////////////
+
+    boolean_expr: boolean_binary_term [boolean_expr_]
+
+    boolean_expr_:  "&" boolean_binary_term [boolean_expr_]    -> bool_and
+                   | "or" boolean_binary_term [boolean_expr_]  -> bool_or
+
+    boolean_binary_term: factor boolean_binary_term_
+
+    boolean_binary_term_:    ">"  factor  -> bool_gt
+                    | "<"  factor  -> bool_lt
+                    | "=" factor  -> bool_eq
+                    | "!=" factor  -> bool_neq
+
+    ///////////////////////////////////////////
+
+
+    factor: "(" expr ")" |  array  | number | factor_ | string
+
+    array: "[" [arglist] "]"
+           | identifier "~" identifier
+
+    factor_: identifier [arguments]
+
+
+    arguments: "[" arglist "]"  -> array_index
+              | "(" arglist ")" -> function_call_args
+
+    arglist: expr [more_args]
+
+    fn_arglist: expr [more_args] [fn_precondition]
+
+    fn_precondition: "|" boolean_expr
+
+    more_args:  "," expr [more_args]
+
+
+    ///////////////////////////////////////////
+    //Terminal Definitions
+    ///////////////////////////////////////////
+
+    identifier: NAME
+
+    number: "-" number_
+            | number_
+
+    number_: DEC_NUMBER | HEX_NUMBER | FLOAT
+
+    COMMENT: /#[^\n]*/
+    _NEWLINE: ( /\r?\n[\t ]*/ | COMMENT )+
+
+    string: STRING
+
+    STRING : /[ubf]?r?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
+    DEC_NUMBER: /[0-9]\d*l?/i
+    HEX_NUMBER: /0x[\da-f]*l?/i
+
+    %import common.FLOAT -> FLOAT
+    %import common.INT -> _INT
+    %import common.CNAME -> NAME
+
+    %ignore /[\t \f]+/  // WS
+    %ignore /\\[\t \f]*\r?\n/   // LINE_CONT
+    %ignore COMMENT
+    %declare _INDENT _DEDENT
+

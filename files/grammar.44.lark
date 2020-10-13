@@ -1,0 +1,39 @@
+start: cmd (" | " cmd)*
+
+?cmd: search_cmd
+    | fields_cmd
+    | join_cmd
+    | pp_cmd
+
+search_cmd: "search" (" " expr)+
+
+?expr: disjunction_expr
+
+?disjunction_expr: disjunction_expr " OR " not_expr
+                 | not_expr
+
+?not_expr: "NOT " comparison_expr -> not_expr
+         | comparison_expr
+
+?comparison_expr: string operator string
+
+operator: "="    -> eq
+        | "!="   -> ne
+        | "<"    -> lt
+        | "<="   -> le
+        | ">"    -> gt
+        | ">="   -> ge
+
+fields_cmd: "fields" (" " string)+
+
+join_cmd: "join BY " string
+
+pp_cmd: "prettyprint format=" pp_format
+
+pp_format: "json"   -> json
+         | "table"  -> table
+
+string: /[\w\.\*]+/
+      | ESCAPED_STRING
+
+%import common.ESCAPED_STRING

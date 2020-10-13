@@ -1,0 +1,53 @@
+%import common.WORD
+%import common.NUMBER
+%import common.WS_INLINE
+
+%ignore WS_INLINE
+
+?start: expr												-> expr_to_str
+
+?expr: term
+	| expr "+" term											-> add
+	| expr "-" term											-> sub
+
+?term: factor
+	| term "**" factor										-> mat_mul
+	| term "*" factor										-> mul
+	| term "/" factor										-> div
+	| term "%" factor										-> mod
+
+?factor: unary
+	| unary "^" factor										-> pow
+
+?unary: atom
+	| "-" atom												-> neg
+
+?atom: NUMBER												-> parse_number
+	| thing
+
+?thing: var													-> resolve_var
+	| "i"													-> imag
+	| "pi"													-> pi
+	| matrix
+	| "(" expr ")"											-> parentheses_expr
+	| func "(" expr [ "," expr ]* ")"						-> eval_func
+	| built_in "(" expr ")"									-> eval_built_in
+
+?built_in: "inv"											-> inv
+	| "transp"												-> transp
+	| "sqrt"												-> sqrt
+	| "sin"													-> sin
+	| "cos"													-> cos
+	| "tan"													-> tan
+	| "deg"													-> deg
+	| "rad"													-> rad
+
+?matrix: "[" mat_row [ ";" mat_row ]* "]"					-> get_matrix
+
+?mat_row: "[" mat_element [ "," mat_element ]* "]"			-> get_mat_rows
+
+?mat_element: NUMBER										-> parse_number
+	| "-" NUMBER											-> parse_neg_number
+
+?var: WORD
+?func: WORD

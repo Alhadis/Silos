@@ -1,0 +1,164 @@
+start: decl+                                    -> add_codes
+
+decl : variabledec                              -> global_var_declare
+        | funcdec                               -> func_declare               
+        | classdec                              -> class_dec_finished
+        | interfacedec 
+        | COMMENT
+
+//------variable dec-----------
+variabledec: variable";" -> variable_declare
+
+variable : type IDENT 
+        | type IDENT ","
+
+type : "int"            -> int_variable_declaraion
+        | "double"      -> double_variable_declaration
+        | "bool"        -> bool_variable_declaration
+        | "string"      -> string_variable_declaration
+        | IDENT         -> class_type_def
+        | type "[]"     -> array_variable_declaration 
+
+//--------function dec--------
+funcdec : type function_name open_pr formal")" stmtblock             -> non_void_func_declare
+        | void_type function_name open_pr formal")" stmtblock        -> void_func_declare
+
+function_name : IDENT                                                -> function_name
+open_pr : "("                                           -> save_function_type
+void_type : "void"                                      -> void_function_declaration
+
+formal : variable*                              -> formal_reduce
+
+stmtblock : start_of_block (variabledec|stmt|COMMENT)* "}" -> end_block
+
+start_of_block : "{"                                       -> start_block
+
+stmt : [expr]";"                                
+        | stmtblock 
+        | if 
+        | while 
+        | for 
+        | return                -> return_from_func 
+        | print 
+        | "break" ";"           -> pass_stmt
+
+// -------expression---------
+expr_high_level : expr                                  -> end_of_expr                 // when the start and finish of expression is important (for, while)
+
+expr : assignment                                       -> exp_calculated
+
+// from here, Result is returned
+
+assignment : lvalue "=" assignment                      -> assignment_calculated       // todo: assignment as assignment
+        | logical_expr                                  -> pass_assignment
+
+lvalue : logical_expr                                   -> lvalue_calculated
+
+logical_expr : logical_expr "||" equlaity_expr          -> or_logic
+        | logical_expr "&&" equlaity_expr               -> and_logic
+        | equlaity_expr                                 -> pass_logic
+
+equlaity_expr : equlaity_expr "==" compare_expr         -> equal
+        | equlaity_expr "!=" compare_expr               -> not_equal
+        | compare_expr                                  -> pass_equality
+
+compare_expr : compare_expr "<" math_expr_1             -> less_than
+        | compare_expr "<=" math_expr_1                 -> less_equal
+        | compare_expr ">" math_expr_1                  -> grater_than
+        | compare_expr ">=" math_expr_1                 -> grater_equal
+        | math_expr_1                                   -> pass_compare
+
+math_expr_1 : math_expr_1 "+" math_expr_2               -> add
+        | math_expr_1 "-" math_expr_2                   -> sub
+        | math_expr_2                                   -> pass_math_expr1
+
+math_expr_2 : math_expr_2 "*" one_operand_expr          -> multiply
+        | math_expr_2 "/" one_operand_expr              -> divide
+        | math_expr_2 "%" one_operand_expr              -> mod
+        | one_operand_expr                              -> pass_math_expr2
+
+// from here to above, we have Registers or Variable or Immediate
+
+one_operand_expr : "!"one_operand_expr  -> not_statement
+        | "-"one_operand_expr   -> minus
+        | paranthes             -> pass_one_operand_calculation  
+
+// from here to above, we have Variable or Immediate
+
+paranthes : "("expr")"          -> paranthes_action     // start of expression
+        | high_proior           -> token_to_var         // start of expression 
+
+// bellow this, no code is generated yet.
+
+high_proior : high_proior "." IDENT ("("actual?")")?    -> method_call
+        | high_proior"["expr"]"         -> access_to_array
+        | "new" IDENT           -> create_object
+        | call                  -> call_action
+        | constants             -> constant_operand     
+
+call : IDENT"("actual?")"               -> function_call      
+        | "NewArray("expr","type")"     -> new_array
+        | "ReadLine()"          -> read_line
+        | "ReadInteger()"       -> read_integer
+        | "itod("expr")"       -> itod
+        | "dtoi("expr")"       -> dtoi
+        | "itob("expr")"       -> itob
+        | "btoi("expr")"       -> btoi
+        | IDENT                 -> identifier_in_expression    
+
+constants : constant              -> pass_constant
+
+actual : actual","expr          -> prevent_tree_generation_for_actual 
+        | expr                  -> exp_to_actual
+
+constant : HEX_NUMBER 
+        | DOUBLE                
+        | INT
+        | BOOL                 
+        | STRING_CONSTANT 
+        | "null"                
+
+//------special statements----------
+if: "if" "(" expr ")" stmt ("else" stmt)?       -> _if
+while : "while" "(" expr ")" stmt               -> _while
+for : "for" "("[expr]";"expr";"[expr]")" stmt   -> _for
+return : "return" [expr] ";"
+print : ("Print"|"print") "("actual")" ";"      -> _print
+
+//---------class dec----------
+classdec : startclass ["extends" IDENT] ["implements" (IDENT | IDENT",")+] "{"field*"}"      -> class_declare
+startclass : "class" IDENT                                                                   -> start_class_dec
+field : variabledec 
+        | methoddec
+methoddec : funcdec                                                                          -> method_declare
+
+//--------interface dec--------
+interfacedec : "interface" IDENT "{" prototype* "}"
+prototype : type IDENT "(" formal ")" ";"
+    | "void" IDENT "(" formal ")" ";"
+
+
+STRING_CONSTANT : /"[^"^\n]*"/
+COMMENT : "//" /[^\n]*/
+        | "/*" /(.|\n)+/ "*/"
+BOOL.2 : "true" | "false"  
+IDENT : /[a-zA-Z]([\w]|[_]){0,30}/
+HEX_NUMBER.2: /0[x|X][\da-fA-F]*/
+READLINE.4: "ReadLine()"
+READINTEGER.2: "ReadInteger()"
+NEWARRAY.4: "NewArray("
+ITOD.4: "itod("
+DTOI.4: "dtoi("
+ITOB.4: "itob("
+BTOI.4: "btoi("
+// EMPTY: ""
+INT: /\d+/
+DOUBLE: /\d+\.\d*[E,e]\+?\d+/ | /\d+\.\d*/
+
+%import common.ESCAPED_STRING
+%import common._STRING_ESC_INNER
+// %import common.NUMBER
+%import common.WS
+
+%ignore WS
+%ignore COMMENT

@@ -1,0 +1,48 @@
+start: _NL* literals _NL* truth _NL* actions _NL* protocols _NL* agents _NL*
+
+literals: "Vars:" _NL [_INDENT (LITERAL _NL)+ _DEDENT]
+truth: "Truth:" _NL [_INDENT (expr _NL)+ _DEDENT]
+actions: "Actions:" _NL [_INDENT action* _DEDENT]
+protocols: "Protocols:" _NL [_INDENT protocol* _DEDENT]
+agents: "Agents:" _NL [_INDENT agent+ _DEDENT]
+
+agent: AGENT _NL [_INDENT info _NL? acts _NL? goal _NL? _DEDENT]
+protocol: NAME _NL [_INDENT "if" expr _NL "then" expr _NL? _DEDENT]  _NL*
+action: NAME _NL [_INDENT "pre" expr _NL "post" expr _NL? _DEDENT]
+
+info: "Info:" _NL [_INDENT (sentence _NL*)+ _DEDENT]
+acts: "Acts:" _NL [_INDENT (NAME _NL*)* _DEDENT]
+goal: "Goal:" _NL [_INDENT sentence _NL* _DEDENT]
+
+?sentence: expr
+	| protocol
+
+?expr: single_expr
+	| "(" conjunction ")"
+	| "(" disjunction ")"
+	| "(" implication ")"
+	| "(" biimplication ")"
+
+?single_expr: LITERAL 		-> literal
+	| negation
+	| "(" knows ")"
+
+conjunction: (conjunction | expr) "&" (conjunction | expr)
+disjunction: (disjunction | expr) "|" (disjunction | expr) 
+implication: (implication | expr) "->" (implication | expr)
+biimplication: (biimplication | expr) "<->" (biimplication | expr)
+
+negation: "~" expr
+knows: AGENT "knows" expr 	
+
+AGENT.2: UCASE_LETTER LCASE_LETTER+ 
+LITERAL: "_" LCASE_LETTER+
+NAME: LCASE_LETTER+
+
+_NL: /(\r?\n[\t ]*)+/
+
+%declare _INDENT _DEDENT
+%import common.LCASE_LETTER
+%import common.UCASE_LETTER
+%import common.WS_INLINE
+%ignore WS_INLINE

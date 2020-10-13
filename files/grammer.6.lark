@@ -1,0 +1,116 @@
+?program: [(state)+]
+
+?state: var ";"
+      | const ";"
+      | loop ";"
+      | if ";"
+      | switch ";"
+      | func ";"
+      | call ";"
+      | use ";"
+      | break ";"
+      | continue ";"
+      | pass ";"
+      | return ";"
+
+TYPE: "int"
+    | "float"
+    | "string"
+    | "later"
+    | "bool"
+    | "dict"
+
+?type: TYPE
+     | "[]" type
+
+LALPHABET: "a".."z"
+UALPHABET: "A".."Z"
+ALPHABET: LALPHABET | UALPHABET
+DIGIT: "0".."9"
+UNDERBAR: "_"
+ATMARK: "@"
+LANGCHAR: "$"
+CHAR: ALPHABET | DIGIT | UNDERBAR | ATMARK
+
+GT: ">"
+LT: "<"
+GE: ">="
+LE: "<="
+EQ: "=="
+
+ADD: "+"
+SUB: "-"
+MUL: "*"
+DIV: "/"
+MOD: "%"
+RDW: "//"
+
+comp: GT | LT | GE | LE | EQ
+OPER: ADD | SUB | MUL | DIV | MOD | RDW
+
+LANGVAR: LANGCHAR IDENTIFIER
+IDENTIFIER: ALPHABET CHAR*
+CIDENTIFIER: ("A".."Z" | "_")+
+
+int_literal: NUMBER
+number: SIGNED_NUMBER ("." int_literal)?
+STRING: /".*?(?<!\\)"/
+
+?expr: term
+     | addition
+
+?term: fact
+     | term MUL  fact
+     | term DIV  fact
+     | term MOD  fact
+     | term RDW fact
+
+?addition: expr ADD term
+         | expr SUB term
+
+?fact: "(" expr ")"
+     | LANGVAR
+     | IDENTIFIER
+     | CIDENTIFIER
+     | number
+     | STRING
+     | call
+
+?condition: expr comp expr
+
+arg: IDENTIFIER "[" type "]"
+args: (expr ("," expr)* )? 
+
+
+var: IDENTIFIER "[" type "]" ("<-" expr | "?")
+const: CIDENTIFIER "[" type "]" "<-" expr
+loop: "loop" expr "{" state* "}"
+
+if: "if" condition "{" state* "}" else
+else: "else" "{" state* "}"
+
+switch: "switch" "{" c_case+ else? "}"
+      | "switch" expr "{" v_case+ else? "}"
+c_case: "case" condition "{" state* "}"
+v_case: "case" expr "{" state* "}"
+
+func: "func" IDENTIFIER "(" (arg ("," arg)*)? ")" "->" (type | "void") "{" state* "}"
+call: IDENTIFIER "(" args ")"
+return: "return" expr?
+break: "break"
+continue: "continue"
+pass: "pass"
+
+use: "use" IDENTIFIER ("," IDENTIFIER)*
+
+%import common.SIGNED_NUMBER
+%import common.NUMBER
+%import common.CNAME
+%import common.WS
+
+COMMENT: "#" /[^\n]/*
+
+%ignore WS
+%ignore "\n"
+%ignore COMMENT
+

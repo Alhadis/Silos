@@ -1,0 +1,62 @@
+
+
+start: _NEWLINE* (stmt _NEWLINE*)*
+?stmt: (object | fn | assign | retval | value) _NEWLINE?
+suite: stmt | _NEWLINE _INDENT _NEWLINE? stmt+ _DEDENT _NEWLINE?
+object_suite: stmt | _NEWLINE _INDENT _NEWLINE? fn+ _DEDENT _NEWLINE?
+
+
+
+
+fn: "def" name parameters ":" suite
+assign: store "=" value
+      | index "=" value -> assign_index
+retval: "return" (value ",")* value
+object: "class" name ":" object_suite
+
+index: value "[" value "]"
+     | value "." ident -> dot_index
+
+
+list: "[" (value ",")* [value] "]"
+
+value: load
+    | list
+    | index
+    | method_call
+    | string
+    | number
+    | call
+    | "True" -> true
+    | "False" -> false
+    | "(" value ")"
+
+method_call: index arguments
+call: value arguments
+arguments: "(" [value] ("," value)* ")"
+
+
+load: name
+store: name
+
+name: (ident "::")* ident
+string: STRING
+number: NUMBER | FLOAT_NUMBER
+ident: IDENTIFIER
+
+parameters: "(" [ident] ("," ident)* ")"
+
+
+
+NUMBER: /0|[1-9]\d*/i
+FLOAT_NUMBER: /((\d+\.\d*|\.\d+)(e[-+]?\d+)?|\d+(e[-+]?\d+))/i
+STRING : /[ubf]?r?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
+IDENTIFIER: /[a-zA-Z_]\w*/
+
+_NEWLINE: ( /\r?\n[\t ]*/ | COMMENT )+
+COMMENT: /#[^\n]*/
+
+%ignore /[\t \f]+/  // WS
+%ignore /\\[\t \f]*\r?\n/   // LINE_CONT
+%ignore COMMENT
+%declare _INDENT _DEDENT

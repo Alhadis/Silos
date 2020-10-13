@@ -1,0 +1,32 @@
+?start: (_NEWLINE | redorddef)*
+
+simple_type: NAME
+
+multiline_doc:  MULTILINE_STRING _NEWLINE
+inline_doc: INLINE_STRING
+
+?element_doc:  ":" _NEWLINE _INDENT multiline_doc _DEDENT | inline_doc
+
+attribute_name: NAME
+attribute_simple_type: attribute_name simple_type [element_doc] _NEWLINE
+attributes: attribute_simple_type+
+_recordbody: _NEWLINE _INDENT [multiline_doc] attributes _DEDENT
+redorddef: "record" NAME ":" _recordbody
+
+
+
+MULTILINE_STRING: /"""([^"\\]*(\\.[^"\\]*)*)"""/
+INLINE_STRING: /"([^"\\]*(\\.[^"\\]*)*)"/
+
+_WS_INLINE: (" "|/\t/)+
+COMMENT: /#[^\n]*/
+_NEWLINE: ( /\r?\n[\t ]*/ | COMMENT )+
+
+%import common.CNAME -> NAME
+%import common.INT
+
+%ignore /[\t \f]+/  // WS
+%ignore /\\[\t \f]*\r?\n/   // LINE_CONT
+%ignore COMMENT
+%declare _INDENT _DEDENT
+

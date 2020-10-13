@@ -1,0 +1,94 @@
+root: node (";" _NL? node | _NL)* [";"]
+
+?node: stmt _NL?
+     | expr _NL?
+
+?stmt: decl
+     | infix
+
+decl: ID "=" expr
+infix: ID ID ID "=" expr
+
+?expr: conj
+     | conj "=>" node "else" node -> condition
+
+?conj: equ
+     | equ "and" expr -> conj 
+     | equ "or" expr  -> disj
+
+?equ: compare
+    | compare "is" "not" equ -> nequ
+    | compare "is" equ       -> equ
+
+?compare: sum
+        | sum "<" compare  -> lt
+        | sum ">" compare  -> gt
+        | sum "<=" compare -> lte
+        | sum ">=" compare -> gte
+
+?sum: product
+    | product "+" sum -> add
+    | product "-" sum -> sub
+
+?product: molecule
+        | molecule "*" product   -> mul
+        | molecule "/" product   -> div
+        | molecule "mod" product -> mod
+
+?molecule: atom
+         | distribute
+         | "-" molecule   -> neg
+         | "!" molecule   -> inv
+         | "+" molecule   -> pos
+         | atom "^" molecule -> pow
+
+distribute: (INFIX | atom) "->" expr
+
+?atom: list
+     | num
+     | text
+     | ID -> req
+     | accessor
+     | call
+     | field
+     | range
+     | "(" expr ")"
+     | "{" _NL? (node (";" _NL? node | _NL)* [";"] _NL?)? "}" -> block
+     | "|" ID ("," ID)* "|" expr -> lambda
+     
+list: "[" _NL? atom* _NL? "]"
+
+?num: DECIMAL -> decimal
+    | FRACT   -> fractional
+    | BIN     -> binary
+    | OCT     -> octal
+    | HEX     -> hexadecimal
+
+text: "\"" (TCHAR | "{" expr "}")* "\""
+
+range: atom "to" atom
+
+accessor: atom "[" atom "]"
+
+call: atom "(" _NL? [expr ("," expr)* _NL?] ")"
+
+field: atom ("." ID)+
+
+// Lexer
+
+ID: /[a-zA-Z_][a-zA-Z0-9_]+|[a-zA-Z]/
+DECIMAL: /[1-9][0-9]*|0/
+FRACT: /[0-9]+\.[0-9]+(e\-?[0-9]+)?/
+BIN.2: /0b[01]+/
+HEX.2: /0x[0-9A-fa-f]+/
+OCT.2: /0o[0-7]+/
+TCHAR: /[^\n"\\\{]|\\[ntvr]/
+INFIX.2: "+" | "-" | "*" | "/" | "^" | "mod" | "and" | "or" 
+       | "isnt" | "is" | "<=" | ">=" | "<" | ">"
+
+COMMENT.2: /--[^\n]*/ _NL
+_NL: /\r?\n[\t ]*/+
+
+%import common.WS_INLINE
+%ignore WS_INLINE
+%ignore COMMENT

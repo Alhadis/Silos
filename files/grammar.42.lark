@@ -1,0 +1,57 @@
+// This file is part of the tagup Python module which is released under MIT.
+// See file LICENSE for full license details.
+
+?start: block
+
+block: (object | WS)* object (object | WS)*
+//block: object
+//     | object (object | WS)* object
+
+?object: escape_sequence
+       | named_substitution
+       | positional_substitution
+       | named_test
+       | positional_test
+       | positional_loop
+       | loop_item
+       | tag
+       | STRING
+
+escape_sequence: _BUILTIN_OPEN LCASE_LETTER _CLOSE
+
+named_substitution: _BUILTIN_OPEN "\\" IDENTIFIER _CLOSE
+positional_substitution: _BUILTIN_OPEN "\\" INTEGER _CLOSE
+
+named_test: _BUILTIN_OPEN "if" _OPTIONAL_SEP IDENTIFIER _WS? _SEP positional_argument (_SEP positional_argument)? _CLOSE
+positional_test: _BUILTIN_OPEN "if" _OPTIONAL_SEP INTEGER _WS? _SEP positional_argument (_SEP positional_argument)? _CLOSE
+
+positional_loop: _BUILTIN_OPEN "loop" _OPTIONAL_SEP positional_argument (_SEP positional_argument)? _CLOSE
+loop_item: _BUILTIN_OPEN "item" _CLOSE
+
+tag: _OPEN IDENTIFIER _CLOSE
+   | _OPEN IDENTIFIER _OPTIONAL_SEP (named_argument | positional_argument) (_SEP (named_argument | positional_argument))* _CLOSE
+
+named_argument: block "\\\\" block
+positional_argument: block
+
+_OPEN: "["
+_BUILTIN_OPEN: _OPEN "\\"
+_CLOSE: "]"
+
+_SEP: "\\"
+_OPTIONAL_SEP: (WS? _SEP | WS)
+
+STRING: /[^\s[\]\\]+/
+//STRING: /[^[\]\\]*[^\s[\]\\][^[\]\\]*/m
+//STRING: ((/[^\s[\]\\]/ /[^\n[\]\\]/* /[^\s[\]\\]/) | /[^\s[\]\\]/)
+
+IDENTIFIER: LCASE_LETTER (LCASE_LETTER | "-")*
+
+INTEGER: INT
+
+_WS: WS
+
+%import common.INT
+%import common.LCASE_LETTER
+%import common.NEWLINE
+%import common.WS

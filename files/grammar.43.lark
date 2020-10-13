@@ -1,0 +1,78 @@
+LETTER: ("a".."z") | ("A".."Z")
+DIGIT: ("0".."9")
+_WHITESPACE: (" " | "\n" | "\t")+
+
+
+OPERATOR: "**"
+    | "==" | "!=" | "<" | ">" | ">=" | "<="
+    | " or " | " and " | " not " | " xor "
+    | "+" | "-" | "/" | "*" 
+    | " cat " | " rep "
+    | "." | ":"
+operator: OPERATOR
+
+VARIABLE_NAME: LETTER ( LETTER | DIGIT | "_" )*
+
+
+start: codeblock
+
+codeblock: _WHITESPACE? "{" executable (";" executable)* "}"
+
+executable: [codeblock_prefix] codeblock 
+    | [VARIABLE_NAME  _WHITESPACE? "=" _WHITESPACE?]  evaluatable
+    | return_statement
+    | "adsads"
+
+evaluatable: VARIABLE_NAME 
+    | function_call
+    | string
+    | DECIMAL_NUMBER
+    | arbitrary_base_number
+    | operation
+    | brackets
+    | BOOLEAN
+
+return_statement: "return" evaluatable
+
+brackets: brackets_square | brackets_round
+brackets_square: "[" _WHITESPACE? evaluatable _WHITESPACE? "]"
+brackets_round: "(" _WHITESPACE? evaluatable _WHITESPACE? ")"
+
+operation: evaluatable _WHITESPACE? operator _WHITESPACE? evaluatable
+
+function_call: evaluatable "(" function_args ")"
+function_args: [evaluatable (evaluatable ",")*]
+
+DECIMAL_NUMBER: (DIGIT+)
+
+arbitrary_base_number: (DIGIT)+ "x" (LETTER|DIGIT)+
+
+BOOLEAN: "false" | "true"
+
+DOUBLE_QUOTE_DATA: (/[^"]/)+
+double_quote_string: "\"" DOUBLE_QUOTE_DATA "\"" 
+
+SINGLE_QUOTE_DATA: (/[^']/)+
+single_quote_string: ("'" SINGLE_QUOTE_DATA "'" ) | "''"
+
+string: double_quote_string | single_quote_string
+
+function_args_def: "(" _WHITESPACE? VARIABLE_NAME _WHITESPACE? ( "," _WHITESPACE? VARIABLE_NAME _WHITESPACE?)* ")"
+
+codeblock_prefix: codeblock_prefix_nocolon ";"
+
+IF_CBPREFIX: "if"
+FOR_CBPREFIX: "for"
+WHILE_CBPREFIX: "while"
+SCOPE_CBPREFIX: "scope"
+PRAGMA_CBPREFIX: "pragma"
+FUNCTION_CBPREFIX: "function"
+
+
+codeblock_prefix_nocolon: IF_CBPREFIX _WHITESPACE+ evaluatable
+    | "for" _WHITESPACE VARIABLE_NAME _WHITESPACE "in" _WHITESPACE evaluatable
+    | "while" _WHITESPACE evaluatable
+    | "scope" _WHITESPACE VARIABLE_NAME
+    | "pragma" _WHITESPACE evaluatable
+    | FUNCTION_CBPREFIX _WHITESPACE VARIABLE_NAME _WHITESPACE? function_args_def
+%ignore "\n"

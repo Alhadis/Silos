@@ -1,0 +1,636 @@
+@java.lang.Module 
+package java.lang;
+
+import java.util.Collection;
+
+import org.w3c.dom.Node;
+import org.w3c.event.Event;
+import org.w3c.event.EventHandler;
+import org.w3c.html.HTMLElement; 
+  
+public interface MarkupExtension {
+	public Object provideValue (Node target, String property, String targetProperty1);
+}
+
+public enum UpdateSourceTrigger {
+    /**
+     * Update whenever the target property changes 
+     */
+    PropertyChanged,   
+    /**
+     * Update only when target element loses focus, or when Binding deactivates
+     */
+    LostFocus,
+    /**
+     * Update only by explicit call to BindingExpression.UpdateSource() 
+     */
+    Explicit
+}  
+
+public enum BindingMode
+{
+    /**
+     * Data flows from source to target and vice-versa
+     */
+    TwoWay, 
+    /**
+     * Data flows from source to target, source changes cause data flow
+     */
+    OneWay,
+    /**
+     * Data flows from source to target once, source changes are ignored 
+     */
+    OneTime;
+}
+
+public function void UpdateTargetCallback(Object target, String tagProperty1, String tagProperty2, Object value);
+public final class Binding implements MarkupExtension{
+	private BindingMode _mode;
+	private UpdateSourceTrigger _updateSourceTrigger;
+	private String	_property; 
+	private UpdateTargetCallback _callback;
+
+	public Binding(Object options) {
+		if(options["property"] != undefined){
+			this._property = (String) options["property"];
+		}
+		
+		if(options["mode"] != undefined){
+			this._mode = (BindingMode) options["mode"];
+		}
+		
+		if(options["updateSourceTrigger"] != undefined){
+			this._updateSourceTrigger = (UpdateSourceTrigger) options["updateSourceTrigger"];
+		}
+		
+		if(options["callback"] != undefined){
+			this._callback = (UpdateTargetCallback) options["callback"];
+		}
+	} 
+	
+	public UpdateTargetCallback callback {
+		& { 
+			return _callback; 
+		} 
+		+ {
+			_callback = value;
+		} 
+	} 
+
+	public String property {
+		& { 
+			return _property; 
+		} 
+		+ {
+			_property = value;
+		} 
+	} 
+	
+	public boolean isDirectBinding{
+		&{
+			return String.isNullOrEmpty(this.property);
+		}
+	}
+
+	public BindingMode mode {
+		& {
+			return _mode; 
+		} 
+		+ { 
+			this._mode = value; 
+		}
+	} 
+
+	  public UpdateSourceTrigger updateSourceTrigger {
+	      & { 
+	          return _updateSourceTrigger; 
+	      }
+	      + {
+	    	  this._updateSourceTrigger = value;
+	      } 
+	  }
+	  
+	  public native Object provideValue (Node target, String targetProperty, String targetProperty1)/*-{
+		  var bindingExp = new (__lc('java.lang.BindingExpression'))(target, targetProperty, targetProperty1, this);
+		  return bindingExp.value;
+	  }-*/;
+	  
+}
+
+public final class BindingExpression { 
+	private Binding _binding;
+	private Node _target;
+	private String _targetProperty;
+	private String _targetProperty1;
+	
+	public BindingExpression(Node target, String targetProperty, String targetProperty1, Binding binding) { 
+  		this._binding = binding;
+  		this._targetProperty = targetProperty;
+  		this._targetProperty1 = targetProperty1;
+  		this._target = target;
+  		
+  		switch(_binding.mode){
+	  		case TwoWay:
+	  			if(target instanceof HTMLElement){
+		  			attachTarget((HTMLElement)_target, _targetProperty);
+	  			}
+	  		case OneWay:
+	  			_target.dataContext.addBinding(this);
+	  		case OneTime:
+	  			updateTarget();
+  		}
+	}
+
+	public void updateSource() {
+		if(_binding.isDirectBinding){
+			_target.dataContext.dataItem = _target[this._targetProperty];
+		} else {
+			_target.dataContext.dataItem[_binding.property] = _target[this._targetProperty];
+		}
+	}
+	
+	public Binding binding{
+		&{
+			return this._binding;
+		}
+	}
+
+	public void updateTarget() {
+		if(_binding.isDirectBinding){
+			if(_binding.callback != null){
+				_binding.callback(_target, _targetProperty, _targetProperty1, _target.dataContext.dataItem);  
+			} else {
+				if(_target.dataContext.dataItem != null){
+					if(_targetProperty1 == null){
+						_target[_targetProperty] = _target.dataContext.dataItem;
+					} else {
+						_target[_targetProperty][_targetProperty1] = _target.dataContext.dataItem;
+					}
+				} else {
+		 			if(_targetProperty1 == null){
+						_target[_targetProperty] = null;
+					} else {
+						_target[_targetProperty][_targetProperty1] = null;
+					}
+				}  
+			}
+		} else {
+			if(_target.dataContext.dataItem != null){
+				if(_binding.callback != null){
+					_binding.callback(_target, _targetProperty, _targetProperty1, _target.dataContext.dataItem[_binding.property]);
+				} else {
+					if(_targetProperty1 == null){
+						if(_target[_targetProperty] !== _target.dataContext.dataItem[_binding.property]){
+							_target[_targetProperty] = _target.dataContext.dataItem[_binding.property];
+						}
+					} else {
+						_target[_targetProperty][_targetProperty1] = _target.dataContext.dataItem[_binding.property];
+					}
+				}
+			} else {
+				if(_binding.callback != null){
+					_binding.callback(_target, _targetProperty, _targetProperty1, null);
+				} else {
+					if(_targetProperty1 == null){
+						_target[_targetProperty] = null;
+					} else {
+						_target[_targetProperty][_targetProperty1] = null;
+					}
+				}
+			}
+		}
+	}
+	
+	public Object value{
+		&{
+			if(_target.dataContext.dataItem == null){
+				return null;
+			} else {
+				if(_binding.isDirectBinding){
+					return _target.dataContext.dataItem;
+				} else {
+					return _target.dataContext.dataItem[_binding.property];
+				}
+			}
+		}
+	}
+
+	public void attachTarget(HTMLElement target, String property){
+		// listen for lost focus and input 
+		switch(_binding.updateSourceTrigger) { 
+			case LostFocus:
+				target.addEventListener("blur", this.handle, false);
+				break; 
+			case PropertyChanged: 
+				target.addEventListener("input", this.handle, false);
+				target.addEventListener("change", this.handle, false);
+				break;
+			default:
+		}  
+	}
+	
+	public EventHandler handle = (Event e)->{updateSource();};
+	
+	public PropertyChange propertyChange = (Object source, PropertyChangeEvent e)->{updateTarget();};
+	
+	public void invalidate(Object data){
+		updateTarget();
+	}
+}
+
+public final class DataContext {  
+	private PathMode _mode;
+	private String _property;
+	private BindingExpression[] _bindings;
+	private DataContext[] _dependents;
+	private ItemsControl[] _itemControls;
+	private Object _dataItem;
+	
+	@Overload("0")
+	public native DataContext() /*-{
+		this._mode = __lc("java.lang.PathMode", "java.lang.bindings").Absolute;
+//		this._property = null;
+		this._bindings = [];
+		this._dependents = [];
+		this._itemControls = [];
+		this._dataItem = __this; 
+	}-*/;
+	
+	@Overload("11")
+	public native DataContext(String property) /*-{
+		this._mode = __lc("java.lang.PathMode", "java.lang.bindings").Relative;
+		this._property = property;
+		this._bindings = [];
+		this._dependents = [];
+		this._itemControls = [];
+//		this._dataItem = __this; 
+	}-*/;
+	
+	@Overload("12")
+	public native DataContext(Object dataItem) /*-{
+		this._mode = __lc("java.lang.PathMode", "java.lang.bindings").Absolute;
+		this._property = null;
+		this._bindings = [];
+		this._dependents = [];
+		this._itemControls = [];
+		this._dataItem = dataItem; 
+	}-*/;
+	
+	@Overload("2")
+	public DataContext(String property, PathMode mode){
+//		if(mode == undefined){
+//			this._mode = PathMode.Relative;
+//		} else {
+			this._mode = mode;
+//		}
+		this._property = property;
+		_bindings = new Array<BindingExpression>();
+		_dependents = new Array<DataContext>();
+		_itemControls = new Array<ItemsControl>();
+	}
+	
+	public String property{
+		&{
+			return this._property;
+		}
+		+{
+			this._property = value;
+		}
+	}
+	
+	public boolean isRelative{
+		&{
+			return this._mode === PathMode.Relative;
+		}
+	}
+	
+	public void addBinding(BindingExpression be){ 
+		_bindings.push(be);
+		if(this._dataItem instanceof INotifyPropertyChanged){
+			if(!be.binding.isDirectBinding){
+				((INotifyPropertyChanged) this._dataItem).addPropertyChangeListener(be.binding.property, be.propertyChange);
+			}
+		}
+	}
+	
+	public void removeBinding(BindingExpression dependent){
+		_bindings.forEach((BindingExpression be, int index, Array<BindingExpression> array)->{
+			if(be == dependent){
+				_bindings.splice(index, 1);
+				return;
+			}
+		});
+		
+		//TODO remove from INotifyPropertyLiistener
+	}
+	
+	public void addItemsControl(ItemsControl ic){ 
+		_itemControls.push(ic);
+		if(this._dataItem instanceof INotifyPropertyChanged){
+//			if(!ic.isDirectBinding){
+				((INotifyPropertyChanged) this._dataItem).addPropertyChangeListener(ic.path, ic.propertyChange);
+//			}
+		}
+	}
+	
+	public void removeItemsControl(ItemsControl dependent){
+		_itemControls.forEach((ItemsControl ic, int index, Array<ItemsControl> array)->{
+			if(ic == dependent){
+				_itemControls.splice(index, 1);
+				return;
+			}
+		});
+		
+		//TODO remove from INotifyPropertyLiistener
+	}
+	
+	public void addDependent(DataContext dependent){ 
+		_dependents.push(dependent);
+	}
+	
+	public void removeDependent(DataContext dependent){
+		_dependents.forEach((DataContext dc, int index, Array<DataContext> array)->{
+			if(dc === dependent){
+				_dependents.splice(index, 1); 
+				return;
+			}
+		});
+		
+		//TODO remove from INotifyPropertyLiistener
+	}
+	
+	public Object dataItem{
+		&{
+			return this._dataItem;
+		}
+		+{
+			if(value === this._dataItem)
+				return;
+
+			replaceDataItem(value); 
+			this._dataItem = value;
+			dirty(value);
+		}
+	}
+	
+	private void dirty(Object data){
+		_bindings.forEach((BindingExpression be, int index, Array<BindingExpression> array)->{
+			be.invalidate(data);
+		});
+		
+		_dependents.forEach((DataContext dc, int index, Array<DataContext> array)->{
+			dc.invalidate(data);
+		});
+	}
+	 
+	private void replaceDataItem(Object newDataItem){
+		if(this._dataItem != null && this._dataItem instanceof INotifyPropertyChanged){  
+			INotifyPropertyChanged oldPc = (INotifyPropertyChanged) this._dataItem;
+			for(int i=0, length = _dependents.length; i<length; i++){
+				oldPc.removePropertyChangeListener(_dependents[i].property, _dependents[i]::propertyChange);
+			}
+			
+			for(int i=0, length = _bindings.length; i<length; i++){
+				oldPc.removePropertyChangeListener(_bindings[i].binding.property, _bindings[i].propertyChange);
+			}
+		}
+		
+		if(newDataItem != null && newDataItem instanceof INotifyPropertyChanged){
+			INotifyPropertyChanged newPc = (INotifyPropertyChanged) newDataItem;
+			for(int i=0, length = _dependents.length; i<length; i++){
+				newPc.addPropertyChangeListener(_dependents[i].property, _dependents[i]::propertyChange);
+			}
+			
+			for(int i=0, length = _bindings.length; i<length; i++){
+				newPc.addPropertyChangeListener(_bindings[i].binding.property, _bindings[i].propertyChange);
+			}
+		}
+	}
+
+	public void propertyChange(Object source, PropertyChangeEvent e) {
+		this.dataItem = source[e.propertyName];
+	}
+	
+	public void invalidate(Object data){
+		if(data == null){
+			this.dataItem = null;
+		} else {
+			this.dataItem = data[this.property];
+		}
+	}
+}
+
+public enum PathMode{
+	Relative,
+	Absolute;
+}
+
+public class DataPath implements MarkupExtension {
+	private PathMode _mode;
+	private String _property;
+
+	public DataPath(Object options) {
+		if(options["property"] != undefined){
+			this._property = (String) options["property"];
+		}
+		
+		if(options["mode"] != undefined){
+			this._mode = (PathMode) options["mode"];
+		}
+	}
+	
+	public PathMode mode {
+		&{
+			return this._mode;
+		}
+		+{
+			this._mode = value;
+		}
+	}
+	
+	public String property {
+		&{
+			return this._property;
+		}
+		+{
+			this._property = value;
+		}
+	}
+	
+	public native DataContext provideValue(Node target, String property, String targetProperty) /*-{
+		return new (__lc("java.lang.DataContext"))(this._property, this._mode, '2');
+	} -*/;
+}
+
+public class ItemsConfig implements MarkupExtension{
+	private Class<ItemsControl> _itemControlClazz;
+	private Class<ItemTemplate> _template;
+	private String _path;   //property
+	
+	public ItemsConfig(Object option){
+		if(option["clazz"] != null){
+			this._itemControlClazz = (Class<ItemsControl>) option["clazz"];
+		} else {
+			this._itemControlClazz =ItemsControl.class;
+		}
+		
+		if(option["itemTemplate"] != null){
+			this._template = (Class<ItemTemplate>) option["itemTemplate"];
+		}
+		if(option["path"] != null){
+			this._path = (String) option["path"];
+		} 
+	} 
+	
+	public Class<ItemsControl> clazz{
+		&{
+			return this._itemControlClazz;
+		}
+		+{
+			this._itemControlClazz = value;
+		}
+	}
+	
+	public Class<ItemTemplate> itemTemplate{
+		&{
+			return this._template;
+		}
+		+{
+			this._template = value;
+		}
+	}
+	
+	public String path{
+		&{
+			return this._path;
+		}
+		+{
+			this._path = value;
+		}
+	}
+	
+	public native Object provideValue(Node target, String property, String targetProperty1) /*-{
+		var r = new (this._itemControlClazz.factory)(target, this._path, this._template);
+		return r;
+	}-*/;
+}
+
+public class ItemsControl {
+	private Class<ItemTemplate> itemTemplate;
+	private Node container;
+	private String _path;
+	
+	private Object _dataItem;
+	protected java.lang.Map<Object, Node> nodesMap = new java.lang.Map<Object, Node>();
+	
+	public ItemsControl(Node container, String path, Class<ItemTemplate> itemTemplate){
+		this.itemTemplate = itemTemplate;
+		this.container = container;
+		this._path = path;
+		
+		container.dataContext.addItemsControl(this);
+		if(container.dataContext.dataItem == null){
+			this.dataItem = null;
+		} else {
+			this.dataItem = container.dataContext.dataItem[path];
+		}
+	}
+	
+	public String path{
+		&{
+			return this._path;
+		}
+	}
+	
+	public Object dataItem{
+		&{
+			return this._dataItem;
+		}
+		+{
+			if(this._dataItem === value){
+				return;
+			}
+			
+			nodesMap.forEach((Node node, Object item, Map<Object, Node> mapObj)->{
+				this.container.removeChild(node);
+			});
+			nodesMap.clear();
+			
+			if(this._dataItem != null){
+				if(this._dataItem instanceof INotifyCollectionChanged){
+					((INotifyCollectionChanged<Object>)this._dataItem).removeCollectionChangedListener(this.onCollectionChanged);
+				}
+			}
+
+			this._dataItem = value;
+			
+			if(this._dataItem != null){
+				if(this._dataItem instanceof INotifyCollectionChanged){
+					((INotifyCollectionChanged<Object>)this._dataItem).addCollectionChangedListener(this.onCollectionChanged);
+				}
+				
+				expand();
+			}
+		}
+	}
+	
+	public void expand(){
+		if(this._dataItem instanceof Collection){
+			for(Object obj : (Collection<?>)this._dataItem){
+				ItemTemplate template = (java.lang.ItemTemplate) itemTemplate.newInstance();
+				Node node = template.create(container, obj);
+				nodesMap.set(obj, node);
+			}
+		}
+	}
+	
+	public void invalidate(){
+		if(container.dataContext.dataItem == null){
+			this.dataItem = null;
+		} else {
+			this.dataItem = container.dataContext.dataItem[_path];
+		}
+	}
+	
+	protected CollectionChanged<Object> onCollectionChanged = (Object sender, CollectionChangedEvent<Object> event) ->{
+		switch(event.Action){
+		case Add:
+			Array<?> items = event.NewItems;
+			for(Object item : items){
+				ItemTemplate template = (java.lang.ItemTemplate) itemTemplate.newInstance();
+				Node root = template.create(container, item);
+				this.nodesMap.set(item, root);
+			}
+			break;
+		case Reset:
+			nodesMap.forEach((Node node, Object key, Map<Object, Node> mapObj)->{
+				container.removeChild(node);
+				nodesMap.delete(key);
+			});
+			break;
+		case Remove:
+			for(Object item : event.OldItems){
+				Node child = nodesMap.get(item);
+				container.removeChild(child);
+				nodesMap.delete(item);
+			}
+			break;
+		case Replace:
+		case Move:
+			
+		}
+	};
+	
+	public PropertyChange propertyChange = (Object source, PropertyChangeEvent event)->{
+		this.dataItem = source[event.propertyName];
+	};
+}
+
+public class Page implements MarkupExtension{
+	private Class<ItemsControl> pageClass;
+	public Object provideValue(Node target, java.lang.String property, String targetProperty1) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+}

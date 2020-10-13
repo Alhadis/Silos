@@ -1,0 +1,104 @@
+start: openqasmversion program
+
+openqasmversion: OPENQASM REAL _SEMICOLON
+
+program: statement+
+
+statement: decl
+         | gatedecl goplist? _CBRA
+         | OPAQUE ID [_OPAR idlist? _CPAR] idlist _SEMICOLON
+         | [IF _OPAR ID EQEQ NNINTEGER _CPAR] qop
+         | BARRIER arglist _SEMICOLON
+
+decl: (QREG | CREG) ID _OSQBRA NNINTEGER _CSQBRA _SEMICOLON
+
+gatedecl: GATE ID [_OPAR idlist? _CPAR] idlist _OBRA
+
+goplist: ( uop | BARRIER idlist _SEMICOLON)+
+
+qop: uop
+   | MEASURE argument _ARROW argument _SEMICOLON
+   | RESET argument _SEMICOLON
+
+uop: U _OPAR explist _CPAR argument _SEMICOLON
+   | CX argument _COMMA argument _SEMICOLON
+   | ID [_OPAR explist? _CPAR] arglist _SEMICOLON
+
+register: ID
+
+indexed_register: register _OSQBRA NNINTEGER _CSQBRA
+
+arglist: argument (_COMMA argument)*
+
+idlist: ID (_COMMA ID)*
+
+argument: register | indexed_register
+
+explist: exp ( _COMMA exp )*
+
+exp: REAL
+   | NNINTEGER
+   | PI
+   | ID
+   | exp PLUS exp
+   | exp MINUS exp
+   | exp MULT exp
+   | exp DIV exp
+   | MINUS exp
+   | exp POWSYM exp
+   | _OPAR exp _CPAR
+   | unaryop _OPAR exp _CPAR
+
+unaryop: SIN
+       | COS
+       | TAN
+       | EXP
+       | LN
+       | SQRT
+
+
+OPENQASM  : "OPENQASM"
+OPAQUE    : "opaque"
+IF        : "if"
+BARRIER   : "barrier"
+QREG      : "qreg"
+CREG      : "creg"
+GATE      : "gate"
+MEASURE   : "measure"
+RESET     : "reset"
+U         : "U"
+CX        : "CX"
+PI        : "pi"
+SIN       : "sin"
+COS       : "cos"
+TAN       : "tan"
+EXP       : "exp"
+LN        : "ln"
+SQRT      : "sqrt"
+PLUS      : "+"
+MINUS     : "-"
+MULT      : "*"
+DIV       : "/"
+POWSYM    : "^"
+EQEQ      : "=="
+
+ID        : /[a-z][A-Za-z0-9_]*/
+REAL.2    : (/[0-9]+/ "." /[0-9]*/ | /[0-9]*/ "." /[0-9]+/) [ /[eE][-+]?[0-9]+/ ]
+NNINTEGER : /[1-9]+[0-9]*|0/
+
+
+_SEMICOLON: ";"
+_OBRA     : "{"
+_CBRA     : "}"
+_OPAR     : "("
+_CPAR     : ")"
+_OSQBRA   : "["
+_CSQBRA   : "]"
+_COMMA    : ","
+_ARROW    : "->"
+
+
+BLANK     : /[\t \f\n]+/
+%ignore BLANK
+COMMENT   : "//" /[^\n]*/
+%ignore COMMENT

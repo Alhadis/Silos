@@ -1,0 +1,42 @@
+%import common.ESCAPED_STRING  
+%import common.SIGNED_NUMBER 
+%import common.CNAME
+%import common.WS
+%import common.WS_INLINE
+
+
+%ignore WS_INLINE
+%ignore WS
+
+program: WS* defs WS* body
+
+defs: ("def" CNAME "(" params ")" _scope)* 
+
+params: ((WS* CNAME ","WS*)* CNAME+) WS* | 
+
+_scope: WS* "{" WS* body WS* "}" WS*
+
+body: ((assignment
+    | const_assignment
+    | while
+    | function_call 
+    | conditional
+    | COMMENT ) WS*)+ 
+    
+assignment: CNAME "=" CNAME 
+const_assignment: CNAME "=" value
+while: "while" "(" boolean ")" _scope 
+function_call: WS_INLINE* CNAME "(" params ")" WS*
+conditional: if elif* else?
+
+!boolean: CNAME ( "<" | ">" | "==" | "&&" | "||"  ) CNAME
+
+if: "if" "(" CNAME ")" _scope 
+elif: "elif" "(" CNAME ")" _scope
+else: "else" _scope
+
+
+value: SIGNED_NUMBER 
+     | ESCAPED_STRING 
+
+COMMENT: /#.*\n/

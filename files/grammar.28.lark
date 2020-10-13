@@ -1,0 +1,97 @@
+?program: [(state)+]
+
+// statement
+?state: expr ";"
+      | function
+      | procedure
+      | assignment ";"
+      | return_state ";"
+      | end_state ";"
+      | declare ";"
+      | if_state  ";"
+      | while_state ";"
+      | until_state ";"
+      | for_state ";"
+      | break_state ";"
+function: "def" types symbol "(" [args_declare] ")" "{" program "}"
+procedure: "proc" symbol "(" [args_declare] ")" "{" program "}"
+assignment: symbol "=" expr
+return_state: "return" expr
+end_state: "end"
+declare: types symbol ("," symbol)*
+args_declare: arg_declare ("," arg_declare)*
+arg_declare: types symbol
+else_: "else" "{" program "}"
+elif_: "elif" expr "{" program "}"
+optional_if:  elif_* else_?
+if_state: "if" expr "{" program "}" optional_if
+while_state: "while" expr "{" program "}"
+until_state: "until" expr "{" program "}"
+for_state: "for" symbol "in" expr ".." expr ( "by" number)? "{" program "}"
+break_state: "break"
+
+
+// expression
+?expr: condition
+     | term
+     | addition
+     | substraction
+     | function_call
+addition: expr "+" expr
+substraction: expr "-" expr
+function_call: symbol "(" [expr ("," expr)*] ")"
+
+?condition: test
+          | bitcomp
+
+?bitcomp: not_
+        | or_
+        | and_
+lt: "<"
+le: "<="
+gt: ">"
+ge: ">="
+eq: "=="
+ne: "!="
+bitop: lt | le | gt | ge | eq | ne
+test: expr bitop expr
+or_: expr "or" expr
+and_: expr "and" expr
+not_: "not" expr
+
+?term: fact
+     | multiplication
+     | division
+     | mod
+multiplication: term "*" fact
+division: term "/" fact
+mod: term "%" fact
+
+?fact: number
+     | symbol
+     | float
+     | bool
+     | str
+     | priority
+priority: "(" expr ")"
+
+index: "[" expr ("," expr)* "]"
+symbol: /[a-zA-Z][a-zA-Z0-9]*/ index?
+number: /[+-]?\d+/
+float: /[+-]?\d+"."\d+/
+true: "true"
+false: "false"
+bool: true | false
+str: /".*?(?<!\\)"/
+
+type_int: "int"
+type_long: "long"
+type_float: "float"
+type_str: "str"
+type_bool: "bool"
+types: type_int | type_long | type_float | type_str | type_bool
+
+%import common.WORD
+%import common.SIGNED_NUMBER
+%import common.WS
+%ignore WS

@@ -1,0 +1,237 @@
+start: (view)
+
+// Bootstrap
+
+bootstrap: ((declare_knowledge | append_knowledge | define | register_mp | add_trigger | output_xmr_template) BOOTSTRAPDELIMITER)*
+
+declare_knowledge: "@" graph "." name (declare_knowledge_instance)? "=" "{" (declare_knowledge_element (BOOTSTRAPDELIMITER declare_knowledge_element)*)? (BOOTSTRAPDELIMITER)? "}"
+declare_knowledge_instance: "." (instance | GENERATE_INSTANCE)
+declare_knowledge_element: (declare_isa_knowledge | declare_property_knowledge)
+declare_isa_knowledge: DISA identifier
+declare_property_knowledge: slot (facet)? filler
+
+append_knowledge: identifier "+=" "{" (append_knowledge_element (BOOTSTRAPDELIMITER append_knowledge_element)*)? (BOOTSTRAPDELIMITER)? "}"
+append_knowledge_element: (append_property_knowledge)
+append_property_knowledge: slot (facet)? filler
+
+register_mp: REGISTER MP agent_method (AS NAME)?
+agent_method: MODULE "." CLASS
+
+add_trigger: ADD TRIGGER TO identifier INSTANTIATE identifier WHEN logical_slot_query
+
+output_xmr_template: DEFINE NAME arguments AS TEMPLATE output_xmr_template_type output_xmr_template_requires (output_xmr_template_root)? output_xmr_template_include
+output_xmr_template_type: TYPE (VERBAL | PHYSICAL | MENTAL)
+output_xmr_template_requires: REQUIRES identifier
+output_xmr_template_root: ROOT identifier
+output_xmr_template_include: INCLUDE declare_knowledge*
+
+slot: NAME
+facet: (SEM | DEFAULT | VALUE | NOT)
+filler: (identifier | literal | filler_argument)
+filler_argument: argument
+
+ADD: "add"i
+BOOTSTRAPDELIMITER: ";"
+DISA: "isa"i
+GENERATE_INSTANCE: "?"
+INCLUDE: "include"i
+INSTANTIATE: "instantiate"i
+MENTAL: "mental"i
+PHYSICAL: "physical"i
+REGISTER: "register"i
+REQUIRES: "requires"i
+ROOT: "root"i
+SEM: "sem"i
+TEMPLATE: "template"i
+TRIGGER: "trigger"i
+TYPE: "type"i
+VALUE: "value"i
+VERBAL: "verbal"i
+
+// Statements and executables
+
+define: DEFINE goal
+goal: NAME arguments AS GOAL IN GRAPH priority resources (plan)* (condition)* (effect)*
+priority: (PRIORITY (double | mp_statement))?
+resources: (RESOURCES (double | mp_statement))?
+goal_status: (PENDING | ACTIVE | ABANDONED | SATISFIED)
+
+plan: PLAN "(" PLAN_NAME ")" plan_selection plan_step+
+plan_selection: SELECT (DEFAULT | IF NOT? (boolean_statement | mp_statement))
+plan_step: STEP plan_do+
+plan_do: DO (statement | IDLE)
+
+condition: WHEN (condition_and | condition_or | condition_nand | condition_nor | condition_not | condition_on) THEN goal_status
+condition_and: boolean_statement (AND boolean_statement)*
+condition_or: boolean_statement (OR boolean_statement)+
+condition_nand: boolean_statement (NAND boolean_statement)+
+condition_nor: boolean_statement (NOR boolean_statement)+
+condition_not: boolean_statement (NOT boolean_statement)+
+condition_on: (EXECUTED)
+
+effect: EFFECT effect_do+
+effect_do: DO statement
+
+statement: (add_filler_statement | assert_statement | assign_filler_statement | assign_variable_statement | exists_statement | expectation_statement |foreach_statement | is_statement | make_instance_statement | mp_statement | output_statement | transient_statement)
+boolean_statement: (exists_statement | is_statement)
+
+add_filler_statement: statement_instance "[" NAME "]" "+=" (statement_instance | literal)
+assert_statement: ASSERT assertion ELSE IMPASSE WITH impasses
+assign_filler_statement: statement_instance "[" NAME "]" "=" (statement_instance | literal)
+assign_variable_statement: ARGUMENT "=" (literal | identifier | ARGUMENT | statement | list)
+exists_statement: EXISTS logical_slot_query
+expectation_statement: EXPECT (boolean_statement | mp_statement)
+foreach_statement: FOR EACH ARGUMENT IN logical_slot_query ("|" statement)*
+is_statement: statement_instance "[" NAME "]" EQUALS EQUALS literal
+make_instance_statement: "@" (graph | special_agent_graph) ":" identifier arguments
+mp_statement: SELF "." MP output_arguments
+output_statement: OUTPUT NAME output_arguments BY statement_instance
+transient_statement: "{" (declare_property_knowledge (BOOTSTRAPDELIMITER declare_property_knowledge)*)? (BOOTSTRAPDELIMITER)? "}"
+
+assertion: (exists_statement | is_statement | mp_statement)
+impasses: impasse (OR impasse)*
+impasse: make_instance_statement
+
+statement_instance: (SELF | identifier | make_instance_statement | argument)
+special_agent_graph: "AGENT." (INTERNAL | EXE | ONTOLOGY | WM | LT) "!"
+arguments: "(" (argument ("," argument)*)? ")"
+argument: ARGUMENT
+output_arguments: "(" (output_argument ("," output_argument)*)? ")"
+output_argument: (argument | literal | statement_instance)
+
+list: ("[]" | "[" list_element ("," list_element)* "]")
+list_element: (literal | identifier | ARGUMENT | statement | list)
+
+ABANDONED: "abandoned"i
+ACTIVE: "active"i
+AS: "as"i
+ASSERT: "assert"i
+BY: "by"i
+CAPABILITY: "capability"i
+DEFAULT: "default"i
+DEFINE: "define"i
+DO: "DO"i
+EACH: "each"i
+EFFECT: "effect"i
+ELSE: "else"i
+EXE: "exe"i
+EXECUTED: "executed"i
+EXISTS: "exists"i
+EXPECT: "expect"i
+FOR: "for"i
+GOAL: "goal"i
+IDLE: "idle"i
+IF: "if"i
+IMPASSE: "impasse"i
+IN: "in"i
+INTERNAL: "internal"i
+LT: "lt"i
+NAND: "nand"i
+NOR: "nor"i
+ONTOLOGY: "ontology"i
+OUTPUT: "output"i
+PENDING: "pending"i
+PLAN: "plan"i
+PRIORITY: "priority"i
+RESOURCES: "resources"i
+SATISFIED: "satisfied"i
+SELECT: "select"i
+SELF: "self"i
+STEP: "step"i
+WHEN: "when"i
+WITH: "with"i
+WM: "wm"i
+
+ARGUMENT: /\$[a-zA-Z0-9]+/
+MP: /[a-zA-Z0-9\_]+/
+PLAN_NAME: /(?!True|False)[a-zA-Z\.\*\_\- ]+/i
+
+// Views and querying
+
+view: VIEW graph (view_all | view_query) (FOLLOW path (AND FOLLOW path)*)?
+view_all: SHOW ALL
+view_query: frame_query
+
+path: step ((THEN)? step)*
+step: "[" relation (RECURSIVE)? "]->" (to)?
+relation: (RELATION | WILDCARD)
+to: TO logical_slot_query
+
+frame_query: (SHOW FRAMES)? WHERE logical_slot_query
+logical_slot_query: (frame_id_query | "(" frame_id_query ")" | slot_query | "(" slot_query ")" | logical_and_slot_query | logical_or_slot_query | logical_not_slot_query | logical_exact_slot_query)
+frame_id_query: "@" identifier_query
+logical_and_slot_query: "(" logical_slot_query (AND logical_slot_query)+ ")"
+logical_or_slot_query: "(" logical_slot_query (OR logical_slot_query)+ ")"
+logical_not_slot_query: NOT logical_slot_query
+logical_exact_slot_query: EXACTLY logical_and_slot_query
+
+slot_query: (slot_name_only_query | slot_name_fillers_query)
+slot_name_only_query: HAS NAME
+slot_name_fillers_query: (NAME | WILDCARD) (logical_filler_query)
+logical_filler_query: (filler_query | "(" filler_query ")" | logical_and_filler_query | logical_or_filler_query | logical_not_filler_query | logical_exact_filler_query)
+logical_and_filler_query: "(" logical_filler_query (AND logical_filler_query)+ ")"
+logical_or_filler_query: "(" logical_filler_query (OR logical_filler_query)+ ")"
+logical_not_filler_query: NOT logical_filler_query
+logical_exact_filler_query: EXACTLY logical_and_filler_query
+
+filler_query: (identifier_query | literal_query)
+identifier_query: (FROM_CONCEPT)? (EQUALS | ISA | ISPARENT | SUBCLASSES) (EXPAND_SETS_DISABLED)? identifier
+literal_query: EQUALS literal
+
+literal: (integer | double | string | boolean)
+boolean: (TRUE | FALSE)
+integer: INTEGER
+double: INTEGER "." INTEGER
+string: ("\"") STRING ("\"")
+
+identifier: "@" (graph ".")? name ("." instance)?
+graph: (GRAPH | tmr | vmr | xmr | xmr_template)
+tmr: "TMR" "#" INTEGER
+vmr: "VMR" "#" INTEGER
+xmr: "XMR" "#" INTEGER
+xmr_template: "XMR-TEMPLATE" "#" INTEGER
+name: NAME
+instance: INSTANCE
+
+ALL: "all"i
+AND: "and"i
+EXACTLY: "exactly"i
+FALSE: "false"i
+FOLLOW: "follow"i
+FRAMES: "frames"i
+HAS: "has"i
+NOT: "not"i
+OR: "or"i
+SHOW: "show"i
+THEN: "then"i
+TO: "to"i
+TRUE: "true"i
+VIEW: "view"i
+WHERE: "where"i
+
+DASH: "-"
+EQUALS: "="
+EXPAND_SETS_DISABLED: "!"
+FROM_CONCEPT: "~"
+ISA: "^"
+ISPARENT: "^."
+RECURSIVE: "*"
+SUBCLASSES: ">"
+
+CLASS: /[a-z0-9\_]+/i
+GRAPH: /[a-zA-Z]+/
+MODULE: /[a-z0-9\_]+[\.[a-z0-9\_]+]*/i
+NAME: /(?!True|False|isa)[a-zA-Z\.\*\_\-]+/i
+INSTANCE: /[0-9]+/
+RELATION: /[a-zA-Z0-9\-]+/
+WILDCARD: "*"
+
+INTEGER: /[0-9]+/
+ALPHA: /[a-zA-Z]+/
+SYMBOL: /[\_]+/
+STRING: /[0-9a-zA-z\_\-\>\$\.]+/
+
+COMMENT: /\/\/.*\n/
+WHITESPACE: (" " | /\t/ | /\n/)+
+%ignore COMMENT
+%ignore WHITESPACE

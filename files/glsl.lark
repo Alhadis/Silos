@@ -1,0 +1,120 @@
+// adapted from https://www2.cs.arizona.edu/~debray/Teaching/CSc453/DOCS/cminusminusspec.html
+
+%ignore WHITESPACE
+
+start: prog
+
+prog: ( decl ";" | func )*
+
+decl: type var_decl ( "," var_decl )*
+ 	| type id "(" param_types ")" ( "," id "(" param_types ")" )*
+ 	| "uniform" type var_decl
+ 	| struct_stmt
+ 	| assg
+
+var_decl 	: 	id ["[" int_const "]"]
+
+type 	: "void" | "char" | "short" | "int" | "long" | "float"
+    | "double" | "signed" | "unsigned"
+    | "vec2" | "vec3" | "vec4"
+    | "ivec2" | "ivec3" | "ivec4"
+    | "uvec2" | "uvec3" | "uvec4"
+    | "dvec2" | "dvec3" | "dvec4"
+    | id
+
+param_types 	: [param_type] ("," param_type)*
+param_type: ["in"|"out"|"inout"] type id ["[" int_const "]"]
+
+func 	: 	type id "(" [param_types] ")" "{" (stmt)* "}"
+
+stmt 	: 	if_stmt
+ 	| 	"while" "(" expr ")" stmt
+ 	| 	"for" "(" [ assg ] ";" [ expr ] ";" [ assg ] ")" stmt
+ 	| 	"return" [ expr ] ";"
+ 	|   "break" ";"
+ 	|   "continue" ";"
+ 	|   "discard" ";"
+ 	| 	assg ";"
+ 	|   assg ("," assg)+ ";"
+ 	|   type nested_id ";"
+ 	| 	func_call ";"
+ 	| 	"{" ( stmt )* "}"
+ 	|   struct_stmt
+ 	| 	";"
+
+if_stmt: "if" "(" cond ["," cond] ")" stmt ["else" stmt]
+cond: expr
+
+struct_stmt: "struct" id "{" struct_mem_def "}"
+struct_mem_def: type id ["[" int_const "]"] ";" (type id ["[" int_const "]"] ";")*
+
+assg 	: [decl_spec] type id ["=" expr] ("," id ["=" expr])*
+        | nested_id assg_op expr ("," nested_id assg_op expr)*
+        | pfix_op nested_id
+        | nested_id pfix_op
+        | [decl_spec] [type] id "=" (nested_id assg_op)* expr
+
+decl_spec: ["const"] ["highp" | "lowp"]
+
+nested_id: id | id ["[" expr "]"] ["." nested_id]
+
+expr 	: 	"-" expr
+    |   "+" expr
+ 	| 	"!" expr
+ 	|   expr "." nested_id
+ 	|   expr "[" expr "]"
+ 	| 	expr binary_op expr
+ 	| 	expr relation_op expr
+ 	| 	expr logical_op expr
+ 	| 	"(" expr ")"
+ 	| 	const
+ 	|   nested_id
+    |   func_call
+    |   cond "?" expr ":" expr
+ 	|   pfix_op nested_id
+ 	|   nested_id pfix_op
+ 	|   assg
+
+func_call: id "(" [expr ("," expr)*] ")"
+
+binary_op 	: 	"+"
+ 	|	"-"
+ 	|	"*"
+ 	|	"/"
+ 	|   "%"
+ 	|   "&"
+ 	|   "|"
+ 	|   "^"
+
+relation_op 	: 	"=="
+ 	|	"!="
+ 	|	"<="
+ 	|	"<"
+ 	|	">="
+ 	|	">"
+
+logical_op 	: 	"&&"
+ 	|	"||"
+
+pfix_op: "++" | "--"
+
+assg_op	: "=" | "*=" | "/=" | "%=" | "+=" | "-=" | "<<="
+			| ">>=" | "&=" | "^=" | "|="
+
+const:  int_const | float_const | char_const | string_const
+
+int_const:          /-?[0-9]+[uU]?/
+                |   /0[xX][0-9a-fA-F]+[uU]?/
+
+float_const:        /[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?/
+                    | /[-+]?[0-9]+\.[0-9]*([eE][-+]?[0-9]+)?/
+
+char_const:         "\"" /./ "\""
+
+string_const:             /".*"/
+
+enumeration_const:  id
+
+id:                 /[a-zA-Z_][a-zA-Z0-9_]*/
+
+WHITESPACE: /\s/

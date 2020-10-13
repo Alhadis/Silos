@@ -1,0 +1,56 @@
+// LALR(1) Grammar
+// Precedence same as C
+// https://en.cppreference.com/w/c/language/operator_precedence
+
+
+?start: expression
+
+// low precedence first
+?expression: or_exp
+
+?or_exp: (or_exp OR_OP)? and_exp
+?and_exp: (and_exp AND_OP)? eq_neq_exp
+
+?eq_neq_exp: (eq_neq_exp EQ_NEQ_OP)? compare_exp
+?compare_exp: (compare_exp COMPARE_OP)? add_sub_exp
+
+?add_sub_exp: (add_sub_exp ADD_MINUS_OP)? mul_div_mod_exp
+?mul_div_mod_exp: (mul_div_mod_exp MUL_DIV_MOD_OP)? not_exp
+
+?not_exp: NOT_OP* in_exp
+
+?in_exp: (in_exp IN_OP)? unary_exp
+
+?unary_exp: ADD_MINUS_OP* parn
+
+?parn: "(" expression ")"
+    | terminal
+    | array
+
+array: "[" [expression ("," expression)* ","?] "]"
+
+terminal: NUMBER
+    | STRING
+    | BOOLEAN
+    | FIELD
+
+// keywords and operators
+IN_OP: "in"
+BOOLEAN: "true" | "false"
+NOT_OP: "!"
+OR_OP: "||"
+AND_OP: "&&"
+MUL_DIV_MOD_OP: "*" | "/" | "%"
+ADD_MINUS_OP: "+" | "-"
+COMPARE_OP: "<" | ">" | "<=" | ">="
+EQ_NEQ_OP: "==" | "!="
+
+// field should contain only numbers, letters and underline _
+// ".-1" means low priority, default is 1
+FIELD.-1: /[0-9a-zA-Z_]+/
+
+%import common.ESCAPED_STRING -> STRING
+%import common.SIGNED_NUMBER  -> NUMBER
+%import common.WS
+%import common.WORD
+%ignore WS

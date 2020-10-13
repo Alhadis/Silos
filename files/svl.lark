@@ -1,0 +1,143 @@
+?start: visualization
+
+?visualization: datasets? charts
+
+datasets: "DATASETS"i dataset+
+
+?dataset: file_dataset | sql_dataset
+
+file_dataset: CNAME ESCAPED_STRING
+
+sql_dataset: CNAME "SQL"i ESCAPED_STRING
+
+charts: chart+
+
+vcat: "(" chart+ ")"
+
+hcat: "CONCAT"i "(" chart+ ")"
+
+chart: xy_chart | histogram_chart | pie_chart | number_chart | vcat | hcat
+
+// The XX_property directives include the dimensions, so at least that one
+// is required. This is enforced by the compiler.
+xy_chart: markxy data xy_property+
+
+histogram_chart: "HISTOGRAM"i data histogram_property+
+
+pie_chart: "PIE"i data pie_property+
+
+number_chart: "NUMBER"i data number_property+
+
+?xy_property: title | dimensions | filter
+
+?histogram_property: title | dimensions | histogram_opts | filter
+
+?pie_property: title | axis | pie_opts | filter
+
+?number_property: title | value | filter
+
+title: "TITLE"i ESCAPED_STRING
+
+filter: "FILTER"i ESCAPED_STRING
+
+markxy: SCATTER | LINE | BAR
+
+data: CNAME
+
+dimensions: (x | y | split_by | color_by)+
+
+?histogram_opts: step | bins
+
+?pie_opts: hole
+
+step: "STEP"i NUMBER
+
+bins: "BINS"i NUMBER
+
+hole: "HOLE"i NUMBER
+
+// This allows for both x and y to have aggregations, which results in
+// order ambiguity (i.e. which aggregation gets applied first?).
+// This is resolved in the compiler.
+x: "X"i axis_spec axis_modifier*
+
+y: "Y"i axis_spec axis_modifier*
+
+color_by: "COLOR"i "BY"i axis_spec color_axis_modifier*
+
+axis: "AXIS"i axis_spec axis_modifier*
+
+// We only should aggregate as an axis modifier.
+// We don't need a label because the title is the label.
+value: "VALUE"i axis_spec aggregation?
+
+?axis_spec: field | transform
+
+?axis_modifier: aggregation | temporal | label | sort
+
+?color_axis_modifier: aggregation | temporal | label | color_scale
+
+label: "LABEL"i ESCAPED_STRING
+
+split_by: "SPLIT"i "BY"i axis_spec split_by_modifier*
+
+?split_by_modifier: temporal | label
+
+field: CNAME
+
+aggregation: COUNT | MIN | MAX | AVG | SUM
+
+temporal: "BY"i (YEAR | MONTH | DAY | HOUR | MINUTE | SECOND)
+
+transform: "TRANSFORM"i ESCAPED_STRING
+
+sort: "SORT"i (ASC | DESC)
+
+color_scale: ESCAPED_STRING
+
+SCATTER: "SCATTER"i
+
+BAR: "BAR"i
+
+LINE: "LINE"i
+
+HISTOGRAM: "HISTOGRAM"i
+
+PIE: "PIE"i
+
+COUNT: "COUNT"i
+
+MIN: "MIN"i
+
+MAX: "MAX"i
+
+AVG: "AVG"i
+
+SUM: "SUM"i
+
+YEAR: "YEAR"i
+
+MONTH: "MONTH"i
+
+DAY: "DAY"i
+
+HOUR: "HOUR"i
+
+MINUTE: "MINUTE"i
+
+SECOND: "SECOND"i
+
+ASC: "ASC"i
+
+DESC: "DESC"i
+
+// https://github.com/lark-parser/lark/blob/master/examples/lark.lark#L47
+COMMENT: "--" /[^\n]/*
+
+%import common.CNAME
+%import common.ESCAPED_STRING
+%import common.NUMBER
+%import common.WS
+
+%ignore WS
+%ignore COMMENT

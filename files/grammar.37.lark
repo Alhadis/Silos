@@ -1,0 +1,150 @@
+// -------------------------- BASIC PROGRAM STRUCTURE --------------------------
+program:   const_decl* var_decl* function_declaration* statement*
+
+code_block: statement | _LBRACE statement* _RBRACE
+
+// -------------------------- VARIABLES & CONSTANTS --------------------------
+
+const_decl: _DEFINE IDENTIFIER exp
+
+?var_decl: type declarations _SEMI
+
+declarations: declaration (_COMMA declaration)*
+
+?declaration: declaration_and_assignment
+            | array_declaration
+            | scalar_declaration
+
+declaration_and_assignment: IDENTIFIER _ASSIGN exp
+array_declaration: IDENTIFIER _LSQUARE exp _RSQUARE
+scalar_declaration: IDENTIFIER
+
+?statement:  assign_statement _SEMI
+        |   control_statement
+        |   io_statement _SEMI
+        |   function_call _SEMI
+        |   _SEMI
+
+?assign_statement:   scalar_assignment
+                |   IDENTIFIER _LSQUARE exp _RSQUARE _ASSIGN exp -> array_assignment
+
+scalar_assignment: IDENTIFIER _ASSIGN exp
+
+// -------------------------- FUNCTIONS --------------------------
+function_declaration: _FUNCDEF type IDENTIFIER _LPAR function_parameters_declaration? _RPAR code_block
+
+?function_parameters_declaration: parameter_declaration (_COMMA parameter_declaration)*
+
+?parameter_declaration: type IDENTIFIER -> scalar_parameter
+                      | type IDENTIFIER _LSQUARE _RSQUARE -> array_parameter
+
+function_call: IDENTIFIER _LPAR function_parameters? _RPAR
+
+?function_parameters: exp (_COMMA exp)*
+
+// -------------------------- CONTROL FLOW --------------------------
+
+?control_statement: if_construct
+                  | while_construct
+                  | do_while_construct _SEMI
+                  | for_construct
+                  | return_stmt
+
+?if_construct: if_statement
+             | if_statement _ELSE code_block -> if_else_statement
+
+if_statement: _IF _LPAR exp _RPAR code_block
+
+while_construct: _WHILE _LPAR exp _RPAR code_block
+
+do_while_construct: _DO code_block _WHILE _LPAR exp _RPAR
+
+for_construct: _FOR _LPAR scalar_assignment _SEMI exp _SEMI assign_statement _RPAR code_block
+
+return_stmt: _RETURN
+
+// -------------------------- IO --------------------------
+
+?io_statement: read_stmt | write_stmt
+read_stmt: _READ _LPAR IDENTIFIER _RPAR
+write_stmt: _WRITE _LPAR exp _RPAR
+
+// -------------------------- EXPRESSIONS --------------------------
+
+?exp: INTEGER -> intexpr
+    | IDENTIFIER -> scalar_expr
+    | IDENTIFIER _LSQUARE exp _RSQUARE -> array_expr
+    | _LNOT exp -> lnot_expr
+    | exp (PLUS|MINUS|DIV|MUL|MOD|EQ|NEQ|GT|LT|GTE|LTE|LAND|LOR|BAND|BOR|BXOR) exp -> binexpr
+    | _LPAR exp _RPAR
+    | MINUS exp -> neg_expr
+
+?type: INT
+
+// ----------- TOKENS ---------------
+
+// Operands
+_LBRACE: "{"
+_RBRACE: "}"
+_LSQUARE: "["
+_RSQUARE: "]"
+_LPAR: "("
+_RPAR: ")"
+_SEMI: ";"
+PLUS: "+"
+MINUS: "-"
+DIV: "/"
+MUL: "*"
+MOD: "%"
+EQ: "=="
+NEQ: "!="
+GT: ">"
+LT: "<"
+GTE: ">="
+LTE: "<="
+LAND: "&&"
+LOR: "||"
+BAND: "&"
+BOR: "|"
+BXOR: "^"
+_LNOT: "!"
+// TODO: shift operations
+
+// Variables and constants declaration and assignment
+INT: "int"
+_DEFINE: "define"
+_ASSIGN: "="
+IDENTIFIER: /[a-z_][a-z0-9_]*/i
+
+// Function declaration
+_FUNCDEF: "def"
+
+// Control flow
+_IF: "if"
+_ELSE: "else"
+_DO: "do"
+_WHILE: "while"
+_FOR: "for"
+_RETURN: "return"
+
+// IO
+_READ: "read"
+_WRITE: "write"
+
+// Other basic tokens
+INTEGER: /[0-9]+/
+_COMMA: ","
+
+COMMENT_START: "/*"
+COMMENT_END: "*/"
+COMMENT: COMMENT_START /.*/ COMMENT_END
+COMMENT_SR: "//" /.*/
+
+// -------------------------- PARSER CONFIGURATION --------------------------
+
+%import common.WS
+
+%ignore WS
+
+%ignore COMMENT
+%ignore COMMENT_SR

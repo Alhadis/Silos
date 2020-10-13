@@ -1,0 +1,75 @@
+program: _global_statement+
+
+_global_statement: function
+                 | c_include
+                 | c_func
+
+c_include: "!import" FILE
+FILE: /.+/
+c_func: "!" IDENTIFIER "(" func_args ")" TYPE
+
+function: IDENTIFIER "(" func_args ")" TYPE block
+
+func_arg: IDENTIFIER TYPE
+func_args: [func_arg ("," func_arg)*]
+
+block: "{" statements "}"
+statements: [statement (statement)*]
+
+statement: block
+         | return_stmt
+         | definition
+         | assign
+         | if_stmt
+         | expression ";"
+
+return_stmt: "return" expression ";"
+
+if_stmt: "if" expression block ("else" block)?
+
+assign: IDENTIFIER "=" expression ";"
+
+definition: IDENTIFIER TYPE? ":=" expression ";"
+          | IDENTIFIER TYPE ";"
+
+expression: cmp_expr
+
+CMP_OP: "==" | "!=" | "<" | "<=" | ">" | ">="
+cmp_expr: add_expr (CMP_OP add_expr)*
+ADD_OP: "+" | "-"
+add_expr: mul_expr (ADD_OP mul_expr)*
+MUL_OP: "*" | "/"
+mul_expr: prim_expr (MUL_OP prim_expr)*
+prim_expr: "(" expression ")" | IDENTIFIER | constant | call
+
+call: IDENTIFIER "(" call_args? ")"
+call_args: [expression ("," expression)*]
+
+constant: SIGNED_NUMBER
+        | HEX_NUMBER
+        | BIN_NUMBER
+        | CHAR_STRING
+
+SIGNED_NUMBER: /-?\d+(\.\d+)?([eE][+-]?\d+)?/
+HEX_NUMBER: "0x" /[0-9ABCDEFabcdef_]+/
+BIN_NUMBER: "0b" /[01_]+/
+
+CHAR_STRING: ESCAPED_STRING
+
+
+BINARY_OPERATOR: "+" | "-" | "*" | "/" | "%"
+               | "&" | "|" | "^" | "~"
+               | "<" | "<=" | "<<"
+               | "==" | "!="
+               | ">" | ">=" | ">>"
+
+IDENTIFIER: /[A-z][A-z0-9]*/
+
+TYPE: /[A-z][A-z0-9]*/
+
+COMMENT: "#" /[^\n]/*
+%ignore COMMENT
+
+%import common.ESCAPED_STRING
+%import common.WS
+%ignore WS

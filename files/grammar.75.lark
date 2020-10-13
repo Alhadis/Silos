@@ -1,0 +1,61 @@
+
+//datatypes
+
+
+// [STRING]
+
+// single line string
+STRING: /[ubf]?r?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
+// multiline string (like python)
+LONG_STRING: /[ubf]?r?(""".*?(?<!\\)(\\\\)*?"""|'''.*?(?<!\\)(\\\\)*?''')/is
+string: STRING | LONG_STRING
+
+// [LIST]
+list: "[" atom ("," atom)* [","] "]"
+
+// [NUMBER]
+
+DEC_NUMBER: /0|[1-9]\d*/i
+HEX_NUMBER.2: /0x[\da-f]*/i
+OCT_NUMBER.2: /0o[0-7]*/i
+BIN_NUMBER.2 : /0b[0-1]*/i
+FLOAT_NUMBER.2: /((\d+\.\d*|\.\d+)(e[-+]?\d+)?|\d+(e[-+]?\d+))/i
+?number: DEC_NUMBER | HEX_NUMBER | BIN_NUMBER | OCT_NUMBER | FLOAT_NUMBER
+
+// [None]
+
+none: "None"
+
+// [Boolean]
+
+boolean: "True" | "False"
+
+// [MAP]
+
+pair: atom ":" atom
+map: "{" pair ("," pair)* [","] "}"
+
+// [GRAMMAR]
+
+?atom: string | list | number | map | none | boolean
+
+line: NAME "=" atom _NEWLINE
+block: NAME ":" _NEWLINE _INDENT statement+ _DEDENT
+
+extends: "extends" NAME _NEWLINE
+
+?statement: line | block | extends
+
+// parsing starts here
+input: (_NEWLINE | statement)*
+
+// [UTILS]
+
+NAME: /[a-zA-Z_]\w*/
+COMMENT: /#[^\n]*/
+_NEWLINE: ( /\r?\n[\t ]*/ | COMMENT )+
+
+%ignore /[\t \f]+/  // WS
+%ignore /\\[\t \f]*\r?\n/   // LINE_CONT
+%ignore COMMENT
+%declare _INDENT _DEDENT

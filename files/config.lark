@@ -1,0 +1,178 @@
+// general
+// ================
+
+?tok_ignore: COMMENT
+           | ";" -> extra_semicolon
+
+path: string
+key: string
+param: string
+quoted_param: quoted_string
+kernel_option_value: string
+
+// kernel logic expressions
+// ================
+
+EXPR_CMP_GE:  ">"
+EXPR_CMP_GEQ: ">="
+EXPR_CMP_LE:  "<"
+EXPR_CMP_LEQ: "<="
+EXPR_CMP_NEQ: ( WS "is" WS "not" WS | "!=" )
+EXPR_CMP_EQ:  ( WS "is" WS | "==" )
+
+expr_op_neg: "not" WS
+           | "!"
+expr_op_cmp: EXPR_CMP_GE
+           | EXPR_CMP_GEQ
+           | EXPR_CMP_LE
+           | EXPR_CMP_LEQ
+           | EXPR_CMP_NEQ
+           | EXPR_CMP_EQ
+
+EXPR_STRING: /[\$_a-zA-Z0-9.,-]+/
+EXPR_ENV_STRING: "$env[" EXPR_STRING [ ":" ESCAPED_STRING ] "]"
+expr_string: ESCAPED_STRING  -> string_quoted
+           | EXPR_STRING     -> string
+           | EXPR_ENV_STRING -> string
+expr_param: expr_string
+expr_id: expr_string
+
+expr:         expr_term ( WS "or" WS expr_term | "||" expr_term )*
+expr_term:    expr_factor ( WS "and" WS expr_factor | "&&" expr_factor )*
+expr_cmp:     expr_param ( expr_op_cmp expr_param )+
+expr_factor: [ expr_op_neg ] expr_id
+           | [ expr_op_neg ] "(" expr ")"
+           | expr_cmp
+
+_expr_ws: WS expr
+        | "(" expr ")"
+
+// module
+// ================
+
+module_name: IDENTIFIER
+TRY:         "try"
+
+blck_module: "module" WS module_name "{" ctxt_module "}"
+ctxt_module: ( tok_ignore
+             | stmt_module_if
+             | stmt_module_use
+             | stmt_module_merge
+             | stmt_module_assert
+             | stmt_module_set
+             | stmt_module_add_cmdline )*
+stmt_module_if:          "if"     _expr_ws "{" ctxt_module "}" ( "else" WS "if" _expr_ws "{" ctxt_module "}" )* [ "else" WS "{" ctxt_module "}" ]
+stmt_module_use:         "use"    ( WS IDENTIFIER )+                                 [ WS "if" _expr_ws ] ";"
+stmt_module_merge:       "merge"  WS path                                            [ WS "if" _expr_ws ] ";"
+stmt_module_assert:      "assert" _expr_ws [ ":" quoted_param ]                      [ WS "if" _expr_ws ] ";"
+stmt_module_set:         [ TRY ] "set" WS KERNEL_OPTION [ WS kernel_option_value ]   [ WS "if" _expr_ws ] ";"
+stmt_module_add_cmdline: "add_cmdline" ( WS quoted_param )+                          [ WS "if" _expr_ws ] ";"
+
+// kernel
+// ================
+
+blck_kernel: "kernel" "{" ctxt_kernel "}"
+ctxt_kernel: ( tok_ignore
+             | ctxt_module )*
+
+// initramfs
+// ================
+
+blck_initramfs: "initramfs" "{" ctxt_initramfs "}"
+ctxt_initramfs: ( tok_ignore
+                | stmt_initramfs_enabled
+                | stmt_initramfs_builtin
+                | stmt_initramfs_build_command
+                | stmt_initramfs_build_output )*
+stmt_initramfs_enabled:        "enabled"       WS param ";"
+stmt_initramfs_builtin:        "builtin"       WS param ";"
+stmt_initramfs_build_command:  "build_command" ( WS quoted_param )+ ";"
+stmt_initramfs_build_output:   "build_output"  WS path  ";"
+
+// hooks
+// ================
+
+blck_hooks: "hooks" "{" ctxt_hooks "}"
+ctxt_hooks: ( tok_ignore
+            | stmt_hooks_pre
+            | stmt_hooks_post )*
+stmt_hooks_pre:  "pre"  ( WS quoted_param )+ ";"
+stmt_hooks_post: "post" ( WS quoted_param )+ ";"
+
+// install
+// ================
+
+blck_install: "install" "{" ctxt_install "}"
+ctxt_install: ( tok_ignore
+              | blck_hooks
+              | stmt_install_umask
+              | stmt_install_target_dir
+              | stmt_install_target_kernel
+              | stmt_install_target_config
+              | stmt_install_target_initramfs
+              | stmt_install_modules_prefix
+              | stmt_install_mount
+              | stmt_install_assert_mounted
+              | stmt_install_keep_old )*
+stmt_install_umask:            "umask"            WS param ";"
+stmt_install_target_dir:       "target_dir"       WS path ";"
+stmt_install_target_kernel:    "target_kernel"    WS path ";"
+stmt_install_target_config:    "target_config"    WS path ";"
+stmt_install_target_initramfs: "target_initramfs" WS path ";"
+stmt_install_modules_prefix:   "modules_prefix"   WS path ";"
+stmt_install_mount:            "mount"            WS path ";"
+stmt_install_assert_mounted:   "assert_mounted"   WS path ";"
+stmt_install_keep_old:         "keep_old"         WS param ";"
+
+// build
+// ================
+
+blck_build: "build" "{" ctxt_build "}"
+ctxt_build: ( tok_ignore
+            | blck_hooks
+            | stmt_build_umask )*
+stmt_build_umask: "umask" WS param ";"
+
+// root
+// ================
+
+blck_root: ctxt_root
+ctxt_root: ( tok_ignore
+           | blck_module
+           | blck_kernel
+           | blck_initramfs
+           | blck_install
+           | blck_build
+           | stmt_root_include_module_dir
+           | stmt_root_include_module )*
+
+stmt_root_include_module_dir: "include_module_dir" WS path ";"
+stmt_root_include_module:     "include_module"     WS path ";"
+
+// terminals
+// ================
+
+KERNEL_OPTION: /[_a-zA-Z0-9]+/
+COMMENT:       /#[^\n]*/
+IDENTIFIER:    ( "_" | "-" | LETTER | DIGIT )+
+
+// The negative lookbehind avoids beeing greedy for the semicolon at the end
+STRING: /\S+(?<!;)/
+string: ESCAPED_STRING  -> string_quoted
+      | EXPR_ENV_STRING -> string
+      | STRING          -> string
+quoted_string: ESCAPED_STRING -> string_quoted
+
+// meta
+// ================
+
+_STRING_INNER: /.*?/
+_STRING_ESC_INNER: _STRING_INNER /(?<!\\)(\\\\)*?/
+ESCAPED_STRING: "\"" _STRING_ESC_INNER "\""
+              | "'" _STRING_ESC_INNER "'"
+
+%import common.LETTER
+%import common.DIGIT
+%import common.WS
+%ignore WS
+%ignore COMMENT

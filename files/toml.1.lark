@@ -1,0 +1,307 @@
+// Copyright (c) 2019 Stephen Bunn <stephen@bunn.io>
+// ISC License <https://choosealicense.com/licenses/isc>
+
+
+// Carriage return (CR) rules:
+//   - Carriage return is the Window's style newline prefix `\r`
+CR: /\r/
+
+// Line feed (LF) rules:
+//   - Line feed is the default newline prefix `\n`
+LF: /\n/
+
+// Newline (NL) rules:
+//   - Newline means LF (0x0a) or CRLF (0x0d 0x0a)
+NL: (CR? LF)
+
+// Whitespace (WS) rules:
+//   - Whitespace means TAB (0x09) or SPACE (0x20)
+WS: (" " | /\t/)
+
+// Assignment (EQ) rules:
+//   - The key assignment is the equals sign `=`
+EQ: "="
+
+// Dot rules:
+//   - The dot delimiter is a period `.`
+DOT: "."
+
+// Delimiter rules:
+//   - The default delimiter is a comma `,`
+DELIM: ","
+
+// Section rules:
+//   - Section and array prefixes are a left square-bracket `[`
+//   - Section and array suffixes are a right square-bracket `]`
+SECTION_PREFIX: "["
+SECTION_SUFFIX: "]"
+
+// Boolean rules:
+//   - Booleans are either `true` or `false`
+//   - Booleans are always lowercased
+BOOLEAN: "true" | "false"
+
+// Digit rules:
+//   - Digits can be represented as decimal, hexadecimal, octal, or binary
+//   - Hexadecimal digits are case-sensitive
+DIGIT: "0".."9"
+DIGIT_HEX: "a".."f" | "A".."F" | DIGIT
+DIGIT_OCT: "0".."7"
+DIGIT_BIN: "0".."1"
+
+// Sign rules:
+//   - Numbers can optionally be signed
+//   - No sign or `+` sign indicates number is positive
+//   - `-` sign indicates number is negative
+SIGN: "-" | "+"
+
+// Special numbers:
+//   - Special numbers can be optionally signed
+//   - `inf` can be used as a float value indicating infinity
+//   - `nan` can be used as a float value indicating a non-number
+INF: "inf"
+INF_SIGNED: SIGN INF
+NAN: "nan"
+NAN_SIGNED: SIGN NAN
+
+// Number rules:
+//   - Basic numbers contain at least one digit
+//   - Numbers can employ underscores `_` to enhance readability
+//   - Each underscore must be surrounded by at least one digit on both sides
+//   - Numbers can be optionally signed
+NUMBER: DIGIT+ ("_" DIGIT+)*
+NUMBER_SIGNED: SIGN NUMBER
+
+// Number fragment rules:
+//   - Number fragments are either decimals or exponents
+//   - Decimal fragments are prefixed with a `.` and followed by at least one digit
+//   - Exponent fragments are prefixed with a `e` or `E` and followed by an optionally signed number
+FRAGMENT_DECIMAL: DOT NUMBER
+FRAGMENT_EXPONENT: ("e" | "E") (NUMBER | NUMBER_SIGNED)
+
+// Quote rules:
+//   - Quotes are either string quotes `"` or literal quotes `'`
+QUOTE_STRING: "\""
+QUOTE_LITERAL: "'"
+
+// Quote multi-line rules:
+//   - Multi-line quotes must repeat 3 times
+QUOTE_STRING_MULTI: QUOTE_STRING QUOTE_STRING QUOTE_STRING // ~3 does not work for terminals
+QUOTE_LITERAL_MULTI: QUOTE_LITERAL QUOTE_LITERAL QUOTE_LITERAL // ~3 does not work for terminals
+
+// String rules:
+//
+STRING: "\\\"" | /[^"]/
+STRING_LITERAL: /[^']/
+
+// Comment rules:
+//   - A hash symbol marks the rest of the line as a comment
+//     - Does not apply when the hash symbol appears within a string
+COMMENT_PREFIX: "#"
+COMMENT: COMMENT_PREFIX /[^\n]/*
+
+// Key rules:
+//   - A key may be bare, quoted, or dotted
+// Bare key rules:
+//   - A bare key may only contain ASCII letters, ASCII digits, underscores, and dashes
+//     - Bare keys could potentially be all ASCII digits but are interpreted as strings
+KEY_BARE: /[a-zA-Z0-9_-]+/
+
+// Quoted key rules:
+//   - Follows the same rules as bare keys
+//   - Are surrounded by string quotes `"` or literal quotes `'`
+//   - Potentially, empty quoted strings are allowed (though discouraged)
+KEY_QUOTED: QUOTE_STRING /[^"]/* QUOTE_STRING
+    | QUOTE_LITERAL /[^']/* QUOTE_LITERAL
+
+// Dotted key rules:
+//   - A sequence of bare or quoted keys joined with a period `.`
+//   - Whitespace around dot-separated parts is ignored (though discouraged)
+KEY_DOTTED: (KEY_BARE | KEY_QUOTED) (WS? DOT WS? (KEY_BARE | KEY_QUOTED))+
+
+// String rules:
+//   - Strings can be of type basic, multi-line basic, literal, or multi-line literal
+//   - All strings must only contain valid UTF-8 characters
+// Basic string rules:
+//   - Basic strings are surrounded with string quotations
+//   - Any unicode character may be used except those that must be escaped
+//     - String quotations must be escaped
+//     - Backslashes must be escaped
+//     - Control characters (U+0000 to U+001f, U+007f) must be escaped
+//   - For convenience, popular characters have compact escape sequences
+//     - \b <backspace> (U+0008)
+//     - \t <tab> (U+0009)
+//     - \n <linefeed> (U+000a)
+//     - \f <form feed> (U+000c)
+//     - \r <carriage return> (U+000d)
+//     - \" <quote> (U+0022)
+//     - \\ <backslash> (U+005c)
+//     - \uXXXX <unicode> (U+XXXX)
+//     - \UXXXXXXXX <unicode> (U+XXXXXXXX)
+VALUE_STRING_BASIC: QUOTE_STRING STRING* QUOTE_STRING
+
+// Literal string rules:
+//   - Literal strings are surrounded with literal quotations
+//   - Adhere to the same rules as basic strings
+//     - Does not have to escape the \" <quote> character
+//     - Must escape the \' <single quote> character
+VALUE_STRING_LITERAL: QUOTE_LITERAL STRING_LITERAL* QUOTE_LITERAL
+
+// Multi-line string rules:
+//   - Multi-line strings are surrounded by 3 string quotation marks `"""`
+//   - Multi-line strings allow newlines
+//     - A newline immediately following an opening newline will be trimmed
+VALUE_STRING_BASIC_MULTI: QUOTE_STRING_MULTI (STRING | NL)* QUOTE_STRING_MULTI
+
+// Multi-line literal string rules:
+//   - Multi-line literal strings are surrounded by 3 literal quotation marks `'''`
+//   - Multiline literal strings allow newlines
+//     - A newline immediately followed by an opening newline will be trimmed
+VALUE_STRING_LITERAL_MULTI: QUOTE_LITERAL_MULTI (/(?!'{3})./* | NL)* QUOTE_LITERAL_MULTI
+
+
+// Integer rules:
+//   - Integers can be represented in decinal, hexadecimal, octal, and binary
+//   - Integers are whole numbers
+//   - Positive numbers may be prefixed with a plus sign `+`
+//   - Negative numbers are always prefixed with a minus sign `-`
+//   - Large numbers may employ underscores between digits to enhance readability
+//     - Each underscore must be surrounded by at least one digit on each side
+//   - Leading zeros are not allowed
+//   - Integer values `-0` and `+0` are valid and identical to an unprefixed zero `0`
+// VALUE_INTEGER_DEC: SIGN? "1".."9" ("_"? DIGIT+)*
+//     | SIGN? "0"
+
+VALUE_INTEGER_DEC: SIGN? "1".."9"+ ("_"? DIGIT+)*
+    | SIGN? "0"
+
+// Hexadecimal integer rules:
+//   - Hexadecimal values may not be negative
+//   - Plus sign prefix `+` is not allowed
+//   - Hexadecimal values must be prefixed by `0x`
+//   - Hexadecimal values are case-sensitive
+//   - Leading zeros are allowed (as opposed to decimal integers)
+//   - Underscores are allowed between digits
+//     - Underscores are not allowed between the prefix and the value
+VALUE_INTEGER_HEX: "0x" DIGIT_HEX+ ("_" DIGIT_HEX+)*
+
+// Octal integer rules:
+//   - Octal values may not be negative
+//   - Plus sign prefix `+` is not allowed
+//   - Octal values must be prefixed by `0o`
+//   - Leading zeros are allowed (as opposed to decimal integers)
+//   - Underscores are allowed between digits
+//     - Underscores are not allowed between the prefix and the value
+VALUE_INTEGER_OCT: "0o" DIGIT_OCT+ ("_" DIGIT_OCT+)*
+
+// Binary integer rules:
+//   - Binary values may not be negative
+//   - Plus sign prefix `+` is not allowed
+//   - Binary values must be prefixed by `0b`
+//   - Leading zeros are allowed (as opposed to decimal integers)
+//   - Underscores are allowed between digits
+//     - Underscores are not allowed between the prefix and the value
+VALUE_INTEGER_BIN: "0b" DIGIT_BIN+ ("_" DIGIT_BIN+)*
+
+
+// Float rules:
+//   - Floats are IEEE 754 binary64 values
+//   - Floats begin with an decimal integer
+//   - Floats are suffixed with a fractional and/or an exponent
+//     - If both parts are present, fractional must precede the exponent
+//   - A fractional part is prefixed by a period `.` and followed by at least one digit
+//   - An exponent is a upper or lowercase `E` or `e` followed by a decimal integer
+//   - Floats can use underscores to enhance readability
+//     - Each underscore must be surrounded by at least one digit
+//   - Float values `-0.0` and `+0.0` are valid and identical to an unprefixed `0.0`
+//   - Special float values `inf` and `nan` can also be used
+//     - They are always lowercased
+//     - They can be prefixed with a plus `+` or minus `-` sign
+VALUE_FLOAT: (NUMBER | NUMBER_SIGNED) ((FRAGMENT_DECIMAL FRAGMENT_EXPONENT) | FRAGMENT_DECIMAL | FRAGMENT_EXPONENT)
+VALUE_FLOAT_INF: (INF | INF_SIGNED)
+VALUE_FLOAT_NAN: (NAN | NAN_SIGNED)
+
+
+// Date rules:
+//   - Dates are RFC 3339 formatted date-times without any relation to offset or timezone
+// HACK: Local dates must be match weighted higher than `VALUE_INTEGER_DEC` to avoid conflicts
+VALUE_LOCAL_DATE.2: /[0-9]{4}-[0-9]{2}-[0-9]{2}[^\r?\n]*/
+
+// Time rules:
+//   - Times are RFC 3339 formatted date-times without any relation to day, offset, or timezone
+//   - Precision of fractional secords is implementation specific
+//     - At least millisecond precision is expected
+//     - If precision is greater than milliseconds, precision must be truncated (not rounded)
+// HACK: Local times must be match weighted higher than `VALUE_INTEGER_DEC` to avoid conflicts
+VALUE_LOCAL_TIME.2: /[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,6})?[^\r?\n]*/
+
+// Local datetime rules:
+//   - Local datetimes are RFC 3339 formatted date-times
+//   - Local datetimes have no relation to an offset or timezone
+//   - Precision of fractional secords is implementation specific
+//     - At least millisecond precision is expected
+//     - If precision is greater than milliseconds, precision must be truncated (not rounded)
+//   - For sake of readability you can substitude the `T` with a space ` ` between date and time
+VALUE_LOCAL_DATETIME: VALUE_LOCAL_DATE ("T" | " ") VALUE_LOCAL_TIME
+
+// Offset datetime rules:
+//   - Offset datetimes are RFC 3339 formatted date-times
+//   - Precision of fractional secords is implementation specific
+//     - At least millisecond precision is expected
+//     - If precision is greater than milliseconds, precision must be truncated (not rounded)
+//   - Timezones are either the classic `Z` suffix or the offset specified after a dash `-`
+VALUE_OFFSET_DATETIME: VALUE_LOCAL_DATETIME ("Z" | ("-" /[0-9]{2}:[0-9]{2}/))
+
+
+// Boolean rules:
+//   - Booleans are always lowercase
+//   - Booleans are either `true` or `false`
+VALUE_BOOLEAN: BOOLEAN
+
+
+string: VALUE_STRING_BASIC
+    | VALUE_STRING_BASIC_MULTI
+    | VALUE_STRING_LITERAL
+    | VALUE_STRING_LITERAL_MULTI
+
+boolean: VALUE_BOOLEAN
+
+integer: VALUE_INTEGER_DEC
+    | VALUE_INTEGER_HEX
+    | VALUE_INTEGER_OCT
+    | VALUE_INTEGER_BIN
+
+float: VALUE_FLOAT
+    | VALUE_FLOAT_INF
+    | VALUE_FLOAT_NAN
+
+date: VALUE_LOCAL_DATE
+    | VALUE_LOCAL_TIME
+    | VALUE_LOCAL_DATETIME
+    | VALUE_OFFSET_DATETIME
+
+key: KEY_BARE
+    | KEY_QUOTED
+    | KEY_DOTTED
+
+value: string
+    | boolean
+    | integer
+    | float
+    | date
+
+
+// Pair rules:
+//   - Key and value pairs are separated by an equals sign `=`
+//   - Keys must be on the left of the equal sign
+//   - Values must be on the right of the equal sign
+//   - Whitespace is ignored around keys and values
+//   - The pair must appear on a single line
+//     - Values can potentially be broken over multiple lines
+//   - There must be a newline after a pair
+//     - Inline tables are a common exception for this rule
+pair: key WS? EQ WS? value WS? COMMENT? NL
+
+toml: (NL | COMMENT | pair)*
+
+?start: toml

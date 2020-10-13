@@ -1,0 +1,83 @@
+?start: const_expr
+      | rand_expr
+      | dicelet_expr
+
+?const_unit: NUMBER       -> number
+    | NUMBER "%"          -> percent
+    | "(" const_expr ")"  -> bracket
+
+?const_expr_mul: const_unit
+    | const_expr_mul OP_MULDIV const_unit -> const_calc
+
+?const_expr: const_expr_mul
+    | "-" const_expr_mul                  -> const_neg
+    | const_expr OP_ADDSUB const_expr_mul -> const_calc
+
+?rand_unit: const_unit? ("d" | "D") const_unit                   -> simple_rand
+    | const_unit ("d" | "D") const_unit ("h" | "H") const_unit   -> highest_rand
+    | const_unit ("d" | "D") const_unit ("l" | "L") const_unit   -> lowest_rand
+    | "(" rand_expr ")"                                          -> bracket
+
+?rand_expr_mul: rand_unit
+    | const_expr_mul OP_MULDIV rand_unit -> rand_calc
+    | rand_expr_mul OP_MULDIV const_unit -> rand_calc
+    | rand_expr_mul OP_MULDIV rand_unit  -> rand_calc
+
+?rand_expr: rand_expr_mul
+    | "-" rand_expr_mul                  -> rand_neg
+    | const_expr OP_ADDSUB rand_expr_mul -> rand_calc
+    | rand_expr OP_ADDSUB const_expr_mul -> rand_calc
+    | rand_expr OP_ADDSUB rand_expr_mul  -> rand_calc
+
+?dicelet_list: const_expr
+    | rand_expr
+    | dicelet_expr
+    | dicelet_list "," const_expr     -> dicelet_concat
+    | dicelet_list "," rand_expr      -> dicelet_concat
+    | dicelet_list "," dicelet_repeat -> dicelet_concat
+
+?dicelet_repeat: const_unit "#" const_unit -> dicelet_const
+    | const_unit "#" rand_expr             -> dicelet_rand
+
+?dicelet_unit: dicelet_repeat
+    | "{" dicelet_list ","? "}"
+    | "(" dicelet_expr ")"      -> bracket
+
+?dicelet_expr_mul: dicelet_unit
+    | const_expr_mul OP_MULDIV dicelet_unit   -> dicelet_calc
+    | rand_expr_mul OP_MULDIV dicelet_unit    -> dicelet_calc
+    | dicelet_expr_mul OP_MULDIV const_unit   -> dicelet_calc
+    | dicelet_expr_mul OP_MULDIV rand_unit    -> dicelet_calc
+    | dicelet_expr_mul OP_MULDIV dicelet_unit -> dicelet_calc
+
+?dicelet_expr: dicelet_expr_mul
+    | "-" dicelet_expr_mul                    -> dicelet_neg
+    | const_expr OP_ADDSUB dicelet_expr_mul   -> dicelet_calc
+    | rand_expr OP_ADDSUB dicelet_expr_mul    -> dicelet_calc
+    | dicelet_expr OP_ADDSUB const_expr_mul   -> dicelet_calc
+    | dicelet_expr OP_ADDSUB rand_expr_mul    -> dicelet_calc
+    | dicelet_expr OP_ADDSUB dicelet_expr_mul -> dicelet_calc
+
+
+// Operators
+
+ADD: "+"
+SUB: "-"
+MUL: ("*" | "x" | "X")
+DIV: "/"
+
+OP_ADDSUB: ADD | SUB
+OP_MULDIV: MUL | DIV
+
+// Decimals
+
+DIGIT: "0".."9"
+INT: DIGIT+
+DECIMAL: INT "." INT | "." INT
+NUMBER: DECIMAL | INT
+
+// Imports
+
+%import common.WS_INLINE
+
+%ignore WS_INLINE

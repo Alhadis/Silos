@@ -1,0 +1,107 @@
+// Many of this code is from:
+// https://github.com/lark-parser/lark/blob/master/examples/python3.lark
+
+file_input: (_NEWLINE | use)* rootdef
+rootdef: node_type nodedef
+
+node_type: "extern"           -> node_type_extern
+         | "data"             -> node_type_data
+         | "optim"            -> node_type_optim
+         | "exec"             -> node_type_exec
+         |                    -> node_type_default
+
+use: "use" NAME use_by _NEWLINE
+?use_by: "by" NAME            -> use_by_author
+       | "by" "w" STRING      -> use_by_web
+       |                      -> use_by_local
+
+externdef: "extern" nodedef
+
+nodedef: "node" NAME ":" _node_suite
+_node_suite: _NEWLINE _INDENT node_suite_let node_suite_with node_suite_children node_suite_graph _DEDENT
+node_suite_let: nodelet*
+node_suite_with: withdef*
+node_suite_children: nodedef*
+node_suite_graph: graph*
+
+nodelet: "let" [NAME ":"] fullname "=" nodelet_value _NEWLINE
+?nodelet_value: "bool" (expr       | _NULL)           -> nodelet_type_bool
+              | "int"  (expr       | _NULL)           -> nodelet_type_int
+              | "real" (expr       | _NULL)           -> nodelet_type_real
+              | "data"  "node" (NAME       | _NULL)   -> nodelet_type_data
+              | "optim" "node" (NAME       | _NULL)   -> nodelet_type_optim
+              | "node" (NAME       | _NULL)           -> nodelet_type_node
+              | "dim"                                 -> nodelet_type_dim
+
+graph: graph_id graph_nodes (graph_shapes | _NEWLINE)
+?graph_id: value_int "."
+graph_nodes: graph_node ("+" graph_node)*
+graph_node: NAME [graph_inputs] [graph_args] [graph_repeat]
+graph_inputs: "{" graph_input_kw ("," graph_input_kw)* [","] "}"      -> graph_inputs_dict
+            | "[" out ("," out)* [","] "]"                            -> graph_inputs_list
+graph_input_kw: NAME "=" out
+graph_args: "(" graph_arg ("," graph_arg)* [","] ")"
+graph_arg: NAME "=" expr
+?graph_repeat: "*" value
+graph_shapes: graph_shape _NEWLINE | ":" _NEWLINE _INDENT graph_shape_kw+ _DEDENT
+graph_shape_kw: NAME graph_shape _NEWLINE
+graph_shape: "=" dim ("," dim)* [","]
+
+dim: expr | _NULL
+
+out: [NAME] "$" [value_int]
+   | expr                     -> out_const
+
+withdef: "with" NAME ":" with_suite
+with_suite: _PASS _NEWLINE | _NEWLINE _INDENT withset+ _DEDENT
+
+withset: "set" fullname "=" expr _NEWLINE
+
+?expr: (expr "|")? xor_expr
+?xor_expr: (xor_expr "^")? and_expr
+?and_expr: (and_expr "&")? arith_expr
+?arith_expr: (arith_expr _add_op)? term
+?term: (term _mul_op)? factor
+?factor: [_factor_op] power
+?power: value ("**" factor)?
+
+!_factor_op: "+"|"-"
+!_add_op: "+"|"-"
+!_mul_op: "*"|"/"|"%"
+
+?value: value_bool | value_int | value_real | variable | "(" expr ")"
+?value_bool: BOOL_YES | BOOL_NO
+?value_int : DEC_NUMBER
+?value_real: FLOAT_NUMBER
+variable   : NAME
+fullname   : NAME+
+
+// ------------------------------
+// Tokens
+// ------------------------------
+
+_PASS: "..."
+_NULL: "*"
+
+BOOL_YES: "yes"
+BOOL_NO: "no"
+
+NAME: /[a-zA-Z_]\w*/
+COMMENT: /#[^\n]*/
+_NEWLINE: ( /\r?\n[\t ]*/ | COMMENT )+
+
+
+STRING : /[ubf]?r?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
+LONG_STRING: /[ubf]?r?(""".*?(?<!\\)(\\\\)*?"""|'''.*?(?<!\\)(\\\\)*?''')/is
+
+DEC_NUMBER: /0|[1-9]\d*/i
+HEX_NUMBER.2: /0x[\da-f]*/i
+OCT_NUMBER.2: /0o[0-7]*/i
+BIN_NUMBER.2 : /0b[0-1]*/i
+FLOAT_NUMBER.2: /((\d+\.\d*|\.\d+)(e[-+]?\d+)?|\d+(e[-+]?\d+))/i
+IMAG_NUMBER.2: /\d+j/i | FLOAT_NUMBER "j"i
+
+%ignore /[\t \f]+/  // WS
+%ignore /\\[\t \f]*\r?\n/   // LINE_CONT
+%ignore COMMENT
+%declare _INDENT _DEDENT

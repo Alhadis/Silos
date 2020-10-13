@@ -1,0 +1,64 @@
+// Lark grammar for JADN Type definitions
+
+start:      typedef*
+
+typedef:    _WSNL? TYPE_NAME _ASSIGN typestring desc? (items | fields)?
+
+items:      _LBR desc? item  (_COMMA desc?  item)*  desc?  _RBR
+fields:     _LBR desc? field   (_COMMA desc?  field)*   desc  _RBR
+item:       FIELD_ID (_WS FIELD_NAME)?
+field:      FIELD_ID (_WS FIELD_NAME)? _WS fieldstr
+
+desc:       (_DESC /.+/?)? _WSNL
+
+// Definition rules
+
+typestring: TYPE_NAME ID? sub? vrange? format?
+sub:          kvtype
+            | vtype
+            | efunc
+            | pattern
+            | tfield
+kvtype:     "(" typestring _COMMA typestring ")"
+vtype:      "(" typestring ")"
+efunc:      "Enum(" TYPE_NAME ")"
+pattern:    /\(%(.{1,100}?)%\)/
+vrange:     "{" VALSTAR ".." VALSTAR "}"    // Float range: m and n are real numbers
+format:     _FMT /[-a-z0-9]{1,32}/          // Format option (e.g., "/email")
+
+fieldstr:   typestring (multi | tfield)?
+            | FLATTEN typestring
+multi:      _WS /optional/
+            | _mrange                       // Option: field multiplicity
+_mrange:    "[" UINT ".." UINTSTAR "]"      // Multiplicity: m GE 0, n GT 0 or *
+tfield:     "(&" (FIELD_ID | FIELD_NAME) ")"
+
+// Terminals
+
+ID:         ".ID"                           // Id option
+_FMT:       /\s*\//
+NAMETERM:   "::"
+FLATTEN:    "<"
+UINT:       /\d+/
+UINTSTAR:   /\d+|\*/
+// VALSTAR:    /(-?[1-9][0-9]*\.?[0-9]*?)|(-?\.[0-9]+?)|\*/
+VALSTAR:    /\*|-?(0|[1-9][0-9]*)/
+FIELD_ID:   UINT
+
+_LBR:       /\s*{\s*/
+_RBR:       /\s*}\s*/
+_COMMA:     /,\s*/
+_WS:        /[ \t\n\r\f\v]+/
+_DESC:      /[ \t]*\/\/[ \t]*/
+_WSNL:      /[ \t]*[\n\r]+[ \t]*/
+_ASSIGN:    /\s*=\s*/
+
+COMMENT:    /\/\*.*?\*\/\s*/s
+%ignore COMMENT
+
+// JADN default naming conventions
+TYPE_NAME:  /[$A-Z]([-$A-Za-z0-9]){0,31}/       // Uppercase-Hyphen
+FIELD_NAME: /[A-Za-z]([_A-Za-z0-9]){0,31}/      // Any_underscore
+FIELD_SEP:  "/"
+SYS:        "$"
+NSID:       /[A-Za-z]([-A-Za-z0-9]){0,7}:/      // Namespace ID

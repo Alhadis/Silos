@@ -1,0 +1,48 @@
+// Parser for Therion Files
+// see thdataobject.h
+
+%import common (WS, WS_INLINE, NEWLINE, ESCAPED_STRING, INT, DECIMAL)
+%ignore WS
+// %ignore /#.*?\n/
+
+
+// set XVIgrids {1.0 m}
+// set  {
+
+SIGNEDDECIMAL: "-"? DECIMAL 
+STRING: /[^}" \n]+/
+    | ESCAPED_STRING
+STATION: STRING
+coords: x y
+?x: SIGNEDDECIMAL 
+?y: SIGNEDDECIMAL
+    
+start: (grids|stations|shots|sketchlines|grid)+
+
+grids: "set XVIgrids" "{" grids_data? "m}"
+grids_data: DECIMAL
+
+stations: "set XVIstations" "{" stations_data* "}"
+stations_data: "{" SIGNEDDECIMAL SIGNEDDECIMAL STATION "}"
+
+shots: "set XVIshots" "{" shots_data* "}"
+shots_data: "{" coords coords "}"
+
+sketchlines: "set XVIsketchlines" "{" sketchlines_data* "}"
+sketchlines_data: "{" COLOR coords+ "}"
+COLOR: "brown" 
+    | "black"
+    | "green"
+    | "orange"
+    | "blue"
+    | "red"
+    | "connect"
+
+grid: "set XVIgrid" "{" minx miny gridsize "0.0" "0.0" SIGNEDDECIMAL xdim ydim "}"
+minx: SIGNEDDECIMAL
+miny: SIGNEDDECIMAL
+gridsize: SIGNEDDECIMAL
+xdim: INT
+ydim: INT
+// (x points / grid size) + 1 int(($l_maxx - $l_minx) / $gsize) + 1
+// (y points / grid size) + 1

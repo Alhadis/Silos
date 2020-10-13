@@ -1,0 +1,35 @@
+start: expr+ (op expr)* meta* repeat?|die relexp ("," relexp)~0..3 (repeat| diminish)?
+
+expr: tok
+     |l expr (op expr)* r
+     |l tok r
+     |l tok expr_tail r
+
+expr_tail: op tok
+          |op tok expr_tail
+          |op l tok r
+          |op l tok expr_tail r
+
+relexp: RELOP INT
+
+tok: die|num
+die: INT "d" INT         -> die
+num: INT                 -> num
+op: ADDOP|MULOP          -> op
+l: LPAREN                -> lparen
+r: RPAREN                -> rparen
+
+meta: ADDOP SPEC         -> meta
+repeat: "{" INT "}"      -> repeat
+diminish: "!"            -> diminish
+
+LPAREN: "("
+RPAREN: ")"
+ADDOP: "+"|"-"
+MULOP: "*"|"/"
+RELOP: "<="|">="|"<"|">"|"="
+SPEC: "min"|"max"
+
+%import common.INT
+%import common.WS
+%ignore WS

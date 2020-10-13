@@ -1,0 +1,117 @@
+mainprogram:  ("OPENQASM" real ";")* program
+
+?program: statement
+        | program statement
+
+statement: decl
+         | gatedecl goplist "}"
+         | gatedecl "}"
+         | opdecl goplist "}"
+         | opdecl "}"
+         | OPAQUE id idlist ";"
+         | OPAQUE id "(" ")" idlist ";"
+         | OPAQUE id "(" idlist ")" idlist ";"
+         | qop
+         | IF "(" id "==" nninteger ")" qop
+         | BARRIER anylist ";"
+         | INCLUDE ESCAPED_STRING ";"
+
+decl: QREG id "[" nninteger "]" ";"
+    | CREG id "[" nninteger "]" ";"
+
+opdecl: OPERATOR id idlist "{"
+      | OPERATOR id "(" ")" idlist "{"
+      | OPERATOR id "(" idlist ")" idlist "{"
+
+gatedecl: GATE id idlist "{"
+        | GATE id "(" ")" idlist "{"
+        | GATE id "(" idlist ")" idlist "{"
+
+goplist: uop
+       | term
+       | BARRIER idlist ";"
+       | goplist uop
+       | goplist term
+       | goplist BARRIER idlist ";"
+
+term: exp uop
+    | "-" uop
+
+qop: uop
+   | MEASURE argument "->" argument ";"
+   | RESET argument ";"
+
+uop: U "(" explist ")" argument ";"
+   | CX argument "," argument ";"
+   | id anylist ";"
+   | id "(" ")" anylist ";"
+   | id "(" explist ")" anylist ";"
+   | id anylist "," uop
+   | id "(" ")" anylist "," uop
+   | id "(" explist ")" anylist "," uop
+
+anylist: idlist
+       | mixedlist
+
+idlist: id
+      | idlist "," id
+
+mixedlist: id "[" nninteger "]"
+         | mixedlist "," id
+         | mixedlist "," id "[" nninteger "]"
+         | idlist "," id "[" nninteger "]"
+
+argument: id
+        | id "[" nninteger "]"
+
+explist: exp
+       | explist "," exp
+
+exp: real
+   | nninteger
+   | PI
+   | id -> parameter
+   | exp "+" exp -> add
+   | exp "-" exp -> subtract
+   | exp "*" exp -> multiply
+   | exp "/" exp -> divide
+   | "-" exp -> negate
+   | exp "^" exp -> binary_exp
+   | "(" exp ")"
+   | unaryop "(" exp ")"
+
+unaryop: "sin" -> sin
+       | "cos" -> cos
+       | "tan" -> tan
+       | "exp" -> unary_exp
+       | "ln" -> ln
+       | "sqrt" -> sqrt
+
+//regexes
+id: /[a-z][A-Za-z0-9_]*/ -> id_
+real: /([0-9]+\.[0-9]*|[0-9]*\.[0-9]+)([eE][-+]?[0-9]+?)?/
+nninteger: /[1-9]+[0-9]*|0/
+
+//terminals
+OPAQUE: "opaque"
+INCLUDE: "include"
+IF: "if"
+BARRIER: "barrier"
+QREG: "qreg"
+CREG: "creg"
+GATE: "gate"
+OPERATOR: "operator"
+MEASURE: "measure"
+RESET: "reset"
+U: "U"
+CX: "CX"
+PI: "pi"
+
+
+
+// ignores
+COMMENT: "//" /[^\n]/*
+%import common.ESCAPED_STRING
+%import common.WS
+%ignore WS
+%ignore COMMENT

@@ -1,0 +1,73 @@
+?start: expr*
+
+// EXPRESSIONS
+?expr: value | assign | while_loop
+
+?value: dot_name -> load_dot
+     | index_name -> load_index
+     | call
+     | name -> load
+     | number
+     | string
+     | bool
+     | math
+     | group
+     | fn
+
+group: "(" expr+ ")"
+
+math: "*" -> mul
+    | "/" -> div
+    | "+" -> add
+    | "-" -> sub
+    | "%" -> mod
+    | ">" -> great
+    | "<" -> less
+    | "==" -> eq
+    | "!=" -> neq
+
+assign: name "="
+      | dot_name "=" -> attribute_assign
+      | index_name "=" -> index_assign
+
+while_loop: "while" value "{" start "}"
+
+call: dot_name "!" -> method_call
+    | value "!"
+
+parameters: "(" (name ",")* [name] ")" 
+fn: "fn" parameters "{" start "}"
+// END EXPRESSIONS
+
+
+
+
+// BASIC TOKENS
+name: (IDENTIFIER "::")* IDENTIFIER
+dot_name: (IDENTIFIER ".")+ IDENTIFIER
+        | value "." (IDENTIFIER ".")* IDENTIFIER -> dot_value
+index_name: value ("[" value "]")+
+        
+
+number: NUMBER | FLOAT_NUMBER
+
+string: STRING
+
+bool: "true" -> true
+    | "false" -> false
+// END BASIC TOKENS
+
+
+
+
+// TERMINALS
+NUMBER: /0|[1-9]\d*/i
+FLOAT_NUMBER: /((\d+\.\d*|\.\d+)(e[-+]?\d+)?|\d+(e[-+]?\d+))/i
+STRING : /[ubf]?r?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
+IDENTIFIER: /[a-zA-Z_]\w*/
+COMMENT: /\/\/[^\n]*/
+// END TERMINALS
+
+%ignore /[\t\n\r \f]+/
+%ignore /\\[\t \f]*\r?\n/
+%ignore COMMENT

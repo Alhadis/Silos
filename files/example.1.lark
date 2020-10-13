@@ -1,0 +1,50 @@
+start: declaration* program
+
+declaration: symbol "=" stream_attribute -> sa_dec
+           | symbol "=" route_attribute -> ra_dec
+           | symbol "=" way_point -> wp_dec
+stream_attribute: "StreamAttribute.load(" STRING "," STRING ")"
+route_attribute: symbol (":-:" symbol)+ 
+way_point: "Waypoint(role=" STRING ")"
+
+program: "program {" statements "}"
+statements: statement+
+statement: "iff" condition "{" statements "} else {" statements "}" -> bi_branches
+         | symbol "=" expr -> assignment
+         | "bind(" pkt "," expr ")" -> bind
+pkt: "pkt" -> forward_pkt
+   | "~pkt" -> backward_pkt
+condition: "(" expr ")"
+
+expr: expr2 binary_op1 expr2 -> bi_expr
+    | expr2
+expr2: expr3 binary_op2 expr3 -> bi_expr
+     | expr3
+expr3: unary_op symbol -> un_expr
+     | expr4
+expr4: value -> single_value
+     | symbol -> single_symbol
+     | function
+binary_op1: "&&" -> bool_and
+binary_op2: "==" -> equal
+
+unary_op: "~" -> inverse
+function: "any(" symbol "where" condition ")" -> ra_any_condition
+        | "any(" symbol ")" -> ra_any
+
+value: NUMBER -> numeric
+       | STRING -> string
+       | BOOLEAN -> boolean
+
+symbol: VARIABLE -> variable
+      | ATTRIBUTE -> pkt_attribute
+VARIABLE: (LETTER | "_")+ [NUMBER]
+ATTRIBUTE: "pkt." (LETTER | "_")+
+
+BOOLEAN: "true" | "false" | "unknown"
+STRING: "'" (LETTER | NUMBER | "." | ":" | "_")* "'"
+
+%import common.INT -> NUMBER
+%import common.LETTER
+%import common.WS
+%ignore WS

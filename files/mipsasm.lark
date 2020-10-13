@@ -1,0 +1,48 @@
+start: data? text
+
+data: _DATA (mem_label? label? decl? _NL)*          -> data_segm
+_DATA.2: ".data"
+
+?decl: "." NAME constant                            -> create_decl
+
+text: _TEXT (mem_label? label? instr? _NL)*         -> text_segm
+_TEXT.2: ".text"
+
+?instr: NAME args                                   -> create_instr
+
+args: (arg (","? arg)*)?
+
+?arg: reg
+    | offset_reg
+    | label_name
+    | constant
+
+?offset_reg: SIGNED_INT "(" reg ")"         -> offset_reg
+?reg: /\$\d+/                               -> numeric_reg
+    | /\$\w[\w\d]+/                         -> named_reg
+
+?constant: HEX_INT                          -> hex_const
+    | SIGNED_INT                            -> integer_const
+    | ESCAPED_STRING                        -> string_const
+
+HEX_INT.2: /0x[0-9a-fA-F]+/
+
+?label: label_name ":"                      -> create_label
+?label_name: NAME                           -> create_label_ref
+
+?mem_label: "@" HEX_INT                     -> create_mem_label
+
+%import common.CNAME -> NAME
+%import common.WS_INLINE
+%import common.ESCAPED_STRING
+%import common.SIGNED_INT
+%import common.INT
+%import common.NEWLINE
+%ignore WS_INLINE
+
+_NL: NEWLINE
+
+COMMENT: "#" /[^\n]*/
+    | ";" /[^\n]*/
+
+%ignore COMMENT

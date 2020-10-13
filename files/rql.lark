@@ -1,0 +1,125 @@
+start: statement [(";" | NEWLINE ~ 2) statement]*
+
+statement: load_statement
+         | define_statement
+         | set_statement
+         | select_statement
+         | drop_statement
+         | show_statement
+         | COMMENT
+         | NEWLINE
+
+
+load_statement: LOAD TOPONAME AS VARNAME
+drop_statement: DROP var_ref
+
+define_statement: DEFINE DATA_TYPE data_spec element_selection
+
+DATA_TYPE: PROPERTY | COST
+
+data_spec: var_ref "," VARTYPE "," default -> property_spec
+         | var_ref "," VARTYPE "," default "," ACCUM_FUNC -> cost_spec
+
+set_statement: SET DATA_TYPE var_ref ["," value] element_selection
+
+element_selection: for_each_clause [that_clause]
+
+for_each_clause: FOR EACH ELEMENT_TYPE IN VARNAME
+that_clause: THAT prop_constraint
+
+ELEMENT_TYPE: NODE | LINK | PORT
+
+prop_constraint:  [prop_constraint AND] or_prop_constraint
+
+or_prop_constraint: [or_prop_constraint OR ]atom_prop_constraint
+
+atom_prop_constraint: "(" prop_constraint ")" -> encap_prop_constraint
+                    | operand BINOP operand -> basic_prop_constraint
+                    | "NOT" atom_prop_constraint -> not_prop_constraint
+
+operand: var_ref
+       | value
+
+var_ref: [WAYPOINT "::"] [VARNAME "."] VARNAME
+
+BINOP: ">"
+     | ">="
+     | "<"
+     | "<="
+     | "="
+     | "!="
+
+select_statement: [opt_clause] select_clause [where_clause] [as_clause]
+
+select_clause: SELECT ra_expr IN VARNAME
+as_clause: AS VARNAME
+ra_expr: (WAYPOINT RA_OP)+ WAYPOINT
+
+WAYPOINT: IDENTIFIER
+
+RA_OP: ":-:" | ":=:" | ":<:" | ":>:"
+
+opt_clause: OPT VARNAME WHEN
+where_clause: WHERE prop_constraint
+
+show_statement: SHOW var_ref [element_selection]
+
+// Keywords
+
+AS: "AS"
+DEFINE: "DEFINE"
+DROP: "DROP"
+EACH: "EACH"
+FOR: "FOR"
+IN: "IN"
+LOAD: "LOAD"
+OPT: "OPT"
+SELECT: "SELECT" | "WATCH"
+SET: "SET"
+SHOW: "SHOW"
+THAT: "THAT"
+WHEN: "WHEN"
+WHERE: "WHERE"
+
+INT_TYPE: "int"
+STRING_TYPE: "str"
+FLOAT_TYPE: "float"
+
+AND: "AND"
+OR: "OR"
+NOT: "NOT"
+
+PROPERTY: "PROPERTY"
+COST: "COST"
+
+NODE: "NODE"
+LINK: "LINK"
+PORT: "PORT"
+
+ADD: "+" | "add"
+MIN: "min"
+MAX: "max"
+
+
+TOPONAME: IDENTIFIER
+VARNAME:  IDENTIFIER
+VARTYPE: INT_TYPE | STRING_TYPE | FLOAT_TYPE
+default: value
+value: STRING -> string
+     | NUMBER -> number
+ACCUM_FUNC: ADD | MIN | MAX
+
+IDENTIFIER: /[A-Za-z_][A-Za-z_0-9]*/
+
+%import common (WORD)
+%import common.NUMBER -> NUMBER
+%import common.ESCAPED_STRING -> STRING
+%import common (WS, WS_INLINE)
+
+COMMENT: /\/\/[^\n]*/
+NEWLINE: ( /\r?\n[\t ]*/)
+
+%ignore WS
+%ignore WS_INLINE
+%ignore COMMENT
+%ignore NEWLINE

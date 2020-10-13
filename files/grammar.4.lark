@@ -1,0 +1,84 @@
+start: (function | statement | struct)*
+
+function: _DIV* "def" _DIV+ function_id _DIV* "(" arglist ")" _DIV* "(" typelist ")" _DIV* block
+
+struct: _DIV* "struct" _DIV+ TYPE_ID_LIT _DIV* structdef
+
+structdef: "{" _END+  ( _DIV* field _END)* "}" _END
+
+field: type _DIV+ variable_id
+
+typelist: (type (_DIV* "," _DIV+ type )*)?
+
+arglist: (argpair (_DIV* "," _DIV+ argpair )*)? 
+
+argpair: type _DIV+ variable_id
+
+block: _DIV* "{" _END+  statement* return_statement? _DIV* "}" _END?
+
+statement.1: _DIV* "if" _DIV+ expression _DIV+ block                                -> if_block
+    |  _DIV* "if" _DIV+ expression _DIV+ block _DIV+ "else" _DIV+ block             -> ifelse_block
+    | _DIV* "while" _DIV+ expression _DIV+ block                                    -> while
+    | _DIV* REF_LIT _DIV+ variable_id _DIV+ ":=" _DIV+ expression _END              -> auto_variable_declaration
+    | _DIV* variable_id _DIV+ ":=" _DIV+ expression _END                            -> auto_variable_declaration
+    | _DIV* var_access  _DIV+ "=" _DIV+ expression _END                             -> variable_assignment
+    | _DIV* function_call _END
+    | _DIV* expression _END
+
+
+return_statement.2: _DIV* "return" _DIV+ expression_list _END
+    | _DIV* "return" _END                
+
+expression_list: (atom ( _DIV* "," _DIV+ atom)*)?
+
+expression: atom 
+    | atom (_DIV* function_id _DIV* atom)+      -> binary_function_call
+
+atom: constant 
+    | "(" expression ")"                        -> bracket_expression
+    | function_id _DIV* atom                    -> unary_function_call
+    | function_call
+    | struct_init
+    | var_access
+
+unpack_vars.1: 
+    | ("," | variable_id) (_DIV* "," | _DIV* "," _DIV* variable_id)*
+    
+var_access: variable_id                         -> variable_deref
+    | dot_access
+    | variable_id _DIV* "[" expression "]"      -> access
+
+
+dot_access: variable_id (_DIV* "." _DIV* variable_id)+
+
+struct_init:  TYPE_ID_LIT _DIV* "{" _DIV* expression_list _DIV* "}"
+function_call: function_id "(" expression_list ")"
+            | variable_id "(" expression_list ")"   -> variable_function_call
+
+function_id: FUNCTION_ID_LIT
+variable_id: VARIABLE_ID_LIT
+type: TYPE_ID_LIT (_DIV+ REF_LIT)?
+constant: bool | integer | float | string
+TYPE_ID_LIT: ((SYMBOL)+ | (LETTER+ ("_" | LETTER)*))
+FUNCTION_ID_LIT: ((SYMBOL)+ | (LETTER+ ("_" | LETTER)*)) 
+VARIABLE_ID_LIT: "_" (LETTER | "_")+ 
+
+bool: BOOL_LIT 
+integer: DIGIT+
+float:  FLOAT_LIT
+string: STRING_LIT
+
+REF_LIT: "ref"
+STRING_LIT:  /".*?(?<!\\)"/
+BOOL_LIT: "true" | "false"
+INTEGER_LIT: DIGIT+
+FLOAT_LIT: DIGIT+ "." DIGIT+ "f"
+
+COMMENT: ("#") /[^\n]/* _END 
+_END: _DIV* ("\n" | "\0")+
+_DIV: (" " | "\t")+
+LETTER: ("A".."Z" | "a".."z")
+SYMBOL: ("!" | "|" | "&" | "*" | "<" | ">" | "+" | "-" | "@" | "$" | "%" | "~" | "." | "/")
+DIGIT: ("0".."9")+
+WHITESPACE: (" " | "\t" | "\n")+ 
+%ignore COMMENT

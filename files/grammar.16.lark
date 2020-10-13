@@ -1,0 +1,69 @@
+start: (expr ";")+
+
+expr: assignment
+    | ifexpr
+    | whileexpr
+    | funct
+    | aexpr
+    | print
+
+assignment: "var" NAME "=" aexpr -> assign_var
+          | NAME "=" aexpr -> reassign_var
+
+ifexpr: "if" comp "do" block ["else" "do" block] -> if_expr
+
+whileexpr: "while" comp "do" block -> while_expr
+
+block: "{" start "}"
+
+funct: "defun" NAME "(" ")" "do" functblock -> def_function
+
+functblock: "{" start* functreturn "}"
+
+functreturn: "returns" aexpr ";"
+
+functcall: NAME "(" ")"
+
+print: "show" "(" aexpr ")" -> print_screen
+
+comp: aexpr OP_COMP aexpr -> comp_operation
+    | "(" aexpr OP_COMP aexpr ")" -> comp_operation
+
+aexpr: term
+     | aexpr OP_TERM term
+
+term: factor
+    | term OP_FACTOR factor
+
+factor: trig
+      | factor OP_POW trig
+
+trig: base
+    | TRIG base
+
+base: leftoperation
+    | number 
+    | getvar
+    | functcall
+    | TRIG base
+    | "(" aexpr ")"
+
+leftoperation: OP_LEFT base
+
+number: NUMBER
+
+getvar: NAME
+
+OP_TERM: "+" | "-"
+OP_FACTOR: "//" | "*" | "/" | "%"
+OP_POW: "^"
+OP_LEFT: "+" | "-"
+OP_COMP: "==" | "!=" | ">=" | "<=" | ">" | "<"
+TRIG: "sen" | "cos" | "tang" | "arcsen" | "arccos" | "arctang"
+COMMENT: /(\#\#.+\#\#)/
+
+%import common.CNAME -> NAME
+%import common.SIGNED_NUMBER -> NUMBER
+%import common.WS
+%ignore WS
+%ignore COMMENT

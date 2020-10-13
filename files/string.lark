@@ -1,0 +1,31 @@
+//
+// BASIC RULES
+//
+start : "\"" char* "\""
+
+?char : NON_ESCAPE
+      | high low        -> surrogate_pair
+      | "\\\""          -> quote
+      | "\\\\"          -> backslash
+      | "\\/"           -> solidus
+      | "\\b"           -> backspace
+      | "\\f"           -> formfeed
+      | "\\n"           -> newline
+      | "\\r"           -> return_line
+      | "\\t"           -> tab
+      | "\\u" hex
+      | "\\u{" HEX* "}" -> unicode_extra
+
+// We can detect surrogate pairs with regexes
+high  : /\\u[Dd][89aAbB]/ HEX HEX
+low   : /\\u[Dd][cCdDeEfF]/ HEX HEX
+hex   : HEX HEX HEX HEX
+
+
+//
+// TERMINALS
+//
+// All control characters: [U+00, U+1F] U [U+7F, U+9F]
+NON_ESCAPE : /[^"\\\x00-\x1F\x7F-\x9F]+/
+HEX        : /[a-fA-F0-9]/
+

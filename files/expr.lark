@@ -1,0 +1,76 @@
+DEC_NUMBER: /0|[1-9]\d*/
+HEX_NUMBER.2: /0x[\da-f]+/i
+BIN_NUMBER.2: /0b[0-1]+/i
+OCT_NUMBER.2: /0o[0-7]+/i
+FLOAT_NUMBER.2: /((\d+\.\d*|\.\d+)(e[-+]?\d+)?|\d+(e[-+]?\d+))/i
+
+STRING: /("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/
+
+COMMENT: /#[^\n]*/
+_NEWLINE: ( /\r?\n[\t ]*/ | COMMENT )+
+NAME: /[a-zA-Z_]\w*/
+
+string: STRING
+number: DEC_NUMBER | HEX_NUMBER | BIN_NUMBER | OCT_NUMBER | FLOAT_NUMBER
+name: NAME
+qualname: NAME ("." NAME)*
+const: "{" qualname "}"
+
+!_diff_op: "'"
+!_power_op: "^"
+!_factor_op: "+"|"-"|"!"
+!_add_op: "+"|"-"
+!_mul_op: "*"|"/"|"%"|"//"
+!_shift_op: "<<"|">>"
+!_comp_op: "<"|">"|"=="|">="|"<="|"!="
+!_and_op: "&"
+!_or_op: "|"
+!_logicand_op: "&&"
+!_logicor_op: "||"
+
+!_assign_op: "="
+
+?expr1_diff: atom_expr [_diff_op]
+?expr_power: expr1_diff (_power_op expr1_diff)*
+?expr1_unary: _factor_op expr1_diff | expr_power
+?expr_mul: expr1_unary (_mul_op expr1_unary)*
+?expr_add: expr_mul (_add_op expr_mul)*
+
+?expr_shift: expr_add (_shift_op expr_add)*
+?expr_and: expr_shift (_and_op expr_shift)*
+?expr_or: expr_and (_or_op expr_and)*
+
+?expr_comparison: expr_or (_comp_op expr_or)*
+
+?expr_logicand: expr_comparison (_logicand_op expr_comparison)*
+?expr_logicor: expr_logicand (_logicor_op expr_logicand)*
+
+?expr: expr_logicor
+
+exprlist: expr ("," expr)*
+
+funccall: qualname "(" [exprlist] ")"
+
+?atom: name | number | string | const | "(" expr ")"
+
+?atom_expr: atom
+          | atom_expr "[" exprlist "]"   -> getitem
+          | funccall
+
+assign_stmt: name _assign_op expr
+
+?simple_stmt: assign_stmt (";" assign_stmt)* [";"] _NEWLINE
+?stmt: simple_stmt | if_stmt
+
+suite: _NEWLINE (_NEWLINE | stmt)+
+
+if_first_block: "if" expr suite
+if_elseif_block: "elseif" expr suite
+if_else_block: "else" suite
+if_stmt: if_first_block (if_elseif_block)* [if_else_block] "end"
+
+start: (_NEWLINE | stmt)+
+?start_expr: expr
+
+%ignore /[\t \f]+/  // WS
+%ignore COMMENT

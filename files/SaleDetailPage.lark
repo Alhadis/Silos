@@ -1,0 +1,208 @@
+package summary;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ObservableCollection;
+
+import org.w3c.dom.Node;
+import org.w3c.event.MouseEvent;
+import org.w3c.event.MouseEventHandler;
+
+public class SaleDetailPage implements Page, INotifyPropertyChanged {
+	<%
+	<html xmlns:lark = "http://www.lark.org/2012">
+		<head> 
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		   <title>Bootstrap 销售订单</title>
+		   <link href="/scripts/bootstrap.min.css" rel="stylesheet" />
+		   <script src="/scripts/jquery.min.js"></script>
+		   <script src="/scripts/bootstrap.min.js"></script>
+		</head>
+		<body >
+		
+		<table class="table"> 
+		<caption>订单明细</caption>
+			<thead >
+				<tr>
+				<td ><input type="checkbox" checked = {Binding property = "allSelected" mode="TwoWay" trigger="PropertyChanged"} /></td> 
+				<td>序号</td><td>品名</td> <td>数量</td><td>单价</td><td onmouseover=function{return false;}> 小计</td> 
+				</tr> 
+		    </thead> 
+			<tbody  >
+				<Iterator items = {Binding property = "saleDetails" }>
+					<Record />
+				</Iterator>
+		    </tbody>
+			<tbody  id="1111" >
+				<tr>
+					<td colSpan=4> 总计 </td>
+					<td textContent={Binding property = "grandTotal" mode="OneWay"}> 0.0 </td>
+				</tr>
+			</tbody>
+		</table>		
+		<button onclick="add" >
+			新增
+		</button>
+		</body> 
+		
+	</html>
+	%>
+	
+	public SaleDetailPage(){
+		_saleDetails.addCollectionChangedListener((Object sender, CollectionChangedEvent<SaleDetail> event)->{
+			switch(event.action){
+			case Add:
+			case Move:
+			case Remove:
+			case Replace:
+			case Reset:
+				notifyChanged("grandTotal");
+			}
+		});
+	}
+	
+	PropertyChange changeHandler = (Object source, PropertyChangeEvent evt)->{
+		notifyChanged("grandTotal");
+	};
+	
+	private int _ordinal = 0;
+	public int ordinal{
+		&{
+			console.log("ordinal:" + this._ordinal);
+			return this._ordinal++;
+		}
+	}
+	
+	private ObservableCollection<SaleDetail> _saleDetails = new ObservableCollection<>();
+	{
+		SaleDetail sd = new SaleDetail("茅台", 23, 1);
+		sd.addPropertyChangeListener("summary", changeHandler);
+		_saleDetails.add(sd);
+		
+		sd = new SaleDetail("长城干红", 98, 2);
+		sd.addPropertyChangeListener("summary", changeHandler);
+		_saleDetails.add(sd);
+		
+		sd = new SaleDetail("费列罗巧克力", 48, 3);
+		sd.addPropertyChangeListener("summary", changeHandler);
+		_saleDetails.add(sd);
+		
+		sd = new SaleDetail("百威啤酒", 6.5, 4);
+		sd.addPropertyChangeListener("summary", changeHandler);
+		_saleDetails.add(sd);
+	}
+	
+	public ObservableCollection<SaleDetail> saleDetails{
+		&{
+			return this._saleDetails;
+		}
+		+{
+			this._saleDetails = value; 
+		}
+	}
+	
+	public double grandTotal{
+		&{
+			double r = 0;
+			for(SaleDetail sd:_saleDetails){
+				r += sd.summary; 
+			}
+			return r;
+		}
+	}
+	 
+	public MouseEventHandler add = (MouseEvent event)->{
+		SaleDetail sd = new SaleDetail("产品11", 23.4, 3);
+		sd.addPropertyChangeListener("summary", changeHandler);
+		_saleDetails.add(sd);
+	};
+}
+
+class Record extends Template {
+	<%
+	<tr >
+		<td>
+		<input type="checkbox" />
+		</td>
+		<td textContent = {Binding property="ordinal"  context = "current"}>
+		</td>
+		<td>
+			<input type="text" value = {Binding property="name" mode="TwoWay" trigger="PropertyChanged" context = "current"}/>
+		</td>
+		<td>
+			<input type="text" value = {Binding property="quantity" mode="TwoWay" trigger="PropertyChanged" context = "current"}/>
+		</td> 
+		<td textContent = {Binding property="unitPrice" context = "current"}></td>  
+		<td textContent = {Binding property="summary" mode="OneWay" context = "current"}></td>
+		<td>
+			<a href="javascript:void(0)" onclick = "removeItem"> X </a>
+		</td>
+	</tr> 
+	%>
+	
+	protected Record(Node parent) {
+		super(parent);
+	}
+
+	MouseEventHandler removeItem = (MouseEvent event)->{
+		Node node = (Node) event.target;
+		SaleDetailPage page = (SaleDetailPage) node.getDataContext("ROOT").dataItem;
+		page.saleDetails.remove(node.getDataContext("current").dataItem);
+	};
+}
+
+class SaleDetail implements INotifyPropertyChanged{
+	private double _unitPrice;
+	private int _quantity;
+	private String _name;
+	
+	public SaleDetail(String name, double unitPrice, int quantity){
+		this._name = name;
+		this._unitPrice = unitPrice;
+		this._quantity = quantity;
+		addPropertyChangeListeners(new String[]{"quantity", "unitPrice"}, changeHandler);
+	}
+	
+	public String name{
+		&{
+			return this._name;
+		}
+		+{
+			this._name = value;
+			notifyChanged("name");
+		}
+	}
+	
+	public double unitPrice{
+		&{
+			return this._unitPrice;
+		}
+		+{
+			this._unitPrice = value;
+			notifyChanged("unitPrice");
+		}
+	}
+
+	public int quantity{
+		&{
+			return this._quantity;
+		}
+		+{
+			this._quantity = value;
+			notifyChanged("quantity");
+		}
+	}
+
+	public double summary{
+		&{
+			return this._quantity * this._unitPrice;
+		}
+		+{
+			notifyChanged("summary");
+		}
+	}
+	
+	PropertyChange changeHandler = (Object source, PropertyChangeEvent evt)->{
+		this.summary = 0;
+	};
+}

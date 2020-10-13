@@ -1,0 +1,57 @@
+_WS_INLINE : (" "|/\t/)+
+_WS        : /[ \t\f\r\n]/+
+CR         : /\r/
+LF         : /\n/
+NEWLINE    : (CR? LF)+
+COMMENT    : "//" /[^\n]*/ NEWLINE*
+B_COMMENT  : "/*" /(\S|\s)*?/ "*/"
+
+%ignore COMMENT
+%ignore B_COMMENT
+%ignore NEWLINE
+%ignore _WS
+%ignore _WS_INLINE
+
+_DELIMETER : ";"
+_LBRACE    : "{"
+_RBRACE    : "}"
+
+HEADER_NAME       : /[A-Z]+[a-zA-Z]*/
+QNAME             : /[a-zA-Z]+[a-zA-Z0-9]*/
+_QNAME            : QNAME
+// TYPENAME          : /(?!^\.req$|^\.opt$)^\.[a-zA-Z]+/
+_STRING_INNER     : /.*?/
+_STRING_ESC_INNER : _STRING_INNER /(?<!\\)(\\\\)*?/ 
+ESCAPED_STRING    : ("\"" _STRING_ESC_INNER "\"" |"'" _STRING_ESC_INNER "'")
+
+_DOT : "."
+
+REQUIRED : ".req"
+OPTIONAL : ".opt"
+
+_U32     : ("uint32" | "u32")
+_U64     : ("uint64" | "u64")
+_I32     : ("int32" | "i32")
+_I64     : ("int64" | "i64")
+_FLOAT   : (/[F|f]loat/)
+_DOUBLE  : (/[D|d]ouble/)
+_STRING  : (/[S|s]tr(ing)?/)
+_BYTES   : /[B|b]ytes/
+_BOOL    : (/[B|b]ool(ean)?/)
+
+_INTS    : (_U32 | _U64 | _I32 | _I64)
+_FLOATS  : (_FLOAT ) // | _DOUBLE
+DATATYPE : (_INTS | _STRING | _BYTES | _FLOATS | _BOOL | QNAME)
+
+data_type    : _DOT DATATYPE
+data_opt     : (REQUIRED | OPTIONAL)?
+name         : QNAME
+declaration  : name data_type data_opt _DELIMETER
+
+include      : "include" _WS_INLINE* ESCAPED_STRING _DELIMETER
+statement    : QNAME _DELIMETER
+header       : "name" _WS_INLINE* HEADER_NAME _DELIMETER
+type_block   : "type" _WS_INLINE* name _LBRACE ( statement | type_block | declaration )* _RBRACE
+
+start : header type_block* // includes will be part of a future update.
+// start : header include* type_block*

@@ -1,0 +1,66 @@
+start: expr*
+
+expr: sum
+
+sum: product
+    | sum "+" product -> add
+    | sum "-" product -> sub
+
+product: value
+    | product "*" value -> mul
+    | product "/" value -> div
+
+value: object
+    | array
+    | range
+    | tuple
+    | sample
+    | number
+    | string
+    | WORD
+    | VAR
+
+object: "{" [ pair ("," pair)* ] "}"
+pair: WORD ":" value
+
+array: "[" [ value ("," value)* ] "]"
+range: "[" number ".." number "]"
+    | "[" number "..." number "]" -> crange
+tuple: "(" [ value ("," value)* ] ")"
+
+sample: die_count distribution
+    | distribution -> sample1
+distribution: DIE number -> d_number
+    | DIE array -> d_array
+    | DIE range -> d_range
+    | DIE tuple -> d_tuple
+
+number: float | int
+
+float: FLOAT
+int: INTEGER
+die_count: DIE_COUNT
+string: ESCAPED_STRING
+
+// Tokens
+
+FLOAT.2: INT _EXP
+    | DECIMAL _EXP?
+DIE.2: /[dD]/
+DIE_COUNT.2: INT /(?=[dD])/
+INTEGER.2: INT /(\b)/
+VAR: "$" WORD
+WORD: (LETTER | "_") (LETTER | DIGIT | "_")*
+
+DECIMAL: DIGITS "." DIGITS
+    | DIGITS "." /(?!\.)/
+    | /(?<!\.)/ "." DIGITS
+DIGITS: DIGIT+
+
+%import common.ESCAPED_STRING
+%import common._EXP
+%import common.INT
+%import common.DIGIT
+%import common.LETTER
+
+%ignore /\s/

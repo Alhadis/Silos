@@ -1,0 +1,87 @@
+?start:         "hn:"? (assign? hn)+ ("rels:" rels+)? ("lambdas:" lambdas+)? ("psis:" psis+)?
+
+hn:             hs
+              | "(" hn ")"
+
+hs:             alpha
+              | beta
+              | empty_alpha
+              | empty_beta
+
+alpha:          "<" a_simplex r? time? boundary? psi? ">" level?
+beta:           "{" b_simplex r? time? boundary? "}" level?
+empty_alpha:    "<>"
+empty_beta:     "{}"
+
+?a_simplex:     a_vertex ("," a_vertex)*
+?a_vertex:      vertex
+              | sequence
+              | immutable
+              | mandatory
+              | WILDCARD
+
+?b_simplex:     vertex ("," vertex)*
+
+vertex:         (NAME | assign? hs) typed?
+sequence:       "(" NAME ")"
+immutable:      "[" NAME "]"
+mandatory:      "!" NAME
+
+assign:         NAME "="
+
+r:              ";" "R" ("_" NAME)?
+time:           ";" "t_" NUMBER
+boundary:       ";" "B(" NAME ("," NAME)* ")"
+psi:            ";" "psi_" NAME
+level:          "^N" LEVEL*
+
+typed:          "::" TYPE
+
+vname:          "v_" NUMBER
+rname:          NAME
+
+neg:            "-" hn      // minus == add hn neg hn
+
+
+// Lambda functions for R
+lambdas:        assign lambda_expr ";"
+lambda_expr:    "\\\\" vname ("," vname)* "." lambda_expr
+              | "(" lambda_expr ")"
+              | expr
+expr:           vname
+              | expr (logic_and | logic_or | rname) expr
+              | "(" expr ")"
+              | rname "(" vname ("," vname)* ")"
+
+
+// Simple relations
+rels:           assign rel_expr
+rel_expr:       vname
+              | PRED "(" rel_expr ("," rel_expr)* ")"
+
+
+// Psi functions for vertices
+psis:           NAME "=" NAME
+
+
+// Terminals
+NAME:           "-" | DECIMAL | (LETTER | DIGIT | "-" | "_" | "^" | "." | "&" | ":")+
+NUMBER:         DIGIT+
+DECIMAL:        DIGIT+ "." DIGIT+
+TYPE:           NAME
+N:              "N"
+LEVEL:          ("+" | "-") (NUMBER | LETTER)
+PRED:           NAME
+WILDCARD:       "*"
+
+logic_and:      "\/\\"
+logic_or:       "\\/"
+
+
+COMMENT:        /#.*/
+%ignore WS
+%ignore COMMENT
+%import common.LETTER
+%import common.DIGIT
+%import common.WS
+%import common.NEWLINE

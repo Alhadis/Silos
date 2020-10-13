@@ -1,0 +1,156 @@
+start: statement_list*
+
+?statement_list: statement+
+
+?statement: function_definition_statement
+     | template_definition_statement       
+     | if_statement                        
+     | for_statement
+     | while_statement
+     | do_while_statement
+     | return_statement
+     | block
+     | expression_statement             
+     | include_statement
+
+function_definition_statement: "function" IDENTIFIER "(" identifier_list ")" block
+    | "function" IDENTIFIER "(" ")" block
+
+template_definition_statement: "template" IDENTIFIER "(" identifier_list ")" block
+    | "template" IDENTIFIER "(" ")" block
+
+identifier_list: identifier_list "," IDENTIFIER
+    | IDENTIFIER
+
+if_statement:  "if" "(" expression ")" statement "else" statement
+    | "if" "(" expression ")" statement
+
+for_statement: "for" "(" expression ";" expression ";" expression ")" statement
+
+while_statement: "while" "(" expression ")" statement
+
+do_while_statement: "do" statement "while" "(" expression ")"
+
+return_statement: "return" expression ";"
+
+include_statement: "include" STRING ";"
+
+block: "{" statement_list "}"
+
+?expression_statement: expression ";"
+
+?expression: e17
+
+?e17: left_hand_expression "=" e17     -> assignment
+    | left_hand_expression "+=" e17    -> aug_asgn_plus
+    | left_hand_expression "-=" e17    -> aug_asgn_minus
+    | left_hand_expression "*=" e17    -> aug_asgn_mul
+    | left_hand_expression "/=" e17    -> aug_asgn_div
+    | left_hand_expression "%=" e17    -> aug_asgn_mod
+    | left_hand_expression "<<=" e17   -> aug_asgn_left_shift
+    | left_hand_expression ">>=" e17   -> aug_asgn_right_shift
+    | left_hand_expression "&=" e17    -> aug_asgn_bit_and
+    | left_hand_expression "|=" e17    -> aug_asgn_bit_or
+    | left_hand_expression "^=" e17    -> aug_asgn_xor
+    | left_hand_expression "<==" e17   -> signal_asgn_constraint
+    | e17 "==>" left_hand_expression   -> signal_asgn_constraint
+    | left_hand_expression "<--" e17   -> signal_asgn
+    | e17 "-->" left_hand_expression   -> signal_asgn
+    | e16 "===" e17                    -> constraint
+    | e17 "?" e17 ":" e17              -> ternary
+    | e16
+
+?e16: array 
+    | e15
+
+?e15: e15 "||" e14                    -> or
+    | e14
+
+?e14: e14 "&&" e13                    -> and
+    | e13 
+
+?e13: e13 "|" e12                     -> bit_or
+    | e12
+
+?e12: e12 "^" e11                     -> xor
+    | e11
+
+?e11: e11 "&" e10                     -> bit_and
+    | e10
+
+?e10: e10 "==" e9                     -> equality
+    | e10 "!=" e9                     -> non_equality
+    | e9
+
+?e9: e9 "<=" e7                       -> lte
+    | e9 ">=" e7                      -> gte
+    | e9 "<" e7                       -> less_than
+    | e9 ">" e7                       -> greater_than
+    | e7
+
+?e7: e7 "<<" e6                       -> left_shift
+    | e7 ">>" e6                      -> right_shift
+    | e6
+
+?e6: e6 "+" e5                        -> plus_op
+    | e6 "-" e5                       -> minus_op
+    | e5
+
+?e5: e5 "*" e4                        -> mul_op
+    | e5 "/" e4                       -> div_op
+    | e5 "\\" e4                      -> int_div_op
+    | e5 "%" e4                       -> mod_op
+    | e4
+
+?e4: e4 "**" e3                       -> exp_op
+    | e3
+
+?e3: "++" left_hand_expression        -> pre_inc_op
+    | "--" left_hand_expression       -> pre_dec_op
+    | "+" e3                          -> plus_sign
+    | "-" e3                          -> minus_sign
+    | "!" e3                          -> eq_zero_op
+    | "~" e3                          -> bit_inv_op
+    | e2
+
+?e2: left_hand_expression "++"        -> post_inc_op
+    | left_hand_expression "--"       -> post_dec_op
+    | function_call
+    | e0 
+
+?e0: left_hand_expression
+    | NUMBER
+    | HEXDIGIT
+    | "(" expression ")"
+
+?left_hand_expression: simple_left_hand_expression "." simple_left_hand_expression -> dot_accessor
+    | declaration
+    | simple_left_hand_expression
+
+declaration: "var" simple_left_hand_expression                   -> var
+    | "signal" simple_left_hand_expression                       -> signal
+    | "signal" "input" simple_left_hand_expression               -> signal_input
+    | "signal" "private" "input" simple_left_hand_expression     -> signal_private_input
+    | "signal" "output" simple_left_hand_expression              -> signal_output
+    | "component" simple_left_hand_expression                    -> component
+
+?simple_left_hand_expression: simple_left_hand_expression array
+    | IDENTIFIER
+
+function_call: IDENTIFIER "(" expression_list ")"
+    | IDENTIFIER "(" ")"
+
+?expression_list: expression_list "," expression
+    | expression
+
+array: "[" expression_list? "]"
+
+IDENTIFIER: /[a-zA-Z][a-zA-Z$_0-9]*/
+
+COMMENT: "//" /[^\n]/* | "/*" /(\S|\s)*?/ "*/"
+%ignore COMMENT
+%import common.ESCAPED_STRING -> STRING
+%import common.NUMBER
+%import common.HEXDIGIT
+%import common.WS
+%ignore WS

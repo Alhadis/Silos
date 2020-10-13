@@ -1,0 +1,59 @@
+start: expr*
+
+literal: "null" -> null_literal
+	| "true" -> bool_literal_true
+	| "false" -> bool_literal_false
+	| STRING -> string_literal
+	| INT -> int_literal
+	| FLOAT -> float_literal
+
+?expr: rassign_expr
+?rassign_expr: lassign_expr (RASSIGN_OP lassign_expr)*
+?lassign_expr: or_expr (LASSIGN_OP or_expr)*
+?or_expr: and_expr (OR_OP and_expr)*
+?and_expr: negate_expr (AND_OP negate_expr)*
+?negate_expr: (NEGATE_OP compare_expr) | compare_expr
+?compare_expr: add_expr (COMPARE_OP add_expr)*
+?add_expr: mul_expr (ADD_OP mul_expr)*
+?mul_expr: pipe_expr (MUL_OP pipe_expr)*
+?pipe_expr: call_expr (PIPE_OP call_expr)*
+?call_expr: access_expr call_arglist? | call_arglist -> paren_expr
+?access_expr: primary (ACCESS_OP primary)*
+?primary: literal | IDENT -> ident_expr | func_expr | interpolate_expr | use_expr
+
+arg_def: IDENT ":" expr
+args_def: arg_def? ("," arg_def)* ","?
+
+?provided_arg: expr
+	| IDENT "=" expr -> named_provided_arg
+call_arglist: "(" provided_arg? ("," provided_arg)* ")"
+block_expr: "{" expr* "}"
+func_expr: "fn" IDENT? "(" args_def ")" "->" expr block_expr
+interpolate_expr: "{{" expr "}}"
+
+use_lib_chain: IDENT ("::" IDENT)*
+use_wildcard: "::*"
+use_list: "::{" IDENT? ("," IDENT)* ","? "}"
+use_expr: "use" use_lib_chain (use_wildcard | use_list)?
+
+RASSIGN_OP.2: "->"
+LASSIGN_OP.2: "<-"
+NEGATE_OP: "!" | "-"
+AND_OP: "&&" | "&"
+OR_OP: "||" | "|"
+COMPARE_OP: "==" | "!=" | "<=" | ">=" | ">" | "<"
+ADD_OP: "-" | "+"
+MUL_OP: "/" | "*"
+ACCESS_OP: "::"
+PIPE_OP.2: "|>"
+
+%import common.INT
+%import common.FLOAT
+%import common.ESCAPED_STRING -> STRING
+%import common.CNAME -> IDENT
+%import common.WS
+
+COMMENT: "#" /[^\n]/*
+
+%ignore WS
+%ignore COMMENT

@@ -1,0 +1,231 @@
+package collection;
+ 
+import java.util.ArrayList;
+import java.util.Collection; 
+import java.util.List;
+import java.util.ObservableCollection;
+
+import org.w3c.dom.Text;
+import org.w3c.event.Event;
+import org.w3c.event.EventHandler;
+import org.w3c.event.MouseEvent;
+import org.w3c.event.MouseEventHandler;
+ 
+public class Test implements Page, INotifyPropertyChanged {
+	<%
+	<html xmlns:lark = "http://www.lark.org/2012"> 
+		<head> 
+		<meta http-equiv="pragma" content="no-cache" /> 
+		<meta http-equiv="cache-control" content="no-cache, must-revalidate" /> 
+		<meta http-equiv="expires" content="wed, 26 feb 1997 08:21:57 gmt" /> 
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+			<style>
+			.rect {
+			    border: 5px solid red;
+			}   
+			</style> 
+		</head>
+		<body >
+		
+		<a href = {Test1 age=10 flag={Binding property="flag"} width=10 }> 测试 </a> 
+		
+		<button onclick="addChild"  >
+			新增
+		</button>
+		<button onclick = "deleteChild" > 
+			删除 
+		</button>
+
+		<button onclick = "nextPage">
+			下一页  
+		</button>
+			<table>
+				<tbody>
+					<Iterator items = {Binding property = "persons"}>
+						<TableRow />
+					</Iterator>
+				</tbody>
+			</table>
+		<svg width="500" height="200">
+			<line x1="20" y1="180" x2="400" y2="180" style="stroke:black;stroke-width:1px;"/>
+			<!--
+			<Iterator begin=30 end = 300 step = 50 >
+				<text x={Binding property="count" context="status" converteTo="converteX"} y=200>2001</text>
+			</Iterator>
+			-->
+			<XAxis /> 
+			
+			<line x1="20" y1="180" x2="20" y2="10" style="stroke:black;stroke-width:1px;"/>
+		
+			<Iterator begin=30 end =300 step = 50 >
+				<text x=1 y={Binding property="count" context="status" converteTo="converteY"} >
+					<Text data ={Binding property="count" context="status" converteTo="converteY"} />
+				</text> 
+			</Iterator>
+			<Iterator begin=30 end =300 step = 50 >
+				<rect x={Binding property="count" context="status" converteTo="converteX"} 
+					y={Binding property="count" context="status" converteTo="converteRectY"} 
+					width="20" height={Binding property="count" mode="OneTime" context="status" converteTo="converteHeight"} fill = "red" />
+			</Iterator>
+		</svg>
+		</body> 
+	</html>
+	%>
+
+	/**
+	*@see Test#name
+	 */ 
+	public Test(){
+		_persons.add(new Person("1", "张三", "山东高密", 65));
+		_persons.add(new Manager("2", "财务部经理", "河南安阳", 65));
+		_persons.add(new Person("3", "李四", "山西大同", 65));
+		_persons.add(new Person("4", "王小五", "湖北武汉", 65));
+		_persons.add(new Manager("5", "人力资源经理", "广东广州", 65));
+	}
+	
+	public ConverterFunction converteX = (Object data)->{
+		return 30+((int)data-1)*50;
+	};
+	
+	public ConverterFunction converteY = (Object data)->{
+		return 150-((int)data-1)*30;
+	};
+	
+	public ConverterFunction converteHeight = (Object data)->{
+		return 150-((int)data-1)*30;
+	};
+	
+	public ConverterFunction converteRectY = (Object data)->{
+		return 150-((int)data-1)*30;
+	};
+	
+	private String _name = "sss";
+	
+	public String name{
+		&{
+			return this._name;
+		}
+		+{
+			if(this._name === value){
+				return;
+			}
+			this._name = value;
+			notifyChanged("name");
+		}
+	}
+	
+	private boolean _flag = true;
+	public boolean flag{
+		&{
+			return this._flag;
+		}
+		+{
+			if(this._flag === value){
+				return;
+			}
+			this._flag = value;
+			notifyChanged("flag");
+		}
+	}
+	
+	private int _age = 70; 
+	public int age{
+		&{
+			return this._age;
+		}
+		+{
+			if(this._age === value){
+				return;
+			}
+			this._age = value;
+			notifyChanged("age");
+		}
+	}
+	
+	private int _width = 18;
+	public int width{
+		&{
+			return this._width;
+		}
+		+{
+			if(this._width === value){
+				return;
+			}
+			this._width = value;
+			notifyChanged("width");
+		}
+	}
+	
+	private int _height = 18;
+	public int height{
+		&{
+			return this._height;
+		}
+		+{
+			if(this._height === value){
+				return;
+			}
+			this._height = value;
+			notifyChanged("height");
+		}
+	}
+	
+	EventHandler h = (Event e)->{
+		alert("Hello world");
+	};
+	
+	@Override
+	public String toString() {
+		return this._name + "2" + "; age : " + this._age;
+	}
+	
+	public ConverterFunction to=(Object data) ->{
+		return data + "px";
+	};
+	
+	public ConverterFunction from=(Object data) ->{
+		return data;
+	};
+	
+	private Collection<Person> _persons = new ObservableCollection<>();
+	public Collection<Person> persons{
+		&{
+			return this._persons;
+		}
+		+{
+			this._persons = value; 
+		}
+	}
+	 
+	public MouseEventHandler addChild = (MouseEvent event)->{
+		persons.add(new Manager("child1", "新增员工1", "广东广州", 35));
+	};
+	 
+	public MouseEventHandler deleteChild =  (MouseEvent event)->{
+		List<Person> toBeDeleted = new ArrayList<Person>();
+		for(Person p : persons){
+			if(p.selected){
+				toBeDeleted.add(p);
+			} 
+		}
+		
+		if(toBeDeleted.size>0){
+			persons.removeAll(toBeDeleted);
+		}
+	};
+	
+	public MouseEventHandler nextPage =  (MouseEvent event)->{
+		ObservableCollection<Person> nextPage = new ObservableCollection<Person>();
+		nextPage.add(new Person("11" + Math.random(), "张三1" + Math.random(), "山东高密", 65));
+		nextPage.add(new Person("21" + Math.random(), "张三11" + Math.random(), "山东高密1", 65));
+		nextPage.add(new Person("31" + Math.random(), "张三21" + Math.random(), "山东高密2", 65));
+		nextPage.add(new Person("41" + Math.random(), "张三31" + Math.random(), "山东高密2", 65)); 
+		
+		if(persons != null){ 
+			persons.clear(); 
+		}
+		persons.addAll(nextPage); 
+	};
+} 
+
+

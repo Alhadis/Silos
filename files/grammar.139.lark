@@ -1,0 +1,42 @@
+?start: sum
+      | sum "=" sum                       -> eq
+
+?sum:                                     -> null_reduce
+    | term
+    | sum "-" term                        -> minus
+    | sum "+" term                        -> add
+
+?term: product
+     | term "\\div" product               -> div
+
+?product: factor
+        | product factor                  -> mul
+        | product "\\times" factor        -> mul
+        | product "\\cdot" factor         -> mul
+
+?factor: atom
+       | atom "^" "{" sum "}"             -> sup
+       | "\\frac" "{" sum "}" "{" sum "}" -> frac
+       | NUMBER "\\frac" "{" sum "}" "{" sum "}" -> ifrac
+       | IFRAC_NUM "\\frac" "{" sum "}" "{" sum "}" -> ifrac
+
+?atom: NUMBER                             -> number
+     | VAR                                -> var
+     | ASTERISK "{" NUMBER "}"            -> wildcards
+     | "\\sqrt" "{" sum "}"               -> sqrt
+     | "(" sum ")"                        -> grp
+     | "[" sum "]"                        -> grp
+     | "\\left" "|" sum "\\right" "|"     -> abs
+     | "`" sum "`[" STRING "]"            -> animation
+     | "`" sum "`[" STRING "," NUMBER "]" -> animation_group
+     | "`" sum "`[replace]{" sum "}"      -> animation_replace
+
+VAR: "a".."z" | "A".."Z"
+ASTERISK: "*"
+IFRAC_NUM: "&"
+STRING: /[a-zA-Z]+/
+
+%import common.NUMBER
+
+%import common.WS_INLINE
+%ignore WS_INLINE

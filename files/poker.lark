@@ -1,0 +1,120 @@
+start: game?
+
+// game: header table seat+ ante* small_blind big_blind hole_cards received_card action* flop action* (turn action*)? river? (show_down show_down_player+)? prize_collect* tournament_finished* summary total_pot board seat_result*
+
+game: header table (seat | ante)+ after_button* ante* small_blind big_blind hole_cards received_card pre_flop flop? turn? river? show_down? summary
+
+header: hand tournament blind "- " DATE_ISO
+hand: "PokerStars Hand #" NUMBER
+tournament: ": Tournament #" NUMBER ", " ((NUMBER | MONEY) "+"?)+ " " PHRASE
+blind: "- Level" ROMAN_NUMBER "(" NUMBER "/" NUMBER  ") "
+
+table: "Table '" NUMBER " " NUMBER "' " NUMBER "-max Seat #" button
+button: NUMBER " is the button"
+
+seat: "Seat " NUMBER ": " player chips IS_OUT? WHATEVER?
+chips:  "(" NUMBER " in chips)"
+after_button: player "will be allowed to play after the button"
+
+ante: player ": posts the ante " NUMBER
+
+small_blind: player ": posts small blind " NUMBER IS_ALL_IN? 
+big_blind: player ": posts big blind " NUMBER IS_ALL_IN?
+
+hole_cards: "*** HOLE CARDS ***"
+
+received_card: "Dealt to " player card_set
+
+action: raise | bet | fold | call | timeout | check | uncalled_bet | prize_collect_hand | hide_hand | timeout_disconnected | disconnected | connected | chat | returned | is_sitting_out | show_down_player
+raise: player ": bets " NUMBER IS_ALL_IN? -> raised
+bet: player ": raises " NUMBER " to " NUMBER IS_ALL_IN?
+fold: player ": folds" card_set? " "?
+call: player ": calls " NUMBER IS_ALL_IN?
+timeout: player "has timed out"
+check: player ": checks"
+uncalled_bet: "Uncalled bet (" NUMBER ") returned to " (WORD | NUMBER | SYMBOL)*
+hide_hand: player ": doesn't show hand"
+returned: player "has returned"
+timeout_disconnected: player "has timed out while " "being "? "disconnected"
+disconnected: player "is disconnected" " "?
+connected: player "is connected" " "?
+is_sitting_out: player IS_OUT
+
+show_down_player: player ": shows" card_set WHATEVER
+mucks_hand: player ": mucks hand"
+win: player " wins the tournament and receives " (NUMBER | MONEY) " - congratulations!"
+
+prize_collect: prize_collect_hand | prize_bounty_collect
+prize_collect_hand: prize_collect_hand_single_pot | prize_collect_hand_main_pot | prize_collect_hand_side_pot
+prize_collect_hand_single_pot: player "collected " NUMBER " from pot"
+prize_collect_hand_main_pot: player "collected " NUMBER " from main pot"
+prize_collect_hand_side_pot: player "collected " NUMBER " from side pot" ("-" NUMBER)?
+prize_bounty_collect: player " wins the " NUMBER " bounty for eliminating" (WORD | NUMBER | SYMBOL)*
+
+tournament_finished: player " finished the tournament" (" in " PLACE " place")? (" and received " NUMBER "."? )?
+
+total_pot: total_pot_single | total_pot_many
+total_pot_single: "Total pot " NUMBER "| " rake
+total_pot_many: "Total pot " NUMBER " " pot_main pot_side+ " | " rake
+pot_main: "Main pot " NUMBER
+pot_side: "Side pot" ("-" NUMBER)? NUMBER
+rake: "Rake " NUMBER
+board: "Board " card_set
+seat_result: "Seat " NUMBER ": " WHATEVER
+
+pre_flop: action+
+flop: FLOP_MESSAGE card_set action*
+turn: TURN_MESSAGE card_set+  action*
+river: RIVER_MESSAGE card_set+  action*
+show_down: SHOW_DOWN_MESSAGE (show_down_player | prize_collect| mucks_hand | tournament_finished | returned | chat | win | is_sitting_out)+
+summary: SUMMARY_MESSAGE total_pot board? seat_result*
+
+player: PLAYER_NAME
+card_set:  "[" (card  " "?)* "]"
+card: CARD_VALUE SUIT
+chat: player "said, " WHATEVER
+
+FLOP_MESSAGE: "*** FLOP ***"
+TURN_MESSAGE: "*** TURN ***"
+RIVER_MESSAGE: "*** RIVER ***"
+SHOW_DOWN_MESSAGE: "*** SHOW DOWN ***"
+SUMMARY_MESSAGE: "*** SUMMARY ***"
+
+CARD_VALUE: CARD_NUMBER | ACE | TEN | KING | JACK | QUEEN 
+CARD_NUMBER: "2".."9"
+ACE: "A"
+TEN: "T"
+KING: "K"
+JACK: "J"
+QUEEN: "Q"
+SUIT: CLUBS | DIAMONDS | HEARTS | SPADES
+CLUBS: "c"
+DIAMONDS: "d"
+HEARTS: "h"
+SPADES: "s"
+
+IS_ALL_IN: "and is all-in"
+IS_OUT: " "? "is sitting out"
+
+// PLAYER_NAME: (WORD | NUMBER)+ (" " (WORD | NUMBER)+)?
+PLAYER_NAME: /.+?(?=(:|\(|\[| collected| finished| showed| folded| has | is | will be | said,?| wins ))/
+
+PLACE: NUMBER+ ( "st"| "nd" | "th" | "rd" )
+ROMAN_NUMBER: ("I" | "V" | "X" | "L" | "C" | "M")+" "? 
+DATE_ISO: DATEYMD " " TIME
+TIME: NUMBER ":" NUMBER ":" NUMBER " " WORD
+DATEYMD: NUMBER "/" NUMBER "/" NUMBER
+ACCENTED_LETTER: /[áàâãéèêëíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ]/
+LETTER: UCASE_LETTER | LCASE_LETTER | ACCENTED_LETTER
+WORD: (LETTER | "'")+
+PHRASE: (WORD | " " | ",")+
+MONEY: "$" NUMBER+ "." NUMBER+
+SYMBOL: "€" | "\"" | "!" | "@" | "#" | "$" | "%" | "¨" | "&" | "*" | "(" | ")" | "-" | "_" | "+" | "=" | "[" | "]" | "{" | "}" | ":" | ";" | "."
+WHATEVER: (PHRASE | NUMBER | SYMBOL)+
+
+
+%import common.LCASE_LETTER 
+%import common.UCASE_LETTER 
+%import common.NUMBER 
+%import common.WS 
+%ignore WS

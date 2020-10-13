@@ -1,0 +1,111 @@
+ontoagent: (ontolang | ontoagent_process)*
+ontoagent_process: (ontoagent_process_add_goal_instance | ontoagent_process_add_trigger | ontoagent_process_define_goal | ontoagent_process_define_output_xmr_template | ontoagent_process_register_mp)
+
+ontoagent_process_add_goal_instance: ADD GOAL INSTANCE identifier "(" (filler ("," filler)*)? ")" ";"
+ontoagent_process_add_trigger: ADD TRIGGER TO identifier INSTANTIATE identifier WHEN comparator ";"
+ontoagent_process_define_goal: DEFINE goal ";"
+ontoagent_process_define_output_xmr_template: DEFINE NAME arguments AS TEMPLATE output_xmr_template_type output_xmr_template_requires (output_xmr_template_root)? output_xmr_template_include ";"
+ontoagent_process_register_mp: REGISTER MP agent_method (AS NAME)? ";"
+
+// Rules
+add_filler_statement: statement_instance "[" NAME "]" "+=" (statement_instance | literal)
+agent_method: MODULE
+argument: ARGUMENT
+arguments: "(" (argument ("," argument)*)? ")"
+assert_statement: ASSERT assertion ELSE IMPASSE WITH impasses
+assertion: (exists_statement | is_statement | mp_statement)
+assign_filler_statement: statement_instance "[" NAME "]" "=" (statement_instance | literal)
+assign_variable_statement: ARGUMENT "=" (literal | identifier | ARGUMENT | statement | list)
+boolean_statement: (exists_statement | is_statement)
+condition: WHEN (condition_and | condition_or | condition_nand | condition_nor | condition_not | condition_on) THEN goal_status
+condition_and: boolean_statement (AND boolean_statement)*
+condition_nand: boolean_statement (NAND boolean_statement)+
+condition_nor: boolean_statement (NOR boolean_statement)+
+condition_not: boolean_statement (NOT boolean_statement)+
+condition_on: (EXECUTED)
+condition_or: boolean_statement (OR boolean_statement)+
+effect: EFFECT effect_do+
+effect_do: DO statement
+exists_statement: EXISTS comparator
+expectation_statement: EXPECT (boolean_statement | mp_statement)
+foreach_statement: FOR EACH ARGUMENT IN comparator ("|" statement)*
+goal: NAME arguments AS GOAL IN SPACE (priority)? (resources)? (plan)* (condition)* (effect)*
+goal_status: (PENDING | ACTIVE | ABANDONED | SATISFIED)
+impasse: make_instance_statement
+impasses: impasse (OR impasse)*
+is_statement: statement_instance "[" NAME "]" "==" literal
+list: ("[]" | "[" list_element ("," list_element)* "]")
+list_element: (literal | identifier | ARGUMENT | statement | list)
+make_instance_statement: "@" SPACE ":" identifier arguments
+mp_statement: SELF "." MPNAME output_arguments
+ontoagent_triple: slot (facet)? (filler | argument)
+output_argument: (argument | literal | statement_instance)
+output_arguments: "(" (output_argument ("," output_argument)*)? ")"
+output_statement: OUTPUT NAME output_arguments BY statement_instance
+output_xmr_template_type: TYPE (VERBAL | PHYSICAL | MENTAL)
+output_xmr_template_requires: REQUIRES identifier
+output_xmr_template_root: ROOT identifier
+output_xmr_template_include: INCLUDE assign_process*
+plan: PLAN "(" PLAN_NAME ")" plan_selection plan_step+
+plan_do: DO (statement | IDLE)
+plan_selection: SELECT (DEFAULT | IF NOT? (boolean_statement | mp_statement))
+plan_step: STEP plan_do+
+priority: PRIORITY (double | mp_statement)
+resources: RESOURCES (double | mp_statement)
+statement_instance: (SELF | identifier | make_instance_statement | argument)
+statement: (add_filler_statement | assert_statement | assign_filler_statement | assign_variable_statement | exists_statement | expectation_statement |foreach_statement | is_statement | make_instance_statement | mp_statement | output_statement | transient_statement)
+transient_statement: "{" (ontoagent_triple ";")* "}"
+
+// Overrides
+^string: variable | (("\"") STRING ("\""))
+variable: "$" STRING
+
+// Keywords
+ABANDONED: "abandoned"i
+ADD: "add"i
+ACTIVE: "active"i
+ASSERT: "assert"i
+BY: "by"i
+DEFAULT: "default"i
+DEFINE: "define"i
+DO: "do"i
+EACH: "each"i
+EFFECT: "effect"i
+ELSE: "else"i
+EXECUTED: "executed"i
+EXISTS: "exists"i
+EXPECT: "expect"i
+GOAL: "goal"i
+IDLE: "idle"i
+IF: "if"i
+IMPASSE: "impasse"i
+INCLUDE: "include"i
+INSTANCE: "instance"i
+INSTANTIATE: "instantiate"i
+MENTAL: "mental"i
+MP: "mp"i
+NAND: "nand"i
+NOR: "nor"i
+OUTPUT: "output"i
+PENDING: "pending"i
+PHYSICAL: "physical"i
+PLAN: "plan"i
+PRIORITY: "priority"i
+REGISTER: "register"i
+RESOURCES: "resources"i
+REQUIRES: "requires"i
+ROOT: "root"i
+SATISFIED: "satisfied"i
+SELF: "self"i
+STEP: "step"i
+TEMPLATE: "template"i
+TRIGGER: "trigger"i
+VERBAL: "verbal"i
+WHEN: "when"i
+WITH: "with"i
+
+// Patterns
+ARGUMENT: /\$[a-zA-Z0-9]+/
+MODULE: /[a-z0-9\_]+[\.[a-z0-9\_]+]*/i
+MPNAME: /[a-zA-Z0-9\_]+/
+PLAN_NAME: /(?!True|False)[a-zA-Z\.\*\_\- ]+/i

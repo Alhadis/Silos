@@ -1,0 +1,59 @@
+
+opsymbol     : /([!?@$%^&*\-+;=<>]{2,3}|[!?@$%^&*\-+;]{1,3})(?!:)/                                                                                                            -> string
+label        : /(('\.')?\w+)|'([!?@$%^&*\-+;=<>]{2,3}|[!?@$%^&*\-+;]{1,3})'/                                                                                                  -> string
+acclabel     : /(\+\w+)|(\w+\+)|(((('\.')?\w+)|'([!?@$%^&*\-+;=<>]{2,3}|[!?@$%^&*\-+;]{1,3})')(\.((('\.')?\w+)|'([!?@$%^&*\-+;=<>]{2,3}|[!?@$%^&*\-+;]{1,3})'))*)/                              -> string
+assignlabel  : /((('\.')?\w+)|'([!?@$%^&*\-+;=<>]{2,3}|[!?@$%^&*\-+;]{1,3})')(\.((('\.')?\w+)|'([!?@$%^&*\-+;=<>]{2,3}|[!?@$%^&*\-+;]{1,3})'))*(?=\s*=[^!?@$%^&*\-+;=<>])/    -> string
+createlabel  : /(\+\w+)|(\w+\+)|(((('\.')?\w+)|'([!?@$%^&*\-+;=<>]{2,3}|[!?@$%^&*\-+;]{1,3})')(\.((('\.')?\w+)|'([!?@$%^&*\-+;=<>]{2,3}|[!?@$%^&*\-+;]{1,3})'))*)(?=\s*\??!?:)/                 -> string
+// prepostfix   : /(\w+\+)|(\+\w+)/ -> prepoststring
+
+multilabel : acclabel
+           | "["multilabel(","multilabel)*"]" -> introducer
+introducer : "|"multilabel(","multilabel)*"|"
+
+?lamb      : introducer* strategy
+?strategy  : ("["dualsubs"]")* operators
+?operators : opsymbol* object (opsymbol+ object)*
+subsobject : argument(","argument)*
+dualsubs   : declaration (","declaration)* ","?
+// mixedsubs  : ( ( mixin(","mixin)* ("," argument(","argument)*)? ) | (argument(","argument)*) ) ","?
+
+directive : introducer ("=" introducer)?
+// renamer : directive ("," directive)*
+
+object     : (object".")? label ("("subsobject?")")*   -> reftree
+           | object"<"((directive|mixin|argument) ("," (directive|mixin|argument))* )? ","?">"  -> template
+           | "("subsobject? ",)"                       -> wsafesubsobject
+           | "("subsobject? ")"                        -> wsubsobject
+           | "{"dualsubs?"}"                           -> wdualsubs
+
+argument : (assignlabel"=")? lamb
+
+infermarker : "?:" -> silentmarker | ":"
+
+datapack    : createlabel infermarker
+            | introducer infermarker
+            | infermarker ":"
+
+declaration : datapack ("["dualsubs"]")? "="strategy -> inferreddeclaration
+            | datapack strategy"="strategy
+            | datapack strategy
+            | strategy ("="strategy)?
+
+mixin : datapack ("["dualsubs"]")? "="lamb -> inferreddeclaration
+      | datapack strategy"="lamb           -> declaration
+      | datapack strategy                      -> declaration
+
+precrowflags : "left-assoc"->leftassoc |"right-assoc"->rightassoc
+precrow : opsymbol* precrowflags? ","
+importrow : /'\w+\.ax'/ "," -> string
+start : importrow* precrow*  dualsubs
+
+%ignore /#[^\n]*/
+%ignore "\t"
+%ignore " "
+%ignore "\n"
+
+
+
+
+

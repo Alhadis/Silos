@@ -1,0 +1,57 @@
+// $THETA  value1  [value2]  [value3] ...
+//          [(value)xn]
+//          [NUMBERPOINTS=n]
+//          [ABORT|NOABORT|NOABORTFIRST]
+//
+// 5 legal forms
+//   1. init [FIXED]
+//   2. ([low,] init [,up] [FIXED])
+//   3. ([low,] init [,up]) [FIXED]  // MUST have "low" if "up" exists
+//   4. (low,,up)  // has NO init
+//   5. (value)xn  // value is inside parenthesis of form 2-4
+//
+// Rules
+//   1. "low" and "up" can be skipped with -INF/INF (default).
+//   2. "FIXED" requires "low" & "up" to equal "init", insofar they appear.
+//   3. "FIXED" implied if "low"="init"="up".
+//   4. There can be multiple "FIXED" for one THETA
+//   5. "FIXED" can appear almost anywhere and multiple times in a row
+//      when parentheses are used
+
+root : _ws* theta (NEWLINE | WS | theta | option)*
+
+?option : KEY [WS] "=" [WS] VALUE -> option
+        | VALUE                   -> option
+
+theta : init [WS FIX]                    // form 1
+      | _lpar [_fixes] init [_fixes] _rpar            // form 2+3+5 (init)
+      | _lpar [_fixes] low [_fixes] sep [_fixes] init [_fixes] [sep] _rpar    // form 2+3+5 (low, init)
+      | _lpar [_fixes] low [_fixes] sep [_fixes] init [_fixes]  sep [_fixes] up [_fixes] _rpar  // form 2+3+5 (low, init, up)
+      | _lpar [_fixes] low [_fixes] sepsep [_fixes] up [_fixes] _rpar        // form 4+5 (low, up)
+sep : WS
+    | [WS] "," [WS]
+sepsep : [WS] "," [WS] "," [WS]
+_lpar : "(" [WS]
+_rpar : [WS] ")" n
+      | [WS] ")" [WS] FIX
+      | [WS] ")"
+_fixes: ([WS] FIX [WS])+
+
+init : NUMERIC
+low  : NUMERIC | NEG_INF
+up   : NUMERIC | POS_INF
+n    : "x" INT
+
+FIX : "FIXED" | "FIXE" | "FIX"
+
+// generic option terminals (key/value)
+KEY   : /(?!([0-9]|\(|FIX))\w+/      // TODO: use priority (instead of negative lookahead)
+VALUE : /(?!([0-9]|\(|FIX))[^\s=;]+/  // TODO: use priority (instead of negative lookahead)
+
+// common misc rules
+_ws: [WS] [NEWLINE]
+
+%import .definitions (INT, NEWLINE, NUMERIC, WS)
+
+NEG_INF: "-INF" | "-1000000"
+POS_INF: "INF" | "1000000"

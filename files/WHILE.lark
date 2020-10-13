@@ -1,0 +1,136 @@
+// Siman Wang 4/18/2020
+
+?start: stmt _NEWLINE
+
+// Statements grammar
+?stmt: simple_stmt | compound_stmt
+
+?compound_stmt: (if_stmt | while_stmt | funcdef) (";" stmt)*
+
+// Function grammar
+funcdef: "def" NAME "(" parameters? ")" "{" suite "}"
+
+parameters: paramvalue ("," paramvalue)* ["," [ starparams | kwparams]]
+          | starparams
+          | kwparams
+starparams: "*" typedparam? ("," paramvalue)* ["," kwparams]
+kwparams: "**" typedparam
+
+?paramvalue: typedparam ["=" test]
+?typedparam: NAME [":" test]
+
+// if, while
+if_stmt: "if" ["("] test [")"] "then" suite  ["else" suite]
+while_stmt: "while" ["("] test [")"] "do" suite [";"]            -> simple_while
+          | "while" ["("] test [")"] "do" "{" suite "}"        -> compound_while
+?suite: stmt | _NEWLINE _INDENT stmt+ _DEDENT
+
+// assignment, boolean, skip
+?simple_stmt: small_stmt (";" stmt)*
+?small_stmt: (expr_stmt | flow_stmt | skip_stmt)
+?skip_stmt: "skip"
+?flow_stmt: return_stmt
+?return_stmt: "return" [testlist]
+?expr_stmt: bool_expr | assign_expr
+
+// Assignment expression
+?assign_expr: var ":=" expr_stmt       -> assign
+            | atom_expr ":=" expr      -> array_assign
+            | var ":=" test "?" test ":" test     -> ternary_assign
+
+var: NAME
+// Boolean expression
+?bool_expr: test
+?test: or_test ("if" or_test "else" test)?
+?test_nocond: or_test
+?or_test: and_test ("∨" and_test)*
+?and_test: not_test ("∧" not_test)*
+?not_test: "¬" not_test -> not
+         | comparison
+
+?comparison: expr (_comp_op expr)*
+?expr: arith_expr
+?arith_expr: term 
+           | arith_expr "+" term  -> add 
+           | arith_expr "-" term  -> sub 
+
+?term: factor 
+     | term "*" factor  -> mul 
+     | term "/" factor  -> div
+?factor: _factor_op factor 
+       | power
+
+!_factor_op: "+"|"-"|"~"
+!_shift_op: "<<"|">>"
+//!_add_op: "+"|"-"
+//!_mul_op: "*"|"@"|"/"|"%"|"//"
+// <> isn't actually a valid comparison operator in Python. It's here for the
+// sake of a __future__ import described in PEP 401 (which really works :-)
+!_comp_op: "<"|">"|"="|">="|"<="|"<>"|"!="|"in"|"not" "in"|"is"|"is" "not"
+
+?power: atom_expr ("**" factor)?
+
+?atom_expr: atom_expr "(" [arguments] ")"    -> funccall
+          | atom_expr "[" subscriptlist "]"  -> getitem
+          | atom_expr "." NAME               -> getattr
+          | atom
+
+?atom: "[" [testlist_comp] "]"  -> array
+     | "{" test "}" 
+     | var
+     | number | string+
+     | "(" test ")"
+     | "None"    -> const_none
+     | "true"    -> const_true
+     | "false"   -> const_false
+
+?testlist_comp: test [comp_for | ("," (test))+ [","] | ","]
+subscriptlist: subscript ("," subscript)* [","]
+subscript: test | [test] ":" [test] [sliceop]
+sliceop: ":" [test]
+exprlist: expr ("," expr)* [","]
+testlist: test ("," test)* [","]
+
+arguments: argvalue ("," argvalue)*  ("," [ starargs | kwargs])?
+         | starargs
+         | kwargs
+         //| test comp_for
+
+starargs: "*" test ("," "*" test)* ("," argvalue)* ["," kwargs]
+kwargs: "**" test
+
+?argvalue: test ("=" test)?
+
+
+comp_iter: comp_for | comp_if | async_for
+async_for: "async" "for" exprlist "in" or_test [comp_iter]
+comp_for: "for" exprlist "in" or_test [comp_iter]
+comp_if: "if" test_nocond [comp_iter]
+
+// not used in grammar, but may appear in "node" passed from Parser to Compiler
+encoding_decl: NAME
+
+
+number: DEC_NUMBER | HEX_NUMBER | BIN_NUMBER | OCT_NUMBER | FLOAT_NUMBER | IMAG_NUMBER
+string: STRING | LONG_STRING
+
+// Tokens
+
+NAME: /[a-zA-Z_]\w*/
+COMMENT: /#[^\n]*/
+_NEWLINE: ( /\r?\n[\t ]*/ | COMMENT )+
+
+STRING : /[ubf]?r?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
+LONG_STRING: /[ubf]?r?(""".*?(?<!\\)(\\\\)*?"""|'''.*?(?<!\\)(\\\\)*?''')/is
+
+DEC_NUMBER: /[-]?[0-9]\d*/i
+HEX_NUMBER.2: /0x[\da-f]*/i
+OCT_NUMBER.2: /0o[0-7]*/i
+BIN_NUMBER.2 : /0b[0-1]*/i
+FLOAT_NUMBER.2: /((\d+\.\d*|\.\d+)(e[-+]?\d+)?|\d+(e[-+]?\d+))/i
+IMAG_NUMBER.2: /\d+j/i | FLOAT_NUMBER "j"i
+
+%ignore /[\t \f]+/  // WS
+%ignore /\\[\t \f]*\r?\n/   // LINE_CONT
+%ignore COMMENT
+%declare _INDENT _DEDENT

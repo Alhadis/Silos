@@ -1,0 +1,231 @@
+start: top_level
+
+top_level: (include
+    | scoped_declaration | global_var_arr_decl
+    | generic_func_definition | generic_ctor_definition
+    | type_definition | singleton_definition
+    | namespace_change
+    | intrinsic)*
+
+include: "include" ESCAPED_STRING
+
+namespace_change: "namespace" IDENT ";" | "no" "namespace" ";"
+
+?scoped_declaration: (var_decl_with_init | func_declaration) ";"
+?var_arr_declaration: var_declaration | array_declaration
+global_var_arr_decl: (EXTERN | STATIC) var_arr_declaration ";"
+EXTERN: "extern"
+STATIC: "static"
+
+var_init_expr: "=" assignment_expression
+var_ctor_expr: "(" [assignment_expression ("," assignment_expression)*] ")"
+?var_decl_with_init: var_arr_declaration (var_init_expr|var_ctor_expr)?
+
+var_declaration: type_name_hack IDENT
+
+?func_declaration: async_func_decl
+?async_func_decl: ASYNC? inline_func_decl
+?inline_func_decl: INLINE? func_declaration_
+?func_declaration_: type_name_hack (type_name_hack "::")? (IDENT | "operator" OPERATORS) "(" param_list ")"
+ASYNC: "async"
+INLINE: "inline"
+
+ctor_declaration: "constructor" "(" param_list ")"
+
+array_declaration: type_name_hack IDENT "[" INT_CONSTANT "]"
+
+param_list: param_declaration ("," param_declaration)* |
+param_declaration: type_name BYREF? IDENT
+BYREF: "&"
+
+exec_modifier: MACRO | CONSTEXPR
+MACRO: "macro"
+CONSTEXPR: "constexpr"
+
+// Functions at the top level. Can be generic and have an event handler
+?generic_func_definition: ("generic" "<" IDENT ">")? top_level_func_def
+?annotated_function: func_annotations? normal_func_def
+?func_annotations: event_handler namespace_name | event_handler | namespace_name
+?top_level_func_def: annotated_function | modified_func_def
+
+// Normal runtime function
+?normal_func_def: func_declaration block_statement
+// Function with exec modifier
+?modified_func_def: exec_modifier func_declaration_ block_statement
+
+?function_definition: normal_func_def | modified_func_def
+ctor_definition: ctor_declaration [":" ctor_init_list] block_statement
+
+?modified_ctor_definition: exec_modifier? ctor_definition
+
+?generic_ctor_definition: ("generic" "<" IDENT ">")? top_ctor_definition
+top_ctor_definition: type_name_hack "::" ctor_definition
+ctor_init_list: ctor_init ("," ctor_init)*
+ctor_init: (IDENT | type_name) "(" [expression ("," expression)*] ")"
+
+event_handler: "[" "Event" conditional_expression [":" "{" (event_condition ("," event_condition)*)? "}"] "]"
+event_condition: IDENT ("." IDENT)* ":" conditional_expression
+
+namespace_name: "[" "Namespace" IDENT "]"
+
+var_init_declaration: var_decl_with_init ";"
+
+property_decl: "property" func_declaration
+property_def: "property" function_definition
+
+// All function definitions must occur after variable declarations have finished
+?non_var_decl: func_declaration | property_decl | ctor_declaration
+type_definition: "type" IDENT maybe_type_params maybe_extends "{" (var_arr_declaration ";")* ((non_var_decl ";") | property_def | function_definition | modified_ctor_definition)* "}"
+    | "type" IDENT ";" -> type_declaration
+    | "type" IDENT "is" type_name ";" -> type_alias
+
+maybe_type_params: ["<" IDENT ("," IDENT)* ">"]
+maybe_extends: [":" type_name]
+
+type_name: IDENT ["<" type_name ("," type_name)* ">"]
+type_name_hack: IDENT
+    | ident_less_than IDENT ["<" type_name seq_type_names ">"] seq_type_names ">"
+seq_type_names: ("," type_name)*
+
+// Hack to get around conflict with less-than operator
+?ident_less_than: IDENT "<"
+
+singleton_definition: "singleton" IDENT "{" (scoped_declaration | function_definition)* "}"
+
+intrinsic: "intrinsic_extension" "{" (native_definition | type_configure)* "}"
+native_ctor_decl: type_name_hack "::" ctor_declaration
+native_definition: (func_declaration | native_ctor_decl) "Python" ":" PY_BLOCK
+type_configure: "reconfigure_type" type_name "Python" ":" PY_BLOCK
+PY_BLOCK: /{.*?}/s
+
+block_statement: "{" statement* "}"
+
+?statement: block_statement | statement_no_block
+
+?statement_no_block: var_init_declaration
+    | expression? ";" -> expression_statement
+    | "if" "(" expression ")" statement ["else" statement] -> if_statement
+    | "while" "(" expression ")" statement -> while_statement
+    | "do" statement "while" "(" expression ")" ";" -> do_while_statement
+    | "for" "(" opt_expression ";" opt_expression ";" opt_expression ")" statement -> for_statement
+    | "for" "(" IDENT "in" expression ")" statement -> for_in_statement
+    | "at" "(" expression ")" statement -> at_statement
+    | "ir" "(" [expression ("," expression)*] ")" IR_BLOCK -> ir_statement
+    | "continue" ";" -> continue_statement
+    | "break" ";" -> break_statement
+    | "return" expression? ";" -> return_statement
+
+IR_BLOCK: /{.*?}/s
+
+// Needed so for_statement always keeps child nodes
+?opt_expression: expression?
+
+?expression: assignment_expression
+
+?assignment_expression: filter_expression
+    | unary_expression (ASSIGN | ASSIGN_OP) assignment_expression
+
+?filter_expression: conditional_expression
+    | "filter" "(" IDENT "in" expression ")" "{" (expression ";")* "}"
+
+?conditional_expression: logical_or_expression ["?" expression ":" conditional_expression]
+
+?logical_or_expression: logical_and_expression
+    | logical_or_expression LOG_OR_OP logical_and_expression -> binop_expr
+
+?logical_and_expression: inclusive_or_expression
+    | logical_and_expression LOG_AND_OP inclusive_or_expression -> binop_expr
+
+?inclusive_or_expression: exclusive_or_expression
+    | inclusive_or_expression OR_OP exclusive_or_expression -> binop_expr
+
+?exclusive_or_expression: and_expression
+    | exclusive_or_expression XOR_OP and_expression -> binop_expr
+
+?and_expression: equality_expression
+    | and_expression AND_OP equality_expression -> binop_expr
+
+?equality_expression: relational_expression
+    | equality_expression EQ relational_expression -> binop_expr
+    | equality_expression NEQ relational_expression -> binop_expr
+
+?relational_expression: shift_expression
+    | relational_expression REL_OP shift_expression -> binop_expr
+    | ident_less_than shift_expression -> ident_lt_expr
+
+?shift_expression: additive_expression
+    | shift_expression SHIFT_OP additive_expression -> binop_expr
+
+?additive_expression: multiplicative_expression
+    | additive_expression ADD_OP multiplicative_expression -> binop_expr
+
+?multiplicative_expression: unary_expression
+    | multiplicative_expression MUL_OP unary_expression -> binop_expr
+
+?unary_expression: postfix_expression
+    | INCREMENT_OP unary_expression -> pre_increment_expr
+    | "await" unary_expression -> await_expression
+    | UNARY_OP unary_expression
+
+?postfix_expression: primary_expression
+    | postfix_expression "[" expression "]" -> subscript_expr
+    | postfix_expression "(" [assignment_expression ("," assignment_expression)*] ")" -> function_call_expr
+    | postfix_expression DOT IDENT -> member_access_expr
+    | postfix_expression INCREMENT_OP -> post_increment_expr
+
+?primary_expression: identifier_expr
+    | DECIMAL_NUM -> dec_literal
+    | INT_CONSTANT -> int_literal
+    | ESCAPED_STRING+ -> string_literal
+    | "(" expression ("," expression)+ ")" -> vector_expression
+    | "(" expression ")"
+
+identifier_expr: IDENT
+
+OPERATORS: EQ | ASSIGN_OP | LOG_OR_OP | INCREMENT_OP| LOG_AND_OP | OR_OP | XOR_OP | AND_OP | NEQ | SHIFT_OP
+            | REL_OP  | ADD_OP | MUL_OP | UNARY_OP | "[]"
+
+EQ.3: "=="
+ASSIGN: "="
+ASSIGN_OP.2: ASSIGN | "*=" | "/=" | "%=" | "+=" | "-=" | "<<=" | ">>=" | "&=" | "^=" | "|="
+
+LOG_OR_OP: "||"
+LOG_AND_OP: "&&"
+OR_OP: "|"
+XOR_OP: "^"
+AND_OP: "&"
+NEQ: "!="
+REL_OP: "<=" | ">=" | "<" | ">"
+SHIFT_OP.2: "<<" | ">>"
+ADD_OP: "+" | "-"
+MUL_OP: "*" | "/" | "%"
+UNARY_OP: "+" | "-" | "~" | "!"
+INCREMENT_OP: "++" | "--"
+DOT: "."
+
+INT_CONSTANT: DEC_CONSTANT | OCT_CONSTANT | HEX_CONSTANT | BIN_CONSTANT | CHAR_CONSTANT | "0"
+DEC_CONSTANT: NON_ZERO_DIGIT DIGIT*
+OCT_CONSTANT: "0" ("0".."7")+
+HEX_CONSTANT: "0" ("x" | "X") ("0".."9" | "A".."F" | "a".."f")+
+BIN_CONSTANT: "0" ("b" | "B") ("0" | "1")+
+
+NON_ZERO_DIGIT: "1" .. "9"
+
+DECIMAL_NUM.2: (DEC_CONSTANT | "0") "." DIGIT+
+
+SINGLE_CHAR: (/(<?!\\)./ | "\\" /([abefnrtv\\'"?]|x[\da-fA-F]+|[0-7]{1,3})/ )
+
+CHAR_CONSTANT: "'" SINGLE_CHAR "'"
+
+IDENT: CNAME
+
+%import common.ESCAPED_STRING
+%import common.DIGIT
+%import common.CNAME
+%import common.WS
+
+%ignore WS
+
+COMMENT: "//" /[^\n]/* | "/*" /(\S|\s)*?/ "*/"
+%ignore COMMENT
+

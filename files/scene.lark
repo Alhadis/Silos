@@ -1,0 +1,122 @@
+%import common.ESCAPED_STRING
+%import common.DIGIT
+%import common.SIGNED_NUMBER
+%import common.LETTER
+%import common.INT
+%import common.NEWLINE
+
+%import common.WS
+%ignore WS
+
+COMMENT :  "/*" /(.|\n|\r)+/ "*/"     
+    |  "//" /(.)+/ NEWLINE
+    |  "#" /(.)+/ NEWLINE
+%ignore COMMENT 
+
+scene: env? _entity*
+
+env: ENV "{" _env_option* "}"
+_env_option: external_net
+    | control_net_gateway
+external_net: "external_net" IPV4_NET
+    | "external_net" "[" IPV4_NET ("," IPV4_NET)* "]"
+control_net_gateway: "control_net_gateway" IPV4_ADDR
+
+_entity: lan
+    | host
+    | router
+    | template
+
+lan: LAN ID alias? ("{" _lan_attr_line* host* "}")?
+_lan_attr_line: ipv4_net_line
+ipv4_net_line: IPV4 IPV4_NET
+
+host: (HOST | ATTACKER | SERVER | TERMINAL) ID alias? host_in_lan? use_template? ("{" _host_attr_line* "}")?
+host_in_lan: IN ID _ip_attr? 
+_ip_attr: "[" (IPV4_NET | IPV4_ADDR) "]"
+_host_attr_line: ipv4_addr_line
+    | template_line
+    | port
+    | global_dns_line
+    | generic_option
+    | flag
+global_dns_line: "global_dns" BOOLEAN
+ipv4_addr_line: IPV4 IPV4_ADDR
+template_line: TEMPLATE ESCAPED_STRING
+port: PORT (INT | ID)? (host_in_lan | port_to_port)? ("{" _port_attr_line* "}")?
+flag: (FIXED_FLAG | FLAG) ID "(" INT ")" ESCAPED_STRING
+
+// TODO: direct TO PORT
+port_to_port: _ip_attr? TO ID (node_port_id | node_port_ip)?
+node_port_id: "(" (INT | ID) ")"
+node_port_ip: _ip_attr
+
+_port_attr_line: ipv4_addr_line
+
+router: ROUTER ID alias? ("{" _router_attr_line* "}")?
+_router_attr_line: template_line
+    | port
+    | route_table
+    | generic_option
+    | flag
+
+generic_option: OPTION ID _option_value
+
+_option_value: leaf_value
+    | list_value
+    | dict_value
+leaf_value: SIGNED_NUMBER | ESCAPED_STRING | IPV4_ADDR | IPV4_NET
+list_value: "[" "]"
+    | "[" _option_value ("," _option_value)* ","? "]"
+dict_value: "{" "}"
+    | "{" dict_entry ("," dict_entry)* ","? "}"
+dict_entry: (ID | ESCAPED_STRING) ":" _option_value
+
+route_table: "route_table" "{" route_entry* "}"
+route_entry: IPV4_NET "->" IPV4_ADDR
+
+alias: AS ESCAPED_STRING
+use_template: USE ESCAPED_STRING
+
+template: TEMPLATE ESCAPED_STRING "{" template_attr* "}"
+template_attr: "os" (WINDOWS | LINUX) -> template_os_attr
+    | "emulation" (VSPHERE | DOCKER | LXD | KVM) -> template_emulation_attr
+    | "image" ESCAPED_STRING -> template_image_attr
+
+VSPHERE: "vsphere"
+DOCKER: "docker"
+LXD: "lxd"
+KVM: "kvm"
+
+WINDOWS: "windows"
+LINUX: "linux"
+
+IPV4: "ipv4"
+TEMPLATE: "template"
+PORT: "port"
+
+LAN: "lan"
+HOST: "host"
+ROUTER: "router"
+
+ATTACKER: "attacker"
+SERVER: "server"
+TERMINAL: "terminal"
+
+ENV: "env"
+
+OPTION: "option"
+FLAG: "flag"
+FIXED_FLAG: "fixed_flag"
+
+TO: "to"
+IN: "in"
+AS: "as"
+USE: "use"
+
+
+BOOLEAN: "true" | "false"
+
+IPV4_ADDR: /[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/
+IPV4_NET: IPV4_ADDR "/" INT
+ID: ("_"|LETTER) ("_"|"-"|LETTER|DIGIT)*

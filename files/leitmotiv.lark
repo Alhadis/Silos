@@ -1,0 +1,77 @@
+start: (expr _NL)+
+
+
+block: LBR _NL* (expr _NL+)* _NL* RBR
+
+// display is slightly broken, its not able to match or_test and instead matches molecule, thats because otherwise it becomes difficult to know if a bare path is a division
+?expr: or_test "=" or_test -> assignation
+    | "!" factor path? -> display
+    | if_expr
+    | while_expr
+    | or_test
+
+!if_expr: "if" or_test block ("elif" or_test block)* ("else" block)?
+while_expr: "while" or_test block
+
+!?or_test: and_test ("or" and_test)*
+!?and_test: not_test ("and" not_test)*
+?not_test: not not_test | comparison
+!not.2 : "not"
+!?comparison: arith_expr (comp_op arith_expr)*
+
+!?comp_op: goe|loe|"<"|">"|"=="|"!="
+!goe.2: ">="
+!loe.2: "<="
+!?arith_expr: term (("+"|"-") term)*
+!?term: factor (("*"|"/"|"%"|integer_div) factor)*
+?factor: minus factor | molecule
+
+?molecule:
+         | "fn" "(" [arguments] ")" block -> fn_def
+         | molecule "(" [arguments] ")" -> func_call
+         | molecule side_effect_tok CNAME -> side_effect_call
+         | molecule "." CNAME -> getattr
+         | list_access
+         | list_def
+         | atom
+
+list_access: molecule "[" molecule "]"
+list_def.2: "[" [arguments] "]" -> list
+
+side_effect_tok.3: "->"
+
+?atom: var | number | string | abc_def | perc1_def
+
+arguments: argvalue (_NL* "," argvalue _NL*)*
+?argvalue: expr
+
+abc_def : "abc" STRING|LONG_STRING
+perc1_def : "perc1" STRING|LONG_STRING
+var.2 : CNAME
+path: PATH
+
+string: STRING | LONG_STRING
+number: DEC_NUMBER | FLOAT_NUMBER
+
+!minus.2: "-"
+!integer_div.2: "//"
+LBR: "{"
+RBR: "}"
+
+STRING : /("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
+LONG_STRING: /(""".*?(?<!\\)(\\\\)*?"""|'''.*?(?<!\\)(\\\\)*?''')/is
+
+DEC_NUMBER: /0|[1-9]\d*/i
+FLOAT_NUMBER: /((\d+\.\d*|\.\d+)(e[-+]?\d+)?|\d+(e[-+]?\d+))/i
+
+COMMENT : /#[^\n]*/
+PATH : /(?:\/?[a-zA-Z0-9\.\_-])*([a-zA-Z0-9]+\.?[a-zA-Z0-9]*)+/
+
+_NL: (/\r?\n/)+
+
+%import common.WS
+%import common.CNAME
+%import common.ESCAPED_STRING
+
+%ignore COMMENT
+%ignore WS

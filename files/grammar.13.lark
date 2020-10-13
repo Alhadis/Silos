@@ -1,0 +1,52 @@
+%import common.NUMBER
+%import common.WS
+%ignore WS
+
+?start: expr
+      | assignment
+      | integral
+      | definite_integral
+
+symbol: /\b(?!int|sub|sup|over|d)[a-zA-Z_]\w*/
+
+?atom: NUMBER -> number
+     | symbol
+     | brackets
+     | func
+
+?expr: sum
+
+brackets: "(" expr ")"
+
+//Mathematical expressons
+?add_op: "+" -> plus
+       | "-" -> minus
+
+?mul_op: WS? "*"   WS? -> times
+       | WS? "%"   WS? -> mod
+       | WS "over" WS  -> over
+       | WS "sup"  WS  -> pow
+
+?sum: product (WS? add_op WS? product)*
+?product: atom (mul_op atom)*
+
+//Integrals
+lower_bound: "sub" atom
+upper_bound: "sup" atom
+bounds: lower_bound upper_bound
+      | upper_bound lower_bound
+
+differential: "d(" expr ")"
+
+integral: "int" expr differential
+definite_integral: "int" bounds expr differential
+
+//Functions
+args: (expr | integral | definite_integral) ("," (expr | integral | definite_integral))*
+//symbol, not a keyword, followed by bracket
+func_name: /\b(?!(int|sub|sup|over|d)\b)[a-zA-Z_]\w*!?(?=\()/    
+func: func_name "(" args? ")"
+
+//Assignment
+?lvalue: (symbol | func) "="
+assignment: lvalue (expr | integral | definite_integral)
