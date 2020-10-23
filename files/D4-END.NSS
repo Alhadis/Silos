@@ -1,0 +1,55 @@
+0010* ----------------------------------------------------------------------
+0020* CLASS  Natural Web Interface - New Demo Application
+0030*
+0040*        D4-END
+0050*
+0060* DESCRIPTION
+0070*               Generate the "end" of a demo HTML Page
+0080*
+0090* AUTHOR        SAG   08.09.1998
+0100*
+0110* Version       8.3
+0120*
+0130* Copyright (c) 1997-2016 Software AG, Germany.  All rights reserved.
+0140*
+0150* HISTORY
+0160* USER    DATE       REASON
+0170* ------+----------+----------------------------------------------
+0180*       ! --.--.-- !
+0190* ------+----------+----------------------------------------------
+0200*
+0210* ------ PARAMETER -----------------------------------------------
+0220DEFINE DATA
+0230PARAMETER USING D4-PARM
+0240LOCAL USING W3CONST
+0250LOCAL
+02601 W3VALUE   (A) DYNAMIC
+02701 W3URL     (A) DYNAMIC
+02801 II        (I4)
+0290END-DEFINE
+0300*
+0310DEFINE SUBROUTINE D4-END
+0320*
+0330PERFORM W3TEXTDYNAMIC "</TD></TR><TR><TD></TD><TD></TD>"
+0340  -"<TD BGCOLOR='#6699FF' WIDTH='100%' ALIGN='CENTER'>"
+0350*
+0360INCLUDE D4-IPAGE
+0370*
+0380PERFORM D4-MSG #DEMO-MENU #DEMO-PARM
+0390*
+0400COMPRESS '&nbsp;</TD></TR><TR><TD></TD><TD></TD><TD>'
+0410  -"<IMG SRC='$PICTURES$/natw_nww.gif' WIDTH='110' "
+0420  -"HEIGHT='20' ALIGN='Right'></TD></TR></TABLE>"
+0430  INTO W3VALUE LEAVING NO
+0440PERFORM W3TEXTDYNAMIC W3VALUE
+0450*
+0460PERFORM D4-HGLOB #DEMO-MENU #DEMO-PARM
+0470PERFORM H3-CLOSE-FORM
+0480PERFORM H3-CLOSE-HTML
+0490*
+0500PERFORM W3REPLACE "URL" "$PICTURES$"   #DEMO-PARM.#GIF
+0510PERFORM W3REPLACE "URL" "$JAVASCRIPT$" #DEMO-PARM.#JAVA
+0520
+0530END-SUBROUTINE
+0540*
+0550END

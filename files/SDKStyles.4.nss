@@ -1,0 +1,1 @@
+/* The SDKStyles metadata provides the client with a NUI NSS style file used to style the SDK controls. */

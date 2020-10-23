@@ -1,0 +1,16 @@
+//::///////////////////////////////////////////////
+//:: Name: pgs_temp_public
+//:: Copyright (c) 2001 Bioware Corp.
+//:://////////////////////////////////////////////
+/*
+    Set the temporary status of the new guild to
+    public.
+*/
+//:://////////////////////////////////////////////
+//:: Created By: Samius Maximus
+//:: Created On:
+//:://////////////////////////////////////////////
+void main()
+{
+    SetLocalString (GetPCSpeaker(), "Temp_Guild_Privacy", "public");
+}

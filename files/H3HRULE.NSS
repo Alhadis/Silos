@@ -1,0 +1,49 @@
+0010* ----------------------------------------------------------------------
+0020* CLASS  Natural Web Interface - HTML Extension
+0030*
+0040*        H3HRULE
+0050*
+0060* DESCRIPTION   This program generates a horizontal rule
+0070*
+0080* AUTHOR        SAG   28.07.97
+0090*
+0100* Version       8.3
+0110*
+0120* Copyright (c) 1997-2016 Software AG, Germany.  All rights reserved.
+0130*
+0140* HISTORY
+0150* USER    DATE       REASON
+0160* ------+----------+----------------------------------------------
+0170*       ! --.--.-- !
+0180* ------+----------+----------------------------------------------
+0190*
+0200DEFINE DATA
+0210PARAMETER
+02201 #H3WIDTH         (N4) BY VALUE /* i /m :Width in percent
+0230LOCAL USING W3CONST
+0240LOCAL
+02501 #HTTP_VALUE      (A) DYNAMIC
+0260END-DEFINE
+0270*
+0280DEFINE SUBROUTINE H3-RULE
+0290*
+0300ON ERROR
+0310  ##W3ERROR.SUBROUTINE := "H3-RULE"
+0320  PERFORM W3ERROR ##W3ERROR
+0330  ESCAPE ROUTINE
+0340END-ERROR
+0350*
+0360IF #H3WIDTH GT 100 OR #H3WIDTH LT 0 THEN
+0370  #H3WIDTH := 100
+0380END-IF
+0390*
+0400IF #H3WIDTH > 0 THEN
+0410  COMPRESS '<HR WIDTH="' #H3WIDTH '%">' ##HTTP_NEWLINE
+0420    INTO #HTTP_VALUE LEAVING NO
+0430ELSE
+0440  COMPRESS '<HR>' ##HTTP_NEWLINE INTO #HTTP_VALUE LEAVING NO
+0450END-IF
+0460PERFORM W3TEXTDYNAMIC #HTTP_VALUE
+0470*
+0480END-SUBROUTINE
+0490END

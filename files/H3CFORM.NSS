@@ -1,0 +1,46 @@
+0010* ----------------------------------------------------------------------
+0020* CLASS  Natural Web Interface - HTML Extension
+0030*
+0040*        H3CFORM
+0050*
+0060* DESCRIPTION   This Program generates a ending /FORM tag
+0070*
+0080* AUTHOR        SAG   28.07.97
+0090*
+0100* Version       8.3
+0110*
+0120* Copyright (c) 1997-2016 Software AG, Germany.  All rights reserved.
+0130*
+0140* HISTORY
+0150* USER    DATE       REASON
+0160* ------+----------+----------------------------------------------
+0170*       ! --.--.-- !
+0180* ------+----------+----------------------------------------------
+0190*
+0200DEFINE DATA
+0210LOCAL USING W3CONST
+0220LOCAL USING W3PINFO
+0230LOCAL
+02401 #HTTP_VALUE (A) DYNAMIC
+0250END-DEFINE
+0260*
+0270DEFINE SUBROUTINE H3-CLOSE-FORM
+0280*
+0290ON ERROR
+0300  ##W3ERROR.SUBROUTINE := "H3-CLOSE-FORM"
+0310  PERFORM W3ERROR ##W3ERROR
+0320  ESCAPE ROUTINE
+0330END-ERROR
+0340*
+0350RESET ##W3INFO
+0360PERFORM W3INFO ##W3INFO
+0370IF ##W3INFO.FORM EQ TRUE THEN
+0380  PERFORM W3TEXTLINEDYNAMIC '</FORM>'
+0390END-IF
+0400*
+0410##W3INFO.FORM   := FALSE
+0420##W3INFO.ACTION := "F"
+0430PERFORM W3INFO ##W3INFO
+0440*
+0450END-SUBROUTINE
+0460END

@@ -1,0 +1,55 @@
+0010* ----------------------------------------------------------------------
+0020* CLASS  Natural Web Interface - New Demo Application
+0030*
+0040*        D4BROWSE
+0050*
+0060* DESCRIPTION
+0070*               GENERATE HTML-PAGE FOR BROWSE PERSONS
+0080*
+0090* AUTHOR        SAG   08.09.1998
+0100*
+0110* Version       8.3
+0120*
+0130* Copyright (c) 1997-2016 Software AG, Germany.  All rights reserved.
+0140*
+0150* HISTORY
+0160* USER    DATE       REASON
+0170* ------+----------+----------------------------------------------
+0180*       ! --.--.-- !
+0190* ------+----------+----------------------------------------------
+0200*
+0210* ------ PARAMETER -----------------------------------------------
+0220DEFINE DATA
+0230PARAMETER USING D4-PARM
+0240LOCAL USING W3CONST
+0250LOCAL
+02601 W3URL   (A) DYNAMIC
+02701 W3VALUE (A) DYNAMIC
+02801 II      (I4)
+0290END-DEFINE
+0300*
+0310DEFINE SUBROUTINE D4BROWSE
+0320*
+0330ON ERROR
+0340  ##W3ERROR.SUBROUTINE := *PROGRAM
+0350  PERFORM W3ERROR ##W3ERROR
+0360  ESCAPE ROUTINE
+0370END-ERROR
+0380*
+0390#DEMO-PARM.#TODO    := 'brow'
+0400#DEMO-PARM.#CAPTION := 'Browse'
+0410#DEMO-PARM.#STATUS  := "B"
+0420#DEMO-MENU.#ME      := "T"
+0430#DEMO-MENU.#CH      := "T"
+0440#DEMO-MENU.#DE      := "T"
+0450#DEMO-MENU.#SH      := "T"
+0460#DEMO-MENU.#AD      := "T"
+0470*
+0480PERFORM D4-START #DEMO-MENU #DEMO-PARM
+0490*
+0500#DEMO-PARM.#END-MAX := 10
+0510PERFORM D4EMBROW #DEMO-MENU #DEMO-PARM
+0520*
+0530PERFORM D4-END #DEMO-MENU #DEMO-PARM
+0540END-SUBROUTINE
+0550END

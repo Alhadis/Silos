@@ -1,0 +1,16 @@
+//::///////////////////////////////////////////////
+//:: FileName _mdrn_sc_jump
+//:://////////////////////////////////////////////
+//:://////////////////////////////////////////////
+//:: Created By: Script Wizard
+//:: Created On: 2/6/2007 8:42:49 PM
+//:://////////////////////////////////////////////
+int StartingConditional()
+{
+
+    // Inspect local variables
+    if(!(GetLocalInt(GetPCSpeaker(), "JUMP_INVALID") == 0) && GetIsDM(GetPCSpeaker())==FALSE)
+        return FALSE;
+
+    return TRUE;
+}

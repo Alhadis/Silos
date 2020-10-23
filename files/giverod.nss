@@ -1,0 +1,16 @@
+//::///////////////////////////////////////////////
+//:: FileName giverod
+//:://////////////////////////////////////////////
+//:://////////////////////////////////////////////
+//:: Created By: Script Wizard
+//:: Created On: 10/7/2003 2:03:49 AM
+//:://////////////////////////////////////////////
+void main()
+{
+    // Give the speaker the items
+    CreateItemOnObject("rodofjohnson", GetPCSpeaker(), 1);
+
+    // Set the variables
+    SetLocalInt(GetPCSpeaker(), "quest", 20);
+
+}

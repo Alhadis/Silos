@@ -1,0 +1,92 @@
+0010* ----------------------------------------------------------------------
+0020* CLASS  Natural Web Interface - HTML Extension
+0030*
+0040*        H3IMAGE
+0050*
+0060* DESCRIPTION   This Program generates a IMAGE
+0070*
+0080* AUTHOR        SAG   28.07.97
+0090*
+0100* Version       8.3
+0110*
+0120* Copyright (c) 1997-2016 Software AG, Germany.  All rights reserved.
+0130*
+0140* HISTORY
+0150* USER    DATE       REASON
+0160* ------+----------+----------------------------------------------
+0170*       ! --.--.-- !
+0180* ------+----------+----------------------------------------------
+0190*
+0200DEFINE DATA
+0210PARAMETER
+02201 #H3SRC    (A) DYNAMIC BY VALUE /* i /m : URL of the picture source
+02301 #H3ALT    (A) DYNAMIC BY VALUE /* i /  : Alternative name string
+0240*                                /*        for non gui browsers
+02501 #H3HEIGHT (N4)        BY VALUE /* i /  : Height of the picture
+02601 #H3WIDTH  (N4)        BY VALUE /* i /  : Width of the picture
+02701 #H3ALIGN  (A1)        BY VALUE /* i /  : Align the picture to:
+0280*                                /*        'L' Left
+0290*                                /*        'R' Right
+0300*                                /*        'T' Top
+0310*                                /*        'B' Bottom
+0320*                                /*        'M' Middle
+0330*                                /*        'C' Center
+0340*
+0350LOCAL  USING W3CONST
+0360LOCAL
+03701 #HTTP_VALUE        (A) DYNAMIC
+0380END-DEFINE
+0390*
+0400DEFINE SUBROUTINE H3-IMAGE
+0410*
+0420ON ERROR
+0430##W3ERROR.SUBROUTINE := "H3-IMAGE"
+0440PERFORM W3ERROR ##W3ERROR
+0450ESCAPE ROUTINE
+0460END-ERROR
+0470*
+0480COMPRESS '<IMG' INTO #HTTP_VALUE LEAVING NO
+0490*
+0500IF #H3SRC NE " " THEN
+0510  COMPRESS #HTTP_VALUE 'SRC="' INTO #HTTP_VALUE
+0520  COMPRESS #HTTP_VALUE #H3SRC '"' INTO #HTTP_VALUE LEAVING NO
+0530END-IF
+0540*
+0550IF #H3ALT NE " " THEN
+0560  COMPRESS #HTTP_VALUE 'ALT="' INTO #HTTP_VALUE
+0570  COMPRESS #HTTP_VALUE #H3ALT '"' INTO #HTTP_VALUE LEAVING NO
+0580END-IF
+0590*
+0600IF #H3HEIGHT GT 0 THEN
+0610  COMPRESS #HTTP_VALUE 'HEIGHT="' INTO #HTTP_VALUE
+0620  COMPRESS #HTTP_VALUE #H3HEIGHT '"' INTO #HTTP_VALUE LEAVING NO
+0630END-IF
+0640*
+0650IF #H3WIDTH GT 0 THEN
+0660  COMPRESS #HTTP_VALUE 'WIDTH="' INTO #HTTP_VALUE
+0670  COMPRESS #HTTP_VALUE #H3WIDTH '"' INTO #HTTP_VALUE LEAVING NO
+0680END-IF
+0690*
+0700EXAMINE #H3ALIGN TRANSLATE INTO UPPER
+0710IF #H3ALIGN NE " " THEN
+0720  DECIDE ON FIRST #H3ALIGN
+0730    VALUE "L"
+0740      COMPRESS #HTTP_VALUE 'ALIGN="LEFT"' INTO #HTTP_VALUE
+0750    VALUE "M", "C"
+0760      COMPRESS #HTTP_VALUE 'ALIGN="MIDDLE"' INTO #HTTP_VALUE
+0770    VALUE "R"
+0780      COMPRESS #HTTP_VALUE 'ALIGN="RIGHT"' INTO #HTTP_VALUE
+0790    VALUE "T"
+0800      COMPRESS #HTTP_VALUE 'ALIGN="TOP"' INTO #HTTP_VALUE
+0810    VALUE "B"
+0820      COMPRESS #HTTP_VALUE 'ALIGN="BOTTOM"' INTO #HTTP_VALUE
+0830    NONE
+0840      IGNORE
+0850  END-DECIDE
+0860END-IF
+0870*
+0880COMPRESS #HTTP_VALUE '>' INTO #HTTP_VALUE LEAVING NO
+0890PERFORM W3TEXTDYNAMIC #HTTP_VALUE
+0900*
+0910END-SUBROUTINE
+0920END

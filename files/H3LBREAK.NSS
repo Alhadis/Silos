@@ -1,0 +1,47 @@
+0010* ----------------------------------------------------------------------
+0020* CLASS  Natural Web Interface - HTML Extension
+0030*
+0040*        H3LBREAK
+0050*
+0060* DESCRIPTION   This Program generates a Line Break
+0070*
+0080* AUTHOR        SAG   28.07.97
+0090*
+0100* Version       8.3
+0110*
+0120* Copyright (c) 1997-2016 Software AG, Germany.  All rights reserved.
+0130*
+0140* HISTORY
+0150* USER    DATE       REASON
+0160* ------+----------+----------------------------------------------
+0170*       ! --.--.-- !
+0180* ------+----------+----------------------------------------------
+0190*
+0200DEFINE DATA
+0210PARAMETER
+02201 #H3VALUE    (A) DYNAMIC BY VALUE OPTIONAL /* i /oH: HTML text after the line break
+0230*
+0240LOCAL USING W3CONST
+0250LOCAL
+02601 #HTTP_VALUE (A) DYNAMIC
+0270END-DEFINE
+0280*
+0290DEFINE SUBROUTINE H3-LINE_BREAK
+0300*
+0310ON ERROR
+0320##W3ERROR.SUBROUTINE := "H3-LINE_BREAK"
+0330PERFORM W3ERROR ##W3ERROR
+0340ESCAPE ROUTINE
+0350END-ERROR
+0360*
+0370PERFORM W3TEXTDYNAMIC '<BR>'
+0380*
+0390IF #H3VALUE SPECIFIED
+0400  IF #H3VALUE NE " " THEN
+0410    PERFORM W3HTML #H3VALUE
+0420  END-IF
+0430END-IF
+0440PERFORM W3TEXTDYNAMIC ##HTTP_NEWLINE
+0450*
+0460END-SUBROUTINE
+0470END

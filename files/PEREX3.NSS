@@ -1,0 +1,14 @@
+0010** Example 'PEREX3': SUBROUTINE (external subroutine with parameters)
+0020************************************************************************
+0030DEFINE DATA
+0040PARAMETER
+00501 #ALINE  (A25/1:4,1:3)
+0060END-DEFINE
+0070*
+0080DEFINE SUBROUTINE PEREX2E
+0090  WRITE NOTITLE (AD=OI) #ALINE(*,*)
+0100  RESET #ALINE(*,*)
+0110  SKIP 1
+0120END-SUBROUTINE
+0130*
+0140END

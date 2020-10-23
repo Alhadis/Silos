@@ -1,0 +1,18 @@
+//::///////////////////////////////////////////////
+//:: FileName ftk_05
+//:://////////////////////////////////////////////
+//:://////////////////////////////////////////////
+//:: Created By: Script Wizard
+//:: Created On: 5/23/2009 1:40:48 AM
+//:://////////////////////////////////////////////
+#include "nw_i0_tool"
+
+void main()
+{
+	// Give the speaker some XP
+	RewardPartyXP(500, GetPCSpeaker());
+
+	// Set the variables
+	SetLocalInt(GetPCSpeaker(), "findtheking", 200);
+
+}

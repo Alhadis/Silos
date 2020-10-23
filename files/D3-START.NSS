@@ -1,0 +1,51 @@
+0010* ----------------------------------------------------------------------
+0020* CLASS  Natural Web Interface - Demo Application
+0030*
+0040*        D3-START
+0050*
+0060* DESCRIPTION
+0070*               Generate the "start" of a demo HTML PageAdd a Person
+0080*
+0090* AUTHOR        SAG   11.04.97
+0100*
+0110* Version       8.3
+0120*
+0130* Copyright (c) 1997-2016 Software AG, Germany.  All rights reserved.
+0140*
+0150* HISTORY
+0160* USER    DATE       REASON
+0170* ------+----------+----------------------------------------------
+0180*       ! --.--.-- !
+0190* ------+----------+----------------------------------------------
+0200*
+0210* ------ PARAMETER -----------------------------------------------
+0220DEFINE DATA
+0230PARAMETER USING D3-PARM
+0240LOCAL
+02501 W3VALUE   (A250)
+02601 W3URL     (A250)
+0270END-DEFINE
+0280*
+0290DEFINE SUBROUTINE D3-START
+0300*
+0310COMPRESS 'Demo Application -' #DEMO-PARM.#TODO INTO W3VALUE
+0320PERFORM H3-OPEN-HTML W3VALUE "FFFF80" " "
+0330*
+0340COMPRESS #DEMO-PARM.#CGI "/D3CHOOSE" INTO W3URL LEAVING NO
+0350PERFORM H3-OPEN-FORM "G" W3URL
+0360*
+0370PERFORM W3TEXTLINEDYNAMIC "<BR><H1 ALIGN='CENTER'>"
+0380*
+0390IF #DEMO-PARM.#OT = "EM"
+0400  PERFORM W3TEXTLINEDYNAMIC 'Maintenance of File: Employees'
+0410ELSE
+0420  PERFORM W3TEXTLINEDYNAMIC 'Maintenance of File: Vehicles'
+0430END-IF
+0440PERFORM W3TEXTLINEDYNAMIC "<BR><FONT SIZE=5>"
+0450PERFORM W3TEXTLINEDYNAMIC #DEMO-PARM.#TODO
+0460*
+0470PERFORM W3TEXTLINEDYNAMIC "</FONT></H1><HR><P ALIGN='CENTER'>"
+0480*
+0490END-SUBROUTINE
+0500*
+0510END

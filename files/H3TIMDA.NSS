@@ -1,0 +1,59 @@
+0010* ----------------------------------------------------------------------
+0020* CLASS  Natural Web Interface - HTML Extension
+0030*
+0040*        H3TIMDA
+0050*
+0060* DESCRIPTION   This Program generates a 'time' string
+0070*
+0080* AUTHOR        SAG   18.08.97
+0090*
+0100* Version       8.3
+0110*
+0120* Copyright (c) 1997-2016 Software AG, Germany.  All rights reserved.
+0130*
+0140* HISTORY
+0150* USER    DATE       REASON
+0160* ------+----------+----------------------------------------------
+0170*       ! --.--.-- !
+0180* ------+----------+----------------------------------------------
+0190*
+0200DEFINE DATA PARAMETER
+02101 H3ADDMINUTE (I4) BY VALUE /* i /  : Adds minutes to time
+02201 H3ADDDAY    (I4) BY VALUE /* i /  : Adds days to date
+02301 H3TIMEDATE  (A29)         /*  o/  : Generated string
+02401 REDEFINE H3TIMEDATE
+0250  2 RDATE   (A17)
+0260  2 RTIME   (A8)
+0270  2 RZONE   (A4)
+0280*
+0290LOCAL USING W3CONST
+0300LOCAL
+03101 ATIME (T)
+03201 ADATE (D)
+0330*
+03401 LANG (I4)
+0350*
+0360END-DEFINE
+0370*
+0380DEFINE SUBROUTINE H3-TIME-DATE
+0390*
+0400ON ERROR
+0410  ##W3ERROR.SUBROUTINE := "H3-TIME-DATE"
+0420  PERFORM W3ERROR ##W3ERROR
+0430  ESCAPE ROUTINE
+0440END-ERROR
+0450*
+0460RESET H3TIMEDATE
+0470*
+0480ADATE := *DATX + H3ADDDAY
+0490ATIME := *TIMX + ( H3ADDMINUTE * 600)
+0500*
+0510LANG := *LANGUAGE
+0520*LANGUAGE := 1
+0530MOVE EDITED ADATE (EM=NNN', 'DD' 'LLL' 'YYYY) TO RDATE
+0540MOVE EDITED ATIME (EM=HH:II:SS) TO RTIME
+0550MOVE " GMT" TO RZONE
+0560*LANGUAGE := LANG
+0570*
+0580END-SUBROUTINE
+0590END

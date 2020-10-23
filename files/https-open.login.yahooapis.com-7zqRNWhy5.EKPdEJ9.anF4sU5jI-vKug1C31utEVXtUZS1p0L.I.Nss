@@ -1,0 +1,6 @@
+version:2
+handle:0a6UYGefZ_Wf3YnmezVwprN.iUnZH8VF4Yl7Pcq12kjGRjO6Qe1oQgIIIHbx9xRGcunM532SfvAHiHyt9kAhEyb8r967Lkc4imHeA7QjyzyiL3sDqRxLmvkmeXifOcEFkbk-
+secret:Ud58INSTwJBF6T4WjtVNgcU1nPs=
+issued:1516069756
+lifetime:14400
+assoc_type:HMAC-SHA1
