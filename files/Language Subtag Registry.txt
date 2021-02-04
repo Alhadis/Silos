@@ -1,0 +1,78 @@
+﻿ABNF is used for the production rules
+[2.  The Language Tag] are used to identify a language
+[2.1.  Syntax] A Language Tag is composed of one or more subtags devided by a -
+Exceptions are grandfathered Tags a fixed list of legacy-system Tags that are still used [RFC3066]
+	langtag		= language ["-" script] ["-" region] *("-" variant) *("-" extension) ["-" privateuse]
+	language	= 2*3ALPHA  ["-" extlang] / 4ALPHA / 5*8ALPHA         						; shortest ISO 639 code sometimes followed by extended language subtags or reserved for future use or registered language subtag
+	extlang		= 3ALPHA *2("-" 3ALPHA)										; selected ISO 639 codespermanently reserved
+	script		= 4ALPHA											; ISO 15924 code
+	region		= 2ALPHA / 3DIGIT										; ISO 3166-1 code UN M.49 code
+	variant		= 5*8alphanum / (DIGIT 3alphanum)								; registered variants
+	extension	= singleton 1*("-" (2*8alphanum))
+                                     ; Single alphanumerics
+	singleton	= DIGIT												; 0 - 9
+			/ %x41-57											; A - W
+			/ %x59-5A											; Y - Z
+			/ %x61-77											; a - w
+			/ %x79-7A											; y - z
+	privateuse	= "x" 1*("-" (1*8alphanum))
+ 	grandfathered	= irregular / regular										; non-redundant tags registered during the RFC 3066 era
+	irregular	= "en-GB-oed" / "i-ami"	/ "i-bnn" / "i-default"	/ "i-enochian" / "i-hak" / "i-klingon"		; irregular tags do not match the 'langtag' production and would not otherwise be considered 'well-formed'
+			/ "i-lux" / "i-mingo" / "i-navajo" / "i-pwn" / "i-tao" / "i-tay" / "i-tsu" / "sgn-BE-FR"	; These tags are all valid, but most are deprecated in favor of more modern subtags or subtag combination
+			/ "sgn-BE-NL" / "sgn-CH-DE"
+
+	regular		= "art-lojban" / "cel-gaulish" / "no-bok" / "no-nyn" / "zh-guoyu" / "zh-hakka"			; these tags match the 'langtag' production, but their subtags are not extended language or variant subtags: their meaning
+			/ "zh-min" / "zh-min-nan" / "zh-xiang"								; is defined by their registration and all of these are deprecated in favor of a more modern subtag or sequence of subtags
+[3. Registry Format and Maintenance]  The IANA Language Subtag Registry ("the registry") contains a comprehensive list of all of the subtags valid in language tags.
+Registry: Unicode text file and consists of a series of records separated by lines containing only the sequence "%%"
+  Record: series of fields
+    Field: A line UTF-8 encoded consisting of "field-name" and a "field-body" separated by a "field-separator" (: surrounded by whitespace) every lane has only 72 bytes it, so longer content can be folded in multiple lines
+	registry	= record *("%%" CRLF record)
+	record		= 1*field
+	field		= ( field-name field-sep field-body CRLF )
+	field-name	= (ALPHA / DIGIT) [*(ALPHA / DIGIT / "-") (ALPHA / DIGIT)]
+	field-sep	= *SP ":" *SP	field-body = *([[*SP CRLF] 1*SP] 1*CHARS)
+	CHARS		= (%x21-10FFFF)      										; Unicode code points
+There are three types of records in the registry: "File-Date","Subtag", and "Tag".
+File-Date is the first record it occures only one time and contains a date
+[3.1.3.  Type Field] defines the type of the record
+Types: 
+Note each Sub-Tag can only follow its predecessors e.g. a extlang tag can only follow a language tag, while a variant can variant can follow region script extlang or lang
+- language:		primary language subtag, it is the first subtag of a language tag
+- extlang:		dentifs a form of a language. Allway connected with a primary subtag indicated via 'Prefix' field
+- script:		indicates the script(Darstellung der textstructur z.b. latin)
+- region:		indicates linguistic variations associated with or appropriate to a region
+- variant:		indicate additional, well-recognized variations that define a language or its dialects that are not covered by other available subtags
+Note the folowing tags are no subtags but are a complet standalone tag
+- grandfathered:	(Legacy System) Prior to RFC 4646, whole language tags were registered according to the rules in RFC 1766 and/or RFC 3066.  All of these registered tags remain valid as language tags.
+- redundant:		Some of the RFC 1766 and 3066 Tags are redundantly defined by the current standard
+[3.1.4.  Subtag and Tag Fields]
+- Tag="<tag>" appears in records whose 'Type'='grandfathered' | 'redundant' and contains a tag registered under [RFC3066]
+- Subtag="<Subtag>": appears in records whose 'Type'='<anything else>'
+[3.1.5.  Description Field] contains a description of the tag or subtag in the record
+[3.1.6.  Deprecated Field] contains a mapping between the record in which it appears and another tag or subtag:
+- codes that were later withdrawn in favor of other codes have the prefered value of the code they were replaced by
+- codes that were deprecated have the prefered value of the code they were replaced by
+- Extended language subtags always have a mapping to their identical primary language subtag
+e.g. the legacy code i-klingon is mapped to its newer version tlh preferdvalue='tlh'
+[3.1.8.  Prefix Field] contains a valid language tag that is RECOMMENDED as one possible sub-tag precessing to this record's subtag MUST appear exactly once for extlang MAY appear 0 to n times in for variants
+[3.1.9.  Suppress-Script Field] MUST only occure for type='language' | 'extlang'. It indicates the script in which this language is primarly written. Missing of this field indicates that this language is not written or written in many scripts
+[3.1.10.  Macrolanguage Field] indicates a language that encompasses this subtag's language according to assignments made by ISO 639-3
+macrolanguae: clusters of closely-related language varieties that can be considered distinct individual languages, yet in certain usage contexts a single language identity for all is needed
+[3.1.11.  Scope Field] indicates the purpose of the language tag
+   o  'macrolanguage' - Indicates a macrolanguage
+   o  'collection' - Indicates a subtag that represents a collection of
+      languages, typically related by some type of historical,
+      geographical, or linguistic association.  Unlike a macrolanguage,
+      a collection can contain languages that are only loosely related
+      and a collection cannot be used interchangeably with languages
+      that belong to it.
+   o  'special' - Indicates a special language code.  These are subtags
+      used for identifying linguistic attributes not particularly
+      associated with a concrete language.  These include codes for when
+      the language is undetermined or for non-linguistic content.
+   o  'private-use' - Indicates a code reserved for private use in the
+      underlying standard.  Subtags with this scope can be used to
+      indicate a primary language for which no ISO 639 or registered
+      assignment exists.
+[3.1.12.  Comments Field] contains additional information about the record
